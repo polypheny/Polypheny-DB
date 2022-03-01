@@ -16,6 +16,6 @@
 
 package org.polypheny.db.catalog.exceptions;
 
-public class SchemaAlreadyExistsException extends CatalogException {
+public class NamespaceAlreadyExistsException extends CatalogException {
 
 }

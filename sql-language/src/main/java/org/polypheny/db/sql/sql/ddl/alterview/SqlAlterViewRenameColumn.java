@@ -20,8 +20,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
@@ -79,14 +79,14 @@ public class SqlAlterViewRenameColumn extends SqlAlterView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, view );
+        CatalogEntity catalogEntity = getCatalogTable( context, view );
 
-        if ( catalogTable.tableType != TableType.VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER VIEW because " + catalogTable.name + " is not a View." );
+        if ( catalogEntity.entityType != EntityType.VIEW ) {
+            throw new RuntimeException( "Not Possible to use ALTER VIEW because " + catalogEntity.name + " is not a View." );
         }
 
         try {
-            DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
+            DdlManager.getInstance().renameColumn( catalogEntity, columnOldName.getSimple(), columnNewName.getSimple(), statement );
         } catch ( ColumnAlreadyExistsException e ) {
             throw CoreUtil.newContextException( columnNewName.getPos(), RESOURCE.columnExists( columnNewName.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {

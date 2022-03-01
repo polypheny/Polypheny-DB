@@ -63,9 +63,9 @@ import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.logical.LogicalCalc;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalExchange;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalWindow;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -249,7 +249,7 @@ public abstract class MutableAlgs {
             }
             case TABLE_MODIFY:
                 final MutableTableModify modify = (MutableTableModify) node;
-                return LogicalTableModify.create(
+                return LogicalModify.create(
                         modify.table,
                         modify.catalogReader,
                         fromMutable( modify.getInput(), algBuilder ),

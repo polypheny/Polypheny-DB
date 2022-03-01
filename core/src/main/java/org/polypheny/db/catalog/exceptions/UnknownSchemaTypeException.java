@@ -20,7 +20,7 @@ package org.polypheny.db.catalog.exceptions;
 public class UnknownSchemaTypeException extends CatalogException {
 
     public UnknownSchemaTypeException( final String name ) {
-        super( "There is no SchemaType with name: " + name );
+        super( "There is no NamespaceType with name: " + name );
     }
 
 }

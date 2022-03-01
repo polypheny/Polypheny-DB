@@ -44,8 +44,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -70,7 +70,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
-        CatalogTable table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
+        CatalogEntity table = Catalog.getInstance().getTable( columns.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
         // Check Lists
@@ -83,7 +83,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
             if ( !selectColumnList.contains( catalogColumn ) ) {
                 selectColumnList.add( catalogColumn );
             }
@@ -238,7 +238,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : to ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
         }
@@ -280,7 +280,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : to ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
         }
@@ -322,11 +322,11 @@ public class DataMigratorImpl implements DataMigrator {
 
         // build condition
         RexNode condition = null;
-        CatalogTable catalogTable = Catalog.getInstance().getTable( to.get( 0 ).tableId );
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        CatalogEntity catalogEntity = Catalog.getInstance().getTable( to.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogEntity.primaryKey );
         for ( long cid : primaryKey.columnIds ) {
             CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( to.get( 0 ).adapterId, cid );
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
                     new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id )
@@ -342,7 +342,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : to ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
         }
@@ -382,7 +382,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private List<CatalogColumnPlacement> selectSourcePlacements( CatalogTable table, List<CatalogColumn> columns, int excludingAdapterId ) {
+    private List<CatalogColumnPlacement> selectSourcePlacements( CatalogEntity table, List<CatalogColumn> columns, int excludingAdapterId ) {
         // Find the adapter with the most column placements
         Catalog catalog = Catalog.getInstance();
         int adapterIdWithMostPlacements = -1;
@@ -401,7 +401,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( long cid : table.columnIds ) {
+        for ( long cid : table.fieldIds ) {
             if ( columnIds.contains( cid ) ) {
                 if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
                     placementList.add( catalog.getColumnPlacement( adapterIdWithMostPlacements, cid ) );
@@ -422,7 +422,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     /**
      * Currently used to to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, List, List)}  } instead
+     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, CatalogEntity, CatalogEntity, List, List, List)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -433,7 +433,7 @@ public class DataMigratorImpl implements DataMigrator {
      * @param targetPartitionIds Target Partitions where data should be inserted
      */
     @Override
-    public void copySelectiveData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns, Map<Long, List<CatalogColumnPlacement>> placementDistribution, List<Long> targetPartitionIds ) {
+    public void copySelectiveData( Transaction transaction, CatalogAdapter store, CatalogEntity sourceTable, CatalogEntity targetTable, List<CatalogColumn> columns, Map<Long, List<CatalogColumnPlacement>> placementDistribution, List<Long> targetPartitionIds ) {
         CatalogPrimaryKey sourcePrimaryKey = Catalog.getInstance().getPrimaryKey( sourceTable.primaryKey );
 
         // Check Lists
@@ -446,7 +446,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : sourcePrimaryKey.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
             if ( !selectColumnList.contains( catalogColumn ) ) {
                 selectColumnList.add( catalogColumn );
             }
@@ -520,7 +520,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     /**
      * Currently used to transfer data if unpartitioned is about to be partitioned.
-     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, Map, List)}   } instead
+     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogEntity, CatalogEntity, List, Map, List)}   } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -531,7 +531,7 @@ public class DataMigratorImpl implements DataMigrator {
      * @param targetPartitionIds Target Partitions where data should be inserted
      */
     @Override
-    public void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
+    public void copyPartitionData( Transaction transaction, CatalogAdapter store, CatalogEntity sourceTable, CatalogEntity targetTable, List<CatalogColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
         if ( sourceTable.id != targetTable.id ) {
             throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
@@ -548,7 +548,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
             if ( !selectColumnList.contains( catalogColumn ) ) {
                 selectColumnList.add( catalogColumn );
             }
@@ -556,7 +556,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add partition columns to select column list
         long partitionColumnId = targetTable.partitionProperty.partitionColumnId;
-        CatalogColumn partitionColumn = Catalog.getInstance().getColumn( partitionColumnId );
+        CatalogColumn partitionColumn = Catalog.getInstance().getField( partitionColumnId );
         if ( !selectColumnList.contains( partitionColumn ) ) {
             selectColumnList.add( partitionColumn );
         }

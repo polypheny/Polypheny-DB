@@ -16,10 +16,12 @@
 
 package org.polypheny.db.cypher.cypher2alg;
 
+import java.util.Arrays;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
@@ -44,8 +46,14 @@ public class CypherToAlgConverter {
 
 
     public AlgRoot convert( Node query, QueryParameters parameters ) {
+        AlgOptTable table = getCollection( query );
 
         return null;
+    }
+
+
+    private AlgOptTable getCollection( Node query ) {
+        return catalogReader.getTable( Arrays.asList( "namespace", "collection" ) );
     }
 
 }

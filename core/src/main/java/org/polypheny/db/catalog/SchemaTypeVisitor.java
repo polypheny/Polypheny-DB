@@ -21,23 +21,23 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
 public class SchemaTypeVisitor extends AlgShuttleImpl {
 
-    private final List<SchemaType> schemaTypes = new ArrayList<>();
+    private final List<NamespaceType> namespaceTypes = new ArrayList<>();
 
 
-    public SchemaType getSchemaTypes() {
-        if ( schemaTypes.stream().allMatch( s -> s == SchemaType.RELATIONAL ) ) {
-            return SchemaType.RELATIONAL;
-        } else if ( schemaTypes.stream().allMatch( s -> s == SchemaType.DOCUMENT ) ) {
-            return SchemaType.DOCUMENT;
+    public NamespaceType getSchemaTypes() {
+        if ( namespaceTypes.stream().allMatch( s -> s == NamespaceType.RELATIONAL ) ) {
+            return NamespaceType.RELATIONAL;
+        } else if ( namespaceTypes.stream().allMatch( s -> s == NamespaceType.DOCUMENT ) ) {
+            return NamespaceType.DOCUMENT;
         } else {
             //mixed
             return null;
@@ -51,23 +51,23 @@ public class SchemaTypeVisitor extends AlgShuttleImpl {
             List<String> names = scan.getTable().getQualifiedName();
             CatalogSchema schema;
             if ( names.size() == 3 ) {
-                schema = Catalog.getInstance().getSchema( names.get( 0 ), names.get( 1 ) );
+                schema = Catalog.getInstance().getNamespace( names.get( 0 ), names.get( 1 ) );
             } else if ( names.size() == 2 ) {
                 if ( names.get( 0 ).contains( "_" ) ) {
-                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, names.get( 0 ).split( "_" )[names.size() - 1] );
+                    schema = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, names.get( 0 ).split( "_" )[names.size() - 1] );
                 } else {
-                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, names.get( 0 ) );
+                    schema = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, names.get( 0 ) );
                 }
             } else {
                 Table logicalTable = scan.getTable().getTable();
                 if ( logicalTable instanceof LogicalTable ) {
-                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, ((LogicalTable) logicalTable).getLogicalSchemaName() );
+                    schema = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, ((LogicalTable) logicalTable).getLogicalSchemaName() );
                 } else {
                     throw new RuntimeException( "The used table did not use a full name." );
                 }
             }
-            schemaTypes.add( schema.getSchemaType() );
-        } catch ( UnknownSchemaException | UnknownDatabaseException e ) {
+            namespaceTypes.add( schema.getNamespaceType() );
+        } catch ( UnknownNamespaceException | UnknownDatabaseException e ) {
             throw new RuntimeException( "The was an error on retrieval of the data model." );
         }
         return super.visit( scan );

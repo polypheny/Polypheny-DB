@@ -564,7 +564,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         null,
                         StatementType.OTHER_DDL,
                         new ExecutionTimeMonitor(),
-                        SchemaType.RELATIONAL );
+                        NamespaceType.RELATIONAL );
             }
 
             final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
@@ -637,7 +637,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 bindable,
                 statementType,
                 new ExecutionTimeMonitor(),
-                SchemaType.RELATIONAL );
+                NamespaceType.RELATIONAL );
     }*/
 
 

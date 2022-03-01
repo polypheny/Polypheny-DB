@@ -21,8 +21,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -79,14 +79,14 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         try {
-            DdlManager.getInstance().dropConstraint( catalogTable, constraintName.getSimple() );
+            DdlManager.getInstance().dropConstraint( catalogEntity, constraintName.getSimple() );
         } catch ( DdlOnSourceException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }

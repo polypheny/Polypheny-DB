@@ -85,7 +85,7 @@ import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -229,7 +229,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     public void testValidateUserDefinedAggregate() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
         OperatorTable opTab = ChainedOperatorTable.of( stdOpTab, new ListSqlOperatorTable( ImmutableList.of( new MyCountAggFunction() ) ) );
@@ -284,7 +284,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     private Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -1022,7 +1022,7 @@ public class PlannerTest extends SqlLanguagelDependant {
      * Checks that a query returns a particular plan, using a planner with MultiJoinOptimizeBushyRule enabled.
      */
     private void checkBushy( String sql, String expected ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), SchemaType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
@@ -1154,7 +1154,7 @@ public class PlannerTest extends SqlLanguagelDependant {
 
 
     public String checkTpchQuery( String tpchTestQuery ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ), SchemaType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.configBuilder().setLex( Lex.MYSQL ).build() )
@@ -1214,7 +1214,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     public void testOrderByNonSelectColumn() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "tpch", new ReflectiveSchema( new TpchSchema() ), SchemaType.RELATIONAL );
+                .add( "tpch", new ReflectiveSchema( new TpchSchema() ), NamespaceType.RELATIONAL );
 
         String query = "select t.psPartkey from \n"
                 + "(select ps.psPartkey from `tpch`.`partsupp` ps \n"
@@ -1297,7 +1297,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     private void checkView( String sql, Matcher<String> matcher ) throws NodeParseException, ValidationException, AlgConversionException {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )

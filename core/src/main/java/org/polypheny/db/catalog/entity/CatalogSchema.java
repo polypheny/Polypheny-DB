@@ -24,11 +24,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
 @EqualsAndHashCode
-public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSchema> {
+public final class CatalogSchema implements CatalogObject, Comparable<CatalogSchema> {
 
     private static final long serialVersionUID = 6130781950959616712L;
 
@@ -40,7 +40,7 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
     public final String ownerName;
     @Getter
     @EqualsAndHashCode.Exclude
-    public final SchemaType schemaType;
+    public final NamespaceType namespaceType;
 
 
     public CatalogSchema(
@@ -49,13 +49,13 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
             final long databaseId,
             final int ownerId,
             @NonNull final String ownerName,
-            @NonNull final SchemaType schemaType ) {
+            @NonNull final Catalog.NamespaceType namespaceType ) {
         this.id = id;
         this.name = name;
         this.databaseId = databaseId;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
-        this.schemaType = schemaType;
+        this.namespaceType = namespaceType;
     }
 
 
@@ -68,7 +68,7 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, getDatabaseName(), ownerName, CatalogEntity.getEnumNameOrNull( schemaType ) };
+        return new Serializable[]{ name, getDatabaseName(), ownerName, CatalogObject.getEnumNameOrNull( namespaceType ) };
     }
 
 

@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -60,8 +60,8 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
         long schemaId;
         try {
-            schemaId = catalog.getSchema( context.getDatabaseId(), database ).id;
-        } catch ( UnknownSchemaException e ) {
+            schemaId = catalog.getNamespace( context.getDatabaseId(), database ).id;
+        } catch ( UnknownNamespaceException e ) {
             throw new RuntimeException( "Poly schema was not found." );
         }
 

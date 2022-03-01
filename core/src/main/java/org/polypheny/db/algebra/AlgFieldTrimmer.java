@@ -38,9 +38,9 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -742,9 +742,9 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.logical.LogicalTableModify}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalModify}.
      */
-    public TrimResult trimFields( LogicalTableModify modifier, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( LogicalModify modifier, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         // Ignore what consumer wants. We always project all columns.
         Util.discard( fieldsUsed );
 
@@ -766,7 +766,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
             throw new AssertionError( "Expected identity mapping, got " + inputMapping );
         }
 
-        LogicalTableModify newModifier = modifier;
+        LogicalModify newModifier = modifier;
         if ( newInput != input ) {
             newModifier =
                     modifier.copy(

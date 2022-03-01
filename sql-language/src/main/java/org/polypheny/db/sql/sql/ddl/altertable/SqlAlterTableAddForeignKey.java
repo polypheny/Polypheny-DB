@@ -22,9 +22,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
@@ -109,19 +109,19 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
-        CatalogTable refTable = getCatalogTable( context, referencesTable );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
+        CatalogEntity refTable = getCatalogTable( context, referencesTable );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.tableType != TableType.TABLE ) {
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }
-        if ( refTable.tableType != TableType.TABLE ) {
+        if ( refTable.entityType != EntityType.ENTITY ) {
             throw CoreUtil.newContextException( referencesTable.getPos(), RESOURCE.ddlOnSourceTable() );
         }
         try {
             DdlManager.getInstance().addForeignKey(
-                    catalogTable,
+                    catalogEntity,
                     refTable,
                     columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                     referencesList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),

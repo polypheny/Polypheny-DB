@@ -37,7 +37,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -110,8 +110,8 @@ public interface Table {
     boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent );
 
 
-    default SchemaType getSchemaType() {
-        return SchemaType.RELATIONAL;
+    default NamespaceType getSchemaType() {
+        return NamespaceType.RELATIONAL;
     }
 
 

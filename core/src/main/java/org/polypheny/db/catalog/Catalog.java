@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
@@ -48,7 +49,6 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -68,6 +68,7 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionRuntimeExcepti
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
@@ -75,7 +76,6 @@ import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -246,7 +246,7 @@ public abstract class Catalog {
      * @param schemaId The id of the schema
      * @return The schema
      */
-    public abstract CatalogSchema getSchema( long schemaId );
+    public abstract CatalogSchema getNamespace( long schemaId );
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -254,9 +254,9 @@ public abstract class Catalog {
      * @param databaseName The name of the database
      * @param schemaName The name of the schema
      * @return The schema
-     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
+     * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException;
+    public abstract CatalogSchema getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException;
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -264,9 +264,9 @@ public abstract class Catalog {
      * @param databaseId The id of the database
      * @param schemaName The name of the schema
      * @return The schema
-     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
+     * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException;
+    public abstract CatalogSchema getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException;
 
     /**
      * Adds a schema in a specified database
@@ -274,10 +274,10 @@ public abstract class Catalog {
      * @param name The name of the schema
      * @param databaseId The id of the associated database
      * @param ownerId The owner of this schema
-     * @param schemaType The type of this schema
+     * @param namespaceType The type of this schema
      * @return The id of the inserted schema
      */
-    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType );
+    public abstract long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType );
 
     /**
      * Checks weather a schema with the specified name exists in a database.
@@ -286,7 +286,7 @@ public abstract class Catalog {
      * @param schemaName The name of the schema to check
      * @return True if there is a schema with this name. False if not.
      */
-    public abstract boolean checkIfExistsSchema( long databaseId, String schemaName );
+    public abstract boolean checkIfExistsNamespace( long databaseId, String schemaName );
 
     /**
      * Renames a schema
@@ -319,7 +319,7 @@ public abstract class Catalog {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern );
+    public abstract List<CatalogEntity> getTables( long schemaId, Pattern tableNamePattern );
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -330,7 +330,7 @@ public abstract class Catalog {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<CatalogEntity> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Returns the table with the given name in the specified database and schema.
@@ -340,7 +340,7 @@ public abstract class Catalog {
      * @param tableName The name of the table
      * @return The table
      */
-    public abstract CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException;
+    public abstract CatalogEntity getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException;
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -351,7 +351,7 @@ public abstract class Catalog {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<CatalogEntity> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Returns the table with the given id
@@ -359,7 +359,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return The table
      */
-    public abstract CatalogTable getTable( long tableId );
+    public abstract CatalogEntity getTable( long tableId );
 
     /**
      * Returns the table with the given name in the specified schema.
@@ -369,7 +369,7 @@ public abstract class Catalog {
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    public abstract CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException;
+    public abstract CatalogEntity getTable( long schemaId, String tableName ) throws UnknownTableException;
 
     /**
      * Returns the table with the given name in the specified database and schema.
@@ -380,15 +380,15 @@ public abstract class Catalog {
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    public abstract CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException;
+    public abstract CatalogEntity getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException;
 
     /**
      * Returns the table which is associated with a given partitionId
      *
      * @param partitionId to use for lookup
-     * @return CatalogTable that contains partitionId
+     * @return CatalogEntity that contains partitionId
      */
-    public abstract CatalogTable getTableFromPartition( long partitionId );
+    public abstract CatalogEntity getTableFromPartition( long partitionId );
 
     /**
      * Adds a table to a specified schema.
@@ -396,11 +396,11 @@ public abstract class Catalog {
      * @param name The name of the table to add
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
-     * @param tableType The table type
+     * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract long addEntity( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable );
+    public abstract long addEntity( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable );
 
     /**
      * Adds a view to a specified schema.
@@ -408,14 +408,14 @@ public abstract class Catalog {
      * @param name The name of the view to add
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
-     * @param tableType The table type
+     * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
+    public abstract long addView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
 
     /**
      * Adds a materialized view to a specified schema.
@@ -423,7 +423,7 @@ public abstract class Catalog {
      * @param name of the view to add
      * @param schemaId id of the schema
      * @param ownerId id of the owner
-     * @param tableType type of table
+     * @param entityType type of table
      * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
      * @param algCollation relCollation used for materialized view
@@ -435,7 +435,7 @@ public abstract class Catalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
+    public abstract long addMaterializedView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
@@ -639,7 +639,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @return A CatalogColumn
      */
-    public abstract CatalogColumn getColumn( long columnId );
+    public abstract CatalogColumn getField( long columnId );
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -649,7 +649,7 @@ public abstract class Catalog {
      * @return A CatalogColumn
      * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
-    public abstract CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException;
+    public abstract CatalogColumn getField( long tableId, String columnName ) throws UnknownColumnException;
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -660,7 +660,7 @@ public abstract class Catalog {
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException;
+    public abstract CatalogColumn getField( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownNamespaceException, UnknownDatabaseException, UnknownTableException;
 
     /**
      * Adds a column.
@@ -1553,7 +1553,7 @@ public abstract class Catalog {
      *
      * @return List of tables which need to be periodically processed
      */
-    public abstract List<CatalogTable> getTablesForPeriodicProcessing();
+    public abstract List<CatalogEntity> getTablesForPeriodicProcessing();
 
     /**
      * Registers a table to be considered for periodic processing
@@ -1603,8 +1603,8 @@ public abstract class Catalog {
     public abstract void clear();
 
 
-    public enum TableType {
-        TABLE( 1 ),
+    public enum EntityType {
+        ENTITY( 1 ),
         SOURCE( 2 ),
         VIEW( 3 ),
         MATERIALIZED_VIEW( 4 );
@@ -1613,7 +1613,7 @@ public abstract class Catalog {
         private final int id;
 
 
-        TableType( int id ) {
+        EntityType( int id ) {
             this.id = id;
         }
 
@@ -1623,8 +1623,8 @@ public abstract class Catalog {
         }
 
 
-        public static TableType getById( final int id ) {
-            for ( TableType t : values() ) {
+        public static EntityType getById( final int id ) {
+            for ( EntityType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
@@ -1633,8 +1633,8 @@ public abstract class Catalog {
         }
 
 
-        public static TableType getByName( final String name ) throws UnknownTableTypeException {
-            for ( TableType t : values() ) {
+        public static EntityType getByName( final String name ) throws UnknownTableTypeException {
+            for ( EntityType t : values() ) {
                 if ( t.name().equalsIgnoreCase( name ) ) {
                     return t;
                 }
@@ -1659,7 +1659,7 @@ public abstract class Catalog {
     }
 
 
-    public enum SchemaType {
+    public enum NamespaceType {
         @SerializedName("relational")
         RELATIONAL( 1 ),
         @SerializedName("document")
@@ -1672,7 +1672,7 @@ public abstract class Catalog {
         private final int id;
 
 
-        SchemaType( int id ) {
+        NamespaceType( int id ) {
             this.id = id;
         }
 
@@ -1682,14 +1682,14 @@ public abstract class Catalog {
         }
 
 
-        public static SchemaType getDefault() {
-            //return (SchemaType) ConfigManager.getInstance().getConfig( "runtime/defaultSchemaModel" ).getEnum();
-            return SchemaType.RELATIONAL;
+        public static NamespaceType getDefault() {
+            //return (NamespaceType) ConfigManager.getInstance().getConfig( "runtime/defaultSchemaModel" ).getEnum();
+            return NamespaceType.RELATIONAL;
         }
 
 
-        public static SchemaType getById( final int id ) throws UnknownSchemaTypeException {
-            for ( SchemaType t : values() ) {
+        public static NamespaceType getById( final int id ) throws UnknownSchemaTypeException {
+            for ( NamespaceType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
@@ -1698,8 +1698,8 @@ public abstract class Catalog {
         }
 
 
-        public static SchemaType getByName( final String name ) throws UnknownSchemaTypeException {
-            for ( SchemaType t : values() ) {
+        public static NamespaceType getByName( final String name ) throws UnknownSchemaTypeException {
+            for ( NamespaceType t : values() ) {
                 if ( t.name().equalsIgnoreCase( name ) ) {
                     return t;
                 }
@@ -1711,25 +1711,25 @@ public abstract class Catalog {
 
     public enum QueryLanguage {
         @SerializedName("sql")
-        SQL( SchemaType.RELATIONAL ),
+        SQL( NamespaceType.RELATIONAL ),
         @SerializedName("mql")
-        MONGO_QL( SchemaType.DOCUMENT ),
+        MONGO_QL( NamespaceType.DOCUMENT ),
         @SerializedName("cql")
-        CQL( SchemaType.RELATIONAL ),
+        CQL( NamespaceType.RELATIONAL ),
         @SerializedName("rel")
-        REL_ALG( SchemaType.RELATIONAL ),
+        REL_ALG( NamespaceType.RELATIONAL ),
         @SerializedName("pig")
-        PIG( SchemaType.RELATIONAL ),
+        PIG( NamespaceType.RELATIONAL ),
         @SerializedName("cypher")
-        CYPHER( SchemaType.GRAPH );
+        CYPHER( NamespaceType.GRAPH );
 
 
         @Getter
-        private final SchemaType schemaType;
+        private final NamespaceType namespaceType;
 
 
-        QueryLanguage( SchemaType schemaType ) {
-            this.schemaType = schemaType;
+        QueryLanguage( NamespaceType namespaceType ) {
+            this.namespaceType = namespaceType;
         }
 
 
@@ -2073,10 +2073,10 @@ public abstract class Catalog {
      */
 
 
-    public static List<TableType> convertTableTypeList( @NonNull final List<String> stringTypeList ) throws UnknownTableTypeException {
-        final List<TableType> typeList = new ArrayList<>( stringTypeList.size() );
+    public static List<EntityType> convertTableTypeList( @NonNull final List<String> stringTypeList ) throws UnknownTableTypeException {
+        final List<EntityType> typeList = new ArrayList<>( stringTypeList.size() );
         for ( String s : stringTypeList ) {
-            typeList.add( TableType.getByName( s ) );
+            typeList.add( EntityType.getByName( s ) );
         }
         return typeList;
     }

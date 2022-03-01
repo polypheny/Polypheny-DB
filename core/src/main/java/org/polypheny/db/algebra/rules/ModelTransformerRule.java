@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.LogicalTransformer;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.ModelTrait;
@@ -43,7 +43,7 @@ public class ModelTransformerRule extends ConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        if ( fromModel.getDataModel() == SchemaType.DOCUMENT && toModel.getDataModel() == SchemaType.RELATIONAL ) {
+        if ( fromModel.getDataModel() == NamespaceType.DOCUMENT && toModel.getDataModel() == NamespaceType.RELATIONAL ) {
             return LogicalTransformer.createDocumentToRelational( alg );
         }
         log.warn( "TransformerRule was not possible." );

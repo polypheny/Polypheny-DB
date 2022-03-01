@@ -46,9 +46,9 @@ import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -248,8 +248,8 @@ public class ViewManager {
                 if ( other.getTable() instanceof AlgOptTableImpl ) {
                     if ( other.getTable().getTable() instanceof LogicalTable ) {
                         long tableId = ((LogicalTable) ((AlgOptTableImpl) other.getTable()).getTable()).getTableId();
-                        CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
-                        if ( catalogtable.tableType == TableType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
+                        CatalogEntity catalogtable = Catalog.getInstance().getTable( tableId );
+                        if ( catalogtable.entityType == EntityType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
                             return orderMaterialized( other );
                         }
                     }

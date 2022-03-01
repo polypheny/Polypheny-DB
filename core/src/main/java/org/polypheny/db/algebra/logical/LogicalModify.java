@@ -48,32 +48,32 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Sub-class of {@link TableModify} not targeted at any particular engine or calling convention.
  */
-public final class LogicalTableModify extends TableModify {
+public final class LogicalModify extends TableModify {
 
     /**
-     * Creates a LogicalTableModify.
+     * Creates a LogicalModify.
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalTableModify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public LogicalModify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet, table, schema, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
     /**
-     * Creates a LogicalTableModify.
+     * Creates a LogicalModify.
      */
-    public static LogicalTableModify create( AlgOptTable table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public static LogicalModify create( AlgOptTable table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalTableModify( cluster, traitSet, table, schema, input, operation, updateColumnList, sourceExpressionList, flattened );
+        return new LogicalModify( cluster, traitSet, table, schema, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
     @Override
-    public LogicalTableModify copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+    public LogicalModify copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalTableModify( getCluster(), traitSet, table, catalogReader, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
+        return new LogicalModify( getCluster(), traitSet, table, catalogReader, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
     }
 
 }

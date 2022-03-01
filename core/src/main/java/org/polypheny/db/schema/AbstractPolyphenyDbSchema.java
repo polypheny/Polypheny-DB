@@ -34,7 +34,7 @@ import lombok.Setter;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
 import org.polypheny.db.util.NameSet;
@@ -56,7 +56,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     @Getter
     public final String name;
     @Getter
-    public final SchemaType schemaType;
+    public final NamespaceType namespaceType;
 
     /**
      * Tables explicitly defined in this schema. Does not include tables in {@link #schema}.
@@ -74,7 +74,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             AbstractPolyphenyDbSchema parent,
             Schema schema,
             String name,
-            SchemaType type,
+            NamespaceType type,
             NameMap<PolyphenyDbSchema> subSchemaMap,
             NameMap<TableEntry> tableMap,
             NameMap<TypeEntry> typeMap,
@@ -85,7 +85,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         this.parent = parent;
         this.schema = schema;
         this.name = name;
-        this.schemaType = type;
+        this.namespaceType = type;
         if ( tableMap == null ) {
             this.tableMap = new NameMap<>();
         } else {
@@ -122,13 +122,13 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      */
     public static PolyphenyDbSchema createRootSchema( String name ) {
         final Schema schema = new RootSchema();
-        return new SimplePolyphenyDbSchema( null, schema, name, SchemaType.getDefault() );
+        return new SimplePolyphenyDbSchema( null, schema, name, NamespaceType.getDefault() );
     }
 
 
     /**
      * Returns a sub-schema with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
-     * not explicitly by a call to {@link #add(String, Schema, SchemaType)}), or null.
+     * not explicitly by a call to {@link #add(String, Schema, NamespaceType)}), or null.
      */
     protected abstract PolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive );
 
@@ -334,7 +334,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Schema, SchemaType)})
+     * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Schema, NamespaceType)})
      * and implicit (defined using {@link Schema#getSubSchemaNames()} and {@link Schema#getSubSchema(String)}).
      */
     @Override
@@ -593,8 +593,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
         @Override
-        public SchemaPlus add( String name, Schema schema, SchemaType schemaType ) {
-            final PolyphenyDbSchema polyphenyDbSchema = AbstractPolyphenyDbSchema.this.add( name, schema, schemaType );
+        public SchemaPlus add( String name, Schema schema, NamespaceType namespaceType ) {
+            final PolyphenyDbSchema polyphenyDbSchema = AbstractPolyphenyDbSchema.this.add( name, schema, namespaceType );
             return polyphenyDbSchema.plus();
         }
 

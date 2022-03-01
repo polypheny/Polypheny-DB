@@ -37,7 +37,7 @@ package org.polypheny.db.adapter.enumerable;
 import java.util.function.Predicate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.ModifiableTable;
@@ -45,7 +45,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalTableModify} relational expression {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link LogicalModify} relational expression {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableTableModifyRule extends ConverterRule {
 
@@ -55,13 +55,13 @@ public class EnumerableTableModifyRule extends ConverterRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public EnumerableTableModifyRule( AlgBuilderFactory algBuilderFactory ) {
-        super( LogicalTableModify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableTableModificationRule" );
+        super( LogicalModify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableTableModificationRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalTableModify modify = (LogicalTableModify) alg;
+        final LogicalModify modify = (LogicalModify) alg;
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
         if ( modifiableTable == null ) {
             return null;

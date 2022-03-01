@@ -19,7 +19,7 @@ package org.polypheny.db.sql.sql;
 import java.util.List;
 import lombok.Setter;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
@@ -172,8 +172,8 @@ public class SqlInsert extends SqlCall {
     }
 
 
-    public SchemaType getSchemaType() {
-        return SchemaType.RELATIONAL;
+    public NamespaceType getSchemaType() {
+        return NamespaceType.RELATIONAL;
     }
 
 }

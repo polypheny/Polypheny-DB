@@ -19,10 +19,10 @@ package org.polypheny.db.languages.mql;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -58,11 +58,11 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
-            CatalogSchema schema = catalog.getSchema( Catalog.defaultDatabaseId, database );
-            List<CatalogTable> tables = catalog.getTables( schema.id, null );
+            CatalogSchema schema = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+            List<CatalogEntity> tables = catalog.getTables( schema.id, null );
 
             if ( dropTarget ) {
-                Optional<CatalogTable> newTable = tables.stream()
+                Optional<CatalogEntity> newTable = tables.stream()
                         .filter( t -> t.name.equals( newName ) )
                         .findAny();
 
@@ -71,7 +71,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
                 }
             }
 
-            Optional<CatalogTable> table = tables.stream()
+            Optional<CatalogEntity> table = tables.stream()
                     .filter( t -> t.name.equals( getCollection() ) )
                     .findAny();
 
@@ -80,7 +80,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
             }
 
             DdlManager.getInstance().renameTable( table.get(), newName, statement );
-        } catch ( DdlOnSourceException | TableAlreadyExistsException | UnknownSchemaException e ) {
+        } catch ( DdlOnSourceException | TableAlreadyExistsException | UnknownNamespaceException e ) {
             throw new RuntimeException( "The rename was not successful, due to an error: " + e.getMessage() );
         }
     }

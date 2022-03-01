@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -91,7 +91,7 @@ public abstract class MaterializedViewManager {
 
         @Override
         public AlgNode visit( AlgNode other ) {
-            if ( other instanceof LogicalTableModify ) {
+            if ( other instanceof LogicalModify ) {
                 if ( ((TableModify) other).getOperation() != Operation.MERGE ) {
                     if ( (other.getTable().getTable() instanceof LogicalTable) ) {
                         List<String> qualifiedName = other.getTable().getQualifiedName();

@@ -27,11 +27,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
@@ -52,17 +52,17 @@ public abstract class DataStore extends Adapter {
     }
 
 
-    public List<SchemaType> getSupportedSchemaType() {
-        log.info( "Using default SchemaType support." );
-        return ImmutableList.of( SchemaType.RELATIONAL );
+    public List<NamespaceType> getSupportedSchemaType() {
+        log.info( "Using default NamespaceType support." );
+        return ImmutableList.of( NamespaceType.RELATIONAL );
     }
 
 
-    public abstract void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
+    public abstract void createTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds );
 
-    public abstract void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
+    public abstract void dropTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds );
 
-    public abstract void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn );
+    public abstract void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn );
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
@@ -76,7 +76,7 @@ public abstract class DataStore extends Adapter {
 
     public abstract AvailableIndexMethod getDefaultIndexMethod();
 
-    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable );
+    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity );
 
 
     @AllArgsConstructor
@@ -98,7 +98,7 @@ public abstract class DataStore extends Adapter {
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
             for ( long columnId : columnIds ) {
-                columnNames.add( Catalog.getInstance().getColumn( columnId ).name );
+                columnNames.add( Catalog.getInstance().getField( columnId ).name );
             }
             return columnNames;
         }

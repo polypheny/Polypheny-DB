@@ -43,7 +43,7 @@ public class EnumerableConditionalExecuteRule extends ConverterRule {
         final EnumerableConditionalExecute ece = EnumerableConditionalExecute.create( input, action, lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
         ece.setCheckDescription( lce.getCheckDescription() );
         ece.setCatalogSchema( lce.getCatalogSchema() );
-        ece.setCatalogTable( lce.getCatalogTable() );
+        ece.setCatalogEntity( lce.getCatalogEntity() );
         ece.setCatalogColumns( lce.getCatalogColumns() );
         ece.setValues( lce.getValues() );
         return ece;

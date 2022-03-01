@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 
 
 @EqualsAndHashCode
-public final class CatalogDatabase implements CatalogEntity, Comparable<CatalogDatabase> {
+public final class CatalogDatabase implements CatalogObject, Comparable<CatalogDatabase> {
 
     private static final long serialVersionUID = 4711611630126858410L;
 

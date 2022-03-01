@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
@@ -193,12 +193,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     protected void registerSchema( MockSchema schema ) {
-        rootSchema.add( schema.name, new AbstractSchema(), SchemaType.RELATIONAL );
+        rootSchema.add( schema.name, new AbstractSchema(), NamespaceType.RELATIONAL );
     }
 
 
     private void registerNestedSchema( MockSchema parentSchema, MockSchema schema ) {
-        rootSchema.getSubSchema( parentSchema.getName(), true ).add( schema.name, new AbstractSchema(), SchemaType.RELATIONAL );
+        rootSchema.getSubSchema( parentSchema.getName(), true ).add( schema.name, new AbstractSchema(), NamespaceType.RELATIONAL );
     }
 
 

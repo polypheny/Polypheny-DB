@@ -78,7 +78,7 @@ public abstract class Processor {
         Catalog.getInstance().commit();
         return new PolyResult(
                 null,
-                parameters.getSchemaType(),
+                parameters.getNamespaceType(),
                 new ExecutionTimeMonitor(),
                 null,
                 Kind.CREATE_SCHEMA, // technically correct, maybe change

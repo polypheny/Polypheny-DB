@@ -25,10 +25,10 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -93,13 +93,13 @@ public class UiRoutingPageUtil {
             proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
                 CatalogPartition catalogPartition = Catalog.getInstance().getPartition( k );
                 CatalogPartitionGroup catalogPartitionGroup = Catalog.getInstance().getPartitionGroup( catalogPartition.partitionGroupId );
-                CatalogTable catalogTable = Catalog.getInstance().getTable( catalogPartition.tableId );
+                CatalogEntity catalogEntity = Catalog.getInstance().getTable( catalogPartition.tableId );
                 v.forEach( p -> {
                     CatalogColumnPlacement catalogColumnPlacement = Catalog.getInstance().getColumnPlacement( p.left, p.right );
                     CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getPartitionPlacement( p.left, k );
-                    CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogColumnPlacement.columnId );
+                    CatalogColumn catalogColumn = Catalog.getInstance().getField( catalogColumnPlacement.columnId );
                     table.addRow(
-                            catalogTable.getSchemaName() + "." + catalogTable.name,
+                            catalogEntity.getNamespaceName() + "." + catalogEntity.name,
                             catalogColumn.name,
                             catalogPartitionGroup.partitionGroupName + " --> " + catalogPartition.id,
                             catalogPartitionPlacement.adapterUniqueName,

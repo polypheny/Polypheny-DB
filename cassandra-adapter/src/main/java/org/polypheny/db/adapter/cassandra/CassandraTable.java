@@ -58,13 +58,13 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
@@ -130,7 +130,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     private Long getCatalogTableId() {
         try {
             return Catalog.getInstance().getTable( cassandraSchema.name, columnFamily, physicalName ).id;
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Not possible to get tableId within CassandraTable", e );
         }
     }
@@ -303,7 +303,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     public TableModify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
 //        return new CassandraTableModify( cluster,  )
         cassandraSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+        return new LogicalModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
 //        return new CassandraTableModify( cluster, cluster.traitSetOf( CassandraRel.CONVENTION ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened, this, this.columnFamily );
     }
 

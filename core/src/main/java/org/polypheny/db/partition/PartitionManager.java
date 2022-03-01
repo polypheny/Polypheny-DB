@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.type.PolyType;
 
 public interface PartitionManager {
@@ -28,22 +28,22 @@ public interface PartitionManager {
     /**
      * Returns the Index of the partition where to place the object
      */
-    long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
+    long getTargetPartitionId( CatalogEntity catalogEntity, String columnValue );
 
-    boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold );
+    boolean probePartitionGroupDistributionChange( CatalogEntity catalogEntity, int storeId, long columnId, int threshold );
 
-    Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters );
+    Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogEntity catalogEntity, List<Long> partitionIds, List<Integer> excludedAdapters );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 
     /**
-     * Returns all placements of catalogTable and partitionIds
+     * Returns all placements of catalogEntity and partitionIds
      *
-     * @param catalogTable Table to look for placements
+     * @param catalogEntity Table to look for placements
      * @param partitionIds List of all requested partitions ids
      * @return Returns map of AdapterId  {@code ->} [Map PartitionsId {@code ->}needed Columns Placements]
      */
-    Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+    Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogEntity catalogEntity, List<Long> partitionIds );
 
     int getNumberOfPartitionsPerGroup( int numberOfPartitions );
 

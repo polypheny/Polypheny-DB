@@ -26,13 +26,13 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -92,14 +92,14 @@ public class StatisticQueryProcessor {
         List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
         for ( CatalogSchema schema : schemas ) {
             List<String> tables = new ArrayList<>();
-            List<CatalogTable> childTables = catalog.getTables( schema.id, null );
-            for ( CatalogTable childTable : childTables ) {
+            List<CatalogEntity> childTables = catalog.getTables( schema.id, null );
+            for ( CatalogEntity childTable : childTables ) {
                 List<String> table = new ArrayList<>();
                 List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
                 for ( CatalogColumn catalogColumn : childColumns ) {
                     table.add( schema.name + "." + childTable.name + "." + catalogColumn.name );
                 }
-                if ( childTable.tableType == TableType.TABLE ) {
+                if ( childTable.entityType == EntityType.ENTITY ) {
                     tables.addAll( table );
                 }
             }
@@ -125,7 +125,7 @@ public class StatisticQueryProcessor {
         List<QueryResult> allColumns = new ArrayList<>();
 
         for ( CatalogColumn catalogColumn : catalogColumns ) {
-            if ( catalog.getTable( catalogColumn.tableId ).tableType != TableType.VIEW ) {
+            if ( catalog.getTable( catalogColumn.tableId ).entityType != EntityType.VIEW ) {
                 allColumns.add( new QueryResult( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ) );
             }
         }
@@ -138,17 +138,17 @@ public class StatisticQueryProcessor {
      *
      * @return all the tables ids
      */
-    public List<CatalogTable> getAllTable() {
+    public List<CatalogEntity> getAllTable() {
         Catalog catalog = Catalog.getInstance();
-        List<CatalogTable> catalogTables = catalog.getTables(
+        List<CatalogEntity> catalogEntities = catalog.getTables(
                 new Pattern( databaseName ),
                 null,
                 null );
-        List<CatalogTable> allTables = new ArrayList<>();
+        List<CatalogEntity> allTables = new ArrayList<>();
 
-        for ( CatalogTable catalogTable : catalogTables ) {
-            if ( catalogTable.tableType != TableType.VIEW ) {
-                allTables.add( catalogTable );
+        for ( CatalogEntity catalogEntity : catalogEntities ) {
+            if ( catalogEntity.entityType != EntityType.VIEW ) {
+                allTables.add( catalogEntity );
             }
         }
         return allTables;
@@ -201,7 +201,7 @@ public class StatisticQueryProcessor {
     private Transaction getTransaction() {
         try {
             return transactionManager.startTransaction( userName, databaseName, false, "Statistics", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

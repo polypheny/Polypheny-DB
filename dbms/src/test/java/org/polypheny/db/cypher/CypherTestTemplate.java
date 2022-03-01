@@ -24,6 +24,7 @@ public class CypherTestTemplate {
 
     @BeforeClass
     public static void start() {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
     }
 

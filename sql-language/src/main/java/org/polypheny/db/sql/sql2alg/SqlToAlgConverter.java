@@ -102,11 +102,11 @@ import org.polypheny.db.algebra.logical.LogicalIntersect;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
@@ -120,7 +120,7 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -2865,16 +2865,16 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     targetTable,
                     catalogReader,
                     source,
-                    LogicalTableModify.Operation.INSERT,
+                    LogicalModify.Operation.INSERT,
                     null,
                     null,
                     false );
         }
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 source,
-                LogicalTableModify.Operation.INSERT,
+                LogicalModify.Operation.INSERT,
                 null,
                 null,
                 false );
@@ -2956,7 +2956,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final AlgOptTable targetTable = getTargetTable( call );
         final AlgDataType targetRowType = AlgOptTableImpl.realRowType( targetTable );
         final List<AlgDataTypeField> targetFields = targetRowType.getFieldList();
-        boolean isDocument = call.getSchemaType() == SchemaType.DOCUMENT;
+        boolean isDocument = call.getSchemaType() == NamespaceType.DOCUMENT;
 
         List<RexNode> sourceExps = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
         List<String> fieldNames = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) ); // TODO DL: reevaluate and make final again?
@@ -3079,7 +3079,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         } else {
 
             boolean allowDynamic = false;
-            if ( call.getSchemaType() == SchemaType.DOCUMENT ) {
+            if ( call.getSchemaType() == NamespaceType.DOCUMENT ) {
                 allowDynamic = true;
             }
 
@@ -3138,11 +3138,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private AlgNode convertDelete( SqlDelete call ) {
         AlgOptTable targetTable = getTargetTable( call );
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 sourceRel,
-                LogicalTableModify.Operation.DELETE,
+                LogicalModify.Operation.DELETE,
                 null,
                 null,
                 false );
@@ -3173,11 +3173,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 sourceRel,
-                LogicalTableModify.Operation.UPDATE,
+                LogicalModify.Operation.UPDATE,
                 targetColumnNameList,
                 rexNodeSourceExpressionListBuilder.build(),
                 false );
@@ -3250,11 +3250,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         algBuilder.push( join ).project( projects );
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 algBuilder.build(),
-                LogicalTableModify.Operation.MERGE,
+                LogicalModify.Operation.MERGE,
                 targetColumnNameList,
                 null,
                 false );

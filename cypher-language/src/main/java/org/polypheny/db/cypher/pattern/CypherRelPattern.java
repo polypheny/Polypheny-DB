@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.pattern;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherPathLength;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -47,6 +48,11 @@ public class CypherRelPattern extends CypherPattern {
         this.properties = properties;
         this.predicate = predicate;
         this.legacyTypeSeparator = legacyTypeSeparator;
+    }
+
+
+    public List<String> getLabels() {
+        return relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
     }
 
 }

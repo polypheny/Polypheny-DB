@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -162,8 +162,8 @@ public class LogicalDocuments extends LogicalValues implements Documents {
 
 
     @Override
-    public SchemaType getModel() {
-        return SchemaType.DOCUMENT;
+    public NamespaceType getModel() {
+        return NamespaceType.DOCUMENT;
     }
 
 

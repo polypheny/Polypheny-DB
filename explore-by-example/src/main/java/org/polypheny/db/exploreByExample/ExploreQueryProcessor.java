@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -66,7 +66,7 @@ public class ExploreQueryProcessor {
     private Transaction getTransaction() {
         try {
             return transactionManager.startTransaction( userName, databaseName, false, "Explore-by-Example", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

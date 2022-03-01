@@ -38,7 +38,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
@@ -123,18 +123,18 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                schemaId = catalog.getNamespace( name.names.get( 0 ), name.names.get( 1 ) ).id;
                 viewName = name.names.get( 2 );
             } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+                schemaId = catalog.getNamespace( context.getDatabaseId(), name.names.get( 0 ) ).id;
                 viewName = name.names.get( 1 );
             } else { // TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = catalog.getNamespace( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 viewName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
-        } catch ( UnknownSchemaException e ) {
+        } catch ( UnknownNamespaceException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 

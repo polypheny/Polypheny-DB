@@ -31,9 +31,9 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
@@ -103,7 +103,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Override
     public AlgNode visit( AlgNode other ) {
         if ( other instanceof TableModify ) {
-            LogicalTableModify modify = (LogicalTableModify) super.visit( other );
+            LogicalModify modify = (LogicalModify) super.visit( other );
             List<RexNode> newSourceExpression = null;
             if ( modify.getSourceExpressionList() != null ) {
                 newSourceExpression = new ArrayList<>();
@@ -148,7 +148,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                         input.getRowType()
                 );
             }
-            return new LogicalTableModify(
+            return new LogicalModify(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     modify.getTable(),

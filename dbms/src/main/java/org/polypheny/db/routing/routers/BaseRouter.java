@@ -180,7 +180,7 @@ public abstract class BaseRouter {
                 // Final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> catalog.getColumn( col.columnId ) )
+                        .map( col -> catalog.getField( col.columnId ) )
                         .sorted( Comparator.comparingInt( col -> col.position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {
@@ -196,7 +196,7 @@ public abstract class BaseRouter {
                 List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
                 List<CatalogColumn> pkColumns = new LinkedList<>();
                 for ( long pkColumnId : pkColumnIds ) {
-                    pkColumns.add( catalog.getColumn( pkColumnId ) );
+                    pkColumns.add( catalog.getField( pkColumnId ) );
                 }
 
                 // Add primary key
@@ -252,7 +252,7 @@ public abstract class BaseRouter {
                 // Final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> catalog.getColumn( col.columnId ) )
+                        .map( col -> catalog.getField( col.columnId ) )
                         .sorted( Comparator.comparingInt( col -> col.position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {

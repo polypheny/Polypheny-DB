@@ -26,8 +26,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.cypher.ddl.exception.PartitionGroupNamesNotUniqueException;
@@ -73,8 +73,8 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
 
         long schemaId;
         try {
-            schemaId = catalog.getSchema( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
-        } catch ( UnknownSchemaException e ) {
+            schemaId = catalog.getNamespace( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
+        } catch ( UnknownNamespaceException e ) {
             throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
         }
 

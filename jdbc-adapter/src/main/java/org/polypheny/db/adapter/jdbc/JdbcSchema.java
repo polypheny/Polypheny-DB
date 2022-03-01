@@ -62,8 +62,8 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -138,7 +138,7 @@ public class JdbcSchema implements Schema {
 
 
     public JdbcTable createJdbcTable(
-            CatalogTable catalogTable,
+            CatalogEntity catalogEntity,
             List<CatalogColumnPlacement> columnPlacementsOnStore,
             CatalogPartitionPlacement partitionPlacement ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
@@ -150,7 +150,7 @@ public class JdbcSchema implements Schema {
         String physicalSchemaName = null;
 
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( placement.columnId );
             if ( physicalSchemaName == null ) {
                 physicalSchemaName = placement.physicalSchemaName;
             }
@@ -163,18 +163,18 @@ public class JdbcSchema implements Schema {
 
         JdbcTable table = new JdbcTable(
                 this,
-                catalogTable.getSchemaName(),
-                catalogTable.name,
+                catalogEntity.getNamespaceName(),
+                catalogEntity.name,
                 logicalColumnNames,
                 TableType.TABLE,
                 AlgDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
                 partitionPlacement.physicalTableName,
                 physicalColumnNames,
-                catalogTable.id
+                catalogEntity.id
         );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
-        physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogTable.name );
+        tableMap.put( catalogEntity.name + "_" + partitionPlacement.partitionId, table );
+        physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogEntity.name );
         return table;
     }
 

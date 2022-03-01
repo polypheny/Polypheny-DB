@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2020 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,26 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.catalog.entity;
 
-public class DdlTest extends CypherTestTemplate {
 
+import java.io.Serializable;
+
+
+/**
+ *
+ */
+public interface CatalogObject extends Serializable {
+
+    Serializable[] getParameterArray();
+
+
+    static String getEnumNameOrNull( Enum theEnum ) {
+        if ( theEnum == null ) {
+            return null;
+        } else {
+            return theEnum.name();
+        }
+    }
 
 }

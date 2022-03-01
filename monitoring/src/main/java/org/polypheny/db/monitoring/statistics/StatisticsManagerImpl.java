@@ -52,13 +52,13 @@ import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -157,19 +157,19 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     @Override
-    public void updateTableName( CatalogTable catalogTable, String newName ) {
-        if ( statisticSchemaMap.containsKey( catalogTable.schemaId ) && statisticSchemaMap.get( catalogTable.schemaId ).containsKey( catalogTable.id ) ) {
-            Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogTable.schemaId ).get( catalogTable.id );
+    public void updateTableName( CatalogEntity catalogEntity, String newName ) {
+        if ( statisticSchemaMap.containsKey( catalogEntity.namespaceId ) && statisticSchemaMap.get( catalogEntity.namespaceId ).containsKey( catalogEntity.id ) ) {
+            Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogEntity.namespaceId ).get( catalogEntity.id );
             for ( Entry<Long, StatisticColumn<T>> columnInfo : columnsInformation.entrySet() ) {
                 StatisticColumn<T> statisticColumn = columnInfo.getValue();
                 statisticColumn.updateTableName( newName );
-                statisticSchemaMap.get( catalogTable.schemaId ).get( catalogTable.id ).put( columnInfo.getKey(), statisticColumn );
+                statisticSchemaMap.get( catalogEntity.namespaceId ).get( catalogEntity.id ).put( columnInfo.getKey(), statisticColumn );
             }
         }
-        if ( tableStatistic.containsKey( catalogTable.id ) ) {
-            StatisticTable<T> tableStatistics = tableStatistic.get( catalogTable.id );
+        if ( tableStatistic.containsKey( catalogEntity.id ) ) {
+            StatisticTable<T> tableStatistics = tableStatistic.get( catalogEntity.id );
             tableStatistics.updateTableName( newName );
-            tableStatistic.put( catalogTable.id, tableStatistics );
+            tableStatistic.put( catalogEntity.id, tableStatistics );
         }
     }
 
@@ -194,7 +194,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         Transaction transaction = null;
         try {
             transaction = statisticQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( e );
         }
         return transaction;
@@ -281,7 +281,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         log.debug( "Reevaluate Row Count." );
 
         statisticQueryInterface.getAllTable().forEach( table -> {
-            int rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( table.schemaId, table.id, null, null ), NodeType.ROW_COUNT_TABLE ) );
+            int rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( table.namespaceId, table.id, null, null ), NodeType.ROW_COUNT_TABLE ) );
             updateRowCountPerTable( table.id, rowCount, "SET-ROW-COUNT" );
         } );
     }
@@ -302,7 +302,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             return;
         }
         if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
-            deleteTable( Catalog.getInstance().getTable( tableId ).schemaId, tableId );
+            deleteTable( Catalog.getInstance().getTable( tableId ).namespaceId, tableId );
 
             List<QueryResult> res = statisticQueryInterface.getAllColumns( tableId );
 
@@ -807,9 +807,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             } ) ) );
 
             tableStatistic.forEach( ( k, v ) -> {
-                tableInformation.addRow( v.getTable(), v.getSchemaType(), v.getNumberOfRows() );
+                tableInformation.addRow( v.getTable(), v.getNamespaceType(), v.getNumberOfRows() );
 
-                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getTableType() != TableType.MATERIALIZED_VIEW ) {
+                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getEntityType() != EntityType.MATERIALIZED_VIEW ) {
                     tableSelectInformation.addRow(
                             v.getTable(),
                             v.getCalls().getNumberOfSelects(),
@@ -908,11 +908,11 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private void handleTruncate( long tableId, long schemaId, Catalog catalog ) {
-        CatalogTable catalogTable = catalog.getTable( tableId );
-        for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
-            PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
-            QueryResult queryResult = new QueryResult( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
-            if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
+        CatalogEntity catalogEntity = catalog.getTable( tableId );
+        for ( int i = 0; i < catalogEntity.fieldIds.size(); i++ ) {
+            PolyType polyType = catalog.getField( catalogEntity.fieldIds.get( i ) ).type;
+            QueryResult queryResult = new QueryResult( schemaId, catalogEntity.id, catalogEntity.fieldIds.get( i ), polyType );
+            if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogEntity.fieldIds.get( i ) ) != null ) {
                 StatisticColumn<T> statisticColumn = createNewStatisticColumns( polyType, queryResult );
                 if ( statisticColumn != null ) {
                     put( queryResult, statisticColumn );
@@ -936,13 +936,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private void handleInsert( long tableId, Map<Long, List<Object>> changedValues, long schemaId, Catalog catalog ) {
-        CatalogTable catalogTable = catalog.getTable( tableId );
-        List<Long> columns = catalogTable.columnIds;
+        CatalogEntity catalogEntity = catalog.getTable( tableId );
+        List<Long> columns = catalogEntity.fieldIds;
         if ( this.statisticSchemaMap.get( schemaId ) != null ) {
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ) != null ) {
                 for ( int i = 0; i < columns.size(); i++ ) {
-                    PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
-                    QueryResult queryResult = new QueryResult( schemaId, catalogTable.id, columns.get( i ), polyType );
+                    PolyType polyType = catalog.getField( columns.get( i ) ).type;
+                    QueryResult queryResult = new QueryResult( schemaId, catalogEntity.id, columns.get( i ), polyType );
                     if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( columns.get( i ) ) != null && changedValues.get( (long) i ) != null ) {
                         handleInsertColumn( tableId, changedValues, schemaId, columns, i, queryResult );
                     } else {
@@ -950,10 +950,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     }
                 }
             } else {
-                addInserts( changedValues, catalog, catalogTable, columns );
+                addInserts( changedValues, catalog, catalogEntity, columns );
             }
         } else {
-            addInserts( changedValues, catalog, catalogTable, columns );
+            addInserts( changedValues, catalog, catalogEntity, columns );
         }
     }
 
@@ -961,10 +961,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * Creates new StatisticColumns and inserts the values.
      */
-    private void addInserts( Map<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
+    private void addInserts( Map<Long, List<Object>> changedValues, Catalog catalog, CatalogEntity catalogEntity, List<Long> columns ) {
         for ( int i = 0; i < columns.size(); i++ ) {
-            PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
-            QueryResult queryResult = new QueryResult( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
+            PolyType polyType = catalog.getField( columns.get( i ) ).type;
+            QueryResult queryResult = new QueryResult( catalogEntity.namespaceId, catalogEntity.id, columns.get( i ), polyType );
             addNewColumnStatistics( changedValues, i, polyType, queryResult );
         }
     }
@@ -1204,7 +1204,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             } else if ( v.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
                 alphabeticInfo.add( (AlphabeticStatisticColumn<T>) v );
                 statisticTable.setAlphabeticColumn( alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getColumn( k ).type ) ) {
+            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getField( k ).type ) ) {
                 temporalInfo.add( (TemporalStatisticColumn<T>) v );
                 statisticTable.setTemporalColumn( temporalInfo );
             }

@@ -28,9 +28,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -63,7 +63,7 @@ public class RequestParserTest {
 
 
     @Test
-    public void testParseCatalogTableName() throws UnknownTableException, UnknownSchemaException, UnknownDatabaseException {
+    public void testParseCatalogTableName() throws UnknownTableException, UnknownNamespaceException, UnknownDatabaseException {
         Catalog mockedCatalog = mock( Catalog.class );
         when( mockedCatalog.getTable( "testdb", "schema1", "table1" ) ).thenReturn( null );
         RequestParser requestParser = new RequestParser(
@@ -72,7 +72,7 @@ public class RequestParserTest {
                 null,
                 "username",
                 "testdb" );
-        CatalogTable table = requestParser.parseCatalogTableName( "schema1.table1." );
+        CatalogEntity table = requestParser.parseCatalogTableName( "schema1.table1." );
         verify( mockedCatalog ).getTable( "testdb", "schema1", "table1" );
     }
 

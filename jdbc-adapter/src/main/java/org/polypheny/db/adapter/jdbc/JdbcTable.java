@@ -50,7 +50,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -253,7 +253,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         jdbcSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify(
+        return new LogicalModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

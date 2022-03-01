@@ -48,4 +48,10 @@ public class CypherEveryPathPattern extends CypherPattern {
         this.relationships = relationships;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.PATH;
+    }
+
 }

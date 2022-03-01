@@ -37,9 +37,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
@@ -531,7 +531,7 @@ public class HorizontalPartitioningTest {
                             + "( PARTITION parta VALUES(5,4), "
                             + "PARTITION partb VALUES(10,6))" );
 
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "rangepartitioning3" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "rangepartitioning3" ) ).get( 0 );
 
                     List<CatalogPartition> catalogPartitions = Catalog.getInstance().getPartitionsByTable( table.id );
 
@@ -641,7 +641,7 @@ public class HorizontalPartitioningTest {
                         + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many partitionPlacements are created as requested
@@ -699,7 +699,7 @@ public class HorizontalPartitioningTest {
                         + " USING FREQUENCY write  INTERVAL 10 minutes WITH  20 HASH PARTITIONS" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Check if partition properties are correctly set and parsed
                     Assert.assertEquals( 600, ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() );
@@ -757,7 +757,7 @@ public class HorizontalPartitioningTest {
                     // This should execute two DML INSERTS on the target PartitionId and therefore redistribute the data
 
                     // Verify that the partition is now in HOT and was not before
-                    CatalogTable updatedTable = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
+                    CatalogEntity updatedTable = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -1172,7 +1172,7 @@ public class HorizontalPartitioningTest {
                         + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many DataPlacements are created as requested
@@ -1182,7 +1182,7 @@ public class HorizontalPartitioningTest {
                     CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
 
                     // Check how many columnPlacements are added to the one DataPlacement
-                    Assert.assertEquals( table.columnIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
+                    Assert.assertEquals( table.fieldIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
                     Assert.assertEquals( partitionsToCreate, dataPlacement.partitionPlacementsOnAdapter.size() );

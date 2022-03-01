@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
@@ -70,10 +70,10 @@ public class LogicalViewScan extends Scan {
         Catalog catalog = Catalog.getInstance();
 
         long idLogical = ((LogicalTable) algOptTable.getTable()).getTableId();
-        CatalogTable catalogTable = catalog.getTable( idLogical );
-        AlgCollation algCollation = ((CatalogView) catalogTable).getAlgCollation();
+        CatalogEntity catalogEntity = catalog.getTable( idLogical );
+        AlgCollation algCollation = ((CatalogView) catalogEntity).getAlgCollation();
 
-        return new LogicalViewScan( cluster, traitSet, algOptTable, ((CatalogView) catalogTable).prepareView( cluster ), algCollation );
+        return new LogicalViewScan( cluster, traitSet, algOptTable, ((CatalogView) catalogEntity).prepareView( cluster ), algCollation );
     }
 
 

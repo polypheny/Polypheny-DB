@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 /**
  * Serves as a container, which holds all information related to a table entity placed on physical store.
  */
-public class CatalogDataPlacement implements CatalogEntity {
+public class CatalogDataPlacement implements CatalogObject {
 
     private static final long serialVersionUID = 3758054726464326557L;
     public final long tableId;
@@ -84,7 +84,7 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     public boolean hasColumnFullPlacement() {
-        return Catalog.getInstance().getTable( this.tableId ).columnIds.size() == columnPlacementsOnAdapter.size();
+        return Catalog.getInstance().getTable( this.tableId ).fieldIds.size() == columnPlacementsOnAdapter.size();
     }
 
 

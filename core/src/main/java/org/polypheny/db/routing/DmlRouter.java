@@ -17,7 +17,7 @@
 package org.polypheny.db.routing;
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -29,7 +29,7 @@ public interface DmlRouter {
     /**
      * Routes DML queries and returns a RelNode.
      */
-    AlgNode routeDml( LogicalTableModify node, Statement statement );
+    AlgNode routeDml( LogicalModify node, Statement statement );
 
     /**
      * Routes conditional executes and directly returns a RelNode.

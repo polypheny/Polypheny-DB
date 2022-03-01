@@ -39,16 +39,16 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -176,9 +176,9 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public void addTables( Transaction transaction, List<String> tableNames ) {
         if ( tableNames.size() > 1 ) {
             try {
-                CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
-                long id = catalogTable.id;
-                if ( !catalogTable.getConnectedViews().isEmpty() ) {
+                CatalogEntity catalogEntity = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
+                long id = catalogEntity.id;
+                if ( !catalogEntity.getConnectedViews().isEmpty() ) {
                     potentialInteresting.put( transaction.getXid(), id );
                 }
             } catch ( UnknownTableException e ) {
@@ -209,12 +209,12 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void materializedUpdate( Long potentialInteresting ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( potentialInteresting );
-        List<Long> connectedViews = catalogTable.getConnectedViews();
+        CatalogEntity catalogEntity = catalog.getTable( potentialInteresting );
+        List<Long> connectedViews = catalogEntity.getConnectedViews();
 
         for ( Long id : connectedViews ) {
-            CatalogTable view = catalog.getTable( id );
-            if ( view.tableType == TableType.MATERIALIZED_VIEW ) {
+            CatalogEntity view = catalog.getTable( id );
+            if ( view.entityType == EntityType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
                     int numberUpdated = materializedCriteria.getTimesUpdated();
@@ -270,12 +270,12 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( Long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( materializedId );
+        CatalogEntity catalogEntity = catalog.getTable( materializedId );
 
         try {
             Transaction transaction = getTransactionManager().startTransaction(
-                    catalogTable.ownerName,
-                    catalog.getDatabase( catalogTable.databaseId ).name,
+                    catalogEntity.ownerName,
+                    catalog.getDatabase( catalogEntity.databaseId ).name,
                     false,
                     "Materialized View" );
 
@@ -284,7 +284,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
                 // Get locks for individual tables
-                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition() );
+                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterializedView) catalogEntity).getDefinition() );
                 for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
                     Mode mode = accessMap.getTableAccessMode( tableIdentifier );
                     if ( mode == Mode.READ_ACCESS ) {
@@ -298,7 +298,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             }
             updateData( transaction, materializedId );
             commitTransaction( transaction );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
         }
         updateMaterializedTime( materializedId );
@@ -355,7 +355,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 int localAdapterIndex = catalogMaterializedView.dataPlacements.indexOf( id );
                 catalog.getDataPlacement( catalogMaterializedView.dataPlacements.get( localAdapterIndex ), catalogMaterializedView.id )
                         .columnPlacementsOnAdapter.forEach( col ->
-                                catalogColumns.add( catalog.getColumn( col ) )
+                                catalogColumns.add( catalog.getField( col ) )
                         );
                 columns.put( id, catalogColumns );
             }

@@ -24,10 +24,100 @@ import org.polypheny.db.webui.models.Result;
 @Slf4j
 public class MatchTest extends CypherTestTemplate {
 
+    ///////////////////////////////////////////////
+    ///////// NODE
+    ///////////////////////////////////////////////
     @Test
-    public void simpleTest() {
-        Result res = CypherConnection.executeGetResponse( matches( returns( null, "n" ), "n" ) );
-        log.warn( res.toJson() );
+    public void simpleMatchTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (n)\n" +
+                        "RETURN n" );
+
+    }
+
+    @Test
+    public void simpleMatchLabelTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (n:Person)\n" +
+                        "RETURN n" );
+
+    }
+
+    @Test
+    public void simpleMatchSinglePropertyTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (n:Person {name: 'Max Muster'})\n" +
+                        "RETURN n" );
+
+    }
+
+    @Test
+    public void simpleMatchMultiplePropertyTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (n:Person {name: 'Max Muster', age: 3})\n" +
+                        "RETURN n" );
+
+    }
+
+    @Test
+    public void simpleMultiplePropertyTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (n:Person)\n" +
+                        "RETURN n.name, n.age" );
+
+    }
+
+
+    @Test
+    public void simplePropertyTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (n:Person)\n" +
+                        "RETURN n.name" );
+
+    }
+
+    ///////////////////////////////////////////////
+    ///////// RELATIONSHOP
+    ///////////////////////////////////////////////
+
+    @Test
+    public void simpleRelationshipTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH ()-[r:FRIEND_OF]-()\n" +
+                        "RETURN r" );
+
+    }
+
+    @Test
+    public void simpleDirectedRelationshipTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH ()-[r:KNOWS]->()\n" +
+                        "RETURN r" );
+
+    }
+
+    @Test
+    public void simpleMixedRelationshipTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (:Person)-[r:LIVE_TOGETHER]-(:ANIMAL)\n" +
+                        "RETURN r" );
+
+    }
+
+    @Test
+    public void simpleMixedDirectedRelationshipTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (p:Person)-[:OWNER_OF]->(:ANIMAL)\n" +
+                        "RETURN p" );
+
+    }
+
+    @Test
+    public void simpleWholeRelationshipTest() {
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (p:Person)-[r:OWNER_OF]->(a:ANIMAL)\n" +
+                        "RETURN p, r, a" );
+
     }
 
 }

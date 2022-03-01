@@ -24,8 +24,8 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 public class MqlMockCatalog extends MockCatalog {
 
     @Override
-    public CatalogSchema getSchema( long schemaId ) {
-        return new CatalogSchema( 1, "private", 0, 0, "tester", SchemaType.DOCUMENT );
+    public CatalogSchema getNamespace( long schemaId ) {
+        return new CatalogSchema( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT );
     }
 
 

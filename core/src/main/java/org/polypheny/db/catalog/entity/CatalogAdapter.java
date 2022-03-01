@@ -29,7 +29,7 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode
-public class CatalogAdapter implements CatalogEntity {
+public class CatalogAdapter implements CatalogObject {
 
     private static final long serialVersionUID = -5837600302561930044L;
 

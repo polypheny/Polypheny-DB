@@ -28,8 +28,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -55,7 +55,7 @@ public abstract class Index {
 
     // The logical table this index is for
     @Getter
-    protected CatalogTable table;
+    protected CatalogEntity table;
 
     // The list of columns over which the index was created
     protected List<String> columns;
@@ -93,7 +93,7 @@ public abstract class Index {
             cols.addAll( targetColumns );
         }
         final AlgNode scan = builder
-                .scan( ImmutableList.of( table.getSchemaName(), table.name ) )
+                .scan( ImmutableList.of( table.getNamespaceName(), table.name ) )
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
@@ -240,7 +240,7 @@ public abstract class Index {
                 final Boolean unique,
                 final Boolean persitent,
                 final CatalogSchema schema,
-                final CatalogTable table,
+                final CatalogEntity table,
                 final List<String> columns,
                 final List<String> targetColumns );
 

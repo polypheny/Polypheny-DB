@@ -20,7 +20,7 @@ package org.polypheny.db.catalog.exceptions;
 public class UnknownTableTypeException extends CatalogException {
 
     public UnknownTableTypeException( final String name ) {
-        super( "There is no TableType with name: " + name );
+        super( "There is no EntityType with name: " + name );
     }
 
 }

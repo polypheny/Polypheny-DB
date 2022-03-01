@@ -34,14 +34,14 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.cql.Cql2RelConverter;
@@ -163,7 +163,7 @@ public class LanguageCrud {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Translation" );
             }
-            AlgRoot algRoot = processor.translate( statement, parsed, new QueryParameters( query, SchemaType.RELATIONAL ) );
+            AlgRoot algRoot = processor.translate( statement, parsed, new QueryParameters( query, NamespaceType.RELATIONAL ) );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Translation" );
             }
@@ -317,7 +317,7 @@ public class LanguageCrud {
 
         for ( String query : mqls ) {
             Statement statement = transaction.createStatement();
-            QueryParameters parameters = new MqlQueryParameters( query, database, SchemaType.DOCUMENT );
+            QueryParameters parameters = new MqlQueryParameters( query, database, NamespaceType.DOCUMENT );
 
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Parsing" );
@@ -434,7 +434,7 @@ public class LanguageCrud {
 
         //for ( String query : mqls ) {
         Statement statement = transaction.createStatement();
-        QueryParameters parameters = new QueryParameters( query, SchemaType.GRAPH );
+        QueryParameters parameters = new QueryParameters( query, NamespaceType.GRAPH );
 
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().start( "Parsing" );
@@ -528,12 +528,12 @@ public class LanguageCrud {
         List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         boolean hasMoreRows = result.hasMoreRows();
 
-        CatalogTable catalogTable = null;
+        CatalogEntity catalogEntity = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogTable = Catalog.getInstance().getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
-            } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                catalogEntity = Catalog.getInstance().getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
+            } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
                 log.error( "Caught exception", e );
             }
         }
@@ -563,10 +563,10 @@ public class LanguageCrud {
                     filter );
 
             // Get column default values
-            if ( catalogTable != null ) {
+            if ( catalogEntity != null ) {
                 try {
-                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                    if ( catalog.checkIfExistsColumn( catalogEntity.id, columnName ) ) {
+                        CatalogColumn catalogColumn = catalog.getField( catalogEntity.id, columnName );
                         if ( catalogColumn.defaultValue != null ) {
                             dbCol.defaultValue = catalogColumn.defaultValue.value;
                         }
@@ -581,7 +581,7 @@ public class LanguageCrud {
         ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
         return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                .setSchemaType( result.getSchemaType() )
+                .setNamespaceType( result.getNamespaceType() )
                 .setLanguage( language )
                 .setAffectedRows( data.size() )
                 .setHasMoreRows( hasMoreRows )
@@ -636,7 +636,7 @@ public class LanguageCrud {
         Map<String, String> names = Catalog.getInstance()
                 .getSchemas( Catalog.defaultDatabaseId, null )
                 .stream()
-                .collect( Collectors.toMap( CatalogSchema::getName, s -> s.schemaType.name() ) );
+                .collect( Collectors.toMap( CatalogSchema::getName, s -> s.namespaceType.name() ) );
 
         String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
         ctx.json( new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data ) );

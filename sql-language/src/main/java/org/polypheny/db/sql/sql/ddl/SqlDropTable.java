@@ -20,7 +20,7 @@ package org.polypheny.db.sql.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -52,7 +52,7 @@ public class SqlDropTable extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final CatalogTable table;
+        final CatalogEntity table;
 
         try {
             table = getCatalogTable( context, name );

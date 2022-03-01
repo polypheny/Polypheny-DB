@@ -24,8 +24,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.cypher.ddl.exception.LastPlacementException;
@@ -116,28 +116,28 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !catalogTable.partitionProperty.isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
+        if ( !catalogEntity.partitionProperty.isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogEntity.name + "'" );
         }
 
         // Check if all columns exist
         for ( SqlNode node : columnList.getSqlList() ) {
-            getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
+            getCatalogColumn( catalogEntity.id, (SqlIdentifier) node );
         }
 
         DataStore storeInstance = getDataStoreInstance( storeName );
         try {
             DdlManager.getInstance().modifyDataPlacement(
-                    catalogTable,
+                    catalogEntity,
                     columnList.getList().stream()
-                            .map( c -> getCatalogColumn( catalogTable.id, (SqlIdentifier) c ).id )
+                            .map( c -> getCatalogColumn( catalogEntity.id, (SqlIdentifier) c ).id )
                             .collect( Collectors.toList() ),
                     partitionGroupList,
                     partitionGroupNamesList.stream()
@@ -148,7 +148,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         } catch ( PlacementNotExistsException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
+                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogEntity.name ) );
         } catch ( IndexPreventsRemovalException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),

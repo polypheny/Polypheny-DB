@@ -34,7 +34,7 @@ import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.UnionMergeRule;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -104,7 +104,7 @@ public class AlgToSqlConverterTest extends SqlLanguagelDependant {
     private Sql sql( String sql ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), SchemaType.RELATIONAL );
+                .add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), NamespaceType.RELATIONAL );
         return new Sql( schema, sql, PolyphenyDbSqlDialect.DEFAULT, DEFAULT_REL_CONFIG, ImmutableList.of() );
     }
 
@@ -160,7 +160,7 @@ public class AlgToSqlConverterTest extends SqlLanguagelDependant {
      */
     private static AlgBuilder algBuilder() {
         // Creates a config based on the "scott" schema.
-        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema() ), SchemaType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema() ), NamespaceType.RELATIONAL );
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( schema )

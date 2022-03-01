@@ -30,15 +30,15 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -149,30 +149,30 @@ public class IndexManager {
     }
 
 
-    public void restoreIndexes() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
+    public void restoreIndexes() throws UnknownNamespaceException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
         for ( final CatalogIndex index : Catalog.getInstance().getIndexes() ) {
             addIndex( index );
         }
     }
 
 
-    public void addIndex( final CatalogIndex index ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
+    public void addIndex( final CatalogIndex index ) throws UnknownNamespaceException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
         addIndex( index, null );
     }
 
 
-    public void addIndex( final CatalogIndex index, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
+    public void addIndex( final CatalogIndex index, final Statement statement ) throws UnknownNamespaceException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
         // TODO(s3lph): persistent
         addIndex( index.id, index.name, index.key, index.method, index.unique, null, statement );
     }
 
 
-    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownDatabaseException, UnknownUserException, TransactionException {
+    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownNamespaceException, GenericCatalogException, UnknownDatabaseException, UnknownUserException, TransactionException {
         final IndexFactory factory = INDEX_FACTORIES.stream()
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final CatalogTable table = Catalog.getInstance().getTable( key.tableId );
+        final CatalogEntity table = Catalog.getInstance().getTable( key.tableId );
         final CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
                 id,
@@ -180,7 +180,7 @@ public class IndexManager {
                 method,
                 unique,
                 persistent,
-                Catalog.getInstance().getSchema( key.schemaId ),
+                Catalog.getInstance().getNamespace( key.schemaId ),
                 table,
                 key.getColumnNames(),
                 pk.getColumnNames() );
@@ -212,7 +212,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns ) {
+    public Index getIndex( CatalogSchema schema, CatalogEntity table, List<String> columns ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -222,7 +222,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
+    public Index getIndex( CatalogSchema schema, CatalogEntity table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -234,7 +234,7 @@ public class IndexManager {
     }
 
 
-    public List<Index> getIndices( CatalogSchema schema, CatalogTable table ) {
+    public List<Index> getIndices( CatalogSchema schema, CatalogEntity table ) {
         return this.indexById.values().stream()
                 .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
                 .collect( Collectors.toList() );

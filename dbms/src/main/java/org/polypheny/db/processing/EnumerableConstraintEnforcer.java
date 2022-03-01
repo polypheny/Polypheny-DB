@@ -50,10 +50,10 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -93,7 +93,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
 
         final Catalog catalog = Catalog.getInstance();
         final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
-        final CatalogTable table;
+        final CatalogEntity table;
         final CatalogPrimaryKey primaryKey;
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
@@ -393,14 +393,14 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
+                final CatalogEntity foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
                 builder.push( input );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final CatalogColumn foreignColumn;
                     try {
-                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
+                        foreignColumn = Catalog.getInstance().getField( foreignTable.id, foreignColumnName );
                     } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
@@ -469,14 +469,14 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
+                final CatalogEntity foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
                     final CatalogColumn column, foreignColumn;
                     try {
-                        column = Catalog.getInstance().getColumn( table.id, columnName );
-                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
+                        column = Catalog.getInstance().getField( table.id, columnName );
+                        foreignColumn = Catalog.getInstance().getField( foreignTable.id, foreignColumnName );
                     } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }

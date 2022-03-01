@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
@@ -100,7 +100,7 @@ public class AlgWriterTest extends SqlLanguagelDependant {
     public void testWriter() {
         String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
-                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
                     LogicalScan scan =
                             LogicalScan.create(
                                     cluster,
@@ -135,7 +135,7 @@ public class AlgWriterTest extends SqlLanguagelDependant {
     public void testReader() {
         String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
-                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
                     final AlgJsonReader reader = new AlgJsonReader( cluster, algOptSchema, rootSchema );
                     AlgNode node;
                     try {

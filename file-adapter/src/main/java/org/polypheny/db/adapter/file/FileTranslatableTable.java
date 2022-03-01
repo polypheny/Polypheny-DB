@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
@@ -134,7 +134,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         fileSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify(
+        return new LogicalModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

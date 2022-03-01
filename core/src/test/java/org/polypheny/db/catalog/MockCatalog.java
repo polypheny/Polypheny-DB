@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
@@ -40,7 +41,6 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -52,8 +52,8 @@ import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -166,31 +166,31 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogSchema getSchema( long schemaId ) {
+    public CatalogSchema getNamespace( long schemaId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException {
+    public CatalogSchema getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
+    public CatalogSchema getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) {
+    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean checkIfExistsSchema( long databaseId, String schemaName ) {
+    public boolean checkIfExistsNamespace( long databaseId, String schemaName ) {
         throw new NotImplementedException();
     }
 
@@ -214,67 +214,67 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern ) {
+    public List<CatalogEntity> getTables( long schemaId, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<CatalogEntity> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException {
+    public CatalogEntity getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTableFromPartition( long partitionId ) {
+    public CatalogEntity getTableFromPartition( long partitionId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<CatalogEntity> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTable( long tableId ) {
+    public CatalogEntity getTable( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException {
+    public CatalogEntity getTable( long schemaId, String tableName ) throws UnknownTableException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
+    public CatalogEntity getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addEntity( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable ) {
+    public long addEntity( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
+    public long addView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
+    public long addMaterializedView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         throw new NotImplementedException();
     }
 
@@ -436,19 +436,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogColumn getColumn( long columnId ) {
+    public CatalogColumn getField( long columnId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
+    public CatalogColumn getField( long tableId, String columnName ) throws UnknownColumnException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException {
+    public CatalogColumn getField( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownNamespaceException, UnknownDatabaseException, UnknownTableException {
         throw new NotImplementedException();
     }
 
@@ -1034,7 +1034,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogTable> getTablesForPeriodicProcessing() {
+    public List<CatalogEntity> getTablesForPeriodicProcessing() {
         throw new NotImplementedException();
     }
 

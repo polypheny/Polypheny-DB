@@ -20,8 +20,8 @@ import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
 
 
 public abstract class StatisticsManager<T extends Comparable<T>> implements PropertyChangeListener {
@@ -84,7 +84,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void updateColumnName( CatalogColumn catalogColumn, String newName );
 
-    public abstract void updateTableName( CatalogTable catalogTable, String newName );
+    public abstract void updateTableName( CatalogEntity catalogEntity, String newName );
 
     public abstract void updateSchemaName( CatalogSchema catalogSchema, String newName );
 

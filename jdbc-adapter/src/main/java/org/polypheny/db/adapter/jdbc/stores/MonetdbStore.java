@@ -37,9 +37,9 @@ import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
@@ -145,7 +145,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             return;
         }
         // MonetDB does not support updating the column type directly. We need to do a work-around
-        CatalogTable catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
+        CatalogEntity catalogEntity = Catalog.getInstance().getTable( catalogColumn.tableId );
         String tmpColName = columnPlacement.physicalColumnName + "tmp";
         StringBuilder builder;
 
@@ -225,8 +225,8 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
+    public Table createTableSchema( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentJdbcSchema.createJdbcTable( catalogEntity, columnPlacementsOnStore, partitionPlacement );
     }
 
 
@@ -264,7 +264,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity ) {
         return ImmutableList.of(); // TODO
     }
 

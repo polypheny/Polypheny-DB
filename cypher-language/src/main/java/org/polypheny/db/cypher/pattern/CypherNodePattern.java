@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.pattern;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
@@ -38,6 +39,11 @@ public class CypherNodePattern extends CypherPattern {
         this.labels = labels;
         this.properties = properties;
         this.predicate = predicate;
+    }
+
+
+    public List<String> getLabels() {
+        return labels.stream().map( StringPos::getImage ).collect( Collectors.toList() );
     }
 
 }

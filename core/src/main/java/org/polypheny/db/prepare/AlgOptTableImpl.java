@@ -58,7 +58,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
@@ -524,7 +524,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
         @Override
-        public SchemaPlus add( String name, Schema schema, SchemaType schemaType ) {
+        public SchemaPlus add( String name, Schema schema, NamespaceType namespaceType ) {
             throw new UnsupportedOperationException();
         }
 

@@ -31,8 +31,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
@@ -105,7 +105,7 @@ public class Result {
      * schema type of result DOCUMENT/RELATIONAL
      */
     @Setter
-    private SchemaType schemaType = SchemaType.RELATIONAL;
+    private NamespaceType namespaceType = NamespaceType.RELATIONAL;
 
     /**
      * language type of result MQL/SQL/CQL
@@ -175,10 +175,10 @@ public class Result {
      * @param header columns of the result
      * @param data data of the result
      */
-    public Result( final DbColumn[] header, final String[][] data, SchemaType schemaType, QueryLanguage language ) {
+    public Result( final DbColumn[] header, final String[][] data, NamespaceType namespaceType, QueryLanguage language ) {
         this.header = header;
         this.data = data;
-        this.schemaType = schemaType;
+        this.namespaceType = namespaceType;
         this.language = language;
     }
 
@@ -235,8 +235,8 @@ public class Result {
                 case "type":
                     type = extractEnum( in, ResultType::valueOf );
                     break;
-                case "schemaType":
-                    schemaType = extractEnum( in, SchemaType::valueOf );
+                case "namespaceType":
+                    namespaceType = extractEnum( in, NamespaceType::valueOf );
                     break;
                 case "language":
                     language = extractEnum( in, QueryLanguage::valueOf );
@@ -432,8 +432,8 @@ public class Result {
                 out.value( result.generatedQuery );
                 out.name( "type" );
                 handleEnum( out, result.type );
-                out.name( "schemaType" );
-                handleEnum( out, result.schemaType );
+                out.name( "namespaceType" );
+                handleEnum( out, result.namespaceType );
                 out.name( "language" );
                 handleEnum( out, result.language );
                 out.name( "hasMoreRows" );

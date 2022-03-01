@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptNode;
@@ -370,8 +370,8 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         }
     }
 
-    default SchemaType getModel() {
-        return SchemaType.RELATIONAL;
+    default NamespaceType getModel() {
+        return NamespaceType.RELATIONAL;
     }
 
     /**

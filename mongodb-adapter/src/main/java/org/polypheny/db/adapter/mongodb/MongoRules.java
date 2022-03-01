@@ -73,8 +73,8 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -677,7 +677,7 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             Values values = (Values) alg;
-            if ( values.getModel() == SchemaType.DOCUMENT ) {
+            if ( values.getModel() == NamespaceType.DOCUMENT ) {
                 Documents documents = (Documents) alg;
                 return new MongoDocuments(
                         alg.getCluster(),
@@ -1077,9 +1077,9 @@ public class MongoRules {
             }
 
             BsonDocument doc = new BsonDocument();
-            CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
+            CatalogEntity catalogEntity = implementor.mongoTable.getCatalogEntity();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
-            Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
+            Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogEntity );
 
             implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
 
@@ -1090,7 +1090,7 @@ public class MongoRules {
                     doc.append( physicalMapping.get( pos ), new BsonDynamic( (RexDynamicParam) rexNode ) );
 
                 } else if ( rexNode instanceof RexLiteral ) {
-                    doc.append( getPhysicalName( input, catalogTable, pos ), BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
+                    doc.append( getPhysicalName( input, catalogEntity, pos ), BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
                 } else if ( rexNode instanceof RexCall ) {
                     PolyType type = table
                             .getTable()
@@ -1116,10 +1116,10 @@ public class MongoRules {
         }
 
 
-        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogTable catalogTable ) {
+        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogEntity catalogEntity ) {
             Map<Integer, String> map = new HashMap<>();
-            List<String> names = catalogTable.getColumnNames();
-            List<Long> ids = catalogTable.columnIds;
+            List<String> names = catalogEntity.getColumnNames();
+            List<Long> ids = catalogEntity.fieldIds;
             int pos = 0;
             for ( String name : Pair.left( fieldList ) ) {
                 map.put( pos, MongoStore.getPhysicalColumnName( name, ids.get( names.indexOf( name ) ) ) );
@@ -1129,10 +1129,10 @@ public class MongoRules {
         }
 
 
-        private String getPhysicalName( MongoProject input, CatalogTable catalogTable, int pos ) {
+        private String getPhysicalName( MongoProject input, CatalogEntity catalogEntity, int pos ) {
             String logicalName = input.getRowType().getFieldNames().get( pos );
-            int index = catalogTable.getColumnNames().indexOf( logicalName );
-            return MongoStore.getPhysicalColumnName( logicalName, catalogTable.columnIds.get( index ) );
+            int index = catalogEntity.getColumnNames().indexOf( logicalName );
+            return MongoStore.getPhysicalColumnName( logicalName, catalogEntity.fieldIds.get( index ) );
         }
 
 
@@ -1155,7 +1155,7 @@ public class MongoRules {
 
         private void handleDirectInsert( Implementor implementor, MongoValues values ) {
             List<BsonDocument> docs = new ArrayList<>();
-            CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
+            CatalogEntity catalogEntity = implementor.mongoTable.getCatalogEntity();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
 
             AlgDataType valRowType = rowType;
@@ -1164,8 +1164,8 @@ public class MongoRules {
                 valRowType = values.getRowType();
             }
 
-            List<String> columnNames = catalogTable.getColumnNames();
-            List<Long> columnIds = catalogTable.columnIds;
+            List<String> columnNames = catalogEntity.getColumnNames();
+            List<Long> columnIds = catalogEntity.fieldIds;
             for ( ImmutableList<RexLiteral> literals : values.tuples ) {
                 BsonDocument doc = new BsonDocument();
                 int pos = 0;

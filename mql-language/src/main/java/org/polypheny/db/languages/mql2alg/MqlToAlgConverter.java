@@ -55,17 +55,17 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -277,7 +277,7 @@ public class MqlToAlgConverter {
             node = LogicalScan.create( cluster, table );
         }
 
-        if ( table.getTable() == null || table.getTable().getSchemaType() == SchemaType.DOCUMENT ) {
+        if ( table.getTable() == null || table.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
             this.usesDocumentModel = true;
         }
 
@@ -544,7 +544,7 @@ public class MqlToAlgConverter {
 
         RexCall combination = new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE ), Arrays.asList( id, replace, rename, remove ) );
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 table,
                 catalogReader,
                 node,
@@ -727,7 +727,7 @@ public class MqlToAlgConverter {
             node = wrapLimit( node, 1 );
         }
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 table,
                 catalogReader,
                 node,
@@ -746,8 +746,8 @@ public class MqlToAlgConverter {
      * @param table the table/collection into which the values are inserted
      * @return the modified AlgNode
      */
-    private LogicalTableModify convertInsert( MqlInsert query, AlgOptTable table ) {
-        return LogicalTableModify.create(
+    private LogicalModify convertInsert( MqlInsert query, AlgOptTable table ) {
+        return LogicalModify.create(
                 table,
                 catalogReader,
                 convertMultipleValues( query.getValues(), table.getRowType() ),

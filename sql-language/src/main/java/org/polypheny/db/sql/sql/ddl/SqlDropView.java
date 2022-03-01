@@ -20,8 +20,8 @@ package org.polypheny.db.sql.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -53,10 +53,10 @@ public class SqlDropView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final CatalogTable catalogTable;
+        final CatalogEntity catalogEntity;
 
         try {
-            catalogTable = getCatalogTable( context, name );
+            catalogEntity = getCatalogTable( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
@@ -66,12 +66,12 @@ public class SqlDropView extends SqlDropObject {
             }
         }
 
-        if ( catalogTable.tableType != TableType.VIEW ) {
-            throw new RuntimeException( "Not Possible to use DROP VIEW because " + catalogTable.name + " is not a View." );
+        if ( catalogEntity.entityType != EntityType.VIEW ) {
+            throw new RuntimeException( "Not Possible to use DROP VIEW because " + catalogEntity.name + " is not a View." );
         }
 
         try {
-            DdlManager.getInstance().dropView( catalogTable, statement );
+            DdlManager.getInstance().dropView( catalogEntity, statement );
         } catch ( DdlOnSourceException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
         }

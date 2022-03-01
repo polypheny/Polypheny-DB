@@ -23,9 +23,9 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 
 
 /**
@@ -44,7 +44,7 @@ public class StatisticTable<T extends Comparable<T>> {
     private TableCalls calls;
 
     @Getter
-    private SchemaType schemaType;
+    private NamespaceType namespaceType;
 
     @Getter
     private ImmutableList<Integer> dataPlacements;
@@ -56,7 +56,7 @@ public class StatisticTable<T extends Comparable<T>> {
     private String owner;
 
     @Getter
-    private TableType tableType;
+    private EntityType entityType;
 
     @Getter
     @Setter
@@ -80,12 +80,12 @@ public class StatisticTable<T extends Comparable<T>> {
 
         Catalog catalog = Catalog.getInstance();
         if ( catalog.checkIfExistsTable( tableId ) ) {
-            CatalogTable catalogTable = catalog.getTable( tableId );
-            this.table = catalogTable.name;
-            this.schemaType = catalogTable.getSchemaType();
-            this.dataPlacements = catalogTable.dataPlacements;
-            this.owner = catalogTable.ownerName;
-            this.tableType = catalogTable.tableType;
+            CatalogEntity catalogEntity = catalog.getTable( tableId );
+            this.table = catalogEntity.name;
+            this.namespaceType = catalogEntity.getNamespaceType();
+            this.dataPlacements = catalogEntity.dataPlacements;
+            this.owner = catalogEntity.ownerName;
+            this.entityType = catalogEntity.entityType;
         }
         calls = new TableCalls( tableId, 0, 0, 0, 0 );
 

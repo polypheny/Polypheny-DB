@@ -18,7 +18,7 @@ package org.polypheny.db.sql.sql.ddl;
 
 
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
@@ -43,8 +43,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE SCHEMA.
      */
-    public static SqlCreateSchema createSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
-        return new SqlCreateSchema( pos, replace, ifNotExists, name, schemaType );
+    public static SqlCreateSchema createSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
+        return new SqlCreateSchema( pos, replace, ifNotExists, name, namespaceType );
     }
 
 

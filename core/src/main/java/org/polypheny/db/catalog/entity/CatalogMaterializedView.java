@@ -23,8 +23,8 @@ import lombok.NonNull;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 
@@ -56,7 +56,7 @@ public class CatalogMaterializedView extends CatalogView {
             long databaseId,
             int ownerId,
             String ownerName,
-            TableType tableType,
+            EntityType entityType,
             String query,
             Long primaryKey,
             @NonNull ImmutableList<Integer> dataPlacements,
@@ -77,7 +77,7 @@ public class CatalogMaterializedView extends CatalogView {
                 databaseId,
                 ownerId,
                 ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,
@@ -96,16 +96,16 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+    public CatalogEntity getTableWithColumns( ImmutableList<Long> newColumnIds ) {
         return new CatalogMaterializedView(
                 id,
                 name,
                 newColumnIds,
-                schemaId,
+                namespaceId,
                 databaseId,
                 ownerId,
                 ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,
@@ -121,16 +121,16 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+    public CatalogEntity getConnectedViews( ImmutableList<Long> newConnectedViews ) {
         return new CatalogMaterializedView(
                 id,
                 name,
-                columnIds,
-                schemaId,
+                fieldIds,
+                namespaceId,
                 databaseId,
                 ownerId,
                 ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,
@@ -146,16 +146,16 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogTable getRenamed( String newName ) {
+    public CatalogEntity getRenamed( String newName ) {
         return new CatalogMaterializedView(
                 id,
                 newName,
-                columnIds,
-                schemaId,
+                fieldIds,
+                namespaceId,
                 databaseId,
                 ownerId,
                 ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,

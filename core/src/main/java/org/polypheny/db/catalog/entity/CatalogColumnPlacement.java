@@ -29,7 +29,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @EqualsAndHashCode
-public class CatalogColumnPlacement implements CatalogEntity {
+public class CatalogColumnPlacement implements CatalogObject {
 
     private static final long serialVersionUID = 3538121146945513108L;
 
@@ -71,7 +71,7 @@ public class CatalogColumnPlacement implements CatalogEntity {
 
     @SneakyThrows
     public String getLogicalSchemaName() {
-        return Catalog.getInstance().getTable( tableId ).getSchemaName();
+        return Catalog.getInstance().getTable( tableId ).getNamespaceName();
     }
 
 
@@ -83,7 +83,7 @@ public class CatalogColumnPlacement implements CatalogEntity {
 
     @SneakyThrows
     public String getLogicalColumnName() {
-        return Catalog.getInstance().getColumn( columnId ).name;
+        return Catalog.getInstance().getField( columnId ).name;
     }
 
 

@@ -44,9 +44,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -176,7 +176,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createTableSchema( CatalogEntity combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<String> logicalColumnNames = new LinkedList<>();
@@ -197,7 +197,7 @@ public class CottontailStore extends DataStore {
         }
 
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( placement.columnId );
 
             AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
@@ -209,7 +209,7 @@ public class CottontailStore extends DataStore {
 
         CottontailTable table = new CottontailTable(
                 this.currentSchema,
-                combinedTable.getSchemaName(),
+                combinedTable.getNamespaceName(),
                 combinedTable.name,
                 logicalColumnNames,
                 AlgDataTypeImpl.proto( fieldInfo.build() ),
@@ -230,7 +230,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
+    public void createTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds ) {
 
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
@@ -280,7 +280,7 @@ public class CottontailStore extends DataStore {
 
         for ( CatalogColumnPlacement placement : placements ) {
             final ColumnDefinition.Builder columnBuilder = ColumnDefinition.newBuilder();
-            final CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
+            final CatalogColumn catalogColumn = catalog.getField( placement.columnId );
             columnBuilder.setName( ColumnName.newBuilder().setName( CottontailNameUtil.createPhysicalColumnName( placement.columnId ) ) );
             final CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation(
                     catalogColumn.type,
@@ -300,7 +300,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
+    public void dropTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds ) {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
@@ -324,13 +324,13 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn ) {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
-        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), catalogTable.id );
+        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), catalogEntity.id );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
-        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id );
+        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogEntity.id );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
             //Since only one partition is available
@@ -406,7 +406,7 @@ public class CottontailStore extends DataStore {
 
         }
         // Update column placement physical table names
-        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), catalogEntity.id ) ) {
             this.catalog.updateColumnPlacementPhysicalNames(
                     this.getAdapterId(),
                     placement.columnId,
@@ -427,8 +427,8 @@ public class CottontailStore extends DataStore {
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), columnPlacement.tableId );
         placements.removeIf( it -> it.columnId == columnPlacement.columnId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
-        final CatalogTable catalogTable = catalog.getTable( placements.get( 0 ).tableId );
-        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id );
+        final CatalogEntity catalogEntity = catalog.getTable( placements.get( 0 ).tableId );
+        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogEntity.id );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
@@ -576,7 +576,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void truncate( Context context, CatalogTable table ) {
+    public void truncate( Context context, CatalogEntity table ) {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
@@ -684,7 +684,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity ) {
         return ImmutableList.of();
     }
 

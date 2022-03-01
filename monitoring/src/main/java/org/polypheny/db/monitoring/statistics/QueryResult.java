@@ -59,10 +59,10 @@ class QueryResult {
 
         Catalog catalog = Catalog.getInstance();
         if ( catalog.checkIfExistsTable( tableId ) ) {
-            this.schema = catalog.getSchema( schemaId ).name;
+            this.schema = catalog.getNamespace( schemaId ).name;
             this.table = catalog.getTable( tableId ).name;
             if ( columnId != null ) {
-                this.column = catalog.getColumn( columnId ).name;
+                this.column = catalog.getField( columnId ).name;
             }
         }
     }

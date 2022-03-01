@@ -33,7 +33,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
@@ -119,7 +119,7 @@ public class Cql2RelConverter {
         cqlQuery.queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
                 TableIndex tableIndex = treeNode.getExternalNode();
-                for ( Long columnId : tableIndex.catalogTable.columnIds ) {
+                for ( Long columnId : tableIndex.catalogEntity.fieldIds ) {
                     tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
                 }
             }
@@ -145,9 +145,9 @@ public class Cql2RelConverter {
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 try {
                     if ( treeNode.isLeaf() ) {
-                        CatalogTable catalogTable = treeNode.getExternalNode().catalogTable;
+                        CatalogEntity catalogEntity = treeNode.getExternalNode().catalogEntity;
                         algBuilderAtomicReference.set(
-                                algBuilderAtomicReference.get().scan( catalogTable.getSchemaName(), catalogTable.name )
+                                algBuilderAtomicReference.get().scan( catalogEntity.getNamespaceName(), catalogEntity.name )
                         );
                     } else {
                         Combiner combiner = treeNode.getInternalNode();
@@ -194,12 +194,12 @@ public class Cql2RelConverter {
                 try {
                     TableIndex tableIndex = treeNode.getExternalNode();
                     String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
-                    CatalogTable catalogTable = tableIndex.catalogTable;
-                    for ( Long columnId : catalogTable.columnIds ) {
+                    CatalogEntity catalogEntity = tableIndex.catalogEntity;
+                    for ( Long columnId : catalogEntity.fieldIds ) {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );
-                        CatalogColumn column = catalog.getColumn( columnId );
+                        CatalogColumn column = catalog.getField( columnId );
                         columnNames.add( columnNamePrefix + column.name );
                         tableScanColumnOrdinalities.put( columnId, ordinal );
                     }

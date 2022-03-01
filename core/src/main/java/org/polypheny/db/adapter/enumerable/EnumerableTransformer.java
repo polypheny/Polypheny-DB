@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
@@ -132,9 +132,9 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
     }
 
 
-    private Map<PolyType, Pair<PolyType, Method>> getMapping( SchemaType from, SchemaType to ) {
+    private Map<PolyType, Pair<PolyType, Method>> getMapping( NamespaceType from, NamespaceType to ) {
 
-        if ( from == SchemaType.DOCUMENT && to == SchemaType.RELATIONAL ) {
+        if ( from == NamespaceType.DOCUMENT && to == NamespaceType.RELATIONAL ) {
             this.mappingDesc = "DOCUMENT_TO_RELATIONAL";
             return DOCUMENT_TO_RELATIONAL_MAPPING;
         }

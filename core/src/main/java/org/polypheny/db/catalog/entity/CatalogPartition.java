@@ -24,7 +24,7 @@ import lombok.Getter;
 
 
 @EqualsAndHashCode
-public class CatalogPartition implements CatalogEntity {
+public class CatalogPartition implements CatalogObject {
 
     private static final long serialVersionUID = 6187228972854325431L;
 

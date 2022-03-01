@@ -41,14 +41,14 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -156,7 +156,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getSchemaName(), resourcePatchRequest.tables.get( 0 ).name ) );
+        PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getNamespaceName(), resourcePatchRequest.tables.get( 0 ).name ) );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourcePatchRequest.tables );
@@ -181,13 +181,13 @@ public class Rest {
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
 
         AlgNode algNode = algBuilder.build();
-        TableModify tableModify = new LogicalTableModify(
+        TableModify tableModify = new LogicalModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
                 catalogReader,
                 algNode,
-                LogicalTableModify.Operation.UPDATE,
+                LogicalModify.Operation.UPDATE,
                 valueColumnNames,
                 rexValues,
                 false
@@ -215,7 +215,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getSchemaName(), resourceDeleteRequest.tables.get( 0 ).name ) );
+        PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).name ) );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourceDeleteRequest.tables );
@@ -234,13 +234,13 @@ public class Rest {
         AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
 
         AlgNode algNode = algBuilder.build();
-        TableModify tableModify = new LogicalTableModify(
+        TableModify tableModify = new LogicalModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
                 catalogReader,
                 algNode,
-                LogicalTableModify.Operation.DELETE,
+                LogicalModify.Operation.DELETE,
                 null,
                 null,
                 false
@@ -268,7 +268,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getSchemaName(), insertValueRequest.tables.get( 0 ).name ) );
+        PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).name ) );
 
         // Values
         AlgDataType tableRowType = table.getRowType();
@@ -286,13 +286,13 @@ public class Rest {
 
         // Table Modify
         AlgNode algNode = algBuilder.build();
-        TableModify tableModify = new LogicalTableModify(
+        TableModify tableModify = new LogicalModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
                 catalogReader,
                 algNode,
-                LogicalTableModify.Operation.INSERT,
+                LogicalModify.Operation.INSERT,
                 null,
                 null,
                 false
@@ -313,15 +313,15 @@ public class Rest {
 
 
     @VisibleForTesting
-    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<CatalogTable> tables ) {
+    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<CatalogEntity> tables ) {
         boolean firstTable = true;
-        for ( CatalogTable catalogTable : tables ) {
+        for ( CatalogEntity catalogEntity : tables ) {
             if ( firstTable ) {
-                algBuilder = algBuilder.scan( catalogTable.getSchemaName(), catalogTable.name );
+                algBuilder = algBuilder.scan( catalogEntity.getNamespaceName(), catalogEntity.name );
                 firstTable = false;
             } else {
                 algBuilder = algBuilder
-                        .scan( catalogTable.getSchemaName(), catalogTable.name )
+                        .scan( catalogEntity.getNamespaceName(), catalogEntity.name )
                         .join( JoinAlgType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }
@@ -550,7 +550,7 @@ public class Rest {
     private Transaction getTransaction() {
         try {
             return transactionManager.startTransaction( userName, databaseName, false, "REST Interface", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

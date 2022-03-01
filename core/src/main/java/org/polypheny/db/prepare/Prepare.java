@@ -49,7 +49,7 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -293,19 +293,19 @@ public abstract class Prepare {
     }
 
 
-    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
+    protected LogicalModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
         if ( !isDml ) {
             return null;
         }
         switch ( Kind ) {
             case INSERT:
-                return LogicalTableModify.Operation.INSERT;
+                return LogicalModify.Operation.INSERT;
             case DELETE:
-                return LogicalTableModify.Operation.DELETE;
+                return LogicalModify.Operation.DELETE;
             case MERGE:
-                return LogicalTableModify.Operation.MERGE;
+                return LogicalModify.Operation.MERGE;
             case UPDATE:
-                return LogicalTableModify.Operation.UPDATE;
+                return LogicalModify.Operation.UPDATE;
             default:
                 return null;
         }
@@ -467,7 +467,7 @@ public abstract class Prepare {
 
 
         @Override
-        public LogicalTableModify.Operation getTableModOp() {
+        public LogicalModify.Operation getTableModOp() {
             return null;
         }
 
@@ -500,7 +500,7 @@ public abstract class Prepare {
          * Returns the table modification operation corresponding to this statement if it is a table modification statement;
          * otherwise null.
          */
-        LogicalTableModify.Operation getTableModOp();
+        LogicalModify.Operation getTableModOp();
 
         /**
          * Returns a list describing, for each result field, the origin of the field as a 4-element list
@@ -533,7 +533,7 @@ public abstract class Prepare {
         protected final AlgDataType parameterRowType;
         protected final AlgDataType rowType;
         protected final boolean isDml;
-        protected final LogicalTableModify.Operation tableModOp;
+        protected final LogicalModify.Operation tableModOp;
         protected final List<List<String>> fieldOrigins;
         protected final List<AlgCollation> collations;
 
@@ -544,7 +544,7 @@ public abstract class Prepare {
                 List<List<String>> fieldOrigins,
                 List<AlgCollation> collations,
                 AlgNode rootRel,
-                LogicalTableModify.Operation tableModOp,
+                LogicalModify.Operation tableModOp,
                 boolean isDml ) {
             this.rowType = Objects.requireNonNull( rowType );
             this.parameterRowType = Objects.requireNonNull( parameterRowType );
@@ -563,7 +563,7 @@ public abstract class Prepare {
 
 
         @Override
-        public LogicalTableModify.Operation getTableModOp() {
+        public LogicalModify.Operation getTableModOp() {
             return tableModOp;
         }
 

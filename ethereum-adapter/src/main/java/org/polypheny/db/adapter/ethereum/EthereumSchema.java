@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyType;
@@ -46,13 +46,13 @@ public class EthereumSchema extends AbstractSchema {
     }
 
 
-    public Table createBlockchainTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, EthereumDataSource ethereumDataSource ) {
+    public Table createBlockchainTable( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, EthereumDataSource ethereumDataSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<EthereumFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( EthereumFieldType.getBlockchainFieldType( catalogColumn.type ) );
@@ -60,9 +60,9 @@ public class EthereumSchema extends AbstractSchema {
         }
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : EthereumMapper.TRANSACTION;
-        EthereumTable table = new EthereumTable( clientUrl, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource, catalogTable.id );
-        tableMap.put( catalogTable.name, table );
+        EthereumMapper mapper = catalogEntity.name.equals( "block" ) ? EthereumMapper.BLOCK : EthereumMapper.TRANSACTION;
+        EthereumTable table = new EthereumTable( clientUrl, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource, catalogEntity.id );
+        tableMap.put( catalogEntity.name, table );
         return table;
     }
 

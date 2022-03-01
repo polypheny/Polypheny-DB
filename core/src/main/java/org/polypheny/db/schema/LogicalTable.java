@@ -26,11 +26,11 @@ import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
@@ -44,7 +44,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private AlgProtoDataType protoRowType;
 
     @Getter
-    private final SchemaType schemaType;
+    private final NamespaceType namespaceType;
 
     @Getter
     private final String logicalSchemaName;
@@ -64,7 +64,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
             List<Long> columnIds,
             List<String> logicalColumnNames,
             AlgProtoDataType protoRowType,
-            SchemaType schemaType ) {
+            NamespaceType namespaceType ) {
         super( Object[].class );
         this.tableId = tableId;
         this.logicalSchemaName = logicalSchemaName;
@@ -72,7 +72,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
         this.columnIds = columnIds;
         this.logicalColumnNames = logicalColumnNames;
         this.protoRowType = protoRowType;
-        this.schemaType = schemaType;
+        this.namespaceType = namespaceType;
     }
 
 
@@ -91,7 +91,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
-        return new LogicalTableModify(
+        return new LogicalModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

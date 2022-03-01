@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidMethodInvocation;
 import org.polypheny.db.cql.exception.InvalidModifierException;
@@ -142,15 +142,15 @@ public class Combiner {
             }
         }
 
-        CatalogTable leftCatalogTable = left.catalogTable;
-        CatalogTable rightCatalogTable = right.catalogTable;
+        CatalogEntity leftCatalogEntity = left.catalogEntity;
+        CatalogEntity rightCatalogEntity = right.catalogEntity;
         List<String> columnList = Arrays.asList( columnStrs );
 
-        if ( !leftCatalogTable.getColumnNames().containsAll( columnList ) || !rightCatalogTable.getColumnNames().containsAll( columnList ) ) {
+        if ( !leftCatalogEntity.getColumnNames().containsAll( columnList ) || !rightCatalogEntity.getColumnNames().containsAll( columnList ) ) {
             log.error( "Invalid Modifier Values. Cannot join tables '{}' and '{}' on columns {}",
-                    leftCatalogTable.name, rightCatalogTable.name, columnList );
+                    leftCatalogEntity.name, rightCatalogEntity.name, columnList );
             throw new InvalidModifierException( "Invalid Modifier Values. Cannot join tables '" +
-                    leftCatalogTable.name + "' and '" + rightCatalogTable.name + "' on columns " + columnList );
+                    leftCatalogEntity.name + "' and '" + rightCatalogEntity.name + "' on columns " + columnList );
         }
 
         return columnStrs;
@@ -163,8 +163,8 @@ public class Combiner {
         if ( log.isDebugEnabled() ) {
             log.debug( "Getting Common Columns between '{}' and '{}'.", table1.fullyQualifiedName, table2.fullyQualifiedName );
         }
-        List<String> table1Columns = table1.catalogTable.getColumnNames();
-        List<String> table2Columns = table2.catalogTable.getColumnNames();
+        List<String> table1Columns = table1.catalogEntity.getColumnNames();
+        List<String> table2Columns = table2.catalogEntity.getColumnNames();
 
         return table1Columns.stream().filter( table2Columns::contains ).toArray( String[]::new );
     }

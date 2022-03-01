@@ -45,13 +45,13 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -241,7 +241,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
     public void testFrameworksValidatorWithIdentifierExpansion() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
@@ -276,7 +276,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
     public void testSchemaPath() {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
@@ -312,7 +312,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
     public void testUpdate() throws Exception {
         Table table = new TableImpl();
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
-        SchemaPlus schema = rootSchema.add( "x", new AbstractSchema(), SchemaType.RELATIONAL );
+        SchemaPlus schema = rootSchema.add( "x", new AbstractSchema(), NamespaceType.RELATIONAL );
         schema.add( "MYTABLE", table );
         List<AlgTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
@@ -411,7 +411,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
 
         @Override
         public TableModify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-            return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+            return LogicalModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
 
 

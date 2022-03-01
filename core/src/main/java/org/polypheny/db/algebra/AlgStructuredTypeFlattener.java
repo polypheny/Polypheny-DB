@@ -46,11 +46,11 @@ import org.polypheny.db.algebra.logical.LogicalIntersect;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
@@ -344,9 +344,9 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteAlg( LogicalTableModify alg ) {
-        LogicalTableModify newRel =
-                LogicalTableModify.create(
+    public void rewriteAlg( LogicalModify alg ) {
+        LogicalModify newRel =
+                LogicalModify.create(
                         alg.getTable(),
                         alg.getCatalogReader(),
                         getNewForOldRel( alg.getInput() ),

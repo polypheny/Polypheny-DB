@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -89,17 +89,17 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownNamespaceException {
         Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( user );
         CatalogDatabase catalogDatabase = catalog.getDatabase( database );
-        CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
+        CatalogSchema catalogSchema = catalog.getNamespace( catalogDatabase.id, catalogDatabase.defaultSchemaName );
         return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze, origin, flavor );
     }
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownNamespaceException {
         return startTransaction( user, database, analyze, origin, MultimediaFlavor.DEFAULT );
     }
 

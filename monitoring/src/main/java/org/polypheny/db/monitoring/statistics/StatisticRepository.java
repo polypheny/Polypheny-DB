@@ -126,7 +126,7 @@ public class StatisticRepository implements MonitoringRepository {
                                 tableId,
                                 dataPoint.getChangedValues(),
                                 dataPoint.getMonitoringType(),
-                                catalog.getTable( tableId ).schemaId );
+                                catalog.getTable( tableId ).namespaceId );
                         statisticsManager.updateRowCountPerTable( tableId, added, dataPoint.getMonitoringType() );
                     } else if ( dataPoint.getMonitoringType().equals( "DELETE" ) ) {
                         int deleted = dataPoint.getRowCount();
