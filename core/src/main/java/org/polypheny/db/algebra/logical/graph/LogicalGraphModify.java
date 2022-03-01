@@ -16,17 +16,21 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexNode;
 
-public class LogicalGraphModify extends SingleAlg implements GraphAlg {
+public class LogicalGraphModify extends SingleAlg implements GraphAlg, RelationalTransformable {
 
 
     private final Operation operation;
+    private final List<? extends RexNode> nodeOperations;
+    private final List<? extends RexNode> relationshipOperations;
 
 
     /**
@@ -36,14 +40,23 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, Operation operation ) {
+    protected LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, Operation operation, List<? extends RexNode> nodeOperations, List<? extends RexNode> relationshipOperations ) {
         super( cluster, traits, input );
+        assertLogicalGraphTrait( traits );
         this.operation = operation;
+        this.nodeOperations = nodeOperations;
+        this.relationshipOperations = relationshipOperations;
     }
 
 
     @Override
     public String algCompareString() {
+        return "$" + getClass().getSimpleName() + "$" + nodeOperations.hashCode() + "$" + relationshipOperations.hashCode();
+    }
+
+
+    @Override
+    public AlgNode getRelationalEquivalent() {
         return null;
     }
 

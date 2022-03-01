@@ -40,6 +40,8 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.ModelTrait;
 
 
 /**
@@ -61,6 +63,11 @@ public abstract class SingleAlg extends AbstractAlgNode {
     protected SingleAlg( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits );
         this.input = input;
+    }
+
+
+    protected static void assertLogicalGraphTrait( AlgTraitSet traits ) {
+        assert traits.contains( ModelTrait.GRAPH ) && traits.contains( Convention.NONE );
     }
 
 

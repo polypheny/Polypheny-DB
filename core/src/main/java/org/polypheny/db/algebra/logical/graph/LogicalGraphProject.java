@@ -40,6 +40,7 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
      */
     protected LogicalGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects ) {
         super( cluster, traits, input );
+        assertLogicalGraphTrait( traits );
         this.projects = projects;
     }
 

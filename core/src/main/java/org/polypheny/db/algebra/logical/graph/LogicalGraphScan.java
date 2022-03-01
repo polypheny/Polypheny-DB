@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg {
+public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
 
     private final String label;
     private final long namespaceId;

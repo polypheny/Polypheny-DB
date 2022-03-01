@@ -22,7 +22,6 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModelTrait;
 
 public class LogicalGraphFilter extends SingleAlg implements GraphAlg {
 
@@ -39,7 +38,7 @@ public class LogicalGraphFilter extends SingleAlg implements GraphAlg {
     protected LogicalGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input );
         this.condition = condition;
-        assert input.getTraitSet().contains( ModelTrait.GRAPH );
+        assertLogicalGraphTrait( traits );
     }
 
 
