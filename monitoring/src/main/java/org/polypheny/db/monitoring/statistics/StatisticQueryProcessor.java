@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -89,8 +89,8 @@ public class StatisticQueryProcessor {
         Catalog catalog = Catalog.getInstance();
         List<List<String>> result = new ArrayList<>();
         List<String> schemaTree = new ArrayList<>();
-        List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
-        for ( CatalogSchema schema : schemas ) {
+        List<CatalogNamespace> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
+        for ( CatalogNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
             List<CatalogEntity> childTables = catalog.getTables( schema.id, null );
             for ( CatalogEntity childTable : childTables ) {

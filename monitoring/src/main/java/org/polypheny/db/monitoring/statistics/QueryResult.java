@@ -58,7 +58,7 @@ class QueryResult {
         this.type = type;
 
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsTable( tableId ) ) {
+        if ( catalog.checkIfExistsEntity( tableId ) ) {
             this.schema = catalog.getNamespace( schemaId ).name;
             this.table = catalog.getTable( tableId ).name;
             if ( columnId != null ) {

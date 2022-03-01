@@ -84,12 +84,12 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogIndex.CatalogIndexColumn;
 import org.polypheny.db.catalog.entity.CatalogIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogNamespace.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogSchema.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -350,7 +350,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
             }
-            final List<CatalogSchema> schemas = catalog.getSchemas(
+            final List<CatalogNamespace> schemas = catalog.getSchemas(
                     database == null ? null : new Pattern( database ),
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
             );
@@ -1407,7 +1407,7 @@ public class DbmsMeta implements ProtobufMeta {
 //            Authorizer.hasAccess( user, database );
 
         // Check schema access
-        final CatalogSchema schema;
+        final CatalogNamespace schema;
         try {
             schema = catalog.getNamespace( database.id, defaultSchemaName );
         } catch ( UnknownNamespaceException e ) {

@@ -33,8 +33,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -212,7 +212,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogEntity table, List<String> columns ) {
+    public Index getIndex( CatalogNamespace schema, CatalogEntity table, List<String> columns ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -222,7 +222,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogEntity table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
+    public Index getIndex( CatalogNamespace schema, CatalogEntity table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -234,7 +234,7 @@ public class IndexManager {
     }
 
 
-    public List<Index> getIndices( CatalogSchema schema, CatalogEntity table ) {
+    public List<Index> getIndices( CatalogNamespace schema, CatalogEntity table ) {
         return this.indexById.values().stream()
                 .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
                 .collect( Collectors.toList() );

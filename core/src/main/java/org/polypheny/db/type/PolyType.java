@@ -295,13 +295,19 @@ public enum PolyType {
             Types.OTHER,
             PolyTypeFamily.DOCUMENT ),
 
-    PATH(
+    GRAPH(
             PrecScale.NO_NO,
             true,
             Types.JAVA_OBJECT,
-            PolyTypeFamily.PATH ),
+            PolyTypeFamily.GRAPH ),
 
-    GRAPH(
+    NODE(
+            PrecScale.NO_NO,
+            true,
+            Types.JAVA_OBJECT,
+            PolyTypeFamily.GRAPH ),
+
+    RELATIONSHIP(
             PrecScale.NO_NO,
             true,
             Types.JAVA_OBJECT,
@@ -438,11 +444,11 @@ public enum PolyType {
 
     public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY );
 
-    public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, PATH, MAP, ARRAY );
+    public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, RELATIONSHIP );
 
     public static final List<PolyType> COLLECTION_TYPES = ImmutableList.of( ARRAY );
 
-    public static final List<PolyType> OBJECT_TYPES = ImmutableList.of( MAP, GRAPH, PATH );
+    public static final List<PolyType> OBJECT_TYPES = ImmutableList.of( MAP, GRAPH, NODE, RELATIONSHIP );
 
     public static final Set<PolyType> YEAR_INTERVAL_TYPES =
             Sets.immutableEnumSet(

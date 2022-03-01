@@ -40,4 +40,10 @@ public class CypherPeriodicCommit extends CypherQuery {
         this.queryBody = queryBody;
     }
 
+
+    @Override
+    public void accept( CypherVisitor visitor ) {
+        visitor.visit( this );
+    }
+
 }

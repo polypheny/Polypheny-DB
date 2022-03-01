@@ -34,7 +34,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
@@ -72,7 +72,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final CatalogUser user;
     @Getter
-    private final CatalogSchema defaultSchema;
+    private final CatalogNamespace defaultSchema;
     @Getter
     private final CatalogDatabase database;
 
@@ -105,7 +105,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             PolyXid xid,
             TransactionManagerImpl transactionManager,
             CatalogUser user,
-            CatalogSchema defaultSchema,
+            CatalogNamespace defaultSchema,
             CatalogDatabase database,
             boolean analyze,
             String origin,

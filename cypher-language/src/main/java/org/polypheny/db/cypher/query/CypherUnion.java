@@ -29,10 +29,16 @@ public class CypherUnion extends CypherQuery {
 
 
     public CypherUnion( ParserPos pos, CypherQuery left, CypherQuery right, boolean all ) {
-        super( pos);
+        super( pos );
         this.left = left;
         this.right = right;
         this.all = all;
+    }
+
+
+    @Override
+    public void accept( CypherVisitor visitor ) {
+        visitor.visit( this );
     }
 
 }

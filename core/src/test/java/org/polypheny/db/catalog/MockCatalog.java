@@ -33,14 +33,15 @@ import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogGraphEntity.GraphObjectType;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -68,6 +69,12 @@ import org.polypheny.db.type.PolyType;
  * provide a clean testing setup
  */
 public abstract class MockCatalog extends Catalog {
+
+    @Override
+    public long addGraphEntity( long namespaceId, GraphObjectType objectType, int ownerId, String label, EntityType entityType, boolean modifiable ) {
+        throw new NotImplementedException();
+    }
+
 
     @Override
     public void commit() throws NoTablePrimaryKeyException {
@@ -154,31 +161,31 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
+    public List<CatalogNamespace> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
+    public List<CatalogNamespace> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogSchema getNamespace( long schemaId ) {
+    public CatalogNamespace getNamespace( long schemaId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogSchema getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException {
+    public CatalogNamespace getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogSchema getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException {
+    public CatalogNamespace getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException {
         throw new NotImplementedException();
     }
 
@@ -262,19 +269,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addEntity( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable ) {
+    public long addEntity( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
+    public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
+    public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         throw new NotImplementedException();
     }
 
@@ -286,13 +293,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public boolean checkIfExistsTable( long schemaId, String tableName ) {
+    public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean checkIfExistsTable( long tableId ) {
+    public boolean checkIfExistsEntity( long tableId ) {
         throw new NotImplementedException();
     }
 

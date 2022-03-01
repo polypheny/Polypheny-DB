@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.cypher.ddl.DdlManager;
@@ -58,7 +58,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
-            CatalogSchema schema = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+            CatalogNamespace schema = catalog.getNamespace( Catalog.defaultDatabaseId, database );
             List<CatalogEntity> tables = catalog.getTables( schema.id, null );
 
             if ( dropTarget ) {

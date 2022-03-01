@@ -20,18 +20,19 @@ import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 @EqualsAndHashCode(callSuper = false)
-public class CatalogGraphObject extends CatalogEntity implements CatalogObject, Serializable {
+public class CatalogGraphEntity extends CatalogEntity implements CatalogObject, Serializable {
 
     static final long serialVersionUID = 3103009888330430956L;
     private final String label;
 
 
-    public CatalogGraphObject(
+    public CatalogGraphEntity(
             long id,
             @NonNull String name,
             long namespaceId,
@@ -48,6 +49,21 @@ public class CatalogGraphObject extends CatalogEntity implements CatalogObject, 
         super( id, name, fieldIds, namespaceId, databaseId, ownerId, ownerName, type, primaryKey, dataPlacements, modifiable, partitionProperty );
         this.label = label;
         assert fieldIds.size() == 2 : "GraphObjects can only consist of two fields <id> and the object itself.";
+    }
+
+
+    @Getter
+    public enum GraphObjectType {
+        NODES( "_nodes" ),
+        RELATIONSHIPS( "_rels" );
+
+
+        private final String name;
+
+
+        GraphObjectType( String name ) {
+            this.name = name;
+        }
     }
 
 }

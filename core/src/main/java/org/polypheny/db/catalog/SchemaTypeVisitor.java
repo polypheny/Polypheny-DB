@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.schema.LogicalTable;
@@ -49,7 +49,7 @@ public class SchemaTypeVisitor extends AlgShuttleImpl {
     public AlgNode visit( Scan scan ) {
         try {
             List<String> names = scan.getTable().getQualifiedName();
-            CatalogSchema schema;
+            CatalogNamespace schema;
             if ( names.size() == 3 ) {
                 schema = Catalog.getInstance().getNamespace( names.get( 0 ), names.get( 1 ) );
             } else if ( names.size() == 2 ) {

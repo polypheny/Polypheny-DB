@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -72,7 +72,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor ) {
+    public Transaction startTransaction( CatalogUser user, CatalogNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
@@ -83,7 +83,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin ) {
+    public Transaction startTransaction( CatalogUser user, CatalogNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin ) {
         return startTransaction( user, defaultSchema, database, analyze, origin, MultimediaFlavor.DEFAULT );
     }
 
@@ -93,8 +93,8 @@ public class TransactionManagerImpl implements TransactionManager {
         Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( user );
         CatalogDatabase catalogDatabase = catalog.getDatabase( database );
-        CatalogSchema catalogSchema = catalog.getNamespace( catalogDatabase.id, catalogDatabase.defaultSchemaName );
-        return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze, origin, flavor );
+        CatalogNamespace catalogNamespace = catalog.getNamespace( catalogDatabase.id, catalogDatabase.defaultSchemaName );
+        return startTransaction( catalogUser, catalogNamespace, catalogDatabase, analyze, origin, flavor );
     }
 
 

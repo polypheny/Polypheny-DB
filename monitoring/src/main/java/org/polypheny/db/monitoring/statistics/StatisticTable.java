@@ -79,7 +79,7 @@ public class StatisticTable<T extends Comparable<T>> {
         this.tableId = tableId;
 
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsTable( tableId ) ) {
+        if ( catalog.checkIfExistsEntity( tableId ) ) {
             CatalogEntity catalogEntity = catalog.getTable( tableId );
             this.table = catalogEntity.name;
             this.namespaceType = catalogEntity.getNamespaceType();

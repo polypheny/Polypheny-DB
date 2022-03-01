@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.logical.graph;
 
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -39,6 +40,12 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
     @Override
     public String algCompareString() {
         return "$" + getClass().getSimpleName() + "$" + namespaceId + "$" + label;
+    }
+
+
+    @Override
+    public AlgNode getRelationalEquivalent() {
+        return null;
     }
 
 }

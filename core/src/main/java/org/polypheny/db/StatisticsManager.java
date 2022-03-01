@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 
 
 public abstract class StatisticsManager<T extends Comparable<T>> implements PropertyChangeListener {
@@ -86,6 +86,6 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void updateTableName( CatalogEntity catalogEntity, String newName );
 
-    public abstract void updateSchemaName( CatalogSchema catalogSchema, String newName );
+    public abstract void updateSchemaName( CatalogNamespace catalogNamespace, String newName );
 
 }

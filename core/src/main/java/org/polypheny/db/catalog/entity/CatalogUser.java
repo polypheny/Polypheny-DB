@@ -42,7 +42,7 @@ public final class CatalogUser implements CatalogObject, Comparable<CatalogUser>
     }
 
 
-    public CatalogSchema getDefaultSchema() {
+    public CatalogNamespace getDefaultSchema() {
         return Catalog.getInstance().getNamespace( defaultSchema );
     }
 

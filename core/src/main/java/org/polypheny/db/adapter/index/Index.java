@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -51,7 +51,7 @@ public abstract class Index {
 
     // The logical schema of the table this index is for
     @Getter
-    protected CatalogSchema schema;
+    protected CatalogNamespace schema;
 
     // The logical table this index is for
     @Getter
@@ -239,7 +239,7 @@ public abstract class Index {
                 final String method,
                 final Boolean unique,
                 final Boolean persitent,
-                final CatalogSchema schema,
+                final CatalogNamespace schema,
                 final CatalogEntity table,
                 final List<String> columns,
                 final List<String> targetColumns );

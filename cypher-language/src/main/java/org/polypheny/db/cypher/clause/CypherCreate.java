@@ -17,10 +17,7 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -47,25 +44,15 @@ public class CypherCreate extends CypherClause implements ExecutableStatement {
 
 
     @Override
+    public void accept( CypherVisitor visitor ) {
+        visitor.visit( this );
+    }
+
+
+    @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        List<CypherEveryPathPattern> paths = this.patterns
-                .stream()
-                .filter( p -> p.getCypherKind() == CypherKind.PATH )
-                .map( p -> (CypherEveryPathPattern) p )
-                .collect( Collectors.toList() );
-
-        Set<String> relLabels = paths
-                .stream()
-                .map( CypherEveryPathPattern::getRelationships )
-                .flatMap( rs -> rs.stream().flatMap( r -> r.getLabels().stream() ) )
-                .collect( Collectors.toSet() );
-
-        Set<String> nodeLabels = paths
-                .stream()
-                .map( CypherEveryPathPattern::getNodes )
-                .flatMap( rs -> rs.stream().flatMap( n -> n.getLabels().stream() ) )
-                .collect( Collectors.toSet() );
 
     }
+
 
 }

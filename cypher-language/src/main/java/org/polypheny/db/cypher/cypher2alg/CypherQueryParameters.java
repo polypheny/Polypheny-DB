@@ -14,34 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.query;
+package org.polypheny.db.cypher.cypher2alg;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.cypher.clause.CypherClause;
-import org.polypheny.db.cypher.clause.CypherQuery;
-import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.languages.QueryParameters;
 
 @Getter
-public class CypherSingleQuery extends CypherQuery {
+public class CypherQueryParameters extends QueryParameters {
 
-    private final List<CypherClause> clauses;
-
-
-    public CypherSingleQuery( ParserPos pos, List<CypherClause> clauses ) {
-        super( pos );
-        this.clauses = clauses;
-    }
+    List<String> nodeLabels = new ArrayList<>();
+    List<String> relationshipLabels = new ArrayList<>();
 
 
-    public CypherSingleQuery( List<CypherClause> clauses ) {
-        this( ParserPos.ZERO, clauses );
-    }
+    public CypherQueryParameters( String query, NamespaceType namespaceType ) {
+        super( query, namespaceType );
 
-
-    @Override
-    public void accept( CypherVisitor visitor ) {
-        visitor.visit( this );
     }
 
 }

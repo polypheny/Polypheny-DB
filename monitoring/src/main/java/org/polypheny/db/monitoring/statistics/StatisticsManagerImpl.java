@@ -55,7 +55,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -175,15 +175,15 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     @Override
-    public void updateSchemaName( CatalogSchema catalogSchema, String newName ) {
-        if ( statisticSchemaMap.containsKey( catalogSchema.id ) ) {
-            Map<Long, Map<Long, StatisticColumn<T>>> tableInformation = statisticSchemaMap.get( catalogSchema.id );
+    public void updateSchemaName( CatalogNamespace catalogNamespace, String newName ) {
+        if ( statisticSchemaMap.containsKey( catalogNamespace.id ) ) {
+            Map<Long, Map<Long, StatisticColumn<T>>> tableInformation = statisticSchemaMap.get( catalogNamespace.id );
             for ( long tableId : tableInformation.keySet() ) {
-                Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogSchema.id ).remove( tableId );
+                Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogNamespace.id ).remove( tableId );
                 for ( Entry<Long, StatisticColumn<T>> columnInfo : columnsInformation.entrySet() ) {
                     StatisticColumn<T> statisticColumn = columnInfo.getValue();
                     statisticColumn.updateSchemaName( newName );
-                    statisticSchemaMap.get( catalogSchema.id ).get( tableId ).put( columnInfo.getKey(), statisticColumn );
+                    statisticSchemaMap.get( catalogNamespace.id ).get( tableId ).put( columnInfo.getKey(), statisticColumn );
                 }
             }
         }
@@ -301,7 +301,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         if ( statisticQueryInterface == null ) {
             return;
         }
-        if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
+        if ( Catalog.getInstance().checkIfExistsEntity( tableId ) ) {
             deleteTable( Catalog.getInstance().getTable( tableId ).namespaceId, tableId );
 
             List<QueryResult> res = statisticQueryInterface.getAllColumns( tableId );
@@ -336,7 +336,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn<T> reevaluateColumn( QueryResult column ) {
-        if ( !Catalog.getInstance().checkIfExistsTable( column.getTableId() )
+        if ( !Catalog.getInstance().checkIfExistsEntity( column.getTableId() )
                 && !Catalog.getInstance().checkIfExistsColumn( column.getTableId(), column.getColumn() ) ) {
             return null;
         }
@@ -526,7 +526,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         final RexBuilder rexBuilder = relBuilder.getRexBuilder();
         final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
-        if ( Catalog.getInstance().checkIfExistsTable( queryResult.getTableId() ) ) {
+        if ( Catalog.getInstance().checkIfExistsEntity( queryResult.getTableId() ) ) {
             LogicalScan tableScan = getLogicalScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );
 
             StatisticQueryResult statisticQueryColumn;
@@ -844,7 +844,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private void workQueue() {
         while ( !this.tablesToUpdate.isEmpty() ) {
             long tableId = this.tablesToUpdate.poll();
-            if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
+            if ( Catalog.getInstance().checkIfExistsEntity( tableId ) ) {
                 reevaluateTable( tableId );
             }
             tableStatistic.remove( tableId );
@@ -880,7 +880,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Override
     public void tablesToUpdate( long tableId, Map<Long, List<Object>> changedValues, String type, long schemaId ) {
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsTable( tableId ) ) {
+        if ( catalog.checkIfExistsEntity( tableId ) ) {
             switch ( type ) {
                 case "INSERT":
                     handleInsert( tableId, changedValues, schemaId, catalog );

@@ -69,15 +69,17 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogGraphEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphEntity.GraphObjectType;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -135,8 +137,8 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<String, CatalogDatabase> databaseNames;
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
 
-    private static BTreeMap<Long, CatalogSchema> schemas;
-    private static BTreeMap<Object[], CatalogSchema> schemaNames;
+    private static BTreeMap<Long, CatalogNamespace> schemas;
+    private static BTreeMap<Object[], CatalogNamespace> schemaNames;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
 
     private static BTreeMap<Long, CatalogEntity> tables;
@@ -659,9 +661,9 @@ public class CatalogImpl extends Catalog {
     /**
      * creates all needed maps for schemas
      *
-     * schemas: schemaId {@code ->} CatalogSchema
+     * schemas: schemaId {@code ->} CatalogNamespace
      * schemaChildren: schemaId {@code ->} [tableId, tableId, etc]
-     * schemaNames: new Object[]{databaseId, schemaName} {@code ->} CatalogSchema
+     * schemaNames: new Object[]{databaseId, schemaName} {@code ->} CatalogNamespace
      */
     private void initSchemaInfo( DB db ) {
         //noinspection unchecked
@@ -790,7 +792,7 @@ public class CatalogImpl extends Catalog {
      * Initiates default columns for csv files
      */
     private void addDefaultCsvColumns( CatalogAdapter csv ) throws UnknownNamespaceException, UnknownTableException, GenericCatalogException, UnknownColumnException, UnknownDatabaseException {
-        CatalogSchema schema = getNamespace( "APP", "public" );
+        CatalogNamespace schema = getNamespace( "APP", "public" );
         CatalogEntity depts = getTable( schema.id, "depts" );
 
         addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
@@ -1045,12 +1047,12 @@ public class CatalogImpl extends Catalog {
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
+    public List<CatalogNamespace> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
 
         List<CatalogDatabase> catalogDatabases = getDatabases( databaseNamePattern );
 
         if ( catalogDatabases.size() > 0 ) {
-            Stream<CatalogSchema> catalogSchemas = catalogDatabases.stream().filter( d -> databaseChildren.containsKey( d.id ) ).flatMap( d -> Objects.requireNonNull( databaseChildren.get( d.id ) ).stream() ).map( schemas::get );
+            Stream<CatalogNamespace> catalogSchemas = catalogDatabases.stream().filter( d -> databaseChildren.containsKey( d.id ) ).flatMap( d -> Objects.requireNonNull( databaseChildren.get( d.id ) ).stream() ).map( schemas::get );
 
             if ( schemaNamePattern != null ) {
                 catalogSchemas = catalogSchemas.filter( s -> s.name.matches( schemaNamePattern.toRegex() ) );
@@ -1071,10 +1073,10 @@ public class CatalogImpl extends Catalog {
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
+    public List<CatalogNamespace> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         if ( schemaNamePattern != null ) {
-            List<CatalogSchema> list = new ArrayList<>();
-            for ( CatalogSchema schema : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
+            List<CatalogNamespace> list = new ArrayList<>();
+            for ( CatalogNamespace schema : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
                 if ( schema.name.matches( schemaNamePattern.pattern ) ) {
                     list.add( schema );
                 }
@@ -1093,7 +1095,7 @@ public class CatalogImpl extends Catalog {
      * @return The schema
      */
     @Override
-    public CatalogSchema getNamespace( long schemaId ) {
+    public CatalogNamespace getNamespace( long schemaId ) {
         try {
             return Objects.requireNonNull( schemas.get( schemaId ) );
         } catch ( NullPointerException e ) {
@@ -1111,7 +1113,7 @@ public class CatalogImpl extends Catalog {
      * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
      */
     @Override
-    public CatalogSchema getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException {
+    public CatalogNamespace getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException {
         try {
             long databaseId = getDatabase( databaseName ).id;
             return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
@@ -1130,7 +1132,7 @@ public class CatalogImpl extends Catalog {
      * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
      */
     @Override
-    public CatalogSchema getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException {
+    public CatalogNamespace getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException {
         try {
             return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
         } catch ( NullPointerException e ) {
@@ -1152,7 +1154,7 @@ public class CatalogImpl extends Catalog {
     public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         CatalogUser owner = getUser( ownerId );
         long id = schemaIdBuilder.getAndIncrement();
-        CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, namespaceType );
+        CatalogNamespace schema = new CatalogNamespace( id, name, databaseId, ownerId, owner.name, namespaceType );
         synchronized ( this ) {
             schemas.put( id, schema );
             schemaNames.put( new Object[]{ databaseId, name }, schema );
@@ -1188,8 +1190,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameSchema( long schemaId, String name ) {
         try {
-            CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.namespaceType );
+            CatalogNamespace old = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogNamespace schema = new CatalogNamespace( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.namespaceType );
 
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
@@ -1212,8 +1214,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setSchemaOwner( long schemaId, long ownerId ) {
         try {
-            CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogSchema schema = new CatalogSchema( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.namespaceType );
+            CatalogNamespace old = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogNamespace schema = new CatalogNamespace( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.namespaceType );
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
                 schemaNames.replace( new Object[]{ schema.databaseId, schema.name }, schema );
@@ -1232,7 +1234,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteSchema( long schemaId ) {
-        CatalogSchema schema = getNamespace( schemaId );
+        CatalogNamespace schema = getNamespace( schemaId );
         synchronized ( this ) {
             schemaNames.remove( new Object[]{ schema.databaseId, schema.name } );
             List<Long> oldChildren = new ArrayList<>( Objects.requireNonNull( databaseChildren.get( schema.databaseId ) ) );
@@ -1262,7 +1264,7 @@ public class CatalogImpl extends Catalog {
     public List<CatalogEntity> getTables( long schemaId, Pattern tableNamePattern ) {
         if ( schemas.containsKey( schemaId ) ) {
 
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
             if ( tableNamePattern != null ) {
                 return Collections.singletonList( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableNamePattern.pattern } ) );
             } else {
@@ -1285,12 +1287,12 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogEntity> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         if ( schemaNamePattern != null && tableNamePattern != null ) {
-            CatalogSchema schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            CatalogNamespace schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
             if ( schema != null ) {
                 return Collections.singletonList( Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schema.id, tableNamePattern.pattern } ) ) );
             }
         } else if ( schemaNamePattern != null ) {
-            CatalogSchema schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            CatalogNamespace schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
             if ( schema != null ) {
                 return new ArrayList<>( tableNames.prefixSubMap( new Object[]{ databaseId, schema.id } ).values() );
             }
@@ -1315,10 +1317,10 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogEntity> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        List<CatalogSchema> catalogSchemas = getSchemas( databaseNamePattern, schemaNamePattern );
+        List<CatalogNamespace> catalogNamespaces = getSchemas( databaseNamePattern, schemaNamePattern );
 
-        if ( catalogSchemas.size() > 0 ) {
-            Stream<CatalogEntity> catalogTables = catalogSchemas.stream().filter( t -> schemaChildren.containsKey( t.id ) ).flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() ).map( tables::get );
+        if ( catalogNamespaces.size() > 0 ) {
+            Stream<CatalogEntity> catalogTables = catalogNamespaces.stream().filter( t -> schemaChildren.containsKey( t.id ) ).flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() ).map( tables::get );
 
             if ( tableNamePattern != null ) {
                 catalogTables = catalogTables.filter( t -> t.name.matches( tableNamePattern.toRegex() ) );
@@ -1357,7 +1359,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogEntity getTable( long schemaId, String tableName ) throws UnknownTableException {
         try {
-            CatalogSchema schema = getNamespace( schemaId );
+            CatalogNamespace schema = getNamespace( schemaId );
             return Objects.requireNonNull( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( schemaId, tableName );
@@ -1422,22 +1424,22 @@ public class CatalogImpl extends Catalog {
      * Adds a table to a specified schema.
      *
      * @param name The name of the table to add
-     * @param schemaId The id of the schema
+     * @param namespaceId The id of the schema
      * @param ownerId The if of the owner
      * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
     @Override
-    public long addEntity( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable ) {
+    public long addEntity( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
         long id = tableIdBuilder.getAndIncrement();
-        CatalogSchema schema = getNamespace( schemaId );
+        CatalogNamespace schema = getNamespace( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
         try {
             //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
             List<Long> partitionGroupIds = new ArrayList<>();
-            partitionGroupIds.add( addPartitionGroup( id, "full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
+            partitionGroupIds.add( addPartitionGroup( id, "full", namespaceId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
             //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
             CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
 
@@ -1453,7 +1455,7 @@ public class CatalogImpl extends Catalog {
                     id,
                     name,
                     ImmutableList.of(),
-                    schemaId,
+                    namespaceId,
                     schema.databaseId,
                     ownerId,
                     owner.name,
@@ -1464,7 +1466,7 @@ public class CatalogImpl extends Catalog {
                     partitionProperty,
                     ImmutableList.of() );
 
-            updateTableLogistics( name, schemaId, id, schema, table );
+            updateEntityLogistics( name, namespaceId, id, schema, table );
             openTable = id;
 
         } catch ( GenericCatalogException e ) {
@@ -1474,11 +1476,66 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public long addGraphEntity( long namespaceId, GraphObjectType objectType, int ownerId, String label, EntityType entityType, boolean modifiable ) {
+        long id = tableIdBuilder.getAndIncrement();
+        CatalogNamespace schema = getNamespace( namespaceId );
+        CatalogUser owner = getUser( ownerId );
+
+        List<CatalogEntity> entities = getTables( namespaceId, new Pattern( objectType.getName() ) );
+        if ( !entities.isEmpty() ) {
+            log.info( String.format( "Graph entity with label %s does already exist", label ) );
+            return entities.get( 0 ).id;
+        }
+
+        try {
+            //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
+            List<Long> partitionGroupIds = new ArrayList<>();
+            partitionGroupIds.add( addPartitionGroup( id, "full", namespaceId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
+            //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+            CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
+
+            PartitionProperty partitionProperty = PartitionProperty.builder()
+                    .partitionType( PartitionType.NONE )
+                    .isPartitioned( false )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
+                    .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
+                    .reliesOnPeriodicChecks( false )
+                    .build();
+
+            String entityName = objectType.getName();
+
+            CatalogEntity table = new CatalogGraphEntity(
+                    id,
+                    objectType.getName(),
+                    namespaceId,
+                    schema.databaseId,
+                    ownerId,
+                    owner.name,
+                    entityType,
+                    null,
+                    null,
+                    ImmutableList.of(),
+                    ImmutableList.of(),
+                    modifiable,
+                    partitionProperty );
+
+            updateEntityLogistics( entityName, namespaceId, id, schema, table );
+            openTable = id;
+
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( "Error when adding entity " + entityType, e );
+        }
+        return id;
+
+    }
+
+
     /**
      * Adds a view to a specified schema.
      *
      * @param name The name of the view to add
-     * @param schemaId The id of the schema
+     * @param namespaceId The id of the schema
      * @param ownerId The if of the owner
      * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
@@ -1488,9 +1545,9 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
+    public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = tableIdBuilder.getAndIncrement();
-        CatalogSchema schema = getNamespace( schemaId );
+        CatalogNamespace schema = getNamespace( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
         PartitionProperty partitionProperty = PartitionProperty.builder()
@@ -1505,7 +1562,7 @@ public class CatalogImpl extends Catalog {
                     id,
                     name,
                     ImmutableList.of(),
-                    schemaId,
+                    namespaceId,
                     schema.databaseId,
                     ownerId,
                     owner.name,
@@ -1524,7 +1581,7 @@ public class CatalogImpl extends Catalog {
                     language //fieldList
             );
             addConnectedViews( underlyingTables, viewTable.id );
-            updateTableLogistics( name, schemaId, id, schema, viewTable );
+            updateEntityLogistics( name, namespaceId, id, schema, viewTable );
             algTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
@@ -1539,7 +1596,7 @@ public class CatalogImpl extends Catalog {
      * Adds a materialized view to a specified schema.
      *
      * @param name of the view to add
-     * @param schemaId id of the schema
+     * @param namespaceId id of the schema
      * @param ownerId id of the owner
      * @param entityType type of table
      * @param modifiable Whether the content of the table can be modified
@@ -1554,14 +1611,14 @@ public class CatalogImpl extends Catalog {
      * @return id of the inserted materialized view
      */
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
+    public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         long id = tableIdBuilder.getAndIncrement();
-        CatalogSchema schema = getNamespace( schemaId );
+        CatalogNamespace schema = getNamespace( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
         // Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
         List<Long> partitionGroupIds = new ArrayList<>();
-        partitionGroupIds.add( addPartitionGroup( id, "full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
+        partitionGroupIds.add( addPartitionGroup( id, "full", namespaceId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
 
         // Get the single PartitionGroup and consequently retrieve all contained partitionIds to add them to completeList of partitionIds in the partitionProperty
         CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
@@ -1579,7 +1636,7 @@ public class CatalogImpl extends Catalog {
                     id,
                     name,
                     ImmutableList.of(),
-                    schemaId,
+                    namespaceId,
                     schema.databaseId,
                     ownerId,
                     owner.name,
@@ -1600,7 +1657,7 @@ public class CatalogImpl extends Catalog {
                     ordered
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
-            updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
+            updateEntityLogistics( name, namespaceId, id, schema, materializedViewTable );
 
             algTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
@@ -1615,17 +1672,17 @@ public class CatalogImpl extends Catalog {
     /**
      * Update all information after the addition of all kind of tables
      */
-    private void updateTableLogistics( String name, long schemaId, long id, CatalogSchema schema, CatalogEntity table ) {
+    private void updateEntityLogistics( String name, long namespaceId, long id, CatalogNamespace schema, CatalogEntity entity ) {
         synchronized ( this ) {
-            tables.put( id, table );
+            tables.put( id, entity );
             tableChildren.put( id, ImmutableList.<Long>builder().build() );
-            tableNames.put( new Object[]{ schema.databaseId, schemaId, name }, table );
-            List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
+            tableNames.put( new Object[]{ schema.databaseId, namespaceId, name }, entity );
+            List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( namespaceId ) ) );
             children.add( id );
-            schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
+            schemaChildren.replace( namespaceId, ImmutableList.copyOf( children ) );
         }
 
-        listeners.firePropertyChange( "table", null, table );
+        listeners.firePropertyChange( "entity", null, entity );
     }
 
 
@@ -1675,14 +1732,14 @@ public class CatalogImpl extends Catalog {
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
-     * @param schemaId The id of the schema
-     * @param tableName The name to check for
+     * @param namespaceId The id of the schema
+     * @param entityName The name to check for
      * @return true if there is a table with this name, false if not.
      */
     @Override
-    public boolean checkIfExistsTable( long schemaId, String tableName ) {
-        CatalogSchema schema = getNamespace( schemaId );
-        return tableNames.containsKey( new Object[]{ schema.databaseId, schemaId, tableName } );
+    public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
+        CatalogNamespace schema = getNamespace( namespaceId );
+        return tableNames.containsKey( new Object[]{ schema.databaseId, namespaceId, entityName } );
     }
 
 
@@ -1693,7 +1750,7 @@ public class CatalogImpl extends Catalog {
      * @return true if there is a table with this id, false if not.
      */
     @Override
-    public boolean checkIfExistsTable( long tableId ) {
+    public boolean checkIfExistsEntity( long tableId ) {
         return tables.containsKey( tableId );
     }
 
@@ -3620,7 +3677,7 @@ public class CatalogImpl extends Catalog {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Creating partitionGroup of type '{}' with id '{}'", partitionType, id );
             }
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
 
             List<Long> partitionIds = new ArrayList<>();
             for ( int i = 0; i < numberOfInternalPartitions; i++ ) {
@@ -3813,7 +3870,7 @@ public class CatalogImpl extends Catalog {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Creating partition with id '{}'", id );
             }
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
 
             CatalogPartition partition = new CatalogPartition(
                     id,

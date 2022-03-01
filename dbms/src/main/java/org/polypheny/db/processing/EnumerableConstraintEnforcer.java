@@ -52,8 +52,8 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -92,7 +92,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         final Modify root = (Modify) logicalRoot.alg;
 
         final Catalog catalog = Catalog.getInstance();
-        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
+        final CatalogNamespace schema = statement.getTransaction().getDefaultSchema();
         final CatalogEntity table;
         final CatalogPrimaryKey primaryKey;
         final List<CatalogConstraint> constraints;

@@ -73,7 +73,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.SchemaTypeVisitor;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -614,7 +614,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalModify ltm = (LogicalModify) node;
                         final CatalogEntity table;
-                        final CatalogSchema schema;
+                        final CatalogNamespace schema;
                         try {
                             String tableName;
                             if ( ltm.getTable().getQualifiedName().size() == 3 ) { // DatabaseName.SchemaName.TableName
@@ -874,7 +874,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalConditionalExecute ) {
                         final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
                         final Index index = IndexManager.getInstance().getIndex(
-                                lce.getCatalogSchema(),
+                                lce.getCatalogNamespace(),
                                 lce.getCatalogEntity(),
                                 lce.getCatalogColumns()
                         );
@@ -926,7 +926,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         ctypes.add( field.getType() );
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
-                    final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
+                    final CatalogNamespace schema = statement.getTransaction().getDefaultSchema();
                     final CatalogEntity ctable;
                     try {
                         ctable = Catalog.getInstance().getTable( schema.id, table );

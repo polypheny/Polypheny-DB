@@ -20,6 +20,7 @@ package org.polypheny.db.cypher.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,12 +68,13 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogGraphEntity.GraphObjectType;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -234,9 +236,9 @@ public class DdlManagerImpl extends DdlManager {
             for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
                 // Make sure the table name is unique
                 String tableName = entry.getKey();
-                if ( catalog.checkIfExistsTable( 1, tableName ) ) {
+                if ( catalog.checkIfExistsEntity( 1, tableName ) ) {
                     int i = 0;
-                    while ( catalog.checkIfExistsTable( 1, tableName + i ) ) {
+                    while ( catalog.checkIfExistsEntity( 1, tableName + i ) ) {
                         i++;
                     }
                     tableName += i;
@@ -377,9 +379,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void alterSchemaOwner( String schemaName, String ownerName, long databaseId ) throws UnknownUserException, UnknownNamespaceException {
-        CatalogSchema catalogSchema = catalog.getNamespace( databaseId, schemaName );
+        CatalogNamespace catalogNamespace = catalog.getNamespace( databaseId, schemaName );
         CatalogUser catalogUser = catalog.getUser( ownerName );
-        catalog.setSchemaOwner( catalogSchema.id, catalogUser.id );
+        catalog.setSchemaOwner( catalogNamespace.id, catalogUser.id );
     }
 
 
@@ -388,11 +390,11 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsNamespace( databaseId, newName ) ) {
             throw new NamespaceAlreadyExistsException();
         }
-        CatalogSchema catalogSchema = catalog.getNamespace( databaseId, oldName );
-        catalog.renameSchema( catalogSchema.id, newName );
+        CatalogNamespace catalogNamespace = catalog.getNamespace( databaseId, oldName );
+        catalog.renameSchema( catalogNamespace.id, newName );
 
         // Update Name in statistics
-        StatisticsManager.getInstance().updateSchemaName( catalogSchema, newName );
+        StatisticsManager.getInstance().updateSchemaName( catalogNamespace, newName );
     }
 
 
@@ -1537,7 +1539,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameTable( CatalogEntity catalogEntity, String newTableName, Statement statement ) throws TableAlreadyExistsException {
-        if ( catalog.checkIfExistsTable( catalogEntity.namespaceId, newTableName ) ) {
+        if ( catalog.checkIfExistsEntity( catalogEntity.namespaceId, newTableName ) ) {
             throw new TableAlreadyExistsException();
         }
         // Check if views are dependent from this view
@@ -1575,7 +1577,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
-        if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
+        if ( catalog.checkIfExistsEntity( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
                     dropView( catalog.getTable( schemaId, viewName ), statement );
@@ -1632,7 +1634,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException {
         // Check if there is already a table with this name
-        if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
+        if ( catalog.checkIfExistsEntity( schemaId, viewName ) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return;
@@ -1768,6 +1770,44 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
+    public void addGraphLabels( int namespaceId, Collection<String> nodeLabels, Collection<String> relLabels ) {
+        for ( String label : nodeLabels ) {
+            catalog.addGraphEntity( namespaceId, GraphObjectType.NODES, Catalog.defaultUserId, label, EntityType.ENTITY, true );
+        }
+
+        for ( String label : relLabels ) {
+            catalog.addGraphEntity( namespaceId, GraphObjectType.NODES, Catalog.defaultUserId, label, EntityType.ENTITY, true );
+        }
+    }
+
+
+    @Override
+    public long createGraph( int databaseId, boolean ifExists, boolean replace ) {
+        long graphNamespaceId;
+        assert ifExists && !replace : "Graphs are only create if not exists and cannot be replaced yet.";
+        // add general graph
+        graphNamespaceId = catalog.addNamespace( "_graph", databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
+
+        // add default nodes and relationships
+        createGraphObjects( graphNamespaceId, Catalog.defaultUserId );
+
+        return graphNamespaceId;
+    }
+
+
+    private void createGraphObjects( long graphNamespaceId, long ownerId ) {
+        long nodeId = catalog.addGraphEntity( graphNamespaceId, GraphObjectType.NODES, Math.toIntExact( ownerId ), null, EntityType.ENTITY, true );
+
+        catalog.addColumn( "_nodes", nodeId, 0, PolyType.NODE, null, null, null, null, null, false, Collation.getDefaultCollation() );
+
+        long relationshipId = catalog.addGraphEntity( graphNamespaceId, GraphObjectType.RELATIONSHIPS, Math.toIntExact( ownerId ), null, EntityType.ENTITY, true );
+
+        catalog.addColumn( "_relationships", relationshipId, 0, PolyType.RELATIONSHIP, null, null, null, null, null, false, Collation.getDefaultCollation() );
+
+    }
+
+
     private List<FieldInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList ) {
         return getColumnInformation( projectedColumns, fieldList, false, 0 );
     }
@@ -1863,7 +1903,7 @@ public class DdlManagerImpl extends DdlManager {
     public void createEntity( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException {
         try {
             // Check if there is already an entity with this name
-            if ( catalog.checkIfExistsTable( schemaId, name ) ) {
+            if ( catalog.checkIfExistsEntity( schemaId, name ) ) {
                 if ( ifNotExists ) {
                     // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                     return;
@@ -2387,16 +2427,16 @@ public class DdlManagerImpl extends DdlManager {
         try {
             // Check if there is a schema with this name
             if ( catalog.checkIfExistsNamespace( databaseId, schemaName ) ) {
-                CatalogSchema catalogSchema = catalog.getNamespace( databaseId, schemaName );
+                CatalogNamespace catalogNamespace = catalog.getNamespace( databaseId, schemaName );
 
                 // Drop all tables in this schema
-                List<CatalogEntity> catalogEntities = catalog.getTables( catalogSchema.id, null );
+                List<CatalogEntity> catalogEntities = catalog.getTables( catalogNamespace.id, null );
                 for ( CatalogEntity catalogEntity : catalogEntities ) {
                     dropTable( catalogEntity, statement );
                 }
 
                 // Drop schema
-                catalog.deleteSchema( catalogSchema.id );
+                catalog.deleteSchema( catalogNamespace.id );
             } else {
                 if ( ifExists ) {
                     // This is ok because "IF EXISTS" was specified

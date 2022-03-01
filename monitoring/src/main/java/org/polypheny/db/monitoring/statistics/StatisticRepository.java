@@ -86,7 +86,7 @@ public class StatisticRepository implements MonitoringRepository {
 
             if ( isOneTable ) {
                 long tableId = values.stream().findFirst().get();
-                if ( catalog.checkIfExistsTable( tableId ) ) {
+                if ( catalog.checkIfExistsEntity( tableId ) ) {
                     statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
                     // RowCount from UI is only used if there is no other possibility
@@ -100,7 +100,7 @@ public class StatisticRepository implements MonitoringRepository {
                 }
             } else {
                 for ( long id : values ) {
-                    if ( catalog.checkIfExistsTable( id ) ) {
+                    if ( catalog.checkIfExistsEntity( id ) ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
                 }
@@ -119,7 +119,7 @@ public class StatisticRepository implements MonitoringRepository {
                 long tableId = values.stream().findFirst().get();
                 statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
-                if ( catalog.checkIfExistsTable( tableId ) ) {
+                if ( catalog.checkIfExistsEntity( tableId ) ) {
                     if ( dataPoint.getMonitoringType().equals( "INSERT" ) ) {
                         int added = dataPoint.getRowCount();
                         statisticsManager.tablesToUpdate(
@@ -137,7 +137,7 @@ public class StatisticRepository implements MonitoringRepository {
                 }
             } else {
                 for ( long id : values ) {
-                    if ( catalog.checkIfExistsTable( id ) ) {
+                    if ( catalog.checkIfExistsEntity( id ) ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
 

@@ -22,6 +22,10 @@ import java.util.Set;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.cypher.clause.CypherCreate;
+import org.polypheny.db.cypher.query.CypherPeriodicCommit;
+import org.polypheny.db.cypher.query.CypherSingleQuery;
+import org.polypheny.db.cypher.query.CypherUnion;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
@@ -79,6 +83,11 @@ public abstract class CypherNode implements Node {
     }
 
 
+    public void accept( CypherVisitor visitor ) {
+        throw new UnsupportedOperationException( "Accept() method was not implemented for the used cypher node: " + getClass().getSimpleName() );
+    }
+
+
     public boolean isDDL() {
         return DDL.contains( getCypherKind() );
     }
@@ -86,6 +95,31 @@ public abstract class CypherNode implements Node {
 
     public enum CypherKind {
         SCOPE, REMOVE, ADMIN_COMMAND, QUERY, PATTERN, EXPRESSION, WITH_GRAPH, CALL, CASE, CREATE, SCHEMA_COMMAND, ADMIN_ACTION, DELETE, DROP, FOR_EACH, LOAD_CSV, MATCH, MERGE, ORDER_ITEM, RETURN, SET, SHOW, TRANSACTION, UNWIND, USE, WAIT, WHERE, WITH, MAP_PROJECTION, YIELD, EITHER, RESOURCE, PRIVILEGE, PATH_LENGTH, CALL_RESULT, HINT, PATH, SET_ITEM
+    }
+
+
+    public static abstract class CypherVisitor {
+
+        public void visit( CypherSingleQuery query ) {
+            query.getClauses().forEach( c -> c.accept( this ) );
+        }
+
+
+        public void visit( CypherPeriodicCommit query ) {
+            query.getQueryBody().forEach( c -> c.accept( this ) );
+        }
+
+
+        public void visit( CypherUnion union ) {
+            union.getLeft().accept( this );
+            union.getRight().accept( this );
+        }
+
+
+        public void visit( CypherCreate create ) {
+            create.getPatterns().forEach( p -> p.accept( this ) );
+        }
+
     }
 
 }

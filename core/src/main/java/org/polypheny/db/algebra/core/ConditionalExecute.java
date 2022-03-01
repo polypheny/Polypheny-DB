@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -45,7 +45,7 @@ public abstract class ConditionalExecute extends BiAlg {
 
     @Getter
     @Setter
-    protected CatalogSchema catalogSchema = null;
+    protected CatalogNamespace catalogNamespace = null;
     @Getter
     @Setter
     protected CatalogEntity catalogEntity = null;
@@ -83,7 +83,7 @@ public abstract class ConditionalExecute extends BiAlg {
         return super.explainTerms( pw )
                 .item( "condition", condition )
                 .itemIf( "check", checkDescription, checkDescription != null );
-//        pw.item( "schema", catalogSchema == null ? "null" : catalogSchema.name );
+//        pw.item( "schema", catalogNamespace == null ? "null" : catalogNamespace.name );
 //        pw.item( "table", catalogEntity == null ? "null" : catalogEntity.name );
 //        pw.item( "columns", catalogColumns == null ? "null" : catalogColumns );
 //        pw.item( "values", values == null ? "null" : values );

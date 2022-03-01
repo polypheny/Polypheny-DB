@@ -41,14 +41,15 @@ import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogGraphEntity.GraphObjectType;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -228,7 +229,7 @@ public abstract class Catalog {
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern );
+    public abstract List<CatalogNamespace> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern );
 
     /**
      * Get all schemas of the specified database which fit to the specified filter pattern.
@@ -238,7 +239,7 @@ public abstract class Catalog {
      * @param schemaNamePattern Pattern for the schema name. null returns all
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern );
+    public abstract List<CatalogNamespace> getSchemas( long databaseId, Pattern schemaNamePattern );
 
     /**
      * Returns the schema with the specified id.
@@ -246,7 +247,7 @@ public abstract class Catalog {
      * @param schemaId The id of the schema
      * @return The schema
      */
-    public abstract CatalogSchema getNamespace( long schemaId );
+    public abstract CatalogNamespace getNamespace( long schemaId );
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -256,7 +257,7 @@ public abstract class Catalog {
      * @return The schema
      * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogSchema getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException;
+    public abstract CatalogNamespace getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException;
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -266,7 +267,7 @@ public abstract class Catalog {
      * @return The schema
      * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogSchema getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException;
+    public abstract CatalogNamespace getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException;
 
     /**
      * Adds a schema in a specified database
@@ -394,19 +395,22 @@ public abstract class Catalog {
      * Adds a table to a specified schema.
      *
      * @param name The name of the table to add
-     * @param schemaId The id of the schema
+     * @param namespaceId The id of the schema
      * @param ownerId The if of the owner
      * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract long addEntity( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable );
+    public abstract long addEntity( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
+
+
+    public abstract long addGraphEntity( long namespaceId, GraphObjectType objectType, int ownerId, String label, EntityType entityType, boolean modifiable );
 
     /**
      * Adds a view to a specified schema.
      *
      * @param name The name of the view to add
-     * @param schemaId The id of the schema
+     * @param namespaceId The id of the schema
      * @param ownerId The if of the owner
      * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
@@ -415,13 +419,13 @@ public abstract class Catalog {
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
+    public abstract long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
 
     /**
      * Adds a materialized view to a specified schema.
      *
      * @param name of the view to add
-     * @param schemaId id of the schema
+     * @param namespaceId id of the schema
      * @param ownerId id of the owner
      * @param entityType type of table
      * @param modifiable Whether the content of the table can be modified
@@ -435,16 +439,16 @@ public abstract class Catalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    public abstract long addMaterializedView( String name, long schemaId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
+    public abstract long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
-     * @param schemaId The id of the schema
-     * @param tableName The name to check for
+     * @param namespaceId The id of the schema
+     * @param entityName The name to check for
      * @return true if there is a table with this name, false if not.
      */
-    public abstract boolean checkIfExistsTable( long schemaId, String tableName );
+    public abstract boolean checkIfExistsEntity( long namespaceId, String entityName );
 
     /**
      * Checks if there is a table with the specified id.
@@ -452,7 +456,7 @@ public abstract class Catalog {
      * @param tableId id of the table
      * @return true if there is a table with this id, false if not.
      */
-    public abstract boolean checkIfExistsTable( long tableId );
+    public abstract boolean checkIfExistsEntity( long tableId );
 
     /**
      * Renames a table

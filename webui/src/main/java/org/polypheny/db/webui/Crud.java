@@ -125,8 +125,8 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -375,8 +375,8 @@ public class Crud implements InformationObserver {
             ctx.json( new ArrayList<>() );
         }
 
-        List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
-        for ( CatalogSchema schema : schemas ) {
+        List<CatalogNamespace> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
+        for ( CatalogNamespace schema : schemas ) {
             SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", schema.namespaceType == NamespaceType.RELATIONAL ? "cui-layers" : "cui-folder" );
 
             if ( request.depth > 1 ) {
@@ -4010,7 +4010,7 @@ public class Crud implements InformationObserver {
         ctx.json( catalog
                 .getSchemas( 1, null )
                 .stream()
-                .collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getNamespaceType ) ) );
+                .collect( Collectors.toMap( CatalogNamespace::getName, CatalogNamespace::getNamespaceType ) ) );
     }
 
 

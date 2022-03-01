@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.ddl;
 
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -537,7 +538,7 @@ public abstract class DdlManager {
     public abstract void dropFunction();
 
     /**
-     * Set a option
+     * Set an option
      */
     public abstract void setOption();
 
@@ -545,6 +546,11 @@ public abstract class DdlManager {
      * Refresh data in a Materialized View
      */
     public abstract void refreshView( Statement statement, Long materializedId );
+
+
+    public abstract void addGraphLabels( int namespaceId, Collection<String> nodeLabels, Collection<String> relLabels );
+
+    public abstract long createGraph( int databaseId, boolean ifExists, boolean replace );
 
 
     /**

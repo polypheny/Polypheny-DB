@@ -346,7 +346,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
 
         List<Integer> ids = new ArrayList<>();
-        if ( catalog.checkIfExistsTable( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
+        if ( catalog.checkIfExistsEntity( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
             CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( materializedId );
             for ( int id : catalogMaterializedView.dataPlacements ) {
                 ids.add( id );

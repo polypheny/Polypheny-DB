@@ -45,8 +45,8 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -94,7 +94,7 @@ public class CatalogTest {
         assertEquals( databaseId, database.id );
 
         long schemaId = catalog.addNamespace( "test_schema", databaseId, userId, NamespaceType.RELATIONAL );
-        CatalogSchema schema = catalog.getNamespace( databaseId, "test_schema" );
+        CatalogNamespace schema = catalog.getNamespace( databaseId, "test_schema" );
         assertEquals( schemaId, schema.id );
 
         long tableId = catalog.addEntity( "test_table", schemaId, userId, EntityType.ENTITY, true );
