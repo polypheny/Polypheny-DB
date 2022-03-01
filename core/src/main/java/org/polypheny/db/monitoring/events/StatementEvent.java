@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyResult;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
@@ -60,13 +61,15 @@ public abstract class StatementEvent extends BaseEvent {
     protected String physicalQueryClass;
     protected final HashMap<Long, List<Object>> changedValues = new HashMap<>();
     protected Integer indexSize = null;
-    // Only used for ddl events
+    ///////////////////////////////
+    // Only used for ddl events //
     protected long tableId;
-    // Only used for ddl events
     protected long schemaId;
-    // Only used for ddl events
     protected long columnId;
-
+    /////////////////////////////
+    // Only used for workload analysis//
+    protected AlgNode algNode;
+    ///////////////////////////////////
 
     @Override
     public abstract <T extends MonitoringDataPoint> List<Class<T>> getMetrics();

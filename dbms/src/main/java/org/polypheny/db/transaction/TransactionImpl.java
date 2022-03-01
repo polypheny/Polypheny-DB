@@ -41,6 +41,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.GeneralEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.monitoring.events.WorkloadEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -167,6 +168,14 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                     StatementEvent eventData = statement.getMonitoringEvent();
                     eventData.setCommitted( true );
                     MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+
+                    StatementEvent workloadEvent = new WorkloadEvent();
+                    if(eventData.getAlgNode() != null){
+                        workloadEvent.setAlgNode( eventData.getAlgNode() );
+                        workloadEvent.setCommitted( true );
+                        workloadEvent.setExecutionTime( eventData.getExecutionTime() );
+                    }
+                    MonitoringServiceProvider.getInstance().monitorEvent( workloadEvent );
                 }else{
                     StatementEvent event = new GeneralEvent();
                     event.setCommitted(true);

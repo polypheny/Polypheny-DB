@@ -34,9 +34,10 @@ class MonitoringQueueImplTest {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
+        MonitoringRepository workloadRepo = Mockito.mock( MonitoringRepository.class );
 
         // act
-        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo, workloadRepo );
 
         // assert
         Assertions.assertNotNull( sut );
@@ -48,7 +49,8 @@ class MonitoringQueueImplTest {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
-        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
+        MonitoringRepository workloadRepo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo, workloadRepo );
         MonitoringEvent event = Mockito.mock( MonitoringEvent.class );
 
         // act
@@ -65,7 +67,8 @@ class MonitoringQueueImplTest {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
-        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
+        MonitoringRepository workloadRepo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo, workloadRepo );
         QueryEvent event = new QueryEvent();
 
         // act
@@ -83,7 +86,8 @@ class MonitoringQueueImplTest {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
-        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
+        MonitoringRepository workloadRepo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo, workloadRepo );
         long numberOfEvents = 100L;
 
         // act

@@ -14,35 +14,26 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.events;
+package org.polypheny.db.monitoring.workloadAnalysis.InformationObjects;
 
-import java.io.Serializable;
-import java.sql.Timestamp;
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
+import org.polypheny.db.util.Pair;
 
+public class JoinInformation {
 
-/**
- * Marker interface for the persistent metric type, which can be monitored.
- * A MonitoringEvent will be analyzed and create metric objects.
- */
-public interface MonitoringDataPoint extends Serializable {
+    private final List<Pair<Long, Long>> jointTableIds = new ArrayList<>();
+    private final List<Pair<Long, Long>> jointColumnIds = new ArrayList<>();
+    private int joinCount;
 
-    UUID id();
-
-    Timestamp timestamp();
-
-    DataPointType getDataPointType();
-
-    boolean isCommitted();
-
-    enum DataPointType {
-        DML,
-        DQL,
-        DDL,
-        QueryDataPointImpl,
-        QueryPostCostImpl,
-        GENERAL,
-        WORKLOAD
+    public JoinInformation(  ) {
+        this.joinCount = 0;
     }
+
+    public void updateJoinInformation(Long tableIdLeft, Long tableIdRight){
+        this.joinCount += 1;
+        this.jointTableIds.add( new Pair<>( tableIdLeft, tableIdRight ) );
+    }
+
 
 }

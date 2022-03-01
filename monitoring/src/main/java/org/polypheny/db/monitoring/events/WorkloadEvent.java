@@ -16,33 +16,22 @@
 
 package org.polypheny.db.monitoring.events;
 
-import java.io.Serializable;
-import java.sql.Timestamp;
-import java.util.UUID;
+import java.util.Arrays;
+import java.util.List;
+import org.polypheny.db.monitoring.events.analyzer.WorkloadEventAnalyzer;
+import org.polypheny.db.monitoring.events.metrics.WorkloadDataPoint;
+
+public class WorkloadEvent extends StatementEvent {
+
+    @Override
+    public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
+        return Arrays.asList( (Class<T>) WorkloadDataPoint.class );
+    }
 
 
-/**
- * Marker interface for the persistent metric type, which can be monitored.
- * A MonitoringEvent will be analyzed and create metric objects.
- */
-public interface MonitoringDataPoint extends Serializable {
-
-    UUID id();
-
-    Timestamp timestamp();
-
-    DataPointType getDataPointType();
-
-    boolean isCommitted();
-
-    enum DataPointType {
-        DML,
-        DQL,
-        DDL,
-        QueryDataPointImpl,
-        QueryPostCostImpl,
-        GENERAL,
-        WORKLOAD
+    @Override
+    public List<MonitoringDataPoint> analyze() {
+        return Arrays.asList( WorkloadEventAnalyzer.analyze( this ) );
     }
 
 }

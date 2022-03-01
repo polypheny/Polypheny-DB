@@ -40,10 +40,11 @@ class MonitoringQueueImplIntegrationTest {
         // Initialize mock repository
         TestMapDbRepository persistentRepo = new TestMapDbRepository();
         TestMapDbRepository statisticRepo = new TestMapDbRepository();
+        TestMapDbRepository workloadRepo = new TestMapDbRepository();
         persistentRepo.initialize( true ); // will delete the file
 
         // Create monitoring service with dependencies
-        MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo );
+        MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo, workloadRepo );
 
         // Initialize the monitoringService
         MonitoringService sut = new MonitoringServiceImpl( queueWriteService, persistentRepo );

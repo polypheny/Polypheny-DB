@@ -19,6 +19,7 @@ package org.polypheny.db.monitoring.core;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.monitoring.statistics.StatisticRepository;
+import org.polypheny.db.monitoring.workloadAnalysis.WorkloadRepository;
 
 
 @Slf4j
@@ -28,12 +29,13 @@ public class MonitoringServiceFactory {
         // Create mapDB repository
         MapDbRepository persistentRepo = new MapDbRepository();
         StatisticRepository statisticRepo = new StatisticRepository();
+        WorkloadRepository workloadRepo = new WorkloadRepository();
 
         // Initialize the mapDB repo and open connection
         persistentRepo.initialize( resetRepository );
 
         // Create monitoring service with dependencies
-        MonitoringQueue queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo );
+        MonitoringQueue queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo, workloadRepo );
 
         // Initialize the monitoringService
         MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, persistentRepo );

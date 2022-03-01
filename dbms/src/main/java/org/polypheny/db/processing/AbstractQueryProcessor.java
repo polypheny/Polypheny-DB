@@ -1359,10 +1359,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             } else if ( logicalRoot.kind.belongsTo( Kind.QUERY ) ) {
                 event = new QueryEvent();
             } else {
-                log.error( "No corresponding monitoring event class found" );
+                log.warn( "No corresponding monitoring event class found" );
                 event = new QueryEvent();
             }
 
+            event.setAlgNode( logicalRoot.alg );
             event.setAnalyze( isAnalyze );
             event.setSubQuery( isSubquery );
             event.setLogicalQueryInformation( queryInformation );

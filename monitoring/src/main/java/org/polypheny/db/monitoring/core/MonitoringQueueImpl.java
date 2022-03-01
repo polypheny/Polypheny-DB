@@ -29,6 +29,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
@@ -43,6 +44,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     private final PersistentMonitoringRepository persistentRepository;
     private final MonitoringRepository statisticRepository;
+    private final MonitoringRepository workloadRepository;
     private ThreadPoolExecutor threadPoolWorkers;
 
     private final BlockingQueue eventQueue;
@@ -62,9 +64,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public MonitoringQueueImpl(
             boolean backgroundProcessingActive,
             @NonNull PersistentMonitoringRepository persistentRepository,
-            @NonNull MonitoringRepository statisticRepository ) {
+            @NonNull MonitoringRepository statisticRepository,
+            @NonNull MonitoringRepository workloadRepository ) {
         this.persistentRepository = persistentRepository;
         this.statisticRepository = statisticRepository;
+        this.workloadRepository = workloadRepository;
         this.eventQueue = new LinkedBlockingQueue();
         this.backgroundProcessingActive = backgroundProcessingActive;
 
@@ -87,8 +91,9 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      */
     public MonitoringQueueImpl(
             @NonNull PersistentMonitoringRepository persistentRepository,
-            @NonNull MonitoringRepository statisticRepository ) {
-        this( true, persistentRepository, statisticRepository );
+            @NonNull MonitoringRepository statisticRepository,
+            @NonNull MonitoringRepository workloadRepository ) {
+        this( true, persistentRepository, statisticRepository, workloadRepository );
     }
 
 
@@ -169,10 +174,15 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 if ( !dataPoints.isEmpty() ) {
                     // Sends all extracted metrics to subscribers
                     for ( MonitoringDataPoint dataPoint : dataPoints ) {
-                        persistentRepository.dataPoint( dataPoint );
-                        // Statistics are only collected if Active Tracking is switched on
-                        if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-                            statisticRepository.dataPoint( dataPoint );
+                        if(dataPoint.getDataPointType().equals( DataPointType.WORKLOAD )){
+                            //to analyze the workload
+                            workloadRepository.dataPoint( dataPoint );
+                        }else{
+                            persistentRepository.dataPoint( dataPoint );
+                            // Statistics are only collected if Active Tracking is switched on
+                            if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
+                                statisticRepository.dataPoint( dataPoint );
+                            }
                         }
                     }
                 }

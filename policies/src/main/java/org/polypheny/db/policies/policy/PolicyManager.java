@@ -165,7 +165,6 @@ public class PolicyManager {
         return policies;
     }
 
-
     /**
      * Checks all the registered clauses for a specific target and returns it.
      */
@@ -406,7 +405,6 @@ public class PolicyManager {
                 default:
                     log.warn( "target is not specified in checkStoreclause" );
             }
-
         }
         return true;
     }
