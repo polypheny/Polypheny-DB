@@ -183,32 +183,36 @@ public class Condition {
      * @return
      */
     private static boolean like( final String str, String expr ) {
+        // no wildcards ，return directly
+        if( !expr.contains( "%" ) && !expr.contains( "_" )){
+            return str.matches( expr );
+        }
         final String[] parts = expr.split( "%" );
         final boolean traillingOp = expr.endsWith( "%" );
-        expr = "";
-        for ( int i = 0, l = parts.length; i < l; ++i ) {
+        StringBuffer exprBuffer = new StringBuffer("");
+        for ( int i = 0 ; i < parts.length; ++i ) {
             final String[] p = parts[i].split( "\\\\\\?" );
             if ( p.length > 1 ) {
-                for ( int y = 0, l2 = p.length; y < l2; ++y ) {
-                    expr += p[y];
-                    if ( i + 1 < l2 ) {
-                        expr += ".";
+                for ( int y = 0 ; y < p.length; ++y ) {
+                    exprBuffer.append( p[y] );
+                    if ( i + 1 < p.length ) {
+                        exprBuffer.append( "." );
                     }
                 }
             } else {
-                expr += parts[i];
+                exprBuffer.append( parts[i] );
             }
-            if ( i + 1 < l ) {
-                expr += "%";
+            if ( i + 1 < parts.length ) {
+                exprBuffer.append( "%" );
             }
         }
         if ( traillingOp ) {
-            expr += "%";
+            exprBuffer.append( "%" );
         }
-        expr = expr.replace( "_", "." );
-        expr = expr.replace( "%", ".*" );
-
-        return str.matches( expr );
+        String exprMatch = exprBuffer.toString();
+        exprMatch = exprMatch.replace( "_", "." );
+        exprMatch = exprMatch.replace( "%", ".*" );
+        return str.matches( exprMatch );
     }
 
     public boolean matches( final Object[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
