@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.information;
 
-
 import lombok.NoArgsConstructor;
 
 
@@ -26,8 +25,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InformationResponse {
 
-    String errorMsg;
-    String successMsg;
+    @SuppressWarnings("FieldCanBeLocal")
+    private String errorMsg;
+    @SuppressWarnings("FieldCanBeLocal")
+    private String successMsg;
 
 
     public InformationResponse message( final String message ) {
@@ -40,4 +41,5 @@ public class InformationResponse {
         this.errorMsg = error;
         return this;
     }
+
 }

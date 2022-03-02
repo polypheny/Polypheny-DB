@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
@@ -22,11 +21,11 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -36,8 +35,6 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
 
 
 @Slf4j
@@ -50,10 +47,10 @@ import org.reflections.scanners.ResourcesScanner;
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class CsvSource extends DataSource {
 
-
     private URL csvDir;
     private CsvSchema currentSchema;
     private final int maxStringLength;
+    private Map<String, List<ExportedColumn>> exportedColumnCache;
 
 
     public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -66,7 +63,7 @@ public class CsvSource extends DataSource {
         }
 
         setCsvDir( settings );
-        registerInformationPage( uniqueName );
+        addInformationExportedColumns();
         enableInformationPage();
     }
 
@@ -111,15 +108,18 @@ public class CsvSource extends DataSource {
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        Map<String, List<ExportedColumn>> map = new HashMap<>();
+        if ( exportedColumnCache != null ) {
+            return exportedColumnCache;
+        }
+        Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
-            Reflections reflections = new Reflections( "hr", new ResourcesScanner() );
-            Set<String> fileNamesSet = reflections.getResources( Pattern.compile( ".*\\.(csv|csv\\.gz)$" ) );
+            List<CatalogColumnPlacement> ccps = Catalog
+                    .getInstance()
+                    .getColumnPlacementsOnAdapter( getAdapterId() );
             fileNames = new HashSet<>();
-            for ( String fileName : fileNamesSet ) {
-                String[] fileNameSplit = fileName.split( "/" );
-                fileNames.add( fileNameSplit[fileNameSplit.length - 1] );
+            for ( CatalogColumnPlacement ccp : ccps ) {
+                fileNames.add( ccp.physicalSchemaName );
             }
         } else {
             File[] files = Sources.of( csvDir )
@@ -214,9 +214,9 @@ public class CsvSource extends DataSource {
                 throw new RuntimeException( e );
             }
 
-            map.put( physicalTableName, list );
+            exportedColumnCache.put( physicalTableName, list );
         }
-        return map;
+        return exportedColumnCache;
     }
 
 
@@ -253,13 +253,10 @@ public class CsvSource extends DataSource {
     }
 
 
-    protected void registerInformationPage( String uniqueName ) {
-        InformationManager im = InformationManager.getInstance();
-        /*informationPage = new InformationPage( uniqueName, "CSV Data Source" ).setLabel( "Sources" );
-        im.addPage( informationPage );*/
-
+    private void addInformationExportedColumns() {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
             InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
+            informationGroups.add( group );
 
             InformationTable table = new InformationTable(
                     group,
@@ -275,7 +272,6 @@ public class CsvSource extends DataSource {
                 );
             }
             informationElements.add( table );
-            informationGroups.add( group );
         }
     }
 

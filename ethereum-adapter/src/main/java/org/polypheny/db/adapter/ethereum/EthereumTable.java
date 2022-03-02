@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,13 +50,15 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
             List<EthereumFieldType> fieldTypes,
             int[] fields,
             EthereumMapper mapper,
-            EthereumDataSource ethereumDataSource ) {
+            EthereumDataSource ethereumDataSource,
+            Long tableId ) {
         this.clientUrl = clientUrl;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.ethereumDataSource = ethereumDataSource;
         this.mapper = mapper;
+        this.tableId = tableId;
     }
 
 

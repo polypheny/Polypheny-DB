@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.events.analyzer;
 
 
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -31,17 +32,25 @@ public class DmlEventAnalyzer {
         DmlDataPoint metric = DmlDataPoint
                 .builder()
                 .Id( dmlEvent.getId() )
+                .tables( dmlEvent.getLogicalQueryInformation().getTables() )
                 .fieldNames( dmlEvent.getFieldNames() )
                 .executionTime( dmlEvent.getExecutionTime() )
                 .rowCount( dmlEvent.getRowCount() )
                 .isSubQuery( dmlEvent.isSubQuery() )
+                .isCommitted( dmlEvent.isCommitted() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
-                .accessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
                 .queryClass( dmlEvent.getLogicalQueryInformation().getQueryClass() )
-                .monitoringType( "DML" )
+                .monitoringType( dmlEvent.getMonitoringType() )
                 .physicalQueryClass( dmlEvent.getPhysicalQueryClass() )
+                .availableColumnsWithTable( dmlEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
+                .changedValues( dmlEvent.getChangedValues() )
                 .build();
-        metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );
+
+        if ( dmlEvent.getAccessedPartitions() != null ) {
+            metric.setAccessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) );
+        } else {
+            metric.setAccessedPartitions( Collections.emptyList() );
+        }
 
         return metric;
     }

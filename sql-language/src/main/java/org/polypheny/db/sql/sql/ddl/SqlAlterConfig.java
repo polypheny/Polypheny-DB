@@ -96,8 +96,10 @@ public class SqlAlterConfig extends SqlAlter {
             valueStr = StringUtils.chop( valueStr );
         }
         Config config = ConfigManager.getInstance().getConfig( keyStr );
+        if ( config == null ) {
+            throw new RuntimeException( "Unknown config key: " + keyStr );
+        }
         config.parseStringAndSetValue( valueStr );
     }
 
 }
-

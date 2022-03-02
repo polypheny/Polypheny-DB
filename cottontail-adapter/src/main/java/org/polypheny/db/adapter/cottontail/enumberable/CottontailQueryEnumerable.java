@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,10 +158,10 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
                     return Linq4JFixer.getDecimalData( data );
                 case DATE:
                     return Linq4JFixer.getDateData( data );
-                case TIMESTAMP:
-                    return Linq4JFixer.getTimestampData( data );
                 case TIME:
                     return Linq4JFixer.getTimeData( data );
+                case TIMESTAMP:
+                    return Linq4JFixer.getTimestampData( data );
                 case BINARY:
                 case VARBINARY:
                     return Linq4JFixer.getBinaryData( data );

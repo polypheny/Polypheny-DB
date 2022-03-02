@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.webui;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import org.junit.Assert;
@@ -59,9 +58,10 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
                 "hans",
                 TableType.TABLE,
                 23L,
-                ImmutableMap.of(),
+                ImmutableList.of(),
                 true,
-                PartitionProperty.builder().build() );
+                PartitionProperty.builder().build(),
+                ImmutableList.of() );
         Catalog catalog = Catalog.getInstance();
         Arrays.asList(
                 new CatalogColumn( 5, "sid", 4, 1, 1, 1, PolyType.INTEGER, null, null, null, null, null, false, null, null ),

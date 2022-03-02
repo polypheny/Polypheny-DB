@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -50,7 +51,6 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -161,9 +161,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 adapter.commit( xid );
             }
 
-            if ( changedTables.size() > 0 ) {
-                StatisticsManager.getInstance().apply( changedTables );
-            }
+            this.statements.forEach( statement -> {
+                if ( statement.getMonitoringEvent() != null ) {
+                    StatementEvent eventData = statement.getMonitoringEvent();
+                    eventData.setCommitted( true );
+                    MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+                }
+            } );
 
             IndexManager.getInstance().commit( this.xid );
         } else {
@@ -198,7 +202,14 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             IndexManager.getInstance().rollback( this.xid );
             Catalog.getInstance().rollback();
             // Free resources hold by statements
-            statements.forEach( Statement::close );
+            statements.forEach( statement -> {
+                if ( statement.getMonitoringEvent() != null ) {
+                    StatementEvent eventData = statement.getMonitoringEvent();
+                    eventData.setCommitted( false );
+                    MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+                }
+                statement.close();
+            } );
         } finally {
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );

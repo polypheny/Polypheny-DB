@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,6 +186,7 @@ public class InformationManager {
         for ( InformationGroup g : groups ) {
             if ( this.groups.containsKey( g.getId() ) ) {
                 this.groups.remove( g.getId() );
+                getPage( g.getPageId() ).removeGroup( g );
             } else {
                 log.warn( "Trying to remove a information group which is not registered in this information manager." );
             }
@@ -212,7 +213,8 @@ public class InformationManager {
      */
     public void removeInformation( final Information... infos ) {
         for ( Information i : infos ) {
-            this.informationMap.remove( i.getId(), i );
+            this.informationMap.remove( i.getId() );
+            getGroup( i.getGroup() ).removeInformation( i );
         }
     }
 
@@ -301,8 +303,9 @@ public class InformationManager {
      * Send an updated information object as JSON via Websocket to the WebUI
      */
     public void notify( final Information i ) {
+        String info = i.asJson();
         for ( InformationObserver observer : this.observers ) {
-            observer.observeInfos( i, instanceId, session );
+            observer.observeInfos( info, instanceId, session );
         }
     }
 
@@ -312,6 +315,5 @@ public class InformationManager {
             observer.observePageList( this.pages.values().toArray( new InformationPage[0] ), instanceId, session );
         }
     }
-
 
 }

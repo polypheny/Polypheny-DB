@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,13 +217,19 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/exploration", crud::exploration );
 
-        webuiServer.post( "/allStatistics", ( ctx ) -> crud.getStatistics( ctx, gsonExpose ) );
+        webuiServer.post( "/allStatistics", ( ctx ) -> crud.statisticCrud.getStatistics( ctx, gsonExpose ) );
+
+        webuiServer.post( "/getTableStatistics", crud.statisticCrud::getTableStatistics );
+
+        webuiServer.post( "/getDashboardInformation", crud.statisticCrud::getDashboardInformation );
+
+        webuiServer.post( "/getDashboardDiagram", crud.statisticCrud::getDashboardDiagram );
 
         webuiServer.post( "/getColumns", crud::getColumns );
 
         webuiServer.post( "/getDataSourceColumns", crud::getDataSourceColumns );
 
-        webuiServer.post( "/getExportedColumns", crud::getExportedColumns );
+        webuiServer.post( "/getAvailableSourceColumns", crud::getAvailableSourceColumns );
 
         webuiServer.post( "/updateColumn", crud::updateColumn );
 
@@ -368,8 +374,6 @@ public class HttpServer implements Runnable {
     /**
      * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
      * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
-     *
-     * @param webuiServer
      */
     private static void enableCORS( Javalin webuiServer ) {
         //staticFiles.header("Access-Control-Allow-Origin", "*");

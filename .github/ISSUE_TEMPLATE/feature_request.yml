@@ -1,0 +1,56 @@
+name: 🚀 Feature Request
+description: Suggest an idea for this project
+labels: [ "C-enhancement" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check if there is already a ticket for this feature requests, and use the [reaction feature](https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) to up-vote the existing request.
+        
+        ---
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Areas
+      description: Which areas of the project are affected
+      multiple: true
+      options:
+        - DB
+        - UI
+        - Control
+        - Client
+        - Website
+        - JDBC
+        - Python
+        - Something else (please specify in the description!)
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value:
+        ---
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: A written overview of the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Case(s)
+      description: Any relevant use-cases that you see.
+    validations:
+      required: true
+  - type: textarea
+    id: possible-solutions
+    attributes:
+      label: Possible solutions
+      description: A clear and concise description of what you want to happen.
+  - type: textarea
+    id: possible-alts
+    attributes:
+      label: Possible alternatives
+      description: A clear and concise description of any alternative solutions or features you've considered.
+      

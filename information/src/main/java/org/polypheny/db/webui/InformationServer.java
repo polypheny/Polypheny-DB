@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,12 @@ package org.polypheny.db.webui;
 
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.plugin.json.JsonMapper;
@@ -27,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService;
-import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -41,7 +46,44 @@ import org.polypheny.db.information.InformationResponse;
 @Slf4j
 public class InformationServer implements InformationObserver {
 
-    private final Gson gson = new Gson();
+    private static final Gson gson;
+    public static final TypeAdapterFactory throwableTypeAdapterFactory;
+    public static final TypeAdapter<Throwable> throwableTypeAdapter;
+
+
+    static {
+        // Adapter factory, which handles generic throwables
+        throwableTypeAdapterFactory = new TypeAdapterFactory() {
+            @Override
+            public <T> TypeAdapter<T> create( Gson gson, TypeToken<T> type ) {
+                if ( !Throwable.class.isAssignableFrom( type.getRawType() ) ) {
+                    return null;
+                }
+                //noinspection unchecked
+                return (TypeAdapter<T>) throwableTypeAdapter;
+            }
+        };
+        throwableTypeAdapter = new TypeAdapter<Throwable>() {
+            @Override
+            public void write( JsonWriter out, Throwable value ) throws IOException {
+                if ( value == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginObject();
+                out.name( "message" );
+                out.value( value.getMessage() );
+                out.endObject();
+            }
+
+
+            @Override
+            public Throwable read( JsonReader in ) throws IOException {
+                return new Throwable( in.nextString() );
+            }
+        };
+        gson = new GsonBuilder().registerTypeAdapterFactory( throwableTypeAdapterFactory ).create();
+    }
 
 
     public InformationServer( final int port ) {
@@ -66,8 +108,6 @@ public class InformationServer implements InformationObserver {
 
         // Needs to be called before defining routes!
         webSockets( http );
-
-        //enableCORS( http );
 
         informationRoutes( http );
 
@@ -98,7 +138,7 @@ public class InformationServer implements InformationObserver {
                 }
                 ctx.result( page.asJson() );
             } catch ( Exception e ) {
-                // if input not number or page does not exist
+                // If input not number or page does not exist
                 log.error( "Caught exception!", e );
                 ctx.result( "" );
             }
@@ -117,7 +157,7 @@ public class InformationServer implements InformationObserver {
         } );
 
         http.post( "/refreshPage", ctx -> {
-            //refresh not necessary, since getPage already triggers a refresh
+            // Refresh not necessary, since getPage already triggers a refresh
             try {
                 im.getPage( ctx.body() );
             } catch ( Exception e ) {
@@ -136,7 +176,6 @@ public class InformationServer implements InformationObserver {
         } );
 
         http.get( "/getEnabledPlugins", this::getEnabledPlugins );
-
     }
 
 
@@ -149,9 +188,9 @@ public class InformationServer implements InformationObserver {
      * Observe Changes in Information Objects of the Information Manager
      */
     @Override
-    public void observeInfos( final Information info, final String informationManagerId, final Session session ) {
+    public void observeInfos( final String info, final String informationManagerId, final Session session ) {
         try {
-            InformationWebSocket.broadcast( info.asJson() );
+            InformationWebSocket.broadcast( info );
         } catch ( IOException e ) {
             log.info( "Error while sending information object to web ui!", e );
         }

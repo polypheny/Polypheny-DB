@@ -1,20 +1,29 @@
 import java.text.SimpleDateFormat
 
-group "org.polypheny"
-
-
-version = versionMajor + "." + versionMinor + versionQualifier
-
-
 buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+    }
     dependencies {
-        // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
-        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: shadow_plugin_version
+        classpath group: "app.cash.licensee", name: "licensee-gradle-plugin", version: licensee_version
+        classpath group: "com.jaredsburrows", name: "gradle-license-plugin", version: license_report_version
     }
 }
 
+plugins {
+    id "application"
+    id "com.github.johnrengelman.shadow" version "$shadow_plugin_version"
+}
 
-apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: "app.cash.licensee"
+apply plugin: "com.jaredsburrows.license"
+
+group "org.polypheny"
+
+version = versionMajor + "." + versionMinor + versionQualifier
 
 
 dependencies {
@@ -32,7 +41,7 @@ dependencies {
     implementation project(":mongodb-adapter")
     implementation project(":catalog")
     implementation project(":webui")
-    implementation project(":jdbc-interface")
+    implementation project(":avatica-interface")
     implementation project(":http-interface")
     implementation project(":rest-interface")
     implementation project(":statistic")
@@ -53,7 +62,7 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":sql-language", configuration: "tests")
-    testImplementation project(path: ":jdbc-interface", configuration: "tests")
+    testImplementation project(path: ":avatica-interface", configuration: "tests")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
@@ -99,6 +108,113 @@ sourceSets {
     }
 }
 
+licenseReport {
+    generateCsvReport = true
+    generateHtmlReport = true
+    generateJsonReport = true
+}
+
+
+licensee {
+    //
+    // Ignore these dependencies, remove on release branches!
+    // START
+    ignoreDependencies('nz.ac.waikato.cms.weka') {
+        transitive = true
+        because "removed on release branches"
+    }
+    ignoreDependencies('com.datastax.oss') {
+        transitive = true
+        because "removed on release branches"
+    }
+    ignoreDependencies('com.github.nosan') {
+        transitive = true
+        because "removed on release branches"
+    }
+    ignoreDependencies('org.mariadb.jdbc') {
+        transitive = true
+        because "removed on release branches"
+    }
+    ignoreDependencies('org.apache.cassandra') {
+        transitive = true
+        because "removed on release branches"
+    }
+    allowDependency('com.github.jnr', 'jnr-posix', '3.0.50') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-analysis', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-commons', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-tree', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-util', '7.1') { because 'removed on release branches' }
+    // END
+
+    allow('Apache-2.0')
+    allow('MIT')
+    allow('BSD-2-Clause')
+    allow('BSD-3-Clause')
+    allow('CC0-1.0')
+    allowUrl('http://opensource.org/licenses/BSD-3-Clause')
+    allowUrl('http://www.wtfpl.net/')
+    allowUrl('https://creativecommons.org/publicdomain/zero/1.0/')
+    allowUrl('http://www.opensource.org/licenses/bsd-license.php') // BSD 2-Clause
+    allowUrl('https://www.eclipse.org/licenses/edl-v10.html') // EDL 1.0
+    allowUrl('http://www.eclipse.org/org/documents/edl-v10.php') // EDL 1.0
+
+    allowDependency('com.j256.simplemagic', 'simplemagic', '1.16') { because 'ISC license' }
+    allowDependency('com.adobe.xmp', 'xmpcore', '6.0.6') { because 'BSD 3-Clause' }
+    allowDependency('org.bouncycastle', 'bcpkix-jdk15on', '1.67') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.67') { because 'MIT license' }
+    allowDependency('org.vitrivr', 'cottontaildb', '0.13.3') { because 'MIT license' }
+    allowDependency('org.vitrivr', 'cottontaildb-proto', '0.13.0') { because 'MIT license' }
+    allowDependency('org.javassist', 'javassist', '3.28.0-GA') { because 'Apache 2.0 license' }
+    allowDependency('org.awaitility', 'awaitility', '4.0.1') { because 'Apache 2.0 license' }
+    allowDependency('net.java.dev.jna', 'jna', '5.9.0') { because 'Apache 2.0 license' }
+    allowDependency('net.java.dev.jna', 'jna-platform', '5.8.0') { because 'Apache 2.0 license' }
+    allowDependency('jakarta.xml.bind', 'jakarta.xml.bind-api', '2.3.2') { because 'Eclipse Distribution License 1.0' }
+    allowDependency('org.postgresql', 'postgresql', '42.2.19') { because 'BSD 2-Clause' }
+    allowDependency('org.ow2.asm', 'asm', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-analysis', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-commons', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-tree', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-util', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.codehaus.janino', 'janino', '3.0.11') { because 'BSD 3-Clause' }
+    allowDependency('org.codehaus.janino', 'commons-compiler', '3.0.11') { because 'BSD 3-Clause' }
+    allowDependency('com.google.re2j', 're2j', '1.5') { because 'BSD 3-Clause' }
+    allowDependency('org.java-websocket', 'Java-WebSocket', '1.3.8') { because 'MIT license' }
+    allowDependency('org.hsqldb', 'hsqldb', '2.6.1') { because 'BSD 3-Clause' }
+
+
+    // Category B
+    allow('EPL-1.0')
+    allow('MPL-1.1')
+    allow('MPL-2.0')
+    allowUrl('http://www.eclipse.org/legal/epl-2.0') // EPL 2.0
+    allowUrl('https://www.eclipse.org/legal/epl-2.0/') // EPL 2.0
+    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
+    allowUrl('https://www.eclipse.org/legal/epl-v20.html') // EPL 2.0
+    allowUrl('https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.txt') // EPL 2.0
+
+    allowDependency('jakarta.annotation', 'jakarta.annotation-api', '1.3.5') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('jakarta.ws.rs', 'jakarta.ws.rs-api', '2.1.6') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('com.github.jnr', 'jnr-posix', '3.0.47') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('jakarta.activation', 'jakarta.activation-api', '1.2.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('javax.annotation', 'javax.annotation-api', '1.3.2') { because 'CDDL license' }
+    allowDependency('javax.servlet', 'javax.servlet-api', '4.0.1') {
+        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
+    }
+
+    // Glassfish
+    allowDependency('org.glassfish.jersey.core', 'jersey-common', '2.30.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.jersey.core', 'jersey-client', '2.30.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.jersey.inject', 'jersey-hk2', '2.30.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.jersey.connectors', 'jersey-apache-connector', '2.30.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.hk2.external', 'jakarta.inject', '2.6.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.hk2.external', 'aopalliance-repackaged', '2.6.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.hk2', 'osgi-resource-locator', '1.0.3') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.hk2', 'hk2-api', '2.6.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.hk2', 'hk2-locator', '2.6.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish.hk2', 'hk2-utils', '2.6.1') { because 'Eclipse Public License v. 2.0' }
+}
+
 
 /**
  * JARs
@@ -111,6 +227,12 @@ jar {
         attributes "Implementation-Version": project.version
         attributes "Build-Date": "${buildTime()}"
         attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
+    }
+    metaInf {
+        from(rootProject.rootDir, {
+            include "LICENSE"
+            include "NOTICE"
+        })
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -133,8 +255,21 @@ assemble.dependsOn shadowJar
 artifacts {
     //archives jar // regular jar containing only the compiled source
     archives shadowJar // fat jar which additionally contains all dependencies
-    archives sourcesJar // jar file containing the java doc files
-    archives javadocJar // jar file containing the source files
+    //archives sourcesJar // jar file containing the java doc files
+    //archives javadocJar // jar file containing the source files
+}
+
+
+/**
+ * Release
+ */
+application {
+    mainClassName = 'org.polypheny.db.PolyphenyDb'
+    applicationName = 'Polypheny-DB'
+    //applicationDefaultJvmArgs = ["-Dlog4j.configuration=config/log4j.properties"]
+}
+startScripts {
+    defaultJvmOpts += ['-Xmx6g', '-XX:+HeapDumpOnOutOfMemoryError', '-Dfile.encoding=UTF-8']
 }
 
 static def buildTime() {

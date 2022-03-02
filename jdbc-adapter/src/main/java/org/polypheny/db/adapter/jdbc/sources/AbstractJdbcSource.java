@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.dialect.MysqlSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
@@ -63,7 +62,7 @@ public abstract class AbstractJdbcSource extends DataSource {
             SqlDialect dialect,
             boolean readOnly ) {
         super( storeId, uniqueName, settings, readOnly );
-        this.connectionFactory = createConnectionFactory( settings, MysqlSqlDialect.DEFAULT, diverClass );
+        this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerInformationPage();
@@ -121,8 +120,8 @@ public abstract class AbstractJdbcSource extends DataSource {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        String physicalTableName = Catalog.getInstance().getPartitionPlacementByTable( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getPartitionPlacementByTable( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        String physicalTableName = Catalog.getInstance().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )

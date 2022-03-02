@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -315,7 +315,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
-        for ( int id : materializedView.placementsByAdapter.keySet() ) {
+        for ( int id : materializedView.dataPlacements ) {
             Statement sourceStatement = transaction.createStatement();
             prepareSourceRel( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
@@ -348,15 +348,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         List<Integer> ids = new ArrayList<>();
         if ( catalog.checkIfExistsTable( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
             CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( materializedId );
-            for ( int id : catalogMaterializedView.placementsByAdapter.keySet() ) {
+            for ( int id : catalogMaterializedView.dataPlacements ) {
                 ids.add( id );
                 List<CatalogColumn> catalogColumns = new ArrayList<>();
-                if ( catalogMaterializedView.placementsByAdapter.containsKey( id ) ) {
-                    catalogMaterializedView.placementsByAdapter.get( id ).forEach( col ->
-                            catalogColumns.add( catalog.getColumn( col ) )
-                    );
-                    columns.put( id, catalogColumns );
-                }
+
+                int localAdapterIndex = catalogMaterializedView.dataPlacements.indexOf( id );
+                catalog.getDataPlacement( catalogMaterializedView.dataPlacements.get( localAdapterIndex ), catalogMaterializedView.id )
+                        .columnPlacementsOnAdapter.forEach( col ->
+                                catalogColumns.add( catalog.getColumn( col ) )
+                        );
+                columns.put( id, catalogColumns );
             }
 
             AlgRoot targetRel;
