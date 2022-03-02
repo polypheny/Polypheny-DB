@@ -58,6 +58,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
 import org.polypheny.db.monitoring.statistics.StatisticsManagerImpl;
+import org.polypheny.db.monitoring.workloadAnalysis.WorkloadManager;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -344,6 +345,8 @@ public class PolyphenyDb {
 
         //start the policy manager
         PolicyManager.getInstance().initialize();
+
+        WorkloadManager.getInstance();
 
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();

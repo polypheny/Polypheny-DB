@@ -39,6 +39,7 @@ public class WorkloadDataPoint  implements MonitoringDataPoint, Serializable {
     private static final long serialVersionUID = 8919328919318396771L;
     private UUID Id;
     private Timestamp recordedTimestamp;
+    private long executionTime;
     protected boolean isCommitted;
     private String monitoringType;
     private AlgNode algNode;

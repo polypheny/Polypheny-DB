@@ -26,6 +26,7 @@ public class WorkloadEventAnalyzer {
                 .builder()
                 .Id( workloadEvent.getId() )
                 .recordedTimestamp( workloadEvent.getRecordedTimestamp() )
+                .executionTime( workloadEvent.getExecutionTime() )
                 .isCommitted( workloadEvent.isCommitted() )
                 .monitoringType( workloadEvent.getMonitoringType() )
                 .algNode( workloadEvent.getAlgNode() )

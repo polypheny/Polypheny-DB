@@ -223,6 +223,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getDashboardInformation", crud.statisticCrud::getDashboardInformation );
 
+        webuiServer.post( "/getWorkloadInformation", crud.workloadCrud::getWorkloadInformation );
+
         webuiServer.post( "/getDashboardDiagram", crud.statisticCrud::getDashboardDiagram );
 
         webuiServer.post( "/getClauses", crud.policyCrud::getClauses );

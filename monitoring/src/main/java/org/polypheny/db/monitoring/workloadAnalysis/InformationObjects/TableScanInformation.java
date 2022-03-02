@@ -18,7 +18,9 @@ package org.polypheny.db.monitoring.workloadAnalysis.InformationObjects;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
+@Getter
 public class TableScanInformation {
 
     private final List<Long> entityIds = new ArrayList<>();

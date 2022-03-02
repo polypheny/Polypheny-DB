@@ -61,7 +61,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalAggregate aggregate ) {
-        log.warn( "LogicalAggregate#" + aggregate.getAggCallList() );
+        //log.warn( "LogicalAggregate#" + aggregate.getAggCallList() );
 
         for ( AggregateCall test : aggregate.getAggCallList() ) {
             aggregateInformation.incrementAggregateInformation(
@@ -74,14 +74,14 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalMatch match ) {
-        log.warn( "LogicalMatch#" + match.getTable().getQualifiedName() );
+        //log.warn( "LogicalMatch#" + match.getTable().getQualifiedName() );
         return visitChild( match, 0, match.getInput() );
     }
 
 
     @Override
     public AlgNode visit( TableScan scan ) {
-        log.warn( "TableScan#" + scan.getTable().getQualifiedName() );
+        //log.warn( "TableScan#" + scan.getTable().getQualifiedName() );
         tableScanInformation.updateTableScanInfo( scan.getTable().getTable().getTableId() );
         return super.visit( scan );
     }
@@ -89,7 +89,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalFilter filter ) {
-        log.warn( "LogicalFilter" );
+        //log.warn( "LogicalFilter" );
         this.filterCount += 1;
         super.visit( filter );
         filter.accept( this.rexShuttle );
@@ -100,7 +100,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalProject project ) {
-        log.warn( "LogicalProject#" + project.getProjects().size() );
+        //log.warn( "LogicalProject#" + project.getProjects().size() );
         this.projectCount += 1;
         super.visit( project );
         project.accept( this.rexShuttle );
@@ -110,7 +110,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalCorrelate correlate ) {
-        log.warn( "LogicalCorrelate" );
+        //log.warn( "LogicalCorrelate" );
         return visitChildren( correlate );
     }
 
@@ -118,7 +118,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalJoin join ) {
         if ( join.getLeft() instanceof LogicalTableScan && join.getRight() instanceof LogicalTableScan ) {
-            log.warn( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
+            //log.warn( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
             joinInformation.updateJoinInformation(join.getLeft().getTable().getTable().getTableId(),join.getRight().getTable().getTable().getTableId() );
         }
 
@@ -130,7 +130,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalUnion union ) {
-        log.warn( "LogicalUnion" );
+        //log.warn( "LogicalUnion" );
         super.visit( union );
         union.accept( this.rexShuttle );
         return union;
@@ -139,7 +139,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalIntersect intersect ) {
-        log.warn( "LogicalIntersect" );
+        //log.warn( "LogicalIntersect" );
         super.visit( intersect );
         intersect.accept( this.rexShuttle );
         return intersect;
@@ -148,14 +148,14 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalMinus minus ) {
-        log.warn( "LogicalMinus" );
+        //log.warn( "LogicalMinus" );
         return visitChildren( minus );
     }
 
 
     @Override
     public AlgNode visit( LogicalSort sort ) {
-        log.warn( "LogicalSort" );
+        //log.warn( "LogicalSort" );
         this.sortCount += 1;
         return visitChildren( sort );
     }
@@ -163,14 +163,14 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalExchange exchange ) {
-        log.warn( "LogicalExchange#" + exchange.distribution.getType().shortName );
+        //log.warn( "LogicalExchange#" + exchange.distribution.getType().shortName );
         return visitChildren( exchange );
     }
 
 
     @Override
     public AlgNode visit( AlgNode other ) {
-        log.warn( "other#" + other.getClass().getSimpleName() );
+        //log.warn( "other#" + other.getClass().getSimpleName() );
         if ( other instanceof LogicalTableModify ) {
             // Add all columns to availableColumnsWithTable for statistics
             if ( (other.getTable().getTable() instanceof LogicalTable) ) {

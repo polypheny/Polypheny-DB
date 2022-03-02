@@ -183,6 +183,7 @@ import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.crud.PolicyCrud;
 import org.polypheny.db.webui.crud.StatisticCrud;
+import org.polypheny.db.webui.crud.WorkloadCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
@@ -240,6 +241,7 @@ public class Crud implements InformationObserver {
     public final PolicyCrud policyCrud;
     private boolean isActiveTracking = false;
     public final StatisticCrud statisticCrud;
+    public final WorkloadCrud workloadCrud;
     private final Catalog catalog = Catalog.getInstance();
 
 
@@ -255,6 +257,7 @@ public class Crud implements InformationObserver {
         this.languageCrud = new LanguageCrud( this );
         this.policyCrud = new PolicyCrud( this );
         this.statisticCrud = new StatisticCrud( this );
+        this.workloadCrud = new WorkloadCrud( this );
     }
 
 

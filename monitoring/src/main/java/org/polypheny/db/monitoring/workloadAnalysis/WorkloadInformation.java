@@ -17,36 +17,59 @@
 package org.polypheny.db.monitoring.workloadAnalysis;
 
 import java.sql.Timestamp;
+import lombok.Getter;
 import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.AggregateInformation;
 import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.JoinInformation;
 import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.TableScanInformation;
+import org.polypheny.db.util.Pair;
 
+@Getter
 public class WorkloadInformation {
 
-    private final Timestamp timestamp;
-    private final AggregateInformation aggregateInformation;
-    private final JoinInformation joinInformation;
-    private final TableScanInformation tableScanInformation;
-    private final int projectCount;
-    private final int sortCount;
-    private final int filterCount;
+    private long executionTime;
+    private AggregateInformation aggregateInformation;
+    private JoinInformation joinInformation;
+    private TableScanInformation tableScanInformation;
+    private int projectCount;
+    private int sortCount;
+    private int filterCount;
 
 
     public WorkloadInformation(
-            Timestamp timestamp,
+            long executionTime,
             AggregateInformation aggregateInformation,
             JoinInformation joinInformation,
             TableScanInformation tableScanInformation,
             int projectCount,
             int sortCount,
             int filterCount ) {
-        this.timestamp = timestamp;
+        this.executionTime = executionTime;
         this.aggregateInformation = aggregateInformation;
         this.joinInformation = joinInformation;
         this.tableScanInformation = tableScanInformation;
         this.projectCount = projectCount;
         this.sortCount = sortCount;
         this.filterCount = filterCount;
+    }
+
+
+    public WorkloadInformation updateInfo(
+            WorkloadInformation workloadInfo ) {
+        this.aggregateInformation.updateAggregateInformation( workloadInfo.getAggregateInformation() );
+
+        for ( Pair<Long, Long>tableId : workloadInfo.getJoinInformation().getJointTableIds()) {
+            this.joinInformation.updateJoinInformation( tableId.left, tableId.right );
+        }
+
+        for ( Long tableId : workloadInfo.getTableScanInformation().getEntityIds()) {
+            this.tableScanInformation.updateTableScanInfo( tableId );
+        }
+        this.projectCount += workloadInfo.getProjectCount();
+        this.sortCount += workloadInfo.getSortCount();
+        this.filterCount += workloadInfo.getFilterCount();
+        this.executionTime = (this.executionTime + workloadInfo.executionTime)/2;
+
+        return this;
     }
 
 }

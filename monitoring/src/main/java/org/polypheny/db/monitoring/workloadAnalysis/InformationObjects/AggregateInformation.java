@@ -16,12 +16,15 @@
 
 package org.polypheny.db.monitoring.workloadAnalysis.InformationObjects;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
 
 @Slf4j
+@Getter
 public class AggregateInformation {
 
+    private Kind kind;
     private int minCount = 0;
     private int maxCount = 0;
     private int sumCount = 0;
@@ -70,6 +73,15 @@ public class AggregateInformation {
                 log.warn("This kind of Aggregation is not implemented yet. (AggregateInformation)");
                 throw new RuntimeException("This kind of Aggregation is not implemented yet.");
         }
+    }
+
+    public void updateAggregateInformation(AggregateInformation aggregateInformation){
+        this.minCount = this.minCount + aggregateInformation.getMinCount();
+        this.maxCount = this.maxCount + aggregateInformation.getMaxCount();
+        this.sumCount = this.sumCount + aggregateInformation.getSumCount();
+        this.avgCount = this.avgCount + aggregateInformation.getAvgCount();
+        this.countCount = this.countCount + aggregateInformation.getCountCount();
+        this.overAllCount = maxCount + maxCount + sumCount + avgCount + countCount;
     }
 
 }

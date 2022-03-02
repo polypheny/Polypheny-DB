@@ -16,43 +16,41 @@
 
 package org.polypheny.db.monitoring.workloadAnalysis;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.sql.Timestamp;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.WorkloadDataPoint;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
-import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.AggregateInformation;
-import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.TableScanInformation;
 import org.polypheny.db.monitoring.workloadAnalysis.Shuttle.AlgNodeAnalyzeShuttle;
 
 
 @Slf4j
+@Getter
 public class WorkloadRepository implements MonitoringRepository {
-
-    public List<WorkloadTimeline> workloadTimelines = new ArrayList<>();
 
 
     @Override
     public void dataPoint( MonitoringDataPoint dataPoint ) {
-        log.warn( ((WorkloadDataPoint) dataPoint).getAlgNode().getAlgTypeName() );
         // Analyze logical query
         if ( ((WorkloadDataPoint) dataPoint).getAlgNode() != null && dataPoint.isCommitted() ) {
             AlgNodeAnalyzeShuttle analyzeRelShuttle = new AlgNodeAnalyzeShuttle();
             ((WorkloadDataPoint) dataPoint).getAlgNode().accept( analyzeRelShuttle );
 
-            workloadTimelines.add( new WorkloadTimeline( ((WorkloadDataPoint) dataPoint).getRecordedTimestamp(),
-                    Collections.singletonList( new WorkloadInformation(
-                            ((WorkloadDataPoint) dataPoint).getRecordedTimestamp(),
+            Timestamp timestamp = ((WorkloadDataPoint) dataPoint).getRecordedTimestamp();
+
+            WorkloadManager.getInstance().updateWorkloadTimeline(
+                    timestamp,
+                    new WorkloadInformation(
+                            ((WorkloadDataPoint) dataPoint).getExecutionTime(),
                             analyzeRelShuttle.getAggregateInformation(),
                             analyzeRelShuttle.getJoinInformation(),
                             analyzeRelShuttle.getTableScanInformation(),
                             analyzeRelShuttle.getProjectCount(),
                             analyzeRelShuttle.getSortCount(),
                             analyzeRelShuttle.getFilterCount()
+                    ) );
 
-                    ) ) ) );
         }
 
 

@@ -14,28 +14,27 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.workloadAnalysis.InformationObjects;
+package org.polypheny.db.webui.crud;
 
-import java.util.ArrayList;
-import java.util.List;
+import io.javalin.http.Context;
 import lombok.Getter;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.monitoring.workloadAnalysis.WorkloadManager;
+import org.polypheny.db.webui.Crud;
 
-@Getter
-public class JoinInformation {
+public class WorkloadCrud {
 
-    private final List<Pair<Long, Long>> jointTableIds = new ArrayList<>();
-    private final List<Pair<Long, Long>> jointColumnIds = new ArrayList<>();
-    private int joinCount;
+    @Getter
+    private static Crud crud;
 
-    public JoinInformation(  ) {
-        this.joinCount = 0;
+    private final WorkloadManager workloadManager = WorkloadManager.getInstance();
+
+    public WorkloadCrud(Crud crud){
+        WorkloadCrud.crud = crud;
     }
 
-    public void updateJoinInformation(Long tableIdLeft, Long tableIdRight){
-        this.joinCount += 1;
-        this.jointTableIds.add( new Pair<>( tableIdLeft, tableIdRight ) );
-    }
 
+    public void getWorkloadInformation( Context ctx){
+        ctx.json( workloadManager.getWorkloadInformation() );
+    }
 
 }
