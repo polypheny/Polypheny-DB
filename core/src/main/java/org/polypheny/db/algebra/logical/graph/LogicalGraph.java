@@ -14,28 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.cypher2alg;
+package org.polypheny.db.algebra.logical.graph;
 
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Getter;
-import lombok.Setter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.algebra.AlgNode;
 
 @Getter
-public class CypherQueryParameters extends QueryParameters {
+public class LogicalGraph implements RelationalTransformable {
 
-    List<String> nodeLabels = new ArrayList<>();
-    List<String> relationshipLabels = new ArrayList<>();
-    final String databaseName;
-    @Setter
-    Long databaseId;
+    private final long namespaceId;
 
 
-    public CypherQueryParameters( String query, NamespaceType namespaceType, String databaseName ) {
-        super( query, namespaceType );
-        this.databaseName = databaseName;
+    public LogicalGraph( long namespaceId ) {
+        this.namespaceId = namespaceId;
+    }
+
+
+    @Override
+    public AlgNode getRelationalEquivalent() {
+        return null;
     }
 
 }

@@ -17,7 +17,7 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class TableAlreadyExistsException extends CatalogException {
+public class EntityAlreadyExistsException extends CatalogException {
 
 }
 

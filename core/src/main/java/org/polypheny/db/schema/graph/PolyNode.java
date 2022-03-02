@@ -18,18 +18,18 @@ package org.polypheny.db.schema.graph;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.PolyCollections;
 
 @Getter
 public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode> {
 
 
-    public PolyNode( @NonNull PolyMap<String, Comparable<?>> properties ) {
+    public PolyNode( @NonNull PolyCollections.PolyDirectory properties ) {
         this( idBuilder.getAndIncrement(), properties );
     }
 
 
-    public PolyNode( long id, @NonNull PolyMap<String, Comparable<?>> properties ) {
+    public PolyNode( long id, @NonNull PolyCollections.PolyDirectory properties ) {
         super( id, GraphObjectType.NODE, properties );
     }
 

@@ -34,8 +34,8 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -153,7 +153,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         AlgRoot algRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate(
-                        statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
+                        statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, , null );
 
         List<String> columns = null;
 
@@ -200,7 +200,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
                     Catalog.QueryLanguage.SQL,
                     ifNotExists,
                     ordered );
-        } catch ( TableAlreadyExistsException e ) {
+        } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException | ColumnNotExistsException | ColumnAlreadyExistsException e ) {
             // we just added the table/column, so it has to exist, or we have an internal problem

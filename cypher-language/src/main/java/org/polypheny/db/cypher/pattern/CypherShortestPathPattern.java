@@ -32,4 +32,10 @@ public class CypherShortestPathPattern extends CypherPattern {
         this.all = all;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.SHORTEST_PATTERN;
+    }
+
 }

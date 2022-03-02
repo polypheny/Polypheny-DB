@@ -16,40 +16,43 @@
 
 package org.polypheny.db.schema.graph;
 
+import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.PolyCollections;
 
 @Getter
 public class PolyRelationship extends GraphPropertyHolder implements Comparable<PolyRelationship> {
 
     private final long leftId;
     private final long rightId;
+    private final ImmutableList<String> labels;
     private final RelationshipDirection direction;
 
 
-    public PolyRelationship( @NonNull PolyMap<String, Comparable<?>> properties, long leftId, long rightId, RelationshipDirection direction ) {
-        this( idBuilder.getAndIncrement(), properties, leftId, rightId, direction );
+    public PolyRelationship( @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
+        this( idBuilder.getAndIncrement(), properties, labels, leftId, rightId, direction );
     }
 
 
-    public PolyRelationship( long id, @NonNull PolyMap<String, Comparable<?>> properties, long leftId, long rightId, RelationshipDirection direction ) {
+    public PolyRelationship( long id, @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
         super( id, GraphObjectType.RELATIONSHIP, properties );
         this.leftId = leftId;
         this.rightId = rightId;
         this.direction = direction;
+        this.labels = labels;
     }
 
 
     @Override
-    public int compareTo( PolyRelationship o ) {
-        if ( leftId < rightId ) {
+    public int compareTo( PolyRelationship other ) {
+        if ( leftId < other.leftId || rightId < other.rightId ) {
             return -1;
         }
-        if ( leftId > rightId ) {
+        if ( leftId > other.rightId || rightId > other.rightId ) {
             return 1;
         }
-        return this.getProperties().compareTo( o.getProperties() );
+        return this.getProperties().compareTo( other.getProperties() );
     }
 
 

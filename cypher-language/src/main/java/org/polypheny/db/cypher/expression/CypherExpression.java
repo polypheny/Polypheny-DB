@@ -63,4 +63,11 @@ public class CypherExpression extends CypherNode {
         ALL, NONE, SINGLE, PATTERN, ANY, DEFAULT
     }
 
+
+    public <T extends Comparable<T>> T getComparable( Class<T> clazz ) {
+        T comp = null;
+
+        return (T) comp;
+    }
+
 }

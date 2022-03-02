@@ -46,4 +46,10 @@ public class CypherPeriodicCommit extends CypherQuery {
         visitor.visit( this );
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.PERIODIC_COMMIT;
+    }
+
 }

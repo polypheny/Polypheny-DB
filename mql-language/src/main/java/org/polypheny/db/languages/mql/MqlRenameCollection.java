@@ -21,7 +21,7 @@ import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
@@ -80,7 +80,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
             }
 
             DdlManager.getInstance().renameTable( table.get(), newName, statement );
-        } catch ( DdlOnSourceException | TableAlreadyExistsException | UnknownNamespaceException e ) {
+        } catch ( DdlOnSourceException | EntityAlreadyExistsException | UnknownNamespaceException e ) {
             throw new RuntimeException( "The rename was not successful, due to an error: " + e.getMessage() );
         }
     }

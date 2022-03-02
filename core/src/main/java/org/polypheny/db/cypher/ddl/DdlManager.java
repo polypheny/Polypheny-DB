@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher.ddl;
 
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,9 +33,9 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -411,7 +410,7 @@ public abstract class DdlManager {
      * @param newTableName the new name for the table
      * @param statement the used statement
      */
-    public abstract void renameTable( CatalogEntity catalogEntity, String newTableName, Statement statement ) throws TableAlreadyExistsException;
+    public abstract void renameTable( CatalogEntity catalogEntity, String newTableName, Statement statement ) throws EntityAlreadyExistsException;
 
     /**
      * Rename a column of a table (changing the logical name of the column)
@@ -435,7 +434,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createEntity( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void createEntity( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
      * Create a new view
@@ -445,7 +444,7 @@ public abstract class DdlManager {
      * @param algNode the algNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException;
 
 
     /**
@@ -456,7 +455,7 @@ public abstract class DdlManager {
      * @param algRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
+    public abstract void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
 
 
     /**
@@ -548,9 +547,7 @@ public abstract class DdlManager {
     public abstract void refreshView( Statement statement, Long materializedId );
 
 
-    public abstract void addGraphLabels( int namespaceId, Collection<String> nodeLabels, Collection<String> relLabels );
-
-    public abstract long createGraph( int databaseId, boolean ifExists, boolean replace );
+    public abstract long createGraph( long databaseId, String namespaceName, boolean ifExists, boolean replace, Statement statement );
 
 
     /**

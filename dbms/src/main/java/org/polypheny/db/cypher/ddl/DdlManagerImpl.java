@@ -20,7 +20,6 @@ package org.polypheny.db.cypher.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,9 +79,9 @@ import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -130,6 +129,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -1538,9 +1538,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void renameTable( CatalogEntity catalogEntity, String newTableName, Statement statement ) throws TableAlreadyExistsException {
+    public void renameTable( CatalogEntity catalogEntity, String newTableName, Statement statement ) throws EntityAlreadyExistsException {
         if ( catalog.checkIfExistsEntity( catalogEntity.namespaceId, newTableName ) ) {
-            throw new TableAlreadyExistsException();
+            throw new EntityAlreadyExistsException();
         }
         // Check if views are dependent from this view
         checkViewDependencies( catalogEntity );
@@ -1576,7 +1576,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws EntityAlreadyExistsException {
         if ( catalog.checkIfExistsEntity( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
@@ -1585,7 +1585,7 @@ public class DdlManagerImpl extends DdlManager {
                     throw new RuntimeException( "Unable tp drop the existing View with this name." );
                 }
             } else {
-                throw new TableAlreadyExistsException();
+                throw new EntityAlreadyExistsException();
             }
         }
 
@@ -1632,14 +1632,14 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException {
+    public void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException {
         // Check if there is already a table with this name
         if ( catalog.checkIfExistsEntity( schemaId, viewName ) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return;
             } else {
-                throw new TableAlreadyExistsException();
+                throw new EntityAlreadyExistsException();
             }
         }
 
@@ -1771,40 +1771,55 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addGraphLabels( int namespaceId, Collection<String> nodeLabels, Collection<String> relLabels ) {
-        for ( String label : nodeLabels ) {
-            catalog.addGraphEntity( namespaceId, GraphObjectType.NODES, Catalog.defaultUserId, label, EntityType.ENTITY, true );
-        }
-
-        for ( String label : relLabels ) {
-            catalog.addGraphEntity( namespaceId, GraphObjectType.NODES, Catalog.defaultUserId, label, EntityType.ENTITY, true );
-        }
-    }
-
-
-    @Override
-    public long createGraph( int databaseId, boolean ifExists, boolean replace ) {
-        long graphNamespaceId;
-        assert ifExists && !replace : "Graphs are only create if not exists and cannot be replaced yet.";
+    public long createGraph( long databaseId, String namespaceName, boolean ifNotExists, boolean replace, Statement statement ) {
+        assert ifNotExists && !replace : "Graphs are only create if not exists is specified and cannot be replaced yet.";
         // add general graph
-        graphNamespaceId = catalog.addNamespace( "_graph", databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
+        try {
+            long graphNamespaceId =
+                    createNamespace( namespaceName, databaseId, NamespaceType.GRAPH, Catalog.defaultUserId, ifNotExists, replace );
 
-        // add default nodes and relationships
-        createGraphObjects( graphNamespaceId, Catalog.defaultUserId );
+            // add default nodes and relationships
+            createGraphObjects( graphNamespaceId, statement );
 
-        return graphNamespaceId;
+            return graphNamespaceId;
+
+        } catch ( NamespaceAlreadyExistsException e ) {
+            throw new RuntimeException( "Namespace exists already." );
+        }
     }
 
 
-    private void createGraphObjects( long graphNamespaceId, long ownerId ) {
-        long nodeId = catalog.addGraphEntity( graphNamespaceId, GraphObjectType.NODES, Math.toIntExact( ownerId ), null, EntityType.ENTITY, true );
+    private void createGraphObjects( long graphNamespaceId, Statement statement ) {
+        try {
+            Pair<List<FieldInformation>, List<ConstraintInformation>> nodeInfos = getGraphInformation( GraphObjectType.NODES.getName() );
+            createEntity( graphNamespaceId, GraphObjectType.NODES.getName(), nodeInfos.getKey(), nodeInfos.getValue(), true, null, PlacementType.AUTOMATIC, statement );
 
-        catalog.addColumn( "_nodes", nodeId, 0, PolyType.NODE, null, null, null, null, null, false, Collation.getDefaultCollation() );
+            Pair<List<FieldInformation>, List<ConstraintInformation>> relInfos = getGraphInformation( GraphObjectType.RELATIONSHIPS.getName() );
+            createEntity( graphNamespaceId, GraphObjectType.RELATIONSHIPS.getName(), relInfos.getKey(), relInfos.getValue(), true, null, PlacementType.AUTOMATIC, statement );
 
-        long relationshipId = catalog.addGraphEntity( graphNamespaceId, GraphObjectType.RELATIONSHIPS, Math.toIntExact( ownerId ), null, EntityType.ENTITY, true );
+        } catch ( EntityAlreadyExistsException e ) {
+            throw new RuntimeException( "It was not possible to create the structure for a new graph as it already exists." );
+        }
+    }
 
-        catalog.addColumn( "_relationships", relationshipId, 0, PolyType.RELATIONSHIP, null, null, null, null, null, false, Collation.getDefaultCollation() );
 
+    private Pair<List<FieldInformation>, List<ConstraintInformation>> getGraphInformation( String mainName ) {
+        List<FieldInformation> fields = new ArrayList<>();
+        FieldInformation id = new FieldInformation( "_id",
+                new ColumnTypeInformation( PolyType.BIGINT, null, null, null, null, null, false ), Collation.getDefaultCollation(), null, 0 );
+        fields.add( id );
+
+        FieldInformation labels = new FieldInformation( "_labels",
+                new ColumnTypeInformation( PolyType.VARCHAR, PolyType.ARRAY, 255, null, 1, null, false ), Collation.getDefaultCollation(), null, 2 );
+        fields.add( labels );
+
+        FieldInformation nodes = new FieldInformation( mainName,
+                new ColumnTypeInformation( PolyType.NODE, null, null, null, null, null, false ), Collation.getDefaultCollation(), null, 2 );
+        fields.add( nodes );
+
+        ConstraintInformation primary = new ConstraintInformation( "primary_" + mainName, ConstraintType.PRIMARY, List.of( "_id" ) );
+
+        return Pair.of( fields, List.of( primary ) );
     }
 
 
@@ -1900,7 +1915,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createEntity( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException {
+    public void createEntity( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
         try {
             // Check if there is already an entity with this name
             if ( catalog.checkIfExistsEntity( schemaId, name ) ) {
@@ -1908,7 +1923,7 @@ public class DdlManagerImpl extends DdlManager {
                     // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                     return;
                 } else {
-                    throw new TableAlreadyExistsException();
+                    throw new EntityAlreadyExistsException();
                 }
             }
 

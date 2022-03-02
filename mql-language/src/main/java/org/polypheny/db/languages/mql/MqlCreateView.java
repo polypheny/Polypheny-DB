@@ -24,8 +24,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.cypher.ddl.DdlManager;
@@ -72,7 +72,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
         AlgRoot algRoot = statement.getTransaction()
                 .getProcessor( QueryLanguage.MONGO_QL )
-                .translate( statement, mqlNode, parameters );
+                .translate( statement, mqlNode, , parameters );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         AlgNode algNode = algRoot.alg;
@@ -90,7 +90,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
                     algRoot.alg.getRowType().getFieldNames(),
                     buildQuery(),
                     Catalog.QueryLanguage.MONGO_QL );
-        } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+        } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         } // we just added the table/column, so it has to exist, or we have an internal problem
     }

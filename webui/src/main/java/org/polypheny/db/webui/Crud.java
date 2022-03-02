@@ -131,8 +131,8 @@ import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -2858,7 +2858,7 @@ public class Crud implements InformationObserver {
                             false,
                             false
                     );
-                } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
                     log.error( "Not possible to create Materialized View because the name is already used", e );
                     Result finalResult = new Result( e );
                     finalResult.setGeneratedQuery( "Execute logical query plan" );
@@ -2897,7 +2897,7 @@ public class Crud implements InformationObserver {
                             gson.toJson( request.topNode ),
                             Catalog.QueryLanguage.REL_ALG
                     );
-                } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
                     log.error( "Not possible to create View because the Name is already used", e );
                     Result finalResult = new Result( e );
                     finalResult.setGeneratedQuery( "Execute logical query plan" );
@@ -3822,7 +3822,7 @@ public class Crud implements InformationObserver {
                 statement.getOverviewDuration().stop( "Validation" );
                 statement.getOverviewDuration().start( "Translation" );
             }
-            logicalRoot = sqlProcessor.translate( statement, validated.left, parameters );
+            logicalRoot = sqlProcessor.translate( statement, validated.left, , parameters );
             if ( isAnalyze ) {
                 statement.getOverviewDuration().stop( "Translation" );
             }

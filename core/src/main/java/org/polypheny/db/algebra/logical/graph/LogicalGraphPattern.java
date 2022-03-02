@@ -16,33 +16,37 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
-
+import com.google.common.collect.ImmutableList;
+import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyRelationship;
 
-public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
+@Getter
+public class LogicalGraphPattern extends AbstractAlgNode {
 
-    private final long namespaceId;
+    private final ImmutableList<PolyNode> nodes;
+    private final ImmutableList<PolyRelationship> rels;
 
 
-    public LogicalGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, long namespaceId ) {
+    /**
+     * Creates an <code>AbstractRelNode</code>.
+     *
+     * @param cluster
+     * @param traitSet
+     */
+    public LogicalGraphPattern( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<PolyNode> nodes, ImmutableList<PolyRelationship> rels ) {
         super( cluster, traitSet );
-        this.namespaceId = namespaceId;
+        this.nodes = nodes;
+        this.rels = rels;
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + namespaceId;
-    }
-
-
-    @Override
-    public AlgNode getRelationalEquivalent() {
-        return null;
+        return "$" + getClass().getSimpleName() + "$";
     }
 
 }

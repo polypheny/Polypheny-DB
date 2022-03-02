@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.hint.CypherHint;
 import org.polypheny.db.cypher.pattern.CypherPattern;
@@ -32,7 +33,7 @@ public class CypherMatch extends CypherClause {
     private final CypherWhere where;
 
 
-    public CypherMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where ) {
+    public CypherMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, @Nullable CypherWhere where ) {
         super( pos );
         this.optional = optional;
         this.patterns = patterns;

@@ -80,7 +80,7 @@ public class PigProcessorImpl extends Processor {
 
 
     @Override
-    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+    public AlgRoot translate( Statement statement, Node query, Class<N> nodeClass, QueryParameters parameters ) {
         final PigAlgBuilder builder = PigAlgBuilder.create( statement );
         new Handler( builder ).handle( (PigNode) query );
         return AlgRoot.of( builder.build(), Kind.SELECT );

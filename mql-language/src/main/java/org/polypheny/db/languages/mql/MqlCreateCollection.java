@@ -24,7 +24,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
@@ -94,7 +94,7 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
                     dataStores.size() == 0 ? null : dataStores,
                     placementType,
                     statement );
-        } catch ( TableAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException | UnknownColumnException | PartitionGroupNamesNotUniqueException e ) {
+        } catch ( EntityAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException | UnknownColumnException | PartitionGroupNamesNotUniqueException e ) {
             throw new RuntimeException( "The generation of the collection was not possible, due to: " + e.getMessage() );
         }
     }

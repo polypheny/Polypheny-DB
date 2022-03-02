@@ -164,7 +164,7 @@ public class LanguageCrud {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Translation" );
             }
-            AlgRoot algRoot = processor.translate( statement, parsed, new QueryParameters( query, NamespaceType.RELATIONAL ) );
+            AlgRoot algRoot = processor.translate( statement, parsed, , new QueryParameters( query, NamespaceType.RELATIONAL ) );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Translation" );
             }
@@ -352,7 +352,7 @@ public class LanguageCrud {
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().start( "Translation" );
                 }
-                AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
+                AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, , parameters );
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().stop( "Translation" );
                 }
@@ -435,7 +435,7 @@ public class LanguageCrud {
 
         //for ( String query : mqls ) {
         Statement statement = transaction.createStatement();
-        CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH );
+        CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, databaseName );
 
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().start( "Parsing" );
@@ -444,7 +444,6 @@ public class LanguageCrud {
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().stop( "Parsing" );
         }
-
 
         for ( Node node : statements ) {
             CypherStatement stmt = (CypherStatement) node;
@@ -464,7 +463,7 @@ public class LanguageCrud {
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().start( "Translation" );
                 }
-                AlgRoot logicalRoot = cypherProcessor.translate( statement, stmt, parameters );
+                AlgRoot logicalRoot = cypherProcessor.translate( statement, stmt, , parameters );
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().stop( "Translation" );
                 }

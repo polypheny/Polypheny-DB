@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
-import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -29,7 +28,6 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 public class CatalogGraphEntity extends CatalogEntity implements CatalogObject, Serializable {
 
     static final long serialVersionUID = 3103009888330430956L;
-    private final String label;
 
 
     public CatalogGraphEntity(
@@ -41,13 +39,11 @@ public class CatalogGraphEntity extends CatalogEntity implements CatalogObject, 
             @NonNull String ownerName,
             @NonNull Catalog.EntityType type,
             Long primaryKey,
-            @Nullable String label,
             ImmutableList<Long> fieldIds,
             @NonNull ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty ) {
         super( id, name, fieldIds, namespaceId, databaseId, ownerId, ownerName, type, primaryKey, dataPlacements, modifiable, partitionProperty );
-        this.label = label;
         assert fieldIds.size() == 2 : "GraphObjects can only consist of two fields <id> and the object itself.";
     }
 

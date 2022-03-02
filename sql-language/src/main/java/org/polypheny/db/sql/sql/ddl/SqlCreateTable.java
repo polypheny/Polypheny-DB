@@ -30,8 +30,8 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -261,7 +261,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                         statement );
             }
 
-        } catch ( TableAlreadyExistsException e ) {
+        } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( tableName ) );
         } catch ( ColumnNotExistsException e ) {
             throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );

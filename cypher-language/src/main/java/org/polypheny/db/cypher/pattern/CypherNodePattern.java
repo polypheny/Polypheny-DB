@@ -23,6 +23,8 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.schema.graph.PolyNode;
 
 @Getter
 public class CypherNodePattern extends CypherPattern {
@@ -44,6 +46,19 @@ public class CypherNodePattern extends CypherPattern {
 
     public List<String> getLabels() {
         return labels.stream().map( StringPos::getImage ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.NODE_PATTERN;
+    }
+
+
+    public PolyNode getPolyNode() {
+        PolyDirectory properties = this.properties.getComparable( PolyDirectory.class );
+
+        return new PolyNode( properties );
     }
 
 }

@@ -18,6 +18,7 @@ package org.polypheny.db.runtime;
 
 import com.drew.lang.annotations.NotNull;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -88,6 +89,36 @@ public class PolyCollections {
             return new PolyList<>( list );
         }
 
+
+    }
+
+
+    public static class PolyDirectory implements Comparable<PolyDirectory> {
+
+        private final ImmutableMap<String, Comparable<?>> map;
+
+
+        PolyDirectory( Map<String, Comparable<?>> map ) {
+            this.map = ImmutableMap.copyOf( map );
+        }
+
+
+        @Override
+        public int compareTo( @NotNull PolyDirectory directory ) {
+            if ( map.size() > directory.map.size() ) {
+                return 1;
+            }
+            if ( map.size() < directory.map.size() ) {
+                return -1;
+            }
+
+            if ( map.equals( directory.map ) ) {
+                return 0;
+            }
+
+            return map.hashCode() >= directory.map.hashCode() ? 1 : -1;
+
+        }
 
     }
 

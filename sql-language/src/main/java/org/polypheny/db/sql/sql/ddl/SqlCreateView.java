@@ -31,8 +31,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -126,7 +126,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
         AlgRoot algRoot = sqlProcessor.translate(
                 statement,
-                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
+                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, , null );
 
         AlgNode algNode = algRoot.alg;
         AlgCollation algCollation = algRoot.collation;
@@ -149,7 +149,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                     columns,
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
                     Catalog.QueryLanguage.SQL );
-        } catch ( TableAlreadyExistsException e ) {
+        } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // we just added the table/column so it has to exist or we have a internal problem

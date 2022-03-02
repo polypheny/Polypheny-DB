@@ -1240,7 +1240,7 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle.getStatement().getTransaction(),
                     parsed,
                     RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            AlgRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, null );
+            AlgRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, , null );
             AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare

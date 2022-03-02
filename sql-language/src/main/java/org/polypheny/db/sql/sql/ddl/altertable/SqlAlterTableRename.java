@@ -22,7 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -86,7 +86,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
 
         try {
             DdlManager.getInstance().renameTable( table, newName.getSimple(), statement );
-        } catch ( TableAlreadyExistsException e ) {
+        } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( newName.getPos(), RESOURCE.tableExists( newName.getSimple() ) );
         }
     }

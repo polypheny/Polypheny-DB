@@ -17,16 +17,16 @@
 package org.polypheny.db.schema.graph;
 
 import lombok.Getter;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 
 @Getter
 public abstract class GraphPropertyHolder extends GraphObject {
 
 
-    private final PolyMap<String, Comparable<?>> properties;
+    private final PolyDirectory properties;
 
 
-    public GraphPropertyHolder( long id, GraphObjectType type, PolyMap<String, Comparable<?>> properties ) {
+    public GraphPropertyHolder( long id, GraphObjectType type, PolyDirectory properties ) {
         super( id, type );
         this.properties = properties;
     }

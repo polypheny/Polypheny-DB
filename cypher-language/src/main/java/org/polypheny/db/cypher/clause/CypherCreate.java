@@ -20,13 +20,9 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.nodes.ExecutableStatement;
-import org.polypheny.db.prepare.Context;
-import org.polypheny.db.transaction.Statement;
 
 @Getter
-public class CypherCreate extends CypherClause implements ExecutableStatement {
+public class CypherCreate extends CypherClause {
 
     private final List<CypherPattern> patterns;
 
@@ -49,10 +45,6 @@ public class CypherCreate extends CypherClause implements ExecutableStatement {
     }
 
 
-    @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-
-    }
 
 
 }

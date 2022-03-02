@@ -35,7 +35,7 @@ public class LogicalGraphFilter extends SingleAlg implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected LogicalGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    public LogicalGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input );
         this.condition = condition;
         assertLogicalGraphTrait( traits );

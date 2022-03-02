@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.pattern;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -24,6 +25,9 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.schema.graph.PolyRelationship;
+import org.polypheny.db.schema.graph.PolyRelationship.RelationshipDirection;
 
 @Getter
 public class CypherRelPattern extends CypherPattern {
@@ -53,6 +57,20 @@ public class CypherRelPattern extends CypherPattern {
 
     public List<String> getLabels() {
         return relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.REL_PATTERN;
+    }
+
+
+    public PolyRelationship getPolyRelationship( long leftId, long rightId ) {
+        PolyDirectory properties = this.properties.getComparable( PolyDirectory.class );
+        RelationshipDirection direction = left == right ? RelationshipDirection.NONE : left ? RelationshipDirection.LEFT_TO_RIGHT : RelationshipDirection.RIGHT_TO_LEFT;
+        List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
+        return new PolyRelationship( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction );
     }
 
 }

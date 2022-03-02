@@ -33,4 +33,10 @@ public class CypherNamedPattern extends CypherPattern {
         this.anonymousPattern = anonymousPattern;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.NAMED_PATTERN;
+    }
+
 }

@@ -94,7 +94,25 @@ public abstract class CypherNode implements Node {
 
 
     public enum CypherKind {
-        SCOPE, REMOVE, ADMIN_COMMAND, QUERY, PATTERN, EXPRESSION, WITH_GRAPH, CALL, CASE, CREATE, SCHEMA_COMMAND, ADMIN_ACTION, DELETE, DROP, FOR_EACH, LOAD_CSV, MATCH, MERGE, ORDER_ITEM, RETURN, SET, SHOW, TRANSACTION, UNWIND, USE, WAIT, WHERE, WITH, MAP_PROJECTION, YIELD, EITHER, RESOURCE, PRIVILEGE, PATH_LENGTH, CALL_RESULT, HINT, PATH, SET_ITEM
+        SCOPE, REMOVE, ADMIN_COMMAND, QUERY, PATTERN, EXPRESSION, WITH_GRAPH, CALL, CASE, CREATE, SCHEMA_COMMAND, ADMIN_ACTION, DELETE, DROP, FOR_EACH, LOAD_CSV, MATCH, MERGE, ORDER_ITEM, RETURN, SET, SHOW, TRANSACTION, UNWIND, USE, WAIT, WHERE, WITH, MAP_PROJECTION, YIELD, EITHER, RESOURCE, PRIVILEGE, PATH_LENGTH, CALL_RESULT, HINT, PATH, PERIODIC_COMMIT, UNION, SINGLE, NAMED_PATTERN, NODE_PATTERN, REL_PATTERN, SHORTEST_PATTERN, SET_ITEM
+    }
+
+
+    public enum CypherFamily {
+        QUERY( CypherKind.QUERY, CypherKind.PERIODIC_COMMIT, CypherKind.UNION, CypherKind.SINGLE ),
+        PATTERN( CypherKind.PATH, CypherKind.PATTERN, CypherKind.NODE_PATTERN, CypherKind.REL_PATTERN, CypherKind.SHORTEST_PATTERN );
+
+        private final List<CypherKind> kinds;
+
+
+        CypherFamily( CypherKind... kinds ) {
+            this.kinds = List.of( kinds );
+        }
+
+
+        public boolean contains( CypherKind kind ) {
+            return kinds.contains( kind );
+        }
     }
 
 

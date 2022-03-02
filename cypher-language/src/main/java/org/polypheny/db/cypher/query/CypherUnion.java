@@ -41,4 +41,10 @@ public class CypherUnion extends CypherQuery {
         visitor.visit( this );
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.UNION;
+    }
+
 }
