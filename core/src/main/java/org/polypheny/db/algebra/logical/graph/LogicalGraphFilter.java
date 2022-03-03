@@ -38,13 +38,12 @@ public class LogicalGraphFilter extends SingleAlg implements GraphAlg {
     public LogicalGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input );
         this.condition = condition;
-        assertLogicalGraphTrait( traits );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + condition.hashCode();
+        return "$" + getClass().getSimpleName() + "$" + this.condition.hashCode();
     }
 
 }

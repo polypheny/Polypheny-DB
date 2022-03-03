@@ -1366,7 +1366,9 @@ public enum OperatorName {
 
     ENDS_WITH( LangFunctionOperator.class ),
 
-    DESERIALIZE( LangFunctionOperator.class );
+    DESERIALIZE( LangFunctionOperator.class ),
+
+    CYPHER_PATTERN_MATCH( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;

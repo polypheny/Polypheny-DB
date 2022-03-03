@@ -67,7 +67,7 @@ public class CypherRelPattern extends CypherPattern {
 
 
     public PolyRelationship getPolyRelationship( long leftId, long rightId ) {
-        PolyDirectory properties = this.properties.getComparable( PolyDirectory.class );
+        PolyDirectory properties = (PolyDirectory) this.properties.getComparable();
         RelationshipDirection direction = left == right ? RelationshipDirection.NONE : left ? RelationshipDirection.LEFT_TO_RIGHT : RelationshipDirection.RIGHT_TO_LEFT;
         List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
         return new PolyRelationship( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction );

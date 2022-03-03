@@ -27,7 +27,12 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
     private final PolyMap<Long, PolyRelationship> relationships;
 
 
-    protected PolyGraph( long id, @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyRelationship> relationships ) {
+    public PolyGraph( @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyRelationship> relationships ) {
+        this( idBuilder.getAndIncrement(), nodes, relationships );
+    }
+
+
+    public PolyGraph( long id, @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyRelationship> relationships ) {
         super( id, GraphObjectType.GRAPH );
         this.nodes = nodes;
         this.relationships = relationships;

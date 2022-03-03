@@ -98,7 +98,7 @@ public class PolyCollections {
         private final ImmutableMap<String, Comparable<?>> map;
 
 
-        PolyDirectory( Map<String, Comparable<?>> map ) {
+        public PolyDirectory( Map<String, Comparable<?>> map ) {
             this.map = ImmutableMap.copyOf( map );
         }
 

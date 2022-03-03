@@ -40,7 +40,7 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
      * @param traits
      * @param input Input relational expression
      */
-    protected LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, Operation operation, List<? extends RexNode> nodeOperations, List<? extends RexNode> relationshipOperations ) {
+    public LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, Operation operation, List<? extends RexNode> nodeOperations, List<? extends RexNode> relationshipOperations ) {
         super( cluster, traits, input );
         assertLogicalGraphTrait( traits );
         this.operation = operation;

@@ -17,9 +17,15 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherReturnClause extends CypherClause {
@@ -50,6 +56,20 @@ public class CypherReturnClause extends CypherClause {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.RETURN;
+    }
+
+
+    public AlgNode getGraphProject( AlgNode input, CypherContext context ) {
+
+        List<Pair<String, RexNode>> nameAndProject = returnItems.stream().map( i -> i.getRexNode( context ) ).collect( Collectors.toList() );
+
+        return new LogicalGraphProject(
+                context.cluster,
+                context.cluster.traitSet(),
+                input,
+                Pair.right( nameAndProject ),
+                Pair.left( nameAndProject )
+        );
     }
 
 }

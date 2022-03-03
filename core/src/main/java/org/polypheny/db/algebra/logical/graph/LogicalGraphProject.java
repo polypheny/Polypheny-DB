@@ -29,6 +29,7 @@ import org.polypheny.db.rex.RexNode;
 public class LogicalGraphProject extends SingleAlg implements GraphAlg {
 
     private final List<? extends RexNode> projects;
+    private final List<String> names;
 
 
     /**
@@ -38,10 +39,12 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected LogicalGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects ) {
+    public LogicalGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
         super( cluster, traits, input );
         assertLogicalGraphTrait( traits );
         this.projects = projects;
+        this.names = names;
+        assert this.names.size() == this.projects.size();
     }
 
 

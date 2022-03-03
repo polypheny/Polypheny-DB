@@ -18,8 +18,10 @@ package org.polypheny.db.cypher.expression;
 
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
 
 @Getter
 public class CypherExpression extends CypherNode {
@@ -59,15 +61,17 @@ public class CypherExpression extends CypherNode {
     }
 
 
+    public RexNode getRexNode( CypherContext context ) {
+    }
+
+
     public enum ExpressionType {
         ALL, NONE, SINGLE, PATTERN, ANY, DEFAULT
     }
 
 
-    public <T extends Comparable<T>> T getComparable( Class<T> clazz ) {
-        T comp = null;
-
-        return (T) comp;
+    public Comparable<?> getComparable() {
+        throw new UnsupportedOperationException();
     }
 
 }

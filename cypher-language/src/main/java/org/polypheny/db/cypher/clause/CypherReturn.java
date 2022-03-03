@@ -17,7 +17,10 @@
 package org.polypheny.db.cypher.clause;
 
 import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 public class CypherReturn extends CypherNode {
 
@@ -29,6 +32,11 @@ public class CypherReturn extends CypherNode {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.RETURN;
+    }
+
+
+    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+        throw new UnsupportedOperationException();
     }
 
 }

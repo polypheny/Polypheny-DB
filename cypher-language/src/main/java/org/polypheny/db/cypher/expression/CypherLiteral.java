@@ -19,17 +19,22 @@ package org.polypheny.db.cypher.expression;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
 
 @Getter
 public class CypherLiteral extends CypherExpression {
 
     private final Literal literalType;
-    private final Object value;
+    private Map<String, CypherExpression> mapValue;
+    private Object value;
+    private List<CypherExpression> listValue;
 
 
     public CypherLiteral( ParserPos pos, Literal literalType ) {
@@ -43,7 +48,7 @@ public class CypherLiteral extends CypherExpression {
         super( pos );
         this.literalType = literalType;
         assert literalType == Literal.LIST;
-        this.value = list;
+        this.listValue = list;
     }
 
 
@@ -60,7 +65,7 @@ public class CypherLiteral extends CypherExpression {
         this.literalType = literalType;
         assert keys.size() == values.size();
         //noinspection UnstableApiUsage
-        this.value = Streams.zip( keys.stream(), values.stream(), Maps::immutableEntry ).collect( Collectors.toMap( k -> k.getKey().getImage(), Entry::getValue ) );
+        this.mapValue = Streams.zip( keys.stream(), values.stream(), Maps::immutableEntry ).collect( Collectors.toMap( k -> k.getKey().getImage(), Entry::getValue ) );
     }
 
 
@@ -79,6 +84,39 @@ public class CypherLiteral extends CypherExpression {
 
     public enum Literal {
         TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR
+    }
+
+
+    @Override
+    public Comparable<?> getComparable() {
+
+        switch ( literalType ) {
+            case TRUE:
+                return true;
+            case FALSE:
+                return false;
+            case NULL:
+                return null;
+            case LIST:
+                List<Comparable<?>> list = listValue.stream().map( CypherExpression::getComparable ).collect( Collectors.toList() );
+                return new PolyList<>( list );
+            case MAP:
+                Map<String, Comparable<?>> map = mapValue.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getComparable() ) );
+                return new PolyDirectory( map );
+            case STRING:
+                return (String) value;
+            case DOUBLE:
+                return (Double) value;
+            case DECIMAL:
+                return (Float) value;
+            case HEX:
+                return (String) value;
+            case OCTAL:
+                return (String) value;
+            case STAR:
+                throw new UnsupportedOperationException();
+        }
+        throw new UnsupportedOperationException();
     }
 
 }

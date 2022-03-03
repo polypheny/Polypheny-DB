@@ -17,9 +17,12 @@
 package org.polypheny.db.cypher.clause;
 
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherReturnItem extends CypherReturn {
@@ -48,6 +51,17 @@ public class CypherReturnItem extends CypherReturn {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.RETURN;
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+        String name = null;
+        if ( variable != null ) {
+            name = variable.getName();
+        }
+        return Pair.of( name, expression.getRexNode( context ) );
+
     }
 
 }

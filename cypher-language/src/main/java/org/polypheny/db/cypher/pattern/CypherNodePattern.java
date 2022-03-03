@@ -56,7 +56,7 @@ public class CypherNodePattern extends CypherPattern {
 
 
     public PolyNode getPolyNode() {
-        PolyDirectory properties = this.properties.getComparable( PolyDirectory.class );
+        PolyDirectory properties = (PolyDirectory) this.properties.getComparable();
 
         return new PolyNode( properties );
     }

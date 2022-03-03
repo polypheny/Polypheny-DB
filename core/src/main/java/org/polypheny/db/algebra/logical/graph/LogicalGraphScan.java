@@ -25,18 +25,19 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
 
-    private final long namespaceId;
+
+    private final LogicalGraph graph;
 
 
-    public LogicalGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, long namespaceId ) {
+    public LogicalGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalGraph graph ) {
         super( cluster, traitSet );
-        this.namespaceId = namespaceId;
+        this.graph = graph;
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + namespaceId;
+        return "$" + getClass().getSimpleName() + "$" + graph.getNamespaceId();
     }
 
 
