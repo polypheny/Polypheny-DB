@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,6 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -176,6 +174,47 @@ public class Condition {
     }
 
 
+    /**
+     * Implement the like keyword
+     *
+     * @param str Data in database
+     * @param expr String in SQL statement
+     * @return boolean
+     */
+    private static boolean like( final String str, String expr ) {
+        // No wildcards，return directly
+        if ( !expr.contains( "%" ) && !expr.contains( "_" ) ) {
+            return str.matches( expr );
+        }
+        final String[] parts = expr.split( "%" );
+        final boolean traillingOp = expr.endsWith( "%" );
+        StringBuffer exprBuffer = new StringBuffer( "" );
+        for ( int i = 0; i < parts.length; ++i ) {
+            final String[] p = parts[i].split( "\\\\\\?" );
+            if ( p.length > 1 ) {
+                for ( int y = 0; y < p.length; ++y ) {
+                    exprBuffer.append( p[y] );
+                    if ( i + 1 < p.length ) {
+                        exprBuffer.append( "." );
+                    }
+                }
+            } else {
+                exprBuffer.append( parts[i] );
+            }
+            if ( i + 1 < parts.length ) {
+                exprBuffer.append( "%" );
+            }
+        }
+        if ( traillingOp ) {
+            exprBuffer.append( "%" );
+        }
+        String exprMatch = exprBuffer.toString();
+        exprMatch = exprMatch.replace( "_", "." );
+        exprMatch = exprMatch.replace( "%", ".*" );
+        return str.matches( exprMatch );
+    }
+
+
     public boolean matches( final Object[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
             switch ( operator ) {
@@ -286,10 +325,7 @@ public class Condition {
             case LESS_THAN_OR_EQUAL:
                 return comparison <= 0;
             case LIKE:
-                //todo maybe replace '%' by '(.*)' etc.
-                Pattern pattern = Pattern.compile( parameterValue.toString() );
-                Matcher matcher = pattern.matcher( columnValue.toString() );
-                return matcher.matches();
+                return like( columnValue.toString(), parameterValue.toString() );
             default:
                 throw new RuntimeException( operator + " comparison not supported by file adapter." );
         }
