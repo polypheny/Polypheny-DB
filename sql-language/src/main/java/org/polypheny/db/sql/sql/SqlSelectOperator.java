@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,8 @@ public class SqlSelectOperator extends SqlOperator {
                 (SqlNodeList) operands[6],
                 (SqlNodeList) operands[7],
                 (SqlNode) operands[8],
-                (SqlNode) operands[9] );
+                (SqlNode) operands[9],
+                (SqlNode) operands[10] );
     }
 
 
@@ -92,6 +93,7 @@ public class SqlSelectOperator extends SqlOperator {
      * @param orderBy The ORDER BY clause, or null if not present
      * @param offset Expression for number of rows to discard before returning first row
      * @param fetch Expression for number of rows to fetch
+     * @param freshness Optional expression if the query should be executed using outdated nodes
      * @param pos The parser position, or {@link ParserPos#ZERO} if not specified; must not be null.
      * @return A {@link SqlSelect}, never null
      */
@@ -106,6 +108,7 @@ public class SqlSelectOperator extends SqlOperator {
             SqlNodeList orderBy,
             SqlNode offset,
             SqlNode fetch,
+            SqlNode freshness,
             ParserPos pos ) {
         return new SqlSelect(
                 pos,
@@ -118,7 +121,8 @@ public class SqlSelectOperator extends SqlOperator {
                 windowDecls,
                 orderBy,
                 offset,
-                fetch );
+                fetch,
+                freshness );
     }
 
 

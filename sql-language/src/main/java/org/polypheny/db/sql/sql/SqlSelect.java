@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ public class SqlSelect extends SqlCall implements Select {
     SqlNodeList orderBy;
     SqlNode offset;
     SqlNode fetch;
+    SqlNode freshness;
 
 
     public SqlSelect(
@@ -64,7 +65,8 @@ public class SqlSelect extends SqlCall implements Select {
             SqlNodeList windowDecls,
             SqlNodeList orderBy,
             SqlNode offset,
-            SqlNode fetch ) {
+            SqlNode fetch,
+            SqlNode freshness ) {
         super( pos );
         this.keywordList = Objects.requireNonNull(
                 keywordList != null
@@ -82,6 +84,7 @@ public class SqlSelect extends SqlCall implements Select {
         this.orderBy = orderBy;
         this.offset = offset;
         this.fetch = fetch;
+        this.freshness = freshness;
     }
 
 
@@ -141,6 +144,9 @@ public class SqlSelect extends SqlCall implements Select {
                 break;
             case 9:
                 fetch = (SqlNode) operand;
+                break;
+            case 10:
+                freshness = (SqlNode) operand;
                 break;
             default:
                 throw new AssertionError( i );
@@ -259,6 +265,16 @@ public class SqlSelect extends SqlCall implements Select {
 
     public void setFetch( SqlNode fetch ) {
         this.fetch = fetch;
+    }
+
+
+    public final SqlNode getFreshness() {
+        return freshness;
+    }
+
+
+    public void setFreshness( SqlNode freshness ) {
+        this.freshness = freshness;
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1151,6 +1151,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             null,
                             null,
                             null,
+                            null,
                             null );
                 }
 
@@ -1212,7 +1213,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         null,
                         orderList,
                         orderBy.offset,
-                        orderBy.fetch );
+                        orderBy.fetch,
+                        null );
             }
 
             case EXPLICIT_TABLE: {
@@ -1225,6 +1227,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         null,
                         selectList,
                         call.operand( 0 ),
+                        null,
                         null,
                         null,
                         null,
@@ -1325,6 +1328,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         null,
                         null,
                         null,
+                        null,
                         null );
         call.setSourceSelect( select );
 
@@ -1344,6 +1348,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             null,
                             selectList,
                             insertSource,
+                            null,
                             null,
                             null,
                             null,
@@ -1403,6 +1408,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 null,
                 selectList,
                 source,
+                null,
                 null,
                 null,
                 null,
@@ -1473,6 +1479,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 null,
                 null,
                 null,
+                null,
                 null );
     }
 
@@ -1499,6 +1506,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 selectList,
                 sourceTable,
                 call.getCondition(),
+                null,
                 null,
                 null,
                 null,

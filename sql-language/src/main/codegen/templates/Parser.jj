@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -986,6 +986,7 @@ SqlSelect SqlSelect() :
     final SqlNodeList groupBy;
     final SqlNode having;
     final SqlNodeList windowDecls;
+    final SqlNode freshness;
     final Span s;
 }
 {
@@ -1017,6 +1018,7 @@ SqlSelect SqlSelect() :
         groupBy = GroupByOpt()
         having = HavingOpt()
         windowDecls = WindowOpt()
+        freshness = FreshnessOpt()
     |
         E() {
             fromClause = null;
@@ -1024,12 +1026,13 @@ SqlSelect SqlSelect() :
             groupBy = null;
             having = null;
             windowDecls = null;
+            freshness = null;
         }
     )
     {
         return new SqlSelect(s.end(this), keywordList,
             new SqlNodeList(selectList, Span.of(selectList).pos()),
-            fromClause, where, groupBy, having, windowDecls, null, null, null);
+            fromClause, where, groupBy, having, windowDecls, null, null, null, freshness);
     }
 }
 
@@ -2244,6 +2247,36 @@ SqlNode HavingOpt() :
 }
 {
     <HAVING> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { return e; }
+|
+    { return null; }
+}
+
+/**
+ * Parses the optional FRESHNESS clause for SELECT.
+ */
+SqlNode FreshnessOpt() :
+{
+    SqlNode e;
+}
+{
+    <FRESHNESS>
+    (
+            e = DateTimeLiteral()
+        |
+            e = NumericLiteral()
+            (
+                (
+                        <SECOND>
+                    |
+                        <MINUTE>
+                    |
+                        <HOUR>
+                )
+                |
+                <PERCENT_REMAINDER>
+            )
+    )
+    { return e; }
 |
     { return null; }
 }

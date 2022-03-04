@@ -456,6 +456,7 @@ public abstract class SqlImplementor {
                 SqlNodeList.EMPTY,
                 null,
                 null,
+                null,
                 null );
     }
 
