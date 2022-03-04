@@ -80,7 +80,7 @@ body:
     -   type: textarea
         id: bug-description
         attributes:
-            label: Bug description
+            label: Bug Description
             description: What happened? If applicable, add screenshots and any other context about the problem or additional supporting information here.
         validations:
             required: true
@@ -100,7 +100,7 @@ body:
     -   type: textarea
         id: logs
         attributes:
-            label: Relevant log output
-            description: If applicable, provide relevant log output. No need for backticks here.
+            label: Relevant Log Output
+            description: If applicable, please provide relevant log output. No need for backticks here.
             render: shell
 
