@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -266,5 +266,6 @@ public class TimeString implements Comparable<TimeString>, Serializable {
     private int precision() {
         return v.length() < 9 ? 0 : (v.length() - 9);
     }
+
 }
 
