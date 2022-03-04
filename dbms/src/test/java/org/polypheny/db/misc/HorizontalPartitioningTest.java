@@ -778,8 +778,8 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER ADAPTERS DROP hot" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP cold" );
                 }
-                }
             }
+        }
     }
 
 
