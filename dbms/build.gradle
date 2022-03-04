@@ -23,8 +23,6 @@ apply plugin: "com.jaredsburrows.license"
 
 group "org.polypheny"
 
-version = versionMajor + "." + versionMinor + versionQualifier
-
 
 dependencies {
     implementation project(":core")

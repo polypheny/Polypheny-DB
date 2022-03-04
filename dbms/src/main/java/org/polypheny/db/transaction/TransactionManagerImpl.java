@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,10 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 @Slf4j
 public class TransactionManagerImpl implements TransactionManager {
 
-    private ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
 
 
-    public TransactionManagerImpl() {
+    private TransactionManagerImpl() {
         InformationManager im = InformationManager.getInstance();
         InformationPage page = new InformationPage( "Transactions" );
         page.fullWidth();
@@ -68,6 +68,18 @@ public class TransactionManagerImpl implements TransactionManager {
                     v.getInvolvedAdapters().stream().map( Adapter::getUniqueName ).collect( Collectors.joining( ", " ) ),
                     v.getOrigin() ) );
         } );
+    }
+
+
+    private static final class InstanceHolder {
+
+        private static final TransactionManager INSTANCE = new TransactionManagerImpl();
+
+    }
+
+
+    public static TransactionManager getInstance() {
+        return InstanceHolder.INSTANCE;
     }
 
 
