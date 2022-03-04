@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,6 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -175,25 +173,26 @@ public class Condition {
         return out;
     }
 
+
     /**
      * Implement the like keyword
      *
      * @param str Data in database
      * @param expr String in SQL statement
-     * @return
+     * @return boolean
      */
     private static boolean like( final String str, String expr ) {
-        // no wildcards ，return directly
-        if( !expr.contains( "%" ) && !expr.contains( "_" )){
+        // No wildcards，return directly
+        if ( !expr.contains( "%" ) && !expr.contains( "_" ) ) {
             return str.matches( expr );
         }
         final String[] parts = expr.split( "%" );
         final boolean traillingOp = expr.endsWith( "%" );
-        StringBuffer exprBuffer = new StringBuffer("");
-        for ( int i = 0 ; i < parts.length; ++i ) {
+        StringBuffer exprBuffer = new StringBuffer( "" );
+        for ( int i = 0; i < parts.length; ++i ) {
             final String[] p = parts[i].split( "\\\\\\?" );
             if ( p.length > 1 ) {
-                for ( int y = 0 ; y < p.length; ++y ) {
+                for ( int y = 0; y < p.length; ++y ) {
                     exprBuffer.append( p[y] );
                     if ( i + 1 < p.length ) {
                         exprBuffer.append( "." );
@@ -214,6 +213,7 @@ public class Condition {
         exprMatch = exprMatch.replace( "%", ".*" );
         return str.matches( exprMatch );
     }
+
 
     public boolean matches( final Object[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
