@@ -168,51 +168,51 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         AlgNode input = modify.getInput();
         if ( input instanceof LogicalValues ) {
             List<RexNode> projects = new ArrayList<>();
-                boolean firstRow = true;
-                HashMap<Integer, Integer> idxMapping = new HashMap<>();
-                this.batchSize = ((LogicalValues) input).tuples.size();
-                for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
-                    int i = 0;
-                    for ( RexLiteral literal : node ) {
-                        int idx;
-                        if ( !idxMapping.containsKey( i ) ) {
-                            idx = index.getAndIncrement();
-                            idxMapping.put( i, idx );
-                        } else {
-                            idx = idxMapping.get( i );
-                        }
-                        AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
-                        if ( firstRow ) {
-                            projects.add( new RexDynamicParam( type, idx ) );
-                        }
-                        if ( !values.containsKey( idx ) ) {
-                            types.add( type );
-                            values.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
-                        }
-                        values.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
-                        i++;
+            boolean firstRow = true;
+            HashMap<Integer, Integer> idxMapping = new HashMap<>();
+            this.batchSize = ((LogicalValues) input).tuples.size();
+            for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
+                int i = 0;
+                for ( RexLiteral literal : node ) {
+                    int idx;
+                    if ( !idxMapping.containsKey( i ) ) {
+                        idx = index.getAndIncrement();
+                        idxMapping.put( i, idx );
+                    } else {
+                        idx = idxMapping.get( i );
                     }
-                    firstRow = false;
+                    AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                    if ( firstRow ) {
+                        projects.add( new RexDynamicParam( type, idx ) );
+                    }
+                    if ( !values.containsKey( idx ) ) {
+                        types.add( type );
+                        values.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
+                    }
+                    values.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                    i++;
                 }
-                LogicalValues logicalValues = LogicalValues.createOneRow( input.getCluster() );
-                input = new LogicalProject(
-                        input.getCluster(),
-                        input.getTraitSet(),
-                        logicalValues,
-                        projects,
-                        input.getRowType()
-                );
+                firstRow = false;
             }
-            return new LogicalTableModify(
-                    modify.getCluster(),
-                    modify.getTraitSet(),
-                    modify.getTable(),
-                    modify.getCatalogReader(),
-                    input,
-                    modify.getOperation(),
-                    modify.getUpdateColumnList(),
-                    newSourceExpression,
-                    modify.isFlattened() );
+            LogicalValues logicalValues = LogicalValues.createOneRow( input.getCluster() );
+            input = new LogicalProject(
+                    input.getCluster(),
+                    input.getTraitSet(),
+                    logicalValues,
+                    projects,
+                    input.getRowType()
+            );
+        }
+        return new LogicalTableModify(
+                modify.getCluster(),
+                modify.getTraitSet(),
+                modify.getTable(),
+                modify.getCatalogReader(),
+                input,
+                modify.getOperation(),
+                modify.getUpdateColumnList(),
+                newSourceExpression,
+                modify.isFlattened() );
 
     }
 
