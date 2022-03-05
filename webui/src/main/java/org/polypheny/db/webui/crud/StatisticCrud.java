@@ -103,7 +103,7 @@ public class StatisticCrud {
      */
     public void getStatistics( final Context ctx, Gson gsonExpose ) {
         if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-            ctx.result( gsonExpose.toJson( statisticsManager.getStatisticSchemaMap() ) );
+            ctx.result( gsonExpose.toJson( statisticsManager.getQualifiedStatisticMap() ) );
         } else {
             ctx.json( new ConcurrentHashMap<>() );
         }

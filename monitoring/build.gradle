@@ -1,8 +1,6 @@
 group "org.polypheny"
 
 
-version = versionMajor + "." + versionMinor + versionQualifier
-
 apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"

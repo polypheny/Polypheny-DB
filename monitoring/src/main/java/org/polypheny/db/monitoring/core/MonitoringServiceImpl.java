@@ -72,6 +72,26 @@ public class MonitoringServiceImpl implements MonitoringService {
     }
 
 
+    /**
+     * Removes all data points for given monitoring persistent type.
+     *
+     * @param dataPointClass specific datapoint class of interest to remove
+     */
+    @Override
+    public <T extends MonitoringDataPoint> void removeAllDataPointsOfSpecificClass( Class<T> dataPointClass ) {
+        this.repository.removeAllDataPointsOfSpecificClass( dataPointClass );
+    }
+
+
+    /**
+     * Removes all aggregated dataPoints.
+     */
+    @Override
+    public void resetAllDataPoints() {
+        this.repository.resetAllDataPoints();
+    }
+
+
     @Override
     public QueryPostCost getQueryPostCosts( String physicalQueryClass ) {
         return this.repository.getQueryPostCosts( physicalQueryClass );

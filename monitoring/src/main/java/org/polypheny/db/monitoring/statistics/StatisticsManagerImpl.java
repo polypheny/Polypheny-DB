@@ -1274,4 +1274,28 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         UNIQUE_VALUE
     }
 
+
+    @Override
+    public Map<String, Map<String, Map<String, StatisticColumn<?>>>> getQualifiedStatisticMap() {
+        Map<String, Map<String, Map<String, StatisticColumn<?>>>> map = new HashMap<>();
+        for ( Entry<Long, Map<Long, Map<Long, StatisticColumn<T>>>> namespace : statisticSchemaMap.entrySet() ) {
+            for ( Entry<Long, Map<Long, StatisticColumn<T>>> entity : namespace.getValue().entrySet() ) {
+                for ( Entry<Long, StatisticColumn<T>> field : entity.getValue().entrySet() ) {
+                    StatisticColumn<T> val = field.getValue();
+                    if ( !map.containsKey( val.getSchema() ) ) {
+                        map.put( val.getSchema(), new HashMap<>() );
+                    }
+                    Map<String, Map<String, StatisticColumn<?>>> nVal = map.get( val.getSchema() );
+                    if ( !nVal.containsKey( val.getTable() ) ) {
+                        nVal.put( val.getTable(), new HashMap<>() );
+                    }
+                    Map<String, StatisticColumn<?>> eVal = nVal.get( val.getTable() );
+                    eVal.put( val.getColumn(), val );
+                }
+            }
+        }
+
+        return map;
+    }
+
 }

@@ -20,8 +20,6 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
@@ -69,28 +67,17 @@ public class HttpServer implements Runnable {
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
 
-    private static final Gson gson;
+    public static final Gson gson;
     private final Gson gsonExpose = new GsonBuilder()
             .excludeFieldsWithoutExposeAnnotation()
             .enableComplexMapKeySerialization()
             .setPrettyPrinting()
             .create();
 
-    public static final TypeAdapterFactory throwableTypeAdapterFactory;
     public static final TypeAdapter<Throwable> throwableTypeAdapter;
 
 
     static {
-        throwableTypeAdapterFactory = new TypeAdapterFactory() {
-            @Override
-            public <T> TypeAdapter<T> create( Gson gson, TypeToken<T> type ) {
-                if ( !Throwable.class.isAssignableFrom( type.getRawType() ) ) {
-                    return null;
-                }
-                //noinspection unchecked
-                return (TypeAdapter<T>) throwableTypeAdapter;
-            }
-        };
         throwableTypeAdapter = new TypeAdapter<>() {
             @Override
             public void write( JsonWriter out, Throwable value ) throws IOException {
@@ -112,12 +99,12 @@ public class HttpServer implements Runnable {
         };
         gson = new GsonBuilder()
                 .enableComplexMapKeySerialization()
-                .registerTypeAdapter( DataSource.class, DataSource.getSerializer() )
-                .registerTypeAdapter( DataStore.class, DataStore.getSerializer() )
+                .registerTypeHierarchyAdapter( DataSource.class, DataSource.getSerializer() )
+                .registerTypeHierarchyAdapter( DataStore.class, DataStore.getSerializer() )
+                .registerTypeHierarchyAdapter( Throwable.class, throwableTypeAdapter )
                 .registerTypeAdapter( PolyType.class, PolyType.getSerializer() )
                 .registerTypeAdapter( AdapterInformation.class, AdapterInformation.getSerializer() )
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
-                .registerTypeAdapterFactory( throwableTypeAdapterFactory )
                 .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
                 .registerTypeAdapter( Duration.class, Duration.getSerializer() )
                 .registerTypeAdapter( Result.class, Result.getSerializer() )

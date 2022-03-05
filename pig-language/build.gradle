@@ -2,8 +2,6 @@ import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
 
 group "org.polypheny"
 
-version = versionMajor + '.' + versionMinor + versionQualifier
-
 
 configurations {
     javacc
