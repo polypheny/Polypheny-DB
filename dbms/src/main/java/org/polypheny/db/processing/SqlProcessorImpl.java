@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.processing.replication.freshness.FreshnessManager;
+import org.polypheny.db.processing.replication.freshness.FreshnessManager.FreshnessInformation;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.sql.SqlBasicCall;
@@ -62,6 +64,7 @@ import org.polypheny.db.sql.sql.SqlInsert;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
+import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.sql.parser.SqlParser;
@@ -152,6 +155,8 @@ public class SqlProcessorImpl extends Processor {
         final PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
         validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
         validator.setIdentifierExpansion( true );
+
+        inspectFreshness( transaction, parsed );
 
         Node validated;
         AlgDataType type;
@@ -424,6 +429,27 @@ public class SqlProcessorImpl extends Processor {
         // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past
         // joins and seem to prevent join-reordering.
         return AlgOptUtil.countJoins( rootAlg ) < 2;
+    }
+
+
+    private void inspectFreshness( Transaction transaction, Node parsed ) {
+        if ( parsed.getKind() == Kind.SELECT && ((SqlSelect) parsed).getFreshness() != null ) {
+            extractFreshness( transaction, (SqlSelect) parsed );
+        }
+    }
+
+
+    private void extractFreshness( Transaction transaction, SqlSelect select ) {
+
+        // Adjusts scope of transaction to accept outdated data within
+        // At the same time the usage of DMLs is now permitted
+        transaction.setAcceptsOutdated( true );
+
+        // TODO @HENNLO Check that no DML had already been executed when accepting this query.
+        // Maybe do this and the evaluation later in AbstractQueryProcessor
+
+        FreshnessInformation freshnessInformation = FreshnessManager.FreshnessInformation.fromNodeLists();
+
     }
 
 }

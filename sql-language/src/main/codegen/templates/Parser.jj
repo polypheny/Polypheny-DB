@@ -88,6 +88,7 @@ import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.partition.raw.*;
+import org.polypheny.db.processing.replication.freshness.properties.*;
 
 import org.slf4j.Logger;
 
@@ -2256,27 +2257,50 @@ SqlNode HavingOpt() :
  */
 SqlNode FreshnessOpt() :
 {
-    SqlNode e;
+    SqlNode toleratedFreshness;
+    SqlIdentifier rawEvaluationType;
+    SqlIdentifier unit;
 }
 {
     <FRESHNESS>
     (
-            e = DateTimeLiteral()
+            toleratedFreshness = DateTimeLiteral()
+            {
+                rawEvaluationType = new SqlIdentifier( "TIMESTAMP", getPos() );
+                unit = new SqlIdentifier( "TIMESTAMP", getPos() );
+            }
         |
-            e = NumericLiteral()
+            toleratedFreshness = NumericLiteral()
             (
                 (
                         <SECOND>
+                        {
+                            unit = new SqlIdentifier( "SECOND", getPos() );
+                        }
                     |
                         <MINUTE>
+                        {
+                            unit = new SqlIdentifier( "MINUTE", getPos() );
+                        }
                     |
                         <HOUR>
+                        {
+                            unit = new SqlIdentifier( "HOUR", getPos() );
+                        }
                 )
-                |
+                {
+                   rawEvaluationType = new SqlIdentifier( "DELAY", getPos() );
+                }
+
+               |
                 <PERCENT_REMAINDER>
+                {
+                    rawEvaluationType = new SqlIdentifier( "PERCENTAGE", getPos() );
+                    unit = new SqlIdentifier( "PERCENTAGE", getPos() );
+                }
             )
     )
-    { return e; }
+    { return new SqlFreshness(getPos(), toleratedFreshness, rawEvaluationType, unit); }
 |
     { return null; }
 }
