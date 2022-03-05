@@ -286,7 +286,6 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return VolcanoCost.FACTORY.makeInfiniteCost();
-        //return super.computeSelfCost( planner, mq ).multiplyBy( 10 );
     }
 
 }
