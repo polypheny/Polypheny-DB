@@ -3064,7 +3064,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
-        // TODO DL check with statements
         try {
             long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
             // Check if there is already a unique constraint

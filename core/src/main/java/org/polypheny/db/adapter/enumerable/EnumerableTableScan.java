@@ -55,6 +55,7 @@ import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -285,6 +286,12 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        if ( Catalog.testMode ) {
+            // normally this enumerable is not used by Polypheny and is therefore "removed" by an infinite cost,
+            // but theoretically it is able to handle scans on the application layer
+            // this is tested by different instances and should then lead to a finite selfCost
+            return super.computeSelfCost( planner, mq );
+        }
         return VolcanoCost.FACTORY.makeInfiniteCost();
     }
 
