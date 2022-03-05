@@ -25,6 +25,7 @@ import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherNodePattern extends CypherPattern {
@@ -55,10 +56,14 @@ public class CypherNodePattern extends CypherPattern {
     }
 
 
-    public PolyNode getPolyNode() {
+    public Pair<String, PolyNode> getPolyNode() {
         PolyDirectory properties = (PolyDirectory) this.properties.getComparable();
+        String name = null;
+        if ( variable != null ) {
+            name = variable.getName();
+        }
 
-        return new PolyNode( properties );
+        return Pair.of( name, new PolyNode( properties ) );
     }
 
 }

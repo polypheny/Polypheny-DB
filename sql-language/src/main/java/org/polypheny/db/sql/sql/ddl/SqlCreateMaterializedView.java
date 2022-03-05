@@ -153,7 +153,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         AlgRoot algRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate(
-                        statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, , null );
+                        statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
 
         List<String> columns = null;
 

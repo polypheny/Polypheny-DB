@@ -55,13 +55,13 @@ public class CypherReturnItem extends CypherReturn {
 
 
     @Override
-    public Pair<String, RexNode> getRexNode( CypherContext context ) {
-        String name = null;
+    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
         if ( variable != null ) {
-            name = variable.getName();
+            // name -> aggregate
+            return Pair.of( variable.getName(), expression.getRexNode( context ) );
+        } else {
+            return expression.getRexAsProject( context );
         }
-        return Pair.of( name, expression.getRexNode( context ) );
-
     }
 
 }

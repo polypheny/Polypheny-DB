@@ -16,12 +16,17 @@
 
 package org.polypheny.db.cypher.expression;
 
+import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.pattern.CypherPattern;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherExpression extends CypherNode {
@@ -62,6 +67,45 @@ public class CypherExpression extends CypherNode {
 
 
     public RexNode getRexNode( CypherContext context ) {
+
+        OperatorName operatorName;
+        switch ( type ) {
+            case PATTERN:
+                // EveryPathPattern
+                return pattern.getPatternFilter( context );
+            case ALL:
+                operatorName = OperatorName.CYPHER_ALL_MATCH;
+                break;
+            case ANY:
+                operatorName = OperatorName.CYPHER_ANY_MATCH;
+                break;
+            case NONE:
+                operatorName = OperatorName.CYPHER_NONE_MATCH;
+                break;
+            case SINGLE:
+                operatorName = OperatorName.CYPHER_SINGLE_MATCH;
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+
+        //  ANY ( Variable IN Expression(list) Where? )
+        //  MATCH p = (a)-[*1..3]->(b)
+        //  WHERE
+        //  a.name = 'Alice'
+        //  AND b.name = 'Daniel'
+        //  AND all(x IN nodes(p) WHERE x.age > 30)
+        //  RETURN p
+
+        return new RexCall(
+                context.booleanType,
+                OperatorRegistry.get( operatorName ),
+                List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRexNode( context ) ) );
+    }
+
+
+    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
+        throw new UnsupportedOperationException();
     }
 
 

@@ -1368,7 +1368,15 @@ public enum OperatorName {
 
     DESERIALIZE( LangFunctionOperator.class ),
 
-    CYPHER_PATTERN_MATCH( LangFunctionOperator.class );
+    CYPHER_PATTERN_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_ALL_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_ANY_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_NONE_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_SINGLE_MATCH( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;

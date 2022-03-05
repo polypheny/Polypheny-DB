@@ -19,7 +19,6 @@ package org.polypheny.db.cypher.cypher2alg;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-import java.util.function.Function;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -30,9 +29,10 @@ import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
-import org.polypheny.db.cypher.CypherNode.CypherKind;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.clause.CypherMatch;
@@ -67,8 +67,14 @@ public class CypherToAlgConverter {
 
 
     public AlgRoot convert( CypherNode query, CypherQueryParameters parameters, AlgOptCluster cluster ) {
-        assert parameters.databaseId != null;
-        LogicalGraph graph = new LogicalGraph( parameters.getDatabaseId() );
+        long databaseId;
+        if ( parameters.databaseId == null ) {
+            databaseId = getDatabaseId( parameters );
+        } else {
+            databaseId = parameters.databaseId;
+        }
+
+        LogicalGraph graph = new LogicalGraph( databaseId );
 
         if ( !CypherFamily.QUERY.contains( query.getCypherKind() ) ) {
             throw new RuntimeException( "Used a unsupported query." );
@@ -78,7 +84,18 @@ public class CypherToAlgConverter {
 
         convertQuery( query, context );
 
-        return AlgRoot.of( context.node, context.kind );
+        return AlgRoot.of( context.build(), context.kind );
+    }
+
+
+    private long getDatabaseId( CypherQueryParameters parameters ) {
+        long databaseId;
+        try {
+            databaseId = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, parameters.databaseName ).id;
+        } catch ( UnknownNamespaceException e ) {
+            throw new RuntimeException( "Error on retrieving the used namespace" );
+        }
+        return databaseId;
     }
 
 
@@ -118,7 +135,7 @@ public class CypherToAlgConverter {
 
 
     private void convertReturn( CypherReturnClause clause, CypherContext context ) {
-        context.add( ( n ) -> clause.getGraphProject( n, context ) );
+        context.add( clause.getGraphProject( context ) );
     }
 
 
@@ -129,7 +146,7 @@ public class CypherToAlgConverter {
             convertPattern( pattern, context );
         }
 
-        context.add( ( n ) -> new LogicalGraphModify( cluster, cluster.traitSet(), n, Operation.INSERT, null, null ) );
+        context.add( new LogicalGraphModify( cluster, cluster.traitSet(), context.pop(), Operation.INSERT, null, null ) );
 
     }
 
@@ -160,16 +177,17 @@ public class CypherToAlgConverter {
 
 
     private void convertWhere( CypherWhere where, CypherContext context ) {
+        context.add( where.getExpression().getRexNode( context ) );
     }
 
 
     private void convertPattern( CypherPattern pattern, CypherContext context ) {
-        if ( context.active.getCypherKind() == CypherKind.CREATE ) {
+        if ( context.kind == Kind.CYPHER_CREATE ) {
             // convert "values" pattern (LogicalGraphPattern AlgNode)
-            context.add( pattern.getPatternValues( cluster, context ) );
+            context.add( pattern.getPatternValues( context ) );
         } else {
             // convert filter pattern ( RexNode CYPHER_PATTERN_MATCH )
-            context.add( pattern.getPatternFilter( cluster, context ) );
+            context.add( pattern.getPatternFilter( context ) );
         }
 
     }
@@ -185,8 +203,8 @@ public class CypherToAlgConverter {
     public static class CypherContext {
 
         public final AlgOptCluster cluster;
-        private final AlgBuilder algBuilder;
-        private final RexBuilder rexBuilder;
+        public final AlgBuilder algBuilder;
+        public final RexBuilder rexBuilder;
 
         private final Stack<AlgNode> stack = new Stack<>();
         private final Stack<RexNode> rexStack = new Stack<>();
@@ -194,6 +212,9 @@ public class CypherToAlgConverter {
         public final LogicalGraph graph;
 
         public final AlgDataType graphType;
+        public final AlgDataType booleanType;
+        public final AlgDataType nodeType;
+        public final AlgDataType relType;
         public CypherNode active;
         public Kind kind;
 
@@ -205,6 +226,9 @@ public class CypherToAlgConverter {
             this.algBuilder = algBuilder;
             this.rexBuilder = rexBuilder;
             this.graphType = cluster.getTypeFactory().createPolyType( PolyType.GRAPH );
+            this.booleanType = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+            this.nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
+            this.relType = cluster.getTypeFactory().createPolyType( PolyType.RELATIONSHIP );
         }
 
 
@@ -243,13 +267,6 @@ public class CypherToAlgConverter {
         }
 
 
-        public void add( Function<AlgNode, AlgNode> transformer ) {
-            assert this.stack.size() >= 1;
-            AlgNode parent = this.stack.pop();
-            this.stack.add( transformer.apply( parent ) );
-        }
-
-
         public void add( AlgNode node ) {
             this.stack.add( node );
         }
@@ -259,6 +276,21 @@ public class CypherToAlgConverter {
             this.rexStack.add( node );
         }
 
+
+        public AlgNode build() {
+            assert stack.size() == 1;
+            return stack.pop();
+        }
+
+
+        public AlgNode peek() {
+            return stack.peek();
+        }
+
+
+        public AlgNode pop() {
+            return stack.pop();
+        }
 
     }
 

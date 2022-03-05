@@ -105,6 +105,13 @@ public class AlgOptCluster {
     }
 
 
+    public static AlgOptCluster createGraph( AlgOptPlanner planner, RexBuilder rexBuilder ) {
+        AlgTraitSet traitSet = planner.emptyTraitSet().replace( ModelTrait.GRAPH );
+
+        return AlgOptCluster.create( planner, rexBuilder, traitSet );
+    }
+
+
     private static AlgOptCluster create( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet ) {
         return new AlgOptCluster( planner, rexBuilder.getTypeFactory(), rexBuilder, traitSet );
     }

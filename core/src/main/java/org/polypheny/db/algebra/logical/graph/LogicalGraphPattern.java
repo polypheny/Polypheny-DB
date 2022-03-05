@@ -17,12 +17,19 @@
 package org.polypheny.db.algebra.logical.graph;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyRelationship;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class LogicalGraphPattern extends AbstractAlgNode {
@@ -37,10 +44,40 @@ public class LogicalGraphPattern extends AbstractAlgNode {
      * @param cluster
      * @param traitSet
      */
-    public LogicalGraphPattern( AlgOptCluster cluster, AlgTraitSet traitSet, ImmutableList<PolyNode> nodes, ImmutableList<PolyRelationship> rels ) {
+    public LogicalGraphPattern( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyRelationship> rels, AlgDataType rowType ) {
         super( cluster, traitSet );
-        this.nodes = nodes;
-        this.rels = rels;
+        this.nodes = ImmutableList.copyOf( nodes );
+        this.rels = ImmutableList.copyOf( rels );
+
+        this.rowType = rowType;
+    }
+
+
+    public static LogicalGraphPattern create(
+            AlgOptCluster cluster,
+            AlgTraitSet traitSet,
+            List<Pair<String, PolyNode>> nodes,
+            AlgDataType nodeType,
+            List<Pair<String, PolyRelationship>> rels,
+            AlgDataType relType ) {
+
+        List<AlgDataTypeField> fields = new ArrayList<>();
+
+        int i = 0;
+        for ( String name : Pair.left( nodes ) ) {
+            fields.add( new AlgDataTypeFieldImpl( name, i, nodeType ) );
+            i++;
+        }
+
+        for ( String name : Pair.left( rels ) ) {
+            fields.add( new AlgDataTypeFieldImpl( name, i, relType ) );
+            i++;
+        }
+
+        AlgRecordType rowType = new AlgRecordType( fields );
+
+        return new LogicalGraphPattern( cluster, traitSet, Pair.right( nodes ), Pair.right( rels ), rowType );
+
     }
 
 

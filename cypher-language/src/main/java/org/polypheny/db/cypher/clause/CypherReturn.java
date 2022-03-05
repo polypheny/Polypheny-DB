@@ -35,7 +35,12 @@ public class CypherReturn extends CypherNode {
     }
 
 
-    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+    public RexNode getRexNode( CypherContext context ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
         throw new UnsupportedOperationException();
     }
 

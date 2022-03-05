@@ -126,7 +126,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
         AlgRoot algRoot = sqlProcessor.translate(
                 statement,
-                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, , null );
+                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
 
         AlgNode algNode = algRoot.alg;
         AlgCollation algCollation = algRoot.collation;

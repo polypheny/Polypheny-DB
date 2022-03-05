@@ -28,6 +28,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.schema.graph.PolyRelationship;
 import org.polypheny.db.schema.graph.PolyRelationship.RelationshipDirection;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherRelPattern extends CypherPattern {
@@ -66,11 +67,17 @@ public class CypherRelPattern extends CypherPattern {
     }
 
 
-    public PolyRelationship getPolyRelationship( long leftId, long rightId ) {
+    public Pair<String, PolyRelationship> getPolyRelationship( long leftId, long rightId ) {
         PolyDirectory properties = (PolyDirectory) this.properties.getComparable();
         RelationshipDirection direction = left == right ? RelationshipDirection.NONE : left ? RelationshipDirection.LEFT_TO_RIGHT : RelationshipDirection.RIGHT_TO_LEFT;
         List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
-        return new PolyRelationship( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction );
+
+        String name = null;
+        if ( variable != null ) {
+            name = variable.getName();
+        }
+
+        return Pair.of( name, new PolyRelationship( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction ) );
     }
 
 }

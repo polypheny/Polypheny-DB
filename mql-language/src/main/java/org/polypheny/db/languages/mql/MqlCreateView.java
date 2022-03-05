@@ -72,7 +72,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
         AlgRoot algRoot = statement.getTransaction()
                 .getProcessor( QueryLanguage.MONGO_QL )
-                .translate( statement, mqlNode, , parameters );
+                .translate( statement, mqlNode, parameters );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         AlgNode algNode = algRoot.alg;

@@ -793,7 +793,7 @@ public interface CypherFactory {
     }
 
     static CypherParameter newParameter( ParserPos pos, CypherVariable variable, ParameterType type ) {
-        return new CypherParameter( pos, variable, ParameterType.ANY );
+        return new CypherParameter( pos, variable.getName(), type );
     }
 
     static CypherParameter newParameter( ParserPos pos, String name, ParameterType type ) {

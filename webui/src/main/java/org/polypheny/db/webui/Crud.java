@@ -3822,7 +3822,7 @@ public class Crud implements InformationObserver {
                 statement.getOverviewDuration().stop( "Validation" );
                 statement.getOverviewDuration().start( "Translation" );
             }
-            logicalRoot = sqlProcessor.translate( statement, validated.left, , parameters );
+            logicalRoot = sqlProcessor.translate( statement, validated.left, parameters );
             if ( isAnalyze ) {
                 statement.getOverviewDuration().stop( "Translation" );
             }

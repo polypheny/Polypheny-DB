@@ -17,7 +17,11 @@
 package org.polypheny.db.cypher.expression;
 
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherVariable extends CypherExpression {
@@ -28,6 +32,23 @@ public class CypherVariable extends CypherExpression {
     public CypherVariable( ParserPos pos, String name ) {
         super( pos );
         this.name = name;
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
+        AlgNode node = context.peek();
+
+        int index = node.getRowType().getFieldNames().indexOf( name );
+
+        if ( index < 0 ) {
+            throw new RuntimeException( "The used variable is not known." );
+        }
+
+        return Pair.of(
+                name,
+                context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( index ).getType(), index ) );
+
     }
 
 }

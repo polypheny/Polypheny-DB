@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.pattern;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,7 +26,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -37,6 +35,7 @@ import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyRelationship;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherEveryPathPattern extends CypherPattern {
@@ -73,13 +72,13 @@ public class CypherEveryPathPattern extends CypherPattern {
     }
 
 
-    private List<PolyNode> getPolyNodes() {
+    private List<Pair<String, PolyNode>> getPolyNodes() {
         return this.nodes.stream().map( CypherNodePattern::getPolyNode ).collect( Collectors.toList() );
     }
 
 
-    private List<PolyRelationship> getPolyRelationships( List<PolyNode> nodes ) {
-        List<PolyRelationship> rels = new ArrayList<>();
+    private List<Pair<String, PolyRelationship>> getPolyRelationships( List<PolyNode> nodes ) {
+        List<Pair<String, PolyRelationship>> rels = new ArrayList<>();
         assert nodes.size() == relationships.size() + 1;
 
         Iterator<CypherRelPattern> relIter = relationships.iterator();
@@ -97,19 +96,19 @@ public class CypherEveryPathPattern extends CypherPattern {
 
 
     @Override
-    public LogicalGraphPattern getPatternValues( AlgOptCluster cluster, CypherContext context ) {
-        List<PolyNode> nodes = getPolyNodes();
-        List<PolyRelationship> relationships = getPolyRelationships( nodes );
+    public LogicalGraphPattern getPatternValues( CypherContext context ) {
+        List<Pair<String, PolyNode>> nodes = getPolyNodes();
+        List<Pair<String, PolyRelationship>> relationships = getPolyRelationships( Pair.right( nodes ) );
 
-        return new LogicalGraphPattern( cluster, cluster.traitSet(), ImmutableList.copyOf( nodes ), ImmutableList.copyOf( relationships ) );
+        return LogicalGraphPattern.create( context.cluster, context.cluster.traitSet(), nodes, context.nodeType, relationships, context.relType );
     }
 
 
     @Override
-    public RexNode getPatternFilter( AlgOptCluster cluster, CypherContext context ) {
-        List<PolyNode> polyNodes = getPolyNodes();
+    public RexNode getPatternFilter( CypherContext context ) {
+        List<PolyNode> polyNodes = Pair.right( getPolyNodes() );
         PolyMap<Long, PolyNode> nodes = new PolyMap<>( polyNodes.stream().collect( Collectors.toMap( e -> e.id, e -> e ) ) );
-        PolyMap<Long, PolyRelationship> relationships = new PolyMap<>( getPolyRelationships( polyNodes ).stream().collect( Collectors.toMap( e -> e.id, e -> e ) ) );
+        PolyMap<Long, PolyRelationship> relationships = new PolyMap<>( getPolyRelationships( polyNodes ).stream().collect( Collectors.toMap( e -> e.right.id, e -> e.right ) ) );
         PolyGraph graph = new PolyGraph( nodes, relationships );
 
         return new RexCall(

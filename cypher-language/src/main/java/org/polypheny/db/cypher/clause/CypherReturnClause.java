@@ -59,14 +59,14 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    public AlgNode getGraphProject( AlgNode input, CypherContext context ) {
+    public AlgNode getGraphProject( CypherContext context ) {
 
-        List<Pair<String, RexNode>> nameAndProject = returnItems.stream().map( i -> i.getRexNode( context ) ).collect( Collectors.toList() );
+        List<Pair<String, RexNode>> nameAndProject = returnItems.stream().map( i -> i.getRexAsProject( context ) ).collect( Collectors.toList() );
 
         return new LogicalGraphProject(
                 context.cluster,
                 context.cluster.traitSet(),
-                input,
+                context.pop(),
                 Pair.right( nameAndProject ),
                 Pair.left( nameAndProject )
         );

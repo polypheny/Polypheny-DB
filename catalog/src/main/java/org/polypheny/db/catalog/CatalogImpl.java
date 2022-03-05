@@ -464,7 +464,7 @@ public class CatalogImpl extends Catalog {
                         Node sqlNode = sqlProcessor.parse( query ).get( 0 );
                         AlgRoot algRoot = sqlProcessor.translate(
                                 statement,
-                                sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, ,
+                                sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
                                 new QueryParameters( query, c.getNamespaceType() ) );
                         nodeInfo.put( c.id, algRoot.alg );
                         algTypeInfo.put( c.id, algRoot.validatedRowType );
@@ -472,7 +472,7 @@ public class CatalogImpl extends Catalog {
 
                     case REL_ALG:
                         Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
-                        AlgNode result = jsonRelProcessor.translate( statement, null, , new QueryParameters( query, c.getNamespaceType() ) ).alg;
+                        AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query, c.getNamespaceType() ) ).alg;
 
                         final AlgDataType rowType = result.getRowType();
                         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
@@ -492,7 +492,7 @@ public class CatalogImpl extends Catalog {
 
                         AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,
-                                mqlNode, ,
+                                mqlNode,
                                 new MqlQueryParameters( query, getNamespace( defaultDatabaseId ).name, NamespaceType.DOCUMENT ) );
                         nodeInfo.put( c.id, mqlRel.alg );
                         algTypeInfo.put( c.id, mqlRel.validatedRowType );

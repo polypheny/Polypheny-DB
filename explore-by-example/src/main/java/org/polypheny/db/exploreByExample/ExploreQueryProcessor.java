@@ -171,7 +171,7 @@ public class ExploreQueryProcessor {
             throw new RuntimeException( "No DDL expected here" );
         } else {
             Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
-            AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, , null );
+            AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
             result = statement.getQueryProcessor().prepareQuery( logicalRoot, true );

@@ -21,7 +21,6 @@ import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexNode;
 
 public abstract class CypherPattern extends CypherNode {
@@ -37,12 +36,12 @@ public abstract class CypherPattern extends CypherNode {
     }
 
 
-    public LogicalGraphPattern getPatternValues( AlgOptCluster cluster, CypherContext context ) {
+    public LogicalGraphPattern getPatternValues( CypherContext context ) {
         throw new CypherSyntaxException( "Used pattern is not supported as graph values" );
     }
 
 
-    public RexNode getPatternFilter( AlgOptCluster cluster, CypherContext context ) {
+    public RexNode getPatternFilter( CypherContext context ) {
         throw new CypherSyntaxException( "Used pattern is not supported as graph filter." );
     }
 

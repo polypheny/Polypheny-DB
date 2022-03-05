@@ -18,22 +18,14 @@ package org.polypheny.db.cypher;
 
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
 public class CypherParameter extends CypherExpression {
 
-    private CypherVariable variable;
     private final ParameterType parameterType;
-    private String name;
+    private final String name;
 
-
-    protected CypherParameter( ParserPos pos, CypherVariable variable, ParameterType parameterType ) {
-        super( pos );
-        this.variable = variable;
-        this.parameterType = parameterType;
-    }
 
 
     protected CypherParameter( ParserPos pos, String name, ParameterType parameterType ) {
