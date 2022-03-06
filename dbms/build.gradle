@@ -65,6 +65,7 @@ dependencies {
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
     testImplementation group: "junit", name: "junit", version: junit_version
+    implementation 'org.junit.jupiter:junit-jupiter:5.7.0'
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT

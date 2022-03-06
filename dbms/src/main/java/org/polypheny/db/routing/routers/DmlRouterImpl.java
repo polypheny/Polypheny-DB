@@ -73,6 +73,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.view.ViewWriterOrchestrator;
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
@@ -98,7 +99,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     } else if ( catalogTable.tableType == TableType.SOURCE ) {
                         throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
                     } else if ( catalogTable.tableType == TableType.VIEW ) {
-                        throw new RuntimeException( "Polypheny-DB does not support modifying views." );
+                        ViewWriterOrchestrator viewWriterOrchestrator = new ViewWriterOrchestrator();
+                        viewWriterOrchestrator.writeView();
                     }
                     throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                 }
