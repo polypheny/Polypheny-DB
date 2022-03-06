@@ -47,6 +47,7 @@ import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ForStatement;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -277,6 +278,17 @@ public class EnumUtils {
             }
         }
         return e;
+    }
+
+
+    public static ForStatement for_( ParameterExpression i_, ParameterExpression _list, BlockStatement statement ) {
+        return Expressions.for_(
+                Expressions.declare(
+                        Modifier.PRIVATE, i_, Expressions.constant( 0 ) ),
+                Expressions.lessThan( i_, Expressions.call( _list, "size" ) ),
+                Expressions.postIncrementAssign( i_ ),
+                statement
+        );
     }
 
 }
