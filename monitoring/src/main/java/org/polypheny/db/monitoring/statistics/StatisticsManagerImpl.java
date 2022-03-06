@@ -533,7 +533,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         mapMap.get( tableId ).put( columnId, statisticColumn );
 
         if ( !tableStatistic.containsKey( tableId ) ) {
-            tableStatistic.put( tableId, new StatisticTable<T>( tableId ) );
+            tableStatistic.put( tableId, new StatisticTable<>( tableId ) );
         }
     }
 
