@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -266,12 +265,22 @@ public class StatisticsTest {
                             statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
                             ImmutableList.of()
                     );
-                    waiter.await( 30, TimeUnit.SECONDS );
                     try {
-                        CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
-                        Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                        // the table is does either not exist, is empty or does no longer exist
-                        Assert.assertTrue( Objects.equals( 0, rowCountNation ) || null == rowCountNation );
+                        boolean successfull = false;
+                        int count = 0;
+                        while ( !successfull && count < 180 ) {
+                            waiter.await( 1, TimeUnit.SECONDS );
+                            CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
+                            if ( 0 == StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id ) ) {
+                                successfull = true;
+
+                            }
+                            count++;
+                        }
+
+                        if ( !successfull ) {
+                            Assert.fail( "RowCount did not diverge to the correct number." );
+                        }
                     } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                         log.error( "Caught exception test", e );
                     }
