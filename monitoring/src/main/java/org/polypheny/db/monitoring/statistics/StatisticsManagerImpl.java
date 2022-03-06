@@ -526,10 +526,11 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         if ( !map.containsKey( schemaId ) ) {
             map.put( schemaId, new HashMap<>() );
         }
-        if ( !map.get( schemaId ).containsKey( tableId ) ) {
-            map.get( schemaId ).put( tableId, new HashMap<>() );
+        Map<Long, Map<Long, StatisticColumn<T>>> mapMap = map.get( schemaId );
+        if ( !mapMap.containsKey( tableId ) ) {
+            mapMap.put( tableId, new HashMap<>() );
         }
-        map.get( schemaId ).get( tableId ).put( columnId, statisticColumn );
+        mapMap.get( tableId ).put( columnId, statisticColumn );
 
         if ( !tableStatistic.containsKey( tableId ) ) {
             tableStatistic.put( tableId, new StatisticTable<T>( tableId ) );

@@ -216,9 +216,7 @@ public class StatisticQueryProcessor {
         List<List<Object>> rows;
 
         try {
-            // the statistics are DQL queries, which use no lock to execute them as fast as possible
-            // maybe this can be adjusted to not miss-use the isSubquery flag in the future
-            result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false, true, false );
+            result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
             rows = result.getRows( statement, getPageSize() );
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );

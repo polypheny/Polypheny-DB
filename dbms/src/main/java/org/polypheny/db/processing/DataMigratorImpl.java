@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
@@ -277,9 +279,13 @@ public class DataMigratorImpl implements DataMigrator {
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
+        // while adapters should be able to handle unsorted columnIds for prepared indexes,
+        // this often leads to errors, and can be prevented by sorting
+        List<CatalogColumnPlacement> placements = to.stream().sorted( Comparator.comparingLong( p -> p.columnId ) ).collect( Collectors.toList() );
+
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
-        for ( CatalogColumnPlacement ccp : to ) {
+        for ( CatalogColumnPlacement ccp : placements ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
