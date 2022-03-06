@@ -18,21 +18,21 @@ package org.polypheny.db.policies.policy.models;
 
 import java.util.HashMap;
 import java.util.List;
-import org.polypheny.db.policies.policy.Clause.Category;
+import org.polypheny.db.policies.policy.Clause.ClauseCategory;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
 import org.polypheny.db.policies.policy.Clause.ClauseType;
-import org.polypheny.db.policies.policy.Policy.Target;
+import org.polypheny.db.policies.policy.Policies.Target;
 import org.polypheny.db.util.Pair;
 
 public class UiNumberClause extends UiClause {
 
     private final int value;
 
-    private final HashMap<Category, Pair<Integer, Integer>> categoryRange;
+    private final HashMap<ClauseCategory, Pair<Integer, Integer>> categoryRange;
 
 
-    public UiNumberClause( ClauseName clauseName, int id, boolean isDefault, ClauseType clauseType, Category category, String description, List<Target> possibleTargets, int value, HashMap<Category, Pair<Integer, Integer>> categoryRange ) {
-        super( clauseName, id, isDefault, clauseType, category, description, possibleTargets );
+    public UiNumberClause( ClauseName clauseName, int id, boolean isDefault, ClauseType clauseType, ClauseCategory clauseCategory, String description, List<Target> possibleTargets, int value, HashMap<ClauseCategory, Pair<Integer, Integer>> categoryRange ) {
+        super( clauseName, id, isDefault, clauseType, clauseCategory, description, possibleTargets );
         this.value = value;
         this.categoryRange = categoryRange;
     }

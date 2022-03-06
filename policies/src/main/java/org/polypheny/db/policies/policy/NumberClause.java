@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 import lombok.Getter;
-import org.polypheny.db.policies.policy.Policy.Target;
+import org.polypheny.db.policies.policy.Policies.Target;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -30,11 +30,11 @@ public class NumberClause extends Clause {
 
     private final int value;
 
-    private final HashMap<Category, Pair<Integer, Integer>> categoryRange;
+    private final HashMap<ClauseCategory, Pair<Integer, Integer>> categoryRange;
 
 
-    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<Category, Pair<Integer, Integer>> categoryRange, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide, HashMap<Clause, Clause> interfering ) {
-        super( clauseName, isDefault, ClauseType.NUMBER, category, possibleTargets, description, decide, interfering );
+    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<ClauseCategory, Pair<Integer, Integer>> categoryRange, ClauseCategory clauseCategory, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide, HashMap<Clause, Clause> interfering ) {
+        super( clauseName, isDefault, ClauseType.NUMBER, clauseCategory, possibleTargets, description, decide, interfering );
         this.value = defaultValue;
         this.categoryRange = categoryRange;
 

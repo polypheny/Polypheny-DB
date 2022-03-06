@@ -21,8 +21,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import lombok.Getter;
-import org.checkerframework.checker.units.qual.C;
-import org.polypheny.db.policies.policy.Policy.Target;
+import org.polypheny.db.policies.policy.Policies.Target;
 
 @Getter
 public abstract class Clause {
@@ -43,7 +42,7 @@ public abstract class Clause {
 
     private final ClauseType clauseType;
 
-    private final Category category;
+    private final ClauseCategory clauseCategory;
 
     private final String description;
 
@@ -55,12 +54,12 @@ public abstract class Clause {
     private final HashMap<Clause, Clause> interfering;
 
 
-    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide, HashMap<Clause, Clause> interfering ) {
+    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, ClauseCategory clauseCategory, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide, HashMap<Clause, Clause> interfering ) {
         this.id = atomicId.getAndIncrement();
         this.clauseName = clauseName;
         this.isDefault = isDefault;
         this.clauseType = clauseType;
-        this.category = category;
+        this.clauseCategory = clauseCategory;
         this.description = description;
         this.possibleTargets = possibleTargets;
         this.decide = decide;
@@ -90,7 +89,7 @@ public abstract class Clause {
     /**
      * Different Categories are used to describe the different policies used in Polypheny
      */
-    public enum Category {
+    public enum ClauseCategory {
         STORE
     }
 

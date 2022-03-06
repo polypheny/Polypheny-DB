@@ -20,7 +20,7 @@ import org.polypheny.db.policies.policy.BooleanClause;
 import org.polypheny.db.policies.policy.Clause;
 import org.polypheny.db.policies.policy.Clause.ClauseType;
 import org.polypheny.db.policies.policy.NumberClause;
-import org.polypheny.db.policies.policy.Policy.Target;
+import org.polypheny.db.policies.policy.Policies.Target;
 
 public class UiPolicy {
 
@@ -45,11 +45,11 @@ public class UiPolicy {
     private UiClause buildClause( Clause clause, ClauseType clauseType ) {
         switch ( clauseType ) {
             case BOOLEAN:
-                return new UiBooleanClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getCategory(), clause.getDescription(), clause.getPossibleTargets(), ((BooleanClause) clause).isValue() );
+                return new UiBooleanClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getClauseCategory(), clause.getDescription(), clause.getPossibleTargets(), ((BooleanClause) clause).isValue() );
             case NUMBER:
-                return new UiNumberClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getCategory(), clause.getDescription(), clause.getPossibleTargets(), ((NumberClause) clause).getValue(), ((NumberClause) clause).getCategoryRange() );
+                return new UiNumberClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getClauseCategory(), clause.getDescription(), clause.getPossibleTargets(), ((NumberClause) clause).getValue(), ((NumberClause) clause).getCategoryRange() );
             default:
-                return new UiClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getCategory(), clause.getDescription(), clause.getPossibleTargets() );
+                return new UiClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getClauseCategory(), clause.getDescription(), clause.getPossibleTargets() );
         }
 
     }

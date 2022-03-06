@@ -20,17 +20,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.policies.policy.Clause.AffectedOperations;
-import org.polypheny.db.policies.policy.Clause.Category;
+import org.polypheny.db.policies.policy.Clause.ClauseCategory;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
-import org.polypheny.db.policies.policy.Policy.Target;
+import org.polypheny.db.policies.policy.Policies.Target;
 
 public class ClausesRegister {
 
@@ -51,7 +49,7 @@ public class ClausesRegister {
                 ClauseName.FULLY_PERSISTENT,
                 false,
                 true,
-                Category.STORE,
+                ClauseCategory.STORE,
                 Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY ),
                 "If fully persistent is switched on, Polypheny only adds tables and partitions to persistent stores.",
                 new HashMap<>() {{
@@ -64,7 +62,7 @@ public class ClausesRegister {
                 ClauseName.PERSISTENT,
                 false,
                 false,
-                Category.STORE,
+                ClauseCategory.STORE,
                 Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY ),
                 "If persistent is switched on, a table must be stored on at least one persistent store.",
                 new HashMap<>() {{
@@ -82,7 +80,7 @@ public class ClausesRegister {
                 ClauseName.ONLY_EMBEDDED,
                 false,
                 true,
-                Category.STORE,
+                ClauseCategory.STORE,
                 Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY ),
                 "If only embedded is switched on, Polypheny only adds tables and partitions to embedded store.",
                 new HashMap<>() {{
@@ -95,7 +93,7 @@ public class ClausesRegister {
                 ClauseName.ONLY_DOCKER,
                 false,
                 false,
-                Category.STORE,
+                ClauseCategory.STORE,
                 Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY ),
                 "If only docker is switched on, Polypheny only adds tables and partitions to docker store.",
                 new HashMap<>() {{

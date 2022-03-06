@@ -16,7 +16,7 @@
 
 package org.polypheny.db.policies.policy;
 
-import static org.polypheny.db.policies.policy.Policy.TARGET_POLYPHENY;
+import static org.polypheny.db.policies.policy.Policies.TARGET_POLYPHENY;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,31 +35,31 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.policies.policy.Clause.AffectedOperations;
-import org.polypheny.db.policies.policy.Clause.Category;
+import org.polypheny.db.policies.policy.Clause.ClauseCategory;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
 import org.polypheny.db.policies.policy.Clause.ClauseType;
-import org.polypheny.db.policies.policy.Policy.Target;
+import org.polypheny.db.policies.policy.Policies.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
 import org.polypheny.db.policies.policy.models.UiPolicy;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
-public class PolicyManager {
+public class PoliciesManager {
 
-    private static PolicyManager INSTANCE = null;
+    private static PoliciesManager INSTANCE = null;
 
 
-    public static PolicyManager getInstance() {
+    public static PoliciesManager getInstance() {
         if ( INSTANCE == null ) {
-            INSTANCE = new PolicyManager();
+            INSTANCE = new PoliciesManager();
         }
         return INSTANCE;
     }
 
 
     // id -> Policy
-    private final Map<Integer, Policy> policies = new HashMap<>();
+    private final Map<Integer, Policies> policies = new HashMap<>();
 
     //polyphenyPolicy -> id
     private int polyphenyPolicyId;
@@ -89,22 +89,22 @@ public class PolicyManager {
         Catalog catalog = Catalog.getInstance();
 
         // Policy for Polypheny
-        Policy polyphenyPolicy = new Policy();
-        polyphenyPolicyId = polyphenyPolicy.getId();
-        policies.put( polyphenyPolicy.getId(), polyphenyPolicy );
+        Policies polyphenyPolicies = new Policies();
+        polyphenyPolicyId = polyphenyPolicies.getId();
+        policies.put( polyphenyPolicies.getId(), polyphenyPolicies );
 
         // Policy for each namespace
         List<CatalogSchema> namespaces = catalog.getSchemas( 1, null );
         for ( CatalogSchema namespace : namespaces ) {
-            Policy schemaPolicy = new Policy( Target.NAMESPACE, namespace.id );
-            namespacePolicies.put( namespace.id, schemaPolicy.getId() );
-            policies.put( schemaPolicy.getId(), schemaPolicy );
+            Policies schemaPolicies = new Policies( Target.NAMESPACE, namespace.id );
+            namespacePolicies.put( namespace.id, schemaPolicies.getId() );
+            policies.put( schemaPolicies.getId(), schemaPolicies );
             // Policy for each entity
             List<CatalogTable> entities = catalog.getTables( namespace.id, null );
             for ( CatalogTable entity : entities ) {
-                Policy tablePolicy = new Policy( Target.ENTITY, entity.id );
-                entityPolicies.put( entity.id, tablePolicy.getId() );
-                policies.put( tablePolicy.getId(), tablePolicy );
+                Policies tablePolicies = new Policies( Target.ENTITY, entity.id );
+                entityPolicies.put( entity.id, tablePolicies.getId() );
+                policies.put( tablePolicies.getId(), tablePolicies );
             }
         }
     }
@@ -156,7 +156,7 @@ public class PolicyManager {
 
     private List<UiPolicy> getRelevantClauses( int policyId ) {
         List<UiPolicy> policies = new ArrayList<>();
-        Policy policy = this.policies.get( policyId );
+        Policies policy = this.policies.get( policyId );
         if ( !policy.getClauses().isEmpty() ) {
             for ( Clause clause : policy.getClauses().values() ) {
                 policies.add( new UiPolicy( clause.getClauseName().name(), policy.getTarget(), policy.getTargetId(), clause, clause.getClauseType(), clause.getDescription() ) );
@@ -177,17 +177,17 @@ public class PolicyManager {
                 break;
             case NAMESPACE:
                 if ( !namespacePolicies.containsKey( targetId ) ) {
-                    Policy schemaPolicy = new Policy( Target.NAMESPACE, targetId );
-                    namespacePolicies.put( targetId, schemaPolicy.getId() );
-                    policies.put( schemaPolicy.getId(), schemaPolicy );
+                    Policies schemaPolicies = new Policies( Target.NAMESPACE, targetId );
+                    namespacePolicies.put( targetId, schemaPolicies.getId() );
+                    policies.put( schemaPolicies.getId(), schemaPolicies );
                 }
                 targetPolicies.addAll( getRelevantPolicies( namespacePolicies.get( targetId ), targetId, target.left ) );
                 break;
             case ENTITY:
                 if ( !entityPolicies.containsKey( targetId ) ) {
-                    Policy tablePolicy = new Policy( Target.ENTITY, targetId );
-                    entityPolicies.put( targetId, tablePolicy.getId() );
-                    policies.put( tablePolicy.getId(), tablePolicy );
+                    Policies tablePolicies = new Policies( Target.ENTITY, targetId );
+                    entityPolicies.put( targetId, tablePolicies.getId() );
+                    policies.put( tablePolicies.getId(), tablePolicies );
                 }
                 targetPolicies.addAll( getRelevantPolicies( entityPolicies.get( targetId ), targetId, target.left ) );
                 break;
@@ -211,23 +211,23 @@ public class PolicyManager {
     }
 
 
-    public void updateClauses( PolicyChangeRequest changeRequest ) {
+    public void updateClauses( PolicyChangeRequest changeRequest ){
 
         Target target = Target.valueOf( changeRequest.targetName );
         Clause clause = null;
 
-        for ( Policy policy : policies.values() ) {
-            if ( !policy.getClauses().isEmpty() ) {
-                if ( policy.getTarget() == target ) {
+        for ( Policies policies : this.policies.values() ) {
+            if ( !policies.getClauses().isEmpty() ) {
+                if ( policies.getTarget() == target ) {
                     if ( changeRequest.requestType.equals( "BooleanChangeRequest" ) ) {
-                        clause = policy.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
+                        clause = policies.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
                         ((BooleanClause) clause).setValue( changeRequest.booleanValue );
                     }
 
                     assert clause != null;
-                    if ( checkClauseChange( clause, policy.getTarget(), policy.getTargetId() ) ) {
-                        policy.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
-                        this.policies.put( policy.getId(), policy );
+                    if ( checkClauseChange( clause, policies.getTarget(), policies.getTargetId() ) ) {
+                        policies.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
+                        this.policies.put( policies.getId(), policies );
                     } else {
                         log.warn( "Persistency not possible to change." );
                         throw new PolicyRuntimeException( "Not possible to change this clause because the policies can not be guaranteed anymore." );
@@ -269,15 +269,15 @@ public class PolicyManager {
     private void addSpecificPolicy( ClauseName clauseName, long targetId, int policyId, Target target ) {
         Map<ClauseName, Clause> registeredClauses = ClausesRegister.getBlankRegistry();
         if ( this.policies.containsKey( policyId ) ) {
-            Policy policy = this.policies.remove( policyId );
+            Policies policies = this.policies.remove( policyId );
             Clause clause = registeredClauses.get( clauseName );
-            policy.getClauses().put( clause.getClauseName(), clause );
-            this.policies.put( policy.getId(), policy );
+            policies.getClauses().put( clause.getClauseName(), clause );
+            this.policies.put( policies.getId(), policies );
         } else {
             Clause clause = registeredClauses.get( clauseName );
-            Policy policy = new Policy( target, targetId );
-            policy.getClauses().put( clause.getClauseName(), clause );
-            this.policies.put( policy.getId(), policy );
+            Policies policies = new Policies( target, targetId );
+            policies.getClauses().put( clause.getClauseName(), clause );
+            this.policies.put( policies.getId(), policies );
         }
     }
 
@@ -314,9 +314,9 @@ public class PolicyManager {
 
     private void deleteSpecificClause( int policyId, ClauseName clauseName ) {
         if ( this.policies.containsKey( policyId ) ) {
-            Policy policy = this.policies.remove( policyId );
-            policy.getClauses().remove( clauseName );
-            this.policies.put( policy.getId(), policy );
+            Policies policies = this.policies.remove( policyId );
+            policies.getClauses().remove( clauseName );
+            this.policies.put( policies.getId(), policies );
         } else {
             log.warn( "Something went wrong, it should not be possible to delete a policy if this policy was never set." );
             throw new PolicyRuntimeException( "Something went wrong, it should not be possible to delete a policy if this policy was never set." );
@@ -332,12 +332,12 @@ public class PolicyManager {
      * @param target of the changed clause
      * @return true if it is possible to change clause otherwise false
      */
-    private boolean checkClauseChange( Clause clause, Target target, Long targetId ) {
-        switch ( clause.getCategory() ) {
+    private boolean checkClauseChange( Clause clause, Target target, Long targetId ){
+        switch ( clause.getClauseCategory() ) {
             case STORE:
                 return checkStoreClauses( clause, target, targetId ) && checkActiveClauses( clause, target, targetId );
             default:
-                throw new PolicyRuntimeException( "Category is not yet implemented: " + clause.getCategory() );
+                throw new PolicyRuntimeException( "Category is not yet implemented: " + clause.getClauseCategory() );
         }
 
     }
@@ -375,7 +375,7 @@ public class PolicyManager {
         Map<String, DataStore> allStores = AdapterManager.getInstance().getStores();
         List<Object> possibleStores = new ArrayList<>( allStores.values() );
 
-        if ( clause.getCategory() == Category.STORE && clause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) clause).isValue() ) {
+        if ( clause.getClauseCategory() == ClauseCategory.STORE && clause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) clause).isValue() ) {
             for ( Entry<AffectedOperations, Function<List<Object>, List<Object>>> findStores : clause.getDecide().entrySet() ) {
                 possibleStores = findStores.getValue().apply( possibleStores );
             }
@@ -383,6 +383,11 @@ public class PolicyManager {
         if(allStores.size() == possibleStores.size()){
             return true;
         }
+
+        if(possibleStores.isEmpty()){
+            throw new PolicyRuntimeException( "It is not possible to use this policy because there is no store that holds the criteria: " + clause.getClauseName() );
+        }
+
         List<Integer> adapterIds = new ArrayList<>();
         possibleStores.forEach( ( s ) -> adapterIds.add( ((DataStore) s).getAdapterId() ) );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
@@ -444,7 +449,7 @@ public class PolicyManager {
                 }
 
                 for ( Clause clause : potentiallyInteresting ) {
-                    if ( clause.getCategory() == Category.STORE && clause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) clause).isValue() ) {
+                    if ( clause.getClauseCategory() == ClauseCategory.STORE && clause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) clause).isValue() ) {
                         for ( Entry<AffectedOperations, Function<List<Object>, List<Object>>> findStores : clause.getDecide().entrySet() ) {
                             possibleStores = findStores.getValue().apply( possibleStores );
                         }

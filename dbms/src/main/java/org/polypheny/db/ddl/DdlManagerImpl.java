@@ -117,8 +117,8 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
-import org.polypheny.db.policies.policy.PolicyManager;
-import org.polypheny.db.policies.policy.PolicyManager.Action;
+import org.polypheny.db.policies.policy.PoliciesManager;
+import org.polypheny.db.policies.policy.PoliciesManager.Action;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -675,7 +675,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check Policies if placement is against the policy or not
-        List<DataStore> ids = PolicyManager.getInstance().makeDecision(DataStore.class, Action.CHECK_STORES, catalogTable.schemaId, catalogTable.id, dataStore);
+        List<DataStore> ids = PoliciesManager.getInstance().makeDecision(DataStore.class, Action.CHECK_STORES, catalogTable.schemaId, catalogTable.id, dataStore);
         if(ids.isEmpty()){
             throw new RuntimeException("Not possible to add Placement because the Datastore is not persistent.");
         }

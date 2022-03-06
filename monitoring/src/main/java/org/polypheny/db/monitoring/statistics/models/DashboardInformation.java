@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.statistics;
+package org.polypheny.db.monitoring.statistics.models;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -70,6 +70,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.monitoring.statistics.models.DashboardInformation;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -109,6 +110,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private String revalId = null;
 
     private DashboardInformation dashboardInformation;
+    private StatisticPolypheny polyphenyStatistics;
 
     @Getter
     private final Map<Long, StatisticTable<T>> tableStatistic;
@@ -134,6 +136,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Override
     public void initializeStatisticSettings() {
         this.dashboardInformation = new DashboardInformation();
+        this.polyphenyStatistics = new StatisticPolypheny();
         displayInformation();
         registerTaskTracking();
         registerIsFullTracking();
@@ -1184,6 +1187,12 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    public Object getPolyphenyStatistic(){
+        polyphenyStatistics.updatePolyphenyStatistic();
+        return polyphenyStatistics;
+    }
+
+
     /**
      * Returns all statistic of a given table, used for table information in the UI.
      *
@@ -1214,6 +1223,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         } );
         return statisticTable;
     }
+
 
 
     /**

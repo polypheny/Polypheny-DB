@@ -17,18 +17,18 @@
 package org.polypheny.db.policies.policy.models;
 
 import java.util.List;
-import org.polypheny.db.policies.policy.Clause.Category;
+import org.polypheny.db.policies.policy.Clause.ClauseCategory;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
 import org.polypheny.db.policies.policy.Clause.ClauseType;
-import org.polypheny.db.policies.policy.Policy.Target;
+import org.polypheny.db.policies.policy.Policies.Target;
 
 public class UiBooleanClause extends UiClause {
 
     private boolean value;
 
 
-    public UiBooleanClause( ClauseName clauseName, int id, boolean isDefault, ClauseType clauseType, Category category, String description, List<Target> possibleTargets, boolean value ) {
-        super( clauseName, id, isDefault, clauseType, category, description, possibleTargets );
+    public UiBooleanClause( ClauseName clauseName, int id, boolean isDefault, ClauseType clauseType, ClauseCategory clauseCategory, String description, List<Target> possibleTargets, boolean value ) {
+        super( clauseName, id, isDefault, clauseType, clauseCategory, description, possibleTargets );
         this.value = value;
     }
 

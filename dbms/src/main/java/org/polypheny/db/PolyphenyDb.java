@@ -63,7 +63,7 @@ import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
-import org.polypheny.db.policies.policy.PolicyManager;
+import org.polypheny.db.policies.policy.PoliciesManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
@@ -344,7 +344,7 @@ public class PolyphenyDb {
         DockerManager.getInstance();
 
         //start the policy manager
-        PolicyManager.getInstance().initialize();
+        PoliciesManager.getInstance().initialize();
 
         WorkloadManager.getInstance();
 

@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
 
 @Slf4j
-public class Policy {
+public class Policies {
 
     private final static AtomicInteger atomicId = new AtomicInteger();
     protected static final long TARGET_POLYPHENY = -1;
@@ -65,7 +65,7 @@ public class Policy {
      * @param target either only for a table, a store or for everything
      * @param targetId id of the selected store, table
      */
-    public Policy( Target target, long targetId ) {
+    public Policies( Target target, long targetId ) {
         this.id = atomicId.getAndIncrement();
         this.target = target;
         assert targetId >= -1;
@@ -75,7 +75,7 @@ public class Policy {
     }
 
 
-    public Policy() {
+    public Policies() {
         this( Target.POLYPHENY, TARGET_POLYPHENY );
     }
 
@@ -91,7 +91,7 @@ public class Policy {
                 for ( Entry<ClauseName, Clause> clause : registeredClauses.entrySet() ) {
                     if ( clause.getValue().isDefault() ) {
                         clauses.put( clause.getValue().getClauseName(), clause.getValue() );
-                        //clausesByName.put( clause.getValue().getClauseName(), clause.getValue().getId() );
+                        clausesByName.put( clause.getValue().getClauseName(), clause.getValue().getId() );
                     }
                 }
                 log.warn( "Yeey, default policies for Polypheny are added." );
