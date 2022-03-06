@@ -51,6 +51,14 @@ public class SelectFreshnessTest {
 
                     // Includes DELAY in HOURS
 
+                    // Test with WHERE clause
+
+                    // Test with ORDER BY clause
+
+                    // Test with HAVING clause
+
+                    // Test ILLEGAL values (negative time delay)
+
                 } finally {
                     statement.executeUpdate( "DROP TABLE testfreshnessdelay" );
                 }
@@ -74,6 +82,14 @@ public class SelectFreshnessTest {
                 try {
 
                     // Check if queries can even be executed and are correctly parsed
+
+                    // Test with WHERE clause
+
+                    // Test with ORDER BY clause
+
+                    // Test with HAVING clause
+
+                    // Test ILLEGAL PERCENTAGE (out of bound)
 
                 } finally {
                     statement.executeUpdate( "DROP TABLE testfreshnesspercentage" );
@@ -104,6 +120,18 @@ public class SelectFreshnessTest {
                     // Includes Time
 
                     // Includes Date
+
+                    // Test with WHERE clause
+
+                    // Test with ORDER BY clause
+
+                    // Test with HAVING clause
+
+                    // Test ILLEGAL TIME (in future)
+
+                    // Test ILLEGAL TIME (invalid Timestamp)
+
+                    // Test ILLEGAL TIME (incomplete time)
 
                 } finally {
                     statement.executeUpdate( "DROP TABLE testfreshnesstime" );

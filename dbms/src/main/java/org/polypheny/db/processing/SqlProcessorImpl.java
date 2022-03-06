@@ -54,11 +54,14 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.processing.replication.freshness.FreshnessManager;
 import org.polypheny.db.processing.replication.freshness.FreshnessManager.FreshnessInformation;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessSpecificationException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.sql.SqlBasicCall;
+import org.polypheny.db.sql.sql.SqlFreshness;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlInsert;
 import org.polypheny.db.sql.sql.SqlLiteral;
@@ -448,7 +451,17 @@ public class SqlProcessorImpl extends Processor {
         // TODO @HENNLO Check that no DML had already been executed when accepting this query.
         // Maybe do this and the evaluation later in AbstractQueryProcessor
 
-        FreshnessInformation freshnessInformation = FreshnessManager.FreshnessInformation.fromNodeLists();
+        SqlFreshness freshnessNode = (SqlFreshness) select.getFreshness();
+
+        try {
+            FreshnessInformation freshnessInformation = FreshnessInformation.fromNodeLists(
+                    freshnessNode.toleratedFreshness,
+                    freshnessNode.evaluationType,
+                    freshnessNode.unit
+            );
+        } catch ( UnknownFreshnessEvaluationTypeException | UnknownFreshnessTimeUnitException | UnsupportedFreshnessSpecificationException e ) {
+            e.printStackTrace();
+        }
 
     }
 

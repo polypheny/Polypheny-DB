@@ -2305,6 +2305,8 @@ SqlNode FreshnessOpt() :
     { return null; }
 }
 
+
+
 /**
  * Parses the optional WINDOW clause for SELECT
  */
