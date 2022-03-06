@@ -141,7 +141,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         if ( other instanceof LogicalModifyCollect ) {
             List<AlgNode> inputs = new ArrayList<>( other.getInputs().size() );
             for ( AlgNode node : other.getInputs() ) {
-                inputs.add( visit( node ) );
+                inputs.add( node.accept( this ) );
             }
             return new LogicalModifyCollect(
                     other.getCluster(),
