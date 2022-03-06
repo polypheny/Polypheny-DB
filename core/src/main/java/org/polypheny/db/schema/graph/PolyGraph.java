@@ -55,4 +55,9 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         return -1;
     }
 
+
+    public boolean matches( PolyGraph comp ) {
+        return true;
+    }
+
 }

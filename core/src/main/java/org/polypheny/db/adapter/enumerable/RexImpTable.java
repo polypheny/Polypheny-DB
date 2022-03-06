@@ -339,7 +339,12 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UNWIND ), new UnwindImplementor() );
 
         // Cypher functions
-        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ALL_MATCH ), new CypherImplementor() );
+        CypherImplementor implementor = new CypherImplementor();
+        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ALL_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ANY_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NONE_MATCH ), implementor );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PATTERN_MATCH ), BuiltInMethod.GRAPH_PATTERN_MATCH.method, NullPolicy.NONE );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();

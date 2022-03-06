@@ -19,9 +19,14 @@ package org.polypheny.db.runtime;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.polypheny.db.schema.graph.PolyGraph;
 
 @Deterministic
 @Slf4j
 public class CypherFunctions {
+
+    public static boolean patternMatch( PolyGraph graph, PolyGraph comp ) {
+        return graph.matches( comp );
+    }
 
 }

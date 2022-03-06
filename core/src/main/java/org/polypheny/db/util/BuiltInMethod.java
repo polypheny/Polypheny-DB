@@ -112,6 +112,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.runtime.CypherFunctions;
 import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Functions;
@@ -128,6 +129,7 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.type.PolyType;
 
@@ -433,7 +435,8 @@ public enum BuiltInMethod {
     DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class ),
     DESERIALIZE( PolySerializer.class, "deserializeEnumerable", Object.class ),
     DESERIALIZE_DECOMPRESS_STRING( PolySerializer.class, "deserializeAndCompress", String.class, Class.class ),
-    DESERIALIZE_DECOMPRESS_BYTE_ARRAY( PolySerializer.class, "deserializeAndCompress", byte[].class, Class.class );
+    DESERIALIZE_DECOMPRESS_BYTE_ARRAY( PolySerializer.class, "deserializeAndCompress", byte[].class, Class.class ),
+    GRAPH_PATTERN_MATCH( CypherFunctions.class, "patternMatch", Enumerable.class, PolyGraph.class );
 
     public final Method method;
     public final Constructor constructor;
