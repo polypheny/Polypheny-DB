@@ -31,6 +31,12 @@ dependencies {
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
 
+    compileOnly 'javax.websocket:javax.websocket-api:1.1'
+    compileOnly 'javax.websocket:javax.websocket-client-api:1.1'
+    implementation 'org.glassfish.tyrus:tyrus-client:2.0.2'
+    implementation 'org.glassfish.tyrus.bundles:tyrus-standalone-client:2.0.2'
+//testImplementation 'org.glassfish.tyrus:tyrus-container-grizzly-client:2.0.2'
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
