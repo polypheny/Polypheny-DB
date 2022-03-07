@@ -17,25 +17,27 @@
 package org.polypheny.db.processing.replication.freshness.properties;
 
 
+import java.sql.Timestamp;
 import lombok.Getter;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.replication.freshness.FreshnessManager.EvaluationType;
 
 
 @Getter
-
-public class RawFreshnessInformation {
+public class FreshnessSpecification {
 
     // Considered as the lower bound
-    public Node toleratedFreshness;
-    public Identifier rawEvaluationType;
-    public Identifier unit;
+    private final double freshnessIndex; // Value has to be between 0 and 1
+    private final Timestamp toleratedTimestamp;
+
+    //NOTE timestamp and freshnessIndex can coexist
+
+    private final EvaluationType evaluationType;
 
 
-    public void RawPartitionInformation( Node toleratedFreshness, Identifier rawEvaluationType, Identifier unit ) {
-        this.toleratedFreshness = toleratedFreshness;
-        this.rawEvaluationType = rawEvaluationType;
-        this.unit = unit;
+    public FreshnessSpecification( Timestamp toleratedTimestamp, EvaluationType evaluationType, double freshnessIndex ) {
+        this.toleratedTimestamp = toleratedTimestamp;
+        this.evaluationType = evaluationType;
+        this.freshnessIndex = freshnessIndex;
     }
 
 }

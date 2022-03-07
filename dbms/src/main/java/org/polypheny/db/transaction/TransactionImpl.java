@@ -49,6 +49,7 @@ import org.polypheny.db.processing.JsonRelProcessorImpl;
 import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.SqlProcessorImpl;
+import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -97,6 +98,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private boolean useCache = true;
 
     private boolean acceptsOutdated = false;
+    private FreshnessSpecification freshnessSpecification;
 
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
@@ -330,6 +332,19 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean acceptsOutdated() {
         return this.acceptsOutdated;
+    }
+
+
+    @Override
+    public FreshnessSpecification getFreshnessSpecification() {
+        return freshnessSpecification;
+    }
+
+
+    @Override
+    public void setFreshnessSpecification( FreshnessSpecification freshnessSpecification ) {
+        this.freshnessSpecification = freshnessSpecification;
+        setAcceptsOutdated( true );
     }
 
     //
