@@ -37,7 +37,7 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
 
     public AlphabeticStatisticColumn( QueryResult column ) {
-        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
+        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType(), StatisticType.ALPHABETICAL );
     }
 
 

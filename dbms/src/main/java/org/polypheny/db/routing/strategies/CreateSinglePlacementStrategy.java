@@ -17,6 +17,7 @@
 package org.polypheny.db.routing.strategies;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -43,7 +44,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
         if ( stores.isEmpty() ) {
             throw new RuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
         } else {
-            return stores;
+            return Collections.singletonList( stores.get( 0 ));
         }
     }
 

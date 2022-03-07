@@ -51,7 +51,7 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
 
 
     public NumericalStatisticColumn( QueryResult column ) {
-        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
+        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType(), StatisticType.NUMERICAL );
     }
 
 

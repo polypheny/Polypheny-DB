@@ -56,7 +56,7 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
 
 
     public TemporalStatisticColumn( QueryResult column ) {
-        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
+        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType(), StatisticType.TEMPORAL );
         temporalType = column.getType().getFamily().name();
     }
 

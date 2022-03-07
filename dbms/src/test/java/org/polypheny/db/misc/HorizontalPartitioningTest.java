@@ -44,6 +44,7 @@ import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
@@ -169,6 +170,7 @@ public class HorizontalPartitioningTest {
                     // DROP Table to repartition
                     statement.executeUpdate( "DROP TABLE \"horizontalparttestextension\" " );
 
+
                     // Partition by name
                     statement.executeUpdate( "CREATE TABLE horizontalparttestextension( "
                             + "tprimary INTEGER NOT NULL, "
@@ -177,6 +179,7 @@ public class HorizontalPartitioningTest {
                             + "PRIMARY KEY (tprimary) )"
                             + "PARTITION BY HASH (tinteger) "
                             + " WITH (name1, name2, name3)" );
+
 
                     // Add placement for second table
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
@@ -683,10 +686,13 @@ public class HorizontalPartitioningTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
+                // Cleans all dataPoints that the monitoring has aggregated so far
+                MonitoringServiceProvider.getInstance().resetAllDataPoints();
+
                 // Sets the background processing of Workload Monitoring a Temperature monitoring to one second to get immediate results
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
-                c1.setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
+                c1.setEnum( TaskSchedulingType.EVERY_SECOND );
 
                 statement.executeUpdate( "CREATE TABLE temperaturetest( "
                         + "tprimary INTEGER NOT NULL, "
