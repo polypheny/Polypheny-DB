@@ -31,6 +31,7 @@ import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -270,6 +271,10 @@ public class StatisticsTest {
                         int count = 0;
                         while ( !successfull && count < 180 ) {
                             waiter.await( 1, TimeUnit.SECONDS );
+                            if ( Catalog.getInstance().getTables( new Pattern( "APP" ), new Pattern( "statisticschema" ), new Pattern( "nationdelete" ) ).size() != 1 ) {
+                                count++;
+                                continue;
+                            }
                             CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
                             if ( 0 == StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id ) ) {
                                 successfull = true;
