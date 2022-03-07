@@ -276,7 +276,9 @@ public class StatisticsTest {
                                 continue;
                             }
                             CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
-                            if ( 0 == StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id ) ) {
+                            Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                            // potentially table exists not yet in statistics but in catalog
+                            if ( rowCount != null && rowCount == 0 ) {
                                 successfull = true;
 
                             }
