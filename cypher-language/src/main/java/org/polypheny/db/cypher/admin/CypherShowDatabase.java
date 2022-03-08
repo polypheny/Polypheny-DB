@@ -22,9 +22,10 @@ import org.polypheny.db.cypher.clause.CypherReturnClause;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.scope.CypherDbScope;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
 @Getter
-public class CypherShowDatabase extends CypherWithGraph {
+public class CypherShowDatabase extends CypherWithGraph implements UnsupportedExecutableStatement {
 
     private final CypherDbScope scope;
     private final CypherYield yield;

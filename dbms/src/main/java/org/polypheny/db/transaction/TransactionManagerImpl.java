@@ -89,18 +89,18 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownNamespaceException {
+    public Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownNamespaceException {
         Catalog catalog = Catalog.getInstance();
-        CatalogUser catalogUser = catalog.getUser( user );
-        CatalogDatabase catalogDatabase = catalog.getDatabase( database );
+        CatalogUser catalogUser = catalog.getUser( (int) userId );
+        CatalogDatabase catalogDatabase = catalog.getDatabase( databaseId );
         CatalogNamespace catalogNamespace = catalog.getNamespace( catalogDatabase.id, catalogDatabase.defaultSchemaName );
         return startTransaction( catalogUser, catalogNamespace, catalogDatabase, analyze, origin, flavor );
     }
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownNamespaceException {
-        return startTransaction( user, database, analyze, origin, MultimediaFlavor.DEFAULT );
+    public Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownNamespaceException {
+        return startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.DEFAULT );
     }
 
 

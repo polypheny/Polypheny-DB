@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
@@ -48,23 +47,23 @@ public class StatisticQueryProcessor {
 
     @Getter
     private final TransactionManager transactionManager;
-    private final String databaseName;
-    private final String userName;
+    private final long databaseId;
+    private final long userId;
 
 
     /**
      * LowCostQueries can be used to retrieve short answered queries
      * Idea is to expose a selected list of sql operations with a small list of results and not impact performance
      */
-    public StatisticQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
+    public StatisticQueryProcessor( final TransactionManager transactionManager, long userId, long databaseId ) {
         this.transactionManager = transactionManager;
-        this.databaseName = databaseName;
-        this.userName = userName;
+        this.databaseId = databaseId;
+        this.userId = userId;
     }
 
 
     public StatisticQueryProcessor( TransactionManager transactionManager, Authenticator authenticator ) {
-        this( transactionManager, "pa", "APP" );
+        this( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
     }
 
 
@@ -89,7 +88,7 @@ public class StatisticQueryProcessor {
         Catalog catalog = Catalog.getInstance();
         List<List<String>> result = new ArrayList<>();
         List<String> schemaTree = new ArrayList<>();
-        List<CatalogNamespace> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
+        List<CatalogNamespace> schemas = catalog.getSchemas( databaseId, null );
         for ( CatalogNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
             List<CatalogEntity> childTables = catalog.getTables( schema.id, null );
@@ -118,7 +117,7 @@ public class StatisticQueryProcessor {
     public List<QueryResult> getAllColumns() {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumn> catalogColumns = catalog.getColumns(
-                new Pattern( databaseName ),
+                null,
                 null,
                 null,
                 null );
@@ -141,7 +140,7 @@ public class StatisticQueryProcessor {
     public List<CatalogEntity> getAllTable() {
         Catalog catalog = Catalog.getInstance();
         List<CatalogEntity> catalogEntities = catalog.getTables(
-                new Pattern( databaseName ),
+                null,
                 null,
                 null );
         List<CatalogEntity> allTables = new ArrayList<>();
@@ -200,7 +199,7 @@ public class StatisticQueryProcessor {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false, "Statistics", MultimediaFlavor.FILE );
+            return transactionManager.startTransaction( userId, databaseId, false, "Statistics", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

@@ -28,10 +28,6 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherKind;
 import org.polypheny.db.cypher.CypherNode.CypherVisitor;
@@ -170,8 +166,8 @@ public class CypherProcessorImpl extends AutomaticDdlProcessor {
         assert parameters instanceof CypherQueryParameters;
         try {
             DdlManager ddlManager = DdlManager.getInstance();
-            long namespaceId = ddlManager.createGraph(
-                    Catalog.defaultDatabaseId, ((CypherQueryParameters) parameters).getDatabaseName(), true, false, statement );
+            long namespaceId = ddlManager.createGraphDatabase(
+                    Catalog.defaultDatabaseId, ((CypherQueryParameters) parameters).getDatabaseName(), true, null, true, false, statement );
 
             statement.getTransaction().commit();
             ((CypherQueryParameters) parameters).setDatabaseId( namespaceId );
@@ -183,24 +179,7 @@ public class CypherProcessorImpl extends AutomaticDdlProcessor {
 
     @Override
     public boolean needsDdlGeneration( Node query, QueryParameters parameters ) {
-        assert query.getLanguage() == QueryLanguage.CYPHER : "The provided query does not belong to the Cypher query language";
-
-        assert parameters instanceof CypherQueryParameters;
-        CypherQueryParameters cypherParameters = (CypherQueryParameters) parameters;
-
-        List<CatalogNamespace> namespaces =
-                Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, new Pattern( cypherParameters.getDatabaseName() ) );
-
-        if ( namespaces.size() == 1 ) {
-            assert namespaces.get( 0 ).namespaceType == NamespaceType.GRAPH : "There already exists a namespace with the used name, which is not graph model.";
-            return false;
-        }
-
-        if ( namespaces.size() > 1 ) {
-            throw new RuntimeException( "There seems to be an error with the catalog." );
-        }
-
-        return true;
+        return false;
     }
 
 

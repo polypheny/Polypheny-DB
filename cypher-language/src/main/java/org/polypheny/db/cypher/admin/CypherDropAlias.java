@@ -16,22 +16,41 @@
 
 package org.polypheny.db.cypher.admin;
 
+import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
+import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.prepare.Context;
+import org.polypheny.db.transaction.Statement;
 
 @Getter
-public class CypherDropAlias extends CypherAdminCommand {
+public class CypherDropAlias extends CypherAdminCommand implements ExecutableStatement {
 
-    private final CypherSimpleEither<String, CypherParameter> aliasName;
+    private final String aliasName;
     private final boolean ifExists;
 
 
     public CypherDropAlias( ParserPos pos, CypherSimpleEither<String, CypherParameter> aliasName, boolean ifExists ) {
         super( pos );
-        this.aliasName = aliasName;
+        this.aliasName = aliasName.getLeft() != null ? aliasName.getLeft() : aliasName.getRight().getName();
         this.ifExists = ifExists;
+    }
+
+
+    @Override
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+        List<CatalogGraphDatabase> graphs = Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, new Pattern( aliasName ) );
+        if ( graphs.size() != 1 ) {
+            throw new RuntimeException( "Error while dropping a graph database alias." );
+        }
+        DdlManager.getInstance().removeGraphAlias( graphs.get( 0 ).id, aliasName, ifExists );
     }
 
 }

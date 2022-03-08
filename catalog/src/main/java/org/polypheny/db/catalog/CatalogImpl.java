@@ -69,8 +69,9 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphEntity;
-import org.polypheny.db.catalog.entity.CatalogGraphEntity.GraphObjectType;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
@@ -84,6 +85,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.GraphAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
@@ -94,6 +96,8 @@ import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownGraphException;
+import org.polypheny.db.catalog.exceptions.UnknownGraphPlacementsException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
@@ -170,6 +174,13 @@ public class CatalogImpl extends Catalog {
     // Container Object that contains all other placements
     private static BTreeMap<Object[], CatalogDataPlacement> dataPlacements; // (AdapterId, TableId) -> CatalogDataPlacement
 
+    private static BTreeMap<Long, CatalogGraphDatabase> graphs;
+    private static BTreeMap<String, CatalogGraphDatabase> graphAliases;
+    private static BTreeMap<Object[], CatalogGraphDatabase> graphNames;
+    private static BTreeMap<Object[], CatalogGraphPlacement> graphPlacements;
+
+    private static BTreeMap<Long, CatalogGraphMapping> graphMappings;
+
     private static Long openTable;
 
     private static final AtomicInteger adapterIdBuilder = new AtomicInteger( 1 );
@@ -177,8 +188,8 @@ public class CatalogImpl extends Catalog {
     private static final AtomicInteger userIdBuilder = new AtomicInteger( 1 );
 
     private static final AtomicLong databaseIdBuilder = new AtomicLong( 1 );
-    private static final AtomicLong schemaIdBuilder = new AtomicLong( 1 );
-    private static final AtomicLong tableIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong namespaceIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong entityIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong columnIdBuilder = new AtomicLong( 1 );
 
     private static final AtomicLong partitionGroupIdBuilder = new AtomicLong( 1 );
@@ -350,6 +361,7 @@ public class CatalogImpl extends Catalog {
             initDatabaseInfo( db );
             initSchemaInfo( db );
             initTableInfo( db );
+            initGraphInfo( db );
             initColumnInfo( db );
             initKeysAndConstraintsInfo( db );
             initAdapterInfo( db );
@@ -531,9 +543,9 @@ public class CatalogImpl extends Catalog {
 
 
     private void restoreAllIdBuilders() {
-        restoreIdBuilder( schemas, schemaIdBuilder );
+        restoreIdBuilder( schemas, namespaceIdBuilder );
         restoreIdBuilder( databases, databaseIdBuilder );
-        restoreIdBuilder( tables, tableIdBuilder );
+        restoreIdBuilder( tables, entityIdBuilder );
         restoreIdBuilder( columns, columnIdBuilder );
         restoreIdBuilder( users, userIdBuilder );
         restoreIdBuilder( keys, keyIdBuilder );
@@ -655,6 +667,16 @@ public class CatalogImpl extends Catalog {
 
         // Restores all Tables dependent on periodic checks like TEMPERATURE Partitioning
         frequencyDependentTables = tables.values().stream().filter( t -> t.partitionProperty.reliesOnPeriodicChecks ).map( t -> t.id ).collect( Collectors.toSet() );
+    }
+
+
+    private void initGraphInfo( DB db ) {
+        graphs = db.treeMap( "graphs", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        graphNames = db.treeMap( "graphNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
+        graphPlacements = db.treeMap( "graphPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
+
+        graphMappings = db.treeMap( "graphMappings", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        graphAliases = db.treeMap( "graphAliases", Serializer.STRING, Serializer.JAVA ).createOrOpen();
     }
 
 
@@ -1153,7 +1175,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         CatalogUser owner = getUser( ownerId );
-        long id = schemaIdBuilder.getAndIncrement();
+        long id = namespaceIdBuilder.getAndIncrement();
         CatalogNamespace schema = new CatalogNamespace( id, name, databaseId, ownerId, owner.name, namespaceType );
         synchronized ( this ) {
             schemas.put( id, schema );
@@ -1223,6 +1245,147 @@ public class CatalogImpl extends Catalog {
             listeners.firePropertyChange( "schema", old, schema );
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaIdRuntimeException( schemaId );
+        }
+    }
+
+
+    @Override
+    public long addGraph( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) throws GenericCatalogException {
+
+        if ( getGraphs( databaseId, new Pattern( name ) ).size() != 0 && !ifNotExists ) {
+            throw new GraphAlreadyExistsException( name );
+        }
+
+        long id = addNamespace( name, databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
+
+        addGraphLogistics( id );
+
+        CatalogGraphDatabase graph = new CatalogGraphDatabase( databaseId, id, name, Catalog.defaultUserId, modifiable, ImmutableList.of() );
+
+        synchronized ( this ) {
+            graphs.put( id, graph );
+            graphNames.put( new Object[]{ databaseId, name }, graph );
+        }
+
+        listeners.firePropertyChange( "graph", null, graph );
+        return id;
+    }
+
+
+    @Override
+    public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+        CatalogGraphDatabase graph = Objects.requireNonNull( getGraph( graphId ) );
+
+        if ( graphAliases.containsKey( alias ) ) {
+            if ( !ifNotExists ) {
+                throw new RuntimeException( "Error while creating alias: " + alias );
+            }
+            return;
+        }
+
+        synchronized ( this ) {
+            graphAliases.put( alias, graph );
+        }
+    }
+
+
+    @Override
+    public void removeGraphAlias( String alias, boolean ifNotExists ) {
+        if ( !graphAliases.containsKey( alias ) ) {
+            if ( !ifNotExists ) {
+                throw new RuntimeException( "Error while removing alias: " + alias );
+            }
+            return;
+        }
+        synchronized ( this ) {
+            graphAliases.remove( alias );
+        }
+    }
+
+
+    @Override
+    public CatalogGraphMapping getGraphMapping( long graphId ) {
+        return Objects.requireNonNull( graphMappings.get( graphId ) );
+    }
+
+
+    private void addGraphLogistics( long id ) throws GenericCatalogException {
+
+        // table id nodes -> id, node, labels
+        long nodesId = addEntity( "_nodes_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+
+        long idNodeId = addColumn( "_id", nodesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
+        long nodeNodeId = addColumn( "_node", nodesId, 1, PolyType.NODE, null, null, null, null, null, false, null );
+        long labelsNodeId = addColumn( "_labels", nodesId, 0, PolyType.ARRAY, PolyType.VARCHAR, null, null, null, null, false, null );
+
+        addPrimaryKey( nodesId, Collections.singletonList( idNodeId ) );
+
+        // table id relationships -> id, rel, labels
+        long relsId = addEntity( "_relationships_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+
+        long idRelId = addColumn( "_id", nodesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
+        long relRelId = addColumn( "_relationship", nodesId, 1, PolyType.RELATIONSHIP, null, null, null, null, null, false, null );
+        long labelsRelId = addColumn( "_labels", nodesId, 0, PolyType.ARRAY, PolyType.VARCHAR, null, null, null, null, false, null );
+
+        addPrimaryKey( relsId, Collections.singletonList( idRelId ) );
+
+        CatalogGraphMapping mapping = new CatalogGraphMapping( id, nodesId, relsId, idNodeId, nodeNodeId, labelsNodeId, idRelId, relRelId, labelsRelId );
+        graphMappings.put( id, mapping );
+
+    }
+
+
+    private void removeGraphLogistics( long graphId ) {
+        if ( !graphMappings.containsKey( graphId ) ) {
+            throw new UnknownGraphException( graphId );
+        }
+        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
+
+        deleteTable( mapping.nodeId );
+        deleteTable( mapping.relId );
+    }
+
+
+    @Override
+    public void deleteGraph( long id ) {
+        if ( !graphs.containsKey( id ) ) {
+            throw new UnknownGraphException( id );
+        }
+
+        CatalogGraphDatabase old = Objects.requireNonNull( graphs.get( id ) );
+
+        removeGraphLogistics( id );
+
+        deleteSchema( id );
+
+        synchronized ( this ) {
+            old.placements.forEach( a -> graphPlacements.remove( new Object[]{ a, id } ) );
+            graphs.remove( id );
+            graphNames.remove( new Object[]{ old.databaseId, old.name } );
+        }
+        listeners.firePropertyChange( "graph", null, null );
+    }
+
+
+    @Override
+    public CatalogGraphDatabase getGraph( long id ) {
+        if ( !graphs.containsKey( id ) ) {
+            throw new UnknownGraphException( id );
+        }
+        return graphs.get( id );
+    }
+
+
+    @Override
+    public List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName ) {
+        if ( graphName != null ) {
+            return ImmutableList.copyOf(
+                    Stream.concat(
+                                    graphAliases.values().stream(),
+                                    graphs.values().stream() ).filter( g -> g.name.matches( graphName.pattern ) )
+                            .collect( Collectors.toList() ) );
+        } else {
+            return ImmutableList.copyOf( graphs.values() );
         }
     }
 
@@ -1432,7 +1595,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addEntity( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
-        long id = tableIdBuilder.getAndIncrement();
+        long id = entityIdBuilder.getAndIncrement();
         CatalogNamespace schema = getNamespace( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
@@ -1458,7 +1621,6 @@ public class CatalogImpl extends Catalog {
                     namespaceId,
                     schema.databaseId,
                     ownerId,
-                    owner.name,
                     entityType,
                     null,
                     ImmutableList.of(),
@@ -1473,60 +1635,6 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( "Error when adding table " + name, e );
         }
         return id;
-    }
-
-
-    @Override
-    public long addGraphEntity( long namespaceId, GraphObjectType objectType, int ownerId, String label, EntityType entityType, boolean modifiable ) {
-        long id = tableIdBuilder.getAndIncrement();
-        CatalogNamespace schema = getNamespace( namespaceId );
-        CatalogUser owner = getUser( ownerId );
-
-        List<CatalogEntity> entities = getTables( namespaceId, new Pattern( objectType.getName() ) );
-        if ( !entities.isEmpty() ) {
-            log.info( String.format( "Graph entity with label %s does already exist", label ) );
-            return entities.get( 0 ).id;
-        }
-
-        try {
-            //Technically every Entity is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
-            List<Long> partitionGroupIds = new ArrayList<>();
-            partitionGroupIds.add( addPartitionGroup( id, "full", namespaceId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
-            //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
-            CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
-
-            PartitionProperty partitionProperty = PartitionProperty.builder()
-                    .partitionType( PartitionType.NONE )
-                    .isPartitioned( false )
-                    .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
-                    .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
-                    .reliesOnPeriodicChecks( false )
-                    .build();
-
-            String entityName = objectType.getName();
-
-            CatalogEntity table = new CatalogGraphEntity(
-                    id,
-                    objectType.getName(),
-                    namespaceId,
-                    schema.databaseId,
-                    ownerId,
-                    owner.name,
-                    entityType,
-                    null,
-                    ImmutableList.of(),
-                    ImmutableList.of(),
-                    modifiable,
-                    partitionProperty );
-
-            updateEntityLogistics( entityName, namespaceId, id, schema, table );
-            openTable = id;
-
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( "Error when adding entity " + entityType, e );
-        }
-        return id;
-
     }
 
 
@@ -1545,7 +1653,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
-        long id = tableIdBuilder.getAndIncrement();
+        long id = entityIdBuilder.getAndIncrement();
         CatalogNamespace schema = getNamespace( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
@@ -1564,7 +1672,6 @@ public class CatalogImpl extends Catalog {
                     namespaceId,
                     schema.databaseId,
                     ownerId,
-                    owner.name,
                     entityType,
                     query,//definition,
                     null,
@@ -1611,7 +1718,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
-        long id = tableIdBuilder.getAndIncrement();
+        long id = entityIdBuilder.getAndIncrement();
         CatalogNamespace schema = getNamespace( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
@@ -1638,7 +1745,6 @@ public class CatalogImpl extends Catalog {
                     namespaceId,
                     schema.databaseId,
                     ownerId,
-                    owner.name,
                     entityType,
                     query,
                     null,
@@ -1837,7 +1943,6 @@ public class CatalogImpl extends Catalog {
                     old.namespaceId,
                     old.databaseId,
                     ownerId,
-                    user.name,
                     old.entityType,
                     ((CatalogMaterializedView) old).getQuery(),
                     old.primaryKey,
@@ -1858,7 +1963,6 @@ public class CatalogImpl extends Catalog {
                     old.namespaceId,
                     old.databaseId,
                     ownerId,
-                    user.name,
                     old.entityType,
                     old.primaryKey,
                     old.dataPlacements,
@@ -1895,7 +1999,6 @@ public class CatalogImpl extends Catalog {
                     old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
                     old.entityType,
                     ((CatalogMaterializedView) old).getQuery(),
                     keyId,
@@ -1916,7 +2019,6 @@ public class CatalogImpl extends Catalog {
                     old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
                     old.entityType,
                     keyId,
                     old.dataPlacements,
@@ -2031,7 +2133,6 @@ public class CatalogImpl extends Catalog {
                 old.namespaceId,
                 old.databaseId,
                 old.ownerId,
-                old.ownerName,
                 old.entityType,
                 old.getQuery(),
                 old.primaryKey,
@@ -2764,7 +2865,6 @@ public class CatalogImpl extends Catalog {
                     old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
                     old.entityType,
                     ((CatalogMaterializedView) old).getQuery(),
                     old.primaryKey,
@@ -2786,7 +2886,6 @@ public class CatalogImpl extends Catalog {
                     old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
                     old.entityType,
                     old.primaryKey,
                     old.dataPlacements,
@@ -3965,7 +4064,6 @@ public class CatalogImpl extends Catalog {
                 old.namespaceId,
                 old.databaseId,
                 old.ownerId,
-                old.ownerName,
                 old.entityType,
                 old.primaryKey,
                 old.dataPlacements,
@@ -4025,7 +4123,6 @@ public class CatalogImpl extends Catalog {
                 old.namespaceId,
                 old.databaseId,
                 old.ownerId,
-                old.ownerName,
                 old.entityType,
                 old.primaryKey,
                 old.dataPlacements,
@@ -4058,7 +4155,6 @@ public class CatalogImpl extends Catalog {
                 old.namespaceId,
                 old.databaseId,
                 old.ownerId,
-                old.ownerName,
                 old.entityType,
                 old.primaryKey,
                 old.dataPlacements,
@@ -4604,6 +4700,76 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public long addGraphPlacement( int adapterId, long graphId ) {
+        long id = partitionIdBuilder.getAndIncrement();
+        CatalogGraphPlacement placement = new CatalogGraphPlacement( adapterId, graphId, null );
+        CatalogGraphDatabase old = graphs.get( graphId );
+        if ( old == null ) {
+            throw new UnknownGraphPlacementsException( adapterId, graphId );
+        }
+
+        CatalogGraphDatabase graph = old.addPlacement( adapterId );
+
+        addGraphPlacementLogistics( adapterId, graphId );
+
+        synchronized ( this ) {
+            graphPlacements.put( new Object[]{ adapterId, id }, placement );
+            graphs.replace( graph.id, graph );
+            graphNames.replace( new Object[]{ old.databaseId, graph.name }, graph );
+        }
+        listeners.firePropertyChange( "graphPlacement", null, placement );
+        return id;
+    }
+
+
+    private void addGraphPlacementLogistics( int adapterId, long graphId ) {
+        if ( !graphMappings.containsKey( graphId ) ) {
+            throw new UnknownGraphException( graphId );
+        }
+
+        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
+        addSingleDataPlacementToTable( adapterId, mapping.relId );
+        addSingleDataPlacementToTable( adapterId, mapping.nodeId );
+    }
+
+
+    @Override
+    public void deleteGraphPlacements( int adapterId, long graphId ) {
+        if ( !graphPlacements.containsKey( new Object[]{ adapterId, graphId } ) ) {
+            throw new UnknownGraphPlacementsException( adapterId, graphId );
+        }
+
+        deleteGraphPlacementLogistics( adapterId, graphId );
+
+        synchronized ( this ) {
+            graphPlacements.remove( new Object[]{ adapterId, graphId } );
+        }
+        listeners.firePropertyChange( "graphPlacements", null, null );
+    }
+
+
+    private void deleteGraphPlacementLogistics( int adapterId, long graphId ) {
+        if ( !graphMappings.containsKey( graphId ) ) {
+            throw new UnknownGraphException( graphId );
+        }
+        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
+
+        removeSingleDataPlacementFromTable( adapterId, mapping.nodeId );
+        removeSingleDataPlacementFromTable( adapterId, mapping.relId );
+    }
+
+
+    @Override
+    public CatalogGraphPlacement getGraphPlacement( int adapterId, long partitionId ) {
+        if ( !graphPlacements.containsKey( new Object[]{ adapterId, partitionId } ) ) {
+            throw new UnknownGraphPlacementsException( adapterId, partitionId );
+        }
+
+        return graphPlacements.get( new Object[]{ adapterId, partitionId } );
+    }
+
+
     /**
      * Removes a  DataPlacement for a given table on a specific store
      *
@@ -4703,7 +4869,6 @@ public class CatalogImpl extends Catalog {
                     old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
                     old.entityType,
                     ((CatalogMaterializedView) old).getQuery(),
                     old.primaryKey,
@@ -4725,7 +4890,6 @@ public class CatalogImpl extends Catalog {
                     old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
                     old.entityType,
                     old.primaryKey,
                     ImmutableList.copyOf( newDataPlacements ),

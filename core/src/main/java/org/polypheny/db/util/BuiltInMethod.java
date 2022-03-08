@@ -436,7 +436,7 @@ public enum BuiltInMethod {
     DESERIALIZE( PolySerializer.class, "deserializeEnumerable", Object.class ),
     DESERIALIZE_DECOMPRESS_STRING( PolySerializer.class, "deserializeAndCompress", String.class, Class.class ),
     DESERIALIZE_DECOMPRESS_BYTE_ARRAY( PolySerializer.class, "deserializeAndCompress", byte[].class, Class.class ),
-    GRAPH_PATTERN_MATCH( CypherFunctions.class, "patternMatch", Enumerable.class, PolyGraph.class );
+    GRAPH_PATTERN_MATCH( CypherFunctions.class, "patternMatch", PolyGraph.class, PolyGraph.class );
 
     public final Method method;
     public final Constructor constructor;

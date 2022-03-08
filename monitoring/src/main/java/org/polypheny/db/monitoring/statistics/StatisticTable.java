@@ -53,9 +53,6 @@ public class StatisticTable<T extends Comparable<T>> {
     private final List<Integer> availableAdapters = new ArrayList<>();
 
     @Getter
-    private String owner;
-
-    @Getter
     private EntityType entityType;
 
     @Getter
@@ -84,7 +81,6 @@ public class StatisticTable<T extends Comparable<T>> {
             this.table = catalogEntity.name;
             this.namespaceType = catalogEntity.getNamespaceType();
             this.dataPlacements = catalogEntity.dataPlacements;
-            this.owner = catalogEntity.ownerName;
             this.entityType = catalogEntity.entityType;
         }
         calls = new TableCalls( tableId, 0, 0, 0, 0 );

@@ -20,9 +20,10 @@ import lombok.Getter;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
 @Getter
-public class CypherAlterDatabase extends CypherAdminCommand {
+public class CypherAlterDatabase extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
     private final CypherSimpleEither<String, CypherParameter> databaseName;
     private final boolean ifExists;

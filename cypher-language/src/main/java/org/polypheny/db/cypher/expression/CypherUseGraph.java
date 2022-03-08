@@ -17,12 +17,18 @@
 package org.polypheny.db.cypher.expression;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cypher.admin.CypherWithGraph;
 import org.polypheny.db.cypher.clause.CypherUseClause;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.prepare.Context;
+import org.polypheny.db.transaction.Statement;
 
 @Getter
-public class CypherUseGraph extends CypherWithGraph {
+@Slf4j
+public class CypherUseGraph extends CypherWithGraph implements ExecutableStatement {
 
     private final CypherWithGraph statement;
     private final CypherUseClause useClause;
@@ -32,6 +38,23 @@ public class CypherUseGraph extends CypherWithGraph {
         super( ParserPos.ZERO );
         this.statement = statement;
         this.useClause = useClause;
+    }
+
+
+    @Override
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+        if ( this.statement != null && this.statement instanceof ExecutableStatement ) {
+            ((ExecutableStatement) this.statement).execute( context, statement, parameters );
+        }
+        if ( useClause != null ) {
+            log.warn( useClause.toString() );
+        }
+    }
+
+
+    @Override
+    public boolean isDDL() {
+        return true;
     }
 
 }

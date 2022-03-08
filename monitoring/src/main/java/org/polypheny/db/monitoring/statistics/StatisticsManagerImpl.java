@@ -193,7 +193,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private Transaction getTransaction() {
         Transaction transaction = null;
         try {
-            transaction = statisticQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
+            transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Statistic Manager" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( e );
         }

@@ -230,9 +230,9 @@ public class Crud implements InformationObserver {
     @Getter
     private final TransactionManager transactionManager;
     @Getter
-    private final String databaseName;
+    private final long databaseId;
     @Getter
-    private final String userName;
+    private final long userId;
 
     public final LanguageCrud languageCrud;
     public final StatisticCrud statisticCrud;
@@ -244,10 +244,10 @@ public class Crud implements InformationObserver {
      *
      * @param transactionManager The Polypheny-DB transaction manager
      */
-    Crud( final TransactionManager transactionManager, final String userName, final String databaseName ) {
+    Crud( final TransactionManager transactionManager, final long userId, final long databaseId ) {
         this.transactionManager = transactionManager;
-        this.databaseName = databaseName;
-        this.userName = userName;
+        this.databaseId = databaseId;
+        this.userId = userId;
         this.languageCrud = new LanguageCrud( this );
         this.statisticCrud = new StatisticCrud( this );
     }
@@ -303,14 +303,14 @@ public class Crud implements InformationObserver {
         // determine if it is a view or a table
         CatalogEntity catalogEntity;
         try {
-            catalogEntity = catalog.getTable( this.databaseName, t[0], t[1] );
+            catalogEntity = catalog.getTable( this.databaseId, t[0], t[1] );
             result.setNamespaceType( catalogEntity.getNamespaceType() );
             if ( catalogEntity.modifiable ) {
                 result.setType( ResultType.TABLE );
             } else {
                 result.setType( ResultType.VIEW );
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception", e );
             return result.setError( "Could not retrieve type of Result (table/view)." );
         }
@@ -375,7 +375,7 @@ public class Crud implements InformationObserver {
             ctx.json( new ArrayList<>() );
         }
 
-        List<CatalogNamespace> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
+        List<CatalogNamespace> schemas = catalog.getSchemas( databaseId, null );
         for ( CatalogNamespace schema : schemas ) {
             SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", schema.namespaceType == NamespaceType.RELATIONAL ? "cui-layers" : "cui-folder" );
 
@@ -453,7 +453,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        List<CatalogEntity> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( requestedSchema ), null );
+        List<CatalogEntity> tables = catalog.getTables( databaseId, new Catalog.Pattern( requestedSchema ), null );
         ArrayList<DbTable> result = new ArrayList<>();
         for ( CatalogEntity t : tables ) {
             result.add( new DbTable( t.name, t.getNamespaceName(), t.modifiable, t.entityType ) );
@@ -1133,7 +1133,7 @@ public class Crud implements InformationObserver {
         Map<String, CatalogColumn> catalogColumns = getCatalogColumns( tableName, columnName );
         CatalogEntity catalogEntity;
         try {
-            catalogEntity = catalog.getTable( databaseName, tableName, columnName );
+            catalogEntity = catalog.getTable( databaseId, tableName, columnName );
             CatalogPrimaryKey pk = catalog.getPrimaryKey( catalogEntity.primaryKey );
             for ( long colId : pk.columnIds ) {
                 String colName = catalog.getField( colId ).name;
@@ -1146,7 +1146,7 @@ public class Crud implements InformationObserver {
                     joiner.add( condition );
                 }
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException e ) {
             throw new RuntimeException( "Error while deriving PK WHERE condition", e );
         }
         return " WHERE " + joiner.toString();
@@ -1306,7 +1306,7 @@ public class Crud implements InformationObserver {
         ArrayList<DbColumn> cols = new ArrayList<>();
 
         try {
-            CatalogEntity catalogEntity = catalog.getTable( databaseName, t[0], t[1] );
+            CatalogEntity catalogEntity = catalog.getTable( databaseId, t[0], t[1] );
             ArrayList<String> primaryColumns;
             if ( catalogEntity.primaryKey != null ) {
                 CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
@@ -1338,7 +1338,7 @@ public class Crud implements InformationObserver {
             } else {
                 result.setType( ResultType.VIEW );
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception while getting a column", e );
             ctx.status( 400 ).json( new Result( e ) );
             return;
@@ -1452,7 +1452,7 @@ public class Crud implements InformationObserver {
     void getMaterializedInfo( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownNamespaceException {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
 
-        CatalogEntity catalogEntity = catalog.getTable( databaseName, request.schema, request.table );
+        CatalogEntity catalogEntity = catalog.getTable( databaseId, request.schema, request.table );
 
         if ( catalogEntity.entityType == EntityType.MATERIALIZED_VIEW ) {
             CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogEntity;
@@ -1776,7 +1776,7 @@ public class Crud implements InformationObserver {
         Map<String, ArrayList<String>> temp = new HashMap<>();
 
         try {
-            CatalogEntity catalogEntity = catalog.getTable( databaseName, t[0], t[1] );
+            CatalogEntity catalogEntity = catalog.getTable( databaseId, t[0], t[1] );
 
             // get primary key
             if ( catalogEntity.primaryKey != null ) {
@@ -1811,7 +1811,7 @@ public class Crud implements InformationObserver {
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
         }
@@ -1934,7 +1934,7 @@ public class Crud implements InformationObserver {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         Result result;
         try {
-            CatalogEntity catalogEntity = catalog.getTable( databaseName, request.schema, request.table );
+            CatalogEntity catalogEntity = catalog.getTable( databaseId, request.schema, request.table );
             List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogEntity.id, false );
 
             DbColumn[] header = {
@@ -1986,7 +1986,7 @@ public class Crud implements InformationObserver {
 
             result = new Result( header, data.toArray( new String[0][2] ) );
 
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
@@ -2094,7 +2094,7 @@ public class Crud implements InformationObserver {
         String schemaName = index.getSchema();
         String tableName = index.getTable();
         try {
-            CatalogEntity table = catalog.getTable( databaseName, schemaName, tableName );
+            CatalogEntity table = catalog.getTable( databaseId, schemaName, tableName );
             Placement p = new Placement( table.partitionProperty.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.entityType );
             if ( table.entityType == EntityType.VIEW ) {
 
@@ -2116,7 +2116,7 @@ public class Crud implements InformationObserver {
                 }
                 return p;
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
         }
@@ -2643,7 +2643,7 @@ public class Crud implements InformationObserver {
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
-        List<CatalogEntity> catalogEntities = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
+        List<CatalogEntity> catalogEntities = catalog.getTables( databaseId, new Catalog.Pattern( request.schema ), null );
         for ( CatalogEntity catalogEntity : catalogEntities ) {
             if ( catalogEntity.entityType == EntityType.ENTITY || catalogEntity.entityType == EntityType.SOURCE ) {
                 // get foreign keys
@@ -3211,7 +3211,7 @@ public class Crud implements InformationObserver {
 
     private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws QueryExecutionException {
         // create table from .json file
-        List<CatalogEntity> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
+        List<CatalogEntity> tablesInSchema = catalog.getTables( this.databaseId, new Catalog.Pattern( request.schema ), null );
         int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
         if ( tableAlreadyExists > 0 ) {
             return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a entity with the name '%s'", request.schema, newName ) );
@@ -3311,7 +3311,7 @@ public class Crud implements InformationObserver {
                 OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
                 FileOutputStream tableStream = new FileOutputStream( tableFile );
                 log.info( String.format( "Exporting %s.%s", request.schema, table.initialName ) );
-                CatalogEntity catalogEntity = catalog.getTable( this.databaseName, request.schema, table.initialName );
+                CatalogEntity catalogEntity = catalog.getTable( this.databaseId, request.schema, table.initialName );
 
                 catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogEntity, request.createPks, request.defaultValues ) );
                 catalogWriter.flush();
@@ -3580,9 +3580,9 @@ public class Crud implements InformationObserver {
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogEntity = catalog.getTable( this.databaseName, t[0], t[1] );
+                catalogEntity = catalog.getTable( this.databaseId, t[0], t[1] );
                 entityType = catalogEntity.entityType;
-            } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+            } catch ( UnknownTableException e ) {
                 log.error( "Caught exception", e );
             }
         }
@@ -3953,9 +3953,9 @@ public class Crud implements InformationObserver {
     }
 
 
-    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, String userName, String databaseName ) {
+    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
         try {
-            Transaction transaction = transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
+            Transaction transaction = transactionManager.startTransaction( userId, databaseId, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
             transaction.setUseCache( useCache );
             return transaction;
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
@@ -3965,7 +3965,7 @@ public class Crud implements InformationObserver {
 
 
     public Transaction getTransaction( boolean analyze, boolean useCache ) {
-        return getTransaction( analyze, useCache, transactionManager, userName, databaseName );
+        return getTransaction( analyze, useCache, transactionManager, userId, databaseId );
     }
 
 
@@ -3979,12 +3979,12 @@ public class Crud implements InformationObserver {
     private Map<String, CatalogColumn> getCatalogColumns( String schemaName, String tableName ) {
         Map<String, CatalogColumn> dataTypes = new HashMap<>();
         try {
-            CatalogEntity table = catalog.getTable( this.databaseName, schemaName, tableName );
+            CatalogEntity table = catalog.getTable( this.databaseId, schemaName, tableName );
             List<CatalogColumn> catalogColumns = catalog.getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
                 dataTypes.put( catalogColumn.name, catalogColumn );
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception", e );
         }
         return dataTypes;

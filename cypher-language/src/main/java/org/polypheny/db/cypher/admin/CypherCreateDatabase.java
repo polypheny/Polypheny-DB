@@ -19,8 +19,6 @@ package org.polypheny.db.cypher.admin;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
@@ -65,12 +63,7 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
             }
         }
 
-        try {
-            // todo dl ddlManager should create entities relationships & nodes directly
-            DdlManager.getInstance().createNamespace( databaseName, Catalog.defaultDatabaseId, NamespaceType.GRAPH, Catalog.defaultUserId, ifNotExists, replace );
-        } catch ( NamespaceAlreadyExistsException e ) {
-            throw new RuntimeException( "The PolyNamespace already exists." );
-        }
+        DdlManager.getInstance().createGraphDatabase( Catalog.defaultDatabaseId, databaseName, true, null, ifNotExists, replace, statement );
 
     }
 

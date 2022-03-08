@@ -110,8 +110,8 @@ public class WebSocket implements Consumer<WsConfig> {
                         ctx.session,
                         queryRequest,
                         crud.getTransactionManager(),
-                        crud.getUserName(),
-                        crud.getDatabaseName(),
+                        crud.getUserId(),
+                        crud.getDatabaseId(),
                         crud );
 
                 for ( Result result : results ) {

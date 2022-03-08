@@ -45,6 +45,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -124,7 +125,7 @@ public class TestHelper {
 
     public Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( "pa", "APP", true, "Test Helper" );
+            return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, true, "Test Helper" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

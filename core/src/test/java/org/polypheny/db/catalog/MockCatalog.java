@@ -33,7 +33,9 @@ import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphEntity.GraphObjectType;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
@@ -69,11 +71,6 @@ import org.polypheny.db.type.PolyType;
  * provide a clean testing setup
  */
 public abstract class MockCatalog extends Catalog {
-
-    @Override
-    public long addGraphEntity( long namespaceId, GraphObjectType objectType, int ownerId, String label, EntityType entityType, boolean modifiable ) {
-        throw new NotImplementedException();
-    }
 
 
     @Override
@@ -150,6 +147,66 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addGraph( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void deleteGraph( long id ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void removeGraphAlias( String alias, boolean ifNotExists ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogGraphMapping getGraphMapping( long graphId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addGraphPlacement( int adapterId, long graphId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void deleteGraphPlacements( int adapterId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogGraphPlacement getGraphPlacement( int adapterId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogGraphDatabase getGraph( long id ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName ) {
         throw new NotImplementedException();
     }
 

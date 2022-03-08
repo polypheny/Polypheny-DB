@@ -274,8 +274,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         try {
             Transaction transaction = getTransactionManager().startTransaction(
-                    catalogEntity.ownerName,
-                    catalog.getDatabase( catalogEntity.databaseId ).name,
+                    catalogEntity.ownerId,
+                    catalogEntity.databaseId,
                     false,
                     "Materialized View" );
 

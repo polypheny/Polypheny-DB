@@ -55,7 +55,6 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
                 1,
                 1,
                 1,
-                "hans",
                 EntityType.ENTITY,
                 23L,
                 ImmutableList.of(),

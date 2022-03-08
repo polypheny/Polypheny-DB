@@ -31,6 +31,8 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
@@ -77,6 +79,22 @@ public abstract class DataStore extends Adapter {
     public abstract AvailableIndexMethod getDefaultIndexMethod();
 
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity );
+
+
+    public void createGraphDatabase( Context context, CatalogGraphDatabase graphDatabase ) {
+        // overwrite this if the datastore supports graph
+        createGraphSubstitution( context, graphDatabase );
+    }
+
+
+    private void createGraphSubstitution( Context context, CatalogGraphDatabase graphDatabase ) {
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
+        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodeId );
+        createTable( context, nodes, ImmutableList.of() );
+
+        CatalogEntity rels = Catalog.getInstance().getTable( mapping.nodeId );
+        createTable( context, rels, ImmutableList.of() );
+    }
 
 
     @AllArgsConstructor

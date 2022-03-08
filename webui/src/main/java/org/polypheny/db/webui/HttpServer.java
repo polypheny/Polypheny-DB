@@ -147,8 +147,8 @@ public class HttpServer implements Runnable {
 
         Crud crud = new Crud(
                 transactionManager,
-                Catalog.getInstance().getUser( Catalog.defaultUserId ).name,
-                Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name );
+                Catalog.defaultUserId,
+                Catalog.defaultDatabaseId );
 
         WebSocket webSocketHandler = new WebSocket( crud, gson );
         webSockets( server, webSocketHandler );

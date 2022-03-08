@@ -33,9 +33,9 @@ public interface TransactionManager {
 
     Transaction startTransaction( CatalogUser user, CatalogNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor );
 
-    Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownNamespaceException;
+    Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownNamespaceException;
 
-    Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownNamespaceException;
+    Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownNamespaceException;
 
     void removeTransaction( PolyXid xid );
 

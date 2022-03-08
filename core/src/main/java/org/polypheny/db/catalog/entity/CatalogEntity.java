@@ -43,7 +43,6 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
     public final long namespaceId;
     public final long databaseId;
     public final int ownerId;
-    public final String ownerName;
     public final EntityType entityType;
     public final Long primaryKey;
     public final boolean modifiable;
@@ -63,7 +62,6 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
             final long namespaceId,
             final long databaseId,
             final int ownerId,
-            @NonNull final String ownerName,
             @NonNull final Catalog.EntityType type,
             final Long primaryKey,
             @NonNull final ImmutableList<Integer> dataPlacements,
@@ -75,7 +73,6 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
         this.namespaceId = namespaceId;
         this.databaseId = databaseId;
         this.ownerId = ownerId;
-        this.ownerName = ownerName;
         this.entityType = type;
         this.primaryKey = primaryKey;
         this.modifiable = modifiable;
@@ -98,7 +95,6 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
             final long namespaceId,
             final long databaseId,
             final int ownerId,
-            @NonNull final String ownerName,
             @NonNull final Catalog.EntityType type,
             final Long primaryKey,
             @NonNull final ImmutableList<Integer> dataPlacements,
@@ -111,7 +107,6 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
         this.namespaceId = namespaceId;
         this.databaseId = databaseId;
         this.ownerId = ownerId;
-        this.ownerName = ownerName;
         this.entityType = type;
         this.primaryKey = primaryKey;
         this.modifiable = modifiable;
@@ -170,8 +165,8 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
                 null,
                 null,
                 null,
-                null,
-                ownerName };
+                null
+        };
     }
 
 
@@ -203,7 +198,6 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
                 namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
                 entityType,
                 primaryKey,
                 dataPlacements,
@@ -221,7 +215,6 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
                 namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
                 entityType,
                 primaryKey,
                 dataPlacements,
@@ -239,7 +232,6 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
                 namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
                 entityType,
                 primaryKey,
                 dataPlacements,

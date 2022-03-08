@@ -54,7 +54,6 @@ public class CatalogView extends CatalogEntity {
             long schemaId,
             long databaseId,
             int ownerId,
-            String ownerName,
             EntityType entityType,
             String query,
             Long primaryKey,
@@ -65,7 +64,7 @@ public class CatalogView extends CatalogEntity {
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, entityType, primaryKey, dataPlacements,
+        super( id, name, columnIds, schemaId, databaseId, ownerId, entityType, primaryKey, dataPlacements,
                 modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
@@ -83,7 +82,6 @@ public class CatalogView extends CatalogEntity {
                 namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
                 entityType,
                 query,
                 primaryKey,
@@ -106,7 +104,6 @@ public class CatalogView extends CatalogEntity {
                 namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
                 entityType,
                 query,
                 primaryKey,
@@ -129,7 +126,6 @@ public class CatalogView extends CatalogEntity {
                 namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
                 entityType,
                 query,
                 primaryKey,

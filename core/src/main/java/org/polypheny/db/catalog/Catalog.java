@@ -41,7 +41,9 @@ import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphEntity.GraphObjectType;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
@@ -305,6 +307,20 @@ public abstract class Catalog {
      */
     public abstract void setSchemaOwner( long schemaId, long ownerId );
 
+    public abstract long addGraph( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) throws GenericCatalogException;
+
+    public abstract void deleteGraph( long id );
+
+    public abstract CatalogGraphDatabase getGraph( long id );
+
+    public abstract List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName );
+
+    public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
+
+    public abstract void removeGraphAlias( String alias, boolean ifNotExists );
+
+    public abstract CatalogGraphMapping getGraphMapping( long graphId );
+
     /**
      * Delete a schema from the catalog
      *
@@ -403,8 +419,6 @@ public abstract class Catalog {
      */
     public abstract long addEntity( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
 
-
-    public abstract long addGraphEntity( long namespaceId, GraphObjectType objectType, int ownerId, String label, EntityType entityType, boolean modifiable );
 
     /**
      * Adds a view to a specified schema.
@@ -1412,6 +1426,12 @@ public abstract class Catalog {
      * @param catalogDataPlacement new dataPlacement to be written
      */
     protected abstract void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement );
+
+    public abstract long addGraphPlacement( int adapterId, long graphId );
+
+    public abstract void deleteGraphPlacements( int adapterId, long partitionId );
+
+    public abstract CatalogGraphPlacement getGraphPlacement( int adapterId, long partitionId );
 
     /**
      * Removes a  DataPlacement for a given table on a specific store

@@ -188,7 +188,7 @@ public class IndexManager {
         indexByName.put( name, index );
         final Transaction tx = statement != null
                 ? statement.getTransaction()
-                : transactionManager.startTransaction( "pa", "APP", false, "Index Manager" );
+                : transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Index Manager" );
         try {
             index.rebuild( tx );
             if ( statement == null ) {

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.StatisticsManager;
@@ -67,7 +68,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphEntity.GraphObjectType;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
@@ -88,6 +89,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownGraphException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -129,7 +131,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -316,8 +317,7 @@ public class DdlManagerImpl extends DdlManager {
                 tablesToDrop.add( ccp.tableId );
             }
 
-            Set<Long> temp = tablesToDrop;
-            for ( Long id : temp ) {
+            for ( Long id : tablesToDrop ) {
                 if ( catalog.getTable( id ).entityType != EntityType.MATERIALIZED_VIEW ) {
                     tablesToDrop.add( id );
                 }
@@ -1771,55 +1771,65 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createGraph( long databaseId, String namespaceName, boolean ifNotExists, boolean replace, Statement statement ) {
-        assert ifNotExists && !replace : "Graphs are only create if not exists is specified and cannot be replaced yet.";
+    public long createGraphDatabase( long databaseId, String graphName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement ) {
+        assert !replace : "Graphs cannot be replaced yet.";
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+        }
+
         // add general graph
+        long graphId;
         try {
-            long graphNamespaceId =
-                    createNamespace( namespaceName, databaseId, NamespaceType.GRAPH, Catalog.defaultUserId, ifNotExists, replace );
-
-            // add default nodes and relationships
-            createGraphObjects( graphNamespaceId, statement );
-
-            return graphNamespaceId;
-
-        } catch ( NamespaceAlreadyExistsException e ) {
-            throw new RuntimeException( "Namespace exists already." );
+            graphId = catalog.addGraph( databaseId, graphName, modifiable, ifNotExists, replace );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( "Error while creating GraphDatabase: " + graphName );
         }
+        CatalogGraphDatabase graph = catalog.getGraph( graphId );
+
+        stores.forEach( s -> catalog.addGraphPlacement( s.getAdapterId(), graphId ) );
+
+        for ( DataStore store : stores ) {
+            store.createGraphDatabase( statement.getPrepareContext(), graph );
+        }
+
+        return graphId;
+
     }
 
 
-    private void createGraphObjects( long graphNamespaceId, Statement statement ) {
-        try {
-            Pair<List<FieldInformation>, List<ConstraintInformation>> nodeInfos = getGraphInformation( GraphObjectType.NODES.getName() );
-            createEntity( graphNamespaceId, GraphObjectType.NODES.getName(), nodeInfos.getKey(), nodeInfos.getValue(), true, null, PlacementType.AUTOMATIC, statement );
-
-            Pair<List<FieldInformation>, List<ConstraintInformation>> relInfos = getGraphInformation( GraphObjectType.RELATIONSHIPS.getName() );
-            createEntity( graphNamespaceId, GraphObjectType.RELATIONSHIPS.getName(), relInfos.getKey(), relInfos.getValue(), true, null, PlacementType.AUTOMATIC, statement );
-
-        } catch ( EntityAlreadyExistsException e ) {
-            throw new RuntimeException( "It was not possible to create the structure for a new graph as it already exists." );
-        }
+    @Override
+    public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+        catalog.addGraphAlias( graphId, alias, ifNotExists );
     }
 
 
-    private Pair<List<FieldInformation>, List<ConstraintInformation>> getGraphInformation( String mainName ) {
-        List<FieldInformation> fields = new ArrayList<>();
-        FieldInformation id = new FieldInformation( "_id",
-                new ColumnTypeInformation( PolyType.BIGINT, null, null, null, null, null, false ), Collation.getDefaultCollation(), null, 0 );
-        fields.add( id );
+    @Override
+    public void removeGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+        catalog.removeGraphAlias( alias, ifNotExists );
+    }
 
-        FieldInformation labels = new FieldInformation( "_labels",
-                new ColumnTypeInformation( PolyType.VARCHAR, PolyType.ARRAY, 255, null, 1, null, false ), Collation.getDefaultCollation(), null, 2 );
-        fields.add( labels );
 
-        FieldInformation nodes = new FieldInformation( mainName,
-                new ColumnTypeInformation( PolyType.NODE, null, null, null, null, null, false ), Collation.getDefaultCollation(), null, 2 );
-        fields.add( nodes );
+    @Override
+    public void replaceGraphAlias( long graphId, String oldAlias, String alias ) {
+        catalog.removeGraphAlias( oldAlias, true );
+        catalog.addGraphAlias( graphId, alias, true );
+    }
 
-        ConstraintInformation primary = new ConstraintInformation( "primary_" + mainName, ConstraintType.PRIMARY, List.of( "_id" ) );
 
-        return Pair.of( fields, List.of( primary ) );
+    @Override
+    public void removeGraphDatabase( long graphId, boolean ifExists ) {
+        CatalogGraphDatabase graph = catalog.getGraph( graphId );
+
+        if ( graph == null ) {
+            if ( !ifExists ) {
+                throw new UnknownGraphException( graphId );
+            }
+            return;
+        }
+
+        catalog.deleteGraph( graphId );
     }
 
 
@@ -1986,7 +1996,6 @@ public class DdlManagerImpl extends DdlManager {
 
                 store.createTable( statement.getPrepareContext(), catalogEntity, catalogEntity.partitionProperty.partitionIds );
             }
-
 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );

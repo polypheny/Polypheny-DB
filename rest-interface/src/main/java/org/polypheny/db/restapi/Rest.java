@@ -87,14 +87,14 @@ import org.polypheny.db.util.TimestampString;
 public class Rest {
 
     private final TransactionManager transactionManager;
-    private final String databaseName;
-    private final String userName;
+    private final long databaseId;
+    private final long userId;
 
 
-    Rest( final TransactionManager transactionManager, final String userName, final String databaseName ) {
+    Rest( final TransactionManager transactionManager, final long userId, final long databaseId ) {
         this.transactionManager = transactionManager;
-        this.databaseName = databaseName;
-        this.userName = userName;
+        this.databaseId = databaseId;
+        this.userId = userId;
     }
 
 
@@ -549,7 +549,7 @@ public class Rest {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false, "REST Interface", MultimediaFlavor.FILE );
+            return transactionManager.startTransaction( userId, databaseId, false, "REST Interface", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

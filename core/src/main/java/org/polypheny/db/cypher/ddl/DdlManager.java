@@ -20,6 +20,7 @@ package org.polypheny.db.cypher.ddl;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -422,6 +423,8 @@ public abstract class DdlManager {
      */
     public abstract void renameColumn( CatalogEntity catalogEntity, String columnName, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException, ColumnNotExistsException;
 
+    public abstract void removeGraphDatabase( long graphId, boolean ifExists );
+
     /**
      * Create a new table
      *
@@ -547,7 +550,14 @@ public abstract class DdlManager {
     public abstract void refreshView( Statement statement, Long materializedId );
 
 
-    public abstract long createGraph( long databaseId, String namespaceName, boolean ifExists, boolean replace, Statement statement );
+    public abstract long createGraphDatabase( long databaseId, String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement );
+
+    public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
+
+    public abstract void removeGraphAlias( long graphId, String alias, boolean ifNotExists );
+
+
+    public abstract void replaceGraphAlias( long graphId, String oldAlias, String alias );
 
 
     /**

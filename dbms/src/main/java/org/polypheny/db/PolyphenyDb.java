@@ -291,11 +291,11 @@ public class PolyphenyDb {
             Catalog.defaultStore = Adapter.fromString( defaultStoreName );
             Catalog.defaultSource = Adapter.fromString( defaultSourceName );
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
-            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
-            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
             catalog.restoreViews( trx );
             trx.commit();
