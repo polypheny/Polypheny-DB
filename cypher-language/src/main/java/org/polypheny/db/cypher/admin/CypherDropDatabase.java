@@ -70,4 +70,10 @@ public class CypherDropDatabase extends CypherAdminCommand implements Executable
         DdlManager.getInstance().removeGraphDatabase( databases.get( 0 ).id, ifExists );
     }
 
+
+    @Override
+    public boolean isDDL() {
+        return true;
+    }
+
 }

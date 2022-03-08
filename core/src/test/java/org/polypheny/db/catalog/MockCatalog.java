@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -60,6 +61,7 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -71,6 +73,11 @@ import org.polypheny.db.type.PolyType;
  * provide a clean testing setup
  */
 public abstract class MockCatalog extends Catalog {
+
+    @Override
+    public void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement ) {
+        throw new NotImplementedException();
+    }
 
 
     @Override
@@ -152,7 +159,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addGraph( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) {
+    public long addGraphDatabase( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) {
         throw new NotImplementedException();
     }
 

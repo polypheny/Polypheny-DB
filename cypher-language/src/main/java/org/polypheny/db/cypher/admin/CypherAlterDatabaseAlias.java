@@ -62,5 +62,4 @@ public class CypherAlterDatabaseAlias extends CypherAdminCommand implements Exec
         DdlManager.getInstance().replaceGraphAlias( graphs.get( 0 ).id, targetName, aliasName );
 
     }
-
 }

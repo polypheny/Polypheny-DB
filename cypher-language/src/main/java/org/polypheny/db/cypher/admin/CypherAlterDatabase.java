@@ -37,4 +37,10 @@ public class CypherAlterDatabase extends CypherAdminCommand implements Unsupport
         this.accessType = accessType;
     }
 
+
+    @Override
+    public boolean isDDL() {
+        return true;
+    }
+
 }

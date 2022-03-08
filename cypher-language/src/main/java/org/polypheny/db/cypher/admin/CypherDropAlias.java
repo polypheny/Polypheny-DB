@@ -53,4 +53,10 @@ public class CypherDropAlias extends CypherAdminCommand implements ExecutableSta
         DdlManager.getInstance().removeGraphAlias( graphs.get( 0 ).id, aliasName, ifExists );
     }
 
+
+    @Override
+    public boolean isDDL() {
+        return true;
+    }
+
 }

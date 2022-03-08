@@ -1782,7 +1782,7 @@ public class DdlManagerImpl extends DdlManager {
         // add general graph
         long graphId;
         try {
-            graphId = catalog.addGraph( databaseId, graphName, modifiable, ifNotExists, replace );
+            graphId = catalog.addGraphDatabase( databaseId, graphName, modifiable, ifNotExists, replace );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( "Error while creating GraphDatabase: " + graphName );
         }
@@ -1790,11 +1790,22 @@ public class DdlManagerImpl extends DdlManager {
 
         stores.forEach( s -> catalog.addGraphPlacement( s.getAdapterId(), graphId ) );
 
+        afterGraphLogistics( stores, graphId, statement );
+
         for ( DataStore store : stores ) {
             store.createGraphDatabase( statement.getPrepareContext(), graph );
         }
 
         return graphId;
+
+    }
+
+
+    private void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement ) {
+        // Trigger rebuild of schema; triggers schema creation on adapters
+        PolySchemaBuilder.getInstance().getCurrent();
+
+        catalog.afterGraphLogistics( stores, graphId, statement );
 
     }
 

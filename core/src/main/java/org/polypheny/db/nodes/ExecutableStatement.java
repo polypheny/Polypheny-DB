@@ -29,4 +29,9 @@ public interface ExecutableStatement {
 
     void execute( Context context, Statement statement, QueryParameters parameters );
 
+
+    default boolean isDDL() {
+        return true;
+    }
+
 }

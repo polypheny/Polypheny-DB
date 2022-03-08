@@ -29,6 +29,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -87,6 +88,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -307,13 +309,15 @@ public abstract class Catalog {
      */
     public abstract void setSchemaOwner( long schemaId, long ownerId );
 
-    public abstract long addGraph( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) throws GenericCatalogException;
+    public abstract long addGraphDatabase( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) throws GenericCatalogException;
 
     public abstract void deleteGraph( long id );
 
     public abstract CatalogGraphDatabase getGraph( long id );
 
     public abstract List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName );
+
+    public abstract void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement );
 
     public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
 

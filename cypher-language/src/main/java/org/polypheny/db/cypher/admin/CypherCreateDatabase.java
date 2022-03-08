@@ -67,4 +67,10 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
 
     }
 
+
+    @Override
+    public boolean isDDL() {
+        return true;
+    }
+
 }

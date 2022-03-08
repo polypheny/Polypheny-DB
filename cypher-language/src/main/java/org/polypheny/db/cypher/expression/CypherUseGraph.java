@@ -43,7 +43,7 @@ public class CypherUseGraph extends CypherWithGraph implements ExecutableStateme
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        if ( this.statement != null && this.statement instanceof ExecutableStatement ) {
+        if ( this.statement != null && this.statement.isDDL() ) {
             ((ExecutableStatement) this.statement).execute( context, statement, parameters );
         }
         if ( useClause != null ) {

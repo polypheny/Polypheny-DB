@@ -1250,7 +1250,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addGraph( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) throws GenericCatalogException {
+    public long addGraphDatabase( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) throws GenericCatalogException {
 
         if ( getGraphs( databaseId, new Pattern( name ) ).size() != 0 && !ifNotExists ) {
             throw new GraphAlreadyExistsException( name );
@@ -1269,6 +1269,92 @@ public class CatalogImpl extends Catalog {
 
         listeners.firePropertyChange( "graph", null, graph );
         return id;
+    }
+
+
+    @Override
+    public void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement ) {
+        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
+
+        CatalogEntity nodes = Objects.requireNonNull( tables.get( mapping.nodeId ) );
+        CatalogEntity rels = Objects.requireNonNull( tables.get( mapping.relId ) );
+
+        for ( DataStore store : stores ) {
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    mapping.idNodeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    mapping.nodeNodeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    mapping.labelsNodeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addPartitionPlacement(
+                    store.getAdapterId(),
+                    nodes.id,
+                    nodes.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null );
+
+            //store.createTable( statement.getPrepareContext(), nodes, nodes.partitionProperty.partitionIds );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    mapping.idRelId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    mapping.relRelId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    mapping.labelsRelId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addPartitionPlacement(
+                    store.getAdapterId(),
+                    rels.id,
+                    rels.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null );
+
+            //store.createTable( statement.getPrepareContext(), rels, rels.partitionProperty.partitionIds );
+        }
     }
 
 
@@ -1316,16 +1402,16 @@ public class CatalogImpl extends Catalog {
 
         long idNodeId = addColumn( "_id", nodesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         long nodeNodeId = addColumn( "_node", nodesId, 1, PolyType.NODE, null, null, null, null, null, false, null );
-        long labelsNodeId = addColumn( "_labels", nodesId, 0, PolyType.ARRAY, PolyType.VARCHAR, null, null, null, null, false, null );
+        long labelsNodeId = addColumn( "_labels", nodesId, 2, PolyType.VARCHAR, PolyType.ARRAY, 255, null, null, null, false, Collation.getDefaultCollation() );
 
         addPrimaryKey( nodesId, Collections.singletonList( idNodeId ) );
 
         // table id relationships -> id, rel, labels
         long relsId = addEntity( "_relationships_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
 
-        long idRelId = addColumn( "_id", nodesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
-        long relRelId = addColumn( "_relationship", nodesId, 1, PolyType.RELATIONSHIP, null, null, null, null, null, false, null );
-        long labelsRelId = addColumn( "_labels", nodesId, 0, PolyType.ARRAY, PolyType.VARCHAR, null, null, null, null, false, null );
+        long idRelId = addColumn( "_id", relsId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
+        long relRelId = addColumn( "_relationship", relsId, 1, PolyType.RELATIONSHIP, null, null, null, null, null, false, null );
+        long labelsRelId = addColumn( "_labels", relsId, 2, PolyType.VARCHAR, PolyType.ARRAY, 255, null, null, null, false, Collation.getDefaultCollation() );
 
         addPrimaryKey( relsId, Collections.singletonList( idRelId ) );
 
@@ -1354,7 +1440,7 @@ public class CatalogImpl extends Catalog {
 
         CatalogGraphDatabase old = Objects.requireNonNull( graphs.get( id ) );
 
-        removeGraphLogistics( id );
+        //removeGraphLogistics( id );
 
         deleteSchema( id );
 

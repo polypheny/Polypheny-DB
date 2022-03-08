@@ -127,6 +127,8 @@ public class CypherToAlgConverter {
             case CREATE:
                 convertCreate( (CypherCreate) clause, context );
                 break;
+            case USE:
+                break;
             default:
                 throw new UnsupportedOperationException();
         }

@@ -220,6 +220,9 @@ public class HsqldbStore extends AbstractJdbcStore {
                 return "TIMESTAMP";
             case ARRAY:
                 return "LONGVARCHAR";
+            case NODE:
+            case RELATIONSHIP:
+                return "LONGVARCHAR";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );
     }

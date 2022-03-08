@@ -57,4 +57,10 @@ public class CypherCreateDatabaseAlias extends CypherAdminCommand implements Exe
         DdlManager.getInstance().addGraphAlias( graphs.get( 0 ).id, aliasName, ifNotExists );
     }
 
+
+    @Override
+    public boolean isDDL() {
+        return true;
+    }
+
 }

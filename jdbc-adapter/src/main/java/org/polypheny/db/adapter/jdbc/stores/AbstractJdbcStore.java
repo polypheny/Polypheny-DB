@@ -221,7 +221,7 @@ public abstract class AbstractJdbcStore extends DataStore {
 
 
     protected void createColumnDefinition( CatalogColumn catalogColumn, StringBuilder builder ) {
-        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != PolyType.ARRAY ) {
+        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType == PolyType.ARRAY ) {
             // Returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else if ( catalogColumn.collectionsType == PolyType.MAP ) {
