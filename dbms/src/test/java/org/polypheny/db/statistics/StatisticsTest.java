@@ -186,7 +186,6 @@ public class StatisticsTest {
                 statement.executeUpdate( REGION_TABLE_DATA );
                 statement.executeUpdate( NATION_TABLE_FOR_DELETE );
                 statement.executeUpdate( NATION_TABLE_DATA_FOR_DELETE );
-                statement.executeUpdate( "DELETE FROM statisticschema.nationdelete" );
                 connection.commit();
             }
         } catch ( SQLException e ) {
@@ -262,42 +261,51 @@ public class StatisticsTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
+                    assertStatisticsConvertTo( 180, 3 );
+                    statement.executeUpdate( "DELETE FROM statisticschema.nationdelete" );
+                    connection.commit();
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
                             ImmutableList.of()
                     );
-                    try {
-                        boolean successfull = false;
-                        int count = 0;
-                        while ( !successfull && count < 180 ) {
-                            waiter.await( 1, TimeUnit.SECONDS );
-                            if ( Catalog.getInstance().getTables( new Pattern( "APP" ), new Pattern( "statisticschema" ), new Pattern( "nationdelete" ) ).size() != 1 ) {
-                                count++;
-                                continue;
-                            }
-                            CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
-                            Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                            // potentially table exists not yet in statistics but in catalog
-                            if ( rowCount != null && rowCount == 0 ) {
-                                successfull = true;
+                    assertStatisticsConvertTo( 180, 0 );
 
-                            }
-                            count++;
-                        }
-
-                        if ( !successfull ) {
-                            Assert.fail( "RowCount did not diverge to the correct number." );
-                        }
-                    } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-                        log.error( "Caught exception test", e );
-                    }
                     connection.commit();
-                } catch ( InterruptedException e ) {
-                    log.error( "Caught exception test", e );
                 } finally {
                     connection.rollback();
                 }
             }
+        }
+    }
+
+
+    private void assertStatisticsConvertTo( int maxSeconds, int target ) {
+        try {
+            boolean successfull = false;
+            int count = 0;
+            while ( !successfull && count < maxSeconds ) {
+                waiter.await( 1, TimeUnit.SECONDS );
+                if ( Catalog.getInstance().getTables( new Pattern( "APP" ), new Pattern( "statisticschema" ), new Pattern( "nationdelete" ) ).size() != 1 ) {
+                    count++;
+                    continue;
+                }
+                CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
+                Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                // potentially table exists not yet in statistics but in catalog
+                if ( rowCount != null && rowCount == target ) {
+                    successfull = true;
+
+                }
+                count++;
+            }
+
+            if ( !successfull ) {
+                Assert.fail( String.format( "RowCount did not diverge to the correct number: %d.", target ) );
+            }
+
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | InterruptedException e ) {
+            log.error( "Caught exception test", e );
         }
     }
 
