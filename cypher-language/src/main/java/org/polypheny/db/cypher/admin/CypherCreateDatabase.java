@@ -73,4 +73,10 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
         return true;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.CREATE_DATABASE;
+    }
+
 }

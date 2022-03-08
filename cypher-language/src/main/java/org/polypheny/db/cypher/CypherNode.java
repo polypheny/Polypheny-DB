@@ -36,7 +36,7 @@ public abstract class CypherNode implements Node {
     @Getter
     public final ParserPos pos;
 
-    public static final List<CypherKind> DDL = ImmutableList.of( CypherKind.CREATE, CypherKind.DROP );
+    public static final List<CypherKind> DDL = ImmutableList.of( CypherKind.CREATE_DATABASE, CypherKind.DROP );
 
 
     protected CypherNode( ParserPos pos ) {
@@ -94,7 +94,27 @@ public abstract class CypherNode implements Node {
 
 
     public enum CypherKind {
-        SCOPE, REMOVE, ADMIN_COMMAND, QUERY, PATTERN, EXPRESSION, WITH_GRAPH, CALL, CASE, CREATE, SCHEMA_COMMAND, ADMIN_ACTION, DELETE, DROP, FOR_EACH, LOAD_CSV, MATCH, MERGE, ORDER_ITEM, RETURN, SET, SHOW, TRANSACTION, UNWIND, USE, WAIT, WHERE, WITH, MAP_PROJECTION, YIELD, EITHER, RESOURCE, PRIVILEGE, PATH_LENGTH, CALL_RESULT, HINT, PATH, PERIODIC_COMMIT, UNION, SINGLE, NAMED_PATTERN, NODE_PATTERN, REL_PATTERN, SHORTEST_PATTERN, SET_ITEM
+        SCOPE,
+        REMOVE,
+        ADMIN_COMMAND,
+        QUERY,
+        PATTERN,
+        EXPRESSION,
+        WITH_GRAPH,
+        CALL,
+        CASE,
+        CREATE,
+        CREATE_DATABASE,
+        SCHEMA_COMMAND,
+        ADMIN_ACTION,
+        DELETE,
+        DROP,
+        FOR_EACH,
+        LOAD_CSV,
+        MATCH,
+        MERGE,
+        ORDER_ITEM,
+        RETURN, SET, SHOW, TRANSACTION, UNWIND, USE, WAIT, WHERE, WITH, MAP_PROJECTION, YIELD, EITHER, RESOURCE, PRIVILEGE, PATH_LENGTH, CALL_RESULT, HINT, PATH, PERIODIC_COMMIT, UNION, SINGLE, NAMED_PATTERN, NODE_PATTERN, REL_PATTERN, SHORTEST_PATTERN, SET_ITEM
     }
 
 

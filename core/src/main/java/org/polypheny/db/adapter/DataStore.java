@@ -89,6 +89,7 @@ public abstract class DataStore extends Adapter {
 
     private void createGraphSubstitution( Context context, CatalogGraphDatabase graphDatabase ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
+
         CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodeId );
         createTable( context, nodes, nodes.partitionProperty.partitionIds );
 
