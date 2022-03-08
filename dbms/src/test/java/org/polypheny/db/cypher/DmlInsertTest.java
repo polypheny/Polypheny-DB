@@ -24,14 +24,13 @@ public class DmlInsertTest extends CypherTestTemplate {
 
     @Test
     public void insertNodeTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "CREATE (p:Person {name: 'Max Muster'})" );
+        Result res = execute( "CREATE (p:Person {name: 'Max Muster'})" );
     }
 
 
     @Test
     public void insertReturnNodeTest() {
-        Result res = CypherConnection.executeGetResponse(
+        Result res = execute(
                 "CREATE (p:Person {name: 'Max Muster'})\n"
                         + "RETURN p" );
     }
@@ -39,7 +38,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
     @Test
     public void insertRelationshipTest() {
-        Result res = CypherConnection.executeGetResponse(
+        Result res = execute(
                 "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:ANIMAL {name:'Kira', age:3, type:'dog'})" );
     }
 

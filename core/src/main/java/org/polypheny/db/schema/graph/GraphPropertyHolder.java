@@ -16,6 +16,7 @@
 
 package org.polypheny.db.schema.graph;
 
+import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 
@@ -23,12 +24,14 @@ import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 public abstract class GraphPropertyHolder extends GraphObject {
 
 
-    private final PolyDirectory properties;
+    public final PolyDirectory properties;
+    public final ImmutableList<String> labels;
 
 
-    public GraphPropertyHolder( long id, GraphObjectType type, PolyDirectory properties ) {
+    public GraphPropertyHolder( long id, GraphObjectType type, PolyDirectory properties, ImmutableList<String> labels ) {
         super( id, type );
         this.properties = properties;
+        this.labels = labels;
     }
 
 }

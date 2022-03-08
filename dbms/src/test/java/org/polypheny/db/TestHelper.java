@@ -281,8 +281,36 @@ public class TestHelper {
     }
 
 
-    public static class MongoConnection {
+    public static abstract class HttpConnection {
 
+        public static HttpRequest<?> buildQuery( String route, String query, String database ) {
+            JsonObject data = new JsonObject();
+            data.addProperty( "query", query );
+            data.addProperty( "database", database );
+
+            return Unirest.post( "{protocol}://{host}:{port}" + route )
+                    .header( "Content-ExpressionType", "application/json" )
+                    .body( data );
+
+        }
+
+
+        protected static HttpResponse<String> execute( String prefix, String query, String database ) {
+            HttpRequest<?> request = buildQuery( prefix, query, database );
+            request.basicAuth( "pa", "" );
+            request.routeParam( "protocol", "http" );
+            request.routeParam( "host", "127.0.0.1" );
+            request.routeParam( "port", "13137" );
+            return request.asString();
+        }
+
+    }
+
+
+    public static class MongoConnection extends HttpConnection {
+
+        public static final String MONGO_PREFIX = "/mongo";
+        public static final String MONGO_DB = "test";
         static Gson gson = new Gson();
 
 
@@ -313,30 +341,8 @@ public class TestHelper {
         }
 
 
-        private static HttpRequest<?> buildQuery( String mql ) {
-            JsonObject data = new JsonObject();
-            data.addProperty( "query", mql );
-            data.addProperty( "database", "test" );
-
-            return Unirest.post( "{protocol}://{host}:{port}/mongo" )
-                    .header( "Content-ExpressionType", "application/json" )
-                    .body( data );
-
-        }
-
-
         public static Result executeGetResponse( String mongoQl ) {
-            return getBody( execute( mongoQl ) );
-        }
-
-
-        private static HttpResponse<String> execute( String mql ) {
-            HttpRequest<?> request = MongoConnection.buildQuery( mql );
-            request.basicAuth( "pa", "" );
-            request.routeParam( "protocol", "http" );
-            request.routeParam( "host", "127.0.0.1" );
-            request.routeParam( "port", "13137" );
-            return request.asString();
+            return getBody( execute( MONGO_PREFIX, mongoQl, MONGO_DB ) );
         }
 
 
@@ -411,23 +417,13 @@ public class TestHelper {
     }
 
 
-    public static class CypherConnection {
+    public static class CypherConnection extends HttpConnection {
 
         static Gson gson = new Gson();
 
 
-        private static HttpResponse<String> execute( String query ) {
-            HttpRequest<?> request = MongoConnection.buildQuery( query );
-            request.basicAuth( "pa", "" );
-            request.routeParam( "protocol", "http" );
-            request.routeParam( "host", "127.0.0.1" );
-            request.routeParam( "port", "13137" );
-            return request.asString();
-        }
-
-
         public static Result executeGetResponse( String query ) {
-            return getBody( execute( query ) );
+            return getBody( execute( "/cypher", query, "test" ) );
         }
 
 

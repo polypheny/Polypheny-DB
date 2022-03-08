@@ -440,7 +440,6 @@ public class LanguageCrud {
 
             String query = request.query;
 
-            //for ( String query : mqls ) {
             Statement statement = transaction.createStatement();
             CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, request.database );
 
@@ -485,7 +484,6 @@ public class LanguageCrud {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }
-                    //}
                 }
             }
             commitAndFinish( transaction, queryAnalyzer, results, executionTime );

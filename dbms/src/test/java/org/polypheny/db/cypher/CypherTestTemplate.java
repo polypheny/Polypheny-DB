@@ -17,8 +17,11 @@
 package org.polypheny.db.cypher;
 
 import javax.annotation.Nullable;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.webui.models.Result;
 
 public class CypherTestTemplate {
 
@@ -26,6 +29,29 @@ public class CypherTestTemplate {
     public static void start() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
+        createData();
+    }
+
+
+    private static void createData() {
+        Result res = execute( "CREATE DATABASE test" );
+        res = execute( "USE GRAPH test" );
+    }
+
+
+    @AfterClass
+    public static void tearDown() {
+        deleteData();
+    }
+
+
+    private static void deleteData() {
+        execute( "DROP DATABASE test" );
+    }
+
+
+    public static Result execute( String query ) {
+        return CypherConnection.executeGetResponse( query );
     }
 
 

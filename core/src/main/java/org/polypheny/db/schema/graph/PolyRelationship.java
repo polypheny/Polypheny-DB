@@ -16,17 +16,21 @@
 
 package org.polypheny.db.schema.graph;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.runtime.PolyCollections;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 
 @Getter
 public class PolyRelationship extends GraphPropertyHolder implements Comparable<PolyRelationship> {
 
     private final long leftId;
     private final long rightId;
-    private final ImmutableList<String> labels;
     private final RelationshipDirection direction;
 
 
@@ -36,11 +40,10 @@ public class PolyRelationship extends GraphPropertyHolder implements Comparable<
 
 
     public PolyRelationship( long id, @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
-        super( id, GraphObjectType.RELATIONSHIP, properties );
+        super( id, GraphObjectType.RELATIONSHIP, properties, labels );
         this.leftId = leftId;
         this.rightId = rightId;
         this.direction = direction;
-        this.labels = labels;
     }
 
 
@@ -59,7 +62,33 @@ public class PolyRelationship extends GraphPropertyHolder implements Comparable<
     public enum RelationshipDirection {
         LEFT_TO_RIGHT,
         RIGHT_TO_LEFT,
-        NONE;
+        NONE
     }
 
+
+    public static class PolyRelationshipSerializer extends Serializer<PolyRelationship> {
+
+        @Override
+        public void write( Kryo kryo, Output output, PolyRelationship object ) {
+            kryo.writeClassAndObject( output, object.id );
+            kryo.writeClassAndObject( output, object.properties );
+            kryo.writeClassAndObject( output, object.labels );
+            kryo.writeClassAndObject( output, object.leftId );
+            kryo.writeClassAndObject( output, object.rightId );
+            kryo.writeClassAndObject( output, object.direction );
+        }
+
+
+        @Override
+        public PolyRelationship read( Kryo kryo, Input input, Class<? extends PolyRelationship> type ) {
+            long id = (long) kryo.readClassAndObject( input );
+            PolyDirectory properties = (PolyDirectory) kryo.readClassAndObject( input );
+            ImmutableList<String> labels = (ImmutableList<String>) kryo.readClassAndObject( input );
+            long leftId = (long) kryo.readClassAndObject( input );
+            long rightId = (long) kryo.readClassAndObject( input );
+            RelationshipDirection direction = (RelationshipDirection) kryo.readClassAndObject( input );
+            return new PolyRelationship( id, properties, labels, leftId, rightId, direction );
+        }
+
+    }
 }
