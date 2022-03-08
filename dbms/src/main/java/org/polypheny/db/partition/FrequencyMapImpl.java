@@ -71,6 +71,8 @@ public class FrequencyMapImpl extends FrequencyMap {
 
     public static FrequencyMap INSTANCE = null;
 
+    private TransactionManager transactionManager = TransactionManagerImpl.getInstance();
+
     private final Catalog catalog;
 
     // Make use of central configuration
@@ -135,7 +137,6 @@ public class FrequencyMapImpl extends FrequencyMap {
     private void incrementPartitionAccess( long identifiedPartitionId, List<Long> partitionIds ) {
         // Outer if is needed to ignore frequencies from old non-existing partitionIds
         // Which are not yet linked to the table but are still in monitoring
-        // TODO @CEDRIC or @HENNLO introduce monitoring cleaning of data points
         if ( partitionIds.contains( identifiedPartitionId ) ) {
             if ( accessCounter.containsKey( identifiedPartitionId ) ) {
                 accessCounter.replace( identifiedPartitionId, accessCounter.get( identifiedPartitionId ) + 1 );
@@ -258,7 +259,6 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         Map<DataStore, List<Long>> partitionsToRemoveFromStore = new HashMap<>();
 
-        TransactionManager transactionManager = new TransactionManagerImpl();
         Transaction transaction = null;
         try {
             transaction = transactionManager.startTransaction( "pa", table.getDatabaseName(), false, "FrequencyMap" );

@@ -1,5 +1,5 @@
 name: 🚀 Feature Request
-description: Suggest an idea for this project
+description: Do you miss a feature in Polypheny-DB?
 labels: [ "C-enhancement" ]
 body:
   - type: markdown
@@ -41,16 +41,14 @@ body:
     attributes:
       label: Use Case(s)
       description: Any relevant use-cases that you see.
-    validations:
-      required: true
   - type: textarea
     id: possible-solutions
     attributes:
-      label: Possible solutions
+        label: Possible Solutions
       description: A clear and concise description of what you want to happen.
   - type: textarea
     id: possible-alts
     attributes:
-      label: Possible alternatives
+        label: Possible Alternatives
       description: A clear and concise description of any alternative solutions or features you've considered.
       

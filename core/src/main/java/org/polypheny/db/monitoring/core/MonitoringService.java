@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,6 +71,19 @@ public interface MonitoringService {
      * @return Returns List of all data points from teh specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
+
+
+    /**
+     * Removes all data points for given monitoring persistent type.
+     *
+     * @param dataPointClass specific datapoint class of interest to remove
+     */
+    <T extends MonitoringDataPoint> void removeAllDataPointsOfSpecificClass( Class<T> dataPointClass );
+
+    /**
+     * Removes all aggregated dataPoints.
+     */
+    void resetAllDataPoints();
 
     /**
      * @param physicalQueryClass the physical query class string to identify aggregated post costs.
