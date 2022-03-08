@@ -1058,7 +1058,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
                     statisticTable.setNumberOfRows( totalRows );
                 } else {
-                    statisticTable = new StatisticTable<T>( tableId );
+                    statisticTable = new StatisticTable<>( tableId );
                     statisticTable.setNumberOfRows( number );
                 }
                 break;
@@ -1066,12 +1066,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 if ( tableStatistic.containsKey( tableId ) ) {
                     statisticTable = tableStatistic.get( tableId );
                     int totalRows = statisticTable.getNumberOfRows() - number;
-                    if ( totalRows < 0 ) {
-                        totalRows = 0;
-                    }
+
                     statisticTable.setNumberOfRows( totalRows );
                 } else {
-                    statisticTable = new StatisticTable<T>( tableId );
+                    statisticTable = new StatisticTable<>( tableId );
                 }
                 break;
             case "SET-ROW-COUNT":
