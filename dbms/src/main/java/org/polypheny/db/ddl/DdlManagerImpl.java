@@ -119,6 +119,7 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty.Partit
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.policies.policy.PoliciesManager;
 import org.polypheny.db.policies.policy.PoliciesManager.Action;
+import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -529,8 +530,6 @@ public class DdlManagerImpl extends DdlManager {
         addDefaultValue( defaultValue, columnId );
         CatalogColumn addedColumn = catalog.getColumn( columnId );
 
-
-
         // Ask router on which stores this column shall be placed
         List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
 
@@ -675,9 +674,9 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check Policies if placement is against the policy or not
-        List<DataStore> ids = PoliciesManager.getInstance().makeDecision(DataStore.class, Action.CHECK_STORES, catalogTable.schemaId, catalogTable.id, dataStore);
-        if(ids.isEmpty()){
-            throw new RuntimeException("Not possible to add Placement because the Datastore is not persistent.");
+        List<DataStore> ids = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, catalogTable.schemaId, catalogTable.id, dataStore );
+        if ( ids.isEmpty() ) {
+            throw new RuntimeException( "Not possible to add Placement because the Datastore is not persistent." );
         }
 
         // Check whether the list is empty (this is a short hand for a full placement)
@@ -1003,6 +1002,15 @@ public class DdlManagerImpl extends DdlManager {
         if ( !catalogTable.dataPlacements.contains( storeInstance.getAdapterId() ) ) {
             throw new PlacementNotExistsException();
         }
+
+        // Check if Policy goes against dropping the table
+        try{
+            PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_DELETE, catalogTable.schemaId, catalogTable.id, storeInstance );
+        }catch ( PolicyRuntimeException e ){
+            throw new RuntimeException(e);
+        }
+
+
 
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
         if ( !catalog.validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(),
@@ -1652,7 +1660,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( stores == null ) {
             // Ask router on which store(s) the table should be placed
-            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable(schemaId);
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable( schemaId );
         }
 
         AlgDataType fieldList = algRoot.alg.getRowType();
@@ -1900,7 +1908,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( stores == null ) {
                 // Ask router on which store(s) the table should be placed
-                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable(schemaId);
+                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable( schemaId );
             }
 
             long tableId = catalog.addTable(
@@ -2187,39 +2195,52 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
         // This gets us only one ccp per store (first part of PK)
 
+        // Check Policies if placement is against the policy or not
+        // todo ig: check stores before updating catalog, this can cause issues
         boolean fillStores = false;
+        List<DataStore> dataStores = new ArrayList<>();
         if ( stores == null ) {
+            dataStores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, partitionInfo.table.schemaId, partitionInfo.table.id );
+            if ( dataStores.isEmpty() ) {
+                throw new RuntimeException( "Not possible to add Placement, there is no DataStore available." );
+            }
+
             stores = new ArrayList<>();
             fillStores = true;
+        } else {
+            for ( DataStore store : stores ) {
+                dataStores.addAll( PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, partitionInfo.table.schemaId, partitionInfo.table.id, store ) );
+            }
+            if ( dataStores.isEmpty() ) {
+                throw new RuntimeException( "Not possible to add Placement, there is no DataStore available." );
+            }
+            stores = dataStores;
         }
+
         List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getColumnPlacement( pkColumn.id );
         for ( CatalogColumnPlacement ccp : catalogColumnPlacements ) {
             if ( fillStores ) {
                 // Ask router on which store(s) the table should be placed
+
+                for ( DataStore dataStore : dataStores ) {
+                    if ( dataStore.getAdapterId() == ccp.adapterId ) {
+                        if ( !stores.contains( dataStore ) ) {
+                            stores.add( dataStore );
+                        }
+                    } else {
+                        log.warn( "there is a issue the placement is on a wrong store" );
+                    }
+                }
+
+                /*
                 Adapter adapter = AdapterManager.getInstance().getAdapter( ccp.adapterId );
                 if ( adapter instanceof DataStore ) {
                     stores.add( (DataStore) adapter );
                 }
+
+                 */
             }
         }
-
-
-        // Check Policies if placement is against the policy or not
-        // todo ig: check stores before updating catalog, this can cause issues
-        /*
-        List<Object> persistentStore = PolicyManager.getInstance().makeDecision( Object.class, Action.ADD_PARTITIONING, partitionInfo.table.schemaId, partitionInfo.table.id, stores );
-        if(persistentStore.isEmpty()){
-            throw new RuntimeException("Not possible to add Placement because the Datastore is not persistent.");
-        }
-        stores.clear();
-        for ( Object store : persistentStore ) {
-            if(store instanceof DataStore){
-                stores.add( (DataStore) store );
-            }
-        }
-
-
-         */
 
         // Now get the partitioned table, partitionInfo still contains the basic/unpartitioned table.
         CatalogTable partitionedTable = catalog.getTable( partitionInfo.table.id );

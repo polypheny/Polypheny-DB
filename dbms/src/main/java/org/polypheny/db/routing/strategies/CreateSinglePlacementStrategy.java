@@ -40,10 +40,11 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
     @Override
     public List<DataStore> getDataStoresForNewTable( long schemaId ) {
 
-        List<DataStore> stores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES, schemaId, null );
+        List<DataStore> stores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, schemaId, null );
         if ( stores.isEmpty() ) {
             throw new RuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
         } else {
+            // todo ig: first improvement to choose the best store not just the first store.
             return Collections.singletonList( stores.get( 0 ));
         }
     }

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.policies.policy.Policies.Target;
 
 @Getter
@@ -52,6 +53,10 @@ public abstract class Clause {
 
     //first Value is its own setting, second value is interfering with it
     private final HashMap<Clause, Clause> interfering;
+
+    //for what is this clause actually used
+    @Setter
+    private Target target;
 
 
     protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, ClauseCategory clauseCategory, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide, HashMap<Clause, Clause> interfering ) {

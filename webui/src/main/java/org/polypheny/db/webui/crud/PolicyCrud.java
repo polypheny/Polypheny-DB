@@ -86,7 +86,6 @@ public class PolicyCrud {
         try {
             policiesManager.updateClauses( ctx.bodyAsClass( PolicyChangeRequest.class ) );
         } catch ( PolicyRuntimeException e ) {
-            log.warn( "IN the catch exception." );
             ctx.json( new UiPolicies( null, e.getMessage() ) );
         }
 
