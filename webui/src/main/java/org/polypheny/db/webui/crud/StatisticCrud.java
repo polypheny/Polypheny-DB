@@ -117,6 +117,10 @@ public class StatisticCrud {
         ctx.json( statisticsManager.getDashboardInformation() );
     }
 
+    public void getStatisticPolypheny(Context ctx){
+        ctx.json( statisticsManager.getPolyphenyStatistic() );
+    }
+
 
     /**
      * Information for diagram shown on the UI dashboard.

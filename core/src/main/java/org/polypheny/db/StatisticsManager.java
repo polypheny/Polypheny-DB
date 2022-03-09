@@ -82,6 +82,8 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract Object getDashboardInformation();
 
+    public abstract Object getPolyphenyStatistic();
+
     public abstract void initializeStatisticSettings();
 
     public abstract void updateColumnName( CatalogColumn catalogColumn, String newName );

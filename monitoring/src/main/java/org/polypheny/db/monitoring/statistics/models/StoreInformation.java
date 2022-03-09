@@ -24,10 +24,12 @@ public class StoreInformation {
     private final int storeId;
     private final DeployMode deployMode;
     private final boolean persistent;
+    private final String storeName;
 
 
-    public StoreInformation( int storeId, DeployMode deployMode, boolean persistent) {
+    public StoreInformation( int storeId, String storeName, DeployMode deployMode, boolean persistent) {
         this.storeId = storeId;
+        this.storeName = storeName;
         this.deployMode = deployMode;
         this.persistent = persistent;
 

@@ -1189,6 +1189,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    @Override
     public Object getPolyphenyStatistic(){
         polyphenyStatistics.updatePolyphenyStatistic();
         return polyphenyStatistics;
