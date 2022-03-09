@@ -21,6 +21,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.runtime.PolyCollections;
@@ -30,12 +31,12 @@ import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode> {
 
 
-    public PolyNode( @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels ) {
+    public PolyNode( @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
         this( idBuilder.getAndIncrement(), properties, labels );
     }
 
 
-    public PolyNode( long id, @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels ) {
+    public PolyNode( long id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
         super( id, GraphObjectType.NODE, properties, labels );
     }
 
@@ -43,6 +44,16 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
     @Override
     public int compareTo( PolyNode o ) {
         return getProperties().compareTo( o.getProperties() );
+    }
+
+
+    @Override
+    public String toString() {
+        return "PolyNode{" +
+                "id=" + id +
+                ", properties=" + properties +
+                ", labels=" + labels +
+                '}';
     }
 
 

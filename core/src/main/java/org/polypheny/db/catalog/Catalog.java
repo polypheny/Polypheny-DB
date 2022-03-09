@@ -309,7 +309,9 @@ public abstract class Catalog {
      */
     public abstract void setSchemaOwner( long schemaId, long ownerId );
 
-    public abstract long addGraphDatabase( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) throws GenericCatalogException;
+    public abstract long addGraphDatabase( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
+
+    public abstract void addGraphLogistics( long id, List<DataStore> stores ) throws GenericCatalogException;
 
     public abstract void deleteGraph( long id );
 

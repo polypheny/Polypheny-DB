@@ -31,7 +31,9 @@ import org.polypheny.db.util.Pair;
 public class CypherNodePattern extends CypherPattern {
 
     private final CypherVariable variable;
-    private final List<StringPos> labels;
+    @Getter
+    private final List<String> labels;
+    private final List<ParserPos> positions;
     private final CypherExpression properties;
     private final CypherExpression predicate;
 
@@ -39,14 +41,10 @@ public class CypherNodePattern extends CypherPattern {
     public CypherNodePattern( ParserPos pos, CypherVariable variable, List<StringPos> labels, CypherExpression properties, CypherExpression predicate ) {
         super( pos );
         this.variable = variable;
-        this.labels = labels;
+        this.labels = labels.stream().map( StringPos::getImage ).collect( Collectors.toList() );
+        this.positions = labels.stream().map( StringPos::getPos ).collect( Collectors.toList() );
         this.properties = properties;
         this.predicate = predicate;
-    }
-
-
-    public List<String> getLabels() {
-        return labels.stream().map( StringPos::getImage ).collect( Collectors.toList() );
     }
 
 
@@ -63,7 +61,7 @@ public class CypherNodePattern extends CypherPattern {
             name = variable.getName();
         }
 
-        return Pair.of( name, new PolyNode( properties ) );
+        return Pair.of( name, new PolyNode( properties, labels ) );
     }
 
 }

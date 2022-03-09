@@ -307,7 +307,7 @@ public enum PolyType {
             Types.JAVA_OBJECT,
             PolyTypeFamily.GRAPH ),
 
-    RELATIONSHIP(
+    EDGE(
             PrecScale.NO_NO,
             true,
             Types.JAVA_OBJECT,
@@ -444,11 +444,11 @@ public enum PolyType {
 
     public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY );
 
-    public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, RELATIONSHIP );
+    public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, EDGE );
 
     public static final List<PolyType> COLLECTION_TYPES = ImmutableList.of( ARRAY );
 
-    public static final List<PolyType> OBJECT_TYPES = ImmutableList.of( MAP, GRAPH, NODE, RELATIONSHIP );
+    public static final List<PolyType> OBJECT_TYPES = ImmutableList.of( MAP, GRAPH, NODE, EDGE );
 
     public static final Set<PolyType> YEAR_INTERVAL_TYPES =
             Sets.immutableEnumSet(

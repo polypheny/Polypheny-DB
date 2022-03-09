@@ -17,11 +17,13 @@
 package org.polypheny.db.algebra.logical.graph;
 
 
+import java.util.List;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.transaction.Statement;
 
 public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
 
@@ -42,7 +44,7 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
 
 
     @Override
-    public AlgNode getRelationalEquivalent() {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, Statement statement ) {
         return null;
     }
 

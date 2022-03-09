@@ -43,6 +43,8 @@ import org.polypheny.db.algebra.logical.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphPattern;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -716,6 +718,30 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         return LogicalConditionalExecute.create( builder.build(), action, lce );
+    }
+
+
+    @Override
+    public AlgNode routeGraphDml( LogicalGraphModify alg, Statement statement ) {
+        // todo dl add partition logic
+        if ( alg.getInput() instanceof LogicalGraphPattern ) {
+
+            List<AlgNode> modifies = alg.getRelationalEquivalent( List.of(), statement );
+
+            AlgNode nodes = routeDml( (LogicalModify) modifies.get( 0 ), statement );
+            if ( modifies.size() == 1 ) {
+                return nodes;
+            }
+            AlgNode edges = routeDml( (LogicalModify) modifies.get( 1 ), statement );
+
+            return new LogicalModifyCollect( alg.getCluster(), modifies.get( 0 ).getTraitSet(), List.of( nodes, edges ), true );
+        }
+        throw new RuntimeException( "Could not correctly route graph DML." );
+    }
+
+
+    private List<AlgNode> handleGraphValues( LogicalGraphPattern alg, Statement statement ) {
+        return alg.getRelationalEquivalent( List.of(), statement );
     }
 
 

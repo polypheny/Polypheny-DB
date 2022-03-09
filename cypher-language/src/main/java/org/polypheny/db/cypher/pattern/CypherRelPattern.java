@@ -26,8 +26,8 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
-import org.polypheny.db.schema.graph.PolyRelationship;
-import org.polypheny.db.schema.graph.PolyRelationship.RelationshipDirection;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -67,7 +67,7 @@ public class CypherRelPattern extends CypherPattern {
     }
 
 
-    public Pair<String, PolyRelationship> getPolyRelationship( long leftId, long rightId ) {
+    public Pair<String, PolyEdge> getPolyRelationship( long leftId, long rightId ) {
         PolyDirectory properties = (PolyDirectory) this.properties.getComparable();
         RelationshipDirection direction = left == right ? RelationshipDirection.NONE : left ? RelationshipDirection.LEFT_TO_RIGHT : RelationshipDirection.RIGHT_TO_LEFT;
         List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
@@ -77,7 +77,7 @@ public class CypherRelPattern extends CypherPattern {
             name = variable.getName();
         }
 
-        return Pair.of( name, new PolyRelationship( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction ) );
+        return Pair.of( name, new PolyEdge( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction ) );
     }
 
 }

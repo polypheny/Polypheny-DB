@@ -69,6 +69,7 @@ import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
@@ -1780,15 +1781,18 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // add general graph
-        long graphId;
-        try {
-            graphId = catalog.addGraphDatabase( databaseId, graphName, modifiable, ifNotExists, replace );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( "Error while creating GraphDatabase: " + graphName );
-        }
-        CatalogGraphDatabase graph = catalog.getGraph( graphId );
+        long graphId = catalog.addGraphDatabase( databaseId, graphName, stores, modifiable, ifNotExists, replace );
 
-        stores.forEach( s -> catalog.addGraphPlacement( s.getAdapterId(), graphId ) );
+        try {
+            catalog.addGraphLogistics( graphId, stores );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException();
+        }
+
+        CatalogGraphDatabase graph = catalog.getGraph( graphId );
+        PolySchemaBuilder.getInstance().getCurrent();
+
+        //stores.forEach( s -> catalog.addGraphPlacement( s.getAdapterId(), graphId ) );
 
         afterGraphLogistics( stores, graphId, statement );
 
@@ -1802,10 +1806,27 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement ) {
-        // Trigger rebuild of schema; triggers schema creation on adapters
-        PolySchemaBuilder.getInstance().getCurrent();
-
-        catalog.afterGraphLogistics( stores, graphId, statement );
+        CatalogGraphMapping mapping = catalog.getGraphMapping( graphId );
+        CatalogEntity nodes = catalog.getTable( mapping.nodeId );
+        CatalogEntity edges = catalog.getTable( mapping.edgeId );
+        for ( DataStore store : stores ) {
+            catalog.addPartitionPlacement(
+                    store.getAdapterId(),
+                    nodes.id,
+                    nodes.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null
+            );
+            catalog.addPartitionPlacement(
+                    store.getAdapterId(),
+                    edges.id,
+                    edges.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null
+            );
+        }
 
     }
 

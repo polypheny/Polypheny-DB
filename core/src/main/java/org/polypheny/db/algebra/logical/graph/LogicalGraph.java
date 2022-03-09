@@ -16,8 +16,10 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.transaction.Statement;
 
 @Getter
 public class LogicalGraph implements RelationalTransformable {
@@ -31,7 +33,7 @@ public class LogicalGraph implements RelationalTransformable {
 
 
     @Override
-    public AlgNode getRelationalEquivalent() {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, Statement statement ) {
         return null;
     }
 

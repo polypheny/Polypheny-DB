@@ -18,6 +18,7 @@ package org.polypheny.db.routing;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.LogicalModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -35,5 +36,7 @@ public interface DmlRouter {
      * Routes conditional executes and directly returns a RelNode.
      */
     AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation );
+
+    AlgNode routeGraphDml( LogicalGraphModify alg, Statement statement );
 
 }

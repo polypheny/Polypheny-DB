@@ -24,18 +24,18 @@ import org.polypheny.db.runtime.PolyCollections.PolyMap;
 public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
     private final PolyMap<Long, PolyNode> nodes;
-    private final PolyMap<Long, PolyRelationship> relationships;
+    private final PolyMap<Long, PolyEdge> edges;
 
 
-    public PolyGraph( @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyRelationship> relationships ) {
-        this( idBuilder.getAndIncrement(), nodes, relationships );
+    public PolyGraph( @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyEdge> edges ) {
+        this( idBuilder.getAndIncrement(), nodes, edges );
     }
 
 
-    public PolyGraph( long id, @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyRelationship> relationships ) {
+    public PolyGraph( long id, @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyEdge> edges ) {
         super( id, GraphObjectType.GRAPH );
         this.nodes = nodes;
-        this.relationships = relationships;
+        this.edges = edges;
     }
 
 
@@ -49,7 +49,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
             return -1;
         }
 
-        if ( this.nodes.keySet().equals( o.nodes.keySet() ) && this.relationships.values().equals( o.relationships.values() ) ) {
+        if ( this.nodes.keySet().equals( o.nodes.keySet() ) && this.edges.values().equals( o.edges.values() ) ) {
             return 0;
         }
         return -1;

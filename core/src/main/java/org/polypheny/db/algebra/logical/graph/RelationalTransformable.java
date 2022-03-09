@@ -16,10 +16,12 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.transaction.Statement;
 
 public interface RelationalTransformable {
 
-    AlgNode getRelationalEquivalent();
+    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, Statement statement );
 
 }

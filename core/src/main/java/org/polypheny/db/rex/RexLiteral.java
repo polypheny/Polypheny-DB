@@ -60,6 +60,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CompositeList;
@@ -404,12 +407,16 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case ROW:
             case MULTISET:
             case ARRAY:
-                return value instanceof List;
+                return value instanceof PolyList;
             case ANY:
                 // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains an integer literal surrounded by a cast function.
                 return false;
             case GRAPH:
-                return value instanceof Object;
+                return value instanceof PolyGraph;
+            case NODE:
+                return value instanceof PolyNode;
+            case EDGE:
+                return value instanceof PolyEdge;
             case MAP:
                 return value instanceof Map;
             default:
@@ -727,6 +734,14 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                             }
                         }
                 );
+                break;
+            case NODE:
+                assert value instanceof PolyNode;
+                pw.print( value );
+                break;
+            case EDGE:
+                assert value instanceof PolyEdge;
+                pw.print( value );
                 break;
             default:
                 assert valueMatchesType( value, typeName, true );

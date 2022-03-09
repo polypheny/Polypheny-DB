@@ -142,13 +142,13 @@ public class CypherToAlgConverter {
 
 
     private void convertCreate( CypherCreate clause, CypherContext context ) {
-        context.kind = Kind.CYPHER_CREATE;
+        context.kind = Kind.INSERT;
 
         for ( CypherPattern pattern : clause.getPatterns() ) {
             convertPattern( pattern, context );
         }
 
-        context.add( new LogicalGraphModify( cluster, cluster.traitSet(), context.pop(), Operation.INSERT, null, null ) );
+        context.add( new LogicalGraphModify( cluster, cluster.traitSet(), context.graph, context.pop(), Operation.INSERT, null, null ) );
 
     }
 
@@ -184,7 +184,7 @@ public class CypherToAlgConverter {
 
 
     private void convertPattern( CypherPattern pattern, CypherContext context ) {
-        if ( context.kind == Kind.CYPHER_CREATE ) {
+        if ( context.kind == Kind.INSERT ) {
             // convert "values" pattern (LogicalGraphPattern AlgNode)
             context.add( pattern.getPatternValues( context ) );
         } else {
@@ -230,7 +230,7 @@ public class CypherToAlgConverter {
             this.graphType = cluster.getTypeFactory().createPolyType( PolyType.GRAPH );
             this.booleanType = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
             this.nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
-            this.relType = cluster.getTypeFactory().createPolyType( PolyType.RELATIONSHIP );
+            this.relType = cluster.getTypeFactory().createPolyType( PolyType.EDGE );
         }
 
 

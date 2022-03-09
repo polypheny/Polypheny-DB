@@ -16,22 +16,39 @@
 
 package org.polypheny.db.schema.graph;
 
-import com.google.common.collect.ImmutableList;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.NlsString;
 
 @Getter
 public abstract class GraphPropertyHolder extends GraphObject {
 
 
     public final PolyDirectory properties;
-    public final ImmutableList<String> labels;
+    public final PolyList<String> labels;
 
 
-    public GraphPropertyHolder( long id, GraphObjectType type, PolyDirectory properties, ImmutableList<String> labels ) {
+    public GraphPropertyHolder( long id, GraphObjectType type, PolyDirectory properties, List<String> labels ) {
         super( id, type );
         this.properties = properties;
-        this.labels = labels;
+        this.labels = new PolyList<>( labels );
+    }
+
+
+    public PolyList<RexLiteral> getRexLabels() {
+        return labels
+                .stream()
+                .map( l -> new RexLiteral( new NlsString( l, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 ), PolyType.CHAR ) )
+                .collect( Collectors.toCollection( PolyList::new ) );
     }
 
 }

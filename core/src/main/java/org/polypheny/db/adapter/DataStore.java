@@ -93,8 +93,8 @@ public abstract class DataStore extends Adapter {
         CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodeId );
         createTable( context, nodes, nodes.partitionProperty.partitionIds );
 
-        CatalogEntity rels = Catalog.getInstance().getTable( mapping.relId );
-        createTable( context, rels, rels.partitionProperty.partitionIds );
+        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgeId );
+        createTable( context, edges, edges.partitionProperty.partitionIds );
     }
 
 

@@ -23,29 +23,29 @@ public class CatalogGraphMapping implements CatalogObject {
     public final long graphId;
 
     public final long nodeId;
-    public final long relId;
+    public final long edgeId;
 
     public final long idNodeId;
     public final long nodeNodeId;
     public final long labelsNodeId;
 
-    public final long idRelId;
-    public final long relRelId;
-    public final long labelsRelId;
+    public final long idEdgeId;
+    public final long edgeEdgeId;
+    public final long labelsEdgeId;
 
 
-    public CatalogGraphMapping( long graphId, long nodeId, long relId, long idNodeId, long nodeNodeId, long labelsNodeId, long idRelId, long relRelId, long labelsRelId ) {
+    public CatalogGraphMapping( long graphId, long nodeId, long edgeId, long idNodeId, long nodeNodeId, long labelsNodeId, long idEdgeId, long edgeEdgeId, long labelsEdgeId ) {
         this.graphId = graphId;
         this.nodeId = nodeId;
-        this.relId = relId;
+        this.edgeId = edgeId;
 
         this.idNodeId = idNodeId;
         this.nodeNodeId = nodeNodeId;
         this.labelsNodeId = labelsNodeId;
 
-        this.idRelId = idRelId;
-        this.relRelId = relRelId;
-        this.labelsRelId = labelsRelId;
+        this.idEdgeId = idEdgeId;
+        this.edgeEdgeId = edgeEdgeId;
+        this.labelsEdgeId = labelsEdgeId;
 
     }
 

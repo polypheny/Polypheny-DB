@@ -27,19 +27,19 @@ import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 
 @Getter
-public class PolyRelationship extends GraphPropertyHolder implements Comparable<PolyRelationship> {
+public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge> {
 
     private final long leftId;
     private final long rightId;
     private final RelationshipDirection direction;
 
 
-    public PolyRelationship( @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
+    public PolyEdge( @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
         this( idBuilder.getAndIncrement(), properties, labels, leftId, rightId, direction );
     }
 
 
-    public PolyRelationship( long id, @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
+    public PolyEdge( long id, @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
         super( id, GraphObjectType.RELATIONSHIP, properties, labels );
         this.leftId = leftId;
         this.rightId = rightId;
@@ -48,7 +48,7 @@ public class PolyRelationship extends GraphPropertyHolder implements Comparable<
 
 
     @Override
-    public int compareTo( PolyRelationship other ) {
+    public int compareTo( PolyEdge other ) {
         if ( leftId < other.leftId || rightId < other.rightId ) {
             return -1;
         }
@@ -66,10 +66,23 @@ public class PolyRelationship extends GraphPropertyHolder implements Comparable<
     }
 
 
-    public static class PolyRelationshipSerializer extends Serializer<PolyRelationship> {
+    @Override
+    public String toString() {
+        return "PolyEdge{" +
+                "id=" + id +
+                ", properties=" + properties +
+                ", labels=" + labels +
+                ", leftId=" + leftId +
+                ", rightId=" + rightId +
+                ", direction=" + direction +
+                '}';
+    }
+
+
+    public static class PolyRelationshipSerializer extends Serializer<PolyEdge> {
 
         @Override
-        public void write( Kryo kryo, Output output, PolyRelationship object ) {
+        public void write( Kryo kryo, Output output, PolyEdge object ) {
             kryo.writeClassAndObject( output, object.id );
             kryo.writeClassAndObject( output, object.properties );
             kryo.writeClassAndObject( output, object.labels );
@@ -80,15 +93,16 @@ public class PolyRelationship extends GraphPropertyHolder implements Comparable<
 
 
         @Override
-        public PolyRelationship read( Kryo kryo, Input input, Class<? extends PolyRelationship> type ) {
+        public PolyEdge read( Kryo kryo, Input input, Class<? extends PolyEdge> type ) {
             long id = (long) kryo.readClassAndObject( input );
             PolyDirectory properties = (PolyDirectory) kryo.readClassAndObject( input );
             ImmutableList<String> labels = (ImmutableList<String>) kryo.readClassAndObject( input );
             long leftId = (long) kryo.readClassAndObject( input );
             long rightId = (long) kryo.readClassAndObject( input );
             RelationshipDirection direction = (RelationshipDirection) kryo.readClassAndObject( input );
-            return new PolyRelationship( id, properties, labels, leftId, rightId, direction );
+            return new PolyEdge( id, properties, labels, leftId, rightId, direction );
         }
+
 
     }
 }

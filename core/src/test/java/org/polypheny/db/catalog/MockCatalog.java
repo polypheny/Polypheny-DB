@@ -159,7 +159,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addGraphDatabase( long databaseId, String name, boolean modifiable, boolean ifNotExists, boolean replace ) {
+    public long addGraphDatabase( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
         throw new NotImplementedException();
     }
 
@@ -184,6 +184,12 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public CatalogGraphMapping getGraphMapping( long graphId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addGraphLogistics( long id, List<DataStore> stores ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 

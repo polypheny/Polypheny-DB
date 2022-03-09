@@ -576,6 +576,11 @@ public class SqlDialect {
                 precision = 2024;
                 type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
             }
+            if ( type.getPolyType() == PolyType.NODE ) {
+                precision = 2024;
+                type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
+            }
+
             switch ( type.getPolyType() ) {
                 case JSON:
                 case VARCHAR:

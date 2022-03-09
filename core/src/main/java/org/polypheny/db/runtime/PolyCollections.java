@@ -120,6 +120,14 @@ public class PolyCollections {
 
         }
 
+
+        @Override
+        public String toString() {
+            return "PolyDirectory{" +
+                    "map=" + map +
+                    '}';
+        }
+
     }
 
 
