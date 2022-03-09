@@ -129,6 +129,37 @@ public class MapDbRepository implements PersistentMonitoringRepository {
     }
 
 
+    /**
+     * Removes all data points for given monitoring persistent type.
+     *
+     * @param dataPointClass specific datapoint class of interest to remove
+     */
+    @Override
+    public <T extends MonitoringDataPoint> void removeAllDataPointsOfSpecificClass( Class<T> dataPointClass ) {
+        if ( data.containsKey( dataPointClass ) ) {
+            data.remove( dataPointClass );
+        }
+    }
+
+
+    /**
+     * Removes all aggregated dataPoints.
+     */
+    @Override
+    public void resetAllDataPoints() {
+        if ( data.isEmpty() ) {
+            return;
+        }
+        data.clear();
+        this.simpleBackendDb.commit();
+    }
+
+
+    private List<Class> getAllDataPointClasses() {
+        return data.keySet().stream().collect( Collectors.toList() );
+    }
+
+
     @Override
     public QueryPostCost getQueryPostCosts( @NonNull String physicalQueryClass ) {
         if ( queryPostCosts == null ) {
