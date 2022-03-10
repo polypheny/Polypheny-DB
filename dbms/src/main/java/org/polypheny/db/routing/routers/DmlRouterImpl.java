@@ -34,7 +34,6 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -46,15 +45,14 @@ import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphPattern;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.partition.PartitionManager;
@@ -63,6 +61,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -79,8 +78,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
@@ -633,11 +630,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     false,
                                     statement.getDataContext().getParameterValues() ).build();
 
-                            // underlying node might have adjusted the rowType and uses substituted table
-                            // so we can replace our physical with that
-                            if ( physical.getTable().needsTypeSubstitution() ) {
-                                physical = ((AlgOptTableImpl) physical).substitutedCopy();
-                            }
                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                             if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
@@ -724,24 +716,46 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     @Override
     public AlgNode routeGraphDml( LogicalGraphModify alg, Statement statement ) {
         // todo dl add partition logic
-        if ( alg.getInput() instanceof LogicalGraphPattern ) {
-
-            List<AlgNode> modifies = alg.getRelationalEquivalent( List.of(), statement );
-
-            AlgNode nodes = routeDml( (LogicalModify) modifies.get( 0 ), statement );
-            if ( modifies.size() == 1 ) {
-                return nodes;
-            }
-            AlgNode edges = routeDml( (LogicalModify) modifies.get( 1 ), statement );
-
-            return new LogicalModifyCollect( alg.getCluster(), modifies.get( 0 ).getTraitSet(), List.of( nodes, edges ), true );
+        if ( alg.graph == null ) {
+            throw new RuntimeException( "Error while routing graph" );
         }
-        throw new RuntimeException( "Could not correctly route graph DML." );
+
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.graph.getNamespaceId() );
+
+        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodeId );
+
+        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( nodes.dataPlacements.get( 0 ) );
+
+        List<String> qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        placement.get( 0 ).adapterUniqueName,
+                        nodes.getNamespaceName(),
+                        placement.get( 0 ).physicalSchemaName
+                ),
+                nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
+
+        PreparingTable node = alg.catalogReader.getTableForMember( qualifiedTableName );
+        alg.nodeTable( node );
+
+        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgeId );
+        placement = Catalog.getInstance().getColumnPlacement( edges.dataPlacements.get( 0 ) );
+
+        qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        placement.get( 0 ).adapterUniqueName,
+                        nodes.getNamespaceName(),
+                        placement.get( 0 ).physicalSchemaName
+                ),
+                edges.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
+
+        PreparingTable edge = alg.catalogReader.getTableForMember( qualifiedTableName );
+        alg.edgeTable( edge );
+        return alg;
     }
 
 
     private List<AlgNode> handleGraphValues( LogicalGraphPattern alg, Statement statement ) {
-        return alg.getRelationalEquivalent( List.of(), statement );
+        return alg.getRelationalEquivalent( List.of() );
     }
 
 
@@ -797,17 +811,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
 
             LogicalValues values = (LogicalValues) node;
-            if ( placements.stream().anyMatch( CatalogColumnPlacement::needsSubstitution ) ) {
-                final AlgDataTypeFactory factory = builder.getRexBuilder().getTypeFactory();
-                PolyType substitutionType = placements.stream().filter( f -> f.substitutionType != null ).findAny().orElseThrow( RuntimeException::new ).substitutionType;
-                values = Transformer.getConvertedInput( values, new AlgRecordType( Pair.zip( node.getRowType().getFieldList(), placements ).stream().map( e -> {
-                    if ( e.right.needsSubstitution() ) {
-                        return new AlgDataTypeFieldImpl( e.left.getName(), e.left.getPhysicalName(), e.left.getIndex(), e.right.getSubstitutionAlgType( factory ) );
-                    }
-                    return e.left;
-
-                } ).collect( Collectors.toList() ) ), substitutionType, factory );
-            }
 
             builder = super.handleValues( values, builder );
 

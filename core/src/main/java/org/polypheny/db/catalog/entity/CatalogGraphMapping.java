@@ -32,9 +32,11 @@ public class CatalogGraphMapping implements CatalogObject {
     public final long idEdgeId;
     public final long edgeEdgeId;
     public final long labelsEdgeId;
+    public final long lEdgeId;
+    public final long rEdgeId;
 
 
-    public CatalogGraphMapping( long graphId, long nodeId, long edgeId, long idNodeId, long nodeNodeId, long labelsNodeId, long idEdgeId, long edgeEdgeId, long labelsEdgeId ) {
+    public CatalogGraphMapping( long graphId, long nodeId, long edgeId, long idNodeId, long nodeNodeId, long labelsNodeId, long idEdgeId, long edgeEdgeId, long labelsEdgeId, long lEdgeId, long rEdgeId ) {
         this.graphId = graphId;
         this.nodeId = nodeId;
         this.edgeId = edgeId;
@@ -46,7 +48,8 @@ public class CatalogGraphMapping implements CatalogObject {
         this.idEdgeId = idEdgeId;
         this.edgeEdgeId = edgeEdgeId;
         this.labelsEdgeId = labelsEdgeId;
-
+        this.lEdgeId = lEdgeId;
+        this.rEdgeId = rEdgeId;
     }
 
 

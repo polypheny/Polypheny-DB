@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -37,7 +38,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -102,19 +102,22 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, Statement statement ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
+        AlgDataTypeFactory typeFactory = getCluster().getTypeFactory();
 
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder() );
 
-        AlgDataType arrayType = statement.getTransaction().getTypeFactory().createArrayType( statement.getTransaction().getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), -1, -1 );
+        AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1, -1 );
         AlgDataTypeField id = new AlgDataTypeFieldImpl( "_id", 0, ID_TYPE );
         AlgDataTypeField node = new AlgDataTypeFieldImpl( "_node", 1, NODE_TYPE );
         AlgDataTypeField edge = new AlgDataTypeFieldImpl( "_edge", 1, EDGE_TYPE );
         AlgDataTypeField labels = new AlgDataTypeFieldImpl( "_labels", 2, arrayType );
+        AlgDataTypeField lId = new AlgDataTypeFieldImpl( "_l_id_", 3, ID_TYPE );
+        AlgDataTypeField rId = new AlgDataTypeFieldImpl( "_r_id_", 4, ID_TYPE );
 
         AlgRecordType nodeRowType = new AlgRecordType( Arrays.asList( id, node, labels ) );
-        AlgRecordType edgeRowType = new AlgRecordType( Arrays.asList( id, edge, labels ) );
+        AlgRecordType edgeRowType = new AlgRecordType( Arrays.asList( id, edge, labels, lId, rId ) );
 
         LogicalValues nodeValues = new LogicalValues( cluster, out, nodeRowType, getNodeValues( nodes, arrayType ) );
         if ( edges.isEmpty() ) {
@@ -146,6 +149,8 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
             row.add( new RexLiteral( new BigDecimal( edge.id ), ID_TYPE, PolyType.BIGINT ) );
             row.add( new RexLiteral( edge, EDGE_TYPE, PolyType.EDGE ) );
             row.add( new RexLiteral( edge.getRexLabels(), arrayType, PolyType.ARRAY ) );
+            row.add( new RexLiteral( new BigDecimal( edge.leftId ), ID_TYPE, PolyType.BIGINT ) );
+            row.add( new RexLiteral( new BigDecimal( edge.rightId ), ID_TYPE, PolyType.BIGINT ) );
             rows.add( row.build() );
         }
 

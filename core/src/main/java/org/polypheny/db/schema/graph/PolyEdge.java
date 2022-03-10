@@ -29,9 +29,9 @@ import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 @Getter
 public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge> {
 
-    private final long leftId;
-    private final long rightId;
-    private final RelationshipDirection direction;
+    public final long leftId;
+    public final long rightId;
+    public final RelationshipDirection direction;
 
 
     public PolyEdge( @NonNull PolyCollections.PolyDirectory properties, ImmutableList<String> labels, long leftId, long rightId, RelationshipDirection direction ) {

@@ -147,9 +147,7 @@ public class CypherToAlgConverter {
         for ( CypherPattern pattern : clause.getPatterns() ) {
             convertPattern( pattern, context );
         }
-
-        context.add( new LogicalGraphModify( cluster, cluster.traitSet(), context.graph, context.pop(), Operation.INSERT, null, null ) );
-
+        context.add( new LogicalGraphModify( cluster, cluster.traitSet(), context.graph, catalogReader, context.pop(), Operation.INSERT, null, null ) );
     }
 
 

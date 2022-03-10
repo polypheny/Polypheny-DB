@@ -64,7 +64,6 @@ import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
@@ -432,7 +431,6 @@ public class JdbcRules {
                                     && !multimediaFunctionInProject( project )
                                     && !DocumentRules.containsJson( project )
                                     && !DocumentRules.containsDocument( project )
-                                    && !Transformer.containsDeserialize( project )
                                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project )),
                     Convention.NONE, out, algBuilderFactory, "JdbcProjectRule." + out );
         }

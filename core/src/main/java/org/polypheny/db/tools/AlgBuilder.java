@@ -73,7 +73,6 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
-import org.polypheny.db.algebra.core.AlgFactories.TransformerFactory;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
@@ -105,7 +104,6 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -152,7 +150,6 @@ public class AlgBuilder {
     protected final AlgOptSchema algOptSchema;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
-    private final TransformerFactory transformerFactory;
     private final AlgFactories.AggregateFactory aggregateFactory;
     private final AlgFactories.SortFactory sortFactory;
     private final AlgFactories.ExchangeFactory exchangeFactory;
@@ -233,11 +230,6 @@ public class AlgBuilder {
                 Util.first(
                         context.unwrap( AlgFactories.DocumentsFactory.class ),
                         AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
-
-        this.transformerFactory =
-                Util.first(
-                        context.unwrap( TransformerFactory.class ),
-                        AlgFactories.DEFAULT_CONVERTER_FACTORY );
 
         final RexExecutor executor =
                 Util.first(
@@ -2494,18 +2486,6 @@ public class AlgBuilder {
         stack.clear();
     }
 
-
-    public AlgBuilder transformer( List<PolyType> unsupportedTypes, PolyType substituteType ) {
-        AlgNode node = this.stack.pop().alg;
-        assert node instanceof Scan;
-        stack.clear();
-        assert node.getTable() instanceof AlgOptTableImpl;
-        scan( ((AlgOptTableImpl) node.getTable()).substitutedCopy() );
-
-        stack.push( new Frame( transformerFactory.createTransformer( this.stack.pop().alg, node.getRowType(), unsupportedTypes, substituteType ) ) );
-
-        return this;
-    }
 
 
     /**

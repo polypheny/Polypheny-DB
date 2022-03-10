@@ -72,12 +72,11 @@ import org.polypheny.db.algebra.rules.AggregateProjectMergeRule;
 import org.polypheny.db.algebra.rules.AggregateRemoveRule;
 import org.polypheny.db.algebra.rules.CalcRemoveRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
+import org.polypheny.db.algebra.rules.GraphToRelRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
-import org.polypheny.db.algebra.rules.ModelTransformerRule;
 import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
-import org.polypheny.db.algebra.rules.TransformerMergeRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
@@ -817,9 +816,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     public void registerModelRules() {
-        addRule( ModelTransformerRule.DOCUMENT_TO_RELATIONAL );
-        addRule( TransformerMergeRule.INSTANCE );
-        //addRule( ModelTransformerRule.GRAPH_TO_RELATIONAL );
+        addRule( GraphToRelRule.GRAPH_MODIFY_TO_REL );
+        addRule( GraphToRelRule.GRAPH_SCAN_TO_REL );
     }
 
 

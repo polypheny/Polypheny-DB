@@ -43,7 +43,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -92,9 +91,6 @@ public abstract class BaseRouter {
                 logicalTableName + "_" + partitionId ) ).build();
 
         builder.push( node );
-        if ( !(this instanceof DmlRouter) && node.getTable().getTable() != null && node.getTable().getTable().needsTypeSubstitution() ) {
-            builder.transformer( node.getTable().getTable().getUnsupportedTypes(), node.getTable().getTable().getSubstitutionType() );
-        }
 
         return builder;
     }

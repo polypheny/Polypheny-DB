@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
@@ -341,6 +342,12 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     public void rewriteAlg( LogicalTransformer alg ) {
         rewriteGeneric( alg );
+    }
+
+
+    public void rewriteAlg( LogicalGraphModify alg ) {
+        //LogicalGraphModify newAlg = LogicalConditionalExecute.create( alg.getInputs(), alg. );
+        setNewForOldRel( alg, alg );
     }
 
 

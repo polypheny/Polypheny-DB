@@ -35,7 +35,6 @@ import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 
@@ -95,12 +94,6 @@ public class RoutedAlgBuilder extends AlgBuilder {
     @Override
     public RoutedAlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         super.documents( tuples, rowType, normalizedTuples );
-        return this;
-    }
-
-
-    public RoutedAlgBuilder transformer( List<PolyType> unsupportedTypes, PolyType substituteType ) {
-        super.transformer( unsupportedTypes, substituteType );
         return this;
     }
 

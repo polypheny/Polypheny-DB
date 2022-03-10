@@ -23,7 +23,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.transaction.Statement;
 
 public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
 
@@ -44,7 +43,7 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, Statement statement ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values ) {
         return null;
     }
 

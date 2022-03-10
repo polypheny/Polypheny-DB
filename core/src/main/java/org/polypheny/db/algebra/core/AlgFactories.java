@@ -61,7 +61,6 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalSortExchange;
-import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
@@ -119,8 +118,6 @@ public class AlgFactories {
 
     public static final ConditionalExecuteFactory DEFAULT_CONDITIONAL_EXECUTE_FACTORY = new ConditionalExecuteFactoryImpl();
 
-    public static final TransformerFactory DEFAULT_CONVERTER_FACTORY = new TransformerFactoryImpl();
-
     /**
      * A {@link AlgBuilderFactory} that creates a {@link AlgBuilder} that will create logical relational expressions for everything.
      */
@@ -139,8 +136,7 @@ public class AlgFactories {
                             DEFAULT_SET_OP_FACTORY,
                             DEFAULT_VALUES_FACTORY,
                             DEFAULT_TABLE_SCAN_FACTORY,
-                            DEFAULT_CONDITIONAL_EXECUTE_FACTORY,
-                            DEFAULT_CONVERTER_FACTORY ) );
+                            DEFAULT_CONDITIONAL_EXECUTE_FACTORY ) );
 
 
     private AlgFactories() {
@@ -336,19 +332,6 @@ public class AlgFactories {
 
     }
 
-
-    public static class TransformerFactoryImpl implements TransformerFactory {
-
-        @Override
-        public AlgNode createTransformer(
-                AlgNode input,
-                AlgDataType rowType,
-                List<PolyType> unsupportedTypes,
-                PolyType substituteType ) {
-            return LogicalTransformer.create( input, rowType, unsupportedTypes, substituteType );
-        }
-
-    }
 
 
     /**

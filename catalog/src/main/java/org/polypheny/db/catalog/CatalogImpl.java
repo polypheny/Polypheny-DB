@@ -1350,12 +1350,12 @@ public class CatalogImpl extends Catalog {
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), nodesId ) );
 
-        long idNodeId = addColumn( "_id", nodesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
+        long idNodeId = addColumn( "_id_", nodesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         // Add default value
         setDefaultValue( idNodeId, PolyType.VARCHAR, "" );
-        long nodeNodeId = addColumn( "_node", nodesId, 1, PolyType.NODE, null, null, null, null, null, false, null );
+        long nodeNodeId = addColumn( "_node_", nodesId, 1, PolyType.NODE, null, null, null, null, null, false, null );
         setDefaultValue( nodeNodeId, PolyType.VARCHAR, "" );
-        long labelsNodeId = addColumn( "_labels", nodesId, 2, PolyType.VARCHAR, PolyType.ARRAY, 255, null, null, null, false, Collation.getDefaultCollation() );
+        long labelsNodeId = addColumn( "_labels_", nodesId, 2, PolyType.VARCHAR, PolyType.ARRAY, 255, null, null, null, false, Collation.getDefaultCollation() );
         setDefaultValue( labelsNodeId, PolyType.VARCHAR, "" );
 
         for ( DataStore s : stores ) {
@@ -1390,15 +1390,19 @@ public class CatalogImpl extends Catalog {
         addPrimaryKey( nodesId, Collections.singletonList( idNodeId ) );
 
         // table id relationships -> id, rel, labels
-        long edgesId = addEntity( "_relationships_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        long edgesId = addEntity( "_edges_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), edgesId ) );
 
-        long idEdgeId = addColumn( "_id", edgesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
+        long idEdgeId = addColumn( "_id_", edgesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         setDefaultValue( idEdgeId, PolyType.VARCHAR, "" );
-        long edgeEdgeId = addColumn( "_relationship", edgesId, 1, PolyType.EDGE, null, null, null, null, null, false, null );
+        long edgeEdgeId = addColumn( "_edge_", edgesId, 1, PolyType.EDGE, null, null, null, null, null, false, null );
         setDefaultValue( edgeEdgeId, PolyType.VARCHAR, "" );
-        long labelsEdgeId = addColumn( "_labels", edgesId, 2, PolyType.VARCHAR, PolyType.ARRAY, 255, null, null, null, false, Collation.getDefaultCollation() );
+        long labelsEdgeId = addColumn( "_labels_", edgesId, 2, PolyType.VARCHAR, PolyType.ARRAY, 255, null, null, null, false, Collation.getDefaultCollation() );
+        setDefaultValue( labelsEdgeId, PolyType.VARCHAR, "" );
+        long lEdgeId = addColumn( "_l_id_", edgesId, 3, PolyType.BIGINT, null, null, null, null, null, false, Collation.getDefaultCollation() );
+        setDefaultValue( labelsEdgeId, PolyType.VARCHAR, "" );
+        long rEdgeId = addColumn( "_r_id_", edgesId, 4, PolyType.BIGINT, null, null, null, null, null, false, Collation.getDefaultCollation() );
         setDefaultValue( labelsEdgeId, PolyType.VARCHAR, "" );
 
         for ( DataStore store : stores ) {
@@ -1428,11 +1432,29 @@ public class CatalogImpl extends Catalog {
                     null,
                     null
             );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    lEdgeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    rEdgeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
         }
 
         addPrimaryKey( edgesId, Collections.singletonList( idEdgeId ) );
 
-        CatalogGraphMapping mapping = new CatalogGraphMapping( id, nodesId, edgesId, idNodeId, nodeNodeId, labelsNodeId, idEdgeId, edgeEdgeId, labelsEdgeId );
+        CatalogGraphMapping mapping = new CatalogGraphMapping( id, nodesId, edgesId, idNodeId, nodeNodeId, labelsNodeId, idEdgeId, edgeEdgeId, labelsEdgeId, lEdgeId, rEdgeId );
         graphMappings.put( id, mapping );
 
     }
