@@ -101,6 +101,7 @@ import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
 import org.polypheny.db.processing.caching.RoutingPlanCache;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessOperationRuntimeException;
 import org.polypheny.db.processing.shuttles.LogicalQueryInformationImpl;
 import org.polypheny.db.processing.shuttles.ParameterValueValidator;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
@@ -307,11 +308,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         ParameterValueValidator valueValidator = new ParameterValueValidator( logicalRoot.validatedRowType, statement.getDataContext() );
         valueValidator.visit( logicalRoot.alg );
 
-        // ToDO @HENNLO Remove hardcoded option to specify query as FRESHNESS-RELATED
-        boolean acceptsOutdated = false;
-
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Parameter Validation" );
+            statement.getProcessingDuration().start( "Evaluate Freshness Options" );
+        }
+
+        //
+        // Evaluate freshness options
+        evaluateFreshness( logicalRoot );
+
+        if ( isAnalyze ) {
+            statement.getProcessingDuration().stop( "Evaluate Freshness Options" );
         }
 
         if ( isRouted ) {
@@ -1263,6 +1270,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 analyzeRelShuttle.availableColumnsWithTable,
                 analyzeRelShuttle.getUsedColumns(),
                 analyzeRelShuttle.getTables() );
+
         this.prepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery, queryInformation );
 
         return queryInformation;
@@ -1549,6 +1557,27 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } catch ( DeadlockException e ) {
             throw new RuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }
+    }
+
+
+    /**
+     * Validates if the query can even be executed
+     */
+    private void evaluateFreshness( AlgRoot logicalRoot ) {
+
+        // Either Check if DML operation has occured based on statement type or, active Locks.
+        // SO if there are Exclusive locks a freshnessquery cannot be executed
+
+        // If DML Statement, make sure that no Freshness operation has been executed in TX yet
+        if ( logicalRoot.alg instanceof LogicalTableModify && statement.getTransaction().acceptsOutdated() )
+
+        // If Query Statement && Freshness Related, make sure that no DML operation has been executed in TX yet
+        {
+            if ( statement.getTransaction().acceptsOutdated() && logicalRoot.alg instanceof LogicalTableModify ) {
+                throw new UnsupportedFreshnessOperationRuntimeException();
+            }
+        }
+
     }
 
 }

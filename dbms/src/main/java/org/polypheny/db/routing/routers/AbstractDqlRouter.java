@@ -16,6 +16,7 @@
 
 package org.polypheny.db.routing.routers;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.Collections;
@@ -45,7 +46,7 @@ import org.polypheny.db.transaction.Statement;
  * handleHorizontalPartitioning
  * handleVerticalPartitioning
  * handleNonePartitioning
- * Every table will be check by the following order:
+ * Every table will be checked by the following order:
  * first if partitioned horizontally {@code ->} handleHorizontalPartitioning called.
  * second if partitioned vertically or replicated {@code ->} handleVerticalPartitioningOrReplication
  * third, all other cases {@code ->} handleNonePartitioning

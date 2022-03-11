@@ -98,4 +98,10 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
         return this.queryId;
     }
 
+
+    @Override
+    public List<String> getFreshnessSpecification() {
+        return null;
+    }
+
 }

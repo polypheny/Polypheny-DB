@@ -17,9 +17,9 @@
 package org.polypheny.db.processing.replication.freshness.exceptions;
 
 
-public class UnknownFreshnessTimeUnitException extends FreshnessException {
+public class UnknownFreshnessTimeUnitRuntimeException extends FreshnessRuntimeException {
 
-    public UnknownFreshnessTimeUnitException( final String unit ) {
+    public UnknownFreshnessTimeUnitRuntimeException( final String unit ) {
         super( "The specified time unit: '" + unit + "' is not accepted." );
     }
 

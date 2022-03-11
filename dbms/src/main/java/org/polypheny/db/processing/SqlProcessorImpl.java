@@ -55,9 +55,9 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.replication.freshness.FreshnessExtractor;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeException;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitException;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessSpecificationException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitRuntimeException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessSpecificationRuntimeException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.sql.SqlBasicCall;
@@ -462,7 +462,7 @@ public class SqlProcessorImpl extends Processor {
 
             // TODO @HENNLO attach freshnessSpecification to Statement not to TX alone
 
-        } catch ( UnknownFreshnessEvaluationTypeException | UnknownFreshnessTimeUnitException | UnsupportedFreshnessSpecificationException e ) {
+        } catch ( UnknownFreshnessEvaluationTypeRuntimeException | UnknownFreshnessTimeUnitRuntimeException | UnsupportedFreshnessSpecificationRuntimeException e ) {
             e.printStackTrace();
         }
 

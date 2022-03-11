@@ -22,20 +22,16 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
 
-/**
- * This class is used to transform and extract relevant information out of a query which specified the optional acceptance to retrieve outdated data.
- */
-public abstract class FreshnessManager {
+public class FreshnessManagerImpl extends FreshnessManager {
 
-
-    public abstract double transformToFreshnessIndex( CatalogTable table, String s, EvaluationType evaluationType );
-
-    public abstract List<CatalogPartitionPlacement> getRelevantPartitionPlacements( CatalogTable table, double freshnessIndex );
-
-    public enum EvaluationType {
-        TIMESTAMP,
-        DELAY,
-        PERCENTAGE
+    @Override
+    public double transformToFreshnessIndex( CatalogTable table, String s, EvaluationType evaluationType ) {
+        return 0;
     }
 
+
+    @Override
+    public List<CatalogPartitionPlacement> getRelevantPartitionPlacements( CatalogTable table, double freshnessIndex ) {
+        return null;
+    }
 }

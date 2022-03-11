@@ -22,11 +22,10 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.replication.freshness.FreshnessExtractor;
-import org.polypheny.db.processing.replication.freshness.FreshnessManager;
 import org.polypheny.db.processing.replication.freshness.FreshnessManager.EvaluationType;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeException;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitException;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessSpecificationException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitRuntimeException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessSpecificationRuntimeException;
 import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.sql.sql.SqlTimestampLiteral;
 
@@ -50,9 +49,9 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
 
 
     public FreshnessSpecification extractFreshnessSpecification()
-            throws UnknownFreshnessTimeUnitException,
-            UnknownFreshnessEvaluationTypeException,
-            UnsupportedFreshnessSpecificationException {
+            throws UnknownFreshnessTimeUnitRuntimeException,
+            UnknownFreshnessEvaluationTypeRuntimeException,
+            UnsupportedFreshnessSpecificationRuntimeException {
 
         extractSqlFreshnessSpecification();
         return freshnessSpecification;
@@ -60,9 +59,9 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
 
 
     private void extractSqlFreshnessSpecification()
-            throws UnknownFreshnessTimeUnitException,
-            UnknownFreshnessEvaluationTypeException,
-            UnsupportedFreshnessSpecificationException {
+            throws UnknownFreshnessTimeUnitRuntimeException,
+            UnknownFreshnessEvaluationTypeRuntimeException,
+            UnsupportedFreshnessSpecificationRuntimeException {
 
         if ( toleratedFreshness == null || rawEvaluationType == null || unit == null ) {
             throw new RuntimeException( "Freshness Extraction failed. " );
@@ -71,14 +70,13 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
     }
 
 
-    private void extractFromNodeLists() throws UnknownFreshnessEvaluationTypeException, UnknownFreshnessTimeUnitException, UnsupportedFreshnessSpecificationException {
+    private void extractFromNodeLists() throws UnknownFreshnessEvaluationTypeRuntimeException, UnknownFreshnessTimeUnitRuntimeException, UnsupportedFreshnessSpecificationRuntimeException {
 
         EvaluationType tmpEvaluationType;
         double tmpFreshnessIndex = -1.0;
 
         // Serves as the lower bound of accepted freshness
         Timestamp requestedTimestamp = null;
-        boolean requireIndexTransformation = false;
 
         switch ( rawEvaluationType.toString().toUpperCase() ) {
             case "DELAY":
@@ -103,7 +101,7 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
                         break;
 
                     default:
-                        throw new UnknownFreshnessTimeUnitException( unit.toString().toUpperCase() );
+                        throw new UnknownFreshnessTimeUnitRuntimeException( unit.toString().toUpperCase() );
                 }
 
                 // Transform currentTimestamp to the tolerated level of freshness
@@ -111,14 +109,11 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
                 invocationTimestamp = invocationTimestamp - timeDifference;
                 requestedTimestamp = new Timestamp( invocationTimestamp );
 
-                requireIndexTransformation = true;
-
                 break;
 
             case "TIMESTAMP":
                 tmpEvaluationType = EvaluationType.TIMESTAMP;
                 requestedTimestamp = Timestamp.valueOf( ((SqlTimestampLiteral) toleratedFreshness).getValue().toString() );
-                requireIndexTransformation = true;
 
                 break;
 
@@ -129,21 +124,12 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
                     tmpEvaluationType = EvaluationType.PERCENTAGE;
                     tmpFreshnessIndex = percentageValue / 100;
                 } else {
-                    throw new UnsupportedFreshnessSpecificationException( EvaluationType.PERCENTAGE, toleratedFreshness.toString() );
+                    throw new UnsupportedFreshnessSpecificationRuntimeException( EvaluationType.PERCENTAGE, toleratedFreshness.toString() );
                 }
                 break;
 
             default:
-                throw new UnknownFreshnessEvaluationTypeException( rawEvaluationType.toString().toUpperCase() );
-        }
-
-        // Required to transform the calculated freshness of DELAY and TIMESTAMP to an index
-        if ( requireIndexTransformation && requestedTimestamp != null ) {
-            tmpFreshnessIndex = FreshnessManager.transformTimestampToIndex( requestedTimestamp );
-        }
-
-        if ( tmpFreshnessIndex == -1 ) {
-            throw new RuntimeException( "Failed to calculate a freshnessIndex" );
+                throw new UnknownFreshnessEvaluationTypeRuntimeException( rawEvaluationType.toString().toUpperCase() );
         }
 
         setFreshnessSpecification( requestedTimestamp, tmpEvaluationType, tmpFreshnessIndex );

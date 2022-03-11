@@ -19,9 +19,9 @@ package org.polypheny.db.processing.replication.freshness;
 
 import java.sql.Timestamp;
 import org.polypheny.db.processing.replication.freshness.FreshnessManager.EvaluationType;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeException;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitException;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessSpecificationException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitRuntimeException;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessSpecificationRuntimeException;
 import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
 
 
@@ -39,9 +39,9 @@ public abstract class FreshnessExtractor {
      * @return General FreshnessSpecification unrelated to a specific query language.
      */
     public abstract FreshnessSpecification extractFreshnessSpecification()
-            throws UnknownFreshnessTimeUnitException,
-            UnknownFreshnessEvaluationTypeException,
-            UnsupportedFreshnessSpecificationException;
+            throws UnknownFreshnessTimeUnitRuntimeException,
+            UnknownFreshnessEvaluationTypeRuntimeException,
+            UnsupportedFreshnessSpecificationRuntimeException;
 
 
     public FreshnessSpecification getFreshnessSpecification() {

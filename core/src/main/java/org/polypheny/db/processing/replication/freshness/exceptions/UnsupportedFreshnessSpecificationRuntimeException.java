@@ -17,10 +17,13 @@
 package org.polypheny.db.processing.replication.freshness.exceptions;
 
 
-public class UnknownFreshnessEvaluationTypeException extends FreshnessException {
+import org.polypheny.db.processing.replication.freshness.FreshnessManager.EvaluationType;
 
-    public UnknownFreshnessEvaluationTypeException( final String name ) {
-        super( "There is no related EvaluationType with name: '" + name + "'" );
+
+public class UnsupportedFreshnessSpecificationRuntimeException extends FreshnessRuntimeException {
+
+    public UnsupportedFreshnessSpecificationRuntimeException( EvaluationType evaluationType, final String freshnessValue ) {
+        super( "The specified tolerated level of freshness: '" + freshnessValue + "' cannot be used for the "
+                + "associated evaluation type: '" + evaluationType.toString() + "'." );
     }
-
 }

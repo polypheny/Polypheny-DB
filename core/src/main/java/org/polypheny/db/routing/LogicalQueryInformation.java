@@ -63,4 +63,9 @@ public interface LogicalQueryInformation {
      */
     List<String> getTables();
 
+    /**
+     * @return Gets the freshness specification
+     */
+    List<String> getFreshnessSpecification();
+
 }
