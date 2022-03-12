@@ -87,11 +87,42 @@ public interface Transaction {
 
     void setFreshnessSpecification( FreshnessSpecification freshnessSpecification );
 
+    AccessMode getAccessMode();
+
+    void updateAccessMode( AccessMode accessCandidate );
+
     /**
      * Flavor, how multimedia results should be returned from a store.
      */
     enum MultimediaFlavor {
         DEFAULT, FILE
+    }
+
+
+    /**
+     * Transaction Access mode.
+     */
+    enum AccessMode {
+
+        /**
+         * Transaction does not access anything.
+         */
+        NO_ACCESS,
+
+        /**
+         * Transaction is read only.
+         */
+        READ_ACCESS,
+
+        /**
+         * Transaction is used for write only.
+         */
+        WRITE_ACCESS,
+
+        /**
+         * Transaction is used for both read and write.
+         */
+        READWRITE_ACCESS
     }
 
 }

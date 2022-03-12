@@ -1577,7 +1577,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 throw new UnsupportedFreshnessOperationRuntimeException();
             }
         }
-
     }
 
 }
