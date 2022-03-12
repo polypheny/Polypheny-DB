@@ -57,6 +57,12 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
     }
 
 
+    public boolean isBlank() {
+        // MATCH (n) -> true, MATCH (n{name: 'Max'}) -> false, MATCH (n:Person) -> false
+        return (properties == null || properties.isEmpty()) && (labels == null || labels.isEmpty());
+    }
+
+
     static public class PolyNodeSerializer extends Serializer<PolyNode> {
 
         @Override

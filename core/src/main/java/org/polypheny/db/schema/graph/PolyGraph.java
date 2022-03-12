@@ -60,4 +60,13 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         return true;
     }
 
+
+    @Override
+    public String toString() {
+        return "PolyGraph{" +
+                "nodes=" + nodes +
+                ", edges=" + edges +
+                '}';
+    }
+
 }

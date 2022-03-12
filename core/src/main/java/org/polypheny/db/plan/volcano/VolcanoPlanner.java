@@ -72,6 +72,7 @@ import org.polypheny.db.algebra.rules.AggregateProjectMergeRule;
 import org.polypheny.db.algebra.rules.AggregateRemoveRule;
 import org.polypheny.db.algebra.rules.CalcRemoveRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
+import org.polypheny.db.algebra.rules.GraphToEnumerableRule;
 import org.polypheny.db.algebra.rules.GraphToRelRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
@@ -818,6 +819,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     public void registerModelRules() {
         addRule( GraphToRelRule.GRAPH_MODIFY_TO_REL );
         addRule( GraphToRelRule.GRAPH_SCAN_TO_REL );
+        addRule( GraphToEnumerableRule.PROJECT_TO_ENUMERABLE );
     }
 
 

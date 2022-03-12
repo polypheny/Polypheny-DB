@@ -55,6 +55,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
+import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
@@ -978,9 +979,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private List<ProposedRoutingPlan> route( AlgRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
         final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
-        if ( logicalRoot.alg.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+        if ( logicalRoot.alg.getTraitSet().contains( ModelTrait.GRAPH ) && logicalRoot.alg instanceof LogicalGraphModify ) {
             AlgNode routedDml = dmlRouter.routeGraphDml( (LogicalGraphModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
+        } else if ( logicalRoot.alg.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+            AlgNode routed = RoutingManager.getInstance().getRouters().get( 0 ).routeGraph( (AlgNode & GraphAlg) logicalRoot.alg, statement );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routed, logicalRoot, queryInformation.getQueryClass() ) );
         } else if ( logicalRoot.alg instanceof LogicalModify ) {
             AlgNode routedDml = dmlRouter.routeDml( (LogicalModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
@@ -1108,13 +1112,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 .simplify();
 
         final Program program = Programs.standard();
-        final AlgNode rootAlg4 = program.run( getPlanner(), logicalPlan, desiredTraits );
-
-        //final {@link AlgNode} algNode = getPlanner().changeTraits( root.alg, desiredTraits );
-        //getPlanner().setRoot(algNode);
-        //final {@link AlgNode} rootAlg4 = getPlanner().findBestExp();
-
-        return rootAlg4;
+        return program.run( getPlanner(), logicalPlan, desiredTraits );
     }
 
 

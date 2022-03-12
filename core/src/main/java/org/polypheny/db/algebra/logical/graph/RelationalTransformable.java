@@ -18,9 +18,32 @@ package org.polypheny.db.algebra.logical.graph;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
 
 public interface RelationalTransformable {
 
-    List<AlgNode> getRelationalEquivalent( List<AlgNode> values );
+    default AlgOptTable getNodeTable() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setNodeTable( AlgOptTable table ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default AlgOptTable getEdgeTable() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setEdgeTable( AlgOptTable table ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default CatalogReader getCatalogReader() {
+        throw new UnsupportedOperationException();
+    }
+
+
+    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities );
 
 }

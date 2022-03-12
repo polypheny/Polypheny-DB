@@ -31,17 +31,22 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.RelationalTransformable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -267,6 +272,44 @@ public abstract class BaseRouter {
             joinedScanCache.put( placements.hashCode(), node );
         }
         return node;
+    }
+
+
+    protected <T extends AlgNode & GraphAlg, G extends AlgNode & GraphAlg & RelationalTransformable> void attachMappingsIfNecessary( T input ) {
+        if ( !(input instanceof RelationalTransformable) ) {
+            return;
+        }
+        G alg = (G) input;
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getNamespaceId() );
+
+        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodeId );
+
+        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( nodes.dataPlacements.get( 0 ) );
+
+        List<String> qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        placement.get( 0 ).adapterUniqueName,
+                        nodes.getNamespaceName(),
+                        placement.get( 0 ).physicalSchemaName
+                ),
+                nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
+
+        PreparingTable node = alg.getCatalogReader().getTableForMember( qualifiedTableName );
+        alg.setNodeTable( node );
+
+        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgeId );
+        placement = Catalog.getInstance().getColumnPlacement( edges.dataPlacements.get( 0 ) );
+
+        qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        placement.get( 0 ).adapterUniqueName,
+                        edges.getNamespaceName(),
+                        placement.get( 0 ).physicalSchemaName
+                ),
+                edges.name + "_" + edges.partitionProperty.partitionIds.get( 0 ) );
+
+        PreparingTable edge = alg.getCatalogReader().getTableForMember( qualifiedTableName );
+        alg.setEdgeTable( edge );
     }
 
 }

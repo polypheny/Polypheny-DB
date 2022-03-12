@@ -199,6 +199,8 @@ public class SqlLiteral extends SqlNode implements Literal {
                         || (value instanceof SqlSampleSpec);
             case MULTISET:
                 return true;
+            case ARRAY:
+                return value instanceof List;
             case INTEGER: // not allowed -- use Decimal
             case VARCHAR: // not allowed -- use Char
             case VARBINARY: // not allowed -- use Binary

@@ -21,7 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphPattern;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -41,7 +41,7 @@ import org.polypheny.db.util.Pair;
 public class CypherEveryPathPattern extends CypherPattern {
 
     private final List<CypherNodePattern> nodes;
-    private final List<CypherRelPattern> relationships;
+    private final List<CypherRelPattern> edges;
 
 
     /**
@@ -57,12 +57,12 @@ public class CypherEveryPathPattern extends CypherPattern {
      * </code>
      *
      * @param nodes all nodes included in path
-     * @param relationships all relationship connections included in the path
+     * @param edges all relationship connections included in the path
      */
-    public CypherEveryPathPattern( List<CypherNodePattern> nodes, List<CypherRelPattern> relationships ) {
+    public CypherEveryPathPattern( List<CypherNodePattern> nodes, List<CypherRelPattern> edges ) {
         super( ParserPos.ZERO );
         this.nodes = nodes;
-        this.relationships = relationships;
+        this.edges = edges;
     }
 
 
@@ -79,15 +79,15 @@ public class CypherEveryPathPattern extends CypherPattern {
 
     private List<Pair<String, PolyEdge>> getPolyRelationships( List<PolyNode> nodes ) {
         List<Pair<String, PolyEdge>> rels = new ArrayList<>();
-        assert nodes.size() == relationships.size() + 1;
+        assert nodes.size() == edges.size() + 1;
 
-        Iterator<CypherRelPattern> relIter = relationships.iterator();
+        Iterator<CypherRelPattern> relIter = edges.iterator();
         PolyNode node = nodes.get( 0 );
         int i = 0;
         while ( relIter.hasNext() ) {
             i++;
             PolyNode next = nodes.get( i );
-            rels.add( relationships.get( i - 1 ).getPolyRelationship( node.id, next.id ) );
+            rels.add( edges.get( i - 1 ).getPolyRelationship( node.id, next.id ) );
             node = next;
         }
 
@@ -96,16 +96,44 @@ public class CypherEveryPathPattern extends CypherPattern {
 
 
     @Override
-    public LogicalGraphPattern getPatternValues( CypherContext context ) {
+    public LogicalGraphValues getPatternValues( CypherContext context ) {
         List<Pair<String, PolyNode>> nodes = getPolyNodes();
         List<Pair<String, PolyEdge>> relationships = getPolyRelationships( Pair.right( nodes ) );
 
-        return LogicalGraphPattern.create( context.cluster, context.cluster.traitSet(), nodes, context.nodeType, relationships, context.relType );
+        return LogicalGraphValues.create( context.cluster, context.cluster.traitSet(), nodes, context.nodeType, relationships, context.edgeType );
     }
 
 
     @Override
     public RexNode getPatternFilter( CypherContext context ) {
+        if ( edges.isEmpty() ) {
+            return getNodeFilter( context );
+        } else if ( nodes.isEmpty() ) {
+            return getEdgeFilter( context );
+        }
+        return getGraphFilter( context );
+    }
+
+
+    private RexNode getNodeFilter( CypherContext context ) {
+        // single node match MATCH (n) RETURN n
+        assert nodes.size() == 1;
+        Pair<String, PolyNode> nameNode = nodes.get( 0 ).getPolyNode();
+
+        if ( nameNode.right.isBlank() ) {
+            return new RexLiteral( true, context.booleanType, PolyType.BOOLEAN );
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+
+    private RexNode getEdgeFilter( CypherContext context ) {
+        return null;
+    }
+
+
+    private RexCall getGraphFilter( CypherContext context ) {
         List<PolyNode> polyNodes = Pair.right( getPolyNodes() );
         PolyMap<Long, PolyNode> nodes = new PolyMap<>( polyNodes.stream().collect( Collectors.toMap( e -> e.id, e -> e ) ) );
         PolyMap<Long, PolyEdge> relationships = new PolyMap<>( getPolyRelationships( polyNodes ).stream().collect( Collectors.toMap( e -> e.right.id, e -> e.right ) ) );

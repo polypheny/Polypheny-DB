@@ -43,16 +43,13 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphPattern;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.partition.PartitionManager;
@@ -61,7 +58,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -716,46 +712,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     @Override
     public AlgNode routeGraphDml( LogicalGraphModify alg, Statement statement ) {
         // todo dl add partition logic
-        if ( alg.graph == null ) {
+        if ( alg.getGraph() == null ) {
             throw new RuntimeException( "Error while routing graph" );
         }
 
-        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.graph.getNamespaceId() );
-
-        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodeId );
-
-        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( nodes.dataPlacements.get( 0 ) );
-
-        List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        placement.get( 0 ).adapterUniqueName,
-                        nodes.getNamespaceName(),
-                        placement.get( 0 ).physicalSchemaName
-                ),
-                nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
-
-        PreparingTable node = alg.catalogReader.getTableForMember( qualifiedTableName );
-        alg.nodeTable( node );
-
-        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgeId );
-        placement = Catalog.getInstance().getColumnPlacement( edges.dataPlacements.get( 0 ) );
-
-        qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        placement.get( 0 ).adapterUniqueName,
-                        nodes.getNamespaceName(),
-                        placement.get( 0 ).physicalSchemaName
-                ),
-                edges.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
-
-        PreparingTable edge = alg.catalogReader.getTableForMember( qualifiedTableName );
-        alg.edgeTable( edge );
+        attachMappingsIfNecessary( alg );
         return alg;
-    }
-
-
-    private List<AlgNode> handleGraphValues( LogicalGraphPattern alg, Statement statement ) {
-        return alg.getRelationalEquivalent( List.of() );
     }
 
 

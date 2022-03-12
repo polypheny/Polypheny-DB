@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -29,16 +30,22 @@ public class Transformer extends AbstractAlgNode {
     @Getter
     private final List<AlgNode> inputs;
 
+    public final AlgTraitSet inTraitSet;
+    public final AlgTraitSet outTraitSet;
+
 
     /**
      * Creates an <code>AbstractRelNode</code>.
      *
      * @param cluster
-     * @param traitSet
+     * @param rowType
      */
-    public Transformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        super( cluster, traitSet );
+    public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet inTraitSet, AlgTraitSet outTraitSet, AlgDataType rowType ) {
+        super( cluster, outTraitSet );
         this.inputs = inputs;
+        this.inTraitSet = inTraitSet;
+        this.outTraitSet = outTraitSet;
+        this.rowType = rowType;
     }
 
 

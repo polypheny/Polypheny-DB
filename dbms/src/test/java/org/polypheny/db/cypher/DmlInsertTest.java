@@ -25,6 +25,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertNodeTest() {
         Result res = execute( "CREATE (p:Person {name: 'Max Muster'})" );
+        res = execute( "MATCH (n)\nRETURN n" );
     }
 
 

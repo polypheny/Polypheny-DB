@@ -18,21 +18,41 @@ package org.polypheny.db.algebra.logical.graph;
 
 
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.logical.LogicalScan;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.schema.ModelTrait;
 
 public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
 
-
+    @Getter
     private final LogicalGraph graph;
 
+    @Getter
+    private final PolyphenyDbCatalogReader catalogReader;
 
-    public LogicalGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalGraph graph ) {
+    @Getter
+    @Setter
+    private AlgOptTable edgeTable;
+
+    @Getter
+    @Setter
+    private AlgOptTable nodeTable;
+
+
+    public LogicalGraphScan( AlgOptCluster cluster, PolyphenyDbCatalogReader catalogReader, AlgTraitSet traitSet, LogicalGraph graph, AlgDataType rowType ) {
         super( cluster, traitSet );
         this.graph = graph;
+        this.rowType = rowType;
+        this.catalogReader = catalogReader;
     }
 
 
@@ -43,8 +63,33 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values ) {
-        return null;
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities ) {
+        assert !entities.isEmpty();
+        AlgTraitSet out = getTraitSet().replace( ModelTrait.RELATIONAL );
+        LogicalScan nodes = new LogicalScan( getCluster(), out, entities.get( 0 ) );
+
+        if ( entities.size() == 1 ) {
+            return List.of( nodes );
+        }
+
+        LogicalScan edges = new LogicalScan( getCluster(), out, entities.get( 1 ) );
+
+        return List.of( nodes, edges );
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.SCAN;
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        LogicalGraphScan scan = new LogicalGraphScan( inputs.get( 0 ).getCluster(), catalogReader, traitSet, graph, rowType );
+        scan.setEdgeTable( edgeTable );
+        scan.setNodeTable( nodeTable );
+        return scan;
     }
 
 }

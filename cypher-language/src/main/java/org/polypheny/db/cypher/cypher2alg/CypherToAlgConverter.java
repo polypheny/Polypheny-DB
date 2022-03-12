@@ -29,6 +29,8 @@ import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.cypher.CypherNode;
@@ -47,6 +49,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 public class CypherToAlgConverter {
 
@@ -80,9 +83,10 @@ public class CypherToAlgConverter {
             throw new RuntimeException( "Used a unsupported query." );
         }
 
-        CypherContext context = new CypherContext( query, graph, cluster, algBuilder, rexBuilder );
+        CypherContext context = new CypherContext( query, graph, cluster, algBuilder, rexBuilder, catalogReader );
 
         convertQuery( query, context );
+
 
         return AlgRoot.of( context.build(), context.kind );
     }
@@ -183,7 +187,7 @@ public class CypherToAlgConverter {
 
     private void convertPattern( CypherPattern pattern, CypherContext context ) {
         if ( context.kind == Kind.INSERT ) {
-            // convert "values" pattern (LogicalGraphPattern AlgNode)
+            // convert "values" pattern (LogicalGraphValues AlgNode)
             context.add( pattern.getPatternValues( context ) );
         } else {
             // convert filter pattern ( RexNode CYPHER_PATTERN_MATCH )
@@ -214,12 +218,13 @@ public class CypherToAlgConverter {
         public final AlgDataType graphType;
         public final AlgDataType booleanType;
         public final AlgDataType nodeType;
-        public final AlgDataType relType;
+        public final AlgDataType edgeType;
+        private final PolyphenyDbCatalogReader catalogReader;
         public CypherNode active;
         public Kind kind;
 
 
-        private CypherContext( CypherNode original, LogicalGraph graph, AlgOptCluster cluster, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+        private CypherContext( CypherNode original, LogicalGraph graph, AlgOptCluster cluster, AlgBuilder algBuilder, RexBuilder rexBuilder, PolyphenyDbCatalogReader catalogReader ) {
             this.original = original;
             this.graph = graph;
             this.cluster = cluster;
@@ -228,23 +233,35 @@ public class CypherToAlgConverter {
             this.graphType = cluster.getTypeFactory().createPolyType( PolyType.GRAPH );
             this.booleanType = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
             this.nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
-            this.relType = cluster.getTypeFactory().createPolyType( PolyType.EDGE );
+            this.edgeType = cluster.getTypeFactory().createPolyType( PolyType.EDGE );
+            this.catalogReader = catalogReader;
         }
 
 
         public void addDefaultScanIfNecessary() {
-            if ( stack.size() == 0 ) {
-                stack.add( new LogicalGraphScan( cluster, cluster.traitSet(), graph ) );
+            if ( !stack.isEmpty() ) {
+                return;
             }
+            stack.add( new LogicalGraphScan( cluster, catalogReader, cluster.traitSet(), graph, new AlgRecordType(
+                    List.of(
+                            new AlgDataTypeFieldImpl( "n", 0, nodeType ),
+                            new AlgDataTypeFieldImpl( "e", 1, edgeType ) ) ) ) );
+
         }
 
 
         public void combineMatch() {
             addDefaultScanIfNecessary();
-            AlgNode node = stack.pop();
             RexNode condition = getCondition();
+            if ( condition.isAlwaysTrue() ) {
+                // blank MATCH (n) without condition
+                return;
+            }
+
+            AlgNode node = stack.pop();
 
             stack.add( new LogicalGraphMatch( cluster, cluster.traitSet(), node, condition ) );
+
         }
 
 
@@ -290,6 +307,27 @@ public class CypherToAlgConverter {
 
         public AlgNode pop() {
             return stack.pop();
+        }
+
+
+        public void addScanIfNecessary( List<Pair<String, RexNode>> nameAndProject ) {
+            if ( !stack.isEmpty() ) {
+                return;
+            }
+            if ( nameAndProject.size() == 1 ) {
+                assert nameAndProject.get( 0 ).right.getType().getPolyType() == PolyType.NODE;
+                stack.add( new LogicalGraphScan( cluster, catalogReader, cluster.traitSet(), graph, new AlgRecordType(
+                        List.of(
+                                new AlgDataTypeFieldImpl( nameAndProject.get( 0 ).left, 0, nodeType ) ) ) ) );
+                return;
+            } else if ( nameAndProject.size() == 2 ) {
+                assert nameAndProject.get( 0 ).right.getType().getPolyType() == PolyType.NODE;
+                assert nameAndProject.get( 1 ).right.getType().getPolyType() == PolyType.EDGE;
+
+                addDefaultScanIfNecessary();
+                return;
+            }
+            throw new UnsupportedOperationException();
         }
 
     }

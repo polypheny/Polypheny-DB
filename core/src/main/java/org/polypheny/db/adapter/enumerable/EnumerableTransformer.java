@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Transformer;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -31,11 +32,10 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
      * Creates an <code>AbstractRelNode</code>.
      *
      * @param cluster
-     * @param traitSet
      * @param inputs
      */
-    public EnumerableTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        super( cluster, traitSet, inputs );
+    public EnumerableTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet inTraitSet, AlgTraitSet outTraitSet, AlgDataType rowType ) {
+        super( cluster, inputs, inTraitSet, outTraitSet, rowType );
     }
 
 

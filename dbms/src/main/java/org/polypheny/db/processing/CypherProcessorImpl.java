@@ -202,7 +202,7 @@ public class CypherProcessorImpl extends AutomaticDdlProcessor {
 
             relationshipLabels.addAll( paths
                     .stream()
-                    .map( CypherEveryPathPattern::getRelationships )
+                    .map( CypherEveryPathPattern::getEdges )
                     .flatMap( rs -> rs.stream().flatMap( r -> r.getLabels().stream() ) )
                     .collect( Collectors.toSet() ) );
 

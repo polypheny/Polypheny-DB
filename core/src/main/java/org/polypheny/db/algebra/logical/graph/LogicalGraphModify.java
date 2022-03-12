@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
@@ -35,14 +34,15 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 
-@Accessors(fluent = true)
 public class LogicalGraphModify extends SingleAlg implements GraphAlg, RelationalTransformable {
 
 
     public final Operation operation;
     public final List<? extends RexNode> nodeOperations;
     public final List<? extends RexNode> edgeOperations;
-    public final LogicalGraph graph;
+    @Getter
+    private final LogicalGraph graph;
+    @Getter
     public final PolyphenyDbCatalogReader catalogReader;
 
     @Setter
@@ -79,21 +79,23 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + nodeOperations.hashCode() + "$" + edgeOperations.hashCode();
+        return "$" + getClass().getSimpleName() +
+                "$" + (nodeOperations != null ? nodeOperations.hashCode() : "[]") +
+                "$" + (edgeOperations != null ? edgeOperations.hashCode() : "[]");
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         LogicalGraphModify modify = new LogicalGraphModify( inputs.get( 0 ).getCluster(), traitSet, graph, catalogReader, inputs.get( 0 ), operation, nodeOperations, edgeOperations );
-        modify.edgeTable( edgeTable );
-        modify.nodeTable( nodeTable );
+        modify.setEdgeTable( edgeTable );
+        modify.setNodeTable( nodeTable );
         return modify;
     }
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities ) {
         PolyphenyDbCatalogReader catalogReader = this.catalogReader;
 
         AlgNode nodes = inputs.get( 0 );
@@ -118,6 +120,12 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
 
     private Modify getModify( AlgOptTable table, PolyphenyDbCatalogReader catalogReader, AlgNode alg ) {
         return table.unwrap( ModifiableTable.class ).toModificationAlg( alg.getCluster(), table, catalogReader, alg, operation, null, null, true );
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.MODIFY;
     }
 
 }

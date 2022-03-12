@@ -49,6 +49,12 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 
 
 /**
@@ -85,6 +91,18 @@ public interface AlgShuttle {
     AlgNode visit( LogicalExchange exchange );
 
     AlgNode visit( LogicalConditionalExecute lce );
+
+    AlgNode visit( LogicalGraphModify modify );
+
+    AlgNode visit( LogicalGraphScan scan );
+
+    AlgNode visit( LogicalGraphValues values );
+
+    AlgNode visit( LogicalGraphFilter filter );
+
+    AlgNode visit( LogicalGraphMatch match );
+
+    AlgNode visit( LogicalGraphProject project );
 
     AlgNode visit( AlgNode other );
 

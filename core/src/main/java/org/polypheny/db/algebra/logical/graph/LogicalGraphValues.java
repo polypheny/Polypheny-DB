@@ -33,8 +33,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
@@ -43,7 +45,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 @Getter
-public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
+public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
 
     public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.BIGINT );
     public static final BasicPolyType NODE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.NODE );
@@ -58,7 +60,7 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
      * @param cluster
      * @param traitSet
      */
-    public LogicalGraphPattern( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, AlgDataType rowType ) {
+    public LogicalGraphValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, AlgDataType rowType ) {
         super( cluster, traitSet );
         this.nodes = ImmutableList.copyOf( nodes );
         this.edges = ImmutableList.copyOf( edges );
@@ -67,7 +69,7 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
     }
 
 
-    public static LogicalGraphPattern create(
+    public static LogicalGraphValues create(
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
             List<Pair<String, PolyNode>> nodes,
@@ -90,7 +92,7 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
 
         AlgRecordType rowType = new AlgRecordType( fields );
 
-        return new LogicalGraphPattern( cluster, traitSet, Pair.right( nodes ), Pair.right( rels ), rowType );
+        return new LogicalGraphValues( cluster, traitSet, Pair.right( nodes ), Pair.right( rels ), rowType );
 
     }
 
@@ -102,13 +104,13 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
         AlgDataTypeFactory typeFactory = getCluster().getTypeFactory();
 
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder() );
 
-        AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1, -1 );
+        /*AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1, 1 );
         AlgDataTypeField id = new AlgDataTypeFieldImpl( "_id", 0, ID_TYPE );
         AlgDataTypeField node = new AlgDataTypeFieldImpl( "_node", 1, NODE_TYPE );
         AlgDataTypeField edge = new AlgDataTypeFieldImpl( "_edge", 1, EDGE_TYPE );
@@ -117,24 +119,28 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
         AlgDataTypeField rId = new AlgDataTypeFieldImpl( "_r_id_", 4, ID_TYPE );
 
         AlgRecordType nodeRowType = new AlgRecordType( Arrays.asList( id, node, labels ) );
-        AlgRecordType edgeRowType = new AlgRecordType( Arrays.asList( id, edge, labels, lId, rId ) );
+        AlgRecordType edgeRowType = new AlgRecordType( Arrays.asList( id, edge, labels, lId, rId ) );*/
 
-        LogicalValues nodeValues = new LogicalValues( cluster, out, nodeRowType, getNodeValues( nodes, arrayType ) );
+        LogicalValues nodeValues = new LogicalValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes, typeFactory ) );
         if ( edges.isEmpty() ) {
             return List.of( nodeValues );
         }
-        LogicalValues edgeValues = new LogicalValues( cluster, out, edgeRowType, getEdgeValues( edges, arrayType ) );
+        assert entities.size() == 2 && entities.get( 1 ) != null;
+        LogicalValues edgeValues = new LogicalValues( cluster, out, entities.get( 1 ).getRowType(), getEdgeValues( edges, typeFactory ) );
         return Arrays.asList( nodeValues, edgeValues );
     }
 
 
-    private ImmutableList<ImmutableList<RexLiteral>> getNodeValues( ImmutableList<PolyNode> nodes, AlgDataType arrayType ) {
+    private ImmutableList<ImmutableList<RexLiteral>> getNodeValues( ImmutableList<PolyNode> nodes, AlgDataTypeFactory typeFactory ) {
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyNode node : nodes ) {
             ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
             row.add( new RexLiteral( new BigDecimal( node.id ), ID_TYPE, PolyType.BIGINT ) );
             row.add( new RexLiteral( node, NODE_TYPE, PolyType.NODE ) );
-            row.add( new RexLiteral( node.getRexLabels(), arrayType, PolyType.ARRAY ) );
+
+            PolyList<RexLiteral> labels = node.getRexLabels();
+            AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), labels.size(), 1 );
+            row.add( new RexLiteral( labels, arrayType, PolyType.ARRAY ) );
             rows.add( row.build() );
         }
 
@@ -142,12 +148,16 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
     }
 
 
-    private ImmutableList<ImmutableList<RexLiteral>> getEdgeValues( ImmutableList<PolyEdge> edges, AlgDataType arrayType ) {
+    private ImmutableList<ImmutableList<RexLiteral>> getEdgeValues( ImmutableList<PolyEdge> edges, AlgDataTypeFactory typeFactory ) {
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyEdge edge : edges ) {
             ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
             row.add( new RexLiteral( new BigDecimal( edge.id ), ID_TYPE, PolyType.BIGINT ) );
             row.add( new RexLiteral( edge, EDGE_TYPE, PolyType.EDGE ) );
+
+            PolyList<RexLiteral> labels = edge.getRexLabels();
+            AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), labels.size(), 1 );
+
             row.add( new RexLiteral( edge.getRexLabels(), arrayType, PolyType.ARRAY ) );
             row.add( new RexLiteral( new BigDecimal( edge.leftId ), ID_TYPE, PolyType.BIGINT ) );
             row.add( new RexLiteral( new BigDecimal( edge.rightId ), ID_TYPE, PolyType.BIGINT ) );
@@ -155,6 +165,12 @@ public class LogicalGraphPattern extends AbstractAlgNode implements GraphAlg, Re
         }
 
         return rows.build();
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.VALUES;
     }
 
 }

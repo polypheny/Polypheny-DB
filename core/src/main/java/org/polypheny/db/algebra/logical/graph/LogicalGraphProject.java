@@ -16,14 +16,20 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class LogicalGraphProject extends SingleAlg implements GraphAlg {
@@ -49,8 +55,33 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
 
 
     @Override
+    protected AlgDataType deriveRowType() {
+        List<AlgDataTypeField> fields = new ArrayList<>();
+        int i = 0;
+        for ( Pair<String, ? extends RexNode> pair : Pair.zip( names, projects ) ) {
+            fields.add( new AlgDataTypeFieldImpl( pair.left, i, pair.right.getType() ) );
+            i++;
+        }
+
+        return new AlgRecordType( fields );
+    }
+
+
+    @Override
     public String algCompareString() {
         return "$" + getClass().getSimpleName() + "$" + projects.hashCode();
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.PROJECT;
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalGraphProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), projects, names );
     }
 
 }

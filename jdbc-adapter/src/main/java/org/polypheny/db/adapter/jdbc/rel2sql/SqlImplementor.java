@@ -578,6 +578,9 @@ public abstract class SqlImplementor {
                         case ARRAY:
                             List<SqlNode> array = literal.getRexList().stream().map( e -> toSql( program, e ) ).collect( Collectors.toList() );
                             return SqlLiteral.createArray( array, literal.getType(), POS );
+                        case GRAPH:
+                            // node or edge
+                            return SqlLiteral.createCharString( literal.getValueAs( String.class ), POS );
                         case ANY:
                         case NULL:
                             switch ( literal.getTypeName() ) {

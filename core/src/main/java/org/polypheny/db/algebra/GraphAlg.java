@@ -16,6 +16,24 @@
 
 package org.polypheny.db.algebra;
 
+import org.polypheny.db.algebra.logical.graph.LogicalGraph;
+
 public interface GraphAlg {
+
+    NodeType getNodeType();
+
+    default LogicalGraph getGraph() {
+        return null;
+    }
+
+    enum NodeType {
+        MATCH,
+        FILTER,
+        SCAN,
+        UNWIND,
+        PROJECT,
+        MODIFY,
+        VALUES
+    }
 
 }

@@ -128,6 +128,11 @@ public class PolyCollections {
                     '}';
         }
 
+
+        public boolean isEmpty() {
+            return map.isEmpty();
+        }
+
     }
 
 

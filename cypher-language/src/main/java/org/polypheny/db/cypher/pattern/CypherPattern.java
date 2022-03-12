@@ -16,7 +16,7 @@
 
 package org.polypheny.db.cypher.pattern;
 
-import org.polypheny.db.algebra.logical.graph.LogicalGraphPattern;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
@@ -36,7 +36,7 @@ public abstract class CypherPattern extends CypherNode {
     }
 
 
-    public LogicalGraphPattern getPatternValues( CypherContext context ) {
+    public LogicalGraphValues getPatternValues( CypherContext context ) {
         throw new CypherSyntaxException( "Used pattern is not supported as graph values" );
     }
 

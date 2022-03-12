@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
@@ -45,6 +46,18 @@ public class LogicalGraphMatch extends SingleAlg implements GraphAlg {
     @Override
     public String algCompareString() {
         return "$" + getClass().getSimpleName() + "$" + condition.hashCode();
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.MATCH;
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), condition );
     }
 
 }

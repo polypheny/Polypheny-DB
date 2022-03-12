@@ -63,6 +63,7 @@ import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CompositeList;
@@ -743,6 +744,10 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 assert value instanceof PolyEdge;
                 pw.print( value );
                 break;
+            case GRAPH:
+                assert value instanceof PolyGraph;
+                pw.print( value );
+                break;
             default:
                 assert valueMatchesType( value, typeName, true );
                 throw Util.needToImplement( typeName );
@@ -1071,6 +1076,21 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                     return clazz.cast( value );
                 }
                 break;
+            case NODE:
+                if ( clazz == PolyNode.class ) {
+                    return clazz.cast( value );
+                } else if ( clazz == String.class ) {
+                    return clazz.cast( new String( PolySerializer.serializeAndCompress( value ) ) );
+                }
+                break;
+            case EDGE:
+                if ( clazz == PolyEdge.class ) {
+                    return clazz.cast( value );
+                } else if ( clazz == String.class ) {
+                    return clazz.cast( new String( PolySerializer.serializeAndCompress( value ) ) );
+                }
+                break;
+
         }
         throw new AssertionError( "cannot convert " + typeName + " literal to " + clazz );
     }

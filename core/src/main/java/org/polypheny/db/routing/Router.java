@@ -17,7 +17,9 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -36,6 +38,8 @@ public interface Router {
      * Resets the routing caches, if some are used.
      */
     void resetCaches();
+
+    <T extends AlgNode & GraphAlg> AlgNode routeGraph( T alg, Statement statement );
 
 }
 

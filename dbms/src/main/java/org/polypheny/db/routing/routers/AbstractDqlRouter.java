@@ -23,6 +23,8 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.GraphAlg.NodeType;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.logical.LogicalModify;
@@ -118,6 +120,19 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                     queryInformation );
             return routedAlgBuilders;
         }
+    }
+
+
+    @Override
+    public <T extends AlgNode & GraphAlg> AlgNode routeGraph( T alg, Statement statement ) {
+        if ( alg.getInputs().size() == 1 ) {
+            routeGraph( (AlgNode & GraphAlg) alg.getInput( 0 ), statement );
+            return alg;
+        } else if ( alg.getNodeType() == NodeType.SCAN ) {
+            attachMappingsIfNecessary( alg );
+            return alg;
+        }
+        throw new UnsupportedOperationException();
     }
 
 

@@ -54,6 +54,12 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -181,6 +187,42 @@ public class AlgShuttleImpl implements AlgShuttle {
     @Override
     public AlgNode visit( LogicalConditionalExecute lce ) {
         return visitChildren( lce );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphModify modify ) {
+        return visitChildren( modify );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphScan scan ) {
+        return scan;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphValues values ) {
+        return values;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphFilter filter ) {
+        return visitChildren( filter );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphMatch match ) {
+        return visitChildren( match );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphProject project ) {
+        return visitChildren( project );
     }
 
 
