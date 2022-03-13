@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import java.util.Map;
 public interface LogicalQueryInformation {
 
     /**
-     * @return A map with tableId as key and a list of partitionIds as value.
+     * @return A map with tableScanId as key and a list of partitionIds as value.
      */
-    Map<Integer, List<Long>> getAccessedPartitions(); // tableId  -> partitionIds
+    Map<Integer, List<Long>> getAccessedPartitions(); // scanId  -> partitionIds
 
     /**
      * @return A map with columnId as key and tableId as value.

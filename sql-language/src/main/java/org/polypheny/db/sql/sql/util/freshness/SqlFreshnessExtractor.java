@@ -79,6 +79,7 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
         Timestamp requestedTimestamp = null;
 
         switch ( rawEvaluationType.toString().toUpperCase() ) {
+
             case "DELAY":
 
                 tmpEvaluationType = EvaluationType.DELAY;
@@ -112,6 +113,7 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
                 break;
 
             case "TIMESTAMP":
+
                 tmpEvaluationType = EvaluationType.TIMESTAMP;
                 requestedTimestamp = Timestamp.valueOf( ((SqlTimestampLiteral) toleratedFreshness).getValue().toString() );
 
@@ -120,12 +122,20 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
             case "PERCENTAGE":
 
                 double percentageValue = Double.valueOf( toleratedFreshness.toString() );
-                if ( percentageValue > 0.0 && percentageValue <= 100.0 ) {
+                if ( percentageValue >= 0.0 && percentageValue <= 100.0 ) {
                     tmpEvaluationType = EvaluationType.PERCENTAGE;
                     tmpFreshnessIndex = percentageValue / 100;
                 } else {
                     throw new UnsupportedFreshnessSpecificationRuntimeException( EvaluationType.PERCENTAGE, toleratedFreshness.toString() );
                 }
+                break;
+
+            case "INDEX":
+                tmpFreshnessIndex = Double.valueOf( toleratedFreshness.toString() );
+                if ( tmpFreshnessIndex < 0.0 && tmpFreshnessIndex > 100.0 ) {
+                    throw new UnsupportedFreshnessSpecificationRuntimeException( EvaluationType.PERCENTAGE, toleratedFreshness.toString() );
+                }
+                tmpEvaluationType = EvaluationType.INDEX;
                 break;
 
             default:

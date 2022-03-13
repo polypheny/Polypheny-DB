@@ -29,14 +29,24 @@ import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.processing.replication.freshness.FreshnessManager;
+import org.polypheny.db.processing.replication.freshness.FreshnessManagerImpl;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedAlgBuilder;
+import org.polypheny.db.transaction.EntityAccessMap;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.EntityAccessMap.Mode;
+import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TransactionImpl;
+import org.polypheny.db.util.DeadlockException;
 
 
 /**
@@ -64,6 +74,9 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
      * is the new to "abort" traversing the AlgNode.
      */
     protected boolean cancelQuery = false;
+
+    boolean useFreshness = false;
+    protected FreshnessManager freshnessManager = new FreshnessManagerImpl();
 
 
     /**
@@ -156,6 +169,27 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
+            // TODO @HENNLO consider using statement for information gathering on freshness or LogicalQueryInformation
+            // Consider Freshness
+            if ( statement.getTransaction().acceptsOutdated() ) {
+
+                useFreshness = provideFreshness( node, catalogTable, queryInformation, statement );
+
+                if ( useFreshness ) {
+
+                    // When Freshness has been successfully used, disable caching for this query.
+                    statement.getTransaction().setUseCache( false );
+                } else {
+
+                    // No need to select specific placements, just carry out the regular routing process.
+
+                    // Apply locking if necessary
+                    // Freshness retrieval has failed so continue with regular locking
+                    acquireLock( node, statement, queryInformation );
+                }
+
+            }
+
             // Check if table is even horizontal partitioned
             if ( catalogTable.partitionProperty.isPartitioned ) {
                 return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
@@ -190,6 +224,42 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         );
 
         return builders;
+    }
+
+
+    private boolean provideFreshness( AlgNode node, CatalogTable catalogTable, LogicalQueryInformation queryInformation, Statement statement ) {
+
+        // TODO @HENNLO get several possibilities if possible
+
+        List<CatalogPartitionPlacement> partitionPlacements = freshnessManager.getRelevantPartitionPlacements(
+                catalogTable,
+                queryInformation.getAccessedPartitions().get( node.getId() ),
+                statement.getTransaction().getFreshnessSpecification() );
+
+        return false;
+    }
+
+
+    private void acquireLock( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
+
+        // Locking needed if no valid outdated placements could be found, and we need to fall back to the primary placements
+        try {
+            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+            // Get locks for individual Entities (tables-partitions)
+            EntityAccessMap accessMap = new EntityAccessMap( node, queryInformation.getAccessedPartitions() );
+            for ( EntityIdentifier entityIdentifier : accessMap.getAccessedEntities() ) {
+                Mode mode = accessMap.getEntityAccessMode( entityIdentifier );
+
+                if ( mode == Mode.READ_ACCESS ) {
+                    LockManager.INSTANCE.lock( entityIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                }
+            }
+
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( e );
+        }
+
     }
 
 }

@@ -1565,17 +1565,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      */
     private void evaluateFreshness( AlgRoot logicalRoot ) {
 
-        // Either Check if DML operation has occured based on statement type or, active Locks.
-        // SO if there are Exclusive locks a freshnessquery cannot be executed
-
         // If DML Statement, make sure that no Freshness operation has been executed in TX yet
-        if ( logicalRoot.alg instanceof LogicalTableModify && statement.getTransaction().acceptsOutdated() )
-
         // If Query Statement && Freshness Related, make sure that no DML operation has been executed in TX yet
-        {
-            if ( statement.getTransaction().acceptsOutdated() && logicalRoot.alg instanceof LogicalTableModify ) {
-                throw new UnsupportedFreshnessOperationRuntimeException();
-            }
+        if ( statement.getTransaction().acceptsOutdated()
+                && (!statement.getTransaction().isReadOnly() || logicalRoot.alg instanceof LogicalTableModify) ) {
+
+            throw new UnsupportedFreshnessOperationRuntimeException();
         }
     }
 

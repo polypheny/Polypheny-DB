@@ -91,6 +91,9 @@ public interface Transaction {
 
     void updateAccessMode( AccessMode accessCandidate );
 
+    boolean isReadOnly();
+
+
     /**
      * Flavor, how multimedia results should be returned from a store.
      */

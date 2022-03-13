@@ -17,12 +17,20 @@
 package org.polypheny.db.processing.replication.freshness;
 
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
+import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
 
 
 public class FreshnessManagerImpl extends FreshnessManager {
+
+    Catalog catalog = Catalog.getInstance();
+
 
     @Override
     public double transformToFreshnessIndex( CatalogTable table, String s, EvaluationType evaluationType ) {
@@ -31,7 +39,39 @@ public class FreshnessManagerImpl extends FreshnessManager {
 
 
     @Override
-    public List<CatalogPartitionPlacement> getRelevantPartitionPlacements( CatalogTable table, double freshnessIndex ) {
+    public List<CatalogPartitionPlacement> getRelevantPartitionPlacements( CatalogTable table, List<Long> partitionIds, FreshnessSpecification specs ) {
+
+        List<CatalogPartitionPlacement> proposedPlacements = new ArrayList<>();
+
+        switch ( specs.getEvaluationType() ) {
+
+            case TIMESTAMP:
+            case DELAY:
+
+                proposedPlacements = handleTimestampFreshness( table, specs.getToleratedTimestamp() );
+                break;
+
+            case PERCENTAGE:
+            case INDEX:
+                proposedPlacements = handleFreshnessIndex( table, specs.getFreshnessIndex() );
+                break;
+
+            default:
+                throw new UnknownFreshnessEvaluationTypeRuntimeException( specs.getEvaluationType().toString() );
+        }
+
+        return proposedPlacements;
+    }
+
+
+    private List<CatalogPartitionPlacement> handleTimestampFreshness( CatalogTable table, Timestamp toleratedTimestamp ) {
+
+        return null;
+    }
+
+
+    private List<CatalogPartitionPlacement> handleFreshnessIndex( CatalogTable table, double freshnessIndex ) {
+
         return null;
     }
 }

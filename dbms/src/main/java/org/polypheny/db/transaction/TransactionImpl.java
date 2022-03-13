@@ -386,6 +386,12 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     }
 
+
+    @Override
+    public boolean isReadOnly() {
+        return accessMode == AccessMode.READ_ACCESS || accessMode == AccessMode.NO_ACCESS;
+    }
+
     //
     // For locking
     //

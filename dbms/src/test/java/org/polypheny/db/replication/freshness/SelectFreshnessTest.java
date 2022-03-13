@@ -26,7 +26,108 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 public class SelectFreshnessTest {
 
-    // TODO @HENNLO ADD FreshnessManage rTest
+    // TODO @HENNLO ADD FreshnessManager Test
+
+
+    @Test
+    public void testFreshnessDMLOperations() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE testfreshnessoperations( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+
+                    // DML queries cannot go through if a Freshness Query has already been executed within TX
+
+                    // Freshness Queries cannot be executed if DML operations have already been executed within TX
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE testfreshnessoperations" );
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Checks if PRIMARY and SECONDARY are correctly locked
+     */
+    @Test
+    public void testFreshnessLocking() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE testfreshnessLocking( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE testfreshnessLocking" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testFreshnessFallback() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE testfreshnessfallback( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+
+                    // Check if it falls back to primary placements
+
+                    // Gets the correct results
+
+                    // And Re-Acquires the locks on primary placements
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE testfreshnessfallback" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testGeneralFreshnessSelection() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE testfreshnesspercentage( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE testfreshnesspercentage" );
+                }
+            }
+        }
+    }
 
 
     @Test

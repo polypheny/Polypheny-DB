@@ -42,6 +42,9 @@ public class LockManager {
 
     public void lock( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier, @NonNull TransactionImpl transaction, @NonNull Lock.LockMode requestedMode ) throws DeadlockException {
 
+        //TODO @HENNLO Make sure that if we need to reacquire a lock for PRIMARY in routing
+        // We need a lever to falls back to the else part, because the TX still "acceptsOutdated"
+
         // Decide on which locking  approach to focus
         if ( transaction.acceptsOutdated() ) {
             handleSecondaryLocks( entityIdentifier, transaction, requestedMode );
@@ -101,18 +104,6 @@ public class LockManager {
             lock.release( transaction );
         }
         transaction.removeLock( lock );
-    }
-
-
-    /**
-     * Used to adjust a lock after the initial locking process if the statement can be executed using a less strict approach.
-     *
-     * @param entityIdentifier Entity Identifier of the object to be locked
-     * @return If the execution was successful
-     */
-    public boolean adjustLock( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier, @NonNull TransactionImpl transaction ) {
-        //TODO @HENNLO check validity if even allowed to adjust locks
-        return false;
     }
 
 
