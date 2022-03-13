@@ -243,9 +243,7 @@ public class CypherToAlgConverter {
                 return;
             }
             stack.add( new LogicalGraphScan( cluster, catalogReader, cluster.traitSet(), graph, new AlgRecordType(
-                    List.of(
-                            new AlgDataTypeFieldImpl( "n", 0, nodeType ),
-                            new AlgDataTypeFieldImpl( "e", 1, edgeType ) ) ) ) );
+                    List.of( new AlgDataTypeFieldImpl( "g", 0, graphType ) ) ) ) );
 
         }
 

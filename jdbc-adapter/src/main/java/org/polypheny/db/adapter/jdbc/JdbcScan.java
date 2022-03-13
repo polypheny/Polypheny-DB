@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.ModelTrait;
 
 
 /**
@@ -53,7 +54,7 @@ public class JdbcScan extends Scan implements JdbcAlg {
 
 
     protected JdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
-        super( cluster, cluster.traitSetOf( jdbcConvention ), table );
+        super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), table );
         this.jdbcTable = jdbcTable;
         assert jdbcTable != null;
     }

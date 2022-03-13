@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.plan.AlgOptRule;
@@ -39,7 +40,8 @@ public class GraphToEnumerableRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         LogicalGraphProject project = call.alg( 0 );
         AlgTraitSet out = project.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), out, project.getInput(), project.getProjects(), project.getRowType() );
+        AlgNode input = AlgOptRule.convert( project.getInput(), EnumerableConvention.INSTANCE );
+        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), out, input, project.getProjects(), project.getRowType() );
         call.transformTo( enumerableProject );
     }
 

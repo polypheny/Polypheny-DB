@@ -79,7 +79,7 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     }
 
 
-    public static class PolyRelationshipSerializer extends Serializer<PolyEdge> {
+    public static class PolyEdgeSerializer extends Serializer<PolyEdge> {
 
         @Override
         public void write( Kryo kryo, Output output, PolyEdge object ) {

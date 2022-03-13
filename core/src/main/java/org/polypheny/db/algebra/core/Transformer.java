@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -50,8 +51,25 @@ public class Transformer extends AbstractAlgNode {
 
 
     @Override
+    public void childrenAccept( AlgVisitor visitor ) {
+        int i = 0;
+        for ( AlgNode input : inputs ) {
+            visitor.visit( input, i, this );
+            i++;
+        }
+    }
+
+
+    @Override
+    public void replaceInput( int ordinalInParent, AlgNode p ) {
+        assert ordinalInParent < inputs.size();
+        this.inputs.set( ordinalInParent, p );
+    }
+
+
+    @Override
     public String algCompareString() {
-        return "Transformer";
+        return "Transformer#";
     }
 
 }

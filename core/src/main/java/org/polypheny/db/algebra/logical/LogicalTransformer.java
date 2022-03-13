@@ -64,7 +64,7 @@ public class LogicalTransformer extends Transformer {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, inTraitSet, outTraitSet, rowType );
+        return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, inTraitSet, traitSet, rowType );
     }
 
 
@@ -73,7 +73,7 @@ public class LogicalTransformer extends Transformer {
         AlgWriter writer = super.explainTerms( pw );
         int i = 0;
         for ( AlgNode input : getInputs() ) {
-            writer.item( "input" + i, input );
+            writer.input( "input#" + i, input );
             i++;
         }
         return writer;

@@ -36,6 +36,10 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyEdge.PolyEdgeSerializer;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyNode.PolyNodeSerializer;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Collation.Coercibility;
 import org.polypheny.db.util.NlsString;
@@ -59,6 +63,8 @@ public class PolySerializer {
         kryo.register( List.class );
         kryo.register( PolyMap.class );
         kryo.register( BigDecimal.class );
+        kryo.register( PolyNode.class, new PolyNodeSerializer() );
+        kryo.register( PolyEdge.class, new PolyEdgeSerializer() );
     }
 
 

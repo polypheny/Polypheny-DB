@@ -576,11 +576,15 @@ public abstract class SqlImplementor {
                         case MAP:
                             return SqlLiteral.transformMapToBson( literal.getValueAs( Map.class ), POS );
                         case ARRAY:
-                            List<SqlNode> array = literal.getRexList().stream().map( e -> toSql( program, e ) ).collect( Collectors.toList() );
-                            return SqlLiteral.createArray( array, literal.getType(), POS );
+                            if ( dialect.supportsNestedArrays() ) {
+                                List<SqlNode> array = literal.getRexList().stream().map( e -> toSql( program, e ) ).collect( Collectors.toList() );
+                                return SqlLiteral.createArray( array, literal.getType(), POS );
+                            } else {
+                                return SqlLiteral.createCharString( literal.getValueAs( String.class ), POS );
+                            }
                         case GRAPH:
                             // node or edge
-                            return SqlLiteral.createCharString( literal.getValueAs( String.class ), POS );
+                            return SqlLiteral.createBinaryString( literal.getValueAs( byte[].class ), POS );
                         case ANY:
                         case NULL:
                             switch ( literal.getTypeName() ) {

@@ -52,12 +52,17 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.schema.QueryableTable;
@@ -276,6 +281,15 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
                         format() );
         final Expression expression = getExpression( physType );
         return implementor.result( physType, Blocks.toBlock( expression ) );
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        if ( Catalog.testMode ) {
+            return super.computeSelfCost( planner, mq ).multiplyBy( 2 );
+        }
+        return VolcanoCost.FACTORY.makeInfiniteCost();
     }
 
 }

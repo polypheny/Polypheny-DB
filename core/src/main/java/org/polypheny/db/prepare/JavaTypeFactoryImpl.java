@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.runtime.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
+import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
@@ -209,6 +210,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return GeoFunctions.Geom.class;
                 case SYMBOL:
                     return Enum.class;
+                case GRAPH:
+                    return PolyGraph.class;
                 case FILE:
                 case IMAGE:
                 case VIDEO:

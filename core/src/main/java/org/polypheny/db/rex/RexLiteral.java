@@ -36,6 +36,7 @@ package org.polypheny.db.rex;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.Gson;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigDecimal;
@@ -167,6 +168,8 @@ import org.polypheny.db.util.Util;
  * </table>
  */
 public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
+
+    private static final Gson gson = new Gson();
 
     /**
      * The value of this literal. Must be consistent with its type, as per {@link #valueMatchesType}. For example, you can't store an {@link Integer} value here just because you feel like it -- all numbers are
@@ -1074,13 +1077,15 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case ARRAY:
                 if ( clazz == List.class ) {
                     return clazz.cast( value );
+                } else if ( clazz == String.class ) {
+                    return clazz.cast( gson.toJson( ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toList() ) ) );
                 }
                 break;
             case NODE:
                 if ( clazz == PolyNode.class ) {
                     return clazz.cast( value );
-                } else if ( clazz == String.class ) {
-                    return clazz.cast( new String( PolySerializer.serializeAndCompress( value ) ) );
+                } else if ( clazz == byte[].class ) {
+                    return clazz.cast( PolySerializer.serializeAndCompress( value ) );
                 }
                 break;
             case EDGE:

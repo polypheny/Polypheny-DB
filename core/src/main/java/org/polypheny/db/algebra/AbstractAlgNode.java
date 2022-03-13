@@ -363,7 +363,7 @@ public abstract class AbstractAlgNode implements AlgNode {
         String tempDigest = computeDigest();
         assert tempDigest != null : "computeDigest() should be non-null";
 
-        this.desc = "rel#" + id + ":" + tempDigest;
+        this.desc = "alg#" + id + ":" + tempDigest;
         this.digest = tempDigest;
         return this.digest;
     }

@@ -138,6 +138,9 @@ import org.polypheny.db.type.PolyType;
  * Built-in methods.
  */
 public enum BuiltInMethod {
+    TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
+    TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
+    TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),

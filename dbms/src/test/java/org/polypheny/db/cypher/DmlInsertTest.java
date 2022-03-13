@@ -23,6 +23,12 @@ import org.polypheny.db.webui.models.Result;
 public class DmlInsertTest extends CypherTestTemplate {
 
     @Test
+    public void selectTest() {
+        Result res = execute( "MATCH (n)\nRETURN n" );
+    }
+
+
+    @Test
     public void insertNodeTest() {
         Result res = execute( "CREATE (p:Person {name: 'Max Muster'})" );
         res = execute( "MATCH (n)\nRETURN n" );

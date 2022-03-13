@@ -133,7 +133,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
+        AlgOptCost cost = super.computeSelfCost( planner, mq ).multiplyBy( .1 );
+        return cost;
     }
 
 

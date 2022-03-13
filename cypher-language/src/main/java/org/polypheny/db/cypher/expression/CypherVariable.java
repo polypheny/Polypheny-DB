@@ -21,6 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -42,7 +43,10 @@ public class CypherVariable extends CypherExpression {
         int index = node.getRowType().getFieldNames().indexOf( name );
 
         if ( index < 0 ) {
-            throw new RuntimeException( "The used variable is not known." );
+            if ( node.getRowType().getFieldList().get( 0 ).getType().getPolyType() != PolyType.GRAPH ) {
+                throw new RuntimeException( "The used variable is not known." );
+            }
+            index = 0;
         }
 
         return Pair.of(

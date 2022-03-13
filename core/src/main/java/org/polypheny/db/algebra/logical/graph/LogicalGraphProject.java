@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
@@ -46,7 +47,7 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
      * @param input Input relational expression
      */
     public LogicalGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
-        super( cluster, traits, input );
+        super( cluster, traits.replace( Convention.NONE ), input );
         assertLogicalGraphTrait( traits );
         this.projects = projects;
         this.names = names;

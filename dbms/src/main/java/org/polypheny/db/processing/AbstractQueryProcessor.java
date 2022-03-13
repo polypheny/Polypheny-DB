@@ -1105,9 +1105,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private AlgNode optimize( AlgRoot logicalRoot, Convention resultConvention ) {
         AlgNode logicalPlan = logicalRoot.alg;
 
+        ModelTrait trait = ModelTrait.GRAPH;
+        if ( logicalRoot.kind == Kind.INSERT ) {
+            trait = ModelTrait.RELATIONAL;
+        }
+
         final AlgTraitSet desiredTraits = logicalPlan.getTraitSet()
                 .replace( resultConvention )
-                .replace( ModelTrait.RELATIONAL )
+                .replace( trait )
                 .replace( algCollation( logicalPlan ) )
                 .simplify();
 

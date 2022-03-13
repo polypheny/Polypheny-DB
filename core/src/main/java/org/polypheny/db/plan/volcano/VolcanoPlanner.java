@@ -651,7 +651,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     private void provenanceRecurse( PrintWriter pw, AlgNode node, int i, Set<AlgNode> visited ) {
         Spaces.append( pw, i * 2 );
         if ( !visited.add( node ) ) {
-            pw.println( "rel#" + node.getId() + " (see above)" );
+            pw.println( "alg#" + node.getId() + " (see above)" );
             return;
         }
         pw.println( node );
@@ -1062,7 +1062,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                 ++j;
                 pw.println( "\t" + subset.getDescription() + ", best=" + ((subset.best == null)
                         ? "null"
-                        : ("rel#" + subset.best.getId())) + ", importance=" + ruleQueue.getImportance( subset ) );
+                        : ("alg#" + subset.best.getId())) + ", importance=" + ruleQueue.getImportance( subset ) );
                 assert subset.set == set;
                 for ( int k = 0; k < j; k++ ) {
                     assert !set.subsets.get( k ).getTraitSet().equals( subset.getTraitSet() );
