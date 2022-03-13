@@ -32,6 +32,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     public void insertNodeTest() {
         Result res = execute( "CREATE (p:Person {name: 'Max Muster'})" );
         res = execute( "MATCH (n)\nRETURN n" );
+        System.out.println( res );
     }
 
 

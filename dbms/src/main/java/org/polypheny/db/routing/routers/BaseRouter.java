@@ -284,7 +284,7 @@ public abstract class BaseRouter {
 
         CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodeId );
 
-        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( nodes.dataPlacements.get( 0 ) );
+        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( mapping.idNodeId );
 
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
@@ -298,7 +298,7 @@ public abstract class BaseRouter {
         alg.setNodeTable( node );
 
         CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgeId );
-        placement = Catalog.getInstance().getColumnPlacement( edges.dataPlacements.get( 0 ) );
+        placement = Catalog.getInstance().getColumnPlacement( mapping.idEdgeId );
 
         qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(

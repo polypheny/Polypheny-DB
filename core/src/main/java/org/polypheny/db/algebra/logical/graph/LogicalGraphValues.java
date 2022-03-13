@@ -99,7 +99,7 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$";
+        return "$" + getClass().getSimpleName() + "$" + nodes.hashCode() + "$" + edges.hashCode();
     }
 
 

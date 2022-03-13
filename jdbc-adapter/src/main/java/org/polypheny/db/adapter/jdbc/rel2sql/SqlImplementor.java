@@ -57,6 +57,7 @@ import java.util.Set;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.jdbc.JdbcScan;
@@ -584,7 +585,7 @@ public abstract class SqlImplementor {
                             }
                         case GRAPH:
                             // node or edge
-                            return SqlLiteral.createBinaryString( literal.getValueAs( byte[].class ), POS );
+                            return SqlLiteral.createCharString( new ByteString( literal.getValueAs( byte[].class ) ).toBase64String(), POS );
                         case ANY:
                         case NULL:
                             switch ( literal.getTypeName() ) {

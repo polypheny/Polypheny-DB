@@ -20,6 +20,7 @@ package org.polypheny.db.runtime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
@@ -71,7 +72,7 @@ public class CypherFunctions {
 
         for ( Object value : node ) {
             Object[] o = (Object[]) value;
-            nodes.add( PolySerializer.deserializeAndCompress( (String) o[1], PolyNode.class ) );
+            nodes.add( PolySerializer.deserializeAndCompress( ByteString.parseBase64( (String) o[1] ), PolyNode.class ) );
         }
 
         return Linq4j.asEnumerable( nodes );

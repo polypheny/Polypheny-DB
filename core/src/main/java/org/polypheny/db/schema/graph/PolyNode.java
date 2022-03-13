@@ -20,12 +20,12 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
 
 @Getter
 public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode> {
@@ -77,7 +77,7 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
         public PolyNode read( Kryo kryo, Input input, Class<? extends PolyNode> type ) {
             long id = (long) kryo.readClassAndObject( input );
             PolyDirectory properties = (PolyDirectory) kryo.readClassAndObject( input );
-            ImmutableList<String> labels = (ImmutableList<String>) kryo.readClassAndObject( input );
+            PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
             return new PolyNode( id, properties, labels );
         }
 

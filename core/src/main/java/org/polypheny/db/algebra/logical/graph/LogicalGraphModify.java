@@ -81,7 +81,8 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
     public String algCompareString() {
         return "$" + getClass().getSimpleName() +
                 "$" + (nodeOperations != null ? nodeOperations.hashCode() : "[]") +
-                "$" + (edgeOperations != null ? edgeOperations.hashCode() : "[]");
+                "$" + (edgeOperations != null ? edgeOperations.hashCode() : "[]") +
+                "{" + input.algCompareString() + "}";
     }
 
 

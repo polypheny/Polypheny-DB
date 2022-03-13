@@ -164,6 +164,7 @@ import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoCol
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -3674,6 +3675,11 @@ public class Crud implements InformationObserver {
                             } else {
                                 temp[counter] = o.toString();
                             }
+                            break;
+                        case "GRAPH NOT NULL":
+                        case "NODE NOT NULL":
+                        case "EDGE NOT NULL":
+                            temp[counter] = ((GraphObject) o).toJson();
                             break;
                         case "FILE":
                         case "IMAGE":

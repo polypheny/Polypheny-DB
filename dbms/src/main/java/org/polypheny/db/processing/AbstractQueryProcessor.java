@@ -73,7 +73,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.SchemaTypeVisitor;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -126,6 +125,7 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
@@ -241,7 +241,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private ProposedImplementations prepareQueryList( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubQuery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubQuery;
         boolean lock = !isSubQuery;
-        NamespaceType namespaceType = null;
 
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
         final StopWatch stopWatch = new StopWatch();
@@ -292,10 +291,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         TableUpdateVisitor visitor = new TableUpdateVisitor();
         logicalRoot.alg.accept( visitor );
         MaterializedViewManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
-
-        SchemaTypeVisitor schemaTypeVisitor = new SchemaTypeVisitor();
-        logicalRoot.alg.accept( schemaTypeVisitor );
-        namespaceType = schemaTypeVisitor.getSchemaTypes();
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Expand Views" );
@@ -444,7 +439,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             optimalNode,
                             parameterizedRoot.validatedRowType,
                             resultConvention,
-                            executionTimeMonitor, namespaceType );
+                            executionTimeMonitor,
+                            Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
                     results.add( result );
                     generatedCodes.add( preparedResult.getCode() );
                     optimalNodeList.add( optimalNode );
@@ -547,7 +543,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     preparedResult,
                     optimalRoot.kind,
                     optimalRoot.alg,
-                    optimalRoot.validatedRowType, resultConvention, executionTimeMonitor, namespaceType );
+                    optimalRoot.validatedRowType,
+                    resultConvention,
+                    executionTimeMonitor,
+                    Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
             results.set( i, result );
             generatedCodes.set( i, preparedResult.getCode() );
             optimalNodeList.set( i, optimalRoot.alg );
@@ -1105,9 +1104,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private AlgNode optimize( AlgRoot logicalRoot, Convention resultConvention ) {
         AlgNode logicalPlan = logicalRoot.alg;
 
-        ModelTrait trait = ModelTrait.GRAPH;
-        if ( logicalRoot.kind == Kind.INSERT ) {
-            trait = ModelTrait.RELATIONAL;
+        ModelTrait trait = ModelTrait.RELATIONAL;
+        if ( logicalRoot.kind != Kind.INSERT && logicalRoot.alg.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+            trait = ModelTrait.GRAPH;
         }
 
         final AlgTraitSet desiredTraits = logicalPlan.getTraitSet()

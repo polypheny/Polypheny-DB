@@ -17,8 +17,11 @@
 package org.polypheny.db.runtime;
 
 import com.drew.lang.annotations.NotNull;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -93,44 +96,46 @@ public class PolyCollections {
     }
 
 
-    public static class PolyDirectory implements Comparable<PolyDirectory> {
-
-        private final ImmutableMap<String, Comparable<?>> map;
+    public static class PolyDirectory extends HashMap<String, Object> implements Comparable<PolyDirectory> {
 
 
         public PolyDirectory( Map<String, Comparable<?>> map ) {
-            this.map = ImmutableMap.copyOf( map );
+            super( map );
         }
 
 
         @Override
         public int compareTo( @NotNull PolyDirectory directory ) {
-            if ( map.size() > directory.map.size() ) {
+            if ( size() > directory.size() ) {
                 return 1;
             }
-            if ( map.size() < directory.map.size() ) {
+            if ( size() < directory.size() ) {
                 return -1;
             }
 
-            if ( map.equals( directory.map ) ) {
+            if ( this.equals( directory ) ) {
                 return 0;
             }
 
-            return map.hashCode() >= directory.map.hashCode() ? 1 : -1;
+            return hashCode() >= directory.hashCode() ? 1 : -1;
 
         }
 
 
-        @Override
-        public String toString() {
-            return "PolyDirectory{" +
-                    "map=" + map +
-                    '}';
-        }
+        public static class PolyDirectorySerializer extends Serializer<PolyDirectory> {
+
+            @Override
+            public void write( Kryo kryo, Output output, PolyDirectory object ) {
+                kryo.writeClassAndObject( output, new HashMap<>( object ) );
+            }
 
 
-        public boolean isEmpty() {
-            return map.isEmpty();
+            @Override
+            public PolyDirectory read( Kryo kryo, Input input, Class<? extends PolyDirectory> type ) {
+                final Map<String, Comparable<?>> map = (Map<String, Comparable<?>>) kryo.readClassAndObject( input );
+                return new PolyDirectory( map );
+            }
+
         }
 
     }
