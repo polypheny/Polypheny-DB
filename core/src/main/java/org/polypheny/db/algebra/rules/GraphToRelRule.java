@@ -30,6 +30,8 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.ModelTrait;
 
 public class GraphToRelRule extends AlgOptRule {
 
@@ -80,7 +82,12 @@ public class GraphToRelRule extends AlgOptRule {
             return transformedModifies.get( 0 );
         }
 
-        return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), List.of( transformedModifies.get( 0 ), transformedModifies.get( 1 ) ), true );
+        AlgTraitSet set = modify.getTraitSet();
+        if ( call.getParents() == null ) {
+            set = set.replace( ModelTrait.RELATIONAL );
+        }
+
+        return new LogicalModifyCollect( modify.getCluster(), set, List.of( transformedModifies.get( 0 ), transformedModifies.get( 1 ) ), true );
     }
 
 

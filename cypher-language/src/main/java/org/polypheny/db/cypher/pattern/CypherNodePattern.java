@@ -18,13 +18,13 @@ package org.polypheny.db.cypher.pattern;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.util.Pair;
 
@@ -36,6 +36,7 @@ public class CypherNodePattern extends CypherPattern {
     private final List<String> labels;
     private final List<ParserPos> positions;
 
+    @Nullable
     private final CypherExpression properties;
     private final CypherExpression predicate;
 
@@ -57,12 +58,7 @@ public class CypherNodePattern extends CypherPattern {
 
 
     public Pair<String, PolyNode> getPolyNode() {
-        PolyDirectory properties;
-        if ( this.properties != null ) {
-            properties = (PolyDirectory) this.properties.getComparable();
-        } else {
-            properties = new PolyDirectory( new PolyMap<>() );
-        }
+        PolyDirectory properties = this.properties != null ? (PolyDirectory) this.properties.getComparable() : new PolyDirectory();
 
         String name = null;
         if ( variable != null ) {

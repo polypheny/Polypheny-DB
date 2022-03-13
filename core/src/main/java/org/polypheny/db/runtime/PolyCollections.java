@@ -104,6 +104,11 @@ public class PolyCollections {
         }
 
 
+        public PolyDirectory() {
+            super();
+        }
+
+
         @Override
         public int compareTo( @NotNull PolyDirectory directory ) {
             if ( size() > directory.size() ) {

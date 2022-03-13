@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher.pattern;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -78,20 +77,19 @@ public class CypherEveryPathPattern extends CypherPattern {
 
 
     private List<Pair<String, PolyEdge>> getPolyRelationships( List<PolyNode> nodes ) {
-        List<Pair<String, PolyEdge>> rels = new ArrayList<>();
-        assert nodes.size() == edges.size() + 1;
+        List<Pair<String, PolyEdge>> edges = new ArrayList<>();
+        assert nodes.size() == this.edges.size() + 1;
 
-        Iterator<CypherRelPattern> relIter = edges.iterator();
         PolyNode node = nodes.get( 0 );
         int i = 0;
-        while ( relIter.hasNext() ) {
-            i++;
-            PolyNode next = nodes.get( i );
-            rels.add( edges.get( i - 1 ).getPolyRelationship( node.id, next.id ) );
+
+        for ( CypherRelPattern edge : this.edges ) {
+            PolyNode next = nodes.get( ++i ); // next node
+            edges.add( edge.getPolyRelationship( node.id, next.id ) );
             node = next;
         }
 
-        return rels;
+        return edges;
     }
 
 

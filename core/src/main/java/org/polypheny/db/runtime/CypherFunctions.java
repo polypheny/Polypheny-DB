@@ -60,7 +60,7 @@ public class CypherFunctions {
         List<PolyEdge> edges = new ArrayList<>();
         for ( Object value : edge ) {
             Object[] o = (Object[]) value;
-            edges.add( PolySerializer.deserializeAndCompress( ((String) o[1]).getBytes(), PolyEdge.class ) );
+            edges.add( PolySerializer.deserializeAndCompress( ByteString.parseBase64( (String) o[1] ), PolyEdge.class ) );
         }
 
         return Linq4j.asEnumerable( edges );

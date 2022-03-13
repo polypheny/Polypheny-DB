@@ -1091,8 +1091,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case EDGE:
                 if ( clazz == PolyEdge.class ) {
                     return clazz.cast( value );
-                } else if ( clazz == String.class ) {
-                    return clazz.cast( new String( PolySerializer.serializeAndCompress( value ) ) );
+                } else if ( clazz == byte[].class ) {
+                    return clazz.cast( PolySerializer.serializeAndCompress( value ) );
                 }
                 break;
 

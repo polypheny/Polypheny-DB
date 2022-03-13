@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.pattern;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherPathLength;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -38,6 +39,7 @@ public class CypherRelPattern extends CypherPattern {
     private final CypherVariable variable;
     private final List<StringPos> relTypes;
     private final CypherPathLength pathLength;
+    @Nullable
     private final CypherExpression properties;
     private final CypherExpression predicate;
     private final boolean legacyTypeSeparator;
@@ -68,7 +70,7 @@ public class CypherRelPattern extends CypherPattern {
 
 
     public Pair<String, PolyEdge> getPolyRelationship( long leftId, long rightId ) {
-        PolyDirectory properties = (PolyDirectory) this.properties.getComparable();
+        PolyDirectory properties = this.properties != null ? (PolyDirectory) this.properties.getComparable() : new PolyDirectory();
         RelationshipDirection direction = left == right ? RelationshipDirection.NONE : left ? RelationshipDirection.LEFT_TO_RIGHT : RelationshipDirection.RIGHT_TO_LEFT;
         List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
 

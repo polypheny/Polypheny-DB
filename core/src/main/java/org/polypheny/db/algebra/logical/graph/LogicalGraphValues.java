@@ -21,6 +21,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -80,12 +82,12 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
         List<AlgDataTypeField> fields = new ArrayList<>();
 
         int i = 0;
-        for ( String name : Pair.left( nodes ) ) {
+        for ( String name : Pair.left( nodes ).stream().filter( Objects::nonNull ).collect( Collectors.toList() ) ) {
             fields.add( new AlgDataTypeFieldImpl( name, i, nodeType ) );
             i++;
         }
 
-        for ( String name : Pair.left( rels ) ) {
+        for ( String name : Pair.left( rels ).stream().filter( Objects::nonNull ).collect( Collectors.toList() ) ) {
             fields.add( new AlgDataTypeFieldImpl( name, i, relType ) );
             i++;
         }
