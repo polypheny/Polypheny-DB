@@ -269,7 +269,7 @@ public class StatisticsTest {
                             statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
                             ImmutableList.of()
                     );
-                    assertStatisticsConvertTo( 720, 0 ); // normally the system is a lot faster, but in some edge-cases this seems necessary
+                    assertStatisticsConvertTo( 320, 0 ); // normally the system is a lot faster, but in some edge-cases this seems necessary
 
                     connection.commit();
                 } finally {
@@ -284,12 +284,15 @@ public class StatisticsTest {
         try {
             boolean successfull = false;
             int count = 0;
+            boolean inCatalog = true;
             while ( !successfull && count < maxSeconds ) {
                 waiter.await( 1, TimeUnit.SECONDS );
                 if ( Catalog.getInstance().getTables( new Pattern( "APP" ), new Pattern( "statisticschema" ), new Pattern( "nationdelete" ) ).size() != 1 ) {
                     count++;
+                    inCatalog = false;
                     continue;
                 }
+                inCatalog = true;
                 CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
                 Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
@@ -300,8 +303,13 @@ public class StatisticsTest {
                 count++;
             }
 
-            if ( !successfull ) {
+            if ( !successfull && inCatalog ) {
                 Assert.fail( String.format( "RowCount did not diverge to the correct number: %d.", target ) );
+            }
+
+            if ( inCatalog ) {
+                // collection was removed too fast, so the count was already removed -> returns null
+                log.warn( "Collection was already removed from the catalog, therefore the count will be null, which is correct" );
             }
 
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | InterruptedException e ) {
