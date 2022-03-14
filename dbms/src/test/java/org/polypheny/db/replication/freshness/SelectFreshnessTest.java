@@ -17,10 +17,14 @@
 package org.polypheny.db.replication.freshness;
 
 
+import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.apache.calcite.avatica.AvaticaSqlException;
+import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
@@ -30,7 +34,49 @@ public class SelectFreshnessTest {
 
 
     @Test
-    public void testFreshnessDMLOperations() throws SQLException {
+    public void testFreshnessAfterDMLOperations() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE testfreshnessoperations( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+
+                    // Freshness Queries cannot be executed if DML operations have already been executed within TX
+                    statement.executeUpdate( "INSERT INTO testfreshnessoperations VALUES ( 1 , 10, 'Foo')" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessoperations ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 10, "Foo" } ) );
+
+                    // Check if for a freshness query the TX statement aborts since a DML operation has already been executed.
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "SELECT * FROM testfreshnessoperations FRESHNESS 3 HOUR" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE testfreshnessoperations" );
+                }
+
+            }
+        }
+    }
+
+
+    @Test
+    public void testDMLAfterFreshnessOperations() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -44,12 +90,22 @@ public class SelectFreshnessTest {
                 try {
 
                     // DML queries cannot go through if a Freshness Query has already been executed within TX
+                    statement.executeUpdate( "SELECT * FROM testfreshnessoperations FRESHNESS 3 HOUR" );
 
-                    // Freshness Queries cannot be executed if DML operations have already been executed within TX
+                    // Check if for a freshness query the TX statement aborts since a DML operation has already been executed.
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "INSERT INTO testfreshnessoperations VALUES ( 1 , 10, 'Foo')" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
 
                 } finally {
                     statement.executeUpdate( "DROP TABLE testfreshnessoperations" );
                 }
+
             }
         }
     }
