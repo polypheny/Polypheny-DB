@@ -35,6 +35,7 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
+import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {
@@ -54,6 +55,8 @@ public class StatementImpl implements Statement {
     private InformationDuration routingDuration;
     private InformationDuration overviewDuration;
     private InformationPage executionTimePage;
+
+    private FreshnessSpecification freshnessSpecification;
 
     private StatementEvent statementEvent;
 
@@ -180,6 +183,22 @@ public class StatementImpl implements Statement {
     @Override
     public void registerFileInputHandle( FileInputHandle fileInputHandle ) {
         fileInputHandles.add( fileInputHandle );
+    }
+
+
+    @Override
+    public FreshnessSpecification getFreshnessSpecification() {
+        if ( this.freshnessSpecification != null ) {
+            return freshnessSpecification;
+        } else {
+            return transaction.getGlobalFreshnessSpecification();
+        }
+    }
+
+
+    @Override
+    public void setFreshnessSpecification( FreshnessSpecification freshnessSpecification ) {
+        this.freshnessSpecification = freshnessSpecification;
     }
 
 }

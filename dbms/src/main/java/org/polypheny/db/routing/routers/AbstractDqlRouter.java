@@ -171,7 +171,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             // TODO @HENNLO consider using statement for information gathering on freshness or LogicalQueryInformation
             // Consider Freshness
-            if ( statement.getTransaction().acceptsOutdated() ) {
+            if ( statement.getTransaction().acceptsOutdatedCopies() ) {
 
                 useFreshness = provideFreshness( node, catalogTable, queryInformation, statement );
 
@@ -234,7 +234,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         List<CatalogPartitionPlacement> partitionPlacements = freshnessManager.getRelevantPartitionPlacements(
                 catalogTable,
                 queryInformation.getAccessedPartitions().get( node.getId() ),
-                statement.getTransaction().getFreshnessSpecification() );
+                statement.getFreshnessSpecification() );
 
         return false;
     }

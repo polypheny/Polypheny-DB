@@ -78,4 +78,10 @@ public class JsonRelProcessorImpl extends Processor {
         throw new RuntimeException( "JsonProcessor does not support getParameterRowType!" );
     }
 
+
+    @Override
+    protected void inspectFreshness( Statement statement, Node query ) {
+        throw new RuntimeException( "JsonProcessor does not support Freshness operations yet!" );
+    }
+
 }

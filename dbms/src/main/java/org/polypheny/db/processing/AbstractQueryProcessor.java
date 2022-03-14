@@ -1567,7 +1567,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // If DML Statement, make sure that no Freshness operation has been executed in TX yet
         // If Query Statement && Freshness Related, make sure that no DML operation has been executed in TX yet
-        if ( statement.getTransaction().acceptsOutdated()
+        if ( statement.getTransaction().acceptsOutdatedCopies()
                 && (!statement.getTransaction().isReadOnly() || logicalRoot.alg instanceof LogicalTableModify) ) {
 
             throw new UnsupportedFreshnessOperationRuntimeException();

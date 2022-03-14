@@ -108,4 +108,10 @@ public class PigProcessorImpl extends Processor {
         return null;
     }
 
+
+    @Override
+    protected void inspectFreshness( Statement statement, Node query ) {
+        throw new RuntimeException( "PIGProcessor does not support Freshness operations yet!" );
+    }
+
 }

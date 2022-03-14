@@ -160,7 +160,6 @@ public class SqlProcessorImpl extends Processor {
         validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
         validator.setIdentifierExpansion( true );
 
-        inspectFreshness( transaction, parsed );
 
         Node validated;
         AlgDataType type;
@@ -191,6 +190,8 @@ public class SqlProcessorImpl extends Processor {
             log.debug( "Planning Statement ..." );
         }
         stopWatch.start();
+
+        inspectFreshness( statement, query );
 
         Config sqlToAlgConfig = NodeToAlgConverter.configBuilder().build();
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
@@ -436,14 +437,15 @@ public class SqlProcessorImpl extends Processor {
     }
 
 
-    private void inspectFreshness( Transaction transaction, Node parsed ) {
-        if ( parsed.getKind() == Kind.SELECT && ((SqlSelect) parsed).getFreshness() != null ) {
-            extractFreshness( transaction, (SqlSelect) parsed );
+    @Override
+    protected void inspectFreshness( Statement statement, Node query ) {
+        if ( query.getKind() == Kind.SELECT && ((SqlSelect) query).getFreshness() != null ) {
+            extractFreshness( statement, (SqlSelect) query );
         }
     }
 
 
-    private void extractFreshness( Transaction transaction, SqlSelect select ) {
+    private void extractFreshness( Statement statement, SqlSelect select ) {
 
         // TODO @HENNLO Check that no DML had already been executed when accepting this query.
         // Maybe do this and the evaluation later in AbstractQueryProcessor
@@ -458,7 +460,8 @@ public class SqlProcessorImpl extends Processor {
 
             // Adjusts scope of transaction to accept outdated data within
             // At the same time the usage of DMLs is now permitted
-            transaction.setFreshnessSpecification( freshnessExtractor.extractFreshnessSpecification() );
+            statement.setFreshnessSpecification( freshnessExtractor.extractFreshnessSpecification() );
+            statement.getTransaction().setAcceptsOutdatedCopies( true );
 
             // TODO @HENNLO attach freshnessSpecification to Statement not to TX alone
 

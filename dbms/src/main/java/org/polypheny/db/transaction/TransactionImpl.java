@@ -97,8 +97,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
 
-    private boolean acceptsOutdated = false;
-    private FreshnessSpecification freshnessSpecification;
+    private boolean acceptsOutdatedCopies = false;
+    // Necessary if no query individual freshness has been specified but one that is valid for an entire transaction.
+    // E.g. since it might be used for referential integrity
+    private FreshnessSpecification globalFreshnessSpecification;
 
     private AccessMode accessMode = AccessMode.NO_ACCESS;
 
@@ -326,27 +328,27 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
      * This TX can now support no more freshness-related queries.
      */
     @Override
-    public void setAcceptsOutdated( boolean acceptsOutdated ) {
-        this.acceptsOutdated = acceptsOutdated;
+    public void setAcceptsOutdatedCopies( boolean acceptsOutdatedCopies ) {
+        this.acceptsOutdatedCopies = acceptsOutdatedCopies;
     }
 
 
     @Override
-    public boolean acceptsOutdated() {
-        return this.acceptsOutdated;
+    public boolean acceptsOutdatedCopies() {
+        return this.acceptsOutdatedCopies;
     }
 
 
     @Override
-    public FreshnessSpecification getFreshnessSpecification() {
-        return freshnessSpecification;
+    public FreshnessSpecification getGlobalFreshnessSpecification() {
+        return globalFreshnessSpecification;
     }
 
 
     @Override
-    public void setFreshnessSpecification( FreshnessSpecification freshnessSpecification ) {
-        this.freshnessSpecification = freshnessSpecification;
-        setAcceptsOutdated( true );
+    public void setGlobalFreshnessSpecification( FreshnessSpecification globalFreshnessSpecification ) {
+        this.globalFreshnessSpecification = globalFreshnessSpecification;
+        setAcceptsOutdatedCopies( true );
     }
 
 

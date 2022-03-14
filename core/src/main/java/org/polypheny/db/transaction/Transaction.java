@@ -79,13 +79,13 @@ public interface Transaction {
 
     boolean getUseCache();
 
-    void setAcceptsOutdated( boolean acceptsOutdated );
+    void setAcceptsOutdatedCopies( boolean acceptsOutdatedCopies );
 
-    boolean acceptsOutdated();
+    boolean acceptsOutdatedCopies();
 
-    FreshnessSpecification getFreshnessSpecification();
+    FreshnessSpecification getGlobalFreshnessSpecification();
 
-    void setFreshnessSpecification( FreshnessSpecification freshnessSpecification );
+    void setGlobalFreshnessSpecification( FreshnessSpecification globalFreshnessSpecification );
 
     AccessMode getAccessMode();
 

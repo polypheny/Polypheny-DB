@@ -46,7 +46,7 @@ public class LockManager {
         // We need a lever to falls back to the else part, because the TX still "acceptsOutdated"
 
         // Decide on which locking  approach to focus
-        if ( transaction.acceptsOutdated() ) {
+        if ( transaction.acceptsOutdatedCopies() ) {
             handleSecondaryLocks( entityIdentifier, transaction, requestedMode );
         } else {
             handlePrimaryLocks( entityIdentifier, transaction, requestedMode );
@@ -56,7 +56,7 @@ public class LockManager {
 
 
     /**
-     * Used in traditional transactional workload to lck all entities that will eagerly receive any update
+     * Used in traditional transactional workload to lock all entities that will eagerly receive any update
      */
     private void handlePrimaryLocks( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier, @NonNull TransactionImpl transaction, @NonNull Lock.LockMode requestedMode ) throws DeadlockException {
         lockTable.putIfAbsent( entityIdentifier, new Lock( waitForGraph ) );
