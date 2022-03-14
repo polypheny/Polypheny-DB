@@ -17,9 +17,6 @@
 package org.polypheny.db.monitoring.statistics;
 
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeSupport;
@@ -36,10 +33,8 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -109,18 +104,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
     private int buffer = RuntimeConfig.STATISTIC_BUFFER.getInteger();
-
-    final LoadingCache<Pair<QueryResult, NodeType>, AlgNode> CACHE = CacheBuilder
-            .newBuilder()
-            .maximumSize( 1000 )
-            .expireAfterAccess( 10, TimeUnit.MINUTES )
-            .build( new CacheLoader<>() {
-                @Override
-                public AlgNode load( Pair<QueryResult, NodeType> res ) {
-                    return getQueryNode( res.left, res.right );
-                }
-            } );
-
 
     @Setter
     @Getter
@@ -544,14 +527,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
         if ( Catalog.getInstance().checkIfExistsTable( queryResult.getTableId() ) ) {
 
-            AlgNode queryNode;
-            // check cache
-            try {
-                queryNode = CACHE.get( Pair.of( queryResult, nodeType ) );
-            } catch ( ExecutionException e ) {
-                log.warn( "Error on statistic query retrieval." );
-                return null;
-            }
+            AlgNode queryNode = getQueryNode( queryResult, nodeType );
+
             //queryNode = getQueryNode( queryResult, nodeType );
             statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
         }
