@@ -39,13 +39,18 @@ public class CypherTestTemplate {
     public static void start() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
-        createData();
+        createSchema();
     }
 
 
-    private static void createData() {
-        Result res = execute( "CREATE DATABASE test" );
-        res = execute( "USE GRAPH test" );
+    public static void createSchema() {
+        execute( "CREATE DATABASE test" );
+        execute( "USE GRAPH test" );
+    }
+
+
+    public static void createData() {
+
     }
 
 
@@ -56,7 +61,7 @@ public class CypherTestTemplate {
 
 
     private static void deleteData() {
-        execute( "DROP DATABASE test" );
+        execute( "DROP DATABASE test IF EXISTS" );
     }
 
 
@@ -133,6 +138,21 @@ public class CypherTestTemplate {
         }
 
         return contains;
+    }
+
+
+    public boolean emptyNodes( Result res ) {
+        return containsNodes( res, true );
+    }
+
+
+    public boolean emptyEdges( Result res ) {
+        return containsEdges( res, true );
+    }
+
+
+    public Result matchAndReturnN() {
+        return execute( "MATCH (n) RETURN n" );
     }
 
 }

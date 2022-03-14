@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.cypher2alg;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -28,6 +29,7 @@ import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
@@ -86,7 +88,6 @@ public class CypherToAlgConverter {
         CypherContext context = new CypherContext( query, graph, cluster, algBuilder, rexBuilder, catalogReader );
 
         convertQuery( query, context );
-
 
         return AlgRoot.of( context.build(), context.kind );
     }
@@ -151,7 +152,20 @@ public class CypherToAlgConverter {
         for ( CypherPattern pattern : clause.getPatterns() ) {
             convertPattern( pattern, context );
         }
-        context.add( new LogicalGraphModify( cluster, cluster.traitSet(), context.graph, catalogReader, context.pop(), Operation.INSERT, null, null ) );
+
+        AlgNode node = context.pop();
+        if ( !context.stack.isEmpty() ) {
+            // multiple patternValues, which need to be merged into one "graph"
+            List<AlgNode> nodes = new ArrayList<>();
+            nodes.add( node );
+            while ( !context.stack.isEmpty() ) {
+                nodes.add( context.pop() );
+            }
+            assert nodes.stream().allMatch( n -> n instanceof LogicalGraphValues );
+            node = LogicalGraphValues.merge( nodes.stream().map( n -> (LogicalGraphValues) n ).collect( Collectors.toList() ) );
+        }
+
+        context.add( new LogicalGraphModify( cluster, cluster.traitSet(), context.graph, catalogReader, node, Operation.INSERT, null, null ) );
     }
 
 

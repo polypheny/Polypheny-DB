@@ -29,9 +29,9 @@ public class MatchTest extends CypherTestTemplate {
     ///////////////////////////////////////////////
     @Test
     public void simpleMatchTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (n)\n" +
-                        "RETURN n" );
+        Result res = execute( "MATCH (n)\nRETURN n" );
+        assert emptyEdges( res );
+        assert emptyNodes( res );
 
     }
 

@@ -17,6 +17,8 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
@@ -26,25 +28,44 @@ import org.polypheny.db.webui.models.Result;
 
 public class DmlInsertTest extends CypherTestTemplate {
 
+    @Before
+    public void reset() {
+        tearDown();
+        createSchema();
+    }
+
+
     @Test
-    public void selectTest() {
-        Result res = execute( "MATCH (n)\nRETURN n" );
+    public void insertEmptyNode() {
+        execute( "CREATE (p)" );
+        Result res = matchAndReturnN();
+        assert containsNodes( res, true, TestNode.from( List.of() ) );
+        assert emptyEdges( res );
     }
 
 
     @Test
     public void insertNodeTest() {
         execute( "CREATE (p:Person {name: 'Max Muster'})" );
-        Result res = execute( "MATCH (n)\nRETURN n" );
-        assert containsNodes( res, true,
-                TestNode.from( Pair.of( "name", "Max Muster" ) ) );
+        Result res = matchAndReturnN();
+        assert containsNodes( res, true, TestNode.from( Pair.of( "name", "Max Muster" ) ) );
+        assert emptyEdges( res );
+    }
+
+
+    @Test
+    public void insertMultipleNodesTest() {
+        execute( "CREATE (p),(n),(m)" );
+        Result res = matchAndReturnN();
+        assert containsNodes( res, true, TestNode.from(), TestNode.from(), TestNode.from() );
+        assert emptyEdges( res );
     }
 
 
     @Test
     public void insertPropertyTypeTest() {
         execute( "CREATE (p:Person {name: 'Max Muster', age: 13, height: 185.3, nicknames: [\"Maxi\",\"Musti\"]})" );
-        Result res = execute( "MATCH (n)\nRETURN n" );
+        Result res = matchAndReturnN();
         assert containsNodes( res, true,
                 TestNode.from(
                         Pair.of( "name", "Max Muster" ),
@@ -56,6 +77,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
+    @Ignore
     public void insertReturnNodeTest() {
         Result res = execute(
                 "CREATE (p:Person {name: 'Max Muster'})\n"
@@ -66,7 +88,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertSingleHopPathTest() {
         execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
-        Result res = execute( "MATCH (n) RETURN n" );
+        Result res = matchAndReturnN();
         assert containsNodes( res, true,
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
                 TestNode.from(
@@ -81,7 +103,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertMultipleHopPathTest() {
         execute( "CREATE (n:Person)-[f:FRIEND_OF]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})" );
-        Result res = execute( "MATCH (n) RETURN n" );
+        Result res = matchAndReturnN();
         assert containsNodes( res, true,
                 TestNode.from( List.of( "Person" ) ),
                 TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
@@ -93,6 +115,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
+    @Ignore
     public void insertAdditionalRelationshipTest() {
         Result createPerson = CypherConnection.executeGetResponse(
                 "CREATE (p:Person {name: 'Max'})" );

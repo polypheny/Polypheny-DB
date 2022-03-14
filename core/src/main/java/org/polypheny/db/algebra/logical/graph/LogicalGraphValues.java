@@ -166,4 +166,14 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
         return NodeType.VALUES;
     }
 
+
+    public static LogicalGraphValues merge( List<LogicalGraphValues> values ) {
+        return new LogicalGraphValues(
+                values.get( 0 ).getCluster(),
+                values.get( 0 ).getTraitSet(),
+                values.stream().flatMap( v -> v.nodes.stream() ).collect( Collectors.toList() ),
+                values.stream().flatMap( v -> v.edges.stream() ).collect( Collectors.toList() ),
+                new AlgRecordType( values.stream().flatMap( v -> v.rowType.getFieldList().stream() ).collect( Collectors.toList() ) ) );
+    }
+
 }
