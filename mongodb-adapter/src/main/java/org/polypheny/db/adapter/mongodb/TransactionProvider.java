@@ -141,7 +141,6 @@ public class TransactionProvider {
     public ClientSession getSession( PolyXid xid ) {
         if ( !sessions.containsKey( xid ) ) {
             startTransaction( xid );
-            log.warn( "new one" );
         }
         return sessions.get( xid );
     }

@@ -269,7 +269,7 @@ public class StatisticsTest {
                             statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
                             ImmutableList.of()
                     );
-                    assertStatisticsConvertTo( 360, 0 );
+                    assertStatisticsConvertTo( 720, 0 ); // normally the system is a lot faster, but in some edge-cases this seems necessary
 
                     connection.commit();
                 } finally {
