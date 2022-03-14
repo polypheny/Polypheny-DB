@@ -81,7 +81,7 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         try {
-            List<DataStore> dataStores = stores
+            List<DataStore> dataStores = getStores()
                     .stream()
                     .map( store -> (DataStore) adapterManager.getAdapter( store ) )
                     .collect( Collectors.toList() );
@@ -97,6 +97,21 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
         } catch ( TableAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException | UnknownColumnException | PartitionGroupNamesNotUniqueException e ) {
             throw new RuntimeException( "The generation of the collection was not possible, due to: " + e.getMessage() );
         }
+    }
+
+
+    private List<String> getStores() {
+        if ( options != null ) {
+            if ( options.containsKey( "stores" ) ) {
+                assert options.isArray( "stores" );
+                return options.getArray( "stores" ).stream().map( s -> s.asString().getValue() ).collect( Collectors.toList() );
+            }
+            if ( options.containsKey( "store" ) ) {
+                assert options.isString( "store" );
+                return List.of( options.getString( "store" ).getValue() );
+            }
+        }
+        return List.of();
     }
 
 }

@@ -16,11 +16,8 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import lombok.Setter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.algebra.constant.Kind;
@@ -35,14 +32,6 @@ public abstract class MqlNode implements Node {
 
     @Getter
     protected final ParserPos pos;
-
-    @Getter
-    @Setter
-    List<String> stores = new ArrayList<>();
-
-    @Setter
-    @Getter
-    List<String> primary = new ArrayList<>();
 
 
     @Override

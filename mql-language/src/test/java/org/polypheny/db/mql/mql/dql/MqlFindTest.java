@@ -41,8 +41,6 @@ public class MqlFindTest extends MqlTest {
     private void defaultTests( MqlNode parsed ) {
         assert (parsed.getMqlKind() == Type.FIND);
         assert (parsed.getLanguage() == QueryLanguage.MONGO_QL);
-        assert (parsed.getPrimary().isEmpty());
-        assert (parsed.getStores().isEmpty());
     }
 
 

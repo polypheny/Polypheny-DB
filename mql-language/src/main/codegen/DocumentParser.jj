@@ -417,12 +417,10 @@ MqlNode Db_Statement():
     (
         <CREATE_COLLECTION> name = Literal() [<COMMA> doc = Document()  ]")"
         {n = new MqlCreateCollection(getPos(), name, doc);}
-        (Details(n))* (Primary(n))*
 
     |
         <GET_COLLECTION> name = Literal() ")"
         < DOT > n = Collection_Statement(name)
-        (Details(n))* (Primary(n))*
 
     |
         <CREATE_VIEW> name = Literal() < COMMA > source = Literal() (< COMMA > array=Array() )? ")"
@@ -825,23 +823,4 @@ String Literal():
     t=<IDENTIFIER>
     )
     {return t.image;}
-}
-
-
-void Details( MqlNode node ):
-{
-    List<String> stores = new ArrayList();
-}
-{
-    ".store(" Literal_List(stores) < EOB >
-    {node.setStores(stores);}
-}
-
-void Primary( MqlNode node ):
-{
-    List<String> cols = new ArrayList();
-}
-{
-    ".primary(" Literal_List(cols) < EOB >
-    {node.setPrimary( cols );}
 }
