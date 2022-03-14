@@ -89,14 +89,14 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
             this.max = val;
         }
 
-        if ( minCache.last().compareTo( val ) > 0 ) {
+        if ( !minCache.isEmpty() && minCache.last().compareTo( val ) > 0 ) {
             if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 minCache.remove( minCache.last() );
             }
             minCache.add( val );
         }
 
-        if ( maxCache.first().compareTo( val ) < 0 ) {
+        if ( !maxCache.isEmpty() && maxCache.first().compareTo( val ) < 0 ) {
             if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 maxCache.remove( maxCache.first() );
             }

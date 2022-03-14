@@ -413,6 +413,11 @@ public abstract class DockerManager {
             return physicalUniqueName.split( "_" )[0];
         }
 
+
+        public List<ExposedPort> getInternalPorts() {
+            return internalExternalPortMapping.keySet().stream().map( ExposedPort::tcp ).collect( Collectors.toList() );
+        }
+
     }
 
 }

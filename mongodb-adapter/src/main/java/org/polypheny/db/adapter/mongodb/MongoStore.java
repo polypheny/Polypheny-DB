@@ -141,7 +141,7 @@ public class MongoStore extends DataStore {
         MongoClientSettings mongoSettings = MongoClientSettings
                 .builder()
                 .applyToClusterSettings( builder ->
-                        builder.hosts( Collections.singletonList( new ServerAddress( c.getHost() ) ) )
+                        builder.hosts( Collections.singletonList( new ServerAddress( c.getHost(), port ) ) )
                 )
                 .build();
 

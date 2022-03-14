@@ -27,6 +27,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
+import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig.Builder;
@@ -351,9 +352,10 @@ public class DockerInstance extends DockerManager {
                 .withName( Container.getPhysicalUniqueName( container ) )
                 .withCmd( container.initCommands )
                 .withEnv( container.envCommands )
-                .withExposedPorts( container.getExposedPorts() );
+                //.withExposedPorts( container.getExposedPorts() )
+                .withHostConfig( HostConfig.newHostConfig().withPortBindings( bindings ) );
 
-        Objects.requireNonNull( cmd.getHostConfig() ).withPortBindings( bindings );
+        //Objects.requireNonNull( cmd.getHostConfig() ).withPortBindings( bindings );
         CreateContainerResponse response = cmd.exec();
         container.setContainerId( response.getId() );
     }
@@ -449,7 +451,7 @@ public class DockerInstance extends DockerManager {
         container.setStatus( ContainerStatus.DESTROYED );
 
         usedNames.remove( container.uniqueName );
-        usedPorts.removeAll( container.getExposedPorts().stream().map( ExposedPort::getPort ).collect( Collectors.toList() ) );
+        usedPorts.removeAll( container.internalExternalPortMapping.values() );
         List<String> adapterContainers = containersOnAdapter
                 .get( container.adapterId )
                 .stream()
