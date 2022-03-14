@@ -18,7 +18,6 @@ package org.polypheny.db.schema.graph;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 
 @Getter
@@ -26,13 +25,11 @@ public abstract class GraphObject {
 
     private static Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
 
-    public final long id;
+    public final String id;
     public final GraphObjectType type;
 
-    protected static final AtomicLong idBuilder = new AtomicLong();
 
-
-    protected GraphObject( long id, GraphObjectType type ) {
+    protected GraphObject( String id, GraphObjectType type ) {
         this.id = id;
         this.type = type;
     }

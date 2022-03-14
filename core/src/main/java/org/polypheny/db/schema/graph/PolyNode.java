@@ -21,6 +21,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.runtime.PolyCollections;
@@ -32,11 +33,11 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
 
 
     public PolyNode( @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
-        this( idBuilder.getAndIncrement(), properties, labels );
+        this( UUID.randomUUID().toString(), properties, labels );
     }
 
 
-    public PolyNode( long id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
+    public PolyNode( String id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
         super( id, GraphObjectType.NODE, properties, labels );
     }
 
@@ -75,7 +76,7 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
 
         @Override
         public PolyNode read( Kryo kryo, Input input, Class<? extends PolyNode> type ) {
-            long id = (long) kryo.readClassAndObject( input );
+            String id = (String) kryo.readClassAndObject( input );
             PolyDirectory properties = (PolyDirectory) kryo.readClassAndObject( input );
             PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
             return new PolyNode( id, properties, labels );

@@ -73,7 +73,7 @@ public class CypherLiteral extends CypherExpression {
         super( pos );
         this.literalType = literalType;
         if ( literalType == Literal.DECIMAL ) {
-            this.value = Float.parseFloat( image ) * (negated ? -1 : 1);
+            this.value = Integer.parseInt( image ) * (negated ? -1 : 1);
         } else if ( (literalType == Literal.DOUBLE) ) {
             this.value = Double.parseDouble( image ) * (negated ? -1 : 1);
         } else {
@@ -108,7 +108,7 @@ public class CypherLiteral extends CypherExpression {
             case DOUBLE:
                 return (Double) value;
             case DECIMAL:
-                return (Float) value;
+                return (Integer) value;
             case HEX:
                 return (String) value;
             case OCTAL:

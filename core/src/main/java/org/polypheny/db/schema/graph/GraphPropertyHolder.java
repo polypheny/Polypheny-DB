@@ -37,7 +37,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
     public final PolyList<String> labels;
 
 
-    public GraphPropertyHolder( long id, GraphObjectType type, PolyDirectory properties, List<String> labels ) {
+    public GraphPropertyHolder( String id, GraphObjectType type, PolyDirectory properties, List<String> labels ) {
         super( id, type );
         this.properties = properties;
         this.labels = new PolyList<>( labels );

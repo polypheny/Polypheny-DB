@@ -21,6 +21,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.runtime.PolyCollections;
@@ -30,33 +31,33 @@ import org.polypheny.db.runtime.PolyCollections.PolyList;
 @Getter
 public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge> {
 
-    public final long leftId;
-    public final long rightId;
+    public final String source;
+    public final String target;
     public final RelationshipDirection direction;
 
 
-    public PolyEdge( @NonNull PolyCollections.PolyDirectory properties, List<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
-        this( idBuilder.getAndIncrement(), properties, labels, leftId, rightId, direction );
+    public PolyEdge( @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, RelationshipDirection direction ) {
+        this( UUID.randomUUID().toString(), properties, labels, source, target, direction );
     }
 
 
-    public PolyEdge( long id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels, long leftId, long rightId, RelationshipDirection direction ) {
+    public PolyEdge( String id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, RelationshipDirection direction ) {
         super( id, GraphObjectType.RELATIONSHIP, properties, labels );
-        this.leftId = leftId;
-        this.rightId = rightId;
+        this.source = source;
+        this.target = target;
         this.direction = direction;
     }
 
 
     @Override
     public int compareTo( PolyEdge other ) {
-        if ( leftId < other.leftId || rightId < other.rightId ) {
-            return -1;
+        int left = source.compareTo( other.source );
+        int right = target.compareTo( other.target );
+        int diff = left + right;
+        if ( diff == 0 ) {
+            return this.getProperties().compareTo( other.getProperties() );
         }
-        if ( leftId > other.rightId || rightId > other.rightId ) {
-            return 1;
-        }
-        return this.getProperties().compareTo( other.getProperties() );
+        return diff;
     }
 
 
@@ -73,8 +74,8 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
                 "id=" + id +
                 ", properties=" + properties +
                 ", labels=" + labels +
-                ", leftId=" + leftId +
-                ", rightId=" + rightId +
+                ", leftId=" + source +
+                ", rightId=" + target +
                 ", direction=" + direction +
                 '}';
     }
@@ -87,19 +88,19 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
             kryo.writeClassAndObject( output, object.id );
             kryo.writeClassAndObject( output, object.properties );
             kryo.writeClassAndObject( output, object.labels );
-            kryo.writeClassAndObject( output, object.leftId );
-            kryo.writeClassAndObject( output, object.rightId );
+            kryo.writeClassAndObject( output, object.source );
+            kryo.writeClassAndObject( output, object.target );
             kryo.writeClassAndObject( output, object.direction );
         }
 
 
         @Override
         public PolyEdge read( Kryo kryo, Input input, Class<? extends PolyEdge> type ) {
-            long id = (long) kryo.readClassAndObject( input );
+            String id = (String) kryo.readClassAndObject( input );
             PolyDirectory properties = (PolyDirectory) kryo.readClassAndObject( input );
             PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
-            long leftId = (long) kryo.readClassAndObject( input );
-            long rightId = (long) kryo.readClassAndObject( input );
+            String leftId = (String) kryo.readClassAndObject( input );
+            String rightId = (String) kryo.readClassAndObject( input );
             RelationshipDirection direction = (RelationshipDirection) kryo.readClassAndObject( input );
             return new PolyEdge( id, properties, labels, leftId, rightId, direction );
         }

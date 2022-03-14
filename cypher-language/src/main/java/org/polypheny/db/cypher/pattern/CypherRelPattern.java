@@ -69,7 +69,7 @@ public class CypherRelPattern extends CypherPattern {
     }
 
 
-    public Pair<String, PolyEdge> getPolyRelationship( long leftId, long rightId ) {
+    public Pair<String, PolyEdge> getPolyRelationship( String leftId, String rightId ) {
         PolyDirectory properties = this.properties != null ? (PolyDirectory) this.properties.getComparable() : new PolyDirectory();
         RelationshipDirection direction = left == right ? RelationshipDirection.NONE : left ? RelationshipDirection.LEFT_TO_RIGHT : RelationshipDirection.RIGHT_TO_LEFT;
         List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );

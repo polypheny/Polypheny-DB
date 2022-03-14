@@ -455,7 +455,7 @@ public interface CypherFactory {
     }
 
     static CypherExpression newDouble( ParserPos pos, String image ) {
-        return new CypherLiteral( pos, Literal.DOUBLE, image );
+        return new CypherLiteral( pos, Literal.DOUBLE, image, false );
     }
 
     static CypherExpression newDecimalInteger( ParserPos pos, String image, boolean negated ) {

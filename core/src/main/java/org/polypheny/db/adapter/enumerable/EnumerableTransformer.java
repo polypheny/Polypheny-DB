@@ -23,7 +23,6 @@ import java.util.List;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -41,6 +40,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 @Getter
@@ -60,6 +60,10 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
+        if ( rowType.getFieldList().stream().map( f -> f.getType().getPolyType() ).noneMatch( t -> t == PolyType.EDGE || t == PolyType.NODE || t == PolyType.GRAPH ) ) {
+            return implementUnModifyTransform( implementor, pref );
+        }
+
         BlockBuilder builder = new BlockBuilder();
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
 
@@ -77,7 +81,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         //Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
 
-        final BlockBuilder builder2 = new BlockBuilder();
+        //final BlockBuilder builder2 = new BlockBuilder();
 
         Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), nodes.block );
         Expression edgeExp = builder.append( builder.newName( "edges_" + System.nanoTime() ), edges.block );
@@ -87,8 +91,8 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         MethodCallExpression call = Expressions.call( BuiltInMethod.TO_GRAPH.method, nodeCall, edgeCall );
 
-        builder2.add( Expressions.return_( null, physType.record( List.of( call ) ) ) );
-        BlockStatement currentBody = builder2.toBlock();
+        //builder2.add( Expressions.return_( null, physType.record( List.of( call ) ) ) );
+        //BlockStatement currentBody = builder2.toBlock();
 
         Expression body = Expressions.new_(
                 enumeratorType,
@@ -133,6 +137,14 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
                                 EnumUtils.NO_EXPRS,
                                 ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    private Result implementUnModifyTransform( EnumerableAlgImplementor implementor, Prefer pref ) {
+        if ( getInputs().size() == 1 ) {
+            return implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
+        }
+        throw new UnsupportedOperationException();
     }
 
 

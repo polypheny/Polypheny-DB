@@ -16,6 +16,7 @@
 
 package org.polypheny.db.schema.graph;
 
+import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
@@ -23,16 +24,16 @@ import org.polypheny.db.runtime.PolyCollections.PolyMap;
 @Getter
 public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
-    private final PolyMap<Long, PolyNode> nodes;
-    private final PolyMap<Long, PolyEdge> edges;
+    private final PolyMap<String, PolyNode> nodes;
+    private final PolyMap<String, PolyEdge> edges;
 
 
-    public PolyGraph( @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyEdge> edges ) {
-        this( idBuilder.getAndIncrement(), nodes, edges );
+    public PolyGraph( @NonNull PolyMap<String, PolyNode> nodes, @NonNull PolyMap<String, PolyEdge> edges ) {
+        this( UUID.randomUUID().toString(), nodes, edges );
     }
 
 
-    public PolyGraph( long id, @NonNull PolyMap<Long, PolyNode> nodes, @NonNull PolyMap<Long, PolyEdge> edges ) {
+    public PolyGraph( String id, @NonNull PolyMap<String, PolyNode> nodes, @NonNull PolyMap<String, PolyEdge> edges ) {
         super( id, GraphObjectType.GRAPH );
         this.nodes = nodes;
         this.edges = edges;

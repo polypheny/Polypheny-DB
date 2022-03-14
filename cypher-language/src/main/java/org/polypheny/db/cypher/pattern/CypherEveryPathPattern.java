@@ -133,8 +133,8 @@ public class CypherEveryPathPattern extends CypherPattern {
 
     private RexCall getGraphFilter( CypherContext context ) {
         List<PolyNode> polyNodes = Pair.right( getPolyNodes() );
-        PolyMap<Long, PolyNode> nodes = new PolyMap<>( polyNodes.stream().collect( Collectors.toMap( e -> e.id, e -> e ) ) );
-        PolyMap<Long, PolyEdge> relationships = new PolyMap<>( getPolyRelationships( polyNodes ).stream().collect( Collectors.toMap( e -> e.right.id, e -> e.right ) ) );
+        PolyMap<String, PolyNode> nodes = new PolyMap<>( polyNodes.stream().collect( Collectors.toMap( e -> e.id, e -> e ) ) );
+        PolyMap<String, PolyEdge> relationships = new PolyMap<>( getPolyRelationships( polyNodes ).stream().collect( Collectors.toMap( e -> e.right.id, e -> e.right ) ) );
         PolyGraph graph = new PolyGraph( nodes, relationships );
 
         return new RexCall(

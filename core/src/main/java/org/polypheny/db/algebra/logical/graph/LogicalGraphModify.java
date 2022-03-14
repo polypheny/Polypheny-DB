@@ -100,7 +100,6 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
         PolyphenyDbCatalogReader catalogReader = this.catalogReader;
 
         AlgNode nodes = inputs.get( 0 );
-        //AlgTraitSet out = input.getTraitSet().replace( ModelTrait.RELATIONAL );
 
         //modify of nodes
 

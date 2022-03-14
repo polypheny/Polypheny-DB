@@ -16,14 +16,24 @@
 
 package org.polypheny.db.cypher;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.util.Locale;
 import javax.annotation.Nullable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.cypher.helper.TestEdge;
+import org.polypheny.db.cypher.helper.TestObject;
+import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.webui.models.Result;
 
 public class CypherTestTemplate {
+
+
+    public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
+
 
     @BeforeClass
     public static void start() {
@@ -81,6 +91,48 @@ public class CypherTestTemplate {
             line += String.format( "\n%s", child );
         }
         return line;
+    }
+
+
+    protected boolean containsNodes( Result res, boolean exclusive, TestObject... nodes ) {
+        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "graph" ) ) {
+            return containsNodesInGraph( res.getData()[0][0], exclusive, nodes );
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    protected boolean containsEdges( Result res, boolean exclusive, TestEdge... edges ) {
+        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "graph" ) ) {
+            return containsEdgesInGraph( res.getData()[0][0], exclusive, edges );
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    private boolean containsEdgesInGraph( String graph, boolean exclusive, TestEdge[] edges ) {
+        PolyGraph parsed = GSON.fromJson( graph, PolyGraph.class );
+        assert !exclusive || parsed.getEdges().size() == edges.length;
+
+        boolean contains = true;
+        for ( TestEdge edge : edges ) {
+            contains &= parsed.getEdges().values().stream().anyMatch( e -> edge.matches( e, exclusive ) );
+        }
+
+        return contains;
+    }
+
+
+    private boolean containsNodesInGraph( String graph, boolean exclusive, TestObject[] nodes ) {
+        PolyGraph parsed = GSON.fromJson( graph, PolyGraph.class );
+        assert !exclusive || parsed.getNodes().size() == nodes.length;
+
+        boolean contains = true;
+        for ( TestObject node : nodes ) {
+            contains &= parsed.getNodes().values().stream().anyMatch( n -> node.matches( n, exclusive ) );
+        }
+
+        return contains;
     }
 
 }

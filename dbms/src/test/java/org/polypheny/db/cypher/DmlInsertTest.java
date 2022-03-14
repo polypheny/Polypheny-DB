@@ -16,8 +16,12 @@
 
 package org.polypheny.db.cypher;
 
+import java.util.List;
 import org.junit.Test;
 import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.cypher.helper.TestEdge;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
 
 public class DmlInsertTest extends CypherTestTemplate {
@@ -30,9 +34,24 @@ public class DmlInsertTest extends CypherTestTemplate {
 
     @Test
     public void insertNodeTest() {
-        Result res = execute( "CREATE (p:Person {name: 'Max Muster'})" );
-        res = execute( "MATCH (n)\nRETURN n" );
-        System.out.println( res );
+        execute( "CREATE (p:Person {name: 'Max Muster'})" );
+        Result res = execute( "MATCH (n)\nRETURN n" );
+        assert containsNodes( res, true,
+                TestNode.from( Pair.of( "name", "Max Muster" ) ) );
+    }
+
+
+    @Test
+    public void insertPropertyTypeTest() {
+        execute( "CREATE (p:Person {name: 'Max Muster', age: 13, height: 185.3, nicknames: [\"Maxi\",\"Musti\"]})" );
+        Result res = execute( "MATCH (n)\nRETURN n" );
+        assert containsNodes( res, true,
+                TestNode.from(
+                        Pair.of( "name", "Max Muster" ),
+                        Pair.of( "age", 13 ),
+                        Pair.of( "height", 185.3 ),
+                        Pair.of( "nicknames", List.of( "Maxi", "Musti" ) )
+                ) );
     }
 
 
@@ -45,10 +64,33 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
-    public void insertRelationshipTest() {
-        Result res = execute(
-                "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:ANIMAL {name:'Kira', age:3, type:'dog'})" );
+    public void insertSingleHopPathTest() {
+        execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
+        Result res = execute( "MATCH (n) RETURN n" );
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
+                TestNode.from(
+                        List.of( "Animal" ),
+                        Pair.of( "name", "Kira" ),
+                        Pair.of( "age", 3 ),
+                        Pair.of( "type", "dog" ) ) );
+        assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
     }
+
+
+    @Test
+    public void insertMultipleHopPathTest() {
+        execute( "CREATE (n:Person)-[f:FRIEND_OF]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})" );
+        Result res = execute( "MATCH (n) RETURN n" );
+        assert containsNodes( res, true,
+                TestNode.from( List.of( "Person" ) ),
+                TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
+                TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) );
+        assert containsEdges( res, true,
+                TestEdge.from( List.of( "OWNER_OF" ) ),
+                TestEdge.from( List.of( "FRIEND_OF" ) ) );
+    }
+
 
     @Test
     public void insertAdditionalRelationshipTest() {

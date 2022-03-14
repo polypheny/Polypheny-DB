@@ -64,13 +64,18 @@ public class GraphToRelRule extends AlgOptRule {
         } else {
             res = getRelScan( call );
         }
-        if ( res != null ) {
-            call.transformTo( res );
-        }
+        call.transformTo( res );
     }
 
 
     private AlgNode getRelModify( AlgOptRuleCall call ) {
+        AlgNode node = getRelModifyUntransformed( call );
+
+        return LogicalTransformer.create( List.of( node ), node.getTraitSet(), node.getTraitSet().replace( ModelTrait.GRAPH ), node.getRowType() );
+    }
+
+
+    private AlgNode getRelModifyUntransformed( AlgOptRuleCall call ) {
         LogicalGraphModify modify = call.alg( 0 );
         LogicalGraphValues values = call.alg( 1 );
 
@@ -82,10 +87,10 @@ public class GraphToRelRule extends AlgOptRule {
             return transformedModifies.get( 0 );
         }
 
-        AlgTraitSet set = modify.getTraitSet();
-        if ( call.getParents() == null ) {
+        AlgTraitSet set = modify.getTraitSet().replace( ModelTrait.RELATIONAL );
+        /*if ( call.getParents() == null ) {
             set = set.replace( ModelTrait.RELATIONAL );
-        }
+        }*/
 
         return new LogicalModifyCollect( modify.getCluster(), set, List.of( transformedModifies.get( 0 ), transformedModifies.get( 1 ) ), true );
     }

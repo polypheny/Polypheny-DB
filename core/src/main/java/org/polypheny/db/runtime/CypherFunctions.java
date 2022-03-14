@@ -41,12 +41,12 @@ public class CypherFunctions {
 
     public static Enumerable<?> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
 
-        PolyMap<Long, PolyNode> ns = new PolyMap<>();
+        PolyMap<String, PolyNode> ns = new PolyMap<>();
         for ( PolyNode node : nodes ) {
             ns.put( node.id, node );
         }
 
-        PolyMap<Long, PolyEdge> es = new PolyMap<>();
+        PolyMap<String, PolyEdge> es = new PolyMap<>();
         for ( PolyEdge edge : edges ) {
             es.put( edge.id, edge );
         }

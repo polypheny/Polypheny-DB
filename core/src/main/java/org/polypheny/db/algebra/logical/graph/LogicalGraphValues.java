@@ -17,7 +17,7 @@
 package org.polypheny.db.algebra.logical.graph;
 
 import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,12 +44,14 @@ import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
 @Getter
 public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
 
-    public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.BIGINT );
+    public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 36 );
     public static final BasicPolyType NODE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.NODE );
     public static final BasicPolyType EDGE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.EDGE );
     private final ImmutableList<PolyNode> nodes;
@@ -112,17 +114,6 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
 
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder() );
 
-        /*AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1, 1 );
-        AlgDataTypeField id = new AlgDataTypeFieldImpl( "_id", 0, ID_TYPE );
-        AlgDataTypeField node = new AlgDataTypeFieldImpl( "_node", 1, NODE_TYPE );
-        AlgDataTypeField edge = new AlgDataTypeFieldImpl( "_edge", 1, EDGE_TYPE );
-        AlgDataTypeField labels = new AlgDataTypeFieldImpl( "_labels", 2, arrayType );
-        AlgDataTypeField lId = new AlgDataTypeFieldImpl( "_l_id_", 3, ID_TYPE );
-        AlgDataTypeField rId = new AlgDataTypeFieldImpl( "_r_id_", 4, ID_TYPE );
-
-        AlgRecordType nodeRowType = new AlgRecordType( Arrays.asList( id, node, labels ) );
-        AlgRecordType edgeRowType = new AlgRecordType( Arrays.asList( id, edge, labels, lId, rId ) );*/
-
         LogicalValues nodeValues = new LogicalValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes, typeFactory ) );
         if ( edges.isEmpty() ) {
             return List.of( nodeValues );
@@ -137,7 +128,7 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyNode node : nodes ) {
             ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
-            row.add( new RexLiteral( new BigDecimal( node.id ), ID_TYPE, PolyType.BIGINT ) );
+            row.add( new RexLiteral( new NlsString( node.id, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), ID_TYPE, PolyType.CHAR ) );
             row.add( new RexLiteral( node, NODE_TYPE, PolyType.NODE ) );
 
             PolyList<RexLiteral> labels = node.getRexLabels();
@@ -154,15 +145,15 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyEdge edge : edges ) {
             ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
-            row.add( new RexLiteral( new BigDecimal( edge.id ), ID_TYPE, PolyType.BIGINT ) );
+            row.add( new RexLiteral( new NlsString( edge.id, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), ID_TYPE, PolyType.CHAR ) );
             row.add( new RexLiteral( edge, EDGE_TYPE, PolyType.EDGE ) );
 
             PolyList<RexLiteral> labels = edge.getRexLabels();
             AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), labels.size(), 1 );
 
             row.add( new RexLiteral( edge.getRexLabels(), arrayType, PolyType.ARRAY ) );
-            row.add( new RexLiteral( new BigDecimal( edge.leftId ), ID_TYPE, PolyType.BIGINT ) );
-            row.add( new RexLiteral( new BigDecimal( edge.rightId ), ID_TYPE, PolyType.BIGINT ) );
+            row.add( new RexLiteral( new NlsString( edge.source, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), ID_TYPE, PolyType.CHAR ) );
+            row.add( new RexLiteral( new NlsString( edge.target, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), ID_TYPE, PolyType.CHAR ) );
             rows.add( row.build() );
         }
 

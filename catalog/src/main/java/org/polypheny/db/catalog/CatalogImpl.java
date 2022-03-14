@@ -1350,7 +1350,7 @@ public class CatalogImpl extends Catalog {
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), nodesId ) );
 
-        long idNodeId = addColumn( "_id_", nodesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
+        long idNodeId = addColumn( "_id_", nodesId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
         // Add default value
         setDefaultValue( idNodeId, PolyType.VARCHAR, "" );
         long nodeNodeId = addColumn( "_node_", nodesId, 1, PolyType.NODE, null, null, null, null, null, false, null );
@@ -1394,15 +1394,15 @@ public class CatalogImpl extends Catalog {
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), edgesId ) );
 
-        long idEdgeId = addColumn( "_id_", edgesId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
+        long idEdgeId = addColumn( "_id_", edgesId, 0, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
         setDefaultValue( idEdgeId, PolyType.VARCHAR, "" );
         long edgeEdgeId = addColumn( "_edge_", edgesId, 1, PolyType.EDGE, null, null, null, null, null, false, null );
         setDefaultValue( edgeEdgeId, PolyType.VARCHAR, "" );
         long labelsEdgeId = addColumn( "_labels_", edgesId, 2, PolyType.VARCHAR, PolyType.ARRAY, 255, null, null, null, false, Collation.getDefaultCollation() );
         setDefaultValue( labelsEdgeId, PolyType.VARCHAR, "" );
-        long lEdgeId = addColumn( "_l_id_", edgesId, 3, PolyType.BIGINT, null, null, null, null, null, false, Collation.getDefaultCollation() );
+        long lEdgeId = addColumn( "_l_id_", edgesId, 3, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
         setDefaultValue( labelsEdgeId, PolyType.VARCHAR, "" );
-        long rEdgeId = addColumn( "_r_id_", edgesId, 4, PolyType.BIGINT, null, null, null, null, null, false, Collation.getDefaultCollation() );
+        long rEdgeId = addColumn( "_r_id_", edgesId, 4, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
         setDefaultValue( labelsEdgeId, PolyType.VARCHAR, "" );
 
         for ( DataStore store : stores ) {
