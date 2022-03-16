@@ -24,8 +24,8 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.policies.policy.PoliciesManager;
-import org.polypheny.db.policies.policy.PoliciesManager.Action;
+import org.polypheny.db.policies.policy.policy.PoliciesManager;
+import org.polypheny.db.policies.policy.policy.PoliciesManager.Action;
 
 
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {

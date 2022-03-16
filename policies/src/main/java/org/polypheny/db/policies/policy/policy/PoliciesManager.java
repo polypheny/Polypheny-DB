@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy;
+package org.polypheny.db.policies.policy.policy;
 
-import static org.polypheny.db.policies.policy.Policies.TARGET_POLYPHENY;
+import static org.polypheny.db.policies.policy.policy.Policies.TARGET_POLYPHENY;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,11 +35,11 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.policies.policy.Clause.AffectedOperations;
-import org.polypheny.db.policies.policy.Clause.ClauseCategory;
-import org.polypheny.db.policies.policy.Clause.ClauseName;
-import org.polypheny.db.policies.policy.Clause.ClauseType;
-import org.polypheny.db.policies.policy.Policies.Target;
+import org.polypheny.db.policies.policy.policy.Clause.AffectedOperations;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseCategory;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseName;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseType;
+import org.polypheny.db.policies.policy.policy.Policies.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
 import org.polypheny.db.policies.policy.models.UiPolicy;
@@ -340,6 +340,10 @@ public class PoliciesManager {
         switch ( clause.getClauseCategory() ) {
             case STORE:
                 return checkStoreClauses( clause, target, targetId ) && checkActiveClauses( clause, target, targetId );
+            case SELF_ADAPTING:
+                // at the moment all self adapting should always be possible, so nothing needs to be checked, when the clause is changed
+                log.warn( "CheckClauseChange is always returning true." );
+                return true;
             default:
                 throw new PolicyRuntimeException( "Category is not yet implemented: " + clause.getClauseCategory() );
         }
@@ -484,6 +488,10 @@ public class PoliciesManager {
                         adapterIds.add( ((DataStore) possibleStore).getAdapterId() );
                         persistentStore.add( possibleStore );
                     }
+                }
+
+                if ( potentiallyInteresting.isEmpty() ) {
+                    return Collections.singletonList(preSelection);
                 }
 
                 for ( Clause clause : potentiallyInteresting ) {

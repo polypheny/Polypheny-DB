@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy;
+package org.polypheny.db.policies.policy.policy;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.policies.policy.Policies.Target;
+import org.polypheny.db.policies.policy.policy.Policies.Target;
 
 public class BooleanClause extends Clause {
 

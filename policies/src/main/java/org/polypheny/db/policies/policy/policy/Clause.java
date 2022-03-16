@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy;
+package org.polypheny.db.policies.policy.policy;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.policies.policy.Policies.Target;
+import org.polypheny.db.policies.policy.policy.Policies.Target;
 
 @Getter
 public abstract class Clause {
@@ -95,7 +95,7 @@ public abstract class Clause {
      * Different Categories are used to describe the different policies used in Polypheny
      */
     public enum ClauseCategory {
-        STORE
+        STORE, SELF_ADAPTING
     }
 
     public enum AffectedOperations {
@@ -103,7 +103,7 @@ public abstract class Clause {
     }
 
     public enum ClauseName {
-        FULLY_PERSISTENT, ONLY_EMBEDDED, ONLY_DOCKER, PERSISTENT
+        FULLY_PERSISTENT, ONLY_EMBEDDED, ONLY_DOCKER, PERSISTENT, SPEED_OPTIMIZATION, REDUNDANCY_OPTIMIZATION, SPACE_OPTIMIZATION, LANGUAGE_OPTIMIZATION
 
     }
 

@@ -74,9 +74,11 @@ public class DashboardInformation {
         this.numberOfQueries = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class ).size();
         this.numberOfWorkloads = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size();
 
+        this.availableAdapter.clear();
         catalog.getAdapters().forEach( v -> {
             this.availableAdapter.put( v.uniqueName, v.type );
         } );
+        this.availableSchemas.clear();
         catalog.getSchemas( null, null ).forEach( v -> {
             availableSchemas.put( v.id, new Pair<>( v.name, v.schemaType ) );
         } );

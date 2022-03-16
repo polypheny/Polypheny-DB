@@ -70,8 +70,8 @@ public class AggregateInformation {
                 this.countCount += 1;
                 break;
             default:
-                log.warn("This kind of Aggregation is not implemented yet. (AggregateInformation)");
-                throw new RuntimeException("This kind of Aggregation is not implemented yet.");
+                log.warn("This kind of Aggregation is not implemented yet. (AggregateInformation)" + kind);
+                //throw new RuntimeException("This kind of Aggregation is not implemented yet.");
         }
     }
 

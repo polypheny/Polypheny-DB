@@ -18,10 +18,10 @@ package org.polypheny.db.policies.policy.models;
 
 import java.util.HashMap;
 import java.util.List;
-import org.polypheny.db.policies.policy.Clause.ClauseCategory;
-import org.polypheny.db.policies.policy.Clause.ClauseName;
-import org.polypheny.db.policies.policy.Clause.ClauseType;
-import org.polypheny.db.policies.policy.Policies.Target;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseCategory;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseName;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseType;
+import org.polypheny.db.policies.policy.policy.Policies.Target;
 import org.polypheny.db.util.Pair;
 
 public class UiNumberClause extends UiClause {

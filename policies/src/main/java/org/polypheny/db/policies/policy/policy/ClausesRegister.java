@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy;
+package org.polypheny.db.policies.policy.policy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.policies.policy.Clause.AffectedOperations;
-import org.polypheny.db.policies.policy.Clause.ClauseCategory;
-import org.polypheny.db.policies.policy.Clause.ClauseName;
-import org.polypheny.db.policies.policy.Policies.Target;
+import org.polypheny.db.policies.policy.policy.Clause.AffectedOperations;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseCategory;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseName;
+import org.polypheny.db.policies.policy.policy.Policies.Target;
 
 public class ClausesRegister {
 
@@ -99,6 +100,49 @@ public class ClausesRegister {
                 new HashMap<>() {{
                     put( AffectedOperations.STORE, (( l ) -> l.stream().filter( e -> ((DataStore) e).getDeployMode() == DeployMode.DOCKER ).collect( Collectors.toList() )) );
                 }},
+                new HashMap<>())
+        );
+
+
+        register( new BooleanClause(
+                ClauseName.SPEED_OPTIMIZATION,
+                false,
+                false,
+                ClauseCategory.SELF_ADAPTING,
+                List.of( Target.POLYPHENY ),
+                "Self adaptive options, to choose how the system should adapt itself, in this case speed optimization.",
+                new HashMap<>(),
+                new HashMap<>())
+        );
+
+        register( new BooleanClause(
+                ClauseName.SPACE_OPTIMIZATION,
+                false,
+                false,
+                ClauseCategory.SELF_ADAPTING,
+                List.of( Target.POLYPHENY ),
+                "Self adaptive options, to choose how the system should adapt itself, in this case space optimization.",
+                new HashMap<>(),
+                new HashMap<>())
+        );
+        register( new BooleanClause(
+                ClauseName.REDUNDANCY_OPTIMIZATION,
+                false,
+                false,
+                ClauseCategory.SELF_ADAPTING,
+                List.of( Target.POLYPHENY ),
+                "Self adaptive options, to choose how the system should adapt itself, in this case redundancy optimization.",
+                new HashMap<>(),
+                new HashMap<>())
+        );
+        register( new BooleanClause(
+                ClauseName.LANGUAGE_OPTIMIZATION,
+                false,
+                false,
+                ClauseCategory.SELF_ADAPTING,
+                List.of( Target.POLYPHENY ),
+                "Self adaptive options, to choose how the system should adapt itself, in this case query language optimization.",
+                new HashMap<>(),
                 new HashMap<>())
         );
 

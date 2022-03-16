@@ -16,11 +16,11 @@
 
 package org.polypheny.db.policies.policy.models;
 
-import org.polypheny.db.policies.policy.BooleanClause;
-import org.polypheny.db.policies.policy.Clause;
-import org.polypheny.db.policies.policy.Clause.ClauseType;
-import org.polypheny.db.policies.policy.NumberClause;
-import org.polypheny.db.policies.policy.Policies.Target;
+import org.polypheny.db.policies.policy.policy.BooleanClause;
+import org.polypheny.db.policies.policy.policy.Clause;
+import org.polypheny.db.policies.policy.policy.Clause.ClauseType;
+import org.polypheny.db.policies.policy.policy.NumberClause;
+import org.polypheny.db.policies.policy.policy.Policies.Target;
 
 public class UiPolicy {
 

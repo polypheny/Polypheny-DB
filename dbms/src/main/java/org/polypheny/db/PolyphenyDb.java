@@ -64,7 +64,7 @@ import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
-import org.polypheny.db.policies.policy.PoliciesManager;
+import org.polypheny.db.policies.policy.policy.PoliciesManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
