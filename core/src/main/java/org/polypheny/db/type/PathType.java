@@ -36,7 +36,7 @@ public class PathType extends AbstractPolyType {
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         int i = 0;
-        sb.append( "PATH (" );
+        sb.append( " Path(" );
         for ( AlgDataTypeField field : fieldList ) {
             if ( i != 0 ) {
                 sb.append( ", " );
@@ -45,6 +45,13 @@ public class PathType extends AbstractPolyType {
             sb.append( withDetail ? field.getType().getFullTypeString() : field.getType().toString() );
             i++;
         }
+        sb.append( ")" );
+    }
+
+
+    @Override
+    public boolean isStruct() {
+        return true;
     }
 
 }

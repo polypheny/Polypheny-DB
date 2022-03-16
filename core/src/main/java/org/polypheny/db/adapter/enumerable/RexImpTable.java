@@ -346,6 +346,7 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NONE_MATCH ), implementor );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.GRAPH_PATH_MATCH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.GRAPH_NODE_EXTRACT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_FROM_PATH ), BuiltInMethod.GRAPH_EXTRACT_FROM_PATH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.GRAPH_NODE_MATCH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_LABELS_MATCH ), BuiltInMethod.CYPHER_LABELS_MATCH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PROPERTIES_MATCH ), BuiltInMethod.CYPHER_PROPERTIES_MATCH.method, NullPolicy.NONE );

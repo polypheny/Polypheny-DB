@@ -242,6 +242,7 @@ public class CypherToAlgConverter {
         public final AlgDataType nodeType;
         public final AlgDataType edgeType;
         public final AlgDataType pathType;
+        public final AlgDataType numberType;
         public final PolyphenyDbCatalogReader catalogReader;
         public final AlgDataTypeFactory typeFactory;
         public CypherNode active;
@@ -259,6 +260,7 @@ public class CypherToAlgConverter {
             this.nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
             this.edgeType = cluster.getTypeFactory().createPolyType( PolyType.EDGE );
             this.pathType = cluster.getTypeFactory().createPolyType( PolyType.PATH );
+            this.numberType = cluster.getTypeFactory().createPolyType( PolyType.INTEGER );
             this.typeFactory = cluster.getTypeFactory();
             this.catalogReader = catalogReader;
         }
@@ -276,17 +278,9 @@ public class CypherToAlgConverter {
 
         public void combineMatch() {
             addDefaultScanIfNecessary();
-            //AlgNode node = stack.peek();
             List<Pair<String, RexNode>> matches = getMatches();
 
-
-            /*if ( condition.isAlwaysTrue() ) {
-                // blank MATCH (n) without condition
-                return;
-            }*/
-
             stack.add( new LogicalGraphMatch( cluster, cluster.traitSet(), stack.pop(), Pair.right( matches ), Pair.left( matches ) ) );
-
         }
 
 

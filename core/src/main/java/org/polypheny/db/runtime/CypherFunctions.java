@@ -26,6 +26,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
@@ -36,13 +37,15 @@ import org.polypheny.db.serialize.PolySerializer;
 @Slf4j
 public class CypherFunctions {
 
-    public static boolean pathMatch( PolyGraph graph, PolyPath comp ) {
-        return false;
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyPath> pathMatch( PolyGraph graph, PolyPath comp ) {
+        return null;
     }
 
 
-    public static boolean nodeMatch( PolyGraph graph, PolyNode node ) {
-        return false;
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyNode> nodeMatch( PolyGraph graph, PolyNode node ) {
+        return null;
     }
 
 
@@ -100,5 +103,12 @@ public class CypherFunctions {
     public static boolean labelsMatch( PolyNode node, List<String> labels ) {
         return node.matchesLabels( labels );
     }
+
+
+    @SuppressWarnings("unused")
+    public static GraphObject extractFrom( PolyPath path, int index ) {
+        return path.get( index );
+    }
+
 
 }

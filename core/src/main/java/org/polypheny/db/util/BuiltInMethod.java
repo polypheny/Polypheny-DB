@@ -72,6 +72,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.AggregateLambdaFactory;
+import org.polypheny.db.adapter.enumerable.EnumerableGraphMatch.MatchEnumerable;
 import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
@@ -448,7 +449,9 @@ public enum BuiltInMethod {
     DESERIALIZE_LIST( Functions.class, "deserializeList", String.class ),
     DESERIALIZE_DIRECTORY( Functions.class, "deserializeDirectory", String.class ),
     GRAPH_NODE_MATCH( CypherFunctions.class, "nodeMatch", PolyGraph.class, PolyNode.class ),
-    GRAPH_NODE_EXTRACT( CypherFunctions.class, "nodeExtract", PolyGraph.class );
+    GRAPH_NODE_EXTRACT( CypherFunctions.class, "nodeExtract", PolyGraph.class ),
+    GRAPH_MATCH_CTOR( MatchEnumerable.class, List.class ),
+    GRAPH_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, int.class );
 
     public final Method method;
     public final Constructor constructor;

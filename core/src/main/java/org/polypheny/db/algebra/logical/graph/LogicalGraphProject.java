@@ -63,7 +63,7 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
             int index = 0;
             for ( String name : names ) {
                 if ( name != null ) {
-                    new AlgDataTypeFieldImpl( name, index, projects.get( i ).getType() );
+                    fields.add( new AlgDataTypeFieldImpl( name, index, projects.get( i ).getType() ) );
                     index++;
                 }
                 i++;

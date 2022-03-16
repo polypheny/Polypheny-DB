@@ -30,9 +30,10 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void simpleMatchTest() {
         Result res = execute( "MATCH (n)\nRETURN n" );
-        assert emptyEdges( res );
-        assert emptyNodes( res );
+        assert isNode( res );
+        assert isEmpty( res );
     }
+
 
     @Test
     public void simpleMatchLabelTest() {

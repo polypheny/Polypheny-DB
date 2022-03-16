@@ -16,11 +16,16 @@
 
 package org.polypheny.db.algebra.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -44,6 +49,19 @@ public abstract class GraphMatch extends SingleAlg implements GraphAlg {
         super( cluster, traits, input );
         this.matches = matches;
         this.names = names;
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        List<AlgDataTypeField> fields = new ArrayList<>();
+
+        int i = 0;
+        for ( RexNode match : matches ) {
+            fields.add( new AlgDataTypeFieldImpl( names.get( 0 ), i, match.getType() ) );
+            i++;
+        }
+        return new AlgRecordType( fields );
     }
 
 }

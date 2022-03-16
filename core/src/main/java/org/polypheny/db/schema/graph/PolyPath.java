@@ -21,13 +21,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.serialize.PolySerializer;
+import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.Pair;
 
 @Getter
-public class PolyPath extends GraphObject implements Comparable<PolyPath> {
+public class PolyPath extends GraphObject implements Comparable<PolyPath>, ExpressionTransformable {
 
     private final List<PolyNode> nodes;
     private final List<PolyEdge> edges;
@@ -92,11 +96,8 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
     public List<AlgDataTypeField> getPathType( AlgDataType nodeType, AlgDataType edgeType ) {
         List<AlgDataTypeField> pathType = new ArrayList<>();
 
-        Iterator<GraphObject> iter = path.iterator();
-
         int i = 0;
-        while ( iter.hasNext() ) {
-            GraphObject node = iter.next();
+        for ( String name : names ) {
             AlgDataType type;
             if ( i % 2 == 0 ) {
                 // node
@@ -106,14 +107,40 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
                 type = edgeType;
             }
 
-            if ( names.get( i ) != null ) {
-                pathType.add( new AlgDataTypeFieldImpl( names.get( i ), i, type ) );
+            if ( name != null ) {
+                pathType.add( new AlgDataTypeFieldImpl( name, i, type ) );
             }
 
             i++;
         }
+
         return pathType;
 
+    }
+
+
+    public GraphObject get( int index ) {
+        assert index < names.size();
+        int i = 0;
+        for ( GraphObject object : path ) {
+            if ( index == i ) {
+                return object;
+            }
+            i++;
+        }
+        return null;
+    }
+
+
+    @Override
+    public Expression getAsExpression() {
+        return Expressions.convert_(
+                Expressions.call(
+                        PolySerializer.class,
+                        "deJsonize",
+                        List.of( Expressions.constant( PolySerializer.jsonize( this ) ), Expressions.constant( PolyPath.class ) ) ),
+                PolyPath.class
+        );
     }
 
 }

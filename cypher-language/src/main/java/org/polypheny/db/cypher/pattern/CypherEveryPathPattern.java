@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -107,7 +109,11 @@ public class CypherEveryPathPattern extends CypherPattern {
         if ( edges.isEmpty() ) {
             return getNodeFilter( context );
         }
-        return Pair.of( null, getPathFilter( context ) );
+        RexNode path = getPathFilter( context );
+
+        String name = path.getType().getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.joining( "-", "$", "$" ) );
+
+        return Pair.of( name, path );
     }
 
 
@@ -132,12 +138,14 @@ public class CypherEveryPathPattern extends CypherPattern {
         List<Pair<String, PolyEdge>> polyEdges = getPolyEdges( polyNodes );
         PolyPath path = PolyPath.create( polyNodes, polyEdges );
 
+        AlgDataType pathType = context.typeFactory.createPathType( path.getPathType( context.nodeType, context.edgeType ) );
+
         return new RexCall(
-                context.graphType,
+                pathType,
                 OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PATH_MATCH ),
                 List.of(
                         new RexInputRef( 0, context.graphType ),
-                        new RexLiteral( path, context.typeFactory.createPathType( path.getPathType( context.nodeType, context.edgeType ) ), PolyType.PATH ) ) );
+                        new RexLiteral( path, pathType, PolyType.PATH ) ) );
     }
 
 }

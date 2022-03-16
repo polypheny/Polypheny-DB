@@ -24,12 +24,16 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.serialize.PolySerializer;
+import org.polypheny.db.tools.ExpressionTransformable;
 
 @Getter
-public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode> {
+public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode>, ExpressionTransformable {
 
 
     public PolyNode( @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
@@ -61,6 +65,17 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
     public boolean isBlank() {
         // MATCH (n) -> true, MATCH (n{name: 'Max'}) -> false, MATCH (n:Person) -> false
         return (properties == null || properties.isEmpty()) && (labels == null || labels.isEmpty());
+    }
+
+
+    @Override
+    public Expression getAsExpression() {
+        return Expressions.convert_(
+                Expressions.call(
+                        PolySerializer.class,
+                        "deJsonize",
+                        List.of( Expressions.constant( PolySerializer.jsonize( this ) ), Expressions.constant( PolyNode.class ) ) ),
+                PolyNode.class );
     }
 
 

@@ -18,6 +18,8 @@ package org.polypheny.db.cypher;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nullable;
 import org.junit.AfterClass;
@@ -26,7 +28,9 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestObject;
-import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.schema.graph.GraphPropertyHolder;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.webui.models.Result;
 
 public class CypherTestTemplate {
@@ -100,41 +104,33 @@ public class CypherTestTemplate {
 
 
     protected boolean containsNodes( Result res, boolean exclusive, TestObject... nodes ) {
-        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "graph" ) ) {
-            return containsNodesInGraph( res.getData()[0][0], exclusive, nodes );
+        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
+            return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
         }
         throw new UnsupportedOperationException();
     }
 
 
     protected boolean containsEdges( Result res, boolean exclusive, TestEdge... edges ) {
-        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "graph" ) ) {
-            return containsEdgesInGraph( res.getData()[0][0], exclusive, edges );
+        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "edge" ) ) {
+            return contains( res.getData(), exclusive, 0, PolyEdge.class, edges );
         }
         throw new UnsupportedOperationException();
     }
 
 
-    private boolean containsEdgesInGraph( String graph, boolean exclusive, TestEdge[] edges ) {
-        PolyGraph parsed = GSON.fromJson( graph, PolyGraph.class );
-        assert !exclusive || parsed.getEdges().size() == edges.length;
+    private <T extends GraphPropertyHolder> boolean contains( String[][] actual, boolean exclusive, int index, Class<T> clazz, TestObject[] expected ) {
+        List<T> parsed = new ArrayList<>();
 
-        boolean contains = true;
-        for ( TestEdge edge : edges ) {
-            contains &= parsed.getEdges().values().stream().anyMatch( e -> edge.matches( e, exclusive ) );
+        for ( String[] entry : actual ) {
+            parsed.add( GSON.fromJson( entry[index], clazz ) );
         }
 
-        return contains;
-    }
-
-
-    private boolean containsNodesInGraph( String graph, boolean exclusive, TestObject[] nodes ) {
-        PolyGraph parsed = GSON.fromJson( graph, PolyGraph.class );
-        assert !exclusive || parsed.getNodes().size() == nodes.length;
+        assert !exclusive || parsed.size() == expected.length;
 
         boolean contains = true;
-        for ( TestObject node : nodes ) {
-            contains &= parsed.getNodes().values().stream().anyMatch( n -> node.matches( n, exclusive ) );
+        for ( TestObject node : expected ) {
+            contains &= parsed.stream().anyMatch( n -> node.matches( n, exclusive ) );
         }
 
         return contains;
@@ -151,8 +147,20 @@ public class CypherTestTemplate {
     }
 
 
-    public Result matchAndReturnN() {
+    public Result matchAndReturnAllNodes() {
         return execute( "MATCH (n) RETURN n" );
+    }
+
+
+    protected boolean isNode( Result res ) {
+        assert res.getHeader().length == 1;
+
+        return res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" );
+    }
+
+
+    protected boolean isEmpty( Result res ) {
+        return res.getData().length == 0;
     }
 
 }

@@ -37,13 +37,15 @@ public class CypherRegisterer {
             throw new RuntimeException( "Cypher operators were already registered." );
         }
 
-        register( OperatorName.CYPHER_PROPERTIES_MATCH, new LangFunctionOperator( "CYPHER_PROPERTIES_MATCH", Kind.EQUALS ) );
+        register( OperatorName.CYPHER_PROPERTIES_MATCH, new LangFunctionOperator( "CYPHER_PROPERTIES_MATCH", Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_LABELS_MATCH, new LangFunctionOperator( "CYPHER_LABELS_MATCH", Kind.EQUALS ) );
+        register( OperatorName.CYPHER_LABELS_MATCH, new LangFunctionOperator( "CYPHER_LABELS_MATCH", Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( "CYPHER_PATH_MATCH", Kind.EQUALS ) );
+        register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( "CYPHER_PATH_MATCH", Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( "CYPHER_NODE_EXTRACT", Kind.EQUALS ) );
+        register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( "CYPHER_NODE_EXTRACT", Kind.DESERIALIZE ) );
+
+        register( OperatorName.CYPHER_EXTRACT_FROM_PATH, new LangFunctionOperator( "CYPHER_EXTRACT_FROM_PATH", Kind.DESERIALIZE ) );
 
         isInit = true;
     }

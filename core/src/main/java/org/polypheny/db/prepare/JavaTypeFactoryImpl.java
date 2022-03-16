@@ -42,10 +42,14 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.runtime.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
+import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
+import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Pair;
@@ -159,10 +163,10 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
             JavaType javaType = (JavaType) type;
             return javaType.getJavaClass();
         }
-        if ( type.isStruct() && type.getFieldCount() == 1 ) {
+        if ( type.isStruct() && type.getFieldCount() == 1 && type.getPolyType() != PolyType.PATH ) {
             return getJavaClass( type.getFieldList().get( 0 ).getType() );
         }
-        if ( type instanceof BasicPolyType || type instanceof IntervalPolyType ) {
+        if ( type instanceof BasicPolyType || type instanceof IntervalPolyType || type instanceof PathType ) {
             switch ( type.getPolyType() ) {
                 case JSON:
                 case VARCHAR:
@@ -212,6 +216,12 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return Enum.class;
                 case GRAPH:
                     return PolyGraph.class;
+                case EDGE:
+                    return PolyEdge.class;
+                case NODE:
+                    return PolyNode.class;
+                case PATH:
+                    return PolyPath.class;
                 case FILE:
                 case IMAGE:
                 case VIDEO:
