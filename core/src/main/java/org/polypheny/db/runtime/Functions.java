@@ -106,6 +106,7 @@ import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists.ComparableList;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Bug;
@@ -3679,6 +3680,16 @@ public class Functions {
         } catch ( Exception e ) {
             return false;
         }
+    }
+
+
+    public static List<?> deserializeList( String parsed ) {
+        return gson.fromJson( parsed, List.class );
+    }
+
+
+    public static PolyDirectory deserializeDirectory( String parsed ) {
+        return gson.fromJson( parsed, PolyDirectory.class );
     }
 
 

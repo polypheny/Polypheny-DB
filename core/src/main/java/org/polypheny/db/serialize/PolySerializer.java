@@ -23,6 +23,8 @@ import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -49,6 +51,7 @@ import org.polypheny.db.util.NlsString;
 public class PolySerializer {
 
     public static final Kryo kryo = new Kryo();
+    public static final Gson gson = new GsonBuilder().create();
 
 
     static {
@@ -116,6 +119,16 @@ public class PolySerializer {
         Map<?, ?> obj = map.entrySet().stream().collect( Collectors.toMap( e -> e.getKey().getValue2(), e -> e.getValue().getValue() ) );
 
         return serializeAndCompress( obj );
+    }
+
+
+    public static String jsonize( Object obj ) {
+        return gson.toJson( obj );
+    }
+
+
+    public static <T> T deJsonize( String parsed, Class<T> clazz ) {
+        return gson.fromJson( parsed, clazz );
     }
 
 

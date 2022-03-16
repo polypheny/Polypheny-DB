@@ -313,6 +313,12 @@ public enum PolyType {
             Types.JAVA_OBJECT,
             PolyTypeFamily.GRAPH ),
 
+    PATH(
+            PrecScale.NO_NO,
+            true,
+            Types.JAVA_OBJECT,
+            PolyTypeFamily.GRAPH ),
+
     DISTINCT(
             PrecScale.NO_NO,
             false,

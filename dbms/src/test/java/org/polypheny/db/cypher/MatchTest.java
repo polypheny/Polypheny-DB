@@ -25,21 +25,25 @@ import org.polypheny.db.webui.models.Result;
 public class MatchTest extends CypherTestTemplate {
 
     ///////////////////////////////////////////////
-    ///////// NODE
+    ///////// MATCH
     ///////////////////////////////////////////////
     @Test
     public void simpleMatchTest() {
         Result res = execute( "MATCH (n)\nRETURN n" );
         assert emptyEdges( res );
         assert emptyNodes( res );
-
     }
 
     @Test
     public void simpleMatchLabelTest() {
+        tearDown();
+        createSchema();
+        createData();
+
         Result res = CypherConnection.executeGetResponse(
                 "MATCH (n:Person)\n" +
                         "RETURN n" );
+
 
     }
 
@@ -51,6 +55,7 @@ public class MatchTest extends CypherTestTemplate {
 
     }
 
+
     @Test
     public void simpleMatchMultiplePropertyTest() {
         Result res = CypherConnection.executeGetResponse(
@@ -58,6 +63,11 @@ public class MatchTest extends CypherTestTemplate {
                         "RETURN n" );
 
     }
+
+    ///////////////////////////////////////////////
+    ///////// PROJECT
+    ///////////////////////////////////////////////
+
 
     @Test
     public void simpleMultiplePropertyTest() {
@@ -77,7 +87,7 @@ public class MatchTest extends CypherTestTemplate {
     }
 
     ///////////////////////////////////////////////
-    ///////// RELATIONSHOP
+    ///////// EDGE
     ///////////////////////////////////////////////
 
     @Test

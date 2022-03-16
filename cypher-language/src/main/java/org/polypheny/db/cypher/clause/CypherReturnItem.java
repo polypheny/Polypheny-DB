@@ -58,7 +58,9 @@ public class CypherReturnItem extends CypherReturn {
     public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
         if ( variable != null ) {
             // name -> aggregate
-            return Pair.of( variable.getName(), expression.getRexNode( context ) );
+            Pair<String, RexNode> res = expression.getRexNode( context );
+            assert res.left.equals( variable.getName() );
+            return expression.getRexNode( context );
         } else {
             return expression.getRexAsProject( context );
         }

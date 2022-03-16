@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.logical.graph;
+package org.polypheny.db.algebra.core;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
-import org.polypheny.db.algebra.core.GraphMatch;
+import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public class LogicalGraphMatch extends GraphMatch implements GraphAlg {
+public abstract class GraphMatch extends SingleAlg implements GraphAlg {
+
+    @Getter
+    protected final List<RexNode> matches;
+    @Getter
+    protected final List<String> names;
 
 
     /**
@@ -34,27 +40,10 @@ public class LogicalGraphMatch extends GraphMatch implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
-        super( cluster, traits, input, matches, names );
-        assertLogicalGraphTrait( traits );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + matches.hashCode() + "$" + names.hashCode();
-    }
-
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.MATCH;
-    }
-
-
-    @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+    protected GraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
+        super( cluster, traits, input );
+        this.matches = matches;
+        this.names = names;
     }
 
 }

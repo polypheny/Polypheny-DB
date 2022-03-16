@@ -22,6 +22,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -30,7 +31,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.util.Pair;
 
 @Getter
 public class LogicalGraphProject extends SingleAlg implements GraphAlg {
@@ -51,17 +51,25 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
         assertLogicalGraphTrait( traits );
         this.projects = projects;
         this.names = names;
-        assert this.names.size() == this.projects.size();
+        assert (this.names == null || this.projects == null) || this.names.size() == this.projects.size();
     }
 
 
     @Override
     protected AlgDataType deriveRowType() {
         List<AlgDataTypeField> fields = new ArrayList<>();
-        int i = 0;
-        for ( Pair<String, ? extends RexNode> pair : Pair.zip( names, projects ) ) {
-            fields.add( new AlgDataTypeFieldImpl( pair.left, i, pair.right.getType() ) );
-            i++;
+        if ( names != null && projects != null ) {
+            int i = 0;
+            int index = 0;
+            for ( String name : names ) {
+                if ( name != null ) {
+                    new AlgDataTypeFieldImpl( name, index, projects.get( i ).getType() );
+                    index++;
+                }
+                i++;
+            }
+        } else {
+            throw new UnsupportedOperationException();
         }
 
         return new AlgRecordType( fields );
@@ -77,6 +85,20 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
     @Override
     public NodeType getNodeType() {
         return NodeType.PROJECT;
+    }
+
+
+    public boolean isStar() {
+        if ( !projects.stream().allMatch( p -> p.isA( Kind.INPUT_REF ) ) ) {
+            return false;
+        }
+
+        if ( !(input instanceof LogicalGraphScan) &&
+                !((input instanceof LogicalGraphFilter) && ((LogicalGraphFilter) input).getCondition().isAlwaysTrue()) ) {
+            return false;
+        }
+
+        return true;
     }
 
 

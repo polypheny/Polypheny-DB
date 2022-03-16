@@ -64,6 +64,7 @@ import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
@@ -421,6 +422,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 return value instanceof PolyNode;
             case EDGE:
                 return value instanceof PolyEdge;
+            case PATH:
+                return value instanceof PolyPath;
             case MAP:
                 return value instanceof Map;
             default:
@@ -749,6 +752,10 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 break;
             case GRAPH:
                 assert value instanceof PolyGraph;
+                pw.print( value );
+                break;
+            case PATH:
+                assert value instanceof PolyPath;
                 pw.print( value );
                 break;
             default:

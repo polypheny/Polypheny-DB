@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 public abstract class CypherPattern extends CypherNode {
 
@@ -41,7 +42,7 @@ public abstract class CypherPattern extends CypherNode {
     }
 
 
-    public RexNode getPatternFilter( CypherContext context ) {
+    public Pair<String, RexNode> getPatternMatch( CypherContext context ) {
         throw new CypherSyntaxException( "Used pattern is not supported as graph filter." );
     }
 

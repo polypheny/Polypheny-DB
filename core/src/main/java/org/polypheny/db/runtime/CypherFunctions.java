@@ -24,18 +24,30 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.serialize.PolySerializer;
 
 @Deterministic
 @Slf4j
 public class CypherFunctions {
 
-    public static boolean patternMatch( PolyGraph graph, PolyGraph comp ) {
-        return graph.matches( comp );
+    public static boolean pathMatch( PolyGraph graph, PolyPath comp ) {
+        return false;
+    }
+
+
+    public static boolean nodeMatch( PolyGraph graph, PolyNode node ) {
+        return false;
+    }
+
+
+    public static Enumerable<PolyNode> nodeExtract( PolyGraph graph ) {
+        return Linq4j.asEnumerable( graph.getNodes().values() );
     }
 
 
@@ -77,6 +89,16 @@ public class CypherFunctions {
 
         return Linq4j.asEnumerable( nodes );
 
+    }
+
+
+    public static boolean propertiesMatch( PolyNode node, PolyDirectory properties ) {
+        return node.matchesProperties( properties );
+    }
+
+
+    public static boolean labelsMatch( PolyNode node, List<String> labels ) {
+        return node.matchesLabels( labels );
     }
 
 }

@@ -1502,7 +1502,9 @@ public class RexBuilder {
     }
 
 
+
     public RexLiteral makeMapFromBson( AlgDataType type, Map<String, BsonValue> bson ) {
+        @SuppressWarnings("RedundantCast") // seems necessary
         PolyMap<RexLiteral, RexLiteral> map = PolyMap.of( (Map<RexLiteral, RexLiteral>) bson.entrySet().stream().collect( Collectors.toMap( e -> makeLiteral( e.getKey() ), e -> BsonUtil.getAsLiteral( e.getValue(), this ) ) ) );
         return new RexLiteral( map, type, type.getPolyType() );
     }

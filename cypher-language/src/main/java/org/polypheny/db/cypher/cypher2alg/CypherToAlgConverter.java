@@ -17,8 +17,11 @@
 package org.polypheny.db.cypher.cypher2alg;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -28,9 +31,12 @@ import org.polypheny.db.algebra.logical.graph.LogicalGraph;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
@@ -47,6 +53,7 @@ import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -205,7 +212,7 @@ public class CypherToAlgConverter {
             context.add( pattern.getPatternValues( context ) );
         } else {
             // convert filter pattern ( RexNode CYPHER_PATTERN_MATCH )
-            context.add( pattern.getPatternFilter( context ) );
+            context.add( pattern.getPatternMatch( context ) );
         }
 
     }
@@ -225,7 +232,8 @@ public class CypherToAlgConverter {
         public final RexBuilder rexBuilder;
 
         private final Stack<AlgNode> stack = new Stack<>();
-        private final Stack<RexNode> rexStack = new Stack<>();
+        // named projects, null if no name provided
+        private final Stack<Pair<String, RexNode>> rexStack = new Stack<>();
         public final CypherNode original;
         public final LogicalGraph graph;
 
@@ -233,7 +241,9 @@ public class CypherToAlgConverter {
         public final AlgDataType booleanType;
         public final AlgDataType nodeType;
         public final AlgDataType edgeType;
-        private final PolyphenyDbCatalogReader catalogReader;
+        public final AlgDataType pathType;
+        public final PolyphenyDbCatalogReader catalogReader;
+        public final AlgDataTypeFactory typeFactory;
         public CypherNode active;
         public Kind kind;
 
@@ -248,6 +258,8 @@ public class CypherToAlgConverter {
             this.booleanType = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
             this.nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
             this.edgeType = cluster.getTypeFactory().createPolyType( PolyType.EDGE );
+            this.pathType = cluster.getTypeFactory().createPolyType( PolyType.PATH );
+            this.typeFactory = cluster.getTypeFactory();
             this.catalogReader = catalogReader;
         }
 
@@ -264,35 +276,85 @@ public class CypherToAlgConverter {
 
         public void combineMatch() {
             addDefaultScanIfNecessary();
-            RexNode condition = getCondition();
-            if ( condition.isAlwaysTrue() ) {
+            //AlgNode node = stack.peek();
+            List<Pair<String, RexNode>> matches = getMatches();
+
+
+            /*if ( condition.isAlwaysTrue() ) {
                 // blank MATCH (n) without condition
                 return;
+            }*/
+
+            stack.add( new LogicalGraphMatch( cluster, cluster.traitSet(), stack.pop(), Pair.right( matches ), Pair.left( matches ) ) );
+
+        }
+
+
+        private List<Pair<String, RexNode>> getMatches() {
+            ArrayList<Pair<String, RexNode>> namedMatch = new ArrayList<>();
+
+            while ( !rexStack.isEmpty() ) {
+                namedMatch.add( rexStack.pop() );
             }
-
-            AlgNode node = stack.pop();
-
-            stack.add( new LogicalGraphMatch( cluster, cluster.traitSet(), node, condition ) );
-
+            return namedMatch;
         }
 
 
         public void combineFilter() {
             addDefaultScanIfNecessary();
             AlgNode node = stack.pop();
-            RexNode condition = getCondition();
+
+            assert stack.size() == 1;
+
+            addProjectIfNecessary();
+
+            RexNode condition = getCondition( node );
 
             stack.add( new LogicalGraphFilter( cluster, cluster.traitSet(), node, condition ) );
         }
 
 
-        private RexNode getCondition() {
-            List<RexNode> nodes = new ArrayList<>();
-            while ( !rexStack.isEmpty() ) {
-                nodes.add( 0, rexStack.pop() );
-            }
+        private void addProjectIfNecessary() {
+            if ( stack.size() >= 1 && rexStack.size() > 0 ) {
+                AlgNode node = stack.peek();
+                if ( node.getRowType().getFieldList().size() == 1
+                        && node.getRowType().getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
+                    node = stack.pop();
 
-            return nodes.size() == 1 ? nodes.get( 0 ) : algBuilder.and( nodes );
+                    List<Pair<String, RexNode>> rex = new ArrayList<>();
+                    rexStack.iterator().forEachRemaining( rex::add );
+                    stack.add( new LogicalGraphProject( node.getCluster(), node.getTraitSet(), node, Pair.right( rex ), Pair.left( rex ) ) );
+                }
+            }
+        }
+
+
+        private RexNode getCondition( AlgNode node ) {
+            // maybe we need to insert a projection between the condition and
+            Pair<Collection<Pair<String, PolyType>>, RexNode> namesTypesAndCondition = getNamesAndCondition();
+
+            List<String> names = node.getRowType().getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+            if ( !namesTypesAndCondition.left.stream().allMatch( n -> names.contains( n.left ) ) ) {
+                if ( node.getRowType().getFieldList().size() != 1 || node.getRowType().getFieldList().get( 0 ).getType().getPolyType() != PolyType.GRAPH ) {
+                    throw new RuntimeException();
+                }
+                stack.add( new LogicalGraphProject( node.getCluster(), node.getTraitSet(), node, null, namesTypesAndCondition.left.stream().map( n -> n.left ).collect( Collectors.toList() ) ) );
+            }
+            return namesTypesAndCondition.right;
+        }
+
+
+        private Pair<Collection<Pair<String, PolyType>>, RexNode> getNamesAndCondition() {
+            List<RexNode> nodes = new ArrayList<>();
+            Set<Pair<String, PolyType>> namesAndTypes = new TreeSet<>();
+            while ( !rexStack.isEmpty() ) {
+                Pair<String, RexNode> popped = rexStack.pop();
+                nodes.add( popped.right );
+                namesAndTypes.add( Pair.of( popped.left, popped.right.getType().getPolyType() ) );
+            }
+            RexNode condition = nodes.size() == 1 ? nodes.get( 0 ) : algBuilder.and( nodes );
+
+            return Pair.of( namesAndTypes, condition );
         }
 
 
@@ -301,8 +363,13 @@ public class CypherToAlgConverter {
         }
 
 
-        public void add( RexNode node ) {
-            this.rexStack.add( node );
+        public void add( String name, RexNode node ) {
+            this.rexStack.add( Pair.of( name, node ) );
+        }
+
+
+        public void add( Pair<String, RexNode> namedNode ) {
+            this.rexStack.add( namedNode );
         }
 
 
@@ -340,6 +407,30 @@ public class CypherToAlgConverter {
                 return;
             }
             throw new UnsupportedOperationException();
+        }
+
+
+        public RexInputRef createRefToVar( String name, PolyType fieldType ) {
+            AlgNode node = stack.peek();
+            List<AlgDataTypeField> candidates = node
+                    .getRowType()
+                    .getFieldList()
+                    .stream()
+                    .filter( f -> f.getType().getPolyType() == fieldType
+                            && f.getName().equals( name ) ).collect( Collectors.toList() );
+            if ( candidates.isEmpty()
+                    && node.getRowType().getFieldList().size() == 1
+                    && node.getRowType().getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
+                // we have not yet done a projection,
+                // but there is still the possibility that we match against a graph
+                return rexBuilder.makeInputRef( graphType, 0 );
+
+            } else if ( candidates.size() == 1 ) {
+                return rexBuilder.makeInputRef( candidates.get( 0 ).getType(), candidates.get( 0 ).getIndex() );
+            } else {
+                throw new RuntimeException( "There seems to be a problem with the provided algebra node." );
+            }
+
         }
 
     }

@@ -66,13 +66,13 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public RexNode getRexNode( CypherContext context ) {
+    public Pair<String, RexNode> getRexNode( CypherContext context ) {
 
         OperatorName operatorName;
         switch ( type ) {
             case PATTERN:
                 // EveryPathPattern
-                return pattern.getPatternFilter( context );
+                //return pattern.getPatternMatch( context );
             case ALL:
                 operatorName = OperatorName.CYPHER_ALL_MATCH;
                 break;
@@ -97,10 +97,12 @@ public class CypherExpression extends CypherNode {
         //  AND all(x IN nodes(p) WHERE x.age > 30)
         //  RETURN p
 
-        return new RexCall(
+        String var = variable.getName();
+
+        return Pair.of( var, new RexCall(
                 context.booleanType,
                 OperatorRegistry.get( operatorName ),
-                List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRexNode( context ) ) );
+                List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRexNode( context ).right ) ) );
     }
 
 

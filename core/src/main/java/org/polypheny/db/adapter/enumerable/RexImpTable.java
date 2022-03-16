@@ -344,7 +344,14 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ANY_MATCH ), implementor );
         map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
         map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NONE_MATCH ), implementor );
-        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PATTERN_MATCH ), BuiltInMethod.GRAPH_PATTERN_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.GRAPH_PATH_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.GRAPH_NODE_EXTRACT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.GRAPH_NODE_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_LABELS_MATCH ), BuiltInMethod.CYPHER_LABELS_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PROPERTIES_MATCH ), BuiltInMethod.CYPHER_PROPERTIES_MATCH.method, NullPolicy.NONE );
+
+        defineMethod( OperatorRegistry.get( OperatorName.DESERIALIZE_LIST ), BuiltInMethod.DESERIALIZE_LIST.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.DESERIALIZE_DIRECTORY ), BuiltInMethod.DESERIALIZE_DIRECTORY.method, NullPolicy.NONE );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
@@ -2620,7 +2627,7 @@ public class RexImpTable {
                             return return_;
                     }
 
-                case CYPHER_PATTERN_MATCH:
+                case CYPHER_PATH_MATCH:
                     throw new UnsupportedOperationException( "Pattern match is not yet supported" );
 
             }

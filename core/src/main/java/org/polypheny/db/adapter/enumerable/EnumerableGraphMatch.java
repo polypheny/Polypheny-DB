@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.logical.graph;
+package org.polypheny.db.adapter.enumerable;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.core.GraphMatch;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public class LogicalGraphMatch extends GraphMatch implements GraphAlg {
-
+public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
 
     /**
      * Creates a <code>SingleRel</code>.
@@ -34,9 +32,14 @@ public class LogicalGraphMatch extends GraphMatch implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
+    protected EnumerableGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
         super( cluster, traits, input, matches, names );
-        assertLogicalGraphTrait( traits );
+    }
+
+
+    @Override
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
+        return null;
     }
 
 
@@ -54,7 +57,7 @@ public class LogicalGraphMatch extends GraphMatch implements GraphAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+        return new EnumerableGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
     }
 
 }

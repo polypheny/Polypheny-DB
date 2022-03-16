@@ -43,7 +43,8 @@ public abstract class GraphObject {
     public enum GraphObjectType {
         GRAPH,
         NODE,
-        RELATIONSHIP
+        RELATIONSHIP,
+        PATH
     }
 
 }

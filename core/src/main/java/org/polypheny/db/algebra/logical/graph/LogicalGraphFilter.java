@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.graph;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
@@ -26,6 +27,7 @@ import org.polypheny.db.rex.RexNode;
 
 public class LogicalGraphFilter extends SingleAlg implements GraphAlg {
 
+    @Getter
     private final RexNode condition;
 
 

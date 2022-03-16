@@ -18,6 +18,7 @@ package org.polypheny.db.schema.graph;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -49,6 +50,29 @@ public abstract class GraphPropertyHolder extends GraphObject {
                 .stream()
                 .map( l -> new RexLiteral( new NlsString( l, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 ), PolyType.CHAR ) )
                 .collect( Collectors.toCollection( PolyList::new ) );
+    }
+
+
+    public boolean matchesProperties( PolyDirectory properties ) {
+        if ( this.properties.size() != properties.size() ) {
+            return false;
+        }
+
+        for ( Entry<String, Object> entry : this.properties.entrySet() ) {
+            if ( !properties.containsKey( entry.getKey() ) ) {
+                return false;
+            }
+            if ( !properties.get( entry.getKey() ).equals( entry.getValue() ) ) {
+                return false;
+            }
+        }
+        return true;
+
+    }
+
+
+    public boolean matchesLabels( List<String> labels ) {
+        return this.labels.equals( labels );
     }
 
 }

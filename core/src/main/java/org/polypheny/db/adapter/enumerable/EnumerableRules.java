@@ -107,5 +107,8 @@ public class EnumerableRules {
     public static final EnumerableTableFunctionScanRule ENUMERABLE_TABLE_FUNCTION_SCAN_RULE = new EnumerableTableFunctionScanRule( AlgFactories.LOGICAL_BUILDER );
 
     public static final EnumerableTransformerRule ENUMERABLE_TRANSFORMER_RULE = new EnumerableTransformerRule();
+
+    public static final EnumerableGraphMatchRule ENUMERABLE_GRAPH_MATCH_RULE = new EnumerableGraphMatchRule( AlgFactories.LOGICAL_BUILDER );
+
 }
 

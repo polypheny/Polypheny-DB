@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -29,10 +30,9 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
@@ -76,16 +76,16 @@ public class CypherEveryPathPattern extends CypherPattern {
     }
 
 
-    private List<Pair<String, PolyEdge>> getPolyRelationships( List<PolyNode> nodes ) {
+    private List<Pair<String, PolyEdge>> getPolyEdges( List<Pair<String, PolyNode>> nodes ) {
         List<Pair<String, PolyEdge>> edges = new ArrayList<>();
         assert nodes.size() == this.edges.size() + 1;
 
-        PolyNode node = nodes.get( 0 );
+        Pair<String, PolyNode> node = nodes.get( 0 );
         int i = 0;
 
         for ( CypherRelPattern edge : this.edges ) {
-            PolyNode next = nodes.get( ++i ); // next node
-            edges.add( edge.getPolyRelationship( node.id, next.id ) );
+            Pair<String, PolyNode> next = nodes.get( ++i ); // next node
+            edges.add( edge.getPolyRelationship( node.right.id, next.right.id ) );
             node = next;
         }
 
@@ -96,53 +96,48 @@ public class CypherEveryPathPattern extends CypherPattern {
     @Override
     public LogicalGraphValues getPatternValues( CypherContext context ) {
         List<Pair<String, PolyNode>> nodes = getPolyNodes();
-        List<Pair<String, PolyEdge>> relationships = getPolyRelationships( Pair.right( nodes ) );
+        List<Pair<String, PolyEdge>> relationships = getPolyEdges( nodes );
 
         return LogicalGraphValues.create( context.cluster, context.cluster.traitSet(), nodes, context.nodeType, relationships, context.edgeType );
     }
 
 
     @Override
-    public RexNode getPatternFilter( CypherContext context ) {
+    public Pair<String, RexNode> getPatternMatch( CypherContext context ) {
         if ( edges.isEmpty() ) {
             return getNodeFilter( context );
-        } else if ( nodes.isEmpty() ) {
-            return getEdgeFilter( context );
         }
-        return getGraphFilter( context );
+        return Pair.of( null, getPathFilter( context ) );
     }
 
 
-    private RexNode getNodeFilter( CypherContext context ) {
+    private Pair<String, RexNode> getNodeFilter( CypherContext context ) {
         // single node match MATCH (n) RETURN n
         assert nodes.size() == 1;
+        context.addDefaultScanIfNecessary();
         Pair<String, PolyNode> nameNode = nodes.get( 0 ).getPolyNode();
 
+        RexInputRef graphRef = context.rexBuilder.makeInputRef( context.nodeType, 0 );
         if ( nameNode.right.isBlank() ) {
-            return new RexLiteral( true, context.booleanType, PolyType.BOOLEAN );
+            return Pair.of( nameNode.left, context.rexBuilder.makeCall( context.nodeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_EXTRACT ), List.of( graphRef ) ) );
         } else {
-            throw new UnsupportedOperationException();
+            return Pair.of( nameNode.left, context.rexBuilder.makeCall( context.nodeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_MATCH ), List.of( graphRef, new RexLiteral( nameNode.right, context.nodeType, PolyType.NODE ) ) ) );
         }
     }
 
 
-    private RexNode getEdgeFilter( CypherContext context ) {
-        return null;
-    }
+    private RexNode getPathFilter( CypherContext context ) {
+        List<Pair<String, PolyNode>> polyNodes = getPolyNodes();
 
-
-    private RexCall getGraphFilter( CypherContext context ) {
-        List<PolyNode> polyNodes = Pair.right( getPolyNodes() );
-        PolyMap<String, PolyNode> nodes = new PolyMap<>( polyNodes.stream().collect( Collectors.toMap( e -> e.id, e -> e ) ) );
-        PolyMap<String, PolyEdge> relationships = new PolyMap<>( getPolyRelationships( polyNodes ).stream().collect( Collectors.toMap( e -> e.right.id, e -> e.right ) ) );
-        PolyGraph graph = new PolyGraph( nodes, relationships );
+        List<Pair<String, PolyEdge>> polyEdges = getPolyEdges( polyNodes );
+        PolyPath path = PolyPath.create( polyNodes, polyEdges );
 
         return new RexCall(
                 context.graphType,
-                OperatorRegistry.get( OperatorName.CYPHER_PATTERN_MATCH ),
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PATH_MATCH ),
                 List.of(
-                        new RexLiteral( graph, context.graphType, PolyType.GRAPH ),
-                        new RexInputRef( 0, context.graphType ) ) );
+                        new RexInputRef( 0, context.graphType ),
+                        new RexLiteral( path, context.typeFactory.createPathType( path.getPathType( context.nodeType, context.edgeType ) ), PolyType.PATH ) ) );
     }
 
 }
