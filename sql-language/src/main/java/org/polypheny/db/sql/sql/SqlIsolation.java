@@ -17,38 +17,37 @@
 package org.polypheny.db.sql.sql;
 
 
+import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.util.ImmutableNullableList;
 
 
-public class SqlFreshness extends SqlIsolation {
+/**
+ * Parse tree node representing a {@code WITH ISOLATION} clause.
+ */
+public class SqlIsolation extends SqlCall {
 
-    // Considered as the lower bound
-    public SqlNode toleratedFreshness;
-    public SqlIdentifier evaluationType;
-    public SqlIdentifier unit;
+    public SqlIdentifier isolationLevel;
 
 
-    public SqlFreshness(
+    public SqlIsolation(
             ParserPos pos,
-            SqlNode toleratedFreshness,
-            SqlIdentifier evaluationType,
-            SqlIdentifier unit ) {
-        super( pos, new SqlIdentifier( "NONE", pos ) );
+            SqlIdentifier isolationLevel ) {
+        super( pos );
 
-        this.toleratedFreshness = toleratedFreshness;
-        this.evaluationType = evaluationType;
-        this.unit = unit;
-
+        if ( isolationLevel == null ) {
+            this.isolationLevel = new SqlIdentifier( "STRICT", pos );
+        } else {
+            this.isolationLevel = isolationLevel;
+        }
     }
 
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( toleratedFreshness, evaluationType, unit );
+        return Collections.EMPTY_LIST;
     }
 
 
@@ -60,6 +59,7 @@ public class SqlFreshness extends SqlIsolation {
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( toleratedFreshness, evaluationType, unit );
+        return Collections.EMPTY_LIST;
     }
+
 }

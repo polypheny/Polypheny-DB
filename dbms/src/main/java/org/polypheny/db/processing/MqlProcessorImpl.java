@@ -182,7 +182,7 @@ public class MqlProcessorImpl extends MqlProcessor {
 
 
     @Override
-    protected void inspectFreshness( Statement statement, Node query ) {
+    protected void inspectIsolation( Statement statement, Node query ) {
         throw new RuntimeException( "MQLProcessor does not support Freshness operations yet!" );
     }
 

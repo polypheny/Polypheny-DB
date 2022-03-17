@@ -50,6 +50,7 @@ import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
+import org.polypheny.db.replication.IsolationLevel;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -103,6 +104,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private FreshnessSpecification globalFreshnessSpecification;
 
     private AccessMode accessMode = AccessMode.NO_ACCESS;
+
+    private IsolationLevel isolationLevel = IsolationLevel.STRICT;
 
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
@@ -330,6 +333,18 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public void setAcceptsOutdatedCopies( boolean acceptsOutdatedCopies ) {
         this.acceptsOutdatedCopies = acceptsOutdatedCopies;
+    }
+
+
+    @Override
+    public void setIsolationLevel( IsolationLevel isolationLevel ) {
+        this.isolationLevel = isolationLevel;
+    }
+
+
+    @Override
+    public IsolationLevel getIsolationLevel() {
+        return isolationLevel;
     }
 
 

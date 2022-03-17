@@ -51,7 +51,7 @@ public class SqlSelect extends SqlCall implements Select {
     SqlNodeList orderBy;
     SqlNode offset;
     SqlNode fetch;
-    SqlNode freshness;
+    SqlNode isolation;
 
 
     public SqlSelect(
@@ -66,7 +66,7 @@ public class SqlSelect extends SqlCall implements Select {
             SqlNodeList orderBy,
             SqlNode offset,
             SqlNode fetch,
-            SqlNode freshness ) {
+            SqlNode isolation ) {
         super( pos );
         this.keywordList = Objects.requireNonNull(
                 keywordList != null
@@ -84,7 +84,7 @@ public class SqlSelect extends SqlCall implements Select {
         this.orderBy = orderBy;
         this.offset = offset;
         this.fetch = fetch;
-        this.freshness = freshness;
+        this.isolation = isolation;
     }
 
 
@@ -146,7 +146,7 @@ public class SqlSelect extends SqlCall implements Select {
                 fetch = (SqlNode) operand;
                 break;
             case 10:
-                freshness = (SqlNode) operand;
+                isolation = (SqlNode) operand;
                 break;
             default:
                 throw new AssertionError( i );
@@ -268,13 +268,13 @@ public class SqlSelect extends SqlCall implements Select {
     }
 
 
-    public final SqlNode getFreshness() {
-        return freshness;
+    public final SqlNode getIsolationCriteria() {
+        return isolation;
     }
 
 
-    public void setFreshness( SqlNode freshness ) {
-        this.freshness = freshness;
+    public void setIsolationCriteria( SqlNode isolation ) {
+        this.isolation = isolation;
     }
 
 

@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownIsolationLevelException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -54,6 +55,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.processing.replication.IsolationExtractor;
 import org.polypheny.db.processing.replication.freshness.FreshnessExtractor;
 import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
 import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitRuntimeException;
@@ -64,6 +66,7 @@ import org.polypheny.db.sql.sql.SqlBasicCall;
 import org.polypheny.db.sql.sql.SqlFreshness;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlInsert;
+import org.polypheny.db.sql.sql.SqlIsolation;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
@@ -71,7 +74,8 @@ import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.sql.parser.SqlParser;
-import org.polypheny.db.sql.sql.util.freshness.SqlFreshnessExtractor;
+import org.polypheny.db.sql.sql.util.replication.SqlIsolationExtractor;
+import org.polypheny.db.sql.sql.util.replication.freshness.SqlFreshnessExtractor;
 import org.polypheny.db.sql.sql.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
@@ -191,7 +195,7 @@ public class SqlProcessorImpl extends Processor {
         }
         stopWatch.start();
 
-        inspectFreshness( statement, query );
+        inspectIsolation( statement, query );
 
         Config sqlToAlgConfig = NodeToAlgConverter.configBuilder().build();
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
@@ -438,19 +442,32 @@ public class SqlProcessorImpl extends Processor {
 
 
     @Override
-    protected void inspectFreshness( Statement statement, Node query ) {
-        if ( query.getKind() == Kind.SELECT && ((SqlSelect) query).getFreshness() != null ) {
-            extractFreshness( statement, (SqlSelect) query );
+    protected void inspectIsolation( Statement statement, Node query ) {
+
+        if ( query.getKind() == Kind.SELECT && ((SqlSelect) query).getIsolationCriteria() != null ) {
+
+            SqlIsolation sqlIsolation = (SqlIsolation) ((SqlSelect) query).getIsolationCriteria();
+            IsolationExtractor isolationExtractor = new SqlIsolationExtractor( sqlIsolation.isolationLevel );
+
+            try {
+                statement.getTransaction().setIsolationLevel( isolationExtractor.extractIsolationLevel() );
+            } catch ( UnknownIsolationLevelException e ) {
+                e.printStackTrace();
+            }
+
+            if ( sqlIsolation instanceof SqlFreshness ) {
+                extractFreshness( statement, (SqlFreshness) sqlIsolation );
+            }
         }
     }
 
 
-    private void extractFreshness( Statement statement, SqlSelect select ) {
+    private void extractFreshness( Statement statement, SqlFreshness freshnessNode ) {
 
         // TODO @HENNLO Check that no DML had already been executed when accepting this query.
         // Maybe do this and the evaluation later in AbstractQueryProcessor
 
-        SqlFreshness freshnessNode = (SqlFreshness) select.getFreshness();
+        //SqlFreshness freshnessNode = freshness.getIsolationCriteria();
 
         try {
             FreshnessExtractor freshnessExtractor = new SqlFreshnessExtractor(

@@ -42,8 +42,9 @@ public class LockManager {
 
     public void lock( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier, @NonNull TransactionImpl transaction, @NonNull Lock.LockMode requestedMode ) throws DeadlockException {
 
-        //TODO @HENNLO Make sure that if we need to reacquire a lock for PRIMARY in routing
-        // We need a lever to falls back to the else part, because the TX still "acceptsOutdated"
+        //TODO @HENNLO Make sure that if we need to re-acquire a lock for PRIMARY in routing
+        // We need a lever to fall back to the 'else' part, because the TX still "acceptsOutdated"
+        // Depends if we also accept DIRTY-READS for every freshness specified read
 
         // Decide on which locking  approach to focus
         if ( transaction.acceptsOutdatedCopies() ) {

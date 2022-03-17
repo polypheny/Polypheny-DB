@@ -987,7 +987,7 @@ SqlSelect SqlSelect() :
     final SqlNodeList groupBy;
     final SqlNode having;
     final SqlNodeList windowDecls;
-    final SqlNode freshness;
+    final SqlNode isolation;
     final Span s;
 }
 {
@@ -1019,7 +1019,7 @@ SqlSelect SqlSelect() :
         groupBy = GroupByOpt()
         having = HavingOpt()
         windowDecls = WindowOpt()
-        freshness = FreshnessOpt()
+        isolation = IsolationOpt()
     |
         E() {
             fromClause = null;
@@ -1027,13 +1027,13 @@ SqlSelect SqlSelect() :
             groupBy = null;
             having = null;
             windowDecls = null;
-            freshness = null;
+            isolation = null;
         }
     )
     {
         return new SqlSelect(s.end(this), keywordList,
             new SqlNodeList(selectList, Span.of(selectList).pos()),
-            fromClause, where, groupBy, having, windowDecls, null, null, null, freshness);
+            fromClause, where, groupBy, having, windowDecls, null, null, null, isolation);
     }
 }
 
@@ -2252,17 +2252,68 @@ SqlNode HavingOpt() :
     { return null; }
 }
 
+
+/**
+ * Parses the optional ISOLATION criteria for SELECT.
+ * This can either be an ISOLATION or FRESHNESS specification.
+ */
+SqlNode IsolationOpt() :
+{
+    SqlNode e;
+
+}
+{
+    <WITH> <FRESHNESS>
+    {
+        e = FreshnessSpecification();
+        return e;
+    }
+
+|
+
+    <WITH> <ISOLATION>
+    {
+        e = IsolationSpecification();
+        return e;
+    }
+
+|
+    { return null; }
+}
+
+
+/**
+ * Parses the optional ISOLATION clause for SELECT.
+ */
+SqlNode IsolationSpecification() :
+{
+    SqlNode isolationCriteria;
+    SqlIdentifier isolationIdentifier;
+
+}
+{
+    (
+            <NONE>
+            {
+                isolationIdentifier = new SqlIdentifier( "NONE", getPos() );
+            }
+    )
+    { return new SqlIsolation( getPos(), isolationIdentifier ); }
+|
+    { return null; }
+}
+
+
 /**
  * Parses the optional FRESHNESS clause for SELECT.
  */
-SqlNode FreshnessOpt() :
+SqlNode FreshnessSpecification() :
 {
     SqlNode toleratedFreshness;
     SqlIdentifier rawEvaluationType;
     SqlIdentifier unit;
 }
 {
-    <FRESHNESS>
     (
             toleratedFreshness = DateTimeLiteral()
             {
@@ -2304,7 +2355,6 @@ SqlNode FreshnessOpt() :
 |
     { return null; }
 }
-
 
 
 /**

@@ -18,6 +18,8 @@ package org.polypheny.db.processing.replication.freshness;
 
 
 import java.sql.Timestamp;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.replication.freshness.FreshnessManager.EvaluationType;
 import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
 import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitRuntimeException;
@@ -27,9 +29,23 @@ import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpe
 
 public abstract class FreshnessExtractor {
 
-    public FreshnessSpecification freshnessSpecification;
+    protected FreshnessSpecification freshnessSpecification;
+
+    protected Node toleratedFreshness;
+    protected Identifier rawEvaluationType;
+    protected Identifier unit;
 
     //TODO @HENNLO Add extractor for other querylanguages
+
+
+    protected FreshnessExtractor(
+            Node toleratedFreshness,
+            Identifier rawEvaluationType,
+            Identifier unit ) {
+        this.toleratedFreshness = toleratedFreshness;
+        this.rawEvaluationType = rawEvaluationType;
+        this.unit = unit;
+    }
 
 
     /**

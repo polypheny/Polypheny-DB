@@ -80,7 +80,7 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    protected void inspectFreshness( Statement statement, Node query ) {
+    protected void inspectIsolation( Statement statement, Node query ) {
         throw new RuntimeException( "JsonProcessor does not support Freshness operations yet!" );
     }
 

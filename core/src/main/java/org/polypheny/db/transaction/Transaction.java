@@ -28,6 +28,7 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
+import org.polypheny.db.replication.IsolationLevel;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
@@ -80,6 +81,10 @@ public interface Transaction {
     boolean getUseCache();
 
     void setAcceptsOutdatedCopies( boolean acceptsOutdatedCopies );
+
+    void setIsolationLevel( IsolationLevel isolationLevel );
+
+    IsolationLevel getIsolationLevel();
 
     boolean acceptsOutdatedCopies();
 

@@ -94,7 +94,7 @@ public abstract class Processor {
 
     public abstract AlgDataType getParameterRowType( Node left );
 
-    protected abstract void inspectFreshness( Statement statement, Node query );
+    protected abstract void inspectIsolation( Statement statement, Node query );
 
     void attachAnalyzer( Statement statement, AlgRoot logicalRoot ) {
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();

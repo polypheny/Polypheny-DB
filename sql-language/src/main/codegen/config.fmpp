@@ -42,6 +42,7 @@ data: {
             "org.polypheny.db.sql.sql.SqlInsert"
             "org.polypheny.db.sql.sql.SqlInsertKeyword"
             "org.polypheny.db.sql.sql.SqlIntervalQualifier"
+            "org.polypheny.db.sql.sql.SqlIsolation"
             "org.polypheny.db.sql.sql.SqlJdbcDataTypeName"
             "org.polypheny.db.sql.sql.SqlJdbcFunctionCall"
             "org.polypheny.db.sql.sql.SqlJoin"

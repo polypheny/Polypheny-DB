@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.sql.util.freshness;
+package org.polypheny.db.sql.sql.util.replication.freshness;
 
 
 import java.sql.Timestamp;
@@ -33,18 +33,11 @@ import org.polypheny.db.sql.sql.SqlTimestampLiteral;
 public class SqlFreshnessExtractor extends FreshnessExtractor {
 
 
-    private Node toleratedFreshness;
-    private Identifier rawEvaluationType;
-    private Identifier unit;
-
-
     public SqlFreshnessExtractor(
             Node toleratedFreshness,
             Identifier rawEvaluationType,
             Identifier unit ) {
-        this.toleratedFreshness = toleratedFreshness;
-        this.rawEvaluationType = rawEvaluationType;
-        this.unit = unit;
+        super( toleratedFreshness, rawEvaluationType, unit );
     }
 
 
