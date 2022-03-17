@@ -53,10 +53,6 @@ public class CypherTestTemplate {
     }
 
 
-    public static void createData() {
-
-    }
-
 
     @AfterClass
     public static void tearDown() {

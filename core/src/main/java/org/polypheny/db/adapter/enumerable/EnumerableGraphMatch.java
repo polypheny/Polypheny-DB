@@ -108,7 +108,7 @@ public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
                     extract = true;
                     method = BuiltInMethod.GRAPH_NODE_EXTRACT.method;
                     break;
-                case CYPHER_NONE_MATCH:
+                case CYPHER_NODE_MATCH:
                     method = BuiltInMethod.GRAPH_NODE_MATCH.method;
                     break;
                 case CYPHER_PATH_MATCH:

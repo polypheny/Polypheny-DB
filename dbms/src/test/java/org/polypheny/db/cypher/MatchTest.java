@@ -16,13 +16,35 @@
 
 package org.polypheny.db.cypher;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
 
 @Slf4j
 public class MatchTest extends CypherTestTemplate {
+
+    private static String SINGLE_NODE_PERSON = "CREATE (p:Person {name: 'Max'})";
+
+    private static String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Hans'})";
+
+    private static String SINGLE_NODE_ANIMAL = "CREATE (a:ANIMAL {name:'Kira', age:3, type:'dog'})";
+
+    private static String SINGLE_EDGE = "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})";
+
+    private static String MULTIPLE_HOP_EDGE = "CREATE (n:Person)-[f:FRIEND_OF]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})";
+
+
+    @Before
+    public void reset() {
+        tearDown();
+        createSchema();
+    }
+
 
     ///////////////////////////////////////////////
     ///////// MATCH
@@ -36,32 +58,74 @@ public class MatchTest extends CypherTestTemplate {
 
 
     @Test
-    public void simpleMatchLabelTest() {
-        tearDown();
-        createSchema();
-        createData();
+    public void simpleMatchNoneTest() {
+        execute( SINGLE_NODE_ANIMAL );
+        execute( SINGLE_NODE_PERSON );
 
         Result res = CypherConnection.executeGetResponse(
-                "MATCH (n:Person)\n" +
-                        "RETURN n" );
-
+                "MATCH (n:Villain) RETURN n" );
+        isNode( res );
+        isEmpty( res );
 
     }
 
+
+    @Test
+    public void simpleMatchLabelTest() {
+        execute( SINGLE_NODE_ANIMAL );
+        execute( SINGLE_NODE_PERSON );
+
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (n:Person) RETURN n" );
+        isNode( res );
+        containsNodes( res, true, TestNode.from( List.of(), Pair.of( "name", "Max" ) ) );
+
+    }
+
+
     @Test
     public void simpleMatchSinglePropertyTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (n:Person {name: 'Max Muster'})\n" +
-                        "RETURN n" );
+        execute( SINGLE_NODE_ANIMAL );
+        execute( SINGLE_NODE_PERSON );
+        execute( SINGLE_NODE_PERSON_1 );
 
+        Result res = CypherConnection.executeGetResponse(
+                "MATCH (n {name: 'Max'})\n" +
+                        "RETURN n" );
+        isNode( res );
+        containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
+
+        res = CypherConnection.executeGetResponse(
+                "MATCH (n {name: 'Hans'})\n" +
+                        "RETURN n" );
+        isNode( res );
+        containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) ) );
+
+        res = CypherConnection.executeGetResponse(
+                "MATCH (n {name: 'David'})\n" +
+                        "RETURN n" );
+        isNode( res );
+        isEmpty( res );
     }
 
 
     @Test
     public void simpleMatchMultiplePropertyTest() {
+        execute( SINGLE_NODE_ANIMAL );
+        execute( SINGLE_NODE_PERSON );
+        execute( SINGLE_NODE_PERSON_1 );
+
         Result res = CypherConnection.executeGetResponse(
-                "MATCH (n:Person {name: 'Max Muster', age: 3})\n" +
+                "MATCH (n {name: 'Kira', age: 21})\n" +
                         "RETURN n" );
+        isNode( res );
+        isEmpty( res );
+
+        res = CypherConnection.executeGetResponse(
+                "MATCH (n {name: 'Kira', age: 3})\n" +
+                        "RETURN n" );
+        isNode( res );
+        containsNodes( res, true, TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ) ) );
 
     }
 
@@ -91,6 +155,7 @@ public class MatchTest extends CypherTestTemplate {
     ///////// EDGE
     ///////////////////////////////////////////////
 
+
     @Test
     public void simpleRelationshipTest() {
         Result res = CypherConnection.executeGetResponse(
@@ -98,6 +163,7 @@ public class MatchTest extends CypherTestTemplate {
                         "RETURN r" );
 
     }
+
 
     @Test
     public void simpleDirectedRelationshipTest() {
@@ -107,6 +173,7 @@ public class MatchTest extends CypherTestTemplate {
 
     }
 
+
     @Test
     public void simpleMixedRelationshipTest() {
         Result res = CypherConnection.executeGetResponse(
@@ -115,6 +182,7 @@ public class MatchTest extends CypherTestTemplate {
 
     }
 
+
     @Test
     public void simpleMixedDirectedRelationshipTest() {
         Result res = CypherConnection.executeGetResponse(
@@ -122,6 +190,7 @@ public class MatchTest extends CypherTestTemplate {
                         "RETURN p" );
 
     }
+
 
     @Test
     public void simpleWholeRelationshipTest() {

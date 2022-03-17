@@ -54,15 +54,15 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
 
     public boolean matchesProperties( PolyDirectory properties ) {
-        if ( this.properties.size() != properties.size() ) {
+        /*if ( this.properties.size() != properties.size() ) {
             return false;
-        }
+        }*/
 
-        for ( Entry<String, Object> entry : this.properties.entrySet() ) {
-            if ( !properties.containsKey( entry.getKey() ) ) {
+        for ( Entry<String, Object> entry : properties.entrySet() ) {
+            if ( !this.properties.containsKey( entry.getKey() ) ) {
                 return false;
             }
-            if ( !properties.get( entry.getKey() ).equals( entry.getValue() ) ) {
+            if ( !this.properties.get( entry.getKey() ).equals( entry.getValue() ) ) {
                 return false;
             }
         }
