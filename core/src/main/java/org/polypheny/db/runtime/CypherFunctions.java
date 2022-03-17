@@ -39,13 +39,13 @@ public class CypherFunctions {
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyPath> pathMatch( PolyGraph graph, PolyPath comp ) {
-        return null;
+        return Linq4j.asEnumerable( graph.extract( comp ) );
     }
 
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyNode> nodeMatch( PolyGraph graph, PolyNode node ) {
-        return null;
+        return Linq4j.asEnumerable( graph.extract( node ) );
     }
 
 

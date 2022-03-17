@@ -75,4 +75,21 @@ public abstract class GraphPropertyHolder extends GraphObject {
         return this.labels.equals( labels );
     }
 
+
+    public boolean labelAndPropertyMatch( GraphPropertyHolder other ) {
+        // we dont need to match the source and target, this is done via segements or paths
+        if ( !other.properties.isEmpty() ) {
+            if ( !matchesProperties( other.properties ) ) {
+                return false;
+            }
+        }
+        if ( !other.labels.isEmpty() ) {
+            if ( !matchesLabels( other.labels ) ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }

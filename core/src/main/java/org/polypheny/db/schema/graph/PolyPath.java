@@ -16,6 +16,10 @@
 
 package org.polypheny.db.schema.graph;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +41,8 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
     private final List<PolyEdge> edges;
     private final List<String> names;
     private final List<GraphObject> path;
+    @Getter
+    private final List<PolySegment> segments;
 
 
     public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphObject> path ) {
@@ -52,6 +58,16 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
         this.edges = edges;
         this.names = names;
         this.path = path;
+
+        List<PolySegment> segments = new ArrayList<>();
+        int i = 0;
+        for ( PolyEdge edge : edges ) {
+            PolyNode node = nodes.get( i );
+            segments.add( new PolySegment( node.id, edge.id, nodes.get( i + 1 ).id ) );
+            i++;
+        }
+        this.segments = segments;
+
     }
 
 
@@ -73,7 +89,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
             }
         }
 
-        return new PolyPath( Pair.right( polyNodes ), Pair.right( polyEdges ), names, path );
+        return new PolyPath( new ArrayList<>( Pair.right( polyNodes ) ), new ArrayList<>( Pair.right( polyEdges ) ), names, path );
 
     }
 
@@ -121,14 +137,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
 
     public GraphObject get( int index ) {
         assert index < names.size();
-        int i = 0;
-        for ( GraphObject object : path ) {
-            if ( index == i ) {
-                return object;
-            }
-            i++;
-        }
-        return null;
+        return path.get( index );
     }
 
 
@@ -137,10 +146,107 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
         return Expressions.convert_(
                 Expressions.call(
                         PolySerializer.class,
-                        "deJsonize",
-                        List.of( Expressions.constant( PolySerializer.jsonize( this ) ), Expressions.constant( PolyPath.class ) ) ),
+                        "deserializeAndCompress",
+                        List.of( Expressions.constant( PolySerializer.serializeAndCompress( this ) ), Expressions.constant( PolyPath.class ) ) ),
                 PolyPath.class
         );
     }
+
+
+    public List<PolySegment> getDerefSegments() {
+        ArrayList<PolySegment> segments = new ArrayList<>();
+        int i = 0;
+        for ( PolyEdge edge : edges ) {
+            PolyNode node = nodes.get( i );
+            segments.add( new PolySegment( node, edge, nodes.get( i + 1 ) ) );
+            i++;
+        }
+        return segments;
+    }
+
+
+    public static class PolyPathSerializer extends Serializer<PolyPath> {
+
+        @Override
+        public void write( Kryo kryo, Output output, PolyPath object ) {
+            kryo.writeClassAndObject( output, object.nodes );
+            kryo.writeClassAndObject( output, object.edges );
+            kryo.writeClassAndObject( output, object.names );
+            kryo.writeClassAndObject( output, object.path );
+        }
+
+
+        @Override
+        public PolyPath read( Kryo kryo, Input input, Class<? extends PolyPath> type ) {
+            List<PolyNode> nodes = (List<PolyNode>) kryo.readClassAndObject( input );
+            List<PolyEdge> edges = (List<PolyEdge>) kryo.readClassAndObject( input );
+            List<String> names = (List<String>) kryo.readClassAndObject( input );
+            List<GraphObject> objects = (List<GraphObject>) kryo.readClassAndObject( input );
+            return new PolyPath( nodes, edges, names, objects );
+        }
+
+    }
+
+
+    public static class PolySegment extends GraphObject {
+
+        public final String sourceId;
+        public final String edgeId;
+        public final String targetId;
+        public final PolyNode source;
+        public final PolyEdge edge;
+        public final PolyNode target;
+
+        public final boolean isRef;
+
+
+        protected PolySegment( String sourceId, String edgeId, String targetId ) {
+            super( null, GraphObjectType.SEGEMENT );
+            this.sourceId = sourceId;
+            this.edgeId = edgeId;
+            this.targetId = targetId;
+            isRef = true;
+
+            source = null;
+            edge = null;
+            target = null;
+        }
+
+
+        protected PolySegment( PolyNode source, PolyEdge edge, PolyNode target ) {
+            super( null, GraphObjectType.SEGEMENT );
+            isRef = false;
+            this.sourceId = source.id;
+            this.edgeId = edge.id;
+            this.targetId = target.id;
+            this.source = source;
+            this.edge = edge;
+            this.target = target;
+        }
+
+
+        public boolean matches( PolyNode source, PolyEdge edge, PolyNode target ) {
+            assert !isRef;
+
+            assert this.source != null;
+            if ( !source.labelAndPropertyMatch( this.source ) ) {
+                return false;
+            }
+
+            assert this.edge != null;
+            if ( !edge.labelAndPropertyMatch( this.edge ) ) {
+                return false;
+            }
+
+            assert this.target != null;
+            if ( !target.labelAndPropertyMatch( this.target ) ) {
+                return false;
+            }
+            return true;
+
+        }
+
+    }
+
 
 }

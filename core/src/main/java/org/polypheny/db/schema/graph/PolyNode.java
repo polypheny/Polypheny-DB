@@ -73,8 +73,8 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
         return Expressions.convert_(
                 Expressions.call(
                         PolySerializer.class,
-                        "deJsonize",
-                        List.of( Expressions.constant( PolySerializer.jsonize( this ) ), Expressions.constant( PolyNode.class ) ) ),
+                        "deserializeAndCompress",
+                        List.of( Expressions.constant( PolySerializer.serializeAndCompress( this ) ), Expressions.constant( PolyNode.class ) ) ),
                 PolyNode.class );
     }
 

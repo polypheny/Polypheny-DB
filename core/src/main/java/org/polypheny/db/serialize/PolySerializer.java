@@ -44,9 +44,12 @@ import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.PolyEdgeSerializer;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyNode.PolyNodeSerializer;
+import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.schema.graph.PolyPath.PolyPathSerializer;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Collation.Coercibility;
 import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
 
 public class PolySerializer {
 
@@ -71,6 +74,8 @@ public class PolySerializer {
         kryo.register( PolyNode.class, new PolyNodeSerializer() );
         kryo.register( PolyEdge.class, new PolyEdgeSerializer() );
         kryo.register( PolyDirectory.class, new PolyDirectorySerializer() );
+        kryo.register( PolyPath.class, new PolyPathSerializer() );
+        kryo.register( Pair.class, new PairSerializer() );
     }
 
 
@@ -169,6 +174,26 @@ public class PolySerializer {
             String charsetName = input.readString();
             String coercibility = input.readString();
             return new NlsString( value, charsetName, new Collation( Coercibility.valueOf( coercibility ) ) );
+        }
+
+    }
+
+
+    public static class PairSerializer extends Serializer<Pair<?, ?>> {
+
+        @Override
+        public void write( Kryo kryo, Output output, Pair<?, ?> object ) {
+            kryo.writeClassAndObject( output, object.left );
+            kryo.writeClassAndObject( output, object.right );
+        }
+
+
+        @Override
+        public Pair<?, ?> read( Kryo kryo, Input input, Class<? extends Pair<?, ?>> type ) {
+            Object left = kryo.readClassAndObject( input );
+            Object right = kryo.readClassAndObject( input );
+
+            return Pair.of( left, right );
         }
 
     }

@@ -44,7 +44,7 @@ public abstract class GraphObject {
         GRAPH,
         NODE,
         RELATIONSHIP,
-        PATH
+        SEGEMENT, PATH
     }
 
 }
