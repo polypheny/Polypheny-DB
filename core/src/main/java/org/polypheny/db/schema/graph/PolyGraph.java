@@ -106,10 +106,17 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         Iterator<List<PolySegment>> bucketIter = bucket.iterator();
 
         TreeBuilder builder = new TreeBuilder();
-        builder.evaluateRoot( bucketIter.next() );
+        List<PolySegment> polySegments = bucketIter.next();
+        builder.evaluateRoot( polySegments );
+
+        if ( !builder.evaluate( polySegments ) ) {
+            return List.of();
+        }
 
         while ( bucketIter.hasNext() ) {
-            builder.evaluate( bucketIter.next() );
+            if ( !builder.evaluate( bucketIter.next() ) ) {
+                return List.of();
+            }
         }
 
         List<List<String>> pathIds = builder.getMatchingPaths();
@@ -185,16 +192,15 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         }
 
 
-        public void evaluate( List<PolySegment> segments ) {
+        public boolean evaluate( List<PolySegment> segments ) {
             last = temp;
             temp = new LinkedList<>();
             for ( TreePart part : last ) {
                 List<TreePart> matches = new LinkedList<>();
-                TreePart start = part;
 
                 for ( PolySegment segment : segments ) {
-                    if ( start.targetId.equals( segment.sourceId ) ) {
-                        matches.add( new TreePart( start, segment.edgeId, segment.targetId ) );
+                    if ( part.targetId.equals( segment.sourceId ) ) {
+                        matches.add( new TreePart( part, segment.edgeId, segment.targetId ) );
                     }
                 }
                 if ( !matches.isEmpty() ) {
@@ -202,6 +208,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
                     temp.addAll( matches );
                 }
             }
+            return temp.size() != 0;
 
         }
 

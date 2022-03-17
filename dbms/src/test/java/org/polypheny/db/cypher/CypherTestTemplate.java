@@ -149,9 +149,19 @@ public class CypherTestTemplate {
 
 
     protected boolean isNode( Result res ) {
-        assert res.getHeader().length == 1;
+        return is( res, "node", 0 );
+    }
 
-        return res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" );
+
+    protected boolean isEdge( Result res ) {
+        return is( res, "edge", 0 );
+    }
+
+
+    protected boolean is( Result res, String type, int index ) {
+        assert res.getHeader().length >= index;
+
+        return res.getHeader()[index].dataType.toLowerCase( Locale.ROOT ).contains( type );
     }
 
 

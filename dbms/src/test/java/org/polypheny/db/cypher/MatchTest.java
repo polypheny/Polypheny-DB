@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
@@ -28,15 +29,17 @@ import org.polypheny.db.webui.models.Result;
 @Slf4j
 public class MatchTest extends CypherTestTemplate {
 
-    private static String SINGLE_NODE_PERSON = "CREATE (p:Person {name: 'Max'})";
+    private static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
 
-    private static String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Hans'})";
+    private static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
 
-    private static String SINGLE_NODE_ANIMAL = "CREATE (a:ANIMAL {name:'Kira', age:3, type:'dog'})";
+    private static final String SINGLE_NODE_ANIMAL = "CREATE (a:ANIMAL {name:'Kira', age:3, type:'dog'})";
 
-    private static String SINGLE_EDGE = "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})";
+    private static final String SINGLE_EDGE_1 = "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})";
 
-    private static String MULTIPLE_HOP_EDGE = "CREATE (n:Person)-[f:FRIEND_OF]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})";
+    private static final String SINGLE_EDGE_2 = "CREATE (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(a:Person {name:'Hans', age:31})";
+
+    private static final String MULTIPLE_HOP_EDGE = "CREATE (n:Person)-[f:FRIEND_OF {since: 1995}]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})";
 
 
     @Before
@@ -60,10 +63,9 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void simpleMatchNoneTest() {
         execute( SINGLE_NODE_ANIMAL );
-        execute( SINGLE_NODE_PERSON );
+        execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (n:Villain) RETURN n" );
+        Result res = execute( "MATCH (n:Villain) RETURN n" );
         isNode( res );
         isEmpty( res );
 
@@ -73,10 +75,9 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void simpleMatchLabelTest() {
         execute( SINGLE_NODE_ANIMAL );
-        execute( SINGLE_NODE_PERSON );
+        execute( SINGLE_NODE_PERSON_1 );
 
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (n:Person) RETURN n" );
+        Result res = execute( "MATCH (n:Person) RETURN n" );
         isNode( res );
         containsNodes( res, true, TestNode.from( List.of(), Pair.of( "name", "Max" ) ) );
 
@@ -86,24 +87,18 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void simpleMatchSinglePropertyTest() {
         execute( SINGLE_NODE_ANIMAL );
-        execute( SINGLE_NODE_PERSON );
         execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
 
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (n {name: 'Max'})\n" +
-                        "RETURN n" );
+        Result res = execute( "MATCH (n {name: 'Max'}) RETURN n" );
         isNode( res );
         containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
 
-        res = CypherConnection.executeGetResponse(
-                "MATCH (n {name: 'Hans'})\n" +
-                        "RETURN n" );
+        res = execute( "MATCH (n {name: 'Hans'}) RETURN n" );
         isNode( res );
         containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) ) );
 
-        res = CypherConnection.executeGetResponse(
-                "MATCH (n {name: 'David'})\n" +
-                        "RETURN n" );
+        res = execute( "MATCH (n {name: 'David'}) RETURN n" );
         isNode( res );
         isEmpty( res );
     }
@@ -112,18 +107,14 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void simpleMatchMultiplePropertyTest() {
         execute( SINGLE_NODE_ANIMAL );
-        execute( SINGLE_NODE_PERSON );
         execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
 
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (n {name: 'Kira', age: 21})\n" +
-                        "RETURN n" );
+        Result res = execute( "MATCH (n {name: 'Kira', age: 21}) RETURN n" );
         isNode( res );
         isEmpty( res );
 
-        res = CypherConnection.executeGetResponse(
-                "MATCH (n {name: 'Kira', age: 3})\n" +
-                        "RETURN n" );
+        res = execute( "MATCH (n {name: 'Kira', age: 3}) RETURN n" );
         isNode( res );
         containsNodes( res, true, TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ) ) );
 
@@ -136,18 +127,16 @@ public class MatchTest extends CypherTestTemplate {
 
     @Test
     public void simpleMultiplePropertyTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (n:Person)\n" +
-                        "RETURN n.name, n.age" );
+        Result res = execute( "MATCH (n:Person)\n" +
+                "RETURN n.name, n.age" );
 
     }
 
 
     @Test
     public void simplePropertyTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (n:Person)\n" +
-                        "RETURN n.name" );
+        Result res = execute( "MATCH (n:Person)\n" +
+                "RETURN n.name" );
 
     }
 
@@ -157,25 +146,72 @@ public class MatchTest extends CypherTestTemplate {
 
 
     @Test
-    public void simpleRelationshipTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH ()-[r:FRIEND_OF]-()\n" +
-                        "RETURN r" );
-
+    public void simpleEdgeTest() {
+        execute( SINGLE_EDGE_1 );
+        Result res = execute( "MATCH ()-[r]-() RETURN r" );
+        isEdge( res );
+        containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
     }
 
 
     @Test
-    public void simpleDirectedRelationshipTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH ()-[r:KNOWS]->()\n" +
-                        "RETURN r" );
-
+    public void emptyEdgeTest() {
+        execute( SINGLE_EDGE_1 );
+        Result res = execute( "MATCH ()-[r:KNOWS]->() RETURN r" );
+        isEdge( res );
+        isEmpty( res );
     }
+
+
+    @Test
+    public void singleEdgeFilterTest() {
+        execute( SINGLE_EDGE_1 );
+        execute( SINGLE_EDGE_2 );
+        Result res = execute( "MATCH ()-[r:KNOWS {since: 1995}]->() RETURN r" );
+        isEdge( res );
+        isEmpty( res );
+
+        res = execute( "MATCH ()-[r:KNOWS {since: 1994}]->() RETURN r" );
+        containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ), Pair.of( "since", 1994 ) ) );
+    }
+
+
+    @Test
+    public void singleEdgeFilterMatchNodeTest() {
+        execute( SINGLE_EDGE_1 );
+        execute( SINGLE_EDGE_2 );
+        Result res = execute( "MATCH (n:Person)-[r:KNOWS {since: 1994}]->() RETURN n" );
+        containsNodes( res, true, TestEdge.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
+    }
+
+
+    @Test
+    public void multipleHopTest() {
+        execute( SINGLE_EDGE_1 );
+        execute( SINGLE_EDGE_2 );
+        execute( MULTIPLE_HOP_EDGE );
+
+        Result res = execute( "MATCH (n)-[]->()-[]-() RETURN n" );
+        containsNodes( res, true, TestEdge.from( List.of( "Person" ) ) );
+
+        res = execute( "MATCH ()-[r:FRIEND_OF {since:2000}]->()-[]-() RETURN r" );
+        isEdge( res );
+        isEmpty( res );
+
+        res = execute( "MATCH ()-[r:FRIEND_OF {since:1995}]->()-[]-() RETURN r" );
+        isEdge( res );
+        containsEdges( res, true, TestEdge.from( List.of( "FRIEND_OF" ), Pair.of( "since", 1995 ) ) );
+    }
+
+    ///////////////////////////////////////////////
+    ///////// EDGE
+    ///////////////////////////////////////////////
 
 
     @Test
     public void simpleMixedRelationshipTest() {
+        execute( SINGLE_EDGE_1 );
+        execute( SINGLE_EDGE_2 );
         Result res = CypherConnection.executeGetResponse(
                 "MATCH (:Person)-[r:LIVE_TOGETHER]-(:ANIMAL)\n" +
                         "RETURN r" );
