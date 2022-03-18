@@ -7,8 +7,8 @@ services:
         ports:
             - 2376:443
         environment:
-            - CREATE_CERTS_WITH_PW=supersecret
+            - CREATE_CERTS_WITH_PW=xdar?-xrow?-!xrising
             - CERT_HOSTNAME=localhost
         volumes:
-            - ${POLYPHENY_HOME:-~}/.polypheny/certs/localhost:/data/certs
+            - /home/hypenguin/.polypheny/certs/localhost:/data/certs
             - /var/run/docker.sock:/var/run/docker.sock:ro
