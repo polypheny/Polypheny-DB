@@ -44,11 +44,11 @@ body:
   - type: textarea
     id: possible-solutions
     attributes:
-        label: Possible Solutions
+      label: Possible Solutions
       description: A clear and concise description of what you want to happen.
   - type: textarea
     id: possible-alts
     attributes:
-        label: Possible Alternatives
+      label: Possible Alternatives
       description: A clear and concise description of any alternative solutions or features you've considered.
       

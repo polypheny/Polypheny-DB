@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;

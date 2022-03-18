@@ -386,7 +386,7 @@ public abstract class Catalog {
      * Returns the table which is associated with a given partitionId
      *
      * @param partitionId to use for lookup
-     * @return CatalogTable that contians partitionId
+     * @return CatalogTable that contains partitionId
      */
     public abstract CatalogTable getTableFromPartition( long partitionId );
 
