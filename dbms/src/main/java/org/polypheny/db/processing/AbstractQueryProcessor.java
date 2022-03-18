@@ -101,10 +101,11 @@ import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
 import org.polypheny.db.processing.caching.RoutingPlanCache;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessOperationRuntimeException;
+import org.polypheny.db.processing.replication.exceptions.UnsupportedIsolationOperationRuntimeException;
 import org.polypheny.db.processing.shuttles.LogicalQueryInformationImpl;
 import org.polypheny.db.processing.shuttles.ParameterValueValidator;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
+import org.polypheny.db.replication.IsolationLevel;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -310,15 +311,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Parameter Validation" );
-            statement.getProcessingDuration().start( "Evaluate Freshness Options" );
+            statement.getProcessingDuration().start( "Evaluate Isolation Options" );
         }
 
         //
-        // Evaluate freshness options
-        evaluateFreshness( logicalRoot );
+        // Evaluate isolation options
+        evaluateIsolation( logicalRoot );
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Evaluate Freshness Options" );
+            statement.getProcessingDuration().stop( "Evaluate Isolation Options" );
         }
 
         if ( isRouted ) {
@@ -1563,14 +1564,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     /**
      * Validates if the query can even be executed
      */
-    private void evaluateFreshness( AlgRoot logicalRoot ) {
+    private void evaluateIsolation( AlgRoot logicalRoot ) {
 
         // If DML Statement, make sure that no Freshness operation has been executed in TX yet
         // If Query Statement && Freshness Related, make sure that no DML operation has been executed in TX yet
-        if ( statement.getTransaction().acceptsOutdatedCopies()
+        if ( statement.getTransaction().getIsolationLevel().equals( IsolationLevel.NONE )
                 && (!statement.getTransaction().isReadOnly() || logicalRoot.alg instanceof LogicalTableModify) ) {
 
-            throw new UnsupportedFreshnessOperationRuntimeException();
+            throw new UnsupportedIsolationOperationRuntimeException();
         }
     }
 

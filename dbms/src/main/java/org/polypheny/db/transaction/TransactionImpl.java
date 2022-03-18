@@ -105,7 +105,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private AccessMode accessMode = AccessMode.NO_ACCESS;
 
-    private IsolationLevel isolationLevel = IsolationLevel.STRICT;
+    private IsolationLevel isolationLevel = IsolationLevel.SERIALIZABLE;
 
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();

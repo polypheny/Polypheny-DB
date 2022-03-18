@@ -17,9 +17,12 @@
 package org.polypheny.db.processing.replication.freshness.exceptions;
 
 
-public class UnsupportedFreshnessOperationRuntimeException extends FreshnessRuntimeException {
+import org.polypheny.db.processing.replication.exceptions.UnsupportedIsolationOperationRuntimeException;
+
+
+public class UnsupportedFreshnessOperationRuntimeException extends UnsupportedIsolationOperationRuntimeException {
 
     public UnsupportedFreshnessOperationRuntimeException() {
-        super( "DML operations are not allowed during Transactions that utilized freshness and possibly outdated data. " );
+        super( "Utilization of FRESHNESS in this cope is not permitted to ensure data integrity. " );
     }
 }

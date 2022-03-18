@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.replication.IsolationLevel;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.util.DeadlockException;
 
@@ -47,10 +48,10 @@ public class LockManager {
         // Depends if we also accept DIRTY-READS for every freshness specified read
 
         // Decide on which locking  approach to focus
-        if ( transaction.acceptsOutdatedCopies() ) {
-            handleSecondaryLocks( entityIdentifier, transaction, requestedMode );
-        } else {
+        if ( transaction.getIsolationLevel().equals( IsolationLevel.SERIALIZABLE ) ) {
             handlePrimaryLocks( entityIdentifier, transaction, requestedMode );
+        } else if ( transaction.getIsolationLevel().equals( IsolationLevel.NONE ) && transaction.acceptsOutdatedCopies() ) {
+            handleSecondaryLocks( entityIdentifier, transaction, requestedMode );
         }
 
     }

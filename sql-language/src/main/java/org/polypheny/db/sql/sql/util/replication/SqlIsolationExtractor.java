@@ -17,9 +17,9 @@
 package org.polypheny.db.sql.sql.util.replication;
 
 
-import org.polypheny.db.catalog.exceptions.UnknownIsolationLevelException;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.replication.IsolationExtractor;
+import org.polypheny.db.processing.replication.exceptions.UnknownIsolationLevelException;
 import org.polypheny.db.replication.IsolationLevel;
 
 
@@ -47,9 +47,9 @@ public class SqlIsolationExtractor extends IsolationExtractor {
     private void extractSqlIsolationLevel() throws UnknownIsolationLevelException {
 
         IsolationLevel targetIsolationLevel;
-        // If the isolation mode has not been set explicitly, always assume most STRICT isolation
+        // If the isolation mode has not been set explicitly, always assume most STRICT (SERIALIZABLE) isolation
         if ( isolationNode == null ) {
-            targetIsolationLevel = IsolationLevel.STRICT;
+            targetIsolationLevel = IsolationLevel.SERIALIZABLE;
         } else {
             targetIsolationLevel = IsolationLevel.getByName( isolationNode.toString().toUpperCase() );
         }

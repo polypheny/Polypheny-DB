@@ -14,25 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.replication;
+package org.polypheny.db.processing.replication.exceptions;
 
 
-import org.polypheny.db.processing.replication.exceptions.UnknownIsolationLevelException;
+public class UnknownIsolationLevelException extends Exception {
 
-
-public enum IsolationLevel {
-        NONE,
-        SERIALIZABLE;
-
-
-        public static IsolationLevel getByName( final String name ) throws UnknownIsolationLevelException {
-                for ( IsolationLevel t : values() ) {
-                        if ( t.name().equalsIgnoreCase( name ) ) {
-                                return t;
-                        }
-                }
-                throw new UnknownIsolationLevelException( name );
-        }
+    public UnknownIsolationLevelException( final String name ) {
+        super( "There is no IsolationLevel with name: '" + name + "'" );
+    }
 }
-
-

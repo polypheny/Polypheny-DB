@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.exceptions;
+package org.polypheny.db.processing.replication.exceptions;
 
 
-public class UnknownIsolationLevelException extends Exception {
+public class UnsupportedIsolationOperationRuntimeException extends IsolationRuntimeException {
 
-    public UnknownIsolationLevelException( final String name ) {
-        super( "There is no IsolationLevel with name: '" + name + "'" );
+    public UnsupportedIsolationOperationRuntimeException() {
+        super( "DML operations are not allowed during Transactions that utilized a none SERIALIZABLE isolation level." );
     }
+
+
+    public UnsupportedIsolationOperationRuntimeException( String exception ) {
+        super( "DML operations are not allowed during Transactions that utilized a none SERIALIZABLE isolation level. \n"
+                + exception );
+    }
+
 }

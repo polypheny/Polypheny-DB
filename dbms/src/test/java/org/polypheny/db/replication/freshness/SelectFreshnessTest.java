@@ -59,7 +59,7 @@ public class SelectFreshnessTest {
                     // Check if for a freshness query the TX statement aborts since a DML operation has already been executed.
                     boolean failed = false;
                     try {
-                        statement.executeUpdate( "SELECT * FROM testfreshnessoperations FRESHNESS 3 HOUR" );
+                        statement.executeUpdate( "SELECT * FROM testfreshnessoperations WITH FRESHNESS 3 HOUR" );
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }

@@ -17,8 +17,8 @@
 package org.polypheny.db.processing.replication;
 
 
-import org.polypheny.db.catalog.exceptions.UnknownIsolationLevelException;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.replication.exceptions.UnknownIsolationLevelException;
 import org.polypheny.db.replication.IsolationLevel;
 
 
