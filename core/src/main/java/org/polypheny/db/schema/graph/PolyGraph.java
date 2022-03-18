@@ -16,7 +16,7 @@
 
 package org.polypheny.db.schema.graph;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -80,47 +80,18 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
 
     public List<PolyPath> extract( PolyPath pattern ) {
-
-        List<List<PolySegment>> bucket = new LinkedList<>();
         // retrieve hop as de-referenced segments, which store the full information of nodes and edges
         List<PolySegment> segments = pattern.getDerefSegments();
-        for ( int i = 0; i < segments.size(); i++ ) {
-            bucket.add( new LinkedList<>() );
-        }
 
-        for ( PolyEdge edge : edges.values() ) {
-            int i = 0;
-            for ( PolySegment segment : segments ) {
-                if ( segment.matches( nodes.get( edge.source ), edge, nodes.get( edge.target ) ) ) {
-                    bucket.get( i ).add( new PolySegment( edge.source, edge.id, edge.target ) );
-                }
-                i++;
-            }
-        }
+        List<TreePart> temp = buildMatchingTree( segments );
 
-        if ( bucket.size() == 1 ) {
-            // only ()-[]-(), which are single hops
-            return bucket.get( 0 ).stream().map( this::asPath ).collect( Collectors.toList() );
-        }
+        List<List<String>> pathIds = buildIdPaths( temp );
 
-        Iterator<List<PolySegment>> bucketIter = bucket.iterator();
+        return buildPaths( pathIds );
+    }
 
-        TreeBuilder builder = new TreeBuilder();
-        List<PolySegment> polySegments = bucketIter.next();
-        builder.evaluateRoot( polySegments );
 
-        if ( !builder.evaluate( polySegments ) ) {
-            return List.of();
-        }
-
-        while ( bucketIter.hasNext() ) {
-            if ( !builder.evaluate( bucketIter.next() ) ) {
-                return List.of();
-            }
-        }
-
-        List<List<String>> pathIds = builder.getMatchingPaths();
-
+    private List<PolyPath> buildPaths( List<List<String>> pathIds ) {
         List<PolyPath> paths = new LinkedList<>();
 
         for ( List<String> pathId : pathIds ) {
@@ -147,16 +118,50 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
             paths.add( new PolyPath( nodes, edges, names, path ) );
         }
         return paths;
-
     }
 
 
-    private PolyPath asPath( PolySegment polySegment ) {
-        return new PolyPath(
-                List.of( nodes.get( polySegment.sourceId ), nodes.get( polySegment.targetId ) ),
-                List.of( edges.get( polySegment.edgeId ) ),
-                Arrays.asList( null, null, null ),
-                List.of( nodes.get( polySegment.sourceId ), edges.get( polySegment.edgeId ), nodes.get( polySegment.targetId ) ) );
+    private List<List<String>> buildIdPaths( List<TreePart> temp ) {
+        return temp.stream().map( t -> t.getPath( new LinkedList<>() ) ).collect( Collectors.toList() );
+    }
+
+
+    private List<TreePart> buildMatchingTree( List<PolySegment> segments ) {
+        List<TreePart> root = new ArrayList<>();
+
+        // attach empty stubs for root
+        for ( PolyEdge edge : edges.values() ) {
+            if ( segments.get( 0 ).matches( nodes.get( edge.source ), edge, nodes.get( edge.target ) ) ) {
+                root.add( new TreePart( null, null, edge.source ) );
+            }
+        }
+
+        List<TreePart> temp = root;
+        List<TreePart> last;
+        for ( PolySegment segment : segments ) {
+            last = temp;
+            temp = new ArrayList<>();
+            List<TreePart> matches = new ArrayList<>();
+            for ( TreePart part : last ) {
+                // only loop matching connections
+                for ( PolyEdge edge : edges.values().stream().filter( e -> e.source.equals( part.targetId ) ).collect( Collectors.toList() ) ) {
+                    // then check if it matches pattern of segment
+                    if ( segment.matches( nodes.get( edge.source ), edge, nodes.get( edge.target ) ) ) {
+                        matches.add( new TreePart( part, edge.id, edge.target ) );
+                    }
+                }
+                if ( !matches.isEmpty() ) {
+                    part.connections.addAll( matches );
+                    temp.addAll( matches );
+                    matches.clear();
+                }
+            }
+
+            if ( temp.isEmpty() ) {
+                return List.of();
+            }
+        }
+        return temp;
     }
 
 
@@ -174,57 +179,12 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
     }
 
 
-    public static class TreeBuilder {
-
-        // start index
-        List<TreePart> root = new LinkedList<>();
-        // current index
-        List<TreePart> temp = new LinkedList<>();
-        List<TreePart> last;
-
-
-        public void evaluateRoot( List<PolySegment> segments ) {
-            for ( PolySegment segment : segments ) {
-                TreePart part = new TreePart( null, null, segment.sourceId );
-                root.add( part );
-                temp.add( part );
-            }
-        }
-
-
-        public boolean evaluate( List<PolySegment> segments ) {
-            last = temp;
-            temp = new LinkedList<>();
-            for ( TreePart part : last ) {
-                List<TreePart> matches = new LinkedList<>();
-
-                for ( PolySegment segment : segments ) {
-                    if ( part.targetId.equals( segment.sourceId ) ) {
-                        matches.add( new TreePart( part, segment.edgeId, segment.targetId ) );
-                    }
-                }
-                if ( !matches.isEmpty() ) {
-                    part.connections.addAll( matches );
-                    temp.addAll( matches );
-                }
-            }
-            return temp.size() != 0;
-
-        }
-
-
-        public List<List<String>> getMatchingPaths() {
-            // start matching from behind
-            return temp.stream().map( t -> t.getPath( new LinkedList<>() ) ).collect( Collectors.toList() );
-        }
-
-    }
-
-
     /**
-     * -> 12, 13
+     * <code>
+     * /> 12, 13
      * null, null, 3 -> 4, 4 -> 12, 13
-     * -> 25, 17
+     * \> 25, 17 -> 12, 13
+     * </code>
      */
     public static class TreePart {
 

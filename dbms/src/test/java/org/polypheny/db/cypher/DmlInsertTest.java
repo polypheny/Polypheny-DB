@@ -28,6 +28,10 @@ import org.polypheny.db.webui.models.Result;
 
 public class DmlInsertTest extends CypherTestTemplate {
 
+
+    public static final String CREATE_PERSON_MAX = "CREATE (p:Person {name: 'Max Muster'})";
+
+
     @Before
     public void reset() {
         tearDown();
@@ -39,7 +43,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     public void insertEmptyNode() {
         execute( "CREATE (p)" );
         Result res = matchAndReturnAllNodes();
-        assert isNode( res );
+        assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from( List.of() ) );
     }
 
@@ -48,8 +52,20 @@ public class DmlInsertTest extends CypherTestTemplate {
     public void insertNodeTest() {
         execute( "CREATE (p:Person {name: 'Max Muster'})" );
         Result res = matchAndReturnAllNodes();
-        assert isNode( res );
+        assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from( Pair.of( "name", "Max Muster" ) ) );
+    }
+
+
+    @Test
+    public void insertTwoNodeTest() {
+        execute( CREATE_PERSON_MAX );
+        execute( CREATE_PERSON_MAX );
+        Result res = matchAndReturnAllNodes();
+        assertNode( res, 0 );
+        assert containsNodes( res, true,
+                TestNode.from( Pair.of( "name", "Max Muster" ) ),
+                TestNode.from( Pair.of( "name", "Max Muster" ) ) );
     }
 
 
@@ -57,7 +73,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     public void insertMultipleNodesTest() {
         execute( "CREATE (p),(n),(m)" );
         Result res = matchAndReturnAllNodes();
-        assert isNode( res );
+        assertNode( res, 0 );
         assert containsNodes( res, true, TestNode.from(), TestNode.from(), TestNode.from() );
     }
 
@@ -66,7 +82,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     public void insertPropertyTypeTest() {
         execute( "CREATE (p:Person {name: 'Max Muster', age: 13, height: 185.3, nicknames: [\"Maxi\",\"Musti\"]})" );
         Result res = matchAndReturnAllNodes();
-        assert isNode( res );
+        assertNode( res, 0 );
         assert containsNodes( res, true,
                 TestNode.from(
                         Pair.of( "name", "Max Muster" ),

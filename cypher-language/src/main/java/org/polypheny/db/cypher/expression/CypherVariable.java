@@ -75,4 +75,11 @@ public class CypherVariable extends CypherExpression {
         throw new RuntimeException( "The used variable is not known." );
     }
 
+
+    @Override
+    public ExpressionType getType() {
+        return ExpressionType.VARIABLE;
+    }
+
+
 }

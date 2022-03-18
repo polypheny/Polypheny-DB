@@ -111,8 +111,13 @@ public class CypherExpression extends CypherNode {
     }
 
 
+    public String getName() {
+        throw new UnsupportedOperationException();
+    }
+
+
     public enum ExpressionType {
-        ALL, NONE, SINGLE, PATTERN, ANY, DEFAULT
+        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, DEFAULT
     }
 
 

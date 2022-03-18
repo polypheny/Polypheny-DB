@@ -22,11 +22,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nullable;
+import lombok.Getter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
+import org.polypheny.db.cypher.helper.TestGraphObject;
+import org.polypheny.db.cypher.helper.TestLiteral;
+import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
 import org.polypheny.db.schema.graph.PolyEdge;
@@ -53,7 +57,6 @@ public class CypherTestTemplate {
     }
 
 
-
     @AfterClass
     public static void tearDown() {
         deleteData();
@@ -70,35 +73,6 @@ public class CypherTestTemplate {
     }
 
 
-    public static String matches( String child, String... matches ) {
-        return concatStatement( "MATCH", child, matches );
-    }
-
-
-    public static String returns( String child, String... returns ) {
-        return concatStatement( "RETURN", child, returns );
-    }
-
-
-    public static String with( String child, String... withs ) {
-        return concatStatement( "WITH", child, withs );
-    }
-
-
-    public static String where( String child, String... conditions ) {
-        return concatStatement( "WHERE", child, conditions );
-    }
-
-
-    public static String concatStatement( String keyword, @Nullable String child, String... variables ) {
-        String line = String.format( "%s %s", keyword, String.join( ",", variables ) );
-        if ( child != null ) {
-            line += String.format( "\n%s", child );
-        }
-        return line;
-    }
-
-
     protected boolean containsNodes( Result res, boolean exclusive, TestObject... nodes ) {
         if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
             return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
@@ -112,6 +86,46 @@ public class CypherTestTemplate {
             return contains( res.getData(), exclusive, 0, PolyEdge.class, edges );
         }
         throw new UnsupportedOperationException();
+    }
+
+
+    public boolean containsIn( Result res, boolean exclusive, int index, TestGraphObject... expected ) {
+        boolean successful = true;
+        Class<? extends GraphPropertyHolder> clazz = null;
+        if ( expected.length > 0 ) {
+            Type type = Type.from( expected[0] );
+            successful = is( res, type, index );
+            clazz = (Class<? extends GraphPropertyHolder>) type.polyClass;
+        }
+        if ( !successful ) {
+            return false;
+        }
+
+        return contains( res.getData(), exclusive, index, clazz, expected );
+    }
+
+
+    public boolean containsIn( Result actual, boolean exclusive, int index, @Nullable String name, TestLiteral... expected ) {
+        // simple object match
+        List<String> cols = new ArrayList<>();
+
+        for ( String[] entry : actual.getData() ) {
+            cols.add( entry[index] );
+        }
+        assert !exclusive || cols.size() == expected.length;
+
+        boolean correct = true;
+        if ( name != null ) {
+            correct = actual.getHeader()[index].name.equals( name );
+        }
+
+        boolean contains = correct;
+        for ( TestObject object : expected ) {
+            contains &= cols.stream().anyMatch( n -> object.matches( n, exclusive ) );
+        }
+
+        return contains;
+
     }
 
 
@@ -133,40 +147,62 @@ public class CypherTestTemplate {
     }
 
 
-    public boolean emptyNodes( Result res ) {
-        return containsNodes( res, true );
-    }
-
-
-    public boolean emptyEdges( Result res ) {
-        return containsEdges( res, true );
-    }
-
-
     public Result matchAndReturnAllNodes() {
         return execute( "MATCH (n) RETURN n" );
     }
 
 
-    protected boolean isNode( Result res ) {
-        return is( res, "node", 0 );
+    protected void assertNode( Result res, int index ) {
+        assert is( res, Type.NODE, index );
     }
 
 
-    protected boolean isEdge( Result res ) {
-        return is( res, "edge", 0 );
+    protected void assertEdge( Result res, int index ) {
+        assert is( res, Type.EDGE, index );
     }
 
 
-    protected boolean is( Result res, String type, int index ) {
+    protected boolean is( Result res, Type type, int index ) {
         assert res.getHeader().length >= index;
 
-        return res.getHeader()[index].dataType.toLowerCase( Locale.ROOT ).contains( type );
+        return res.getHeader()[index].dataType.toLowerCase( Locale.ROOT ).contains( type.getTypeName() );
     }
 
 
-    protected boolean isEmpty( Result res ) {
-        return res.getData().length == 0;
+    protected void assertEmpty( Result res ) {
+        assert res.getData().length == 0;
+    }
+
+
+    @Getter
+    enum Type {
+        NODE( "node", TestNode.class, PolyNode.class ),
+        EDGE( "edge", TestNode.class, PolyNode.class ),
+        STRING( "varchar", TestNode.class, PolyNode.class );
+
+
+        private final String typeName;
+        private final Class<? extends TestObject> testClass;
+        private final Class<?> polyClass;
+
+
+        Type( String name, Class<? extends TestObject> testClass, Class<?> polyClass ) {
+            this.typeName = name;
+            this.testClass = testClass;
+            this.polyClass = polyClass;
+        }
+
+
+        static Type from( TestObject object ) {
+            if ( object instanceof TestLiteral ) {
+                return STRING;
+            } else if ( object instanceof TestNode ) {
+                return NODE;
+            } else if ( object instanceof TestEdge ) {
+                return EDGE;
+            }
+            throw new UnsupportedOperationException();
+        }
     }
 
 }

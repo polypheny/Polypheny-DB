@@ -16,84 +16,8 @@
 
 package org.polypheny.db.cypher.helper;
 
-import static org.polypheny.db.runtime.Functions.toBigDecimal;
+public interface TestObject {
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.schema.graph.GraphPropertyHolder;
-import org.polypheny.db.util.Pair;
-
-public class TestObject {
-
-    public static double EPSILON = 0.2;
-
-    @Nullable
-    final String id;
-
-    @Nullable
-    final Map<String, Object> properties;
-
-    @Nullable
-    final List<String> labels;
-
-
-    public TestObject( @Nullable String id, @Nullable Map<String, Object> properties, @Nullable List<String> labels ) {
-        this.id = id;
-        this.properties = properties;
-        this.labels = labels;
-    }
-
-
-    @NotNull
-    public static Map<String, Object> getProps( Pair<String, Object>[] properties ) {
-        Map<String, Object> props = new HashMap<>();
-
-        for ( Pair<String, Object> property : properties ) {
-            props.put( property.left, property.right );
-        }
-        return props;
-    }
-
-
-    public boolean matches( GraphPropertyHolder other, boolean exclusive ) {
-        boolean matches = true;
-        if ( id != null ) {
-            matches = id.equals( other.id );
-        }
-        if ( properties != null ) {
-            if ( exclusive ) {
-                matches &= properties.size() == other.properties.size();
-            }
-            for ( Entry<String, Object> entry : properties.entrySet() ) {
-                if ( other.properties.containsKey( entry.getKey() ) ) {
-                    if ( entry.getValue() instanceof List ) {
-                        int i = 0;
-                        for ( Object o : ((List<?>) other.properties.get( entry.getKey() )) ) {
-                            matches &= o.equals( ((List<?>) properties.get( entry.getKey() )).get( i ) );
-                            i++;
-                        }
-                    } else if ( entry.getValue() instanceof Number || other.properties.get( entry.getKey() ) instanceof Number ) {
-                        matches &=
-                                toBigDecimal( (Number) other.properties.get( entry.getKey() ) ).doubleValue()
-                                        - toBigDecimal( entry.getValue() ).doubleValue() < EPSILON;
-                    } else {
-                        matches &= other.properties.get( entry.getKey() ).equals( entry.getValue() );
-                    }
-                } else {
-                    matches = false;
-                }
-            }
-        }
-
-        if ( labels != null ) {
-            matches &= labels.containsAll( other.labels );
-        }
-
-        return matches;
-    }
+    boolean matches( Object other, boolean exclusive );
 
 }

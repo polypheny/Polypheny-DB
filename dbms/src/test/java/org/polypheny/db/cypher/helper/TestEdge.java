@@ -21,7 +21,7 @@ import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.util.Pair;
 
-public class TestEdge extends TestObject {
+public class TestEdge extends TestGraphObject {
 
     @Nullable
     final String source;

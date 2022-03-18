@@ -16,27 +16,24 @@
 
 package org.polypheny.db.cypher.helper;
 
-import java.util.List;
-import java.util.Map;
-import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.util.Pair;
+public class TestLiteral implements TestObject {
 
-public class TestNode extends TestGraphObject {
+    public final String value;
 
-    public TestNode( @Nullable String id, @Nullable Map<String, Object> properties, @Nullable List<String> labels ) {
-        super( id, properties, labels );
+
+    public TestLiteral( String value ) {
+        this.value = value;
     }
 
 
-    @SafeVarargs
-    public static TestNode from( Pair<String, Object>... properties ) {
-        return from( null, properties );
+    @Override
+    public boolean matches( Object other, boolean exclusive ) {
+        return value.equals( other );
     }
 
 
-    @SafeVarargs
-    public static TestNode from( List<String> labels, Pair<String, Object>... properties ) {
-        return new TestNode( null, getProps( properties ), null );
+    public static TestLiteral from( Object value ) {
+        return new TestLiteral( value.toString() );
     }
 
 }

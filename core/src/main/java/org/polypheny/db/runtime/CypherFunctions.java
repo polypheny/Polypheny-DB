@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.function.Deterministic;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.GraphObject;
+import org.polypheny.db.schema.graph.GraphPropertyHolder;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
@@ -110,5 +111,13 @@ public class CypherFunctions {
         return path.get( index );
     }
 
+
+    @SuppressWarnings("unused")
+    public static String extractProperty( GraphPropertyHolder holder, String key ) {
+        if ( holder.getProperties().containsKey( key ) ) {
+            return holder.getProperties().get( key ).toString();
+        }
+        return null;
+    }
 
 }

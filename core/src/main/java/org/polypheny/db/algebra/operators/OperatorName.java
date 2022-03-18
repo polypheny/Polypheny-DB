@@ -1390,7 +1390,9 @@ public enum OperatorName {
 
     CYPHER_NODE_EXTRACT( LangFunctionOperator.class ),
 
-    CYPHER_EXTRACT_FROM_PATH( LangFunctionOperator.class );
+    CYPHER_EXTRACT_FROM_PATH( LangFunctionOperator.class ),
+
+    CYPHER_EXTRACT_PROPERTY( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;

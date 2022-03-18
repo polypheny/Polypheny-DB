@@ -49,6 +49,8 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_NODE_MATCH, new LangFunctionOperator( "CYPHER_NODE_MATCH", Kind.DESERIALIZE ) );
 
+        register( OperatorName.CYPHER_EXTRACT_PROPERTY, new LangFunctionOperator( "CYPHER_EXTRACT_PROPERTY", Kind.DESERIALIZE ) );
+
         isInit = true;
     }
 

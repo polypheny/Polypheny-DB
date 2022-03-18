@@ -16,9 +16,17 @@
 
 package org.polypheny.db.cypher.expression;
 
+import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.parser.StringPos;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherProperty extends CypherExpression {
@@ -31,6 +39,31 @@ public class CypherProperty extends CypherExpression {
         super( ParserPos.ZERO );
         this.subject = subject;
         this.propKeyName = propKeyName;
+    }
+
+
+    public String getName() {
+        if ( subject.getType() == ExpressionType.VARIABLE ) {
+            return subject.getName();
+        }
+        throw new RuntimeException();
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
+        String key = propKeyName.getImage();
+        String subject = this.subject.getName();
+
+        Pair<String, RexNode> namedSubject = this.subject.getRexAsProject( context );
+        assert namedSubject.left.equals( subject );
+
+        RexNode extractedProperty = context.rexBuilder.makeCall(
+                context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_PROPERTY ),
+                List.of( namedSubject.right, context.rexBuilder.makeLiteral( key ) ) );
+
+        return Pair.of( subject + "." + key, extractedProperty );
     }
 
 }
