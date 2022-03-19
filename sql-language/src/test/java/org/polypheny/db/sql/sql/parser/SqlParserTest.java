@@ -6263,7 +6263,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
         sql( "select*from unnest(x) with ordinality AS T(c, o)" )
                 .ok( "SELECT *\n" + "FROM (UNNEST(`X`) WITH ORDINALITY) AS `T` (`C`, `O`)" );
         sql( "select*from unnest(x) as T ^with^ ordinality" )
-                .fails( "(?s)Encountered \"with\" at .*" );
+                .fails( "(?s)Encountered \"with ordinality\" at .*" );
     }
 
 

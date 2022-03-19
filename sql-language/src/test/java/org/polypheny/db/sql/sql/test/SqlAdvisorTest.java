@@ -321,7 +321,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
                     "KEYWORD(ORDER)",
                     "KEYWORD(UNION)",
                     "KEYWORD(WINDOW)",
-                    "KEYWORD(FRESHNESS)" );
+                    "KEYWORD(WITH)" );
 
     private static final List<String> A_TABLE =
             Arrays.asList(
@@ -358,7 +358,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
                     "KEYWORD(ON)",
                     "KEYWORD(INTERSECT)",
                     "KEYWORD(WHERE)",
-                    "KEYWORD(FRESHNESS)" );
+                    "KEYWORD(WITH)" );
 
     private static final List<String> SETOPS =
             Arrays.asList(
