@@ -483,7 +483,7 @@ public class SqlProcessorImpl extends Processor {
             // TODO @HENNLO attach freshnessSpecification to Statement not to TX alone
 
         } catch ( UnknownFreshnessEvaluationTypeRuntimeException | UnknownFreshnessTimeUnitRuntimeException | UnsupportedFreshnessSpecificationRuntimeException e ) {
-            e.printStackTrace();
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
 
     }

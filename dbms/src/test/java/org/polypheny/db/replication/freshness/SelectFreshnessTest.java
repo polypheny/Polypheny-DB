@@ -90,7 +90,7 @@ public class SelectFreshnessTest {
                 try {
 
                     // DML queries cannot go through if a Freshness Query has already been executed within TX
-                    statement.executeUpdate( "SELECT * FROM testfreshnessoperations FRESHNESS 3 HOUR" );
+                    statement.executeUpdate( "SELECT * FROM testfreshnessoperations WITH FRESHNESS 3 HOUR" );
 
                     // Check if for a freshness query the TX statement aborts since a DML operation has already been executed.
                     boolean failed = false;
@@ -203,10 +203,13 @@ public class SelectFreshnessTest {
                     // Check if queries can even be executed and are correctly parsed
 
                     // Includes DELAY in SECONDS
+                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 10 SECOND" );
 
                     // Includes DELAY in MINUTES
+                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 10 MINUTE" );
 
                     // Includes DELAY in HOURS
+                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 3 HOUR" );
 
                     // Test with WHERE clause
 
@@ -215,6 +218,14 @@ public class SelectFreshnessTest {
                     // Test with HAVING clause
 
                     // Test ILLEGAL values (negative time delay)
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS -10 MINUTE" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
 
                 } finally {
                     statement.executeUpdate( "DROP TABLE testfreshnessdelay" );
@@ -239,6 +250,7 @@ public class SelectFreshnessTest {
                 try {
 
                     // Check if queries can even be executed and are correctly parsed
+                    statement.executeUpdate( "SELECT * FROM testfreshnesspercentage WITH FRESHNESS 60%" );
 
                     // Test with WHERE clause
 
@@ -273,10 +285,13 @@ public class SelectFreshnessTest {
                     // Check if queries can even be executed and are correctly parsed
 
                     // Includes Timestamps
+                    statement.executeUpdate( "SELECT * FROM testfreshnesstime WITH FRESHNESS TIMESTAMP '2022-03-04 09:11:37.003' " );
 
                     // Includes Time
+                    // statement.executeUpdate( "SELECT * FROM testfreshnesstime WITH FRESHNESS '09:11:37.003' ");
 
                     // Includes Date
+                    //statement.executeUpdate( "SELECT * FROM testfreshnesstime WITH FRESHNESS '2022-03-04'");
 
                     // Test with WHERE clause
 

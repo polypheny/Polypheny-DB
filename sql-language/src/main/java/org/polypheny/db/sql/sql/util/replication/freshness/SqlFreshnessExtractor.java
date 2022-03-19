@@ -80,10 +80,18 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
                 long timeDifference = 0;
                 long specifiedTimeDelta = Long.valueOf( toleratedFreshness.toString() );
 
+                // Check validity
+                if ( specifiedTimeDelta < 0 ) {
+                    throw new UnsupportedFreshnessSpecificationRuntimeException( EvaluationType.DELAY, toleratedFreshness.toString() );
+                }
+
                 // Initially set to 1000ms = 1s
                 int timeMultiplier = 1000;
 
                 switch ( unit.toString().toUpperCase() ) {
+                    case "SECOND":
+                        break;
+
                     case "MINUTE":
                         // Convert to milliseconds
                         timeMultiplier *= 60;
