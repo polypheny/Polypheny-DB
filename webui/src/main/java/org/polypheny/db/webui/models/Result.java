@@ -78,6 +78,7 @@ public class Result {
     /**
      * Error message if a query failed
      */
+    @Getter
     private String error;
     /**
      * Exception with additional information

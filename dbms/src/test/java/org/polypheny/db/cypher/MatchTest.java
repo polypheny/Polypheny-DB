@@ -20,7 +20,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
-import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
@@ -32,7 +31,11 @@ public class MatchTest extends CypherTestTemplate {
 
     private static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
 
+    private final TestNode MAX = TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) );
+
     private static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
+
+    private final TestNode HANS = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) );
 
     private static final String SINGLE_NODE_ANIMAL = "CREATE (a:Animal {name:'Kira', age:3, type:'dog'})";
 
@@ -55,7 +58,7 @@ public class MatchTest extends CypherTestTemplate {
     ///////////////////////////////////////////////
     @Test
     public void simpleMatchTest() {
-        Result res = execute( "MATCH (n)\nRETURN n" );
+        Result res = execute( "MATCH (n) RETURN n" );
         assertNode( res, 0 );
         assertEmpty( res );
     }
@@ -80,7 +83,7 @@ public class MatchTest extends CypherTestTemplate {
 
         Result res = execute( "MATCH (n:Person) RETURN n" );
         assertNode( res, 0 );
-        containsNodes( res, true, TestNode.from( List.of(), Pair.of( "name", "Max" ) ) );
+        containsNodes( res, true, MAX );
 
     }
 
@@ -93,11 +96,11 @@ public class MatchTest extends CypherTestTemplate {
 
         Result res = execute( "MATCH (n {name: 'Max'}) RETURN n" );
         assertNode( res, 0 );
-        containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
+        containsNodes( res, true, MAX );
 
         res = execute( "MATCH (n {name: 'Hans'}) RETURN n" );
         assertNode( res, 0 );
-        containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) ) );
+        containsNodes( res, true, HANS );
 
         res = execute( "MATCH (n {name: 'David'}) RETURN n" );
         assertNode( res, 0 );
@@ -230,7 +233,7 @@ public class MatchTest extends CypherTestTemplate {
         Result res = execute( "MATCH (h:Person)-[r:OWNER_OF]-(p:Animal) RETURN h,p" );
         assertNode( res, 0 );
         assertNode( res, 1 );
-        assert containsIn( res, true, 0, TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
+        assert containsIn( res, true, 0, MAX );
         assert containsIn( res, true, 1, TestNode.from(
                 List.of( "Animal" ),
                 Pair.of( "name", "Kira" ),
@@ -239,13 +242,69 @@ public class MatchTest extends CypherTestTemplate {
 
     }
 
+    ///////////////////////////////////////////////
+    ///////// "JOIN"
+    ///////////////////////////////////////////////
+
 
     @Test
-    public void simpleMixedDirectedRelationshipTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (p:Person)-[:OWNER_OF]->(:Animal)\n" +
-                        "RETURN p" );
+    public void simpleCrossProductMatchTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        Result res = execute( "MATCH (p:Person),(n) RETURN p,n" );
+        assertNode( res, 0 );
+        assertNode( res, 1 );
 
+        assert containsRows( res, true, true, Row.of( MAX, MAX ) );
+    }
+
+
+    @Test
+    public void simpleCrossProductBiMatchTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        Result res = execute( "MATCH (p:Person),(n) RETURN p,n" );
+        assertNode( res, 0 );
+        assertNode( res, 1 );
+
+        assert containsRows( res, true, true,
+                Row.of( MAX, MAX ),
+                Row.of( HANS, MAX ),
+                Row.of( MAX, HANS ),
+                Row.of( HANS, HANS ) );
+    }
+
+
+    @Test
+    public void simpleTriCrossProductMatchTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        Result res = execute( "MATCH (p:Person),(n),(d) RETURN p,n,d" );
+        assertNode( res, 0 );
+        assertNode( res, 1 );
+        assertNode( res, 2 );
+
+        assert containsRows( res, true, true, Row.of( MAX, MAX, MAX ) );
+
+    }
+
+
+    @Test
+    public void triCrossProductMatchTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        Result res = execute( "MATCH (p:Person),(n),(d) RETURN p,n,d" );
+        assertNode( res, 0 );
+        assertNode( res, 1 );
+        assertNode( res, 2 );
+
+        assert containsRows( res, true, false,
+                Row.of( MAX, MAX, MAX ),
+                Row.of( HANS, MAX, MAX ),
+                Row.of( MAX, HANS, MAX ),
+                Row.of( HANS, HANS, MAX ),
+                Row.of( MAX, MAX, HANS ),
+                Row.of( HANS, MAX, HANS ),
+                Row.of( MAX, HANS, HANS ),
+                Row.of( HANS, HANS, HANS ) );
     }
 
 

@@ -20,4 +20,6 @@ public interface TestObject {
 
     boolean matches( Object other, boolean exclusive );
 
+    Object toPoly( String val );
+
 }

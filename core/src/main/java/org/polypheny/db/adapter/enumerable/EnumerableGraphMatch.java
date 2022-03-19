@@ -17,9 +17,8 @@
 package org.polypheny.db.adapter.enumerable;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -29,7 +28,6 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.GraphMatch;
@@ -44,7 +42,6 @@ import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Pair;
 
 public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
 
@@ -69,31 +66,12 @@ public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
 
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, input.getRowType(), pref.prefer( res.format ) );
-
-        //
-        Type inputJavaType = physType.getJavaRowType();
-
-        Type outputJavaType = Object[].class;
-
-        if ( matches.size() == 1 ) {
-            outputJavaType = typeFactory.getJavaClass( matches.get( 0 ).getType() );
-        }
-
-        //ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
-
         Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block, false );
 
         Expression inputEnumerator = builder.append( builder.newName( "enumerator" + System.nanoTime() ), Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ), false );
         builder.add( Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ) );
 
         Expression graph_ = builder.append( builder.newName( "graph" + System.nanoTime() ), Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), PolyGraph.class ), false );
-
-        Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
-
-        InputGetterImpl getter = new InputGetterImpl( Collections.singletonList( Pair.of( input, res.physType ) ) );
-
-        Expression field = getter.field( builder, 0, null );
 
         List<Expression> expressions = new ArrayList<>( matches.size() );
         for ( RexNode match : matches ) {
@@ -125,26 +103,17 @@ public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
             }
 
         }
-
+        Expression return_;
         if ( expressions.size() == 1 ) {
-            builder.add(
-                    Expressions.return_(
-                            null,
-                            expressions.get( 0 )
-                    )
-            );
+            return_ = expressions.get( 0 );
         } else {
             // we have to join ( cross product ) all results together
-            builder.add(
-                    Expressions.return_(
-                            null,
-                            Expressions.new_(
-                                    BuiltInMethod.GRAPH_MATCH_CTOR.constructor,
-                                    Expressions.call( List.class, "of", expressions )
-                            )
-                    )
-            );
+            return_ = Expressions.new_(
+                    BuiltInMethod.GRAPH_MATCH_CTOR.constructor,
+                    Expressions.call( Arrays.class, "asList", expressions ) );
         }
+
+        builder.add( Expressions.return_( null, return_ ) );
 
         return implementor.result( PhysTypeImpl.of( typeFactory, getRowType(), pref.prefer( res.format ) ), builder.toBlock() );
     }
@@ -202,10 +171,18 @@ public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
             int i = 0;
             while ( iter.hasNext() ) {
                 if ( i == 0 ) {
-                    enumerable = enumerable.join( iter.next(), a0 -> a0, a0 -> a0, FlatLists::of );
+                    enumerable = enumerable.join(
+                            iter.next(),
+                            a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
+                            a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
+                            ( a0, a1 ) -> new Object[]{ a0, a1 } );
                 } else {
-                    enumerable = enumerable.join( iter.next(), a0 -> a0, a0 -> a0,
-                            List::of );
+                    int index = i;
+                    enumerable = enumerable.join(
+                            iter.next(),
+                            a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
+                            a0 -> FlatLists.COMPARABLE_EMPTY_LIST,
+                            ( a0, a1 ) -> asObjectArray( (Object[]) a0, a1, index ) );
                 }
                 i++;
             }
@@ -213,6 +190,16 @@ public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
             return enumerable.enumerator();
         }
 
+    }
+
+
+    public static Object[] asObjectArray( Object[] a0, Object a1, int index ) {
+        Object[] array = new Object[index + 2];
+        if ( index + 1 >= 0 ) {
+            System.arraycopy( a0, 0, array, 0, index + 1 );
+        }
+        array[index + 1] = a1;
+        return array;
     }
 
 }

@@ -32,6 +32,12 @@ public class TestLiteral implements TestObject {
     }
 
 
+    @Override
+    public Object toPoly( String val ) {
+        return val;
+    }
+
+
     public static TestLiteral from( Object value ) {
         return new TestLiteral( value.toString() );
     }

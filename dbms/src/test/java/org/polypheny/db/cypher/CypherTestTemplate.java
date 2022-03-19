@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.Assert.fail;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
@@ -69,7 +71,11 @@ public class CypherTestTemplate {
 
 
     public static Result execute( String query ) {
-        return CypherConnection.executeGetResponse( query );
+        Result res = CypherConnection.executeGetResponse( query );
+        if ( res.getError() != null ) {
+            fail( res.getError() );
+        }
+        return res;
     }
 
 
@@ -129,6 +135,63 @@ public class CypherTestTemplate {
     }
 
 
+    protected boolean containsRows( Result actuel, boolean exclusive, boolean ordered, Row... rows ) {
+        List<List<Object>> parsed = new ArrayList<>();
+
+        int i = 0;
+        for ( Row row : rows ) {
+            parsed.add( row.asList( actuel.getData()[i] ) );
+            i++;
+        }
+
+        assert !exclusive || actuel.getData().length >= rows.length;
+
+        if ( ordered ) {
+            return matchesExactRows( parsed, rows );
+        } else {
+            return matchesUnorderedRows( parsed, rows );
+        }
+    }
+
+
+    private boolean matchesUnorderedRows( List<List<Object>> parsed, Row[] rows ) {
+
+        List<Integer> used = new ArrayList<>();
+        for ( Row row : rows ) {
+
+            int i = 0;
+            boolean matches = false;
+            for ( List<Object> objects : parsed ) {
+
+                if ( !matches && !used.contains( i ) ) {
+                    if ( row.matches( objects ) ) {
+                        used.add( i );
+                        matches = true;
+                    }
+                }
+
+                i++;
+            }
+            if ( !matches ) {
+                return false;
+            }
+        }
+        return true;
+
+    }
+
+
+    private boolean matchesExactRows( List<List<Object>> parsed, Row[] rows ) {
+        boolean matches = true;
+        int j = 0;
+        for ( Row row : rows ) {
+            matches &= row.matches( parsed.get( j ) );
+            j++;
+        }
+        return matches;
+    }
+
+
     private <T extends GraphPropertyHolder> boolean contains( String[][] actual, boolean exclusive, int index, Class<T> clazz, TestObject[] expected ) {
         List<T> parsed = new ArrayList<>();
 
@@ -175,7 +238,7 @@ public class CypherTestTemplate {
 
 
     @Getter
-    enum Type {
+    public enum Type {
         NODE( "node", TestNode.class, PolyNode.class ),
         EDGE( "edge", TestNode.class, PolyNode.class ),
         STRING( "varchar", TestNode.class, PolyNode.class );
@@ -193,7 +256,7 @@ public class CypherTestTemplate {
         }
 
 
-        static Type from( TestObject object ) {
+        public static Type from( TestObject object ) {
             if ( object instanceof TestLiteral ) {
                 return STRING;
             } else if ( object instanceof TestNode ) {
@@ -203,6 +266,48 @@ public class CypherTestTemplate {
             }
             throw new UnsupportedOperationException();
         }
+    }
+
+
+    public static class Row {
+
+        final TestObject[] values;
+
+
+        public Row( TestObject[] values ) {
+            this.values = values;
+        }
+
+
+        static Row of( TestObject... values ) {
+            return new Row( values );
+        }
+
+
+        public List<Object> asList( String[] actual ) {
+            List<Object> res = new ArrayList<>();
+            assert this.values.length == actual.length;
+
+            int i = 0;
+            for ( String val : actual ) {
+                res.add( this.values[i].toPoly( val ) );
+                i++;
+            }
+            return res;
+        }
+
+
+        public boolean matches( List<Object> objects ) {
+            int i = 0;
+            boolean matches = true;
+
+            for ( Object object : objects ) {
+                matches &= values[i].matches( object, true );
+                i++;
+            }
+            return matches;
+        }
+
     }
 
 }

@@ -58,7 +58,7 @@ public abstract class GraphMatch extends SingleAlg implements GraphAlg {
 
         int i = 0;
         for ( RexNode match : matches ) {
-            fields.add( new AlgDataTypeFieldImpl( names.get( 0 ), i, match.getType() ) );
+            fields.add( new AlgDataTypeFieldImpl( names.get( i ), i, match.getType() ) );
             i++;
         }
         return new AlgRecordType( fields );
