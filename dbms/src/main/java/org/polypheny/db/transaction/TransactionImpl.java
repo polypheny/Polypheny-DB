@@ -363,7 +363,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 break;
 
             case NO_ACCESS:
-                throw new RuntimeException( "Nt possible to reset the access mode to NO_ACCESS" );
+                throw new RuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
         }
 
         // If nothing else has matched so far. It's safe to simply use the input
