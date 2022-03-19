@@ -1939,7 +1939,53 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     old.partitionId,
-                    old.role);
+                    old.role,
+                    old.updateTimestamp );
+
+            synchronized ( this ) {
+                partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
+                listeners.firePropertyChange( "partitionPlacement", old, placement );
+            }
+
+        } catch ( NullPointerException e ) {
+            getAdapter( adapterId );
+            getPartition( partitionId );
+            throw new UnknownPartitionPlacementException( adapterId, partitionId );
+        }
+    }
+
+
+    /**
+     * Updates the commit timestamp when the placement was last updated
+     *
+     * @param adapterId The id of the adapter
+     * @param partitionId The id of the partition
+     * @param updateTimestamp The commit time of the TX that updated the primary nodes.
+     */
+    @Override
+    public void updatePartitionPlacementCommitTime( int adapterId, long partitionId, Timestamp updateTimestamp ) {
+        try {
+            CatalogPartitionPlacement old = Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
+
+            if ( updateTimestamp.before( old.updateTimestamp ) ) {
+                //TODO @HENNLO more sophisticated exception
+                // Add TEST to check this
+
+                // Abort if the new timestamp is older than the new one.
+                // This should not happen
+                throw new RuntimeException( "New Commit Timestamp is actually older than new one" );
+            }
+
+            CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
+                    old.tableId,
+                    old.adapterId,
+                    old.adapterUniqueName,
+                    old.placementType,
+                    old.physicalSchemaName,
+                    old.physicalTableName,
+                    old.partitionId,
+                    old.role,
+                    updateTimestamp );
 
             synchronized ( this ) {
                 partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
@@ -4359,23 +4405,28 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
+     * Returns all PartitionPlacements of a given table with a list of IDs that are associated with a given role.
      *
      * @param tableId table to retrieve the placements from
-     * @param partitionId filter by ID
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
+     * @param partitionIds List of partitionIds to filter
+     * @param desiredRole role to specifically filter
+     * @return Map of partitionId to List of all PartitionPlacements for the table that are associated with a specific role
      */
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
-        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+    public Map<Long, List<CatalogPartitionPlacement>> getPartitionPlacementsByIdAndRole( long tableId, List<Long> partitionIds, DataPlacementRole desiredRole ) {
+        Map<Long, List<CatalogPartitionPlacement>> placementPerPartition = new HashMap<>();
 
-        for ( CatalogPartitionPlacement partitionPlacement : getPartitionPlacements( partitionId ) ) {
-            if ( partitionPlacement.role.equals( role ) ) {
-                partitionPlacements.add( partitionPlacement );
-            }
+        for ( long partitionId : partitionIds ) {
+
+            placementPerPartition.put(
+                    partitionId, getPartitionPlacements( partitionId )
+                            .stream()
+                            .filter( p -> p.role.equals( desiredRole ) )
+                            .collect( Collectors.toList() )
+            );
         }
-        return partitionPlacements;
+
+        return placementPerPartition;
     }
 
 
@@ -4503,7 +4554,11 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     partitionId,
-                    role);
+                    role,
+                    new Timestamp( 0 ) // Newly created partitionPlacements are initially ultimately outdated and must first be enriched with data.
+            );
+            //TODO @HENNLO Set the new updated Timestampo of each placement after DataMigration has finished for newly created partitions
+            // However what happens if this is the first placement and has not yet anything to migrate. --> Probably irrelevant since onyl necessary for REFRESHABLEs
 
             synchronized ( this ) {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );

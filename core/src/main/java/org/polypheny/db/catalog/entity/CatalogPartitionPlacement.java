@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -54,6 +55,9 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
     public final DataPlacementRole role;
 
+    // This is the timestamp of the commit time of the initial TX that updated the primary nodes.
+    public final Timestamp updateTimestamp;
+
 
     public CatalogPartitionPlacement(
             final long tableId,
@@ -63,7 +67,8 @@ public class CatalogPartitionPlacement implements CatalogEntity {
             final String physicalSchemaName,
             final String physicalTableName,
             final long partitionId,
-            DataPlacementRole role ) {
+            final DataPlacementRole role,
+            final Timestamp updateTimestamp ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;
@@ -72,6 +77,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
         this.physicalTableName = physicalTableName;
         this.partitionId = partitionId;
         this.role = role;
+        this.updateTimestamp = updateTimestamp;
     }
 
 

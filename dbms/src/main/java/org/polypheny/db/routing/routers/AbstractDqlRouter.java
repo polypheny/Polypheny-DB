@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -231,7 +232,9 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
         // TODO @HENNLO get several possibilities if possible
 
-        List<CatalogPartitionPlacement> partitionPlacements = freshnessManager.getRelevantPartitionPlacements(
+        // Return all possible placements that conform to the tolerated Freshness, without regards to the
+        // partition/Column distribution. This needs to be checked and validated later on
+        Map<Long, List<CatalogPartitionPlacement>> placementOptionsPerPartition = freshnessManager.getRelevantPartitionPlacements(
                 catalogTable,
                 queryInformation.getAccessedPartitions().get( node.getId() ),
                 statement.getFreshnessSpecification() );

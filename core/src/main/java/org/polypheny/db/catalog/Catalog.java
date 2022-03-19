@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.annotations.SerializedName;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -1357,11 +1358,11 @@ public abstract class Catalog {
      * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
      *
      * @param tableId table to retrieve the placements from
+     * @param partitionId filter by ID
      * @param role role to specifically filter
-     * @param partitionId  filter by ID
      * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
      */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role );
+    public abstract Map<Long, List<CatalogPartitionPlacement>> getPartitionPlacementsByIdAndRole( long tableId, List<Long> partitionId, DataPlacementRole role );
 
 
     /**
@@ -1520,6 +1521,15 @@ public abstract class Catalog {
      * @param physicalTableName The physical table name
      */
     public abstract void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName );
+
+    /**
+     * Updates the commit timestamp when the placement was last updated
+     *
+     * @param adapterId The id of the adapter
+     * @param partitionId The id of the partition
+     * @param updateTimestamp The commit time of the TX that updated the primary nodes.
+     */
+    public abstract void updatePartitionPlacementCommitTime( int adapterId, long partitionId, Timestamp updateTimestamp );
 
     /**
      * Deletes a placement for a partition.

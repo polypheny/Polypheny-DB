@@ -1217,7 +1217,7 @@ public abstract class MockCatalog extends Catalog {
     }
 
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
+    public Map<Long, List<CatalogPartitionPlacement>> getPartitionPlacementsByIdAndRole( long tableId, List<Long> partitionId, DataPlacementRole role ) {
         throw new NotImplementedException();
     }
 }

@@ -17,10 +17,14 @@
 package org.polypheny.db.processing.replication.freshness;
 
 
+import com.google.common.collect.ImmutableList;
 import java.sql.Timestamp;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
@@ -39,39 +43,68 @@ public class FreshnessManagerImpl extends FreshnessManager {
 
 
     @Override
-    public List<CatalogPartitionPlacement> getRelevantPartitionPlacements( CatalogTable table, List<Long> partitionIds, FreshnessSpecification specs ) {
+    public Map<Long, List<CatalogPartitionPlacement>> getRelevantPartitionPlacements( CatalogTable table, List<Long> partitionIds, FreshnessSpecification specs ) {
+        return filterOnFreshness( getAllRefreshablePlacements( table, partitionIds ), specs );
+    }
 
-        List<CatalogPartitionPlacement> proposedPlacements = new ArrayList<>();
+
+    private Map<Long, List<CatalogPartitionPlacement>> getAllRefreshablePlacements( CatalogTable table, List<Long> partitionIds ) {
+        return catalog.getPartitionPlacementsByIdAndRole( table.id, partitionIds, DataPlacementRole.REFRESHABLE );
+    }
+
+
+    private Map<Long, List<CatalogPartitionPlacement>> filterOnFreshness(
+            Map<Long, List<CatalogPartitionPlacement>> unfilteredPlacements,
+            FreshnessSpecification specs ) {
 
         switch ( specs.getEvaluationType() ) {
 
             case TIMESTAMP:
             case DELAY:
-
-                proposedPlacements = handleTimestampFreshness( table, specs.getToleratedTimestamp() );
-                break;
+                return filterOnTimestampFreshness( unfilteredPlacements, specs.getToleratedTimestamp() );
 
             case PERCENTAGE:
             case INDEX:
-                proposedPlacements = handleFreshnessIndex( table, specs.getFreshnessIndex() );
-                break;
+                return filterOnFreshnessIndex( unfilteredPlacements, specs.getFreshnessIndex() );
 
             default:
                 throw new UnknownFreshnessEvaluationTypeRuntimeException( specs.getEvaluationType().toString() );
         }
 
-        return proposedPlacements;
     }
 
 
-    private List<CatalogPartitionPlacement> handleTimestampFreshness( CatalogTable table, Timestamp toleratedTimestamp ) {
+    private Map<Long, List<CatalogPartitionPlacement>> filterOnTimestampFreshness(
+            Map<Long, List<CatalogPartitionPlacement>> unfilteredPlacements,
+            Timestamp toleratedTimestampFilter ) {
 
-        return null;
+        Map<Long, List<CatalogPartitionPlacement>> filteredPlacements = new HashMap<>();
+
+        for ( Entry<Long, List<CatalogPartitionPlacement>> entry : unfilteredPlacements.entrySet() ) {
+
+            long partitionId = entry.getKey();
+            List<CatalogPartitionPlacement> partitionPlacements = entry.getValue();
+
+            // Only keep placements that are newer than the specified threshold
+            partitionPlacements.stream().filter(
+                    partitionPlacement -> toleratedTimestampFilter.before( partitionPlacement.updateTimestamp )
+            );
+
+            filteredPlacements.put( partitionId, ImmutableList.copyOf( partitionPlacements ) );
+        }
+
+        return filteredPlacements;
+
     }
 
 
-    private List<CatalogPartitionPlacement> handleFreshnessIndex( CatalogTable table, double freshnessIndex ) {
+    private Map<Long, List<CatalogPartitionPlacement>> filterOnFreshnessIndex(
+            Map<Long, List<CatalogPartitionPlacement>> unfilteredPlacements,
+            double freshnessIndexFilter ) {
 
-        return null;
+        Map<Long, List<CatalogPartitionPlacement>> filteredPlacements = new HashMap<>();
+
+        return filteredPlacements;
     }
+
 }

@@ -18,6 +18,7 @@ package org.polypheny.db.processing.replication.freshness;
 
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
@@ -32,14 +33,14 @@ public abstract class FreshnessManager {
     public abstract double transformToFreshnessIndex( CatalogTable table, String s, EvaluationType evaluationType );
 
     /**
-     * Gets a list of CatalogPartitionPlacements based on their freshness for a given table.
-     * Returns multiple/redundant partitions and only filters if it mathes the tolerated freshness
+     * Gets a list of ALL CatalogPartitionPlacements based on their freshness for a given table.
+     * Returns multiple/redundant partitions and only filters if it matches the tolerated freshness
      *
      * @param table Table to query
      * @param specs FreshnessMetrics to consider
-     * @return A List of usable partitionPlacements that all support the refresh operations
+     * @return A Map of partition id to List of usable partitionPlacements that all tolerate the refresh operations
      */
-    public abstract List<CatalogPartitionPlacement> getRelevantPartitionPlacements( CatalogTable table, List<Long> partitionIds, FreshnessSpecification specs );
+    public abstract Map<Long, List<CatalogPartitionPlacement>> getRelevantPartitionPlacements( CatalogTable table, List<Long> partitionIds, FreshnessSpecification specs );
 
 
     public enum EvaluationType {
