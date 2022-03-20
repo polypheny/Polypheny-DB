@@ -20,26 +20,30 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 
 public enum Adapter {
 
-    MONGODB( "org.polypheny.db.adapter.mongodb.MongoStore" ),
-    HSQLDB( "org.polypheny.db.adapter.jdbc.stores.HsqldbStore" ),
-    CSV( "org.polypheny.db.adapter.csv.CsvSource" ),
-    CASSANDRA( "org.polypheny.db.adapter.cassandra.CassandraStore" ),
-    MONETDB( "org.polypheny.db.adapter.jdbc.stores.MonetdbStore" ),
-    COTTONTAIL( "org.polypheny.db.adapter.cottontail.CottontailStore" ),
-    POSTGRESQL( "org.polypheny.db.adapter.jdbc.stores.PostgresqlStore" ),
-    FILE( "org.polypheny.db.adapter.file.FileStore" );
+    MONGODB( "org.polypheny.db.adapter.mongodb.MongoStore", SchemaType.DOCUMENT ),
+    HSQLDB( "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", SchemaType.RELATIONAL ),
+    CSV( "org.polypheny.db.adapter.csv.CsvSource", SchemaType.RELATIONAL ),
+    CASSANDRA( "org.polypheny.db.adapter.cassandra.CassandraStore", SchemaType.RELATIONAL ),
+    MONETDB( "org.polypheny.db.adapter.jdbc.stores.MonetdbStore", SchemaType.RELATIONAL ),
+    COTTONTAIL( "org.polypheny.db.adapter.cottontail.CottontailStore", SchemaType.RELATIONAL ),
+    POSTGRESQL( "org.polypheny.db.adapter.jdbc.stores.PostgresqlStore", SchemaType.RELATIONAL ),
+    FILE( "org.polypheny.db.adapter.file.FileStore", SchemaType.RELATIONAL );
 
     @Getter
     private final String path;
     @Getter
     private final Class<?> clazz;
+    @Getter
+    private final SchemaType preferredSchemaType;
 
 
-    Adapter( String path ) {
+    Adapter( String path, SchemaType preferredSchemaType ) {
         this.path = path;
+        this.preferredSchemaType = preferredSchemaType;
         try {
             this.clazz = Class.forName( path );
         } catch ( ClassNotFoundException e ) {

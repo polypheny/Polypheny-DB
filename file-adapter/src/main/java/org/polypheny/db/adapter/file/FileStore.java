@@ -42,6 +42,7 @@ import org.apache.commons.lang.SystemUtils;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -450,6 +451,12 @@ public class FileStore extends DataStore {
         // TODO: Check if this is correct and ind better approach
         List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey ).columnIds;
         return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );
+    }
+
+
+    @Override
+    public Adapter getAdapterDefault() {
+        return Adapter.FILE;
     }
 
 

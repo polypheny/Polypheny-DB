@@ -16,6 +16,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -162,6 +163,12 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
         return ImmutableList.of();
+    }
+
+
+    @Override
+    public Adapter getAdapterDefault() {
+        return Adapter.HSQLDB;
     }
 
 

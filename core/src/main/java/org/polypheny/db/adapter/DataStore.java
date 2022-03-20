@@ -25,6 +25,7 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -69,6 +70,7 @@ public abstract class DataStore extends Adapter {
 
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable );
 
+    public abstract org.polypheny.db.catalog.Adapter getAdapterDefault();
 
     @AllArgsConstructor
     public static class AvailableIndexMethod {

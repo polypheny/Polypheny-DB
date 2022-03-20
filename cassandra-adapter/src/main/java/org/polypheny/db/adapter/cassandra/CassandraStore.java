@@ -50,6 +50,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -475,6 +476,12 @@ public class CassandraStore extends DataStore {
     public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
         List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey ).columnIds;
         return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );
+    }
+
+
+    @Override
+    public Adapter getAdapterDefault() {
+        return Adapter.CASSANDRA;
     }
 
 

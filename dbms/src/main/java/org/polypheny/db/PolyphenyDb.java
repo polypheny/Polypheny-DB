@@ -65,6 +65,7 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.policies.policy.policy.PoliciesManager;
+import org.polypheny.db.policies.policy.selfadaptiveness.SelfAdaptivAgent;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
@@ -381,6 +382,7 @@ public class PolyphenyDb {
 
         //start the policy manager
         PoliciesManager.getInstance().initialize();
+        SelfAdaptivAgent.getInstance().initialize();
 
         WorkloadManager.getInstance();
 

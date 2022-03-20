@@ -35,14 +35,17 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
+import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
+import org.polypheny.db.policies.policy.models.UiPolicy;
 import org.polypheny.db.policies.policy.policy.Clause.AffectedOperations;
 import org.polypheny.db.policies.policy.policy.Clause.ClauseCategory;
 import org.polypheny.db.policies.policy.policy.Clause.ClauseName;
 import org.polypheny.db.policies.policy.policy.Clause.ClauseType;
 import org.polypheny.db.policies.policy.policy.Policies.Target;
-import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
-import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
-import org.polypheny.db.policies.policy.models.UiPolicy;
+import org.polypheny.db.policies.policy.selfadaptiveness.Optimization;
+import org.polypheny.db.policies.policy.selfadaptiveness.SelfAdaptivAgent.InformationContext;
+import org.polypheny.db.policies.policy.selfadaptiveness.WeightedList;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -278,6 +281,9 @@ public class PoliciesManager {
             this.policies.put( policies.getId(), policies );
         } else {
             Clause clause = registeredClauses.get( clauseName );
+            if(clause == null){
+
+            }
             clause.setTarget( target );
             Policies policies = new Policies( target, targetId );
             policies.getClauses().put( clause.getClauseName(), clause );
@@ -470,7 +476,18 @@ public class PoliciesManager {
                         return (List<T>) checkMinimumPersistence( allStores, (DataStore) preSelection, possibleStores, clause, namespaceId, entityId );
                     }
                 }
-                return (List<T>) possibleStores;
+
+                InformationContext context = new InformationContext();
+                context.setPossibilities( possibleStores, DataStore.class );
+                context.setNameSpaceModel( Catalog.getInstance().getSchema( namespaceId ).schemaType );
+
+                if(RuntimeConfig.SELF_ADAPTIVE.getBoolean() ){
+                    return (List<T>) rank( context, Optimization.SELECT_STORE );
+                }else{
+                    return (List<T>) possibleStores;
+                }
+
+
 
             case CHECK_STORES_DELETE:
                 List<CatalogPartitionPlacement> partitionPlacements = Catalog.getInstance().getAllPartitionPlacement();
@@ -491,7 +508,7 @@ public class PoliciesManager {
                 }
 
                 if ( potentiallyInteresting.isEmpty() ) {
-                    return Collections.singletonList(preSelection);
+                    return Collections.singletonList( preSelection );
                 }
 
                 for ( Clause clause : potentiallyInteresting ) {
@@ -499,17 +516,17 @@ public class PoliciesManager {
 
                         switch ( clause.getTarget() ) {
                             case POLYPHENY:
-                                if ( adapterIds.contains( partitionPlacement.adapterId ) && ((DataStore)preSelection).getAdapterId() != partitionPlacement.adapterId) {
+                                if ( adapterIds.contains( partitionPlacement.adapterId ) && ((DataStore) preSelection).getAdapterId() != partitionPlacement.adapterId ) {
                                     canBeDeleted = true;
                                 }
                                 break;
                             case NAMESPACE:
-                                if ( adapterIds.contains( partitionPlacement.adapterId ) && partitionPlacement.schemaId == namespaceId && ((DataStore)preSelection).getAdapterId() != partitionPlacement.adapterId) {
+                                if ( adapterIds.contains( partitionPlacement.adapterId ) && partitionPlacement.schemaId == namespaceId && ((DataStore) preSelection).getAdapterId() != partitionPlacement.adapterId ) {
                                     canBeDeleted = true;
                                 }
                                 break;
                             case ENTITY:
-                                if ( adapterIds.contains( partitionPlacement.adapterId ) && partitionPlacement.tableId == entityId && ((DataStore)preSelection).getAdapterId() != partitionPlacement.adapterId) {
+                                if ( adapterIds.contains( partitionPlacement.adapterId ) && partitionPlacement.tableId == entityId && ((DataStore) preSelection).getAdapterId() != partitionPlacement.adapterId ) {
                                     canBeDeleted = true;
                                 }
                                 break;
@@ -520,16 +537,40 @@ public class PoliciesManager {
                     }
                 }
                 if ( canBeDeleted ) {
-                    return Collections.singletonList(preSelection);
+                    return Collections.singletonList( preSelection );
                 } else {
                     throw new PolicyRuntimeException( "Not possible to delete Table because if this table is deleted, there is no persistent table anymore." );
                 }
-
 
             default:
                 throw new PolicyRuntimeException( "Not implemented action was used to make a Decision" );
         }
 
+    }
+
+
+    private List<Object> rank( InformationContext informationContext, Optimization optimization ) {
+        List<WeightedList<?>> rankings = new ArrayList<>();
+
+        //todo ig: now self adaptive policies are only defined for the whole system as soon as this changes, the different policies need to be checked.
+        List<Clause> interestingClauses = new ArrayList<>();
+        policies.get( polyphenyPolicyId ).getClauses().forEach( ( k, v ) -> {
+            if ( v.getClauseCategory() == ClauseCategory.SELF_ADAPTING && ((BooleanClause)v).isValue() ) {
+                interestingClauses.add( v );
+            }
+        } );
+
+        if(interestingClauses.isEmpty()){
+            return informationContext.getPossibilities();
+        }
+
+        for ( Clause interestingClause : interestingClauses ) {
+            if ( interestingClause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) interestingClause).isValue() && optimization.getRank().containsKey( interestingClause.getClauseName() ) ) {
+                rankings.add( optimization.getRank().get( interestingClause.getClauseName() ).apply( informationContext ));
+            }
+        }
+
+        return WeightedList.weightedToList( WeightedList.avg( rankings ));
     }
 
 
@@ -621,7 +662,7 @@ public class PoliciesManager {
             case NAMESPACE:
                 if ( namespacePolicies.containsKey( targetId ) ) {
                     Integer policyId = namespacePolicies.get( targetId );
-                    if ( policies.get( policyId ).getClausesByName().containsKey( clauseName ) ) {
+                    if ( policies.get( policyId ).getClauses().containsKey( clauseName ) ) {
                         return getRelevantClauses( policyId, clauseName );
                     }
                 }
@@ -629,7 +670,7 @@ public class PoliciesManager {
             case ENTITY:
                 if ( entityPolicies.containsKey( targetId ) ) {
                     Integer policyId = entityPolicies.get( targetId );
-                    if ( policies.get( policyId ).getClausesByName().containsKey( clauseName ) ) {
+                    if ( policies.get( policyId ).getClauses().containsKey( clauseName ) ) {
                         return getRelevantClauses( policyId, clauseName );
                     }
                 }

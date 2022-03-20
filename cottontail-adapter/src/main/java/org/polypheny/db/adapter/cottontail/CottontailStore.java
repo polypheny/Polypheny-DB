@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -680,6 +681,12 @@ public class CottontailStore extends DataStore {
     @Override
     public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
         return ImmutableList.of();
+    }
+
+
+    @Override
+    public Adapter getAdapterDefault() {
+        return Adapter.COTTONTAIL;
     }
 
 

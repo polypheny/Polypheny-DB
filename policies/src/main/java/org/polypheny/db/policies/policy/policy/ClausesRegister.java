@@ -37,6 +37,7 @@ public class ClausesRegister {
     @Getter
     private static boolean isInit = false;
 
+    @Getter
     private static final Map<ClauseName, Clause> registry = new HashMap<>();
 
 

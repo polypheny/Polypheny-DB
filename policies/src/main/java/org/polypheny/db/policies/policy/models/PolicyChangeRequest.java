@@ -31,4 +31,12 @@ public class PolicyChangeRequest {
     public Long targetId;
 
 
+    public PolicyChangeRequest( String requestType, String clauseName, String targetName, boolean booleanValue, Long targetId ) {
+        this.requestType = requestType;
+        this.clauseName = clauseName;
+        this.targetName = targetName;
+        this.booleanValue = booleanValue;
+        this.targetId = targetId;
+    }
+
 }

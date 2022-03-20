@@ -450,6 +450,12 @@ public class MongoStore extends DataStore {
     }
 
 
+    @Override
+    public Adapter getAdapterDefault() {
+        return Adapter.MONGODB;
+    }
+
+
     public static String getPhysicalColumnName( String name, long id ) {
         if ( name.startsWith( "_" ) ) {
             return name;
