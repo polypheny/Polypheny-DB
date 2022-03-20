@@ -37,12 +37,37 @@ import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
 
 public class CypherTestTemplate {
 
 
     public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
+    protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
+    protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
+
+    protected static final String SINGLE_NODE_PERSON_COMPLEX_1 = "CREATE (p:Person {name: 'Ann', age: 45, depno: 13})";
+    protected static final String SINGLE_NODE_PERSON_COMPLEX_2 = "CREATE (p:Person {name: 'Bob', age: 31, depno: 13})";
+
+    protected static final String SINGLE_NODE_ANIMAL = "CREATE (a:Animal {name:'Kira', age:3, type:'dog'})";
+    protected static final String SINGLE_EDGE_1 = "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})";
+    protected static final String SINGLE_EDGE_2 = "CREATE (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(a:Person {name:'Hans', age:31})";
+    protected static final String MULTIPLE_HOP_EDGE = "CREATE (n:Person)-[f:FRIEND_OF {since: 1995}]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})";
+    protected final TestNode ANN = TestNode.from(
+            List.of( "Person" ),
+            Pair.of( "name", "Bob" ),
+            Pair.of( "age", 31 ),
+            Pair.of( "depno", 13 ) );
+    protected final TestNode BOB = TestNode.from(
+            List.of( "Person" ),
+            Pair.of( "name", "Ann" ),
+            Pair.of( "age", 45 ),
+            Pair.of( "depno", 13 ) );
+
+    protected final TestNode MAX = TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) );
+    protected final TestNode HANS = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) );
+    protected final TestNode KIRA = TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) );
 
 
     @BeforeClass
@@ -135,16 +160,16 @@ public class CypherTestTemplate {
     }
 
 
-    protected boolean containsRows( Result actuel, boolean exclusive, boolean ordered, Row... rows ) {
+    protected boolean containsRows( Result actual, boolean exclusive, boolean ordered, Row... rows ) {
         List<List<Object>> parsed = new ArrayList<>();
 
         int i = 0;
         for ( Row row : rows ) {
-            parsed.add( row.asList( actuel.getData()[i] ) );
+            parsed.add( row.asList( actual.getData()[i] ) );
             i++;
         }
 
-        assert !exclusive || actuel.getData().length >= rows.length;
+        assert !exclusive || actual.getData().length >= rows.length;
 
         if ( ordered ) {
             return matchesExactRows( parsed, rows );

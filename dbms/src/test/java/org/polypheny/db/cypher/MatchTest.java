@@ -29,22 +29,6 @@ import org.polypheny.db.webui.models.Result;
 @Slf4j
 public class MatchTest extends CypherTestTemplate {
 
-    private static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
-
-    private final TestNode MAX = TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) );
-
-    private static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
-
-    private final TestNode HANS = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) );
-
-    private static final String SINGLE_NODE_ANIMAL = "CREATE (a:Animal {name:'Kira', age:3, type:'dog'})";
-
-    private static final String SINGLE_EDGE_1 = "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})";
-
-    private static final String SINGLE_EDGE_2 = "CREATE (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(a:Person {name:'Hans', age:31})";
-
-    private static final String MULTIPLE_HOP_EDGE = "CREATE (n:Person)-[f:FRIEND_OF {since: 1995}]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})";
-
 
     @Before
     public void reset() {
@@ -243,7 +227,7 @@ public class MatchTest extends CypherTestTemplate {
     }
 
     ///////////////////////////////////////////////
-    ///////// "JOIN"
+    ///////// "CROSS PRODUCT" MATCH
     ///////////////////////////////////////////////
 
 
@@ -266,7 +250,7 @@ public class MatchTest extends CypherTestTemplate {
         assertNode( res, 0 );
         assertNode( res, 1 );
 
-        assert containsRows( res, true, true,
+        assert containsRows( res, true, false,
                 Row.of( MAX, MAX ),
                 Row.of( HANS, MAX ),
                 Row.of( MAX, HANS ),

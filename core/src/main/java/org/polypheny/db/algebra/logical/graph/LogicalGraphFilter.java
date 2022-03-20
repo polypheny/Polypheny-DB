@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -41,6 +42,12 @@ public class LogicalGraphFilter extends SingleAlg implements GraphAlg {
     public LogicalGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input );
         this.condition = condition;
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        return input.getRowType();
     }
 
 

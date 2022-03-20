@@ -119,7 +119,6 @@ import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.MqlFunctions;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.Utilities;
@@ -445,8 +444,8 @@ public enum BuiltInMethod {
     DESERIALIZE_DECOMPRESS_STRING( PolySerializer.class, "deserializeAndCompress", String.class, Class.class ),
     DESERIALIZE_DECOMPRESS_BYTE_ARRAY( PolySerializer.class, "deserializeAndCompress", byte[].class, Class.class ),
     GRAPH_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),
-    CYPHER_LABELS_MATCH( CypherFunctions.class, "labelsMatch", PolyNode.class, List.class ),
-    CYPHER_PROPERTIES_MATCH( CypherFunctions.class, "propertiesMatch", PolyNode.class, PolyDirectory.class ),
+    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyNode.class, String.class ),
+    CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", PolyNode.class, String.class ),
     DESERIALIZE_LIST( Functions.class, "deserializeList", String.class ),
     DESERIALIZE_DIRECTORY( Functions.class, "deserializeDirectory", String.class ),
     GRAPH_NODE_MATCH( CypherFunctions.class, "nodeMatch", PolyGraph.class, PolyNode.class ),

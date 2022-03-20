@@ -37,19 +37,21 @@ public class CypherRegisterer {
             throw new RuntimeException( "Cypher operators were already registered." );
         }
 
-        register( OperatorName.CYPHER_PROPERTIES_MATCH, new LangFunctionOperator( "CYPHER_PROPERTIES_MATCH", Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_HAS_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_HAS_PROPERTY.name(), Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_LABELS_MATCH, new LangFunctionOperator( "CYPHER_LABELS_MATCH", Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( "CYPHER_PATH_MATCH", Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_PATH_MATCH.name(), Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( "CYPHER_NODE_EXTRACT", Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( OperatorName.CYPHER_NODE_EXTRACT.name(), Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_EXTRACT_FROM_PATH, new LangFunctionOperator( "CYPHER_EXTRACT_FROM_PATH", Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_EXTRACT_FROM_PATH, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_FROM_PATH.name(), Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_NODE_MATCH, new LangFunctionOperator( "CYPHER_NODE_MATCH", Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_NODE_MATCH, new LangFunctionOperator( OperatorName.CYPHER_NODE_MATCH.name(), Kind.DESERIALIZE ) );
 
-        register( OperatorName.CYPHER_EXTRACT_PROPERTY, new LangFunctionOperator( "CYPHER_EXTRACT_PROPERTY", Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_EXTRACT_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_PROPERTY.name(), Kind.DESERIALIZE ) );
+
+        register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.DESERIALIZE ) );
 
         isInit = true;
     }

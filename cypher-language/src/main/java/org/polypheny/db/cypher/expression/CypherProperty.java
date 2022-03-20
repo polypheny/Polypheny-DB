@@ -25,7 +25,6 @@ import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -44,9 +43,9 @@ public class CypherProperty extends CypherExpression {
 
     public String getName() {
         if ( subject.getType() == ExpressionType.VARIABLE ) {
-            return subject.getName();
+            return subject.getName() + "." + propKeyName.getImage();
         }
-        throw new RuntimeException();
+        throw new UnsupportedOperationException();
     }
 
 
@@ -58,12 +57,27 @@ public class CypherProperty extends CypherExpression {
         Pair<String, RexNode> namedSubject = this.subject.getRexAsProject( context );
         assert namedSubject.left.equals( subject );
 
-        RexNode extractedProperty = context.rexBuilder.makeCall(
-                context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
-                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_PROPERTY ),
+        return context.getPropertyExtract( key, subject, namedSubject.right );
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+        String key = propKeyName.getImage();
+        String subject = this.subject.getName();
+
+        Pair<String, RexNode> namedSubject = this.subject.getRexAsProject( context );
+        assert namedSubject.left.equals( subject );
+
+        // first check if property even exist, this is not a project, this is a filter
+        RexNode hasProperty = context.rexBuilder.makeCall(
+                context.booleanType,
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_HAS_PROPERTY ),
                 List.of( namedSubject.right, context.rexBuilder.makeLiteral( key ) ) );
 
-        return Pair.of( subject + "." + key, extractedProperty );
+        context.add( Pair.of( subject + "." + key, hasProperty ) );
+
+        return context.getPropertyExtract( key, subject, namedSubject.right );
     }
 
 }

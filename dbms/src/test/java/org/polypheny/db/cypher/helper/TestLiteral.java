@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cypher.helper;
 
+import javax.annotation.Nullable;
+
 public class TestLiteral implements TestObject {
 
     public final String value;
@@ -28,6 +30,10 @@ public class TestLiteral implements TestObject {
 
     @Override
     public boolean matches( Object other, boolean exclusive ) {
+        if ( value == null && other == null ) {
+            return true;
+        }
+
         return value.equals( other );
     }
 
@@ -38,8 +44,8 @@ public class TestLiteral implements TestObject {
     }
 
 
-    public static TestLiteral from( Object value ) {
-        return new TestLiteral( value.toString() );
+    public static TestLiteral from( @Nullable Object value ) {
+        return new TestLiteral( value != null ? value.toString() : null );
     }
 
 }

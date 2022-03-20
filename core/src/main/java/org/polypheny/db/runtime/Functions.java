@@ -943,7 +943,7 @@ public class Functions {
      */
     public static boolean geAny( Object b0, Object b1 ) {
         if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
-            //noinspection unchecked
+            //noinspection unchecked,rawtypes
             return ((Comparable) b0).compareTo( b1 ) >= 0;
         } else if ( allAssignable( Number.class, b0, b1 ) ) {
             return ge( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );

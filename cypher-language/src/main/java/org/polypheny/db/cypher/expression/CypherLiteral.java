@@ -18,15 +18,19 @@ package org.polypheny.db.cypher.expression;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherLiteral extends CypherExpression {
@@ -117,6 +121,39 @@ public class CypherLiteral extends CypherExpression {
                 throw new UnsupportedOperationException();
         }
         throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+        RexNode node;
+        switch ( literalType ) {
+            case TRUE:
+            case FALSE:
+                node = context.rexBuilder.makeLiteral( (Boolean) value );
+                break;
+            case NULL:
+                node = context.rexBuilder.makeLiteral( null );
+                break;
+            case LIST:
+            case MAP:
+            case STAR:
+            case OCTAL:
+            case HEX:
+                throw new UnsupportedOperationException();
+            case STRING:
+                node = context.rexBuilder.makeLiteral( (String) value );
+                break;
+            case DOUBLE:
+                node = context.rexBuilder.makeApproxLiteral( BigDecimal.valueOf( (Double) value ) );
+                break;
+            case DECIMAL:
+                node = context.rexBuilder.makeExactLiteral( BigDecimal.valueOf( (Integer) value ) );
+                break;
+            default:
+                throw new IllegalStateException( "Unexpected value: " + literalType );
+        }
+        return Pair.of( null, node );
     }
 
 }

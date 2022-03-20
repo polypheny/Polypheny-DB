@@ -168,6 +168,7 @@ public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
         public Enumerator<Object> enumerator() {
             Iterator<Enumerable<Object>> iter = enumerables.iterator();
             Enumerable<Object> enumerable = iter.next();
+
             int i = 0;
             while ( iter.hasNext() ) {
                 if ( i == 0 ) {

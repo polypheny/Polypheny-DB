@@ -16,14 +16,21 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
@@ -76,6 +83,43 @@ public class CypherReturnClause extends CypherClause {
         }
         return project;
 
+    }
+
+
+    public AlgNode getGraphSort( CypherContext context ) {
+        List<Pair<Direction, String>> orders = order.stream().map( o ->
+                Pair.of( o.isAsc() ? Direction.ASCENDING : Direction.DESCENDING, o.getExpression().getName() ) ).collect( Collectors.toList() );
+
+        AlgNode node = context.peek();
+
+        List<AlgFieldCollation> collations = new ArrayList<>();
+
+        for ( Pair<Direction, String> item : orders ) {
+            int index = node.getRowType().getFieldNames().indexOf( item.right );
+
+            collations.add( new AlgFieldCollation( index, item.left ) );
+        }
+
+        AlgCollation collation = AlgCollations.of( collations );
+
+        Integer skip = null;
+        if ( this.skip != null ) {
+            skip = (Integer) this.skip.getComparable();
+        }
+
+        Integer limit = null;
+        if ( this.limit != null ) {
+            limit = (Integer) this.limit.getComparable();
+        }
+
+        AlgTraitSet traitSet = node.getTraitSet().replace( collation );
+
+        return new LogicalGraphSort( node.getCluster(), traitSet, collation, context.pop(), skip, limit );
+    }
+
+
+    public List<String> getSortFields() {
+        return order.stream().map( o -> o.getExpression().getName() ).collect( Collectors.toList() );
     }
 
 }

@@ -59,6 +59,7 @@ import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
@@ -372,6 +373,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     public void rewriteAlg( LogicalGraphFilter filter ) {
         setNewForOldRel( filter, filter );
+    }
+
+
+    public void rewriteAlg( LogicalGraphSort sort ) {
+        setNewForOldRel( sort, sort );
     }
 
 

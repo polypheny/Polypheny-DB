@@ -16,11 +16,17 @@
 
 package org.polypheny.db.algebra.rules;
 
+import lombok.Getter;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
+import org.polypheny.db.adapter.enumerable.EnumerableFilter;
+import org.polypheny.db.adapter.enumerable.EnumerableLimit;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
+import org.polypheny.db.adapter.enumerable.EnumerableSort;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -28,21 +34,72 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 public class GraphToEnumerableRule extends AlgOptRule {
 
-    public static GraphToEnumerableRule PROJECT_TO_ENUMERABLE = new GraphToEnumerableRule( operand( LogicalGraphProject.class, any() ), "GRAPH_PROJECT_TO_ENUMERABLE" );
+    public static GraphToEnumerableRule PROJECT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.PROJECT, operand( LogicalGraphProject.class, any() ), "GRAPH_PROJECT_TO_ENUMERABLE" );
+
+    public static GraphToEnumerableRule FILTER_TO_ENUMERABLE = new GraphToEnumerableRule( Type.FILTER, operand( LogicalGraphFilter.class, any() ), "GRAPH_FILTER_TO_ENUMERABLE" );
+
+    public static GraphToEnumerableRule SORT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.SORT, operand( LogicalGraphSort.class, any() ), "GRAPH_SORT_TO_ENUMERABLE" );
+
+    @Getter
+    private final Type type;
 
 
-    public GraphToEnumerableRule( AlgOptRuleOperand operand, String description ) {
+    public GraphToEnumerableRule( Type type, AlgOptRuleOperand operand, String description ) {
         super( operand, AlgFactories.LOGICAL_BUILDER, description );
+        this.type = type;
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
+        if ( type == Type.PROJECT ) {
+            convertProject( call );
+        } else if ( type == Type.FILTER ) {
+            convertFilter( call );
+        }
+    }
+
+
+    private void convertSort( AlgOptRuleCall call ) {
+        LogicalGraphSort sort = call.alg( 0 );
+        //AlgTraitSet out = sort.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode input = AlgOptRule.convert( sort.getInput(), EnumerableConvention.INSTANCE );
+
+        AlgNode node;
+        if ( sort.getCollation().getFieldCollations().isEmpty() ) {
+            node = EnumerableLimit.create( input, sort.getRexSkip(), sort.getRexSkip() );
+        } else {
+            node = EnumerableSort.create( input, sort.getCollation(), sort.getRexSkip(), sort.getRexLimit() );
+        }
+
+        call.transformTo( node );
+    }
+
+
+    private void convertFilter( AlgOptRuleCall call ) {
+        LogicalGraphFilter filter = call.alg( 0 );
+        AlgTraitSet out = filter.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode input = AlgOptRule.convert( filter.getInput(), EnumerableConvention.INSTANCE );
+
+        EnumerableFilter enumerable = new EnumerableFilter( filter.getCluster(), out, input, filter.getCondition() );
+        call.transformTo( enumerable );
+    }
+
+
+    private void convertProject( AlgOptRuleCall call ) {
         LogicalGraphProject project = call.alg( 0 );
         AlgTraitSet out = project.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode input = AlgOptRule.convert( project.getInput(), EnumerableConvention.INSTANCE );
+
         EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), out, input, project.getProjects(), project.getRowType() );
         call.transformTo( enumerableProject );
+    }
+
+
+    private enum Type {
+        PROJECT,
+        FILTER,
+        SORT
     }
 
 }

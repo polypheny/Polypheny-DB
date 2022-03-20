@@ -24,7 +24,6 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
@@ -96,13 +95,15 @@ public class CypherFunctions {
     }
 
 
-    public static boolean propertiesMatch( PolyNode node, PolyDirectory properties ) {
-        return node.matchesProperties( properties );
+    @SuppressWarnings("unused")
+    public static boolean hasProperty( PolyNode node, String property ) {
+        return node.properties.containsKey( property );
     }
 
 
-    public static boolean labelsMatch( PolyNode node, List<String> labels ) {
-        return node.matchesLabels( labels );
+    @SuppressWarnings("unused")
+    public static boolean hasLabel( PolyNode node, String label ) {
+        return node.labels.contains( label );
     }
 
 

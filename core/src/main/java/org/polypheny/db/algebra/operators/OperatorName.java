@@ -1380,11 +1380,11 @@ public enum OperatorName {
 
     DESERIALIZE_DIRECTORY( LangFunctionOperator.class ),
 
-    CYPHER_PROPERTIES_MATCH( LangFunctionOperator.class ),
+    CYPHER_HAS_PROPERTY( LangFunctionOperator.class ),
 
     DESERIALIZE_LIST( LangFunctionOperator.class ),
 
-    CYPHER_LABELS_MATCH( LangFunctionOperator.class ),
+    CYPHER_HAS_LABEL( LangFunctionOperator.class ),
 
     CYPHER_NODE_MATCH( LangFunctionOperator.class ),
 

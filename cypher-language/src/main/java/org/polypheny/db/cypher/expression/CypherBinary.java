@@ -16,9 +16,16 @@
 
 package org.polypheny.db.cypher.expression;
 
+import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.BinaryOperator;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherBinary extends CypherExpression {
@@ -33,6 +40,32 @@ public class CypherBinary extends CypherExpression {
         this.op = op;
         this.left = left;
         this.right = right;
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+
+        Pair<String, RexNode> left = this.left.getRexNode( context );
+        Pair<String, RexNode> right = this.right.getRexNode( context );
+
+        if ( OperatorRegistry.get( op ) instanceof BinaryOperator ) {
+            // when we have a binary comparison, we have to adjust potential mismatches
+            // this is the case if one of the sides is a literal, which has an explicit type
+            if ( left.right.getType().getPolyType().getFamily() != right.right.getType().getPolyType().getFamily() ) {
+                if ( left.right.isA( Kind.LITERAL ) && right.right.isA( Kind.LITERAL ) ) {
+                    throw new UnsupportedOperationException( "Both binary sides define non matching types" );
+                } else if ( left.right.isA( Kind.LITERAL ) ) {
+                    // left defines type
+                    right = Pair.of( right.left, context.rexBuilder.makeCast( left.right.getType(), right.right ) );
+                } else {
+                    // right defines type
+                    left = Pair.of( left.left, context.rexBuilder.makeCast( right.right.getType(), left.right ) );
+                }
+            }
+        }
+
+        return Pair.of( null, context.rexBuilder.makeCall( context.booleanType, OperatorRegistry.get( op ), List.of( left.right, right.right ) ) );
     }
 
 }

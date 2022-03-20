@@ -33,7 +33,8 @@ public interface GraphAlg {
         UNWIND,
         PROJECT,
         MODIFY,
-        VALUES
+        VALUES,
+        SORT
     }
 
 }
