@@ -488,7 +488,7 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
     SqlNodeList usingList = SqlNodeList.EMPTY;
 }
 {
-    <FUNCTION> ifNotExists = IfNotExistsOpt()
+    <PROCEDURE> ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
     <AS>
     className = StringLiteral()

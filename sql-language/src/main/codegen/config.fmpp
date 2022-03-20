@@ -75,6 +75,7 @@ data: {
             "org.polypheny.db.sql.sql.ddl.SqlAlterView"
             "org.polypheny.db.sql.sql.ddl.SqlDdlNodes"
             "org.polypheny.db.sql.sql.ddl.SqlTruncate"
+            "org.polypheny.db.sql.sql.ddl.SqlCreateProcedure"
             "org.polypheny.db.sql.sql.ddl.altermaterializedview.SqlAlterMaterializedViewAddIndex"
             "org.polypheny.db.sql.sql.ddl.altermaterializedview.SqlAlterMaterializedViewDropIndex"
             "org.polypheny.db.sql.sql.ddl.altermaterializedview.SqlAlterMaterializedViewFreshnessManual"
@@ -136,7 +137,6 @@ data: {
 
         # List of keywords from "keywords" section that are not reserved.
         nonReservedKeywords: [
-            "PROCEDURE"
             "A"
             "ABSENT"
             "ABSOLUTE"
