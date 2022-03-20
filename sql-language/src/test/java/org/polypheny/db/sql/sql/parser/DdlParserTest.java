@@ -195,6 +195,15 @@ public class DdlParserTest extends SqlParserTest {
         sql( sql ).ok( expected );
     }
 
+    @Test
+    public void testCreateOrReplaceProcedure() {
+        final String sql = "create procedure \"my Udf\"\n"
+                + " as 'org.polypheny.db.udf.TableFun.demoUdf'";
+        final String expected = "CREATE PROCEDURE `my Udf`"
+                + " AS 'org.polypheny.db.udf.TableFun.demoUdf'";
+        sql( sql ).ok( expected );
+    }
+
 
     @Test
     public void testDropSchema() {

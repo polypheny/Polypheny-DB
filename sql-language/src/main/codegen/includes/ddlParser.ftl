@@ -480,6 +480,32 @@ SqlCreate SqlCreateFunction(Span s, boolean replace) :
     }
 }
 
+SqlCreate SqlCreateProcedure(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier id;
+    final SqlNode className;
+    SqlNodeList usingList = SqlNodeList.EMPTY;
+}
+{
+    <FUNCTION> ifNotExists = IfNotExistsOpt()
+    id = CompoundIdentifier()
+    <AS>
+    className = StringLiteral()
+    [
+        <USING> {
+            usingList = new SqlNodeList(getPos());
+        }
+        FunctionJarDef(usingList)
+        (
+            <COMMA>
+            FunctionJarDef(usingList)
+        )*
+    ] {
+        return SqlDdlNodes.createProcedure(s.end(this), replace, ifNotExists, id, className, usingList);
+    }
+}
+
 SqlDrop SqlDropSchema(Span s, boolean replace) :
 {
     final boolean ifExists;

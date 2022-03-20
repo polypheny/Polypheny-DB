@@ -87,6 +87,13 @@ public class SqlDdlNodes {
         return new SqlCreateFunction( pos, replace, ifNotExists, name, className, usingList );
     }
 
+    /**
+     * Creates a CREATE PROCEDURE.
+     */
+    public static SqlCreateProcedure createProcedure( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode className, SqlNodeList usingList ) {
+        return new SqlCreateProcedure( pos, replace, ifNotExists, name, className, usingList );
+    }
+
 
     /**
      * Creates a DROP SCHEMA.

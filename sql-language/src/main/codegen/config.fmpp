@@ -132,10 +132,12 @@ data: {
             "JAR"
             "FILE"
             "ARCHIVE"
+            "PROCEDURE"
         ]
 
         # List of keywords from "keywords" section that are not reserved.
         nonReservedKeywords: [
+            "PROCEDURE"
             "A"
             "ABSENT"
             "ABSOLUTE"
@@ -485,6 +487,7 @@ data: {
             "SqlAlterAdaptersDrop"
             "SqlAlterInterfacesAdd"
             "SqlAlterInterfacesDrop"
+            #"SqlAlterProcedure"
         ]
 
         # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls. Each must accept arguments "(SqlParserPos pos, boolean replace)".
@@ -495,6 +498,7 @@ data: {
             "SqlCreateView"
             "SqlCreateMaterializedView"
             "SqlCreateFunction"
+            "SqlCreateProcedure"
         ]
 
         # List of methods for parsing extensions to "DROP" calls. Each must accept arguments "(SqlParserPos pos)".
@@ -505,6 +509,7 @@ data: {
             "SqlDropView"
             "SqlDropMaterializedView"
             "SqlDropFunction"
+#            "SqlDropProcedure"
         ]
 
         # List of files in @includes directory that have parser method implementations for parsing custom SQL statements, literals or types

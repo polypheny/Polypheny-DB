@@ -1226,6 +1226,16 @@ public enum Kind {
     DROP_FUNCTION,
 
     /**
+     * {@code CREATE FUNCTION} DDL statement.
+     */
+    CREATE_PROCEDURE,
+
+    /**
+     * {@code DROP FUNCTION} DDL statement.
+     */
+    DROP_PROCEDURE,
+
+    /**
      * DDL statement not handled above.
      *
      * <b>Note to other projects</b>: If you are extending Polypheny-DB's SQL parser and have your own object types you no
