@@ -1424,7 +1424,9 @@ public enum Kind {
             SET_OPTION,
             TRUNCATE,
             ALTER_SCHEMA,
-            OTHER_DDL );
+            OTHER_DDL,
+            CREATE_PROCEDURE
+    );
 
     /**
      * Category consisting of query node types.

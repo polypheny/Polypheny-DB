@@ -472,6 +472,15 @@ public abstract class DdlManager {
 
 
     /**
+     * Create a new procedure
+     *
+     * @param schemaId the id of schema
+     * @param procedureName the name of the new procedure
+     */
+    public abstract void createProcedure( Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments) throws GenericCatalogException, UnknownColumnException;
+
+
+    /**
      * Add new partitions for the column
      *
      * @param partitionInfo the information concerning the partition

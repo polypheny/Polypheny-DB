@@ -59,28 +59,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -167,6 +147,7 @@ public class CatalogImpl extends Catalog {
 
     // Container Object that contains all other placements
     private static BTreeMap<Object[], CatalogDataPlacement> dataPlacements; // (AdapterId, TableId) -> CatalogDataPlacement
+    private static BTreeMap<Long, CatalogProcedure> procedures;
 
     private static Long openTable;
 
@@ -178,6 +159,7 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong schemaIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong tableIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong columnIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong procedureIdBuilder = new AtomicLong( 1 );
 
     private static final AtomicLong partitionGroupIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong partitionIdBuilder = new AtomicLong( 1000 );
@@ -648,6 +630,7 @@ public class CatalogImpl extends Catalog {
         dataPlacements = db.treeMap( "dataPlacement", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
         partitionGroups = db.treeMap( "partitionGroups", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         partitions = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        procedures = db.treeMap( "procedures", Serializer.LONG, Serializer.JAVA ).createOrOpen();
 
         partitionPlacements = db.treeMap( "partitionPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
 
@@ -901,6 +884,15 @@ public class CatalogImpl extends Catalog {
         db.getAll().clear();
         initDBLayout( db );
         restoreAllIdBuilders();
+    }
+
+    @Override
+    public void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) {
+        long id = procedureIdBuilder.getAndIncrement();
+        CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, query, arguments);
+        synchronized (this) {
+            procedures.put(id, procedure);
+        }
     }
 
 
