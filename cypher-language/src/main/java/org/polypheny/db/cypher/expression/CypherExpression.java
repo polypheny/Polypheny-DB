@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -66,10 +67,9 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Pair<String, RexNode> getRexNode( CypherContext context ) {
-
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
         OperatorName operatorName;
-        switch ( type ) {
+        switch ( this.type ) {
             case PATTERN:
                 // EveryPathPattern
                 //return pattern.getPatternMatch( context );
@@ -102,12 +102,7 @@ public class CypherExpression extends CypherNode {
         return Pair.of( var, new RexCall(
                 context.booleanType,
                 OperatorRegistry.get( operatorName ),
-                List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRexNode( context ).right ) ) );
-    }
-
-
-    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
-        throw new UnsupportedOperationException();
+                List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRex( context, type ).right ) ) );
     }
 
 
@@ -117,7 +112,7 @@ public class CypherExpression extends CypherNode {
 
 
     public enum ExpressionType {
-        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, DEFAULT
+        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT
     }
 
 

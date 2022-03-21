@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -43,9 +44,9 @@ public class CypherHasLabelOrTypes extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
 
-        Pair<String, RexNode> namedSubject = subject.getRexAsProject( context );
+        Pair<String, RexNode> namedSubject = subject.getRex( context, type );
 
         RexNode hasLabels;
         if ( labels.size() == 1 ) {

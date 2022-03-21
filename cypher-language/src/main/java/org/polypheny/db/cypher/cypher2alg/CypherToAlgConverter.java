@@ -21,11 +21,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.graph.LogicalGraph;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
@@ -50,13 +51,14 @@ import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.clause.CypherMatch;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
 import org.polypheny.db.cypher.clause.CypherWhere;
+import org.polypheny.db.cypher.clause.CypherWith;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -144,10 +146,24 @@ public class CypherToAlgConverter {
                 break;
             case USE:
                 break;
+            case WITH:
+                convertWith( (CypherWith) clause, context );
+                break;
             default:
                 throw new UnsupportedOperationException();
         }
 
+    }
+
+
+    private void convertWith( CypherWith clause, CypherContext context ) {
+        convertReturn( clause.getReturnClause(), context );
+
+        if ( clause.getWhere() != null ) {
+            convertWhere( clause.getWhere(), context );
+            // the combining could potentially be moved into the convertWhere
+            context.combineFilter();
+        }
     }
 
 
@@ -296,7 +312,7 @@ public class CypherToAlgConverter {
 
 
     private void convertWhere( CypherWhere where, CypherContext context ) {
-        context.add( where.getExpression().getRexNode( context ) );
+        context.add( where.getExpression().getRex( context, RexType.FILTER ) );
     }
 
 
@@ -328,6 +344,7 @@ public class CypherToAlgConverter {
         private final Stack<AlgNode> stack = new Stack<>();
         // named projects, null if no name provided
         private final Queue<Pair<String, RexNode>> rexQueue = new LinkedList<>();
+        private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
         public final CypherNode original;
         public final LogicalGraph graph;
 
@@ -441,6 +458,11 @@ public class CypherToAlgConverter {
         }
 
 
+        public void addAgg( Pair<String, AggregateCall> agg ) {
+            this.rexAggQueue.add( agg );
+        }
+
+
         public AlgNode build() {
             assert stack.size() == 1;
             return stack.pop();
@@ -457,57 +479,17 @@ public class CypherToAlgConverter {
         }
 
 
-        public void addScanIfNecessary( List<Pair<String, RexNode>> nameAndProject ) {
-            if ( !stack.isEmpty() ) {
-                return;
-            }
-            if ( nameAndProject.size() == 1 ) {
-                assert nameAndProject.get( 0 ).right.getType().getPolyType() == PolyType.NODE;
-                stack.add( new LogicalGraphScan( cluster, catalogReader, cluster.traitSet(), graph, new AlgRecordType(
-                        List.of(
-                                new AlgDataTypeFieldImpl( nameAndProject.get( 0 ).left, 0, nodeType ) ) ) ) );
-                return;
-            } else if ( nameAndProject.size() == 2 ) {
-                assert nameAndProject.get( 0 ).right.getType().getPolyType() == PolyType.NODE;
-                assert nameAndProject.get( 1 ).right.getType().getPolyType() == PolyType.EDGE;
-
-                addDefaultScanIfNecessary();
-                return;
-            }
-            throw new UnsupportedOperationException();
+        public List<Pair<String, RexNode>> popNodes() {
+            List<Pair<String, RexNode>> namedNodes = new ArrayList<>( rexQueue );
+            rexQueue.clear();
+            return namedNodes;
         }
 
 
-        public RexInputRef createRefToVar( String name, PolyType fieldType ) {
-            AlgNode node = stack.peek();
-            List<AlgDataTypeField> candidates = node
-                    .getRowType()
-                    .getFieldList()
-                    .stream()
-                    .filter( f -> f.getType().getPolyType() == fieldType
-                            && f.getName().equals( name ) ).collect( Collectors.toList() );
-            if ( candidates.isEmpty()
-                    && node.getRowType().getFieldList().size() == 1
-                    && node.getRowType().getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
-                // we have not yet done a projection,
-                // but there is still the possibility that we match against a graph
-                return rexBuilder.makeInputRef( graphType, 0 );
-
-            } else if ( candidates.size() == 1 ) {
-                return rexBuilder.makeInputRef( candidates.get( 0 ).getType(), candidates.get( 0 ).getIndex() );
-            } else {
-                throw new RuntimeException( "There seems to be a problem with the provided algebra node." );
-            }
-
-        }
-
-
-        public void insertMissingProjects( List<String> missingFields ) {
-            AlgNode node = stack.pop();
-
-            MissingFieldInserter inserter = new MissingFieldInserter( missingFields, this );
-            node = node.accept( inserter );
-            stack.add( node );
+        public List<Pair<String, AggregateCall>> popAggNodes() {
+            List<Pair<String, AggregateCall>> namedNodes = new ArrayList<>( rexAggQueue );
+            rexAggQueue.clear();
+            return namedNodes;
         }
 
 
@@ -521,98 +503,43 @@ public class CypherToAlgConverter {
         }
 
 
-        public static class MissingFieldInserter extends AlgShuttleImpl {
-
-            private final List<String> names;
-
-            private final List<String> adjustedNames = new ArrayList<>();
-            private final CypherContext context;
-
-
-            public MissingFieldInserter( List<String> missingFields, CypherContext context ) {
-                this.names = missingFields;
-                this.context = context;
+        public RexNode getBinaryOperation( OperatorName op, RexNode left, RexNode right ) {
+            switch ( op ) {
+                case STARTS_WITH:
+                    return getLikeOperator( left, right, ( i ) -> i + "%" );
+                case ENDS_WITH:
+                    return getLikeOperator( left, right, ( i ) -> "%" + i );
+                case CONTAINS:
+                    return getLikeOperator( left, right, ( i ) -> "%" + i + "%" );
+                default:
+                    return rexBuilder.makeCall(
+                            booleanType,
+                            OperatorRegistry.get( op ),
+                            List.of( left, right ) );
             }
-
-
-            @Override
-            public AlgNode visit( LogicalGraphProject project ) {
-                AlgNode node = insertProjectIfNecessary( project );
-
-                return adjustFieldsIfNecessary( node );
-            }
-
-
-            private AlgNode adjustFieldsIfNecessary( AlgNode node ) {
-                if ( adjustedNames.isEmpty() ) {
-                    return node;
-                }
-                if ( node instanceof LogicalGraphProject ) {
-                    List<Pair<String, Integer>> namedRef = adjustedNames.stream().map( n -> Pair.of( n, node.getRowType().getFieldNames().indexOf( n ) ) ).collect( Collectors.toList() );
-
-                    List<RexNode> nodes = new ArrayList<>( ((LogicalGraphProject) node).getProjects() );
-                    List<String> names = new ArrayList<>( ((LogicalGraphProject) node).getNames() );
-
-                    namedRef.forEach( n -> {
-                        names.add( n.left );
-                        nodes.add( context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( n.right ).getType(), n.right ) );
-                    } );
-
-                    return new LogicalGraphProject( node.getCluster(), node.getTraitSet(), node.getInput( 0 ), nodes, names );
-                }
-                return node;
-            }
-
-
-            private AlgNode insertProjectIfNecessary( AlgNode node ) {
-                if ( adjustedNames.size() == names.size() ) {
-                    return node;
-                }
-
-                List<Pair<String, RexNode>> additionalProjects = new ArrayList<>();
-                int i = 0;
-                for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
-                    boolean success = false;
-                    for ( String name : names.stream().filter( adjustedNames::contains ).collect( Collectors.toList() ) ) {
-                        if ( success ) {
-                            continue;
-                        }
-                        if ( name.contains( "." ) ) {
-                            // missing property name
-                            if ( field.getName().equals( name.split( "\\." )[0] ) ) {
-                                Pair<String, RexNode> propertyExtract = context.getPropertyExtract(
-                                        name.split( "\\." )[1],
-                                        name.split( "\\." )[0],
-                                        context.rexBuilder.makeInputRef( field.getType(), i ) );
-                                adjustedNames.add( propertyExtract.left );
-                                success = true;
-                                additionalProjects.add( propertyExtract );
-                            }
-                        } else {
-                            // missing node or edge
-                            if ( field.getName().equals( name ) ) {
-                                adjustedNames.add( name );
-                                success = true;
-                            }
-                        }
-                    }
-
-                    i++;
-                }
-
-                // we don't need to adjust the field explicitly, only signal to the parent to look for it
-                if ( !additionalProjects.isEmpty() ) {
-                    // need to explicitly extract the underlying field
-                    List<Pair<String, RexNode>> namedRefs = node.getRowType().getFieldList().stream().map( f -> Pair.of( f.getName(), (RexNode) context.rexBuilder.makeInputRef( f.getType(), f.getIndex() ) ) ).collect( Collectors.toCollection( ArrayList::new ) );
-                    namedRefs.addAll( additionalProjects );
-                    return new LogicalGraphProject( node.getCluster(), node.getTraitSet(), node, Pair.right( namedRefs ), Pair.left( namedRefs ) );
-                }
-                return node;
-
-            }
-
         }
 
+
+        private RexNode getLikeOperator( RexNode left, RexNode right, Function<String, String> adjustingFunction ) {
+            assert right.isA( Kind.LITERAL );
+            String adjustedRight = adjustingFunction.apply( ((RexLiteral) right).getValueAs( String.class ) );
+            return rexBuilder.makeCall(
+                    booleanType,
+                    OperatorRegistry.get( OperatorName.LIKE ),
+                    List.of( left, rexBuilder.makeLiteral( adjustedRight ) ) );
+        }
+
+
+        public boolean containsAggs() {
+            return !rexAggQueue.isEmpty();
+        }
+
+    }
+
+
+    public enum RexType {
+        PROJECT,
+        FILTER
     }
 
 }

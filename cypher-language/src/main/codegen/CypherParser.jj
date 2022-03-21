@@ -261,6 +261,7 @@ TOKEN [IGNORE_CASE] :
     | < ASC: "ASC" ("ENDING")? >
     | < ASSERT: "ASSERT" >
     | < ASSIGN: "ASSIGN" >
+    | < AVG: "avg" >
     | < BAR: "|" >
     | < BOOSTED: "BOOSTED" >
     | < BRIEF: "BRIEF" >
@@ -278,6 +279,7 @@ TOKEN [IGNORE_CASE] :
     | < CONTAINS: "CONTAINS" >
     | < COPY: "COPY" >
     | < COUNT: "count" >
+    | < COLLECT: "collect" >
     | < CREATE: "CREATE" >
     | < CSV: "CSV" >
     | < CURRENT: "CURRENT" >
@@ -349,6 +351,8 @@ TOKEN [IGNORE_CASE] :
     | < MATCH: "MATCH" >
     | < MERGE: "MERGE" >
     | < MINUS: "-" >
+    | < MIN: "min" >
+    | < MAX: "max" >
     | < MODULO: "%" >
     | < NEQ: "!=" >
     | < NEQ2: "<>" >
@@ -414,7 +418,8 @@ TOKEN [IGNORE_CASE] :
     | < SHOW: "SHOW">
     | < SINGLE: "SINGLE" >
     | < SKIPROWS: "SKIP" >
-    | < START: "START">
+    | < START: "START" >
+    | < SUM: "sum" >
     | < STARTS: "STARTS" >
     | < STATUS: "STATUS" >
     | < STOP: "STOP">
@@ -2488,7 +2493,7 @@ CypherExpression Expression1() :
         | LOOKAHEAD( 2 ) t=<FALSE> { e = CypherFactory.newFalseLiteral( pos( t ) ); }
         | LOOKAHEAD( 2 ) t=<NULL> { e = CypherFactory.newNullLiteral( pos( t ) ); }
         | LOOKAHEAD( 3 ) e=CaseExpression()
-        | LOOKAHEAD( 3 ) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = CypherFactory.newCountStar( pos( t ) ); }
+        | LOOKAHEAD( 3 ) e=AggregateExpression()
         | LOOKAHEAD( 3 ) e=MapLiteral()
         | LOOKAHEAD( 3 ) e=ExistsSubQuery() // `exists { match` should not be a map-projection
         | LOOKAHEAD( 2 ) e=MapProjection()
@@ -2509,6 +2514,31 @@ CypherExpression Expression1() :
     {
         return e;
     }
+}
+
+CypherExpression AggregateExpression():
+{
+    OperatorName op = null;
+    CypherExpression target = null;
+    Token t = null;
+    boolean distinct = false;
+}
+{
+    (
+        t=<COUNT> { op=OperatorName.COUNT; }
+        | LOOKAHEAD( 2 ) t=<AVG> { op=OperatorName.AVG; }
+        | LOOKAHEAD( 2 ) t=<COLLECT> { op=OperatorName.COLLECT; }
+        | LOOKAHEAD( 2 ) t=<SUM> { op=OperatorName.SUM; }
+        | LOOKAHEAD( 2 ) t=<MIN> { op=OperatorName.MIN; }
+        | LOOKAHEAD( 2 ) t=<MAX> { op=OperatorName.MAX; }
+    )
+    <LPAREN> (
+        <TIMES>
+        | LOOKAHEAD( 2 ) (<DISTINCT> { distinct=true;} )? target=Expression()
+
+        )
+    <RPAREN>
+    { return CypherFactory.newAggregate( pos( t ), op, target, distinct ); }
 }
 
 CypherExpression CaseExpression() :
@@ -5300,6 +5330,7 @@ Token UnescapedSymbolicNameString() :
         | t=<ASC>
         | t=<ASSERT>
         | t=<ASSIGN>
+        | t=<AVG>
         | t=<BOOSTED>
         | t=<BRIEF>
         | t=<BTREE>
@@ -5314,6 +5345,7 @@ Token UnescapedSymbolicNameString() :
         | t=<CONSTRAINT>
         | t=<CONSTRAINTS>
         | t=<CONTAINS>
+        | t=<COLLECT>
         | t=<COPY>
         | t=<COUNT>
         | t=<CREATE>
@@ -5373,6 +5405,8 @@ Token UnescapedSymbolicNameString() :
         | t=<MATCH>
         | t=<MANAGEMENT>
         | t=<MERGE>
+        | t=<MIN>
+        | t=<MAX>
         | t=<NAME>
         | t=<NAMES>
         | t=<NEW>
@@ -5433,6 +5467,7 @@ Token UnescapedSymbolicNameString() :
         | t=<STATUS>
         | t=<STOP>
         | t=<SUSPENDED>
+        | t=<SUM>
         | t=<TARGET>
         | t=<TERMINATE>
         | t=<TEXT>

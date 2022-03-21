@@ -48,7 +48,7 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
 
     @Override
     public int compareTo( PolyNode o ) {
-        return getProperties().compareTo( o.getProperties() );
+        return id.compareTo( o.id ); //getProperties().compareTo( o.getProperties() );
     }
 
 

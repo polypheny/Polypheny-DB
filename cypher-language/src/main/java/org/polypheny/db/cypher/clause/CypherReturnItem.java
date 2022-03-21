@@ -16,9 +16,13 @@
 
 package org.polypheny.db.cypher.clause;
 
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
@@ -55,14 +59,21 @@ public class CypherReturnItem extends CypherReturn {
 
 
     @Override
-    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
+    @Nullable
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
         if ( variable != null ) {
             // name -> aggregate
-            Pair<String, RexNode> res = expression.getRexNode( context );
-            assert res.left.equals( variable.getName() );
-            return expression.getRexNode( context );
+            // renaming of the field
+            String name = variable.getName();
+            if ( expression.getType() == ExpressionType.AGGREGATE ) {
+                return ((CypherAggregate) expression).getAggregate( context, name );
+            }
+            return Pair.of( name, expression.getRex( context, type ).right );
         } else {
-            return expression.getRexAsProject( context );
+            if ( expression.getType() == ExpressionType.AGGREGATE ) {
+                return ((CypherAggregate) expression).getAggregate( context, null );
+            }
+            return expression.getRex( context, type );
         }
     }
 

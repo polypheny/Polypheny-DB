@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BinaryOperator;
@@ -44,10 +45,10 @@ public class CypherBinary extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
 
-        Pair<String, RexNode> left = this.left.getRexNode( context );
-        Pair<String, RexNode> right = this.right.getRexNode( context );
+        Pair<String, RexNode> left = this.left.getRex( context, type );
+        Pair<String, RexNode> right = this.right.getRex( context, type );
 
         if ( OperatorRegistry.get( op ) instanceof BinaryOperator ) {
             // when we have a binary comparison, we have to adjust potential mismatches

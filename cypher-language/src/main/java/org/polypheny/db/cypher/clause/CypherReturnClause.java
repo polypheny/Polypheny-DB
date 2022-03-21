@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
@@ -25,13 +26,18 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -67,7 +73,58 @@ public class CypherReturnClause extends CypherClause {
 
 
     public AlgNode getGraphProject( CypherContext context ) {
-        List<Pair<String, RexNode>> nameAndProject = returnItems.stream().map( i -> i.getRexAsProject( context ) ).collect( Collectors.toList() );
+        List<Pair<String, RexNode>> nameAndProject = returnItems.stream().map( i -> i.getRex( context, RexType.PROJECT ) ).filter( Objects::nonNull ).collect( Collectors.toCollection( ArrayList::new ) );
+        nameAndProject.addAll( 0, context.popNodes() );
+
+        AlgNode node = getProject( context, nameAndProject );
+
+        if ( context.containsAggs() ) {
+            // we use not yet existing fields in the aggregate
+            // we have to insert a project between, this is automatically "removed" after the aggregate
+            // we do this every time even when not really necessary, worst-case with two projects is removed later
+
+            return getAggregate( context, node );
+        }
+        return node;
+    }
+
+
+    private LogicalGraphAggregate getAggregate( CypherContext context, AlgNode node ) {
+        List<Pair<String, AggregateCall>> aggIndexes = context.popAggNodes();
+        List<AggregateCall> aggCalls = new ArrayList<>();
+        for ( Pair<String, AggregateCall> namedAgg : aggIndexes ) {
+            if ( namedAgg.left == null ) {
+                aggCalls.add( namedAgg.right );
+            } else {
+                int i = node.getRowType().getFieldNames().indexOf( namedAgg.left );
+                aggCalls.add( namedAgg.right.adjustedCopy( List.of( i ) ) );
+            }
+        }
+
+        List<String> aggNames = Pair.left( aggIndexes ).stream().filter( Objects::nonNull ).collect( Collectors.toList() );
+
+        List<Integer> groupIndexes = node
+                .getRowType()
+                .getFieldList()
+                .stream()
+                .filter( f -> !aggNames.contains( f.getName() ) )
+                .map( AlgDataTypeField::getIndex )
+                .collect( Collectors.toList() );
+
+        return new LogicalGraphAggregate(
+                node.getCluster(),
+                node.getTraitSet(),
+                node,
+                false,
+                ImmutableBitSet.of( groupIndexes ),
+                null, // instead of grouping by only one filed add multiple combinations (), (1,2)
+                aggCalls
+
+        );
+    }
+
+
+    private AlgNode getProject( CypherContext context, List<Pair<String, RexNode>> nameAndProject ) {
         AlgNode node = context.pop();
 
         AlgNode project = new LogicalGraphProject(
@@ -82,7 +139,6 @@ public class CypherReturnClause extends CypherClause {
             return node;
         }
         return project;
-
     }
 
 

@@ -33,6 +33,9 @@ public class TestLiteral implements TestObject {
         if ( value == null && other == null ) {
             return true;
         }
+        if ( value == null || other == null ) {
+            return false;
+        }
 
         return value.equals( other );
     }

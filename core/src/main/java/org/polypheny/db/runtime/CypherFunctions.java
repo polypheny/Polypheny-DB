@@ -121,4 +121,17 @@ public class CypherFunctions {
         return null;
     }
 
+
+    @SuppressWarnings("unused")
+    public static String extractLabel( GraphPropertyHolder holder ) {
+        return holder.getLabels().get( 0 );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static List<String> extractLabels( GraphPropertyHolder holder ) {
+        return holder.getLabels();
+    }
+
+
 }

@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexInputRef;
@@ -43,7 +44,13 @@ public class CypherVariable extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
+    public CypherVariable getVariable() {
+        return super.getVariable();
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
         AlgNode node = context.peek();
 
         int index = node.getRowType().getFieldNames().indexOf( name );

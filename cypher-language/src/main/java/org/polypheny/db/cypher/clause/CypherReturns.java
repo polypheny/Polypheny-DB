@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
@@ -30,7 +31,15 @@ public class CypherReturns extends CypherClause {
     public CypherReturns( ParserPos pos, boolean returnAll, List<CypherReturn> returns ) {
         super( pos );
         this.returnAll = returnAll;
-        this.returns = returns;
+        if ( returnAll ) {
+            // attach a star select, which preserves all previous variables
+            List<CypherReturn> list = new ArrayList<>( returns );
+            list.add( 0, new CypherStarReturn( pos ) );
+            this.returns = list;
+        } else {
+            this.returns = returns;
+        }
+
     }
 
 

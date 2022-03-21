@@ -51,13 +51,14 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
 
     @Override
     public int compareTo( PolyEdge other ) {
-        int left = source.compareTo( other.source );
+        /*int left = source.compareTo( other.source );
         int right = target.compareTo( other.target );
         int diff = left + right;
         if ( diff == 0 ) {
             return this.getProperties().compareTo( other.getProperties() );
         }
-        return diff;
+        return diff;*/
+        return id.compareTo( other.id );
     }
 
 
@@ -107,4 +108,5 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
 
 
     }
+
 }

@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
@@ -351,7 +352,6 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( LogicalGraphModify alg ) {
-        //LogicalGraphModify newAlg = LogicalConditionalExecute.create( alg.getInputs(), alg. );
         setNewForOldRel( alg, alg );
     }
 
@@ -378,6 +378,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     public void rewriteAlg( LogicalGraphSort sort ) {
         setNewForOldRel( sort, sort );
+    }
+
+
+    public void rewriteAlg( LogicalGraphAggregate aggregate ) {
+        setNewForOldRel( aggregate, aggregate );
     }
 
 

@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -50,32 +51,22 @@ public class CypherProperty extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRexAsProject( CypherContext context ) {
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
         String key = propKeyName.getImage();
         String subject = this.subject.getName();
 
-        Pair<String, RexNode> namedSubject = this.subject.getRexAsProject( context );
+        Pair<String, RexNode> namedSubject = this.subject.getRex( context, type );
         assert namedSubject.left.equals( subject );
 
-        return context.getPropertyExtract( key, subject, namedSubject.right );
-    }
+        if ( type == RexType.FILTER ) {
+            // first check if property even exist, this is use if it is used as filter
+            RexNode hasProperty = context.rexBuilder.makeCall(
+                    context.booleanType,
+                    OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_HAS_PROPERTY ),
+                    List.of( namedSubject.right, context.rexBuilder.makeLiteral( key ) ) );
 
-
-    @Override
-    public Pair<String, RexNode> getRexNode( CypherContext context ) {
-        String key = propKeyName.getImage();
-        String subject = this.subject.getName();
-
-        Pair<String, RexNode> namedSubject = this.subject.getRexAsProject( context );
-        assert namedSubject.left.equals( subject );
-
-        // first check if property even exist, this is not a project, this is a filter
-        RexNode hasProperty = context.rexBuilder.makeCall(
-                context.booleanType,
-                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_HAS_PROPERTY ),
-                List.of( namedSubject.right, context.rexBuilder.makeLiteral( key ) ) );
-
-        context.add( Pair.of( subject + "." + key, hasProperty ) );
+            context.add( Pair.of( subject + "." + key, hasProperty ) );
+        }
 
         return context.getPropertyExtract( key, subject, namedSubject.right );
     }

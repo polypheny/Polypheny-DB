@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
@@ -125,7 +126,7 @@ public class CypherLiteral extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRexNode( CypherContext context ) {
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
         RexNode node;
         switch ( literalType ) {
             case TRUE:

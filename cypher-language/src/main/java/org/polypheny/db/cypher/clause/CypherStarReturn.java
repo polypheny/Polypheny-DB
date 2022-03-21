@@ -14,39 +14,40 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.expression;
+package org.polypheny.db.cypher.clause;
 
-import lombok.Getter;
-import org.polypheny.db.algebra.operators.OperatorName;
+import javax.annotation.Nullable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
-@Getter
-public class CypherComparison extends CypherExpression {
+public class CypherStarReturn extends CypherReturn {
 
-    private final OperatorName operatorName;
-    private final CypherExpression left;
-    private final CypherExpression right;
-
-
-    public CypherComparison( ParserPos pos, OperatorName operatorName, CypherExpression left, CypherExpression right ) {
+    protected CypherStarReturn( ParserPos pos ) {
         super( pos );
-        this.operatorName = operatorName;
-        this.left = left;
-        this.right = right;
     }
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
-        Pair<String, RexNode> namedLeft = left.getRex( context, type );
-        Pair<String, RexNode> namedRight = right.getRex( context, type );
-
-        return Pair.of( null, context.getBinaryOperation( operatorName, namedLeft.right, namedRight.right ) );
+    public boolean isStar() {
+        return true;
     }
 
+
+    @Override
+    @Nullable
+    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+        AlgNode node = context.peek();
+
+        for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
+            context.add( Pair.of( field.getName(), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
+        }
+
+        return null;
+    }
 
 }

@@ -85,6 +85,7 @@ import org.polypheny.db.cypher.ddl.CypherRevokeRoles;
 import org.polypheny.db.cypher.ddl.CypherSchemaCommand;
 import org.polypheny.db.cypher.ddl.CypherSetOwnPassword;
 import org.polypheny.db.cypher.ddl.CypherShowRoles;
+import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherBinary;
 import org.polypheny.db.cypher.expression.CypherComparison;
 import org.polypheny.db.cypher.expression.CypherExistSubQuery;
@@ -819,6 +820,10 @@ public interface CypherFactory {
 
     static CypherAdminCommand denyPrivilege( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> roles, CypherPrivilegeType privilege ) {
         return new CypherDenyPrivilege( pos, roles, privilege );
+    }
+
+    static CypherExpression newAggregate( ParserPos pos, OperatorName op, CypherExpression target, boolean distinct ) {
+        return new CypherAggregate( pos, op, target, distinct );
     }
 
 }

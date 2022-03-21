@@ -345,4 +345,9 @@ public class AggregateCall {
                 AlgCollations.permute( collation, mapping ) );
     }
 
+
+    public AggregateCall adjustedCopy( List<Integer> argList ) {
+        return new AggregateCall( aggFunction, distinct, approximate, argList, filterArg, collation, type, name );
+    }
+
 }

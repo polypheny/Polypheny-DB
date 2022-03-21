@@ -42,7 +42,10 @@ public class LogicalGraphMatch extends GraphMatch implements GraphAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + matches.hashCode() + "$" + names.hashCode();
+        return "$" + getClass().getSimpleName() +
+                "$" + matches.hashCode() +
+                "$" + names.hashCode() +
+                "$" + input.algCompareString();
     }
 
 

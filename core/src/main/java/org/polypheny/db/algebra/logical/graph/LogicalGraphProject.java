@@ -78,7 +78,9 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + projects.hashCode();
+        return "$" + getClass().getSimpleName() +
+                "$" + projects.hashCode() +
+                "$" + input.algCompareString();
     }
 
 
