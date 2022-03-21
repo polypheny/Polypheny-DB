@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.policy;
+package org.polypheny.db.adaptiveness.policy;
 
-import static org.polypheny.db.policies.policy.policy.Policies.TARGET_POLYPHENY;
-
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,23 +28,25 @@ import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adaptiveness.exception.PolicyRuntimeException;
+import org.polypheny.db.adaptiveness.models.PolicyChangeRequest;
+import org.polypheny.db.adaptiveness.models.UiPolicy;
+import org.polypheny.db.adaptiveness.policy.Clause.AffectedOperations;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseType;
+import org.polypheny.db.adaptiveness.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.selfadaptiveness.Decision;
+import org.polypheny.db.adaptiveness.selfadaptiveness.Optimization;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent.InformationContext;
+import org.polypheny.db.adaptiveness.selfadaptiveness.WeightedList;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
-import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
-import org.polypheny.db.policies.policy.models.UiPolicy;
-import org.polypheny.db.policies.policy.policy.Clause.AffectedOperations;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseCategory;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseName;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseType;
-import org.polypheny.db.policies.policy.policy.Policies.Target;
-import org.polypheny.db.policies.policy.selfadaptiveness.Optimization;
-import org.polypheny.db.policies.policy.selfadaptiveness.SelfAdaptivAgent.InformationContext;
-import org.polypheny.db.policies.policy.selfadaptiveness.WeightedList;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -119,7 +120,7 @@ public class PoliciesManager {
      */
     public Pair<Target, Long> findTarget( String polypheny, Long namespaceId, Long entityId ) {
         if ( polypheny != null ) {
-            return new Pair<>( Target.POLYPHENY, TARGET_POLYPHENY );
+            return new Pair<>( Target.POLYPHENY, Policies.TARGET_POLYPHENY );
         }
         // for a namespace
         else if ( namespaceId != null && entityId == null ) {
@@ -281,7 +282,7 @@ public class PoliciesManager {
             this.policies.put( policies.getId(), policies );
         } else {
             Clause clause = registeredClauses.get( clauseName );
-            if(clause == null){
+            if ( clause == null ) {
 
             }
             clause.setTarget( target );
@@ -436,11 +437,17 @@ public class PoliciesManager {
     }
 
 
+    public <T> List<T> makeDecision( Class<T> clazz, Action action, Long namespaceId, Long entityId, T preSelection ) {
+        return WeightedList.weightedToList( makeDecisionWeighted(clazz, action, namespaceId, entityId, preSelection) );
+
+    }
+
+
     /**
      * Before polypheny can make a decision it needs to be checked if there is a policy that does not allow the change.
      * For example fully persistent is used, then it is checked that no data is stored on a not persistent store.
      */
-    public <T> List<T> makeDecision( Class<T> clazz, Action action, Long namespaceId, Long entityId, T preSelection ) {
+    public <T> WeightedList<T> makeDecisionWeighted( Class<T> clazz, Action action, Long namespaceId, Long entityId, T preSelection ) {
         List<Clause> potentiallyInteresting;
 
         List<ClauseName> clauseNames;
@@ -461,7 +468,7 @@ public class PoliciesManager {
                 }
 
                 if ( potentiallyInteresting.isEmpty() ) {
-                    return (List<T>) possibleStores;
+                    return WeightedList.listToWeighted(possibleStores);
                 }
 
                 for ( Clause clause : potentiallyInteresting ) {
@@ -473,7 +480,7 @@ public class PoliciesManager {
                     if ( clause.getClauseName() == ClauseName.PERSISTENT ) {
                         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
                         List<Object> allStores = new ArrayList<>( availableStores.values() );
-                        return (List<T>) checkMinimumPersistence( allStores, (DataStore) preSelection, possibleStores, clause, namespaceId, entityId );
+                        return WeightedList.listToWeighted(checkMinimumPersistence( allStores, (DataStore) preSelection, possibleStores, clause, namespaceId, entityId ));
                     }
                 }
 
@@ -481,13 +488,22 @@ public class PoliciesManager {
                 context.setPossibilities( possibleStores, DataStore.class );
                 context.setNameSpaceModel( Catalog.getInstance().getSchema( namespaceId ).schemaType );
 
-                if(RuntimeConfig.SELF_ADAPTIVE.getBoolean() ){
-                    return (List<T>) rank( context, Optimization.SELECT_STORE );
-                }else{
-                    return (List<T>) possibleStores;
+                if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() ) {
+                    Pair<Long, Action> decisionKey = new Pair<>( entityId, Action.CHECK_STORES_ADD );
+                    Decision decision = new Decision(
+                            decisionKey,
+                            new Timestamp( System.currentTimeMillis() ),
+                            ClauseCategory.STORE,
+                            DataStore.class,
+                            Action.CHECK_STORES_ADD,
+                            namespaceId,
+                            entityId,
+                            preSelection );
+
+                    return rank( context, Optimization.SELECT_STORE, decisionKey, decision );
+                } else {
+                    return  WeightedList.listToWeighted(possibleStores);
                 }
-
-
 
             case CHECK_STORES_DELETE:
                 List<CatalogPartitionPlacement> partitionPlacements = Catalog.getInstance().getAllPartitionPlacement();
@@ -508,7 +524,7 @@ public class PoliciesManager {
                 }
 
                 if ( potentiallyInteresting.isEmpty() ) {
-                    return Collections.singletonList( preSelection );
+                    return WeightedList.listToWeighted(Collections.singletonList( preSelection ));
                 }
 
                 for ( Clause clause : potentiallyInteresting ) {
@@ -537,7 +553,7 @@ public class PoliciesManager {
                     }
                 }
                 if ( canBeDeleted ) {
-                    return Collections.singletonList( preSelection );
+                    return WeightedList.listToWeighted(Collections.singletonList( preSelection ));
                 } else {
                     throw new PolicyRuntimeException( "Not possible to delete Table because if this table is deleted, there is no persistent table anymore." );
                 }
@@ -549,28 +565,33 @@ public class PoliciesManager {
     }
 
 
-    private List<Object> rank( InformationContext informationContext, Optimization optimization ) {
+    private <T> WeightedList<T> rank( InformationContext informationContext, Optimization optimization, Pair<Long, Action> key, Decision decision ) {
         List<WeightedList<?>> rankings = new ArrayList<>();
 
         //todo ig: now self adaptive policies are only defined for the whole system as soon as this changes, the different policies need to be checked.
         List<Clause> interestingClauses = new ArrayList<>();
         policies.get( polyphenyPolicyId ).getClauses().forEach( ( k, v ) -> {
-            if ( v.getClauseCategory() == ClauseCategory.SELF_ADAPTING && ((BooleanClause)v).isValue() ) {
+            if ( v.getClauseCategory() == ClauseCategory.SELF_ADAPTING && ((BooleanClause) v).isValue() ) {
                 interestingClauses.add( v );
             }
         } );
 
-        if(interestingClauses.isEmpty()){
-            return informationContext.getPossibilities();
+        if ( interestingClauses.isEmpty() ) {
+            return WeightedList.listToWeighted(informationContext.getPossibilities());
         }
 
         for ( Clause interestingClause : interestingClauses ) {
             if ( interestingClause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) interestingClause).isValue() && optimization.getRank().containsKey( interestingClause.getClauseName() ) ) {
-                rankings.add( optimization.getRank().get( interestingClause.getClauseName() ).apply( informationContext ));
+                rankings.add( optimization.getRank().get( interestingClause.getClauseName() ).apply( informationContext ) );
             }
         }
 
-        return WeightedList.weightedToList( WeightedList.avg( rankings ));
+        WeightedList<T> avgRankings = WeightedList.avg( rankings );
+
+        decision.setWeightedList( avgRankings );
+        SelfAdaptivAgent.getInstance().addDecision( key, decision );
+
+        return avgRankings;
     }
 
 
@@ -687,7 +708,21 @@ public class PoliciesManager {
 
 
     public enum Action {
-        CHECK_STORES_ADD, CHECK_STORES_DELETE,
+        CHECK_STORES_ADD{
+            @Override
+            public void newWeightedList(){
+
+            }
+        },
+        CHECK_STORES_DELETE{
+            @Override
+            public void newWeightedList(){
+
+            }
+
+        };
+
+        public abstract void newWeightedList();
 
     }
 

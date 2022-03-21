@@ -24,8 +24,8 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.policies.policy.policy.PoliciesManager;
-import org.polypheny.db.policies.policy.policy.PoliciesManager.Action;
+import org.polypheny.db.adaptiveness.policy.PoliciesManager;
+import org.polypheny.db.adaptiveness.policy.PoliciesManager.Action;
 
 
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
@@ -38,9 +38,9 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
 
     @Override
-    public List<DataStore> getDataStoresForNewTable( long schemaId ) {
+    public List<DataStore> getDataStoresForNewTable( long schemaId, long tableId ) {
 
-        List<DataStore> stores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, schemaId, null );
+        List<DataStore> stores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, schemaId, tableId );
         if ( stores.isEmpty() ) {
             throw new RuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
         } else {

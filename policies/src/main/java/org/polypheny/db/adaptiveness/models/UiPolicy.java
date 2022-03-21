@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.models;
+package org.polypheny.db.adaptiveness.models;
 
-import org.polypheny.db.policies.policy.policy.BooleanClause;
-import org.polypheny.db.policies.policy.policy.Clause;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseType;
-import org.polypheny.db.policies.policy.policy.NumberClause;
-import org.polypheny.db.policies.policy.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.policy.BooleanClause;
+import org.polypheny.db.adaptiveness.policy.Clause;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseType;
+import org.polypheny.db.adaptiveness.policy.NumberClause;
+import org.polypheny.db.adaptiveness.policy.Policies.Target;
 
 public class UiPolicy {
 

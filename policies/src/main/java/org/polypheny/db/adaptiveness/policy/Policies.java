@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.policy;
+package org.polypheny.db.adaptiveness.policy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +22,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseName;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
 
 @Slf4j
 public class Policies {

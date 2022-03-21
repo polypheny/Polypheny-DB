@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.policy;
+package org.polypheny.db.adaptiveness.policy;
 
 import static org.reflections.Reflections.log;
 
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 import lombok.Getter;
-import org.polypheny.db.policies.policy.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.policy.Policies.Target;
 import org.polypheny.db.util.Pair;
 
 @Getter

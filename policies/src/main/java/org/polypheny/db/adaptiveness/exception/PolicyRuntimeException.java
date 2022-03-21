@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.exception;
+package org.polypheny.db.adaptiveness.exception;
 
 /**
  * Generic Policy Exception

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.models;
+package org.polypheny.db.adaptiveness.models;
 
 
 public class PolicyChangeRequest {

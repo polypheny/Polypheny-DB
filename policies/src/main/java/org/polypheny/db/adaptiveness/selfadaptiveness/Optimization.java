@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.selfadaptiveness;
+package org.polypheny.db.adaptiveness.selfadaptiveness;
 
 import java.util.HashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseName;
-import org.polypheny.db.policies.policy.selfadaptiveness.SelfAdaptivAgent.InformationContext;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent.InformationContext;
 
 @Getter
 public enum Optimization {

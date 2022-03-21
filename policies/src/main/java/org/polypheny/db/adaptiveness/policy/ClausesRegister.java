@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.policy;
+package org.polypheny.db.adaptiveness.policy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,10 +26,10 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.policies.policy.policy.Clause.AffectedOperations;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseCategory;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseName;
-import org.polypheny.db.policies.policy.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.policy.Clause.AffectedOperations;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
+import org.polypheny.db.adaptiveness.policy.Policies.Target;
 
 public class ClausesRegister {
 

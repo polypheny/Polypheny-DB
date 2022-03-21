@@ -117,9 +117,9 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
-import org.polypheny.db.policies.policy.policy.PoliciesManager;
-import org.polypheny.db.policies.policy.policy.PoliciesManager.Action;
-import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
+import org.polypheny.db.adaptiveness.policy.PoliciesManager;
+import org.polypheny.db.adaptiveness.policy.PoliciesManager.Action;
+import org.polypheny.db.adaptiveness.exception.PolicyRuntimeException;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -1658,10 +1658,6 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( stores == null ) {
-            // Ask router on which store(s) the table should be placed
-            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable( schemaId );
-        }
 
         AlgDataType fieldList = algRoot.alg.getRowType();
 
@@ -1694,6 +1690,12 @@ public class DdlManagerImpl extends DdlManager {
                 language,
                 ordered
         );
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable( schemaId, tableId );
+        }
+
 
         // Creates a list with all columns, tableId is needed to create the primary key
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
@@ -1906,17 +1908,17 @@ public class DdlManagerImpl extends DdlManager {
                 throw new RuntimeException( "No primary key has been provided!" );
             }
 
-            if ( stores == null ) {
-                // Ask router on which store(s) the table should be placed
-                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable( schemaId );
-            }
-
             long tableId = catalog.addTable(
                     tableName,
                     schemaId,
                     statement.getPrepareContext().getCurrentUserId(),
                     TableType.TABLE,
                     true );
+
+            if ( stores == null ) {
+                // Ask router on which store(s) the table should be placed
+                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable( schemaId, tableId );
+            }
 
             // Initially create DataPlacement containers on every store the table should be placed.
             stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), tableId ) );

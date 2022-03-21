@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing.strategies;
-
-import java.util.List;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-
+package org.polypheny.db.adaptiveness.exception;
 
 /**
- * Interface to define, on which store(s) tables and columns are created.
+ * Generic Policy Exception
  */
-public interface CreatePlacementStrategy {
+public class SelfAdaptiveRuntimeException extends RuntimeException {
 
-    List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn );
-
-    List<DataStore> getDataStoresForNewTable(long schemaId, long tableId);
+    public SelfAdaptiveRuntimeException(String msg){
+        super(msg);
+    }
 
 }

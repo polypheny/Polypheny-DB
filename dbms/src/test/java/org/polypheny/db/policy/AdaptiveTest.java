@@ -32,8 +32,9 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.docker.DockerManagerTest;
-import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
-import org.polypheny.db.policies.policy.policy.PoliciesManager;
+import org.polypheny.db.adaptiveness.models.PolicyChangeRequest;
+import org.polypheny.db.adaptiveness.policy.PoliciesManager;
+import org.polypheny.db.util.Pair;
 
 @Category(DockerManagerTest.class)
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -57,7 +58,7 @@ public class AdaptiveTest {
 
 
     @Test
-    public void storeSelectionBasedOnModel() throws SQLException {
+    public void testStoreSelectionBasedOnModel() throws SQLException {
         PoliciesManager policiesManager = PoliciesManager.getInstance();
         PolicyChangeRequest policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "LANGUAGE_OPTIMIZATION", "POLYPHENY", true, -1L );
         policiesManager.addClause( policyChangeRequest );
@@ -87,8 +88,8 @@ public class AdaptiveTest {
                 }
             }
         }
-
-
     }
+
+
 
 }

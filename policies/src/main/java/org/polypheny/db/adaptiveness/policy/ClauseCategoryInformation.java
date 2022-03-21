@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy.policy;
+package org.polypheny.db.adaptiveness.policy;
 
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.policies.policy.policy.Clause.ClauseCategory;
+import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
 
 @Slf4j
 public class ClauseCategoryInformation {
