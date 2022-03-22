@@ -61,6 +61,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.AutomaticDdlProcessor;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -415,7 +416,23 @@ public class LanguageCrud {
     }
 
 
-    private static List<Result> anyCypherQuery(
+    public static PolyGraph getGraph( String databaseName, TransactionManager manager ) {
+
+        Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
+        Processor processor = transaction.getProcessor( QueryLanguage.CYPHER );
+        Statement statement = transaction.createStatement();
+
+        CypherQueryParameters parameters = new CypherQueryParameters( true, databaseName );
+        AlgRoot logicalRoot = processor.translate( statement, null, parameters );
+        PolyResult polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+
+        List<List<Object>> res = polyResult.getRows( statement, 1 );
+
+        return (PolyGraph) res.get( 0 ).get( 0 );
+    }
+
+
+    public static List<Result> anyCypherQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -480,7 +497,7 @@ public class LanguageCrud {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyResult, noLimit ) );
+                    results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyResult, noLimit ).setNamespaceName( request.database ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }
@@ -557,6 +574,7 @@ public class LanguageCrud {
 
         return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
                 .setNamespaceType( result.getNamespaceType() )
+                .setNamespaceName( request.database )
                 .setLanguage( language )
                 .setAffectedRows( data.size() )
                 .setHasMoreRows( hasMoreRows )

@@ -227,7 +227,7 @@ public interface CypherFactory {
     }
 
     static CypherClause createMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where ) {
-        return new CypherMatch( pos, optional, patterns, pos1, hints, where );
+        return new CypherMatch( pos, optional, patterns, pos1, hints, where, false );
     }
 
     static CypherHint createIndexHint( ParserPos pos, CypherVariable variable, String labelOrRelType, List<String> propNames, boolean seek, HintIndexType indexType ) {
@@ -824,6 +824,10 @@ public interface CypherFactory {
 
     static CypherExpression newAggregate( ParserPos pos, OperatorName op, CypherExpression target, boolean distinct ) {
         return new CypherAggregate( pos, op, target, distinct );
+    }
+
+    static CypherMatch createAllMatch( ParserPos pos, CypherWhere where ) {
+        return new CypherMatch( pos, false, List.of(), pos, List.of(), where, true );
     }
 
 }

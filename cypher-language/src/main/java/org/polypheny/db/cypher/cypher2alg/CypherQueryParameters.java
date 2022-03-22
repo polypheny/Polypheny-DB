@@ -31,11 +31,20 @@ public class CypherQueryParameters extends QueryParameters {
     final String databaseName;
     @Setter
     Long databaseId;
+    final boolean fullGraph;
 
 
     public CypherQueryParameters( String query, NamespaceType namespaceType, String databaseName ) {
         super( query, namespaceType );
         this.databaseName = databaseName;
+        this.fullGraph = false;
+    }
+
+
+    public CypherQueryParameters( boolean fullGraph, String databaseName ) {
+        super( "*", NamespaceType.GRAPH );
+        this.databaseName = databaseName;
+        this.fullGraph = true;
     }
 
 }

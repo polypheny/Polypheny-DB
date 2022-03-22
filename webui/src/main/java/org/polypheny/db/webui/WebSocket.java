@@ -35,8 +35,10 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.requests.GraphRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
@@ -101,6 +103,13 @@ public class WebSocket implements Consumer<WsConfig> {
         UIRequest request = ctx.messageAsClass( UIRequest.class );
         Set<String> xIds = new HashSet<>();
         switch ( request.requestType ) {
+            case "GraphRequest":
+                GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
+                PolyGraph graph = LanguageCrud.getGraph( graphRequest.namespaceName, crud.getTransactionManager() );
+
+                ctx.send( graph.toJson() );
+
+                break;
             case "QueryRequest":
                 QueryRequest queryRequest = ctx.messageAsClass( QueryRequest.class );
                 QueryLanguage language = QueryLanguage.from( queryRequest.language );

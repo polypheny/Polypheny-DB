@@ -63,6 +63,10 @@ public class Result {
      * Information for the pagination: how many pages there can be in total
      */
     private int highestPage;
+
+    @Getter
+    @Setter
+    private String namespaceName;
     /**
      * Table from which the data has been fetched
      */
@@ -239,6 +243,8 @@ public class Result {
                 case "namespaceType":
                     namespaceType = extractEnum( in, NamespaceType::valueOf );
                     break;
+                case "namespaceName":
+                    namespaceName = in.nextString();
                 case "language":
                     language = extractEnum( in, QueryLanguage::valueOf );
                     break;
@@ -435,6 +441,8 @@ public class Result {
                 handleEnum( out, result.type );
                 out.name( "namespaceType" );
                 handleEnum( out, result.namespaceType );
+                out.name( "namespaceName" );
+                out.value( result.namespaceName );
                 out.name( "language" );
                 handleEnum( out, result.language );
                 out.name( "hasMoreRows" );

@@ -95,6 +95,11 @@ public class CypherToAlgConverter {
 
         LogicalGraph graph = new LogicalGraph( databaseId );
 
+        if ( parameters.fullGraph ) {
+            // simple full graph scan
+            return AlgRoot.of( buildFullScan( graph ), Kind.SELECT );
+        }
+
         if ( !CypherFamily.QUERY.contains( query.getCypherKind() ) ) {
             throw new RuntimeException( "Used a unsupported query." );
         }
@@ -104,6 +109,11 @@ public class CypherToAlgConverter {
         convertQuery( query, context );
 
         return AlgRoot.of( context.build(), context.kind != null ? context.kind : Kind.SELECT );
+    }
+
+
+    private AlgNode buildFullScan( LogicalGraph graph ) {
+        return new LogicalGraphScan( cluster, catalogReader, cluster.traitSet(), graph, new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "*", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) ) );
     }
 
 

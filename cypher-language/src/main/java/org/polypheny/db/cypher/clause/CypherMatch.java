@@ -31,15 +31,17 @@ public class CypherMatch extends CypherClause {
     private final ParserPos pos1;
     private final List<CypherHint> hints;
     private final CypherWhere where;
+    private final boolean isAll;
 
 
-    public CypherMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, @Nullable CypherWhere where ) {
+    public CypherMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, @Nullable CypherWhere where, boolean all ) {
         super( pos );
         this.optional = optional;
         this.patterns = patterns;
         this.pos1 = pos1;
         this.hints = hints;
         this.where = where;
+        this.isAll = all;
     }
 
 
