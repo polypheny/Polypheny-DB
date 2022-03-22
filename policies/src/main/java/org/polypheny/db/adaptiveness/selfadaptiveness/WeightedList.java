@@ -17,10 +17,16 @@
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.util.Pair;
 
 
@@ -52,14 +58,16 @@ public class WeightedList<T> extends HashMap<T, Double> {
 
 
     public static <T> List<T> weightedToList(WeightedList<T> list){
-        WeightedList<Object> orderedList = new WeightedList<>();
-        ((WeightedList<Object>)list).entrySet().stream().sorted( Map.Entry.comparingByValue( Comparator.reverseOrder()) ).forEachOrdered( x -> orderedList.put(x.getKey(), x.getValue()));
+        Map<T, Double> orderedList = new LinkedHashMap<>();
+        ((WeightedList<Object>)list).entrySet().stream().sorted( Map.Entry.comparingByValue( Comparator.reverseOrder()) ).forEachOrdered( x -> orderedList.put( (T) x.getKey(), x.getValue()));
 
         List<T> withoutWeight = new ArrayList<>();
         orderedList.forEach( (k, v) -> withoutWeight.add( (T)k ) );
 
         return withoutWeight;
     }
+
+
 
 
     public static <T> WeightedList<T> listToWeighted( List<Object> possibilities ) {
@@ -89,6 +97,11 @@ public class WeightedList<T> extends HashMap<T, Double> {
 
         return new Pair<>( oldBestValue, newBestValue );
 
+    }
+
+
+    public static <T> T getBest( WeightedList<?> weightedList ) {
+        return (T) weightedList.entrySet().stream().max( Comparator.comparing( Entry::getValue ) ).get().getKey();
     }
 
 }

@@ -17,16 +17,22 @@
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
 import java.sql.Timestamp;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
-import org.polypheny.db.adaptiveness.policy.PoliciesManager.Action;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent.DecisionStatus;
 import org.polypheny.db.util.Pair;
 
 @Getter
 public class Decision <T>{
 
+    private static final AtomicInteger atomicId = new AtomicInteger();
+
+    /**
+     * Unique id of Decision.
+     */
+    private final int id;
     private final Pair<Long, Action> key;
     private final Timestamp timestamp;
     private final ClauseCategory clauseCategory;
@@ -48,6 +54,7 @@ public class Decision <T>{
 
 
     public Decision(
+
             Pair<Long, Action> key,
             Timestamp timestamp,
             ClauseCategory clauseCategory,
@@ -56,6 +63,7 @@ public class Decision <T>{
             long nameSpaceId,
             long entityId,
             T preSelection ) {
+        this.id = atomicId.getAndIncrement();
         this.key = key;
         this.timestamp = timestamp;
         this.clauseCategory = clauseCategory;

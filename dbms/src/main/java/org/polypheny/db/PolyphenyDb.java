@@ -31,6 +31,7 @@ import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.adaptiveness.selfadaptiveness.AdaptiveQueryProcessor;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -382,7 +383,7 @@ public class PolyphenyDb {
 
         //start the policy manager
         PoliciesManager.getInstance().initialize();
-        SelfAdaptivAgent.getInstance().initialize();
+        SelfAdaptivAgent.getInstance().initialize(transactionManager, authenticator);
 
         WorkloadManager.getInstance();
 

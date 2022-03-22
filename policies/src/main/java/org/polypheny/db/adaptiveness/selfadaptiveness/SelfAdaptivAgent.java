@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,15 +27,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adaptiveness.exception.SelfAdaptiveRuntimeException;
 import org.polypheny.db.adaptiveness.policy.PoliciesManager;
-import org.polypheny.db.adaptiveness.policy.PoliciesManager.Action;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -42,6 +41,7 @@ import org.polypheny.db.util.Pair;
 public class SelfAdaptivAgent {
 
 
+    private static AdaptiveQueryProcessor adaptiveQueryInterface;
     private static SelfAdaptivAgent INSTANCE = null;
 
 
@@ -54,36 +54,52 @@ public class SelfAdaptivAgent {
 
 
     private final Map<Pair<Long, Action>, List<Decision>> decisions = new HashMap<>();
+    private final Map<Pair<Long, Action>, Decision> newlyAddedDecision = new HashMap<>();
 
     private final Queue<Decision> adaptingQueue = new ConcurrentLinkedQueue<>();
 
 
-    public void initialize() {
-        List<AdapterInformation> test = AdapterManager.getInstance().getAvailableAdapters( AdapterType.STORE );
+    public void initialize( TransactionManager transactionManager, Authenticator authenticator ) {
+        this.setAdaptiveQueryProcessor( new AdaptiveQueryProcessor( transactionManager, authenticator ) );
+    }
 
-        for ( AdapterInformation adapterInformation : test ) {
-            log.warn( adapterInformation.name );
 
-        }
+    private void setAdaptiveQueryProcessor( AdaptiveQueryProcessor adaptiveQueryProcessor ) {
+        adaptiveQueryInterface = adaptiveQueryProcessor;
     }
 
 
     public void addDecision( Pair<Long, Action> key, Decision decision ) {
         if ( this.decisions.containsKey( key ) ) {
-            List<Decision> decisionsList = decisions.remove( key );
+            List<Decision> decisionsList = new ArrayList<>( decisions.remove( key ) );
             decisionsList.add( decision );
+            log.warn( "add second decision" );
             decisions.put( key, decisionsList );
+            newDecision( key, decision );
         } else {
             decision.setDecisionStatus( DecisionStatus.CREATED );
             decisions.put( key, Collections.singletonList( decision ) );
+            log.warn( "add first decision" );
         }
 
+    }
+
+
+    private void newDecision( Pair<Long, Action> key, Decision decision ) {
+        newlyAddedDecision.remove( key );
+        newlyAddedDecision.put( key, decision );
     }
 
 
     // todo ig: when to add to the queue
     private synchronized void addToQueue( Decision decision ) {
         adaptingQueue.add( decision );
+    }
+
+
+    public synchronized void addAllDecisionsToQueue() {
+        this.decisions.forEach( ( k, v ) -> adaptingQueue.add( v.get( 0 ) ) );
+        adaptTheSystem();
     }
 
 
@@ -119,10 +135,13 @@ public class SelfAdaptivAgent {
 
 
     private void updateDecisionStatus( Decision decision, DecisionStatus decisionStatus ) {
-        List<Decision> decisionsList = decisions.remove( decision.getKey() );
-        decisionsList.remove( decision );
-        decision.setDecisionStatus( decisionStatus );
-        decisionsList.add( decision );
+        List<Decision> decisionsList = new ArrayList<>( decisions.remove( decision.getKey() ) );
+        if ( decisionsList != null ) {
+            decisionsList.remove( decision );
+            decision.setDecisionStatus( decisionStatus );
+            decisionsList.add( decision );
+            decisions.put( decision.getKey(), decisionsList );
+        }
     }
 
 
@@ -134,12 +153,17 @@ public class SelfAdaptivAgent {
                 decision.getEntityId(),
                 decision.getPreSelection() );
 
-        //
-        if(isNewDecisionBetter( getOrdered( decision.getWeightedList() ), getOrdered( weightedList ) )){
-            decision.getAction().newWeightedList();
+        Decision newDecision = newlyAddedDecision.remove( decision.getKey() );
+
+        // Check if the correct Decision is safed
+        if ( weightedList.equals( newDecision.getWeightedList() ) ) {
+            log.warn( "It is the same weighted List." );
         }
 
-
+        //
+        if ( isNewDecisionBetter( getOrdered( decision.getWeightedList() ), getOrdered( weightedList ) ) ) {
+            decision.getAction().redo( newDecision, adaptiveQueryInterface.getTransaction() );
+        }
     }
 
 
@@ -170,14 +194,12 @@ public class SelfAdaptivAgent {
     public void adaptTheSystem() {
         while ( !adaptingQueue.isEmpty() ) {
             Decision decision = adaptingQueue.remove();
-            if ( !checkOldDecisions( decision ) ) {
+            if ( decision.getDecisionStatus() == DecisionStatus.NOT_APPLICABLE || !checkOldDecisions( decision ) ) {
                 log.warn( "Decision is not applicable anymore, deleted from queue and marked in decision overview." );
+            } else {
+                rerateDecision( decision );
             }
-            rerateDecision( decision );
-
         }
-
-
     }
 
 

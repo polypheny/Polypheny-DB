@@ -38,6 +38,7 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.adaptiveness.selfadaptiveness.Action;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -118,7 +119,6 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.adaptiveness.policy.PoliciesManager;
-import org.polypheny.db.adaptiveness.policy.PoliciesManager.Action;
 import org.polypheny.db.adaptiveness.exception.PolicyRuntimeException;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
@@ -674,6 +674,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check Policies if placement is against the policy or not
+        // TODO IG: at the moment it redos the decision again here, if preselct only check the policy and no need to redo the adaptiv part
         List<DataStore> ids = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, catalogTable.schemaId, catalogTable.id, dataStore );
         if ( ids.isEmpty() ) {
             throw new RuntimeException( "Not possible to add Placement because the Datastore is not persistent." );

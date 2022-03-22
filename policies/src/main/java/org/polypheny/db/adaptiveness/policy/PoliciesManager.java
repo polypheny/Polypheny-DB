@@ -36,6 +36,7 @@ import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
 import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
 import org.polypheny.db.adaptiveness.policy.Clause.ClauseType;
 import org.polypheny.db.adaptiveness.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.selfadaptiveness.Action;
 import org.polypheny.db.adaptiveness.selfadaptiveness.Decision;
 import org.polypheny.db.adaptiveness.selfadaptiveness.Optimization;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
@@ -349,7 +350,7 @@ public class PoliciesManager {
                 return checkStoreClauses( clause, target, targetId ) && checkActiveClauses( clause, target, targetId );
             case SELF_ADAPTING:
                 // at the moment all self adapting should always be possible, so nothing needs to be checked, when the clause is changed
-                log.warn( "CheckClauseChange is always returning true." );
+                log.warn( "CheckClauseChange is always returning true, is okey like this for the moment." );
                 return true;
             default:
                 throw new PolicyRuntimeException( "Category is not yet implemented: " + clause.getClauseCategory() );
@@ -707,23 +708,7 @@ public class PoliciesManager {
     }
 
 
-    public enum Action {
-        CHECK_STORES_ADD{
-            @Override
-            public void newWeightedList(){
 
-            }
-        },
-        CHECK_STORES_DELETE{
-            @Override
-            public void newWeightedList(){
 
-            }
-
-        };
-
-        public abstract void newWeightedList();
-
-    }
 
 }

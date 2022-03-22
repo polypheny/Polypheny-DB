@@ -239,6 +239,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getAllPossibleClauses", crud.policyCrud::getAllPossibleClauses );
 
+        webuiServer.post( "/selfAdaptSystem", crud.policyCrud::selfAdaptSystem );
+
         webuiServer.post( "/getColumns", crud::getColumns );
 
         webuiServer.post( "/getDataSourceColumns", crud::getDataSourceColumns );

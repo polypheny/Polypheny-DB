@@ -21,11 +21,11 @@ import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adaptiveness.selfadaptiveness.Action;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.adaptiveness.policy.PoliciesManager;
-import org.polypheny.db.adaptiveness.policy.PoliciesManager.Action;
 
 
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {

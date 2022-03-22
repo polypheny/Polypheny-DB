@@ -19,6 +19,7 @@ package org.polypheny.db.policy;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -26,6 +27,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -76,7 +80,62 @@ public class AdaptiveTest {
                 try {
                     statement.executeUpdate( NATION_TABLE );
 
-                    Assert.assertEquals( SchemaType.RELATIONAL, Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).getSchemaType() );
+                    Assert.assertEquals( 1, Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).dataPlacements.size() );
+
+                    Assert.assertEquals( SchemaType.RELATIONAL, ((DataStore)AdapterManager.getInstance().getAdapter(
+                            Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).dataPlacements.get( 0 ) )).getAdapterDefault().getPreferredSchemaType());
+
+                    connection.commit();
+
+                } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                    log.error( "Caught exception test", e );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS statisticschema.nation" );
+                    statement.executeUpdate( "DROP SCHEMA statisticschema" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testAdaptBasedOnModel() throws SQLException {
+        PoliciesManager policiesManager = PoliciesManager.getInstance();
+        PolicyChangeRequest policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "LANGUAGE_OPTIMIZATION", "POLYPHENY", true, -1L );
+        policiesManager.addClause( policyChangeRequest );
+        policiesManager.updateClauses( policyChangeRequest );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                AdapterManager adapterManager = AdapterManager.getInstance();
+                Map<String, DataStore> datastores = adapterManager.getStores();
+                for ( DataStore value : datastores.values() ) {
+                    statement.executeUpdate( "ALTER ADAPTERS DROP " + value.getAdapterName());
+                }
+
+                // Deploy additional store
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"mongodb\" USING 'org.polypheny.db.adapter.mongodb.MongoStore'"
+                        + " WITH '{\"mode\":\"docker\",\"instanceId\":\"0\",\"port\":\"33001\",\"trxLifetimeLimit\":\"1209600\",\"persistent\":\"false\"}'" );
+
+                statement.executeUpdate( SCHEMA );
+
+                connection.commit();
+
+                try {
+                    statement.executeUpdate( NATION_TABLE );
+
+                    Assert.assertNotEquals( SchemaType.RELATIONAL, ((DataStore)AdapterManager.getInstance().getAdapter(
+                            Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).dataPlacements.get( 0 ) )).getAdapterDefault().getPreferredSchemaType());
+
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"hsqldb\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    SelfAdaptivAgent.getInstance().addAllDecisionsToQueue();
+
+                    Assert.assertEquals( 1, Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).dataPlacements.size() );
+
+                    Assert.assertEquals( SchemaType.RELATIONAL, ((DataStore)AdapterManager.getInstance().getAdapter(
+                            Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).dataPlacements.get( 0 ) )).getAdapterDefault().getPreferredSchemaType());
 
                     connection.commit();
 
