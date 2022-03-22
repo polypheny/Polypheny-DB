@@ -822,6 +822,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         addRule( GraphToEnumerableRule.PROJECT_TO_ENUMERABLE );
         addRule( GraphToEnumerableRule.FILTER_TO_ENUMERABLE );
         addRule( GraphToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
+        addRule( GraphToEnumerableRule.VALUES_TO_ENUMERABLE );
     }
 
 

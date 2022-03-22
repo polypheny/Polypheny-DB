@@ -1324,6 +1324,10 @@ public class RexBuilder {
 
 
     private RexLiteral makeArray( List<Object> value, AlgDataType type, boolean allowCast ) {
+        if ( value.stream().allMatch( v -> v instanceof RexLiteral ) ) {
+            return makeArray( type, value.stream().map( v -> (RexLiteral) v ).collect( Collectors.toList() ) );
+        }
+
         final List<RexNode> operands;
         final ArrayType arrayType = (ArrayType) type;
         @SuppressWarnings("unchecked") final List<Object> listValue = value;
@@ -1500,7 +1504,6 @@ public class RexBuilder {
     public RexLiteral makeMap( AlgDataType type, Map<RexNode, RexNode> operands ) {
         return new RexLiteral( PolyMap.ofMap( operands ), type, type.getPolyType() );
     }
-
 
 
     public RexLiteral makeMapFromBson( AlgDataType type, Map<String, BsonValue> bson ) {

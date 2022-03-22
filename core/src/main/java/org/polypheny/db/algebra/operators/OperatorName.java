@@ -1396,7 +1396,9 @@ public enum OperatorName {
 
     CYPHER_EXTRACT_LABELS( LangFunctionOperator.class ),
 
-    CYPHER_EXTRACT_LABEL( LangFunctionOperator.class );
+    CYPHER_EXTRACT_LABEL( LangFunctionOperator.class ),
+
+    CYPHER_TO_LIST( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;

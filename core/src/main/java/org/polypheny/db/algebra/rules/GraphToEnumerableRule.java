@@ -23,6 +23,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableFilter;
 import org.polypheny.db.adapter.enumerable.EnumerableLimit;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.enumerable.EnumerableSort;
+import org.polypheny.db.adapter.enumerable.EnumerableValues;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -30,6 +31,7 @@ import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -42,6 +44,8 @@ public class GraphToEnumerableRule extends AlgOptRule {
     public static GraphToEnumerableRule FILTER_TO_ENUMERABLE = new GraphToEnumerableRule( Type.FILTER, operand( LogicalGraphFilter.class, any() ), "GRAPH_FILTER_TO_ENUMERABLE" );
 
     public static GraphToEnumerableRule AGGREGATE_TO_ENUMERABLE = new GraphToEnumerableRule( Type.AGGREGATE, operand( LogicalGraphAggregate.class, any() ), "GRAPH_AGGREGATE_TO_ENUMERABLE" );
+
+    public static GraphToEnumerableRule VALUES_TO_ENUMERABLE = new GraphToEnumerableRule( Type.VALUES, operand( LogicalGraphValues.class, none() ), "GRAPH_VALUES_TO_ENUMERABLE" );
     //public static GraphToEnumerableRule SORT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.SORT, operand( LogicalGraphSort.class, any() ), "GRAPH_SORT_TO_ENUMERABLE" );
 
     @Getter
@@ -62,7 +66,20 @@ public class GraphToEnumerableRule extends AlgOptRule {
             convertFilter( call );
         } else if ( type == Type.AGGREGATE ) {
             convertAggregate( call );
+        } else if ( type == Type.VALUES ) {
+            convertValues( call );
         }
+    }
+
+
+    private void convertValues( AlgOptRuleCall call ) {
+        LogicalGraphValues values = call.alg( 0 );
+        if ( !values.isEmptyGraphValues() ) {
+            return;
+        }
+
+        AlgNode node = EnumerableValues.create( values.getCluster(), values.getRowType(), values.getValues() );
+        call.transformTo( node );
     }
 
 
@@ -120,7 +137,7 @@ public class GraphToEnumerableRule extends AlgOptRule {
         PROJECT,
         FILTER,
         AGGREGATE,
-        SORT
+        VALUES, SORT
     }
 
 }

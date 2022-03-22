@@ -454,7 +454,9 @@ public enum BuiltInMethod {
     GRAPH_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, int.class ),
     CYPHER_EXTRACT_PROPERTY( CypherFunctions.class, "extractProperty", GraphPropertyHolder.class, String.class ),
     CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),
-    CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class );
+    CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),
+    CYPHER_TO_LIST( CypherFunctions.class, "toList", Object.class ),
+    PRINT( CypherFunctions.class, "print", Object.class );
 
     public final Method method;
     public final Constructor constructor;

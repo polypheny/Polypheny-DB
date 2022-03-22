@@ -16,16 +16,35 @@
 
 package org.polypheny.db.cypher.clause;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
+import org.polypheny.db.cypher.expression.CypherLiteral;
+import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherUnwind extends CypherClause {
 
-    private CypherExpression expression;
-    private CypherVariable variable;
+    private final CypherExpression expression;
+    private final CypherVariable variable;
 
 
     public CypherUnwind( ParserPos pos, CypherExpression expression, CypherVariable variable ) {
@@ -38,6 +57,47 @@ public class CypherUnwind extends CypherClause {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.UNWIND;
+    }
+
+
+    public void getUnwind( CypherContext context ) {
+        Pair<String, RexNode> namedNode;
+        if ( expression.getType() == ExpressionType.LITERAL && ((CypherLiteral) expression).getLiteralType() == Literal.NULL ) {
+            // special case, this is equal to empty list
+            AlgDataType type = context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 );
+            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( variable.getName(), 0, type ) ) );
+
+            RexLiteral emptyList = (RexLiteral) context.rexBuilder.makeLiteral( new PolyList<>(), type, false );
+
+            ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( emptyList ) );
+            context.add( LogicalGraphValues.create( context.cluster, context.cluster.traitSet(), rowType, values ) );
+
+            namedNode = Pair.of( variable.getName(), context.rexBuilder.makeInputRef( context.typeFactory.createPolyType( PolyType.ANY ), 0 ) );
+
+        } else if ( expression.getType() == ExpressionType.LITERAL ) {
+            // is values
+            namedNode = expression.getValues( context, variable.getName() );
+        } else {
+            namedNode = expression.getRex( context, RexType.PROJECT );
+        }
+
+        AlgNode node = context.peek();
+
+        if ( node.getRowType().getFieldList().size() != 1 ) {
+            if ( !node.getRowType().getFieldNames().contains( namedNode.left ) ) {
+                throw new UnsupportedOperationException();
+            }
+            node = new LogicalGraphProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) );
+
+            context.add( node );
+        }
+        context.add( new LogicalGraphUnwind(
+                node.getCluster(),
+                node.getTraitSet(),
+                context.pop(),
+                context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( 0 ).getType(), 0 ),
+                variable.getName() ) );
+
     }
 
 }

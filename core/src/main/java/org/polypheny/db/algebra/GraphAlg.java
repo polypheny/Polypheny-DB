@@ -35,7 +35,7 @@ public interface GraphAlg {
         MODIFY,
         VALUES,
         AGGREGATE,
-        SORT
+        MERGE, SORT
     }
 
 }

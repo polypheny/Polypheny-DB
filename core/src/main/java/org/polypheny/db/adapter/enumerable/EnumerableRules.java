@@ -110,5 +110,7 @@ public class EnumerableRules {
 
     public static final EnumerableGraphMatchRule ENUMERABLE_GRAPH_MATCH_RULE = new EnumerableGraphMatchRule( AlgFactories.LOGICAL_BUILDER );
 
+    public static final EnumerableUnwindRule ENUMERABLE_UNWIND_RULE = new EnumerableUnwindRule();
+
 }
 

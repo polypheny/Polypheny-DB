@@ -127,6 +127,10 @@ public class CypherReturnClause extends CypherClause {
     private AlgNode getProject( CypherContext context, List<Pair<String, RexNode>> nameAndProject ) {
         AlgNode node = context.pop();
 
+        if ( node == null ) {
+            node = context.asValues( nameAndProject );
+        }
+
         AlgNode project = new LogicalGraphProject(
                 context.cluster,
                 context.cluster.traitSet(),

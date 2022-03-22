@@ -37,6 +37,11 @@ import org.polypheny.db.serialize.PolySerializer;
 @Slf4j
 public class CypherFunctions {
 
+    public static void print( Object obj ) {
+        System.out.println( obj.toString() );
+    }
+
+
     @SuppressWarnings("unused")
     public static Enumerable<PolyPath> pathMatch( PolyGraph graph, PolyPath comp ) {
         return Linq4j.asEnumerable( graph.extract( comp ) );
@@ -131,6 +136,18 @@ public class CypherFunctions {
     @SuppressWarnings("unused")
     public static List<String> extractLabels( GraphPropertyHolder holder ) {
         return holder.getLabels();
+    }
+
+
+    @SuppressWarnings("unused")
+    public static List<?> toList( Object obj ) {
+        if ( obj == null ) {
+            return List.of();
+        }
+        if ( obj instanceof List ) {
+            return (List<?>) obj;
+        }
+        return List.of();
     }
 
 

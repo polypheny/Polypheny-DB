@@ -47,6 +47,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.avatica.util.ByteString;
@@ -807,6 +808,16 @@ public class RexToLixTranslator {
             case SYMBOL:
                 value2 = literal.getValueAs( Enum.class );
                 javaClass = value2.getClass();
+                break;
+            case ARRAY:
+                AlgDataType componentType;
+                if ( type.getComponentType() != null ) {
+                    componentType = type.getComponentType();
+                } else {
+                    componentType = type;
+                }
+                value2 = ((List<RexLiteral>) literal.getValueAs( List.class )).stream().map( e -> translateLiteral( e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
+                javaClass = List.class;
                 break;
             default:
                 final Primitive primitive = Primitive.ofBoxOr( javaClass );

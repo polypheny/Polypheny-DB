@@ -53,6 +53,8 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.DESERIALIZE ) );
 
+        register( OperatorName.CYPHER_TO_LIST, new LangFunctionOperator( OperatorName.CYPHER_TO_LIST.name(), Kind.DESERIALIZE ) );
+
         isInit = true;
     }
 

@@ -56,6 +56,7 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
     public static final BasicPolyType EDGE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.EDGE );
     private final ImmutableList<PolyNode> nodes;
     private final ImmutableList<PolyEdge> edges;
+    private final ImmutableList<ImmutableList<RexLiteral>> values;
 
 
     /**
@@ -64,10 +65,11 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
      * @param cluster
      * @param traitSet
      */
-    public LogicalGraphValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, AlgDataType rowType ) {
+    public LogicalGraphValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet );
         this.nodes = ImmutableList.copyOf( nodes );
         this.edges = ImmutableList.copyOf( edges );
+        this.values = values;
 
         this.rowType = rowType;
     }
@@ -76,9 +78,18 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
     public static LogicalGraphValues create(
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
+            AlgDataType rowType,
+            ImmutableList<ImmutableList<RexLiteral>> values ) {
+        return new LogicalGraphValues( cluster, traitSet, List.of(), List.of(), values, rowType );
+    }
+
+
+    public static LogicalGraphValues create(
+            AlgOptCluster cluster,
+            AlgTraitSet traitSet,
             List<Pair<String, PolyNode>> nodes,
             AlgDataType nodeType,
-            List<Pair<String, PolyEdge>> rels,
+            List<Pair<String, PolyEdge>> edges,
             AlgDataType relType ) {
 
         List<AlgDataTypeField> fields = new ArrayList<>();
@@ -89,14 +100,14 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
             i++;
         }
 
-        for ( String name : Pair.left( rels ).stream().filter( Objects::nonNull ).collect( Collectors.toList() ) ) {
+        for ( String name : Pair.left( edges ).stream().filter( Objects::nonNull ).collect( Collectors.toList() ) ) {
             fields.add( new AlgDataTypeFieldImpl( name, i, relType ) );
             i++;
         }
 
         AlgRecordType rowType = new AlgRecordType( fields );
 
-        return new LogicalGraphValues( cluster, traitSet, Pair.right( nodes ), Pair.right( rels ), rowType );
+        return new LogicalGraphValues( cluster, traitSet, Pair.right( nodes ), Pair.right( edges ), ImmutableList.of(), rowType );
 
     }
 
@@ -173,7 +184,13 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
                 values.get( 0 ).getTraitSet(),
                 values.stream().flatMap( v -> v.nodes.stream() ).collect( Collectors.toList() ),
                 values.stream().flatMap( v -> v.edges.stream() ).collect( Collectors.toList() ),
+                ImmutableList.copyOf( values.stream().flatMap( v -> v.values.stream() ).collect( Collectors.toList() ) ),
                 new AlgRecordType( values.stream().flatMap( v -> v.rowType.getFieldList().stream() ).collect( Collectors.toList() ) ) );
+    }
+
+
+    public boolean isEmptyGraphValues() {
+        return edges.isEmpty() && nodes.isEmpty();
     }
 
 }

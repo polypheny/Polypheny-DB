@@ -16,9 +16,14 @@
 
 package org.polypheny.db.cypher.expression;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
@@ -26,6 +31,7 @@ import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
@@ -111,8 +117,25 @@ public class CypherExpression extends CypherNode {
     }
 
 
+    public Pair<String, RexNode> getValues( CypherContext context, String name ) {
+        Pair<String, RexNode> namedNode = getRex( context, RexType.PROJECT );
+        if ( namedNode.right.isA( Kind.LITERAL ) ) {
+            ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( (RexLiteral) namedNode.right ) );
+
+            AlgRecordType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( name, 0, namedNode.right.getType() ) ) );
+            LogicalGraphValues node = LogicalGraphValues.create( context.cluster, context.cluster.traitSet(), rowType, values );
+
+            context.add( node );
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
+        return namedNode;
+    }
+
+
     public enum ExpressionType {
-        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT
+        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT, LITERAL
     }
 
 

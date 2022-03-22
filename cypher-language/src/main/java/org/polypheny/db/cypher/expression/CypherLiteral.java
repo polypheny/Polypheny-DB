@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
@@ -31,6 +32,8 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -134,9 +137,18 @@ public class CypherLiteral extends CypherExpression {
                 node = context.rexBuilder.makeLiteral( (Boolean) value );
                 break;
             case NULL:
-                node = context.rexBuilder.makeLiteral( null );
+                node = context.rexBuilder.makeLiteral( null, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false );
                 break;
             case LIST:
+                List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).collect( Collectors.toList() );
+                AlgDataType dataType = context.typeFactory.createPolyType( PolyType.ANY );
+
+                if ( !list.isEmpty() && list.stream().allMatch( e -> PolyTypeUtil.equalSansNullability( context.typeFactory, e.getType(), list.get( 0 ).getType() ) ) ) {
+                    dataType = list.get( 0 ).getType();
+                }
+                dataType = context.typeFactory.createArrayType( dataType, -1 );
+                node = context.rexBuilder.makeLiteral( list, dataType, false );
+                break;
             case MAP:
             case STAR:
             case OCTAL:
@@ -155,6 +167,12 @@ public class CypherLiteral extends CypherExpression {
                 throw new IllegalStateException( "Unexpected value: " + literalType );
         }
         return Pair.of( null, node );
+    }
+
+
+    @Override
+    public ExpressionType getType() {
+        return ExpressionType.LITERAL;
     }
 
 }

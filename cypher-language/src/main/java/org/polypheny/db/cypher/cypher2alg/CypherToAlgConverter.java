@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.cypher2alg;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,6 +51,7 @@ import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.clause.CypherMatch;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
+import org.polypheny.db.cypher.clause.CypherUnwind;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
 import org.polypheny.db.cypher.pattern.CypherPattern;
@@ -101,7 +103,7 @@ public class CypherToAlgConverter {
 
         convertQuery( query, context );
 
-        return AlgRoot.of( context.build(), context.kind );
+        return AlgRoot.of( context.build(), context.kind != null ? context.kind : Kind.SELECT );
     }
 
 
@@ -149,10 +151,18 @@ public class CypherToAlgConverter {
             case WITH:
                 convertWith( (CypherWith) clause, context );
                 break;
+            case UNWIND:
+                convertUnwind( (CypherUnwind) clause, context );
+                break;
             default:
                 throw new UnsupportedOperationException();
         }
 
+    }
+
+
+    private void convertUnwind( CypherUnwind clause, CypherContext context ) {
+        clause.getUnwind( context );
     }
 
 
@@ -475,7 +485,10 @@ public class CypherToAlgConverter {
 
 
         public AlgNode pop() {
-            return stack.pop();
+            if ( !stack.isEmpty() ) {
+                return stack.pop();
+            }
+            return null;
         }
 
 
@@ -532,6 +545,23 @@ public class CypherToAlgConverter {
 
         public boolean containsAggs() {
             return !rexAggQueue.isEmpty();
+        }
+
+
+        public AlgNode asValues( List<Pair<String, RexNode>> nameAndValues ) {
+            if ( nameAndValues.stream().allMatch( v -> v.right.isA( Kind.LITERAL ) ) ) {
+                List<AlgDataTypeField> fields = new ArrayList<>();
+                int i = 0;
+                for ( Pair<String, RexNode> nameAndValue : nameAndValues ) {
+                    fields.add( new AlgDataTypeFieldImpl( nameAndValue.left, i, nameAndValue.right.getType() ) );
+                    i++;
+                }
+
+                return new LogicalGraphValues( cluster, cluster.traitSet(), List.of(), List.of(),
+                        ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).collect( Collectors.toList() ) ) ), new AlgRecordType( fields ) );
+            } else {
+                throw new UnsupportedOperationException();
+            }
         }
 
     }
