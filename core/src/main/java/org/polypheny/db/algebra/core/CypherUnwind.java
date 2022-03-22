@@ -17,10 +17,12 @@
 package org.polypheny.db.algebra.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -33,10 +35,10 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
-public abstract class Unwind extends SingleAlg {
+public abstract class CypherUnwind extends SingleAlg {
 
-    public final RexNode target;
     public final String alias;
+    public final int index;
 
 
     /**
@@ -46,11 +48,26 @@ public abstract class Unwind extends SingleAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected Unwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode target, @Nullable String alias ) {
-        super( cluster, traits, input );
-        this.target = adjustIfNecessary( target );
-        assert input.getRowType().getFieldList().size() == 1 : "Unwind is for now only able on a single field.";
+    protected CypherUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+        super( cluster, traits, adjustInputIfNecessary( input, index ) );
+        assert this.input.getRowType().getFieldCount() == 1 : "Unwind is for now only able on a single field.";
+
+        this.index = 0; //adjustIfNecessary( target );
         this.alias = alias;
+    }
+
+
+    private static AlgNode adjustInputIfNecessary( AlgNode input, int index ) {
+        if ( input.getRowType().getFieldList().get( index ).getType().getPolyType() == PolyType.ARRAY ) {
+            return input;
+        }
+        AlgDataTypeField field = input.getRowType().getFieldList().get( index );
+        RexNode ref = input.getCluster().getRexBuilder().makeInputRef( field.getType(), field.getIndex() );
+        // we wrap the field in a to-list operation, which wraps single values as list, leaves lists and replaces null with an empty list
+        AlgDataType arrayType = input.getCluster().getTypeFactory().createArrayType( ref.getType(), -1 );
+        ref = input.getCluster().getRexBuilder().makeCall( arrayType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_TO_LIST ), List.of( ref ) );
+        return new LogicalGraphProject( input.getCluster(), input.getTraitSet(), input, Collections.singletonList( ref ), Collections.singletonList( field.getName() ) );
+
     }
 
 
@@ -68,7 +85,7 @@ public abstract class Unwind extends SingleAlg {
     @Override
     public String algCompareString() {
         return "$" + getClass().getSimpleName()
-                + "$" + target.hashCode()
+                + "$" + index
                 + (alias != null ? "$As$" + alias : "")
                 + "$" + input.algCompareString();
     }
@@ -77,7 +94,7 @@ public abstract class Unwind extends SingleAlg {
     @Override
     protected AlgDataType deriveRowType() {
         List<AlgDataTypeField> fields = new ArrayList<>();
-        fields.add( new AlgDataTypeFieldImpl( alias, 0, target.getType().getComponentType() ) );
+        fields.add( new AlgDataTypeFieldImpl( alias, 0, input.getRowType().getFieldList().get( index ).getType().getComponentType() ) );
         return new AlgRecordType( fields );
     }
 

@@ -147,7 +147,7 @@ public class CypherFunctions {
         if ( obj instanceof List ) {
             return (List<?>) obj;
         }
-        return List.of();
+        return List.of( obj );
     }
 
 

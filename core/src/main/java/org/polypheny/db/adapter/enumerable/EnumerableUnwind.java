@@ -32,13 +32,12 @@ import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Unwind;
+import org.polypheny.db.algebra.core.CypherUnwind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 
-public class EnumerableUnwind extends Unwind implements EnumerableAlg {
+public class EnumerableUnwind extends CypherUnwind implements EnumerableAlg {
 
     /**
      * Creates a <code>SingleRel</code>.
@@ -47,14 +46,14 @@ public class EnumerableUnwind extends Unwind implements EnumerableAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected EnumerableUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode node, String alias ) {
-        super( cluster, traits, input, node, alias );
+    protected EnumerableUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
+        super( cluster, traits, input, index, alias );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), target, alias );
+        return new EnumerableUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
     }
 
 
@@ -81,7 +80,7 @@ public class EnumerableUnwind extends Unwind implements EnumerableAlg {
         BlockStatement moveNextBody;
         BlockBuilder unwindBlock = new BlockBuilder();
 
-        ConditionalStatement ifNotSet = Expressions.ifThen(
+        ConditionalStatement ifNotSetInitial = Expressions.ifThen(
                 unset_,
                 Expressions.block(
                         Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),
@@ -90,7 +89,7 @@ public class EnumerableUnwind extends Unwind implements EnumerableAlg {
                         Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )
                 ) );
 
-        unwindBlock.add( ifNotSet );
+        unwindBlock.add( ifNotSetInitial );
 
         unwindBlock.add(
                 Expressions.ifThenElse(
@@ -111,6 +110,16 @@ public class EnumerableUnwind extends Unwind implements EnumerableAlg {
         moveNextBody = unwindBlock.toBlock();
 
         BlockBuilder currentBuilder = new BlockBuilder();
+
+        ConditionalStatement ifNotSet = Expressions.ifThen(
+                unset_,
+                Expressions.block(
+                        //Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),
+                        Expressions.statement( Expressions.assign( list_, Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), Types.of( List.class, Object.class ) ) ) ),
+                        Expressions.statement( Expressions.assign( i_, Expressions.constant( 0 ) ) ),
+                        Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )
+                ) );
+
         currentBuilder.add( ifNotSet );
         currentBuilder.add( Expressions.return_( null, Expressions.call( list_, "get", i_ ) ) );
 

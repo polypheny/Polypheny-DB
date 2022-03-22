@@ -36,7 +36,7 @@ public class EnumerableUnwindRule extends ConverterRule {
         LogicalGraphUnwind unwind = (LogicalGraphUnwind) alg;
         AlgTraitSet out = unwind.getTraitSet().replace( EnumerableConvention.INSTANCE );
 
-        return new EnumerableUnwind( unwind.getCluster(), out, AlgOptRule.convert( unwind.getInput(), out ), unwind.target, unwind.alias );
+        return new EnumerableUnwind( unwind.getCluster(), out, AlgOptRule.convert( unwind.getInput(), out ), unwind.index, unwind.alias );
     }
 
 }

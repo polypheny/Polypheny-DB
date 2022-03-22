@@ -21,13 +21,12 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
-import org.polypheny.db.algebra.core.Unwind;
+import org.polypheny.db.algebra.core.CypherUnwind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexNode;
 
 @Getter
-public class LogicalGraphUnwind extends Unwind implements GraphAlg {
+public class LogicalGraphUnwind extends CypherUnwind implements GraphAlg {
 
 
     /**
@@ -37,15 +36,15 @@ public class LogicalGraphUnwind extends Unwind implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    public LogicalGraphUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode target, @Nullable String alias ) {
-        super( cluster, traits, input, target, alias );
+    public LogicalGraphUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+        super( cluster, traits, input, index, alias );
 
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), target, alias );
+        return new LogicalGraphUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
     }
 
 

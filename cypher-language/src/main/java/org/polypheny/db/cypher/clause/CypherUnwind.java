@@ -91,11 +91,12 @@ public class CypherUnwind extends CypherClause {
 
             context.add( node );
         }
+
         context.add( new LogicalGraphUnwind(
                 node.getCluster(),
                 node.getTraitSet(),
                 context.pop(),
-                context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( 0 ).getType(), 0 ),
+                0,
                 variable.getName() ) );
 
     }
