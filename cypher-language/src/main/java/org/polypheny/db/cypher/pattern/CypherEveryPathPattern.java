@@ -87,7 +87,7 @@ public class CypherEveryPathPattern extends CypherPattern {
 
         for ( CypherRelPattern edge : this.edges ) {
             Pair<String, PolyNode> next = nodes.get( ++i ); // next node
-            edges.add( edge.getPolyRelationship( node.right.id, next.right.id ) );
+            edges.add( edge.getPolyEdge( node.right.id, next.right.id ) );
             node = next;
         }
 

@@ -30,6 +30,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
 import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.Pair;
@@ -63,7 +64,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
         int i = 0;
         for ( PolyEdge edge : edges ) {
             PolyNode node = nodes.get( i );
-            segments.add( new PolySegment( node.id, edge.id, nodes.get( i + 1 ).id ) );
+            segments.add( new PolySegment( node.id, edge.id, nodes.get( i + 1 ).id, RelationshipDirection.NONE ) );
             i++;
         }
         this.segments = segments;
@@ -158,7 +159,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
         int i = 0;
         for ( PolyEdge edge : edges ) {
             PolyNode node = nodes.get( i );
-            segments.add( new PolySegment( node, edge, nodes.get( i + 1 ) ) );
+            segments.add( new PolySegment( node, edge, nodes.get( i + 1 ), edge.direction ) );
             i++;
         }
         return segments;
@@ -198,9 +199,10 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
         public final PolyNode target;
 
         public final boolean isRef;
+        public final RelationshipDirection direction;
 
 
-        protected PolySegment( String sourceId, String edgeId, String targetId ) {
+        protected PolySegment( String sourceId, String edgeId, String targetId, RelationshipDirection direction ) {
             super( null, GraphObjectType.SEGEMENT );
             this.sourceId = sourceId;
             this.edgeId = edgeId;
@@ -210,10 +212,12 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
             source = null;
             edge = null;
             target = null;
+
+            this.direction = direction;
         }
 
 
-        protected PolySegment( PolyNode source, PolyEdge edge, PolyNode target ) {
+        protected PolySegment( PolyNode source, PolyEdge edge, PolyNode target, RelationshipDirection direction ) {
             super( null, GraphObjectType.SEGEMENT );
             isRef = false;
             this.sourceId = source.id;
@@ -222,6 +226,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
             this.source = source;
             this.edge = edge;
             this.target = target;
+            this.direction = direction;
         }
 
 

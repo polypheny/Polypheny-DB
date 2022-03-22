@@ -42,7 +42,7 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
 
 
     public PolyEdge( String id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, RelationshipDirection direction ) {
-        super( id, GraphObjectType.RELATIONSHIP, properties, labels );
+        super( id, GraphObjectType.EDGE, properties, labels );
         this.source = source;
         this.target = target;
         this.direction = direction;

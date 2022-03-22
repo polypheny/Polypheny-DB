@@ -136,8 +136,7 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void mixedNodeAndPropertyProjectTest() {
         execute( SINGLE_NODE_ANIMAL );
-        Result res = execute( "MATCH (n:Person)\n" +
-                "RETURN n, n.age" );
+        Result res = execute( "MATCH (n:Person) RETURN n, n.age" );
         assertNode( res, 0 );
         assert is( res, Type.STRING, 1 );
     }

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.schema.graph;
 
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -23,10 +24,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
 import org.polypheny.db.schema.graph.PolyPath.PolySegment;
 
 @Getter
@@ -87,7 +90,35 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
         List<List<String>> pathIds = buildIdPaths( temp );
 
-        return buildPaths( pathIds );
+        List<List<String>> adjustedPathIds = removeInverseDuplicates( pathIds );
+
+        return buildPaths( adjustedPathIds );
+    }
+
+
+    /**
+     * If path patterns, which have no direction defined are matched each fitting path is matched twice,
+     * once normal and once inverted, but it is still the same path.
+     * Due to this the path is only valid one time and the duplicate has to be removed
+     *
+     * @param pathIds all possible collections of path ids, with inverted duplicates
+     * @return all possible collections of path ids without inverted duplicates
+     */
+    private List<List<String>> removeInverseDuplicates( List<List<String>> pathIds ) {
+        List<List<String>> adjusted = new LinkedList<>();
+        List<String> concats = new LinkedList<>();
+
+        for ( List<String> ids : pathIds ) {
+            String contact = String.join( "", ids );
+            if ( !concats.contains( contact ) ) {
+                concats.add( contact );
+                concats.add( String.join( "", Lists.reverse( ids ) ) );
+                adjusted.add( ids );
+            }
+        }
+
+        return adjusted;
+
     }
 
 
@@ -130,11 +161,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         List<TreePart> root = new ArrayList<>();
 
         // attach empty stubs for root
-        for ( PolyEdge edge : edges.values() ) {
-            if ( segments.get( 0 ).matches( nodes.get( edge.source ), edge, nodes.get( edge.target ) ) ) {
-                root.add( new TreePart( null, null, edge.source ) );
-            }
-        }
+        attachEmptyStubs( segments.get( 0 ), root );
 
         List<TreePart> temp = root;
         List<TreePart> last;
@@ -142,13 +169,31 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
             last = temp;
             temp = new ArrayList<>();
             List<TreePart> matches = new ArrayList<>();
+            // the pre-filter, which already excludes impossible edges
+            // for one only edges, which have matching nodes are considered,
+            // additionally only not used edges can be use, relationship isomorphism prohibits this
+            BiPredicate<PolyEdge, TreePart> filter =
+                    segment.direction == RelationshipDirection.LEFT_TO_RIGHT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.source.equals( p.targetId )) :
+                            segment.direction == RelationshipDirection.RIGHT_TO_LEFT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.target.equals( p.targetId )) :
+                                    (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && (e.target.equals( p.targetId ) || e.source.equals( p.targetId )));
+
             for ( TreePart part : last ) {
                 // only loop matching connections
-                for ( PolyEdge edge : edges.values().stream().filter( e -> e.source.equals( part.targetId ) ).collect( Collectors.toList() ) ) {
-                    // then check if it matches pattern of segment
-                    if ( segment.matches( nodes.get( edge.source ), edge, nodes.get( edge.target ) ) ) {
-                        matches.add( new TreePart( part, edge.id, edge.target ) );
+                for ( PolyEdge edge : edges.values().stream().filter( e -> filter.test( e, part ) ).collect( Collectors.toList() ) ) {
+                    PolyNode left = nodes.get( edge.source );
+                    PolyNode right = nodes.get( edge.target );
+                    // then check if it matches pattern of segment either ()->() or ()-() depending if direction is specified
+                    if ( segment.direction == RelationshipDirection.LEFT_TO_RIGHT || segment.direction == RelationshipDirection.NONE ) {
+                        if ( segment.matches( left, edge, right ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.source ) ) {
+                            matches.add( new TreePart( part, edge.id, edge.target ) );
+                        }
                     }
+                    if ( segment.direction == RelationshipDirection.RIGHT_TO_LEFT || segment.direction == RelationshipDirection.NONE ) {
+                        if ( segment.matches( right, edge, left ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.target ) ) {
+                            matches.add( new TreePart( part, edge.id, edge.source ) );
+                        }
+                    }
+
                 }
                 if ( !matches.isEmpty() ) {
                     part.connections.addAll( matches );
@@ -162,6 +207,27 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
             }
         }
         return temp;
+    }
+
+
+    private void attachEmptyStubs( PolySegment segment, List<TreePart> root ) {
+
+        for ( PolyEdge edge : edges.values() ) {
+            PolyNode left = nodes.get( edge.source );
+            PolyNode right = nodes.get( edge.target );
+            // we attach stubs, which allows ()->() and ()-()
+            if ( segment.direction == RelationshipDirection.LEFT_TO_RIGHT || segment.direction == RelationshipDirection.NONE ) {
+                if ( segment.matches( left, edge, right ) ) {
+                    root.add( new TreePart( null, null, edge.source ) );
+                }
+            }
+            // we attach stubs, which allows ()<-() and ()-() AKA inverted
+            if ( segment.direction == RelationshipDirection.RIGHT_TO_LEFT || segment.direction == RelationshipDirection.NONE ) {
+                if ( segment.matches( right, edge, left ) ) {
+                    root.add( new TreePart( null, null, edge.target ) );
+                }
+            }
+        }
     }
 
 
@@ -192,12 +258,21 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         public final String targetId;
         public final TreePart parent;
         public final Set<TreePart> connections = new HashSet<>();
+        // LPG only matches relationship isomorphic
+        public final List<String> usedEdgesIds = new LinkedList<>();
 
 
         public TreePart( TreePart parent, String edgeId, String targetId ) {
             this.parent = parent;
             this.edgeId = edgeId;
             this.targetId = targetId;
+
+            if ( parent != null ) {
+                usedEdgesIds.addAll( parent.usedEdgesIds );
+            }
+            if ( edgeId != null ) {
+                usedEdgesIds.add( edgeId );
+            }
         }
 
 

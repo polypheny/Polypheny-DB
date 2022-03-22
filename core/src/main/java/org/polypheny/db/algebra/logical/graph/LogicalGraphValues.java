@@ -41,6 +41,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -71,6 +72,8 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
         this.edges = ImmutableList.copyOf( edges );
         this.values = values;
 
+        assert edges.stream().noneMatch( e -> e.direction == RelationshipDirection.NONE ) : "Edges which are created need to have a direction.";
+
         this.rowType = rowType;
     }
 
@@ -90,7 +93,7 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
             List<Pair<String, PolyNode>> nodes,
             AlgDataType nodeType,
             List<Pair<String, PolyEdge>> edges,
-            AlgDataType relType ) {
+            AlgDataType edgeType ) {
 
         List<AlgDataTypeField> fields = new ArrayList<>();
 
@@ -101,7 +104,7 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
         }
 
         for ( String name : Pair.left( edges ).stream().filter( Objects::nonNull ).collect( Collectors.toList() ) ) {
-            fields.add( new AlgDataTypeFieldImpl( name, i, relType ) );
+            fields.add( new AlgDataTypeFieldImpl( name, i, edgeType ) );
             i++;
         }
 
