@@ -354,6 +354,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
 
         defineMethod( OperatorRegistry.get( OperatorName.DESERIALIZE_LIST ), BuiltInMethod.DESERIALIZE_LIST.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.DESERIALIZE_DIRECTORY ), BuiltInMethod.DESERIALIZE_DIRECTORY.method, NullPolicy.NONE );

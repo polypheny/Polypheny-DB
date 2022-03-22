@@ -20,7 +20,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
@@ -30,6 +29,17 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     public static final String CREATE_PERSON_MAX = "CREATE (p:Person {name: 'Max Muster'})";
+
+    public static final String CREATE_COMPLEX_GRAPH_1 =
+            "CREATE\n"
+                    + "  (adam:User {name: 'Adam'}),\n"
+                    + "  (pernilla:User {name: 'Pernilla'}),\n"
+                    + "  (david:User {name: 'David'}),\n"
+                    + "  (adam)-[:FRIEND]->(pernilla),\n"
+                    + "  (pernilla)-[:FRIEND]->(david)";
+
+    public static final String CREATE_COMPLEX_GRAPH_2 =
+            "CREATE (adam:User {name: 'Adam'}), (pernilla:User {name: 'Pernilla'}), (david:User {name: 'David'}), (adam)-[:FRIEND]->(pernilla), (pernilla)-[:FRIEND]->(david), (adam)-[:FRIEND]->(adam)";
 
 
     @Before
@@ -144,18 +154,64 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
+    public void insertAllInOneTest() {
+        execute( CREATE_COMPLEX_GRAPH_1 );
+        Result res = execute( "MATCH (n) RETURN n" );
+        assert res.getData().length == 3;
+        assertNode( res, 0 );
+
+        res = execute( "MATCH ()-[r]-() RETURN r" );
+        assertEdge( res, 0 );
+        assert res.getData().length == 2;
+    }
+
+
+    @Test
+    public void insertAllInOneCircleTest() {
+        execute( CREATE_COMPLEX_GRAPH_2 );
+        Result res = execute( "MATCH (n) RETURN n" );
+        assert res.getData().length == 3;
+        assertNode( res, 0 );
+
+        res = execute( "MATCH ()-[r]-() RETURN r" );
+        assertEdge( res, 0 );
+        assert res.getData().length == 3;
+    }
+
+
+    @Test
     @Ignore
-    public void insertAdditionalRelationshipTest() {
-        Result createPerson = CypherConnection.executeGetResponse(
-                "CREATE (p:Person {name: 'Max'})" );
+    public void insertAdditionalEdgeTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
 
-        Result createAnimal = CypherConnection.executeGetResponse(
-                "CREATE (a:ANIMAL {name:'Kira', age:3, type:'dog'})" );
+        Result res = execute( "MATCH (max:Person {name: 'Max'}), (hans:Person {name: 'Hans'})\n"
+                + "CREATE (max)-[:KNOWS]->(hans)" );
 
-        Result createRel = CypherConnection.executeGetResponse(
-                "MATCH (max:Person {name: 'Max'})\n"
-                        + "MATCH (kira:ANIMAL {name: 'Kira'})\n"
-                        + "CREATE (max)-[rel:OWNER_OF]->(kira)" );
+    }
+
+
+    @Test
+    @Ignore
+    public void insertAdditionalEdgeOneSideTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+
+        Result res = execute( "MATCH (max:Person {name: 'Max'})\n"
+                + "CREATE (max)-[:KNOWS]->(hans:Person {name: 'Hans'})" );
+
+    }
+
+
+    @Test
+    @Ignore
+    public void insertAdditionalEdgeOneSideBothSideTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+
+        Result res = execute( "MATCH (max:Person {name: 'Max'})\n"
+                + "CREATE (max)-[:KNOWS]->(hans:Person {name: 'Hans'})-[:KNOWS]->(peter:Person {name: 'Peter'})" );
+
     }
 
 }

@@ -17,15 +17,16 @@
 package org.polypheny.db.cypher.pattern;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.EdgeVariableHolder;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
@@ -73,13 +74,23 @@ public class CypherEveryPathPattern extends CypherPattern {
     }
 
 
-    private List<Pair<String, PolyNode>> getPolyNodes() {
-        return this.nodes.stream().map( CypherNodePattern::getPolyNode ).collect( Collectors.toList() );
+    private List<Pair<String, PolyNode>> getPolyNodes( CypherContext context ) {
+        List<Pair<String, PolyNode>> nodes = new LinkedList<>();
+        for ( CypherNodePattern node : this.nodes ) {
+            Pair<String, PolyNode> namedNode = node.getPolyNode();
+            if ( namedNode.left != null && context.getNodeVariable( namedNode.left ) != null ) {
+                // this node exists already in the scope, we replace it with the existing one
+                namedNode = context.getNodeVariable( namedNode.left );
+            }
+            nodes.add( namedNode );
+        }
+
+        return nodes;
     }
 
 
-    private List<Pair<String, PolyEdge>> getPolyEdges( List<Pair<String, PolyNode>> nodes ) {
-        List<Pair<String, PolyEdge>> edges = new ArrayList<>();
+    private List<Pair<String, EdgeVariableHolder>> getPolyEdges( List<Pair<String, PolyNode>> nodes ) {
+        List<Pair<String, EdgeVariableHolder>> edges = new ArrayList<>();
         assert nodes.size() == this.edges.size() + 1;
 
         Pair<String, PolyNode> node = nodes.get( 0 );
@@ -87,7 +98,8 @@ public class CypherEveryPathPattern extends CypherPattern {
 
         for ( CypherRelPattern edge : this.edges ) {
             Pair<String, PolyNode> next = nodes.get( ++i ); // next node
-            edges.add( edge.getPolyEdge( node.right.id, next.right.id ) );
+            Pair<String, PolyEdge> now = edge.getPolyEdge( node.right.id, next.right.id );
+            edges.add( Pair.of( now.left, new EdgeVariableHolder( now.right, now.left, node.left, next.left ) ) );
             node = next;
         }
 
@@ -96,11 +108,13 @@ public class CypherEveryPathPattern extends CypherPattern {
 
 
     @Override
-    public LogicalGraphValues getPatternValues( CypherContext context ) {
-        List<Pair<String, PolyNode>> nodes = getPolyNodes();
-        List<Pair<String, PolyEdge>> relationships = getPolyEdges( nodes );
+    public void getPatternValues( CypherContext context ) {
+        List<Pair<String, PolyNode>> nodes = getPolyNodes( context );
+        List<Pair<String, EdgeVariableHolder>> edges = getPolyEdges( nodes );
 
-        return LogicalGraphValues.create( context.cluster, context.cluster.traitSet(), nodes, context.nodeType, relationships, context.edgeType );
+        context.addNodes( nodes );
+        context.addEdges( edges );
+
     }
 
 
@@ -133,10 +147,10 @@ public class CypherEveryPathPattern extends CypherPattern {
 
 
     private RexNode getPathFilter( CypherContext context ) {
-        List<Pair<String, PolyNode>> polyNodes = getPolyNodes();
+        List<Pair<String, PolyNode>> polyNodes = getPolyNodes( context );
 
-        List<Pair<String, PolyEdge>> polyEdges = getPolyEdges( polyNodes );
-        PolyPath path = PolyPath.create( polyNodes, polyEdges );
+        List<Pair<String, EdgeVariableHolder>> polyEdges = getPolyEdges( polyNodes );
+        PolyPath path = PolyPath.create( polyNodes, Pair.right( polyEdges ).stream().map( EdgeVariableHolder::asNamedEdge ).collect( Collectors.toList() ) );
 
         AlgDataType pathType = context.typeFactory.createPathType( path.getPathType( context.nodeType, context.edgeType ) );
 

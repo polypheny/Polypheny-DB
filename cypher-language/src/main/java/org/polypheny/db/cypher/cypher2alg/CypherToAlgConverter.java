@@ -18,18 +18,22 @@ package org.polypheny.db.cypher.cypher2alg;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Stack;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.graph.LogicalGraph;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphDynamicValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
@@ -62,6 +66,8 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -290,7 +296,7 @@ public class CypherToAlgConverter {
             convertPattern( pattern, context );
         }
 
-        AlgNode node = context.pop();
+        /*AlgNode node = context.pop();
         if ( !context.stack.isEmpty() ) {
             // multiple patternValues, which need to be merged into one "graph"
             List<AlgNode> nodes = new ArrayList<>();
@@ -300,9 +306,8 @@ public class CypherToAlgConverter {
             }
             assert nodes.stream().allMatch( n -> n instanceof LogicalGraphValues );
             node = LogicalGraphValues.merge( nodes.stream().map( n -> (LogicalGraphValues) n ).collect( Collectors.toList() ) );
-        }
-
-        context.add( new LogicalGraphModify( cluster, cluster.traitSet(), context.graph, catalogReader, node, Operation.INSERT, null, null ) );
+        }*/
+        context.combineValues();
     }
 
 
@@ -339,7 +344,7 @@ public class CypherToAlgConverter {
     private void convertPattern( CypherPattern pattern, CypherContext context ) {
         if ( context.kind == Kind.INSERT ) {
             // convert "values" pattern (LogicalGraphValues AlgNode)
-            context.add( pattern.getPatternValues( context ) );
+            pattern.getPatternValues( context );
         } else {
             // convert filter pattern ( RexNode CYPHER_PATTERN_MATCH )
             context.add( pattern.getPatternMatch( context ) );
@@ -378,6 +383,8 @@ public class CypherToAlgConverter {
         public final AlgDataTypeFactory typeFactory;
         public CypherNode active;
         public Kind kind;
+        private final Map<String, PolyNode> nodes = new HashMap<>();
+        private List<Pair<String, EdgeVariableHolder>> edges = new LinkedList<>();
 
 
         private CypherContext( CypherNode original, LogicalGraph graph, AlgOptCluster cluster, AlgBuilder algBuilder, RexBuilder rexBuilder, PolyphenyDbCatalogReader catalogReader ) {
@@ -574,12 +581,137 @@ public class CypherToAlgConverter {
             }
         }
 
+
+        public void addNodes( List<Pair<String, PolyNode>> nodes ) {
+            for ( Pair<String, PolyNode> node : nodes ) {
+                if ( !this.nodes.containsKey( node.left ) ) {
+                    this.nodes.put( node.left, node.right );
+                } else if ( node.left == null ) {
+                    this.nodes.put( node.right.id, node.right );
+                }
+                // we don't add the variable again
+            }
+        }
+
+
+        public void addEdges( List<Pair<String, EdgeVariableHolder>> edges ) {
+            this.edges.addAll( edges );
+        }
+
+
+        @Nullable
+        public Pair<String, PolyNode> getNodeVariable( String name ) {
+            if ( this.nodes.containsKey( name ) ) {
+                return Pair.of( name, this.nodes.get( name ) );
+            }
+            return null;
+        }
+
+
+        public void combineValues() {
+            List<Pair<String, PolyNode>> nodes = popNodeValues();
+            List<Pair<String, EdgeVariableHolder>> edges = popEdgeValues();
+
+            if ( stack.isEmpty() ) {
+                // simple unfiltered insert
+                add( LogicalGraphValues.create( cluster, cluster.traitSet(), nodes, nodeType, edges.stream().map( t -> Pair.of( t.left, t.right.edge ) ).collect( Collectors.toList() ), edgeType ) );
+
+                add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.INSERT, null, null ) );
+            } else {
+                // filtered DML
+                List<RexNode> newNodes = new LinkedList<>();
+
+                List<RexNode> newEdges = new LinkedList<>();
+
+                AlgNode node = stack.peek();
+                List<String> names = node.getRowType().getFieldNames();
+                List<AlgDataTypeField> fields = node.getRowType().getFieldList();
+
+                // nodes can be added as literals
+                for ( Pair<String, PolyNode> namedNode : nodes ) {
+                    if ( !names.contains( namedNode.left ) ) {
+                        newNodes.add( rexBuilder.makeLiteral( namedNode.right, nodeType, false ) );
+                    }
+                }
+
+                // edges need to be adjusted depending on the previous stage
+                for ( Pair<String, EdgeVariableHolder> namedEdge : edges ) {
+                    RexNode ref = rexBuilder.makeLiteral( namedEdge.right.edge, edgeType, false );
+                    int leftIndex = names.indexOf( namedEdge.right.left );
+                    int rightIndex = names.indexOf( namedEdge.right.right );
+
+                    if ( leftIndex != -1 && rightIndex != -1 ) {
+                        // both sides are retrieved from the previous stage (inputRef)-[]-(inputRef)
+                        RexNode left = rexBuilder.makeInputRef( fields.get( leftIndex ).getType(), leftIndex );
+                        RexNode right = rexBuilder.makeInputRef( fields.get( rightIndex ).getType(), rightIndex );
+                        newEdges.add( rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, right ) ) );
+                    } else if ( leftIndex == -1 && rightIndex == -1 ) {
+                        // both sides are part of this stage (literal)
+                        newEdges.add( rexBuilder.makeLiteral( namedEdge.right.edge, edgeType, false ) );
+                    } else if ( leftIndex != -1 ) {
+                        // left is from previous stage, right is not (inputRef)-[]-()
+                        RexNode left = rexBuilder.makeInputRef( fields.get( leftIndex ).getType(), leftIndex );
+                        newEdges.add( rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, rexBuilder.makeNullLiteral( typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ) ) ) );
+                    } else {
+                        // right is from previous stage, left is not ()-[]-(inputRef)
+                        RexNode right = rexBuilder.makeInputRef( fields.get( rightIndex ).getType(), rightIndex );
+                        newEdges.add( rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, rexBuilder.makeNullLiteral( typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ), right ) ) );
+                    }
+                }
+
+                add( new LogicalGraphDynamicValues( node.getCluster(), node.getTraitSet(), pop(), newNodes, newEdges ) );
+
+                add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.INSERT, null, null ) );
+            }
+        }
+
+
+        private List<Pair<String, EdgeVariableHolder>> popEdgeValues() {
+            List<Pair<String, EdgeVariableHolder>> edges = this.edges;
+            this.edges = new LinkedList<>();
+            return edges;
+        }
+
+
+        private List<Pair<String, PolyNode>> popNodeValues() {
+            List<Pair<String, PolyNode>> nodes = this.nodes
+                    .entrySet()
+                    .stream()
+                    .map( n -> Pair.of( n.getKey(), n.getValue() ) )
+                    .collect( Collectors.toList() );
+            this.nodes.clear();
+            return nodes;
+        }
+
     }
 
 
     public enum RexType {
         PROJECT,
         FILTER
+    }
+
+
+    public static class EdgeVariableHolder {
+
+        public final PolyEdge edge;
+        public final String identifier;
+        public final String left;
+        public final String right;
+
+
+        public EdgeVariableHolder( PolyEdge edge, String identifier, String left, String right ) {
+            this.edge = edge;
+            this.identifier = identifier;
+            this.left = left;
+            this.right = right;
+        }
+
+
+        public Pair<String, PolyEdge> asNamedEdge() {
+            return Pair.of( identifier, edge );
+        }
+
     }
 
 }

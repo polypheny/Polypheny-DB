@@ -38,8 +38,8 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
 
 
     public final Operation operation;
-    public final List<? extends RexNode> nodeOperations;
-    public final List<? extends RexNode> edgeOperations;
+    public final List<String> ids;
+    public final List<? extends RexNode> operations;
     @Getter
     private final LogicalGraph graph;
     @Getter
@@ -63,12 +63,12 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
      * @param catalogReader
      * @param input Input relational expression
      */
-    public LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, LogicalGraph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<? extends RexNode> nodeOperations, List<? extends RexNode> edgeOperations ) {
+    public LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, LogicalGraph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, input );
         assertLogicalGraphTrait( traits );
         this.operation = operation;
-        this.nodeOperations = nodeOperations;
-        this.edgeOperations = edgeOperations;
+        this.operations = operations;
+        this.ids = ids;
         this.graph = graph;
         // for the moment
         this.catalogReader = catalogReader;
@@ -80,15 +80,15 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
     @Override
     public String algCompareString() {
         return "$" + getClass().getSimpleName() +
-                "$" + (nodeOperations != null ? nodeOperations.hashCode() : "[]") +
-                "$" + (edgeOperations != null ? edgeOperations.hashCode() : "[]") +
+                "$" + (ids != null ? ids.hashCode() : "[]") +
+                "$" + (operations != null ? operations.hashCode() : "[]") +
                 "{" + input.algCompareString() + "}";
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        LogicalGraphModify modify = new LogicalGraphModify( inputs.get( 0 ).getCluster(), traitSet, graph, catalogReader, inputs.get( 0 ), operation, nodeOperations, edgeOperations );
+        LogicalGraphModify modify = new LogicalGraphModify( inputs.get( 0 ).getCluster(), traitSet, graph, catalogReader, inputs.get( 0 ), operation, ids, operations );
         modify.setEdgeTable( edgeTable );
         modify.setNodeTable( nodeTable );
         return modify;

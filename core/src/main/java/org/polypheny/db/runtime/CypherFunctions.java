@@ -151,4 +151,8 @@ public class CypherFunctions {
     }
 
 
+    public static PolyEdge adjustEdge( PolyEdge edge, String left, String right ) {
+        return edge.from( left, right );
+    }
+
 }

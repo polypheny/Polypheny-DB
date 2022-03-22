@@ -131,6 +131,7 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
+import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
@@ -456,7 +457,8 @@ public enum BuiltInMethod {
     CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),
     CYPHER_TO_LIST( CypherFunctions.class, "toList", Object.class ),
-    PRINT( CypherFunctions.class, "print", Object.class );
+    PRINT( CypherFunctions.class, "print", Object.class ),
+    CYPHER_ADJUST_EDGE( CypherFunctions.class, "adjustEdge", PolyEdge.class, String.class, String.class );
 
     public final Method method;
     public final Constructor constructor;

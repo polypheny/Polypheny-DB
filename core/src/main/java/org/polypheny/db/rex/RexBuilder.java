@@ -1303,6 +1303,9 @@ public class RexBuilder {
                     operands.add( e );
                 }
                 return new RexLiteral( (Comparable<?>) FlatLists.of( operands ), type, type.getPolyType() );
+            case NODE:
+            case EDGE:
+                return new RexLiteral( (Comparable<?>) value, type, type.getPolyType() );
             case ANY:
                 return makeLiteral( value, guessType( value ), allowCast );
             default:
