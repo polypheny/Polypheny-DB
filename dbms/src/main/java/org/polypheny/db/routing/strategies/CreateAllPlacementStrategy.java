@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adaptiveness.exception.PolicyRuntimeException;
 import org.polypheny.db.adaptiveness.policy.PoliciesManager;
 import org.polypheny.db.adaptiveness.selfadaptiveness.Action;
 import org.polypheny.db.catalog.Catalog;
@@ -45,7 +46,7 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
     public List<DataStore> getDataStoresForNewTable( long schemaId, long tableId ) {
         List<DataStore> stores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, schemaId, tableId );
         if ( stores.isEmpty() ) {
-            throw new RuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
+            throw new PolicyRuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
         } else {
             return stores;
         }

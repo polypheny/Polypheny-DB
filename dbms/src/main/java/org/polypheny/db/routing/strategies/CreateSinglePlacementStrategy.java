@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adaptiveness.exception.PolicyRuntimeException;
 import org.polypheny.db.adaptiveness.selfadaptiveness.Action;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -42,7 +43,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
         List<DataStore> stores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, schemaId, tableId );
         if ( stores.isEmpty() ) {
-            throw new RuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
+            throw new PolicyRuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
         } else {
             // todo ig: first improvement to choose the best store not just the first store.
             return Collections.singletonList( stores.get( 0 ));
