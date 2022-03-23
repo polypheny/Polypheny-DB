@@ -88,6 +88,12 @@ public interface DataContext {
 
     List<Map<Long, Object>> getParameterValues();
 
+    void setParameterValues( List<Map<Long, Object>> values );
+
+    Map<Long, AlgDataType> getParameterTypes();
+
+    void setParameterTypes( Map<Long, AlgDataType> types );
+
     default void resetParameterValues() {
         throw new UnsupportedOperationException();
     }
@@ -240,6 +246,24 @@ public interface DataContext {
         @Override
         public List<Map<Long, Object>> getParameterValues() {
             return null;
+        }
+
+
+        @Override
+        public void setParameterValues( List<Map<Long, Object>> values ) {
+
+        }
+
+
+        @Override
+        public Map<Long, AlgDataType> getParameterTypes() {
+            return null;
+        }
+
+
+        @Override
+        public void setParameterTypes( Map<Long, AlgDataType> types ) {
+
         }
 
     }

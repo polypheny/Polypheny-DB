@@ -67,16 +67,17 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final Result query = implementor.visitChild( this, 0, (EnumerableAlg) getLeft(), pref );
 
+        final Result prepared = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
+
         MethodCallExpression transformContext = Expressions.call(
                 BuiltInMethod.STREAM_RIGHT.method,
                 Expressions.constant( DataContext.ROOT ),
                 builder.append( builder.newName( "provider" + System.nanoTime() ), query.block ),
+                builder.append( builder.newName( "executor" + System.nanoTime() ), prepared.block ),
                 Expressions.constant( getLeft().getRowType().getFieldList().stream().map( f -> f.getType().getPolyType() ).collect( Collectors.toList() ) ) );
 
-        final Result prepared = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
-
-        builder.add( Expressions.statement( transformContext ) );
-        builder.add( Expressions.return_( null, builder.append( "test", prepared.block ) ) );
+        //builder.add( Expressions.statement( transformContext ) );
+        builder.add( Expressions.return_( null, builder.append( "test", transformContext ) ) );
 
         return implementor.result( prepared.physType, builder.toBlock() );
     }

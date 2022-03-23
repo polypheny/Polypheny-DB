@@ -688,6 +688,12 @@ public class ConstraintEnforcer {
                         Integer index = (Integer) rows.get( 0 ).get( 0 ).get( 1 );
                         throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
                     }
+                    try {
+                        statement.getTransaction().commit();
+                    } catch ( TransactionException e ) {
+                        throw new RuntimeException( "Error while committing constraint enforcement check." );
+                    }
+
 
                 } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownUserException | TransactionException | GenericCatalogException e ) {
                     return false;

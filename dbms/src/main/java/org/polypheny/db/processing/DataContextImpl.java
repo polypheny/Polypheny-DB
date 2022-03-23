@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
@@ -50,9 +52,12 @@ public class DataContextImpl implements DataContext {
     @Getter
     private final Statement statement;
 
-    private final Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
     @Getter
-    private final List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
+    @Setter
+    private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
+    @Getter
+    @Setter
+    private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
 
     public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
@@ -165,8 +170,8 @@ public class DataContextImpl implements DataContext {
 
     @Override
     public void resetParameterValues() {
-        parameterTypes.clear();
-        parameterValues.clear();
+        parameterTypes = new HashMap<>();
+        parameterValues = new ArrayList<>();
     }
 
 
