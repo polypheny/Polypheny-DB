@@ -129,6 +129,24 @@ public class VisitorDataContext implements DataContext {
     }
 
 
+    @Override
+    public void setParameterValues( List<Map<Long, Object>> values ) {
+
+    }
+
+
+    @Override
+    public Map<Long, AlgDataType> getParameterTypes() {
+        return null;
+    }
+
+
+    @Override
+    public void setParameterTypes( Map<Long, AlgDataType> types ) {
+
+    }
+
+
     public static DataContext of( AlgNode targetRel, LogicalFilter queryRel ) {
         return of( targetRel.getRowType(), queryRel.getCondition() );
     }

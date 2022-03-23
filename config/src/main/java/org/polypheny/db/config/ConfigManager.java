@@ -197,6 +197,9 @@ public class ConfigManager {
                 }
             }
             modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myList ) );
+        } else if ( updatedValue instanceof Enum ) {
+            // Enums pose problems, insertion is possible with this but retrieval after restart is not
+            modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( ((Enum<?>) updatedValue).name() ) );
         } else {
             modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
         }

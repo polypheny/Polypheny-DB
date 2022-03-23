@@ -274,7 +274,7 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> batch( final DataContext context, final Enumerable<Object[]> baz ) {
+    public static Enumerable<?> batch( final DataContext context, final Enumerable<Object> baz ) {
         List<Object> results = new ArrayList<>();
 
         List<Map<Long, Object>> values = new ArrayList<>( context.getParameterValues() );
@@ -293,7 +293,7 @@ public class Functions {
             context.resetParameterValues();
             value.forEach( ( k, v ) -> context.addParameterValues( k, types.get( k ), Collections.singletonList( v ) ) );
 
-            Iterator<Object[]> iter = baz.iterator();
+            Iterator<Object> iter = baz.iterator();
             results.add( iter.next() );
         }
         return Linq4j.asEnumerable( results );
@@ -301,7 +301,7 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static <T> void streamRight( final DataContext context, final Enumerable<Object> baz, final List<PolyType> polyTypes ) {
+    public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<Object> baz, final Enumerable<Object> executor, final List<PolyType> polyTypes ) {
         PolyTypeFactoryImpl factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
@@ -315,6 +315,14 @@ public class Functions {
                 values.add( (Object[]) o );
             }
         }
+        if ( values.isEmpty() ) {
+            // there are no updates to make, we don't execute the right executor
+            return Linq4j.asEnumerable( List.of( 0 ) );
+        }
+
+        List<Map<Long, Object>> valuesBackup = context.getParameterValues();
+        Map<Long, AlgDataType> typesBackup = context.getParameterTypes();
+
         context.resetParameterValues();
         Map<Integer, List<Object>> vals = new HashMap<>();
         for ( int i = 0; i < values.get( 0 ).length; i++ ) {
@@ -330,6 +338,18 @@ public class Functions {
         for ( int i = 0; i < values.get( 0 ).length; i++ ) {
             context.addParameterValues( i, algDataTypes.get( i ), vals.get( i ) );
         }
+
+        List<Object> results = new ArrayList<>();
+        for ( Object o : executor ) {
+            results.add( o );
+        }
+
+        context.resetParameterValues();
+
+        context.setParameterTypes( typesBackup );
+        context.setParameterValues( valuesBackup );
+
+        return Linq4j.asEnumerable( results );
     }
 
 

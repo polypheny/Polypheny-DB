@@ -271,8 +271,8 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
     private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
         if ( classPersistentData != null ) {
-            //final BTreeMap<UUID, MonitoringDataPoint> treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
-            //data.put( classPersistentData, treeMap );
+            final BTreeMap<UUID, MonitoringDataPoint> treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
+            data.put( classPersistentData, treeMap );
         }
     }
 

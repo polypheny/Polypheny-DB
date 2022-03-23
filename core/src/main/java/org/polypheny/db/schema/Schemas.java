@@ -571,6 +571,24 @@ public final class Schemas {
             throw new UnsupportedOperationException();
         }
 
+
+        @Override
+        public void setParameterValues( List<Map<Long, Object>> values ) {
+
+        }
+
+
+        @Override
+        public Map<Long, AlgDataType> getParameterTypes() {
+            return null;
+        }
+
+
+        @Override
+        public void setParameterTypes( Map<Long, AlgDataType> types ) {
+
+        }
+
     }
 
 
