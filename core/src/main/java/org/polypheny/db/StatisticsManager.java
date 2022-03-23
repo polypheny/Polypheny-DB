@@ -24,12 +24,12 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 
 
-public abstract class StatisticsManager<T extends Comparable<T>> implements PropertyChangeListener {
+public abstract class StatisticsManager implements PropertyChangeListener {
 
-    public static StatisticsManager<?> INSTANCE = null;
+    public static StatisticsManager INSTANCE = null;
 
 
-    public static StatisticsManager<?> setAndGetInstance( StatisticsManager<?> transaction ) {
+    public static StatisticsManager setAndGetInstance( StatisticsManager transaction ) {
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
         }
@@ -38,7 +38,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
     }
 
 
-    public static StatisticsManager<?> getInstance() {
+    public static StatisticsManager getInstance() {
         if ( INSTANCE == null ) {
             throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
         }
@@ -71,6 +71,8 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
     public abstract void setRevalId( String revalId );
 
     public abstract Map<?, ?> getStatisticSchemaMap();
+
+    public abstract Map<?, ?> getQualifiedStatisticMap();
 
     public abstract Object getTableStatistic( long schemaId, long tableId );
 

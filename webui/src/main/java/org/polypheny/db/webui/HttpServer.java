@@ -67,18 +67,18 @@ public class HttpServer implements Runnable {
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
 
-    private static final Gson gson;
+    public static final Gson gson;
     private final Gson gsonExpose = new GsonBuilder()
             .excludeFieldsWithoutExposeAnnotation()
             .enableComplexMapKeySerialization()
             .setPrettyPrinting()
             .create();
 
-    public static TypeAdapter<Throwable> throwableTypeAdapter;
+    public static final TypeAdapter<Throwable> throwableTypeAdapter;
 
 
     static {
-        throwableTypeAdapter = new TypeAdapter<Throwable>() {
+        throwableTypeAdapter = new TypeAdapter<>() {
             @Override
             public void write( JsonWriter out, Throwable value ) throws IOException {
                 if ( value == null ) {
@@ -99,12 +99,12 @@ public class HttpServer implements Runnable {
         };
         gson = new GsonBuilder()
                 .enableComplexMapKeySerialization()
-                .registerTypeAdapter( DataSource.class, DataSource.getSerializer() )
-                .registerTypeAdapter( DataStore.class, DataStore.getSerializer() )
+                .registerTypeHierarchyAdapter( DataSource.class, DataSource.getSerializer() )
+                .registerTypeHierarchyAdapter( DataStore.class, DataStore.getSerializer() )
+                .registerTypeHierarchyAdapter( Throwable.class, throwableTypeAdapter )
                 .registerTypeAdapter( PolyType.class, PolyType.getSerializer() )
                 .registerTypeAdapter( AdapterInformation.class, AdapterInformation.getSerializer() )
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
-                .registerTypeAdapter( Throwable.class, throwableTypeAdapter )
                 .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
                 .registerTypeAdapter( Duration.class, Duration.getSerializer() )
                 .registerTypeAdapter( Result.class, Result.getSerializer() )

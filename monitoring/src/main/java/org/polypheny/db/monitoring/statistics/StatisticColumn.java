@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -52,8 +53,14 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     @Getter
     private final long columnId;
 
+    @Expose
+    private final String qualifiedColumnName;
+
     @Getter
     private final PolyType type;
+
+    @Expose
+    private final StatisticType columnType;
 
     @Expose
     @Setter
@@ -71,11 +78,12 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     protected Integer count;
 
 
-    public StatisticColumn( long schemaId, long tableId, long columnId, PolyType type ) {
+    public StatisticColumn( long schemaId, long tableId, long columnId, PolyType type, StatisticType columnType ) {
         this.schemaId = schemaId;
         this.tableId = tableId;
         this.columnId = columnId;
         this.type = type;
+        this.columnType = columnType;
 
         Catalog catalog = Catalog.getInstance();
         if ( catalog.checkIfExistsEntity( tableId ) ) {
@@ -83,6 +91,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
             this.table = catalog.getTable( tableId ).name;
             this.column = catalog.getField( columnId ).name;
         }
+        this.qualifiedColumnName = String.format( "%s.%s.%s", this.schema, this.table, this.column );
     }
 
 
@@ -115,6 +124,16 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
 
     public void updateSchemaName( String schemaName ) {
         this.schema = schemaName;
+    }
+
+
+    public enum StatisticType {
+        @SerializedName("temporal")
+        TEMPORAL,
+        @SerializedName("numeric")
+        NUMERICAL,
+        @SerializedName("alphabetic")
+        ALPHABETICAL
     }
 
 }

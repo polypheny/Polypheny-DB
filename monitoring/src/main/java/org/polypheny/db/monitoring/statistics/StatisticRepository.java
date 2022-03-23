@@ -40,7 +40,7 @@ public class StatisticRepository implements MonitoringRepository {
      */
     @Override
     public void dataPoint( MonitoringDataPoint dataPoint ) {
-        StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
+        StatisticsManager statisticsManager = StatisticsManager.getInstance();
         statisticsManager.updateCommitRollback( dataPoint.isCommitted() );
 
         if ( dataPoint.getDataPointType() == DataPointType.DML ) {
@@ -53,7 +53,7 @@ public class StatisticRepository implements MonitoringRepository {
     }
 
 
-    private void updateDdlStatistics( DdlDataPoint dataPoint, StatisticsManager<?> statisticsManager ) {
+    private void updateDdlStatistics( DdlDataPoint dataPoint, StatisticsManager statisticsManager ) {
         if ( dataPoint.getMonitoringType().equals( "TRUNCATE" ) ) {
             statisticsManager.updateRowCountPerTable(
                     dataPoint.getTableId(),
@@ -78,7 +78,7 @@ public class StatisticRepository implements MonitoringRepository {
     }
 
 
-    private void updateQueryStatistics( QueryDataPointImpl dataPoint, StatisticsManager<?> statisticsManager ) {
+    private void updateQueryStatistics( QueryDataPointImpl dataPoint, StatisticsManager statisticsManager ) {
         if ( !dataPoint.getAvailableColumnsWithTable().isEmpty() ) {
             Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
             boolean isOneTable = values.size() == 1;
@@ -109,7 +109,7 @@ public class StatisticRepository implements MonitoringRepository {
     }
 
 
-    private void updateDmlStatistics( DmlDataPoint dataPoint, StatisticsManager<?> statisticsManager ) {
+    private void updateDmlStatistics( DmlDataPoint dataPoint, StatisticsManager statisticsManager ) {
         if ( dataPoint.getChangedValues() != null ) {
             Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
             boolean isOneTable = values.size() == 1;
