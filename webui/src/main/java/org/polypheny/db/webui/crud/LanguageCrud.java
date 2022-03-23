@@ -428,6 +428,12 @@ public class LanguageCrud {
 
         List<List<Object>> res = polyResult.getRows( statement, 1 );
 
+        try {
+            statement.getTransaction().commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( "Error while committing graph retrieval query." );
+        }
+
         return (PolyGraph) res.get( 0 ).get( 0 );
     }
 
