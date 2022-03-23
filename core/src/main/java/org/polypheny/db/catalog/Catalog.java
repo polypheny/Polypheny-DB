@@ -387,7 +387,7 @@ public abstract class Catalog {
      * Returns the table which is associated with a given partitionId
      *
      * @param partitionId to use for lookup
-     * @return CatalogTable that contians partitionId
+     * @return CatalogTable that contains partitionId
      */
     public abstract CatalogTable getTableFromPartition( long partitionId );
 
@@ -1397,13 +1397,13 @@ public abstract class Catalog {
 
     /**
      * Adds a placement for a partition.
-     *  @param adapterId The adapter on which the table should be placed on
+     *
+     * @param adapterId The adapter on which the table should be placed on
      * @param tableId The table for which a partition placement shall be created
      * @param partitionId The id of a specific partition that shall create a new placement
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
-     * @param role
      */
     public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
 

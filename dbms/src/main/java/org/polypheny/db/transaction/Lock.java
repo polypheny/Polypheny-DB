@@ -16,7 +16,6 @@
 
 package org.polypheny.db.transaction;
 
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;

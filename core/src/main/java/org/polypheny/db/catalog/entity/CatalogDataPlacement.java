@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.Data;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -72,9 +71,8 @@ public class CatalogDataPlacement implements CatalogEntity {
             int adapterId,
             PlacementType placementType,
             DataPlacementRole dataPlacementRole,
-            @NonNull final ImmutableList columnPlacementsOnAdapter,
-            @NonNull final ImmutableList partitionPlacementsOnAdapter ) {
-
+            @NonNull final ImmutableList<Long> columnPlacementsOnAdapter,
+            @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;

@@ -92,7 +92,7 @@ public class EntityAccessMap {
         // don't want to retain any alg references after preparation completes.
         this.accessMap = new HashMap<>();
 
-        //TODO @HENNLO remove this and rather integrate Entity AccessMap directly into Query Processor when DML Partitions can be queried
+        //TODO @HENNLO remove this and rather integrate EntityAccessMap directly into Query Processor when DML Partitions can be queried
         this.accessedPartitions = accessedPartitions;
         AlgOptUtil.go( new TableRelVisitor(), alg );
     }

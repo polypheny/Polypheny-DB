@@ -18,13 +18,10 @@ package org.polypheny.db.docker;
 
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-
 
 /**
  * This is a bare-bone catalog which allows to mock register adapters
