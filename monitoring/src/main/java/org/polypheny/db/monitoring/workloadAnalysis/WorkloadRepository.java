@@ -32,14 +32,18 @@ public class WorkloadRepository implements MonitoringRepository {
 
     @Override
     public void dataPoint( MonitoringDataPoint dataPoint ) {
+        WorkloadManager workloadManager = WorkloadManager.getInstance();
         // Analyze logical query
         if ( ((WorkloadDataPoint) dataPoint).getAlgNode() != null && dataPoint.isCommitted() ) {
             AlgNodeAnalyzeShuttle analyzeRelShuttle = new AlgNodeAnalyzeShuttle();
             ((WorkloadDataPoint) dataPoint).getAlgNode().accept( analyzeRelShuttle );
+            if(((WorkloadDataPoint) dataPoint).getAlgNode().algCompareString().length() > 500){
+                workloadManager.findOftenUsedComplexQueries(((WorkloadDataPoint) dataPoint).getAlgNode());
+            }
 
             Timestamp timestamp = ((WorkloadDataPoint) dataPoint).getRecordedTimestamp();
 
-            WorkloadManager.getInstance().updateWorkloadTimeline(
+            workloadManager.updateWorkloadTimeline(
                     timestamp,
                     new WorkloadInformation(
                             ((WorkloadDataPoint) dataPoint).getExecutionTime(),
