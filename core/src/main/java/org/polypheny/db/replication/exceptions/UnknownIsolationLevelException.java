@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.exceptions;
+package org.polypheny.db.replication.exceptions;
 
 
 public class UnknownIsolationLevelException extends Exception {

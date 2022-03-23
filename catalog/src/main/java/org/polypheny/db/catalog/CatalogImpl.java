@@ -4431,6 +4431,27 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Checks if this table is configured to allow outdated or refreshable nodes or if it
+     * requires eager replication
+     *
+     * @return true if it supports outdated nodes, false otherwise
+     */
+    @Override
+    public boolean doesTableSupportOutdatedPlacements( long tableId ) {
+
+        //TODO @HENNLO change this to a new attribute in the table itself
+        // Instead of querying each DataPlacement
+
+        for ( CatalogDataPlacement catalogDataPlacement : getDataPlacements( tableId ) ) {
+            if ( catalogDataPlacement.dataPlacementRole.equals( DataPlacementRole.REFRESHABLE ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
      * Checks if the planned changes are allowed in terms of placements that need to be present.
      * Each column must be present for all partitions somewhere
      *

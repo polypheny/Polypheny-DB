@@ -22,7 +22,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.util.FileInputHandle;
 
 public interface Statement {

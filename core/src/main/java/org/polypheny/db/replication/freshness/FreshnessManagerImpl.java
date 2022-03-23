@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.freshness;
+package org.polypheny.db.replication.freshness;
 
 
 import com.google.common.collect.ImmutableList;
@@ -27,8 +27,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
-import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
+import org.polypheny.db.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 
 
 public class FreshnessManagerImpl extends FreshnessManager {

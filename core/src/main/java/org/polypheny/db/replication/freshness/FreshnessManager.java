@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.freshness;
+package org.polypheny.db.replication.freshness;
 
 
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 
 
 /**

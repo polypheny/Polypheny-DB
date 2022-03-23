@@ -53,6 +53,10 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
+
+    //TODO @HENNLO Revise
+    //  PartitionPlacement holds the information if it is currently outdated
+    // Whereas the DataPlacement contains the information if placements on this store could get outdated
     public final DataPlacementRole role;
 
     // This is the timestamp of the commit time of the initial TX that updated the primary nodes.

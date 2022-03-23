@@ -19,9 +19,11 @@ package org.polypheny.db.routing.routers;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -30,12 +32,14 @@ import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.processing.replication.freshness.FreshnessManager;
-import org.polypheny.db.processing.replication.freshness.FreshnessManagerImpl;
+import org.polypheny.db.replication.freshness.FreshnessManager;
+import org.polypheny.db.replication.freshness.FreshnessManagerImpl;
+import org.polypheny.db.replication.freshness.exceptions.InsufficientFreshnessOptionsException;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
@@ -170,25 +174,28 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
-            // TODO @HENNLO consider using statement for information gathering on freshness or LogicalQueryInformation
-            // Consider Freshness
-            if ( statement.getTransaction().acceptsOutdatedCopies() ) {
+            // Consider Freshness only when specified in query or table supports it
+            if ( statement.getTransaction().acceptsOutdatedCopies() && catalog.doesTableSupportOutdatedPlacements( catalogTable.id ) ) {
 
-                useFreshness = provideFreshness( node, catalogTable, queryInformation, statement );
-
-                if ( useFreshness ) {
+                try {
+                    handleFreshness( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
 
                     // When Freshness has been successfully used, disable caching for this query.
                     statement.getTransaction().setUseCache( false );
-                } else {
+                }
+                // If freshness cannot be provided
+                catch ( InsufficientFreshnessOptionsException e ) {
 
                     // No need to select specific placements, just carry out the regular routing process.
 
                     // Apply locking if necessary
                     // Freshness retrieval has failed so continue with regular locking
                     acquireLock( node, statement, queryInformation );
-                }
 
+                    //TODO @HENNLO Depending on the strategy check if the transaction has to be aborted
+                    // If e.g. a statement has already been executed with freshness or still to continue.
+                    // and only disallow DMLs as before.
+                }
             }
 
             // Check if table is even horizontal partitioned
@@ -228,7 +235,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     }
 
 
-    private boolean provideFreshness( AlgNode node, CatalogTable catalogTable, LogicalQueryInformation queryInformation, Statement statement ) {
+    private Map<Long, List<CatalogPartitionPlacement>> filterFreshnessPlacements( AlgNode node, CatalogTable catalogTable, LogicalQueryInformation queryInformation, Statement statement ) throws InsufficientFreshnessOptionsException {
 
         // TODO @HENNLO get several possibilities if possible
 
@@ -239,7 +246,84 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 queryInformation.getAccessedPartitions().get( node.getId() ),
                 statement.getFreshnessSpecification() );
 
-        return false;
+        // TODO @HENNLO This can be more easily checked directly at one point in time
+        // Pre check if at least all requested partitionIds have a placements
+        // Otherwise freshness cannot be delivered
+        for ( Entry<Long, List<CatalogPartitionPlacement>> entry : placementOptionsPerPartition.entrySet() ) {
+            if ( entry.getValue().size() <= 0 ) {
+                throw new InsufficientFreshnessOptionsException();
+            }
+        }
+
+        return placementOptionsPerPartition;
+    }
+
+
+    private List<RoutedAlgBuilder> handleFreshness( AlgNode node,
+            CatalogTable catalogTable,
+            Statement statement,
+            LogicalTable logicalTable,
+            List<RoutedAlgBuilder> builders,
+            AlgOptCluster cluster,
+            LogicalQueryInformation queryInformation ) throws InsufficientFreshnessOptionsException {
+
+        Map<Long, List<CatalogPartitionPlacement>> placementOptionsPerPartition = filterFreshnessPlacements( node, catalogTable, queryInformation, statement );
+
+        // List of all possible placement distributions to generate plans
+        List<Map<Long, List<CatalogColumnPlacement>>> placements = selectFreshnessPlacements( placementOptionsPerPartition, catalogTable, queryInformation );
+
+        List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
+        for ( Map<Long, List<CatalogColumnPlacement>> placementCombination : placements ) {
+            for ( RoutedAlgBuilder builder : builders ) {
+                RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
+                newBuilder.addPhysicalInfo( placementCombination );
+                newBuilder.push( super.buildJoinedTableScan( statement, cluster, placementCombination ) );
+                newBuilders.add( newBuilder );
+            }
+        }
+
+        builders.clear();
+        builders.addAll( newBuilders );
+
+        return builders;
+    }
+
+
+    // TODO @HENNLO this could be mabye decentralized per router to have different handling options per strategy
+    private List<Map<Long, List<CatalogColumnPlacement>>> selectFreshnessPlacements(
+            Map<Long, List<CatalogPartitionPlacement>> placementOptionsPerPartition,
+            CatalogTable catalogTable,
+            LogicalQueryInformation queryInformation
+    ) throws InsufficientFreshnessOptionsException {
+
+        // Contains all possible placementDistributions to later generate plans for
+        // Each element contains on possible distribution
+        List<Map<Long, List<CatalogColumnPlacement>>> placementDistributionCandidates = new ArrayList<>();
+
+        List<Long> requiredColumnIds = queryInformation.getUsedColumnsPerTable( catalogTable.id );
+
+        // We already know on which Physical Partition Placements we could look for data
+        // This is why we directly know on which DataPlacement we reside
+        // Consequently we therefore already know which ColumnPlacements to use
+
+        //TODO @HENNLO Remove the naive case which is currently only for testing
+        // For now we do simple routing
+        for ( Entry<Long, List<CatalogPartitionPlacement>> entry : placementOptionsPerPartition.entrySet() ) {
+
+            long partitionId = entry.getKey();
+            List<CatalogPartitionPlacement> placementOptions = entry.getValue();
+
+            //
+
+        }
+
+        // TODO @HENNLO if no distribution could be found at all
+        // abort freshness processing for this statement
+        if ( placementDistributionCandidates.size() == 0 ) {
+            throw new InsufficientFreshnessOptionsException();
+        }
+
+        return placementDistributionCandidates;
     }
 
 

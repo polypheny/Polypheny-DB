@@ -14,19 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.exceptions;
+package org.polypheny.db.replication.freshness.exceptions;
 
 
-public class UnsupportedIsolationOperationRuntimeException extends IsolationRuntimeException {
+public class UnknownFreshnessEvaluationTypeRuntimeException extends FreshnessRuntimeException {
 
-    public UnsupportedIsolationOperationRuntimeException() {
-        super( "DML operations are not allowed during Transactions that utilized a none SERIALIZABLE isolation level." );
-    }
-
-
-    public UnsupportedIsolationOperationRuntimeException( String exception ) {
-        super( "DML operations are not allowed during Transactions that utilized a none SERIALIZABLE isolation level. \n"
-                + exception );
+    public UnknownFreshnessEvaluationTypeRuntimeException( final String name ) {
+        super( "There is no related EvaluationType with name: '" + name + "'" );
     }
 
 }

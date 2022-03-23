@@ -18,9 +18,9 @@ package org.polypheny.db.sql.sql.util.replication;
 
 
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.processing.replication.IsolationExtractor;
-import org.polypheny.db.processing.replication.exceptions.UnknownIsolationLevelException;
+import org.polypheny.db.replication.IsolationExtractor;
 import org.polypheny.db.replication.IsolationLevel;
+import org.polypheny.db.replication.exceptions.UnknownIsolationLevelException;
 
 
 public class SqlIsolationExtractor extends IsolationExtractor {

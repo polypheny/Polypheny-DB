@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.freshness.properties;
+package org.polypheny.db.replication.freshness.properties;
 
 
 import java.sql.Timestamp;
 import lombok.Getter;
-import org.polypheny.db.processing.replication.freshness.FreshnessManager.EvaluationType;
+import org.polypheny.db.replication.freshness.FreshnessManager.EvaluationType;
 
 
 @Getter

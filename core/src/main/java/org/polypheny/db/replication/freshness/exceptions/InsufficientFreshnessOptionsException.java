@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.freshness.exceptions;
+package org.polypheny.db.replication.freshness.exceptions;
 
 
-public class UnknownFreshnessEvaluationTypeRuntimeException extends FreshnessRuntimeException {
+public class InsufficientFreshnessOptionsException extends Exception {
 
-    public UnknownFreshnessEvaluationTypeRuntimeException( final String name ) {
-        super( "There is no related EvaluationType with name: '" + name + "'" );
+    public InsufficientFreshnessOptionsException() {
+        super( "No suitable outdated nodes could be delivered." );
     }
 
 }

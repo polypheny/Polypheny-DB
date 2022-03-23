@@ -1366,6 +1366,15 @@ public abstract class Catalog {
 
 
     /**
+     * Checks if this table is configured to allow outdated or refreshable nodes or if it
+     * requires eager replication
+     *
+     * @return true if it supports outdated nodes, false otherwise
+     */
+    public abstract boolean doesTableSupportOutdatedPlacements( long tableId );
+
+
+    /**
      * Checks if the planned changes are allowed in term sof placements that need to be present
      *
      * @param tableId Table to be checked

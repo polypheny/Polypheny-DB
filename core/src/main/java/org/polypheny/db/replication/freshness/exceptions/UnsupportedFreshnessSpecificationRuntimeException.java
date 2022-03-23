@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.freshness.exceptions;
+package org.polypheny.db.replication.freshness.exceptions;
 
 
-import org.polypheny.db.processing.replication.exceptions.UnsupportedIsolationOperationRuntimeException;
+import org.polypheny.db.replication.freshness.FreshnessManager.EvaluationType;
 
 
-public class UnsupportedFreshnessOperationRuntimeException extends UnsupportedIsolationOperationRuntimeException {
+public class UnsupportedFreshnessSpecificationRuntimeException extends FreshnessRuntimeException {
 
-    public UnsupportedFreshnessOperationRuntimeException() {
-        super( "Utilization of FRESHNESS in this cope is not permitted to ensure data integrity. " );
+    public UnsupportedFreshnessSpecificationRuntimeException( EvaluationType evaluationType, final String freshnessValue ) {
+        super( "The specified tolerated level of freshness: '" + freshnessValue + "' cannot be used for the "
+                + "associated evaluation type: '" + evaluationType.toString() + "'." );
     }
 }

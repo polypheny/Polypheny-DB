@@ -49,12 +49,16 @@ public class CatalogDataPlacement implements CatalogEntity {
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.
+
+    //TODO @HENNLO Revise
+    // Contains the information if this placement could get outdated
+    // Whereas teh partitionPlacement holds the information if it is currently outdated
     public final DataPlacementRole dataPlacementRole;
 
     public final ImmutableList<Long> columnPlacementsOnAdapter;
 
     // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important and frequent than writes
-    public final ImmutableMap<DataPlacementRole,ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
+    public final ImmutableMap<DataPlacementRole, ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
 
 
     // The newest commit timestamp when any partitions inside this placement has been updated or refreshed

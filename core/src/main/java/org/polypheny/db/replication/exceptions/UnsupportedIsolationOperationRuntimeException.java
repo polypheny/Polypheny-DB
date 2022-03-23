@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.freshness.exceptions;
+package org.polypheny.db.replication.exceptions;
 
 
-public class UnknownFreshnessTimeUnitRuntimeException extends FreshnessRuntimeException {
+public class UnsupportedIsolationOperationRuntimeException extends IsolationRuntimeException {
 
-    public UnknownFreshnessTimeUnitRuntimeException( final String unit ) {
-        super( "The specified time unit: '" + unit + "' is not accepted." );
+    public UnsupportedIsolationOperationRuntimeException() {
+        super( "DML operations are not allowed during Transactions that utilized a none SERIALIZABLE isolation level." );
+    }
+
+
+    public UnsupportedIsolationOperationRuntimeException( String exception ) {
+        super( "DML operations are not allowed during Transactions that utilized a none SERIALIZABLE isolation level. \n"
+                + exception );
     }
 
 }

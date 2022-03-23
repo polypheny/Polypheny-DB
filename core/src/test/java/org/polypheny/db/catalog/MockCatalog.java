@@ -1216,8 +1216,15 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+
     @Override
     public Map<Long, List<CatalogPartitionPlacement>> getPartitionPlacementsByIdAndRole( long tableId, List<Long> partitionId, DataPlacementRole role ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public boolean doesTableSupportOutdatedPlacements( long tableId ) {
         throw new NotImplementedException();
     }
 }

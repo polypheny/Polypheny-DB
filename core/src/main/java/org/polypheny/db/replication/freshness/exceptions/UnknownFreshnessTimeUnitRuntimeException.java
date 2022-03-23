@@ -14,25 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.replication;
+package org.polypheny.db.replication.freshness.exceptions;
 
 
-import org.polypheny.db.replication.exceptions.UnknownIsolationLevelException;
+public class UnknownFreshnessTimeUnitRuntimeException extends FreshnessRuntimeException {
 
+    public UnknownFreshnessTimeUnitRuntimeException( final String unit ) {
+        super( "The specified time unit: '" + unit + "' is not accepted." );
+    }
 
-public enum IsolationLevel {
-        NONE,
-        SERIALIZABLE;
-
-
-        public static IsolationLevel getByName( final String name ) throws UnknownIsolationLevelException {
-                for ( IsolationLevel t : values() ) {
-                        if ( t.name().equalsIgnoreCase( name ) ) {
-                                return t;
-                        }
-                }
-                throw new UnknownIsolationLevelException( name );
-        }
 }
-
-

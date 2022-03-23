@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing.replication.freshness;
+package org.polypheny.db.replication.freshness;
 
 
 import java.sql.Timestamp;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.processing.replication.freshness.FreshnessManager.EvaluationType;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnknownFreshnessTimeUnitRuntimeException;
-import org.polypheny.db.processing.replication.freshness.exceptions.UnsupportedFreshnessSpecificationRuntimeException;
-import org.polypheny.db.processing.replication.freshness.properties.FreshnessSpecification;
+import org.polypheny.db.replication.freshness.FreshnessManager.EvaluationType;
+import org.polypheny.db.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
+import org.polypheny.db.replication.freshness.exceptions.UnknownFreshnessTimeUnitRuntimeException;
+import org.polypheny.db.replication.freshness.exceptions.UnsupportedFreshnessSpecificationRuntimeException;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 
 
 public abstract class FreshnessExtractor {
