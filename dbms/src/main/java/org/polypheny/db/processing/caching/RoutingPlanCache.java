@@ -88,7 +88,7 @@ public class RoutingPlanCache {
         // This might be only a symptom fix and needs fixing in the ProposedPlan itself
         if ( routingPlans.stream().allMatch( p -> {
             if ( !partitionIds.stream().allMatch( i -> p.physicalPlacementsOfPartitions.containsKey( i ) ) ) {
-                log.warn( "Does not contain all placement." );
+                log.warn( "Does not contain all placements." );
                 return false;
             }
             return true;
