@@ -121,7 +121,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Ignore // this is only a reverence
+    @Ignore // this is only a reference
     public void ddlSqlUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -145,7 +145,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Ignore // this is only a reverence
+    @Ignore // this is only a reference
     public void ddlSqlCountTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

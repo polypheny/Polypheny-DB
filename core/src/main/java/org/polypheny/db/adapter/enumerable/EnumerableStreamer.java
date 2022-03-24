@@ -16,11 +16,19 @@
 
 package org.polypheny.db.adapter.enumerable;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.function.Function;
+import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Streamer;
@@ -69,14 +77,22 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
         final Result prepared = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
+        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), prepared.block );
+
+        ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "executor" + System.nanoTime() ) );
+
+        // move executor enumerable into a lambda so parameters get not prematurely  executed with a "wrong" context (e.g. Cottontail)
+        FunctionExpression<Function<?>> expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
+
+        builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );
+
         MethodCallExpression transformContext = Expressions.call(
                 BuiltInMethod.STREAM_RIGHT.method,
                 Expressions.constant( DataContext.ROOT ),
-                builder.append( builder.newName( "provider" + System.nanoTime() ), query.block ),
-                builder.append( builder.newName( "executor" + System.nanoTime() ), prepared.block ),
+                builder.append( builder.newName( "query" + System.nanoTime() ), query.block ),
+                exp,
                 Expressions.constant( getLeft().getRowType().getFieldList().stream().map( f -> f.getType().getPolyType() ).collect( Collectors.toList() ) ) );
 
-        //builder.add( Expressions.statement( transformContext ) );
         builder.add( Expressions.return_( null, builder.append( "test", transformContext ) ) );
 
         return implementor.result( prepared.physType, builder.toBlock() );

@@ -96,6 +96,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -301,7 +302,7 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<Object> baz, final Enumerable<Object> executor, final List<PolyType> polyTypes ) {
+    public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<Object> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
         PolyTypeFactoryImpl factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
@@ -340,6 +341,7 @@ public class Functions {
         }
 
         List<Object> results = new ArrayList<>();
+        Enumerable<Object> executor = executorCall.apply();
         for ( Object o : executor ) {
             results.add( o );
         }
