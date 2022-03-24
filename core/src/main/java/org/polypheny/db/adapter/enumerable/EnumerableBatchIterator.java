@@ -34,10 +34,10 @@ import org.polypheny.db.util.BuiltInMethod;
 public class EnumerableBatchIterator extends BatchIterator implements EnumerableAlg {
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates a <code>EnumerableBatchIterator</code>.
      *
      * @param cluster Cluster this relational expression belongs to
-     * @param traits
+     * @param traits The trait set
      * @param input Input relational expression
      */
     protected EnumerableBatchIterator( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
