@@ -282,10 +282,9 @@ public abstract class BaseRouter {
         G alg = (G) input;
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getNamespaceId() );
 
-        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodeId );
-
+        // --- nodes
+        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodesId );
         List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( mapping.idNodeId );
-
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
                         placement.get( 0 ).adapterUniqueName,
@@ -297,7 +296,22 @@ public abstract class BaseRouter {
         PreparingTable node = alg.getCatalogReader().getTableForMember( qualifiedTableName );
         alg.setNodeTable( node );
 
-        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgeId );
+        // --- node properties
+        CatalogEntity nodeProperties = Catalog.getInstance().getTable( mapping.nodesPropertyId );
+        placement = Catalog.getInstance().getColumnPlacement( mapping.idNodesPropertyId );
+        qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        placement.get( 0 ).adapterUniqueName,
+                        nodeProperties.getNamespaceName(),
+                        placement.get( 0 ).physicalSchemaName
+                ),
+                nodeProperties.name + "_" + nodeProperties.partitionProperty.partitionIds.get( 0 ) );
+
+        PreparingTable nodeProperty = alg.getCatalogReader().getTableForMember( qualifiedTableName );
+        alg.setNodePropertyTable( nodeProperty );
+        // --- edge
+
+        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgesId );
         placement = Catalog.getInstance().getColumnPlacement( mapping.idEdgeId );
 
         qualifiedTableName = ImmutableList.of(
@@ -310,6 +324,22 @@ public abstract class BaseRouter {
 
         PreparingTable edge = alg.getCatalogReader().getTableForMember( qualifiedTableName );
         alg.setEdgeTable( edge );
+
+        // -- edge property
+
+        CatalogEntity edgeProperties = Catalog.getInstance().getTable( mapping.edgesPropertyId );
+        placement = Catalog.getInstance().getColumnPlacement( mapping.idEdgesPropertyId );
+
+        qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        placement.get( 0 ).adapterUniqueName,
+                        edgeProperties.getNamespaceName(),
+                        placement.get( 0 ).physicalSchemaName
+                ),
+                edgeProperties.name + "_" + edgeProperties.partitionProperty.partitionIds.get( 0 ) );
+
+        PreparingTable edgeProperty = alg.getCatalogReader().getTableForMember( qualifiedTableName );
+        alg.setEdgePropertyTable( edgeProperty );
     }
 
 }

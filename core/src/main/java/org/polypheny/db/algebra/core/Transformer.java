@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.ModelTrait;
 
 @Getter
 public class Transformer extends AbstractAlgNode {
@@ -31,21 +32,23 @@ public class Transformer extends AbstractAlgNode {
     @Getter
     private final List<AlgNode> inputs;
 
-    public final AlgTraitSet inTraitSet;
-    public final AlgTraitSet outTraitSet;
+    public final ModelTrait inTrait;
+    public final ModelTrait outTrait;
 
 
     /**
      * Creates an <code>AbstractRelNode</code>.
      *
+     * @param inTraitSet from node under this one
+     * @param outTraitSet target modeltrait
      * @param cluster
      * @param rowType
      */
-    public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet inTraitSet, AlgTraitSet outTraitSet, AlgDataType rowType ) {
-        super( cluster, outTraitSet );
+    public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
+        super( cluster, traitSet.replace( outTraitSet ) );
         this.inputs = inputs;
-        this.inTraitSet = inTraitSet;
-        this.outTraitSet = outTraitSet;
+        this.inTrait = inTraitSet;
+        this.outTrait = outTraitSet;
         this.rowType = rowType;
     }
 

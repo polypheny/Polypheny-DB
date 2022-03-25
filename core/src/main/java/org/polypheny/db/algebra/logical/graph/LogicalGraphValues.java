@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -29,7 +30,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -38,7 +38,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
@@ -53,6 +52,8 @@ import org.polypheny.db.util.Pair;
 public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
 
     public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 36 );
+    public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 );
+    public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 );
     public static final BasicPolyType NODE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.NODE );
     public static final BasicPolyType EDGE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.EDGE );
     private final ImmutableList<PolyNode> nodes;
@@ -124,30 +125,80 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
-        AlgDataTypeFactory typeFactory = getCluster().getTypeFactory();
 
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder() );
 
-        LogicalValues nodeValues = new LogicalValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes, typeFactory ) );
+        LogicalValues nodeValues = new LogicalValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes ) );
+        LogicalValues nodePropertyValues = new LogicalValues( cluster, out, entities.get( 1 ).getRowType(), getNodePropertyValues( nodes ) );
+
         if ( edges.isEmpty() ) {
-            return List.of( nodeValues );
+            return Arrays.asList( nodeValues, nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues );
         }
-        assert entities.size() == 2 && entities.get( 1 ) != null;
-        LogicalValues edgeValues = new LogicalValues( cluster, out, entities.get( 1 ).getRowType(), getEdgeValues( edges, typeFactory ) );
-        return Arrays.asList( nodeValues, edgeValues );
+
+        assert entities.size() == 4 && entities.get( 2 ) != null && entities.get( 3 ) != null;
+        LogicalValues edgeValues = new LogicalValues( cluster, out, entities.get( 2 ).getRowType(), getEdgeValues( edges ) );
+        LogicalValues edgePropertyValues = new LogicalValues( cluster, out, entities.get( 3 ).getRowType(), getEdgePropertyValues( edges ) );
+
+        return Arrays.asList(
+                nodeValues,
+                nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues,
+                edgeValues,
+                edgePropertyValues.tuples.isEmpty() ? null : edgePropertyValues );
     }
 
 
-    private ImmutableList<ImmutableList<RexLiteral>> getNodeValues( ImmutableList<PolyNode> nodes, AlgDataTypeFactory typeFactory ) {
+    private ImmutableList<ImmutableList<RexLiteral>> getNodeValues( ImmutableList<PolyNode> nodes ) {
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyNode node : nodes ) {
-            ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
-            row.add( new RexLiteral( new NlsString( node.id, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), ID_TYPE, PolyType.CHAR ) );
-            row.add( new RexLiteral( node, NODE_TYPE, PolyType.NODE ) );
+            RexLiteral id = getNls( node.id, ID_TYPE );
+            // empty node without label, as non label nodes are permitted
+            ImmutableList.Builder<RexLiteral> idRow = ImmutableList.builder();
+            idRow.add( id );
+            idRow.add( getCluster().getRexBuilder().makeNullLiteral( ID_TYPE ) );
+            rows.add( idRow.build() );
 
-            PolyList<RexLiteral> labels = node.getRexLabels();
-            AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), labels.size(), 1 );
-            row.add( new RexLiteral( labels, arrayType, PolyType.ARRAY ) );
+            for ( String label : node.labels ) {
+                ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
+                row.add( id );
+                row.add( getNls( label, LABEL_TYPE ) );
+                rows.add( row.build() );
+            }
+        }
+        return rows.build();
+    }
+
+
+    private ImmutableList<ImmutableList<RexLiteral>> getNodePropertyValues( ImmutableList<PolyNode> nodes ) {
+        ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
+        for ( PolyNode node : nodes ) {
+            RexLiteral id = getNls( node.id, ID_TYPE );
+
+            for ( Entry<String, Object> entry : node.properties.entrySet() ) {
+                ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
+                row.add( id );
+                row.add( getNls( entry.getKey(), LABEL_TYPE ) );
+                row.add( getNls( entry.getValue().toString(), VALUE_TYPE ) );
+                rows.add( row.build() );
+            }
+        }
+        return rows.build();
+    }
+
+
+    private static RexLiteral getNls( String value, BasicPolyType type ) {
+        return new RexLiteral( new NlsString( value, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), type, PolyType.CHAR );
+    }
+
+
+    private ImmutableList<ImmutableList<RexLiteral>> getEdgeValues( ImmutableList<PolyEdge> edges ) {
+        ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
+        for ( PolyEdge edge : edges ) {
+            ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
+            row.add( getNls( edge.id, ID_TYPE ) );
+            row.add( getNls( edge.labels.get( 0 ), LABEL_TYPE ) );
+
+            row.add( getNls( edge.source, ID_TYPE ) );
+            row.add( getNls( edge.target, ID_TYPE ) );
             rows.add( row.build() );
         }
 
@@ -155,22 +206,19 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
     }
 
 
-    private ImmutableList<ImmutableList<RexLiteral>> getEdgeValues( ImmutableList<PolyEdge> edges, AlgDataTypeFactory typeFactory ) {
+    private ImmutableList<ImmutableList<RexLiteral>> getEdgePropertyValues( ImmutableList<PolyEdge> edges ) {
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyEdge edge : edges ) {
-            ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
-            row.add( new RexLiteral( new NlsString( edge.id, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), ID_TYPE, PolyType.CHAR ) );
-            row.add( new RexLiteral( edge, EDGE_TYPE, PolyType.EDGE ) );
+            RexLiteral id = getNls( edge.id, ID_TYPE );
 
-            PolyList<RexLiteral> labels = edge.getRexLabels();
-            AlgDataType arrayType = typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), labels.size(), 1 );
-
-            row.add( new RexLiteral( edge.getRexLabels(), arrayType, PolyType.ARRAY ) );
-            row.add( new RexLiteral( new NlsString( edge.source, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), ID_TYPE, PolyType.CHAR ) );
-            row.add( new RexLiteral( new NlsString( edge.target, StandardCharsets.ISO_8859_1.name(), Collation.IMPLICIT ), ID_TYPE, PolyType.CHAR ) );
-            rows.add( row.build() );
+            for ( Entry<String, Object> entry : edge.properties.entrySet() ) {
+                ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
+                row.add( id );
+                row.add( getNls( entry.getKey(), LABEL_TYPE ) );
+                row.add( getNls( entry.getValue().toString(), VALUE_TYPE ) );
+                rows.add( row.build() );
+            }
         }
-
         return rows.build();
     }
 

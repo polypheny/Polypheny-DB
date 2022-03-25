@@ -71,7 +71,7 @@ public class GraphToRelRule extends AlgOptRule {
     private AlgNode getRelModify( AlgOptRuleCall call ) {
         AlgNode node = getRelModifyUntransformed( call );
 
-        return LogicalTransformer.create( List.of( node ), node.getTraitSet(), node.getTraitSet().replace( ModelTrait.GRAPH ), node.getRowType() );
+        return LogicalTransformer.create( List.of( node ), node.getTraitSet(), ModelTrait.RELATIONAL, ModelTrait.GRAPH, node.getRowType() );
     }
 
 
@@ -79,20 +79,17 @@ public class GraphToRelRule extends AlgOptRule {
         LogicalGraphModify modify = call.alg( 0 );
         LogicalGraphValues values = call.alg( 1 );
 
-        List<AlgNode> transformedValues = values.getRelationalEquivalent( List.of(), Arrays.asList( modify.getNodeTable(), modify.getEdgeTable() ) );
+        List<AlgNode> transformedValues = values.getRelationalEquivalent( List.of(), Arrays.asList( modify.getNodeTable(), modify.getNodePropertyTable(), modify.getEdgeTable(), modify.getEdgePropertyTable() ) );
 
         List<AlgNode> transformedModifies = modify.getRelationalEquivalent( transformedValues, List.of() );
+
+        AlgTraitSet set = modify.getTraitSet().replace( ModelTrait.RELATIONAL );
 
         if ( transformedModifies.size() == 1 ) {
             return transformedModifies.get( 0 );
         }
 
-        AlgTraitSet set = modify.getTraitSet().replace( ModelTrait.RELATIONAL );
-        /*if ( call.getParents() == null ) {
-            set = set.replace( ModelTrait.RELATIONAL );
-        }*/
-
-        return new LogicalModifyCollect( modify.getCluster(), set, List.of( transformedModifies.get( 0 ), transformedModifies.get( 1 ) ), true );
+        return new LogicalModifyCollect( modify.getCluster(), set, transformedModifies, true );
     }
 
 
@@ -101,13 +98,15 @@ public class GraphToRelRule extends AlgOptRule {
 
         List<AlgOptTable> tables = new ArrayList<>();
         tables.add( scan.getNodeTable() );
+        tables.add( scan.getNodePropertyTable() );
         if ( scan.getEdgeTable() != null ) {
             tables.add( scan.getEdgeTable() );
+            tables.add( scan.getEdgePropertyTable() );
         }
 
         List<AlgNode> transformedScans = scan.getRelationalEquivalent( List.of(), tables );
 
-        return LogicalTransformer.create( transformedScans, transformedScans.get( 0 ).getTraitSet(), scan.getTraitSet(), scan.getRowType() );
+        return LogicalTransformer.create( transformedScans, scan.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, scan.getRowType() );
     }
 
 }

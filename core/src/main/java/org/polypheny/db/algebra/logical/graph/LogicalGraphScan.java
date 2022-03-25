@@ -17,18 +17,26 @@
 package org.polypheny.db.algebra.logical.graph;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalScan;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
 
 public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
@@ -41,11 +49,19 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
 
     @Getter
     @Setter
+    private AlgOptTable nodeTable;
+
+    @Getter
+    @Setter
+    private AlgOptTable nodePropertyTable;
+
+    @Getter
+    @Setter
     private AlgOptTable edgeTable;
 
     @Getter
     @Setter
-    private AlgOptTable nodeTable;
+    private AlgOptTable edgePropertyTable;
 
 
     public LogicalGraphScan( AlgOptCluster cluster, PolyphenyDbCatalogReader catalogReader, AlgTraitSet traitSet, LogicalGraph graph, AlgDataType rowType ) {
@@ -67,14 +83,32 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
         assert !entities.isEmpty();
         AlgTraitSet out = getTraitSet().replace( ModelTrait.RELATIONAL );
         LogicalScan nodes = new LogicalScan( getCluster(), out, entities.get( 0 ) );
+        LogicalScan nodesProperty = new LogicalScan( getCluster(), out, entities.get( 1 ) );
 
-        if ( entities.size() == 1 ) {
-            return List.of( nodes );
+        RexBuilder builder = getCluster().getRexBuilder();
+
+        RexNode nodeCondition = builder.makeCall(
+                OperatorRegistry.get( OperatorName.EQUALS ),
+                builder.makeInputRef( nodes.getRowType().getFieldList().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( nodesProperty.getRowType().getFieldList().get( 0 ).getType(), nodes.getRowType().getFieldList().size() ) );
+
+        LogicalJoin nodeJoin = new LogicalJoin( getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+
+        if ( entities.size() == 2 ) {
+            return List.of( nodeJoin );
         }
 
-        LogicalScan edges = new LogicalScan( getCluster(), out, entities.get( 1 ) );
+        LogicalScan edges = new LogicalScan( getCluster(), out, entities.get( 2 ) );
+        LogicalScan edgesProperty = new LogicalScan( getCluster(), out, entities.get( 3 ) );
 
-        return List.of( nodes, edges );
+        RexNode edgeCondition = builder.makeCall(
+                OperatorRegistry.get( OperatorName.EQUALS ),
+                builder.makeInputRef( edges.getRowType().getFieldList().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( edgesProperty.getRowType().getFieldList().get( 0 ).getType(), edges.getRowType().getFieldList().size() ) );
+
+        LogicalJoin edgeJoin = new LogicalJoin( getCluster(), out, edges, edgesProperty, edgeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+
+        return List.of( nodeJoin, edgeJoin );
     }
 
 
@@ -88,7 +122,9 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         LogicalGraphScan scan = new LogicalGraphScan( inputs.get( 0 ).getCluster(), catalogReader, traitSet, graph, rowType );
         scan.setEdgeTable( edgeTable );
+        scan.setEdgePropertyTable( edgePropertyTable );
         scan.setNodeTable( nodeTable );
+        scan.setNodePropertyTable( nodePropertyTable );
         return scan;
     }
 

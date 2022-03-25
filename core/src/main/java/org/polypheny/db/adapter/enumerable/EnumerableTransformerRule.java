@@ -23,7 +23,6 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.ModelTrait;
 
 public class EnumerableTransformerRule extends ConverterRule {
 
@@ -38,10 +37,12 @@ public class EnumerableTransformerRule extends ConverterRule {
         List<AlgNode> inputs = transformer
                 .getInputs()
                 .stream()
-                .map( i -> AlgOptRule.convert( i, i.getTraitSet().replace( EnumerableConvention.INSTANCE ).replace( ModelTrait.RELATIONAL ) ) )
+                .map( i -> AlgOptRule.convert( i, i.getTraitSet()
+                        .replace( EnumerableConvention.INSTANCE )
+                        .replace( transformer.inTrait ) ) )
                 .collect( Collectors.toList() );
 
-        return new EnumerableTransformer( transformer.getCluster(), inputs, transformer.inTraitSet, transformer.outTraitSet, transformer.getRowType() );
+        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, transformer.getTraitSet().replace( EnumerableConvention.INSTANCE ), transformer.inTrait, transformer.outTrait, transformer.getRowType() );
     }
 
 }

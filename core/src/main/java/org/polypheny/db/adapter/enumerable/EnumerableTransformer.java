@@ -40,6 +40,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -53,8 +54,8 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
      * @param cluster
      * @param inputs
      */
-    public EnumerableTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet inTraitSet, AlgTraitSet outTraitSet, AlgDataType rowType ) {
-        super( cluster, inputs, inTraitSet.replace( EnumerableConvention.INSTANCE ), outTraitSet.replace( EnumerableConvention.INSTANCE ), rowType );
+    public EnumerableTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
+        super( cluster, inputs, traitSet, inTraitSet, outTraitSet, rowType );
     }
 
 
@@ -168,7 +169,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, inTraitSet, traitSet, rowType );
+        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, inTrait, outTrait, rowType );
     }
 
 }

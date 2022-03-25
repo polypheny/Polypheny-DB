@@ -16,7 +16,7 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -45,13 +45,21 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
     @Getter
     public final PolyphenyDbCatalogReader catalogReader;
 
-    @Setter
     @Getter
+    @Setter
     private AlgOptTable nodeTable;
 
-    @Setter
     @Getter
+    @Setter
+    private AlgOptTable nodePropertyTable;
+
+    @Getter
+    @Setter
     private AlgOptTable edgeTable;
+
+    @Getter
+    @Setter
+    private AlgOptTable edgePropertyTable;
 
 
     /**
@@ -90,7 +98,9 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         LogicalGraphModify modify = new LogicalGraphModify( inputs.get( 0 ).getCluster(), traitSet, graph, catalogReader, inputs.get( 0 ), operation, ids, operations );
         modify.setEdgeTable( edgeTable );
+        modify.setEdgePropertyTable( edgePropertyTable );
         modify.setNodeTable( nodeTable );
+        modify.setNodePropertyTable( nodePropertyTable );
         return modify;
     }
 
@@ -98,23 +108,35 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities ) {
         PolyphenyDbCatalogReader catalogReader = this.catalogReader;
-
-        AlgNode nodes = inputs.get( 0 );
+        List<AlgNode> modifes = new ArrayList<>();
 
         //modify of nodes
 
-        Modify nodeModify = getModify( nodeTable, catalogReader, nodes );
+        Modify nodeModify = getModify( nodeTable, catalogReader, inputs.get( 0 ) );
+        modifes.add( nodeModify );
 
-        if ( inputs.size() == 1 ) {
-            return List.of( nodeModify );
+        //modify of properties
+        if ( inputs.get( 1 ) != null ) {
+            Modify nodePropertyModify = getModify( nodePropertyTable, catalogReader, inputs.get( 1 ) );
+            modifes.add( nodePropertyModify );
         }
-        AlgNode edges = inputs.get( 1 );
+
+        if ( inputs.size() == 2 ) {
+            return modifes;
+        }
 
         // modify of edges
 
-        Modify edgeModify = getModify( edgeTable, catalogReader, edges );
+        Modify edgeModify = getModify( edgeTable, catalogReader, inputs.get( 2 ) );
+        modifes.add( edgeModify );
 
-        return Arrays.asList( nodeModify, edgeModify );
+        // modify of edge properties
+        if ( inputs.get( 3 ) != null ) {
+            Modify edgePropertyModify = getModify( edgePropertyTable, catalogReader, inputs.get( 3 ) );
+            modifes.add( edgePropertyModify );
+        }
+
+        return modifes;
     }
 
 

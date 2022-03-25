@@ -31,11 +31,27 @@ public interface RelationalTransformable {
         throw new UnsupportedOperationException();
     }
 
+    default AlgOptTable getNodePropertyTable() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setNodePropertyTable( AlgOptTable table ) {
+        throw new UnsupportedOperationException();
+    }
+
     default AlgOptTable getEdgeTable() {
         throw new UnsupportedOperationException();
     }
 
     default void setEdgeTable( AlgOptTable table ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default AlgOptTable getEdgePropertyTable() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setEdgePropertyTable( AlgOptTable table ) {
         throw new UnsupportedOperationException();
     }
 

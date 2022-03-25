@@ -18,20 +18,24 @@ package org.polypheny.db.runtime;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
 import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
-import org.polypheny.db.serialize.PolySerializer;
 
 @Deterministic
 @Slf4j
@@ -78,9 +82,44 @@ public class CypherFunctions {
 
     public static Enumerable<PolyEdge> toEdge( Enumerable<?> edge ) {
         List<PolyEdge> edges = new ArrayList<>();
+
+        String oldId = null;
+        String oldSourceId = null;
+        String oldTargetId = null;
+        Set<String> oldLabels = new HashSet<>();
+        Map<String, Comparable<?>> oldProps = new HashMap<>();
+
         for ( Object value : edge ) {
             Object[] o = (Object[]) value;
-            edges.add( PolySerializer.deserializeAndCompress( ByteString.parseBase64( (String) o[1] ), PolyEdge.class ) );
+            String id = (String) o[0];
+            String label = (String) o[1];
+            String sourceId = (String) o[2];
+            String targetId = (String) o[3];
+            // id is 4
+            String key = (String) o[5];
+            String val = (String) o[6];
+
+            if ( !id.equals( oldId ) ) {
+                if ( oldId != null ) {
+                    edges.add( new PolyEdge( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, RelationshipDirection.LEFT_TO_RIGHT ) );
+                }
+                oldId = id;
+                oldLabels = new HashSet<>();
+                oldSourceId = sourceId;
+                oldTargetId = targetId;
+                oldProps = new HashMap<>();
+            }
+            oldLabels.add( label );
+
+            if ( key != null ) {
+                // id | key | value | source | target
+                // 13 | null| null | 12      | 10 ( no key value present )
+                oldProps.put( key, val );
+            }
+        }
+
+        if ( oldId != null ) {
+            edges.add( new PolyEdge( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, RelationshipDirection.LEFT_TO_RIGHT ) );
         }
 
         return Linq4j.asEnumerable( edges );
@@ -90,9 +129,37 @@ public class CypherFunctions {
     public static Enumerable<PolyNode> toNode( Enumerable<?> node ) {
         List<PolyNode> nodes = new ArrayList<>();
 
+        String oldId = null;
+        Set<String> oldLabels = new HashSet<>();
+        Map<String, Comparable<?>> oldProps = new HashMap<>();
+
         for ( Object value : node ) {
             Object[] o = (Object[]) value;
-            nodes.add( PolySerializer.deserializeAndCompress( ByteString.parseBase64( (String) o[1] ), PolyNode.class ) );
+            String id = (String) o[0];
+            String label = (String) o[1];
+            String key = (String) o[3];
+            String val = (String) o[4];
+
+            if ( !id.equals( oldId ) ) {
+                if ( oldId != null ) {
+                    nodes.add( new PolyNode( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ) ) );
+                }
+                oldId = id;
+                oldLabels = new HashSet<>();
+                oldProps = new HashMap<>();
+            }
+            if ( label != null ) {
+                // eventually no labels
+                oldLabels.add( label );
+            }
+            if ( key != null ) {
+                // eventually no properties present
+                oldProps.put( key, val );
+            }
+        }
+
+        if ( oldId != null ) {
+            nodes.add( new PolyNode( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ) ) );
         }
 
         return Linq4j.asEnumerable( nodes );

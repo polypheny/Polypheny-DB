@@ -62,7 +62,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
             if ( !this.properties.containsKey( entry.getKey() ) ) {
                 return false;
             }
-            if ( !this.properties.get( entry.getKey() ).equals( entry.getValue() ) ) {
+            if ( !this.properties.get( entry.getKey() ).toString().equals( entry.getValue().toString() ) ) {
                 return false;
             }
         }
@@ -77,7 +77,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
 
     public boolean labelAndPropertyMatch( GraphPropertyHolder other ) {
-        // we dont need to match the source and target, this is done via segements or paths
+        // we don't need to match the source and target, this is done via segments or paths
         if ( !other.properties.isEmpty() ) {
             if ( !matchesProperties( other.properties ) ) {
                 return false;

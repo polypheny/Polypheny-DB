@@ -51,6 +51,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
 
 
 /**
@@ -136,7 +137,7 @@ public final class LogicalJoin extends Join {
     @Override
     public LogicalJoin copy( AlgTraitSet traitSet, RexNode conditionExpr, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalJoin( getCluster(), getCluster().traitSetOf( Convention.NONE ), left, right, conditionExpr, variablesSet, joinType, semiJoinDone, systemFieldList );
+        return new LogicalJoin( getCluster(), getCluster().traitSetOf( Convention.NONE ).replace( ModelTrait.RELATIONAL ), left, right, conditionExpr, variablesSet, joinType, semiJoinDone, systemFieldList );
     }
 
 

@@ -18,38 +18,70 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 
+
 public class CatalogGraphMapping implements CatalogObject {
 
-    public final long graphId;
+    public final long id;
 
-    public final long nodeId;
-    public final long edgeId;
-
+    public final long nodesId;
     public final long idNodeId;
-    public final long nodeNodeId;
-    public final long labelsNodeId;
+    public final long labelNodeId;
 
+    public final long nodesPropertyId;
+    public final long idNodesPropertyId;
+    public final long keyNodePropertyId;
+    public final long valueNodePropertyId;
+
+    public final long edgesId;
     public final long idEdgeId;
-    public final long edgeEdgeId;
-    public final long labelsEdgeId;
-    public final long lEdgeId;
-    public final long rEdgeId;
+    public final long labelEdgeId;
+    public final long sourceEdgeId;
+    public final long targetEdgeId;
+
+    public final long idEdgesPropertyId;
+    public final long edgesPropertyId;
+    public final long keyEdgePropertyId;
+    public final long valueEdgePropertyId;
 
 
-    public CatalogGraphMapping( long graphId, long nodeId, long edgeId, long idNodeId, long nodeNodeId, long labelsNodeId, long idEdgeId, long edgeEdgeId, long labelsEdgeId, long lEdgeId, long rEdgeId ) {
-        this.graphId = graphId;
-        this.nodeId = nodeId;
-        this.edgeId = edgeId;
-
+    public CatalogGraphMapping(
+            long id,
+            long nodesId,
+            long idNodeId,
+            long labelNodeId,
+            long nodesPropertyId,
+            long idNodesPropertyId,
+            long keyNodePropertyId,
+            long valueNodePropertyId,
+            long edgesId,
+            long idEdgeId,
+            long labelEdgeId,
+            long sourceEdgeId,
+            long targetEdgeId,
+            long edgesPropertyId,
+            long idEdgesPropertyId,
+            long keyEdgePropertyId,
+            long valueEdgePropertyId ) {
+        this.id = id;
+        this.nodesId = nodesId;
         this.idNodeId = idNodeId;
-        this.nodeNodeId = nodeNodeId;
-        this.labelsNodeId = labelsNodeId;
+        this.labelNodeId = labelNodeId;
 
+        this.nodesPropertyId = nodesPropertyId;
+        this.idNodesPropertyId = idNodesPropertyId;
+        this.keyNodePropertyId = keyNodePropertyId;
+        this.valueNodePropertyId = valueNodePropertyId;
+
+        this.edgesId = edgesId;
         this.idEdgeId = idEdgeId;
-        this.edgeEdgeId = edgeEdgeId;
-        this.labelsEdgeId = labelsEdgeId;
-        this.lEdgeId = lEdgeId;
-        this.rEdgeId = rEdgeId;
+        this.labelEdgeId = labelEdgeId;
+        this.sourceEdgeId = sourceEdgeId;
+        this.targetEdgeId = targetEdgeId;
+
+        this.idEdgesPropertyId = idEdgesPropertyId;
+        this.edgesPropertyId = edgesPropertyId;
+        this.keyEdgePropertyId = keyEdgePropertyId;
+        this.valueEdgePropertyId = valueEdgePropertyId;
     }
 
 
@@ -57,5 +89,6 @@ public class CatalogGraphMapping implements CatalogObject {
     public Serializable[] getParameterArray() {
         return new Serializable[0];
     }
+
 
 }

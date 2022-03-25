@@ -1807,8 +1807,10 @@ public class DdlManagerImpl extends DdlManager {
 
     private void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement ) {
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphId );
-        CatalogEntity nodes = catalog.getTable( mapping.nodeId );
-        CatalogEntity edges = catalog.getTable( mapping.edgeId );
+        CatalogEntity nodes = catalog.getTable( mapping.nodesId );
+        CatalogEntity nodeProperty = catalog.getTable( mapping.nodesPropertyId );
+        CatalogEntity edges = catalog.getTable( mapping.edgesId );
+        CatalogEntity edgeProperty = catalog.getTable( mapping.edgesPropertyId );
         for ( DataStore store : stores ) {
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
@@ -1818,10 +1820,29 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null
             );
+
+            catalog.addPartitionPlacement(
+                    store.getAdapterId(),
+                    nodeProperty.id,
+                    nodeProperty.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null
+            );
+
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
                     edges.id,
                     edges.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null
+            );
+
+            catalog.addPartitionPlacement(
+                    store.getAdapterId(),
+                    edgeProperty.id,
+                    edgeProperty.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
                     null

@@ -16,8 +16,10 @@
 
 package org.polypheny.db.cypher.helper;
 
+import static org.junit.Assert.fail;
 import static org.polypheny.db.runtime.Functions.toBigDecimal;
 
+import com.google.gson.Gson;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,14 +88,26 @@ public class TestGraphObject implements TestObject {
                 if ( other.properties.containsKey( entry.getKey() ) ) {
                     if ( entry.getValue() instanceof List ) {
                         int i = 0;
-                        for ( Object o : ((List<?>) other.properties.get( entry.getKey() )) ) {
+                        List<?> list;
+                        Object property = other.properties.get( entry.getKey() );
+
+                        if ( property instanceof List ) {
+                            list = (List<?>) property;
+                        } else if ( property instanceof String ) {
+                            list = new Gson().fromJson( (String) other.properties.get( entry.getKey() ), List.class );
+                        } else {
+                            fail( "comparison with list is not possible" );
+                            throw new RuntimeException();
+                        }
+
+                        for ( Object o : list ) {
                             matches &= o.equals( ((List<?>) properties.get( entry.getKey() )).get( i ) );
                             i++;
                         }
                     } else if ( entry.getValue() instanceof Number || other.properties.get( entry.getKey() ) instanceof Number ) {
                         matches &=
-                                toBigDecimal( (Number) other.properties.get( entry.getKey() ) ).doubleValue()
-                                        - toBigDecimal( entry.getValue() ).doubleValue() < EPSILON;
+                                toBigDecimal( other.properties.get( entry.getKey() ).toString() ).doubleValue()
+                                        - toBigDecimal( entry.getValue().toString() ).doubleValue() < EPSILON;
                     } else {
                         matches &= other.properties.get( entry.getKey() ).equals( entry.getValue() );
                     }
