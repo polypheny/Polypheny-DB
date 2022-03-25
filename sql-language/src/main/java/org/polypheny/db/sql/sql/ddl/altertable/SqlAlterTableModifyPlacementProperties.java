@@ -34,6 +34,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.replication.properties.exception.UnknownPlacementPropertyException;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
@@ -54,19 +55,19 @@ public class SqlAlterTableModifyPlacementProperties extends SqlAlterTable {
 
     private final SqlIdentifier table;
     private final SqlIdentifier storeName;
-    private final Map<SqlIdentifier, SqlIdentifier> propertyMap;
+    private final Map<SqlIdentifier, SqlIdentifier> placementPropertyMap;
 
 
     public SqlAlterTableModifyPlacementProperties(
             ParserPos pos,
             SqlIdentifier table,
             SqlIdentifier storeName,
-            Map<SqlIdentifier, SqlIdentifier> propertyMap ) {
+            Map<SqlIdentifier, SqlIdentifier> placementPropertyMap ) {
 
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.storeName = Objects.requireNonNull( storeName );
-        this.propertyMap = Objects.requireNonNull( propertyMap );
+        this.placementPropertyMap = Objects.requireNonNull( placementPropertyMap );
     }
 
 
@@ -105,7 +106,7 @@ public class SqlAlterTableModifyPlacementProperties extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        if ( propertyMap.isEmpty() ) {
+        if ( placementPropertyMap.isEmpty() ) {
             throw new RuntimeException( "Empty property mapping is not allowed." );
         }
 
@@ -128,11 +129,11 @@ public class SqlAlterTableModifyPlacementProperties extends SqlAlterTable {
         // Update
         try {
             DdlManager.getInstance().modifyDataPlacementProperties(
-                    SqlPlacementPropertyExtractor.fromNodeLists( catalogTable, propertyMap ),
+                    SqlPlacementPropertyExtractor.fromNodeLists( catalogTable, placementPropertyMap ),
                     storeInstance,
                     statement
             );
-        } catch ( LastPlacementException | UnknownPlacementRoleException | UnknownPlacementPropertyException e ) {
+        } catch ( LastPlacementException | UnknownPlacementRoleException | UnknownPlacementPropertyException | InvalidPlacementPropertySpecification e ) {
             throw new RuntimeException( "Failed to execute requested partition modification. This change would remove one partition entirely from table '" + catalogTable.name + "'", e );
         }
     }

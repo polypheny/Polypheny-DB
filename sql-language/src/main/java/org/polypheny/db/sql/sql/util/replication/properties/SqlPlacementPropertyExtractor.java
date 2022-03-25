@@ -40,6 +40,10 @@ public class SqlPlacementPropertyExtractor extends PlacementPropertyExtractor {
 
     public static PlacementPropertyInformation fromNodeLists( CatalogTable table, Map<SqlIdentifier, SqlIdentifier> propertyMapping ) throws UnknownPlacementRoleException, UnknownPlacementPropertyException {
 
+        if ( propertyMapping == null || propertyMapping.isEmpty() ){
+            return null;
+        }
+
             /*CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( storeInstance.getAdapterId(), placementPropertyInfo.table.id ) ;
             if ( dataPlacement.dataPlacementRole.equals( placementPropertyInfo. ) )
 

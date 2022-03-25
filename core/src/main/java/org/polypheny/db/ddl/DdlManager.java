@@ -64,6 +64,7 @@ import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.replication.properties.PlacementPropertyInformation;
+import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -220,15 +221,15 @@ public abstract class DdlManager {
 
     /**
      * Adds new column placements to a table
-     *
      * @param catalogTable the table
      * @param columnIds the ids of the columns for which to create a new placement
      * @param partitionGroupIds the ids of the partitions of the column
      * @param partitionGroupNames the name for these partition
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
+     * @param placementPropertyInfo condensed information which properties have been specified
      */
-    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement, PlacementPropertyInformation placementPropertyInfo ) throws PlacementAlreadyExistsException, InvalidPlacementPropertySpecification;
 
 
     /**
@@ -366,15 +367,15 @@ public abstract class DdlManager {
      * placement type is changed to automatic. Vise versa, for columns specified in the list which are not yet placed on the
      * data store a column placement is created. In case there is already a column placement of type automatic, the type is
      * changed to manual.
-     *
-     * @param catalogTable the table
+     *  @param catalogTable the table
      * @param columnIds which columns should be placed on the specified data store
      * @param partitionGroupIds the ids of the partitions of this column
      * @param partitionGroupNames the name of these partitions
      * @param storeInstance the data store
      * @param statement the used statement
+     * @param placementPropertyInfo condensed information which properties have been specified
      */
-    public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+    public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement, PlacementPropertyInformation placementPropertyInfo ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, InvalidPlacementPropertySpecification;
 
     /**
      * Modifies the DataPlacement in respect to optional properties. Which may alter the behaviour of the placement in certain scenarios
@@ -383,7 +384,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws LastPlacementException;
+    public abstract void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws LastPlacementException, InvalidPlacementPropertySpecification;
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.

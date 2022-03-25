@@ -91,6 +91,7 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -120,6 +121,8 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty.Partit
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.replication.properties.PlacementPropertyInformation;
+import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
+import org.polypheny.db.replication.properties.exception.UnknownPlacementPropertyException;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -661,7 +664,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
+    public void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement, PlacementPropertyInformation placementPropertyInfo ) throws PlacementAlreadyExistsException, InvalidPlacementPropertySpecification {
         List<CatalogColumn> addedColumns = new LinkedList<>();
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
@@ -787,6 +790,10 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null,
                     DataPlacementRole.UPTODATE );
+        }
+
+        if ( placementPropertyInfo != null ){
+            modifyDataPlacementProperties( placementPropertyInfo, dataStore, statement );
         }
 
         // Make sure that the stores have created the schema
@@ -1188,8 +1195,8 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement )
-            throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException {
+    public void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement, PlacementPropertyInformation placementPropertyInfo )
+            throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, InvalidPlacementPropertySpecification {
 
         // Check whether this placement already exists
         if ( !catalogTable.dataPlacements.contains( storeInstance.getAdapterId() ) ) {
@@ -1363,6 +1370,10 @@ public class DdlManagerImpl extends DdlManager {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, intendedPartitionIds );
         }
 
+        if ( placementPropertyInfo != null ){
+            modifyDataPlacementProperties( placementPropertyInfo, storeInstance, statement );
+        }
+
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -1376,7 +1387,11 @@ public class DdlManagerImpl extends DdlManager {
      * @param statement the used statement
      */
     @Override
-    public void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws LastPlacementException {
+    public void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws InvalidPlacementPropertySpecification {
+
+        if ( placementPropertyInfo == null ){
+            throw new InvalidPlacementPropertySpecification();
+        }
 
         catalog.updateDataPlacementRole( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.dataPlacementRole );
 
