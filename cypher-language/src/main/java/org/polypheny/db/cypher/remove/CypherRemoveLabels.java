@@ -17,9 +17,19 @@
 package org.polypheny.db.cypher.remove;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherRemoveLabels extends CypherRemoveItem {
@@ -32,5 +42,37 @@ public class CypherRemoveLabels extends CypherRemoveItem {
         this.variable = variable;
         this.labels = labels;
     }
+
+
+    @Override
+    public void removeItem( CypherContext context ) {
+        AlgNode node = context.peek();
+        int index = node.getRowType().getFieldNames().indexOf( variable.getName() );
+        if ( index < 0 ) {
+            throw new RuntimeException( String.format( "Unknown variable with name %s", variable ) );
+        }
+        AlgDataTypeField field = node.getRowType().getFieldList().get( index );
+
+        if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
+            throw new RuntimeException( "Edges require exactly one label" );
+        }
+
+        RexNode ref = context.getRexNode( variable.getName() );
+        if ( ref == null ) {
+            ref = context.rexBuilder.makeInputRef( field.getType(), index );
+        }
+
+        RexNode op = context.rexBuilder.makeCall(
+                field.getType(),
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_REMOVE_LABELS ),
+                List.of(
+                        ref,
+                        context.rexBuilder.makeArray(
+                                context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
+                                labels.stream().map( l -> (RexNode) context.rexBuilder.makeLiteral( l.getImage() ) ).collect( Collectors.toList() ) ) ) );
+
+        context.add( Pair.of( variable.getName(), op ) );
+    }
+
 
 }

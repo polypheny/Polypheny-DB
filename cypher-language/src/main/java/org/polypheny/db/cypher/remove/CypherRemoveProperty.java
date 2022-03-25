@@ -16,8 +16,17 @@
 
 package org.polypheny.db.cypher.remove;
 
+import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherProperty;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherRemoveProperty extends CypherRemoveItem {
@@ -28,6 +37,32 @@ public class CypherRemoveProperty extends CypherRemoveItem {
     public CypherRemoveProperty( CypherProperty property ) {
 
         this.property = property;
+    }
+
+
+    @Override
+    public void removeItem( CypherContext context ) {
+        String nodeName = property.getSubjectName();
+        AlgNode node = context.peek();
+        int index = node.getRowType().getFieldNames().indexOf( nodeName );
+        if ( index < 0 ) {
+            throw new RuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
+        }
+        AlgDataTypeField field = node.getRowType().getFieldList().get( index );
+
+        RexNode ref = context.getRexNode( nodeName );
+        if ( ref == null ) {
+            ref = context.rexBuilder.makeInputRef( field.getType(), index );
+        }
+
+        RexNode op = context.rexBuilder.makeCall(
+                field.getType(),
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_REMOVE_PROPERTY ),
+                List.of(
+                        ref,
+                        context.rexBuilder.makeLiteral( getProperty().getPropertyKey() ) ) );
+
+        context.add( Pair.of( nodeName, op ) );
     }
 
 }

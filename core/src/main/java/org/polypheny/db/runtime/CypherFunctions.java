@@ -232,18 +232,41 @@ public class CypherFunctions {
     }
 
 
-    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<String> labels ) {
+    @SuppressWarnings("unused")
+    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<String> labels, boolean replace ) {
+        if ( replace ) {
+            target.labels.clear();
+        }
         target.setLabels( labels );
         return target;
     }
 
 
-    public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<String> keys, List<Object> values ) {
+    @SuppressWarnings("unused")
+    public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<String> keys, List<Object> values, boolean replace ) {
+        if ( replace ) {
+            target.properties.clear();
+        }
+
         int i = 0;
         for ( String key : keys ) {
             target.properties.put( key, values.get( i ) );
             i++;
         }
+        return target;
+    }
+
+
+    @SuppressWarnings("unused")
+    public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<String> labels ) {
+        target.labels.removeAll( labels );
+        return target;
+    }
+
+
+    @SuppressWarnings("unused")
+    public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, String key ) {
+        target.properties.remove( key );
         return target;
     }
 

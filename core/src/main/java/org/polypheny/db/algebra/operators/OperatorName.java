@@ -1406,7 +1406,11 @@ public enum OperatorName {
 
     CYPHER_SET_PROPERTIES( LangFunctionOperator.class ),
 
-    CYPHER_SET_LABELS( LangFunctionOperator.class );
+    CYPHER_SET_LABELS( LangFunctionOperator.class ),
+
+    CYPHER_REMOVE_LABELS( LangFunctionOperator.class ),
+
+    CYPHER_REMOVE_PROPERTY( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;

@@ -25,7 +25,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
-import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherVariable;
@@ -87,7 +86,7 @@ public class CypherSetVariable extends CypherSetItem {
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 ),
                                 ((PolyDirectory) value).values().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.ANY ), false ) ).collect( Collectors.toList() ) ),
-                        expression.getRex( context, RexType.PROJECT ).right ) );
+                        context.rexBuilder.makeLiteral( !increment ) ) );
 
         context.add( Pair.of( nodeName, op ) );
     }

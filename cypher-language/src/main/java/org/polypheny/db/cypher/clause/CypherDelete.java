@@ -18,8 +18,12 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherDelete extends CypherClause {
@@ -39,6 +43,19 @@ public class CypherDelete extends CypherClause {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.DELETE;
+    }
+
+
+    public void getDelete( CypherContext context ) {
+        for ( CypherExpression expression : expressions ) {
+            Pair<String, RexNode> pair = expression.getRex( context, RexType.PROJECT );
+            if ( detach ) {
+                throw new UnsupportedOperationException( "Detach is not supported" );
+            }
+            context.add( pair );
+        }
+
+        context.combineDelete();
     }
 
 }

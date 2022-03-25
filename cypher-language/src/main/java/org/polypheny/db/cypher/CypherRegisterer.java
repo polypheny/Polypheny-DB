@@ -61,6 +61,12 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_SET_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_SET_PROPERTY.name(), Kind.DESERIALIZE ) );
 
+        register( OperatorName.CYPHER_SET_PROPERTIES, new LangFunctionOperator( OperatorName.CYPHER_SET_PROPERTIES.name(), Kind.DESERIALIZE ) );
+
+        register( OperatorName.CYPHER_REMOVE_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_PROPERTY.name(), Kind.DESERIALIZE ) );
+
+        register( OperatorName.CYPHER_REMOVE_LABELS, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_LABELS.name(), Kind.DESERIALIZE ) );
+
         isInit = true;
     }
 

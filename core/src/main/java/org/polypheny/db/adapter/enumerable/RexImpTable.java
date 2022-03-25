@@ -358,6 +358,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SET_PROPERTY ), BuiltInMethod.CYPHER_SET_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SET_PROPERTIES ), BuiltInMethod.CYPHER_SET_PROPERTIES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SET_LABELS ), BuiltInMethod.CYPHER_SET_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_REMOVE_LABELS ), BuiltInMethod.CYPHER_REMOVE_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
 
         defineMethod( OperatorRegistry.get( OperatorName.DESERIALIZE_LIST ), BuiltInMethod.DESERIALIZE_LIST.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.DESERIALIZE_DIRECTORY ), BuiltInMethod.DESERIALIZE_DIRECTORY.method, NullPolicy.NONE );

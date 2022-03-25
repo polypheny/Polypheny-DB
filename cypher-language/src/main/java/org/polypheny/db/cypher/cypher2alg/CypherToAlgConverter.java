@@ -56,7 +56,9 @@ import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherCreate;
+import org.polypheny.db.cypher.clause.CypherDelete;
 import org.polypheny.db.cypher.clause.CypherMatch;
+import org.polypheny.db.cypher.clause.CypherRemove;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
 import org.polypheny.db.cypher.clause.CypherSetClause;
 import org.polypheny.db.cypher.clause.CypherUnwind;
@@ -178,10 +180,26 @@ public class CypherToAlgConverter {
             case SET:
                 convertSet( (CypherSetClause) clause, context );
                 break;
+            case DELETE:
+                convertDelete( (CypherDelete) clause, context );
+                break;
+            case REMOVE:
+                convertRemove( (CypherRemove) clause, context );
+                break;
             default:
                 throw new UnsupportedOperationException();
         }
 
+    }
+
+
+    private void convertRemove( CypherRemove clause, CypherContext context ) {
+        clause.getRemove( context );
+    }
+
+
+    private void convertDelete( CypherDelete clause, CypherContext context ) {
+        clause.getDelete( context );
     }
 
 
@@ -727,12 +745,65 @@ public class CypherToAlgConverter {
 
         public void combineUpdate() {
             if ( rexQueue.isEmpty() ) {
-                throw new RuntimeException( "Empty update is not possible" );
+                throw new RuntimeException( "Empty UPDATE is not possible" );
             }
 
             List<Pair<String, RexNode>> updates = popNodes();
 
             add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
+        }
+
+
+        public void combineDelete() {
+            if ( rexQueue.isEmpty() ) {
+                throw new RuntimeException( "Empty DELETE is not possible" );
+            }
+
+            List<Pair<String, RexNode>> deletes = popNodes();
+
+            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.DELETE, Pair.left( deletes ), Pair.right( deletes ) ) );
+
+        }
+
+
+        public RexNode getLabelUpdate( List<String> labels, String variable, boolean replace ) {
+            AlgNode node = peek();
+            int index = node.getRowType().getFieldNames().indexOf( variable );
+            if ( index < 0 ) {
+                throw new RuntimeException( String.format( "Unknown variable with name %s", variable ) );
+            }
+            AlgDataTypeField field = node.getRowType().getFieldList().get( index );
+
+            if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
+                throw new RuntimeException( "Edges require exactly one label" );
+            }
+
+            RexNode ref = getRexNode( variable );
+            if ( ref == null ) {
+                ref = rexBuilder.makeInputRef( field.getType(), index );
+            }
+
+            return rexBuilder.makeCall(
+                    field.getType(),
+                    OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SET_LABELS ),
+                    List.of(
+                            ref,
+                            rexBuilder.makeArray(
+                                    typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
+                                    labels.stream().map( l -> (RexNode) rexBuilder.makeLiteral( l ) ).collect( Collectors.toList() ) ),
+                            rexBuilder.makeLiteral( replace ) ) );
+        }
+
+
+        public void combineSet() {
+            if ( rexQueue.isEmpty() ) {
+                throw new RuntimeException( "Empty DELETE is not possible" );
+            }
+
+            List<Pair<String, RexNode>> updates = popNodes();
+
+            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
+
         }
 
     }

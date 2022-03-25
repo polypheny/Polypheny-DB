@@ -24,9 +24,11 @@ public class DmlDeleteTest extends CypherTestTemplate {
 
     @Test
     public void simpleNodeDeleteTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (p:Person {name: 'Alice'})\n"
-                        + "DELETE p" );
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (p:Person {name: 'Alice'})\n"
+                + "DELETE p" );
+        Result res = matchAndReturnAllNodes();
+        assertEmpty( res );
     }
 
 

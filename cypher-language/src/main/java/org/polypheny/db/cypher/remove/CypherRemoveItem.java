@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.remove;
 
 import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.ParserPos;
 
 public abstract class CypherRemoveItem extends CypherNode {
@@ -30,5 +31,8 @@ public abstract class CypherRemoveItem extends CypherNode {
     public CypherKind getCypherKind() {
         return CypherKind.REMOVE;
     }
+
+
+    public abstract void removeItem( CypherContext context );
 
 }
