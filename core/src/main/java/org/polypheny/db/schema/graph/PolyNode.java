@@ -79,6 +79,12 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
     }
 
 
+    @Override
+    public void setLabels( List<String> labels ) {
+        this.labels.addAll( labels );
+    }
+
+
     static public class PolyNodeSerializer extends Serializer<PolyNode> {
 
         @Override

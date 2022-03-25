@@ -57,6 +57,10 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_ADJUST_EDGE, new LangFunctionOperator( OperatorName.CYPHER_ADJUST_EDGE.name(), Kind.DESERIALIZE ) );
 
+        register( OperatorName.CYPHER_SET_LABELS, new LangFunctionOperator( OperatorName.CYPHER_SET_LABELS.name(), Kind.DESERIALIZE ) );
+
+        register( OperatorName.CYPHER_SET_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_SET_PROPERTY.name(), Kind.DESERIALIZE ) );
+
         isInit = true;
     }
 

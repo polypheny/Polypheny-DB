@@ -42,11 +42,22 @@ public class CypherProperty extends CypherExpression {
     }
 
 
+    @Override
     public String getName() {
         if ( subject.getType() == ExpressionType.VARIABLE ) {
             return subject.getName() + "." + propKeyName.getImage();
         }
         throw new UnsupportedOperationException();
+    }
+
+
+    public String getPropertyKey() {
+        return this.propKeyName.getImage();
+    }
+
+
+    public String getSubjectName() {
+        return this.getSubject().getName();
     }
 
 

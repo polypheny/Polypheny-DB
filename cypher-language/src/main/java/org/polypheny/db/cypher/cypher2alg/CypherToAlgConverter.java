@@ -22,18 +22,21 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.graph.LogicalGraph;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphDynamicValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
@@ -55,6 +58,7 @@ import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.clause.CypherMatch;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
+import org.polypheny.db.cypher.clause.CypherSetClause;
 import org.polypheny.db.cypher.clause.CypherUnwind;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
@@ -73,6 +77,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
+@Slf4j
 public class CypherToAlgConverter {
 
     private final PolyphenyDbCatalogReader catalogReader;
@@ -170,10 +175,18 @@ public class CypherToAlgConverter {
             case UNWIND:
                 convertUnwind( (CypherUnwind) clause, context );
                 break;
+            case SET:
+                convertSet( (CypherSetClause) clause, context );
+                break;
             default:
                 throw new UnsupportedOperationException();
         }
 
+    }
+
+
+    private void convertSet( CypherSetClause clause, CypherContext context ) {
+        clause.getSet( context );
     }
 
 
@@ -485,6 +498,29 @@ public class CypherToAlgConverter {
         }
 
 
+        @Nullable
+        public RexNode getRexNode( String key ) {
+            List<Pair<String, RexNode>> nodes = popNodes();
+            List<String> names = Pair.left( nodes );
+            int i = names.indexOf( key );
+            if ( i >= 0 ) {
+                Pair<String, RexNode> node = nodes.get( i );
+                nodes.remove( i );
+
+                for ( Pair<String, RexNode> pair : nodes ) {
+                    add( pair );
+                }
+
+                return node.right;
+            }
+            for ( Pair<String, RexNode> pair : nodes ) {
+                add( pair );
+            }
+
+            return null;
+        }
+
+
         public void addAgg( Pair<String, AggregateCall> agg ) {
             this.rexAggQueue.add( agg );
         }
@@ -619,9 +655,9 @@ public class CypherToAlgConverter {
                 add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.INSERT, null, null ) );
             } else {
                 // filtered DML
-                List<RexNode> newNodes = new LinkedList<>();
+                List<Pair<String, RexNode>> newNodes = new LinkedList<>();
 
-                List<RexNode> newEdges = new LinkedList<>();
+                List<Pair<String, RexNode>> newEdges = new LinkedList<>();
 
                 AlgNode node = stack.peek();
                 List<String> names = node.getRowType().getFieldNames();
@@ -630,7 +666,7 @@ public class CypherToAlgConverter {
                 // nodes can be added as literals
                 for ( Pair<String, PolyNode> namedNode : nodes ) {
                     if ( !names.contains( namedNode.left ) ) {
-                        newNodes.add( rexBuilder.makeLiteral( namedNode.right, nodeType, false ) );
+                        newNodes.add( Pair.of( namedNode.left, rexBuilder.makeLiteral( namedNode.right, nodeType, false ) ) );
                     }
                 }
 
@@ -644,22 +680,27 @@ public class CypherToAlgConverter {
                         // both sides are retrieved from the previous stage (inputRef)-[]-(inputRef)
                         RexNode left = rexBuilder.makeInputRef( fields.get( leftIndex ).getType(), leftIndex );
                         RexNode right = rexBuilder.makeInputRef( fields.get( rightIndex ).getType(), rightIndex );
-                        newEdges.add( rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, right ) ) );
+                        newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, right ) ) ) );
                     } else if ( leftIndex == -1 && rightIndex == -1 ) {
                         // both sides are part of this stage (literal)
-                        newEdges.add( rexBuilder.makeLiteral( namedEdge.right.edge, edgeType, false ) );
+                        newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeLiteral( namedEdge.right.edge, edgeType, false ) ) );
                     } else if ( leftIndex != -1 ) {
                         // left is from previous stage, right is not (inputRef)-[]-()
                         RexNode left = rexBuilder.makeInputRef( fields.get( leftIndex ).getType(), leftIndex );
-                        newEdges.add( rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, rexBuilder.makeNullLiteral( typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ) ) ) );
+                        newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, rexBuilder.makeNullLiteral( typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ) ) ) ) );
                     } else {
                         // right is from previous stage, left is not ()-[]-(inputRef)
                         RexNode right = rexBuilder.makeInputRef( fields.get( rightIndex ).getType(), rightIndex );
-                        newEdges.add( rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, rexBuilder.makeNullLiteral( typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ), right ) ) );
+                        newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, rexBuilder.makeNullLiteral( typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ), right ) ) ) );
                     }
                 }
 
-                add( new LogicalGraphDynamicValues( node.getCluster(), node.getTraitSet(), pop(), newNodes, newEdges ) );
+                List<Pair<String, RexNode>> nodesAndEdges = Stream.concat( newNodes.stream(), newEdges.stream() ).collect( Collectors.toList() );
+
+                AtomicLong id = new AtomicLong(); // todo dl maybe move into values
+                List<String> adjustedNames = Pair.left( nodesAndEdges ).stream().map( n -> Objects.requireNonNullElseGet( n, () -> "EXPR$" + id.getAndIncrement() ) ).collect( Collectors.toList() );
+
+                add( new LogicalGraphProject( node.getCluster(), node.getTraitSet(), pop(), Pair.right( nodesAndEdges ), adjustedNames ) );
 
                 add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.INSERT, null, null ) );
             }
@@ -681,6 +722,17 @@ public class CypherToAlgConverter {
                     .collect( Collectors.toList() );
             this.nodes.clear();
             return nodes;
+        }
+
+
+        public void combineUpdate() {
+            if ( rexQueue.isEmpty() ) {
+                throw new RuntimeException( "Empty update is not possible" );
+            }
+
+            List<Pair<String, RexNode>> updates = popNodes();
+
+            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
         }
 
     }

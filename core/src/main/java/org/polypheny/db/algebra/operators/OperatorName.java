@@ -1400,7 +1400,13 @@ public enum OperatorName {
 
     CYPHER_TO_LIST( LangFunctionOperator.class ),
 
-    CYPHER_ADJUST_EDGE( LangFunctionOperator.class );
+    CYPHER_ADJUST_EDGE( LangFunctionOperator.class ),
+
+    CYPHER_SET_PROPERTY( LangFunctionOperator.class ),
+
+    CYPHER_SET_PROPERTIES( LangFunctionOperator.class ),
+
+    CYPHER_SET_LABELS( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;

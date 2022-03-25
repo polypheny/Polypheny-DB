@@ -18,13 +18,14 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.set.CypherSetItem;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
 public class CypherSetClause extends CypherClause {
 
-    private List<CypherSetItem> input;
+    private final List<CypherSetItem> input;
 
 
     public CypherSetClause( ParserPos pos, List<CypherSetItem> input ) {
@@ -36,6 +37,15 @@ public class CypherSetClause extends CypherClause {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.SET;
+    }
+
+
+    public void getSet( CypherContext context ) {
+        for ( CypherSetItem item : input ) {
+            item.convertItem( context );
+        }
+
+        context.combineUpdate();
     }
 
 }

@@ -92,4 +92,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
         return true;
     }
 
+
+    public abstract void setLabels( List<String> labels );
+
 }

@@ -458,7 +458,10 @@ public enum BuiltInMethod {
     CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),
     CYPHER_TO_LIST( CypherFunctions.class, "toList", Object.class ),
     PRINT( CypherFunctions.class, "print", Object.class ),
-    CYPHER_ADJUST_EDGE( CypherFunctions.class, "adjustEdge", PolyEdge.class, String.class, String.class );
+    CYPHER_ADJUST_EDGE( CypherFunctions.class, "adjustEdge", PolyEdge.class, String.class, String.class ),
+    CYPHER_SET_PROPERTY( CypherFunctions.class, "setProperty", GraphPropertyHolder.class, String.class, String.class ),
+    CYPHER_SET_PROPERTIES( CypherFunctions.class, "setProperties", GraphPropertyHolder.class, List.class, List.class ),
+    CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class );
 
     public final Method method;
     public final Constructor constructor;

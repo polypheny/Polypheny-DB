@@ -17,9 +17,10 @@
 package org.polypheny.db.cypher.set;
 
 import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherSetItem extends CypherNode {
+public abstract class CypherSetItem extends CypherNode {
 
     public CypherSetItem() {
         super( ParserPos.ZERO );
@@ -30,5 +31,8 @@ public class CypherSetItem extends CypherNode {
     public CypherKind getCypherKind() {
         return CypherKind.SET_ITEM;
     }
+
+
+    public abstract void convertItem( CypherContext context );
 
 }

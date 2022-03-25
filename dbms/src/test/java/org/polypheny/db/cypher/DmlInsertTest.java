@@ -180,7 +180,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore
+    //@Ignore
     public void insertAdditionalEdgeTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );

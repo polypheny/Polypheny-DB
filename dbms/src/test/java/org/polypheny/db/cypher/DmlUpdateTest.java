@@ -16,42 +16,97 @@
 
 package org.polypheny.db.cypher;
 
+import java.util.List;
 import org.junit.Test;
-import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
 
 public class DmlUpdateTest extends CypherTestTemplate {
 
     @Test
     public void updatePropertyTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (a:Animal {name: 'Kira'})\n"
-                        + "SET a.age = 4" );
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (a:Person {name: 'Max'})\n"
+                + "SET a.age = 25" );
+
+        Result res = matchAndReturnAllNodes();
+        containsRows( res, true, true,
+                Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
+    }
+
+
+    @Test
+    public void updateLabelTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (a:Person {name: 'Max'})\n"
+                + "SET a:Swiss" );
+
+        Result res = matchAndReturnAllNodes();
+        containsRows( res, true, true,
+                Row.of( TestNode.from( List.of( "Person", "Swiss" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
+    }
+
+
+    @Test
+    public void updateLabelsTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (a:Person {name: 'Max'})\n"
+                + "SET a:Swiss:German" );
+
+        Result res = matchAndReturnAllNodes();
+        containsRows( res, true, true,
+                Row.of( TestNode.from( List.of( "Person", "Swiss", "German" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
+    }
+
+
+    @Test
+    public void updateVariablesReplaceTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (a:Person {name: 'Max'})\n"
+                + "SET a = {} " );
+
+        Result res = matchAndReturnAllNodes();
+        containsRows( res, true, true,
+                Row.of( TestNode.from( List.of( "Person" ) ) ) );
+    }
+
+
+    @Test
+    public void updateVariablesIncrementTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (a:Person {name: 'Max'})\n"
+                + "SET a = { age: 13, job: 'Developer'} " );
+
+        Result res = matchAndReturnAllNodes();
+        containsRows( res, true, true,
+                Row.of( TestNode.from(
+                        List.of( "Person" ),
+                        Pair.of( "name", "Max" ),
+                        Pair.of( "age", 13 ),
+                        Pair.of( "job", "Developer" ) ) ) );
     }
 
 
     @Test
     public void updatePropertyReturnTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (a:Animal {name: 'Kira'})\n"
-                        + "SET a.age = 4\n"
-                        + "RETURN a" );
+        Result res = execute( "MATCH (a:Animal {name: 'Kira'})\n"
+                + "SET a.age = 4\n"
+                + "RETURN a" );
     }
 
 
     @Test
     public void updateRelationshipExistingPropertyTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
-                        + "SET rel.since = 2018" );
+        Result res = execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
+                + "SET rel.since = 2018" );
     }
 
 
     @Test
     public void updateRelationshipNewPropertyTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
-                        + "SET rel.status = 'fresh'" );
+        Result res = execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
+                + "SET rel.status = 'fresh'" );
     }
 
 }

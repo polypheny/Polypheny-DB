@@ -137,6 +137,7 @@ public class CypherFunctions {
             Object[] o = (Object[]) value;
             String id = (String) o[0];
             String label = (String) o[1];
+            // id is 2
             String key = (String) o[3];
             String val = (String) o[4];
 
@@ -218,8 +219,32 @@ public class CypherFunctions {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyEdge adjustEdge( PolyEdge edge, String left, String right ) {
         return edge.from( left, right );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static GraphPropertyHolder setProperty( GraphPropertyHolder target, String key, Object value ) {
+        target.properties.put( key, value );
+        return target;
+    }
+
+
+    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<String> labels ) {
+        target.setLabels( labels );
+        return target;
+    }
+
+
+    public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<String> keys, List<Object> values ) {
+        int i = 0;
+        for ( String key : keys ) {
+            target.properties.put( key, values.get( i ) );
+            i++;
+        }
+        return target;
     }
 
 }

@@ -60,6 +60,13 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     }
 
 
+    @Override
+    public void setLabels( List<String> labels ) {
+        this.labels.clear();
+        this.labels.add( labels.get( 0 ) );
+    }
+
+
     public enum RelationshipDirection {
         LEFT_TO_RIGHT,
         RIGHT_TO_LEFT,
