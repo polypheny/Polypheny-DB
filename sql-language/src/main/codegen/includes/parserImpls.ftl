@@ -202,26 +202,39 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier partitionColumn;
     List<Integer> partitionList = new ArrayList<Integer>();
     int partitionIndex = 0;
-    int numPartitionGroups = 0;
-    int numPartitions = 0;
-    List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
-    SqlIdentifier partitionName = null;
-    List< List<SqlNode>> partitionQualifierList = new ArrayList<List<SqlNode>>();
-    List<SqlNode> partitionQualifiers = new ArrayList<SqlNode>();
-    SqlNode partitionValues = null;
-    SqlIdentifier tmpIdent = null;
-    int tmpInt = 0;
-    RawPartitionInformation rawPartitionInfo;
-}
-{
-    <TABLE>
-    table = CompoundIdentifier()
-    (
-        <RENAME> <TO>
-        name = SimpleIdentifier()
-        {
-            return new SqlAlterTableRename(s.end(this), table, name);
-        }
+                        int numPartitionGroups = 0;
+                        int numPartitions = 0;
+                        List
+                        <SqlIdentifier> partitionNamesList = new ArrayList
+                            <SqlIdentifier>();
+                                SqlIdentifier partitionName = null;
+                                List< List
+                                <SqlNode>> partitionQualifierList = new ArrayList
+                                    <List
+                                    <SqlNode>>();
+                                        List
+                                        <SqlNode> partitionQualifiers = new ArrayList
+                                            <SqlNode>();
+                                                SqlNode partitionValues = null;
+                                                SqlIdentifier tmpIdent = null;
+                                                int tmpInt = 0;
+                                                RawPartitionInformation rawPartitionInfo;
+                                                Map
+                                                <SqlIdentifier
+                                                ,SqlIdentifier> propertyMap = new HashMap
+                                                <SqlIdentifier
+                                                ,SqlIdentifier>();
+                                                }
+                                                {
+                                                <TABLE>
+                                                    table = CompoundIdentifier()
+                                                    (
+                                                    <RENAME>
+                                                        <TO>
+                                                            name = SimpleIdentifier()
+                                                            {
+                                                            return new SqlAlterTableRename(s.end(this), table, name);
+                                                            }
     |
         <OWNER> <TO>
         owner = SimpleIdentifier()
@@ -448,327 +461,337 @@ SqlAlterTable SqlAlterTable(Span s) :
             {
                 return new SqlAlterTableModifyPlacementAddColumn(s.end(this), table, column, store);
             }
-        |
-            <DROP>
-            <COLUMN>
-            column = SimpleIdentifier()
-            <ON>
-            <STORE>
-            store = SimpleIdentifier()
-            {
-                return new SqlAlterTableModifyPlacementDropColumn(s.end(this), table, column, store);
-            }
-        |
-            columnList = ParenthesizedSimpleIdentifierList()
-            <ON>
-            <STORE>
-            store = SimpleIdentifier()
-            [
-                <WITH> <PARTITIONS>
-                <LPAREN>
-                (
-                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                        (
-                            <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                        )*
-                    |
-
-                        partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                        (
-                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                        )*
-               )
-               <RPAREN>
-            ]
-            {
-                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList);
-            }
-        )
-
-    |
-        <MODIFY>
-        <PARTITIONS>
-        <LPAREN>
-            (
-                    partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                    (
-                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                    )*
                 |
-
-                    partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                    (
-                         <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                    )*
-            )
-        <RPAREN>
-        <ON>
-        <STORE> store = SimpleIdentifier()
-        {
-            return new SqlAlterTableModifyPartitions(s.end(this), table, store, partitionList, partitionNamesList);
-        }
-
-    |
-        <ADD>
-        (
-            <UNIQUE> { unique = true; }
-        |
-            { unique = false; }
-        )
-        <INDEX>
-        indexName = SimpleIdentifier()
-        <ON>
-        (
-            columnList = ParenthesizedSimpleIdentifierList()
-        |
-            column = SimpleIdentifier()
-            {
-                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
-            }
-        )
-        (
-            <USING> indexMethod = SimpleIdentifier()
-        |
-            { indexMethod = null; }
-        )
-        (
-            <ON> <STORE> storeName = SimpleIdentifier()
-        |
-            { storeName = null; }
-        )
-        {
-            return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexMethod, indexName, storeName);
-        }
-    |
-        <DROP> <INDEX>
-        indexName = SimpleIdentifier()
-        {
-            return new SqlAlterTableDropIndex(s.end(this), table, indexName);
-        }
-    |
-        <MODIFY> <COLUMN>
-        column = SimpleIdentifier()
-        statement = AlterTableModifyColumn(s, table, column)
-        {
-            return statement;
-        }
-
-    |
-        <PARTITION> <BY>
-                    (
-                            partitionType = SimpleIdentifier()
-                        |
-                            <RANGE> { partitionType = new SqlIdentifier( "RANGE", s.end(this) );}
-
-                        |
-                            <TEMPERATURE> { partitionType = new SqlIdentifier( "TEMPERATURE", s.end(this) );
-                                    rawPartitionInfo = new RawTemperaturePartitionInformation();
-                                    rawPartitionInfo.setPartitionType( partitionType );
-                                    }
-                                    <LPAREN> partitionColumn = SimpleIdentifier() { rawPartitionInfo.setPartitionColumn( partitionColumn ); } <RPAREN>
-                                    <LPAREN>
-                                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                                                <VALUES> <LPAREN>
-                                                            partitionValues = Literal()
-                                                            {
-                                                                 partitionQualifiers.add(partitionValues);
-                                                                 ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageIn( partitionValues );
-                                                            } <PERCENT_REMAINDER>
-                                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
-                                        <COMMA>
-                                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                                                <VALUES> <LPAREN>
-                                                            partitionValues = Literal()
-                                                            {
-                                                                partitionQualifiers.add(partitionValues);
-                                                                ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageOut( partitionValues );
-                                                            } <PERCENT_REMAINDER>
-                                                    <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
-                                                    <RPAREN>
-                                                        <USING> <FREQUENCY>
+                <DROP>
+                    <COLUMN>
+                        column = SimpleIdentifier()
+                        <ON>
+                            <STORE>
+                                store = SimpleIdentifier()
+                                {
+                                return new SqlAlterTableModifyPlacementDropColumn(s.end(this), table, column, store);
+                                }
+                                |
+                                <ON>
+                                    <STORE>
+                                        store = SimpleIdentifier()
+                                        <SET>
+                                            propertyMap = PlacementPropertyOpt()
+                                            {
+                                            return new SqlAlterTableModifyPlacementProperties(s.end(this), table, store, propertyMap );
+                                            }
+                                            |
+                                            columnList = ParenthesizedSimpleIdentifierList()
+                                            <ON>
+                                                <STORE>
+                                                    store = SimpleIdentifier()
+                                                    [
+                                                    <WITH>
+                                                        <PARTITIONS>
+                                                            <LPAREN>
                                                                 (
-                                                                    <ALL> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "ALL", s.end(this) ) ); tmpIdent = null; }
-                                                                |
-                                                                    <WRITE> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "WRITE", s.end(this) ) ); tmpIdent = null; }
-                                                                |
-                                                                    <READ> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "READ", s.end(this) ) ); tmpIdent = null;}
-                                                                )
-                                                            <INTERVAL>
-                                                                    tmpInt = UnsignedIntLiteral() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setInterval( tmpInt ); tmpInt = 0; }
-                                                                    tmpIdent = SimpleIdentifier() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setIntervalUnit( tmpIdent ); tmpIdent = null; }
-                                                        <WITH>  numPartitions = UnsignedIntLiteral() {rawPartitionInfo.setNumPartitions( numPartitions );}
-                                                                    tmpIdent = SimpleIdentifier() {
-                                                                    ((RawTemperaturePartitionInformation)rawPartitionInfo).setInternalPartitionFunction( tmpIdent ); tmpIdent = null;
-                                                            } <PARTITIONS>
-                                                                    {
-                                                                    rawPartitionInfo.setPartitionNamesList( CoreUtil.toNodeList( partitionNamesList, Identifier.class ) );
-                                                                    rawPartitionInfo.setPartitionQualifierList( SqlUtil.toNodeListList( partitionQualifierList ) );
+                                                                partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                                                                (
+                                                                <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                                                                    )*
+                                                                    |
 
-                                                                return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+                                                                    partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                    (
+                                                                    <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                        )*
+                                                                        )
+                                                                        <RPAREN>
+                                                                            ]
+                                                                            {
+                                                                            return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList);
                                                                             }
-                    )
+                                                                            )
 
-        <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
-        [
-                (
-                        <PARTITIONS> numPartitionGroups = UnsignedIntLiteral()
-                    |
-                        <WITH> <LPAREN>
-                                partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                                (
-                                    <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                                )*
-                        <RPAREN>
+                                                                            |
+                                                                            <MODIFY>
+                                                                                <PARTITIONS>
+                                                                                    <LPAREN>
+                                                                                        (
+                                                                                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                                                                                        (
+                                                                                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                                                                                            )*
+                                                                                            |
 
-                    |
-                            <LPAREN>
-                                <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                                <VALUES> <LPAREN>
-                                        partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
-                                        (
-                                            <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
-                                        )*
-                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
-                                (
-                                    <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                                            <VALUES> <LPAREN>
-                                                    partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
-                                                    (
-                                                        <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
-                                                    )*
-                                            <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
-                                )*
-                            <RPAREN>
-                )
-        ]
-        {
-            rawPartitionInfo = new RawPartitionInformation();
-            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
-        }
+                                                                                            partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                                            (
+                                                                                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                                                )*
+                                                                                                )
+                                                                                                <RPAREN>
+                                                                                                    <ON>
+                                                                                                        <STORE> store = SimpleIdentifier()
+                                                                                                            {
+                                                                                                            return new SqlAlterTableModifyPartitions(s.end(this), table, store, partitionList, partitionNamesList);
+                                                                                                            }
 
-    |
-        <MERGE> <PARTITIONS>
-        {
-            return new SqlAlterTableMergePartitions(s.end(this), table);
-        }
-    )
+                                                                                                            |
+                                                                                                            <ADD>
+                                                                                                                (
+                                                                                                                <UNIQUE> { unique = true; }
+                                                                                                                    |
+                                                                                                                    { unique = false; }
+                                                                                                                    )
+                                                                                                                    <INDEX>
+                                                                                                                        indexName = SimpleIdentifier()
+                                                                                                                        <ON>
+                                                                                                                            (
+                                                                                                                            columnList = ParenthesizedSimpleIdentifierList()
+                                                                                                                            |
+                                                                                                                            column = SimpleIdentifier()
+                                                                                                                            {
+                                                                                                                            columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                                                                                                                            }
+                                                                                                                            )
+                                                                                                                            (
+                                                                                                                            <USING> indexMethod = SimpleIdentifier()
+                                                                                                                                |
+                                                                                                                                { indexMethod = null; }
+                                                                                                                                )
+                                                                                                                                (
+                                                                                                                                <ON> <STORE> storeName = SimpleIdentifier()
+                                                                                                                                        |
+                                                                                                                                        { storeName = null; }
+                                                                                                                                        )
+                                                                                                                                        {
+                                                                                                                                        return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexMethod, indexName, storeName);
+                                                                                                                                        }
+                                                                                                                                        |
+                                                                                                                                        <DROP> <INDEX>
+                                                                                                                                                indexName = SimpleIdentifier()
+                                                                                                                                                {
+                                                                                                                                                return new SqlAlterTableDropIndex(s.end(this), table, indexName);
+                                                                                                                                                }
+                                                                                                                                                |
+                                                                                                                                                <MODIFY> <COLUMN>
+                                                                                                                                                        column = SimpleIdentifier()
+                                                                                                                                                        statement = AlterTableModifyColumn(s, table, column)
+                                                                                                                                                        {
+                                                                                                                                                        return statement;
+                                                                                                                                                        }
+
+                                                                                                                                                        |
+                                                                                                                                                        <PARTITION> <BY>
+                                                                                                                                                                (
+                                                                                                                                                                partitionType = SimpleIdentifier()
+                                                                                                                                                                |
+                                                                                                                                                                <RANGE> { partitionType = new SqlIdentifier( "RANGE", s.end(this) );}
+
+                                                                                                                                                                    |
+                                                                                                                                                                    <TEMPERATURE> { partitionType = new SqlIdentifier( "TEMPERATURE", s.end(this) );
+                                                                                                                                                                        rawPartitionInfo = new RawTemperaturePartitionInformation();
+                                                                                                                                                                        rawPartitionInfo.setPartitionType( partitionType );
+                                                                                                                                                                        }
+                                                                                                                                                                        <LPAREN> partitionColumn = SimpleIdentifier() { rawPartitionInfo.setPartitionColumn( partitionColumn ); } <RPAREN>
+                                                                                                                                                                                <LPAREN>
+                                                                                                                                                                                    <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                                                                                                                                        <VALUES> <LPAREN>
+                                                                                                                                                                                                partitionValues = Literal()
+                                                                                                                                                                                                {
+                                                                                                                                                                                                partitionQualifiers.add(partitionValues);
+                                                                                                                                                                                                ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageIn( partitionValues );
+                                                                                                                                                                                                } <PERCENT_REMAINDER>
+                                                                                                                                                                                                    <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                                                                                                                                                                                            <COMMA>
+                                                                                                                                                                                                                <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                                                                                                                                                                    <VALUES> <LPAREN>
+                                                                                                                                                                                                                            partitionValues = Literal()
+                                                                                                                                                                                                                            {
+                                                                                                                                                                                                                            partitionQualifiers.add(partitionValues);
+                                                                                                                                                                                                                            ((RawTemperaturePartitionInformation)rawPartitionInfo).setHotAccessPercentageOut( partitionValues );
+                                                                                                                                                                                                                            } <PERCENT_REMAINDER>
+                                                                                                                                                                                                                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                                                                                                                                                                                                                        <RPAREN>
+                                                                                                                                                                                                                                            <USING> <FREQUENCY>
+                                                                                                                                                                                                                                                    (
+                                                                                                                                                                                                                                                    <ALL> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "ALL", s.end(this) ) ); tmpIdent = null; }
+                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                        <WRITE> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "WRITE", s.end(this) ) ); tmpIdent = null; }
+                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                            <READ> { ((RawTemperaturePartitionInformation)rawPartitionInfo).setAccessPattern( new SqlIdentifier( "READ", s.end(this) ) ); tmpIdent = null;}
+                                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                                                <INTERVAL>
+                                                                                                                                                                                                                                                                    tmpInt = UnsignedIntLiteral() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setInterval( tmpInt ); tmpInt = 0; }
+                                                                                                                                                                                                                                                                    tmpIdent = SimpleIdentifier() { ((RawTemperaturePartitionInformation)rawPartitionInfo).setIntervalUnit( tmpIdent ); tmpIdent = null; }
+                                                                                                                                                                                                                                                                    <WITH>  numPartitions = UnsignedIntLiteral() {rawPartitionInfo.setNumPartitions( numPartitions );}
+                                                                                                                                                                                                                                                                        tmpIdent = SimpleIdentifier() {
+                                                                                                                                                                                                                                                                        ((RawTemperaturePartitionInformation)rawPartitionInfo).setInternalPartitionFunction( tmpIdent ); tmpIdent = null;
+                                                                                                                                                                                                                                                                        } <PARTITIONS>
+                                                                                                                                                                                                                                                                            {
+                                                                                                                                                                                                                                                                            rawPartitionInfo.setPartitionNamesList( CoreUtil.toNodeList( partitionNamesList, Identifier.class ) );
+                                                                                                                                                                                                                                                                            rawPartitionInfo.setPartitionQualifierList( SqlUtil.toNodeListList( partitionQualifierList ) );
+
+                                                                                                                                                                                                                                                                            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                            )
+
+                                                                                                                                                                                                                                                                            <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
+                                                                                                                                                                                                                                                                                    [
+                                                                                                                                                                                                                                                                                    (
+                                                                                                                                                                                                                                                                                    <PARTITIONS> numPartitionGroups = UnsignedIntLiteral()
+                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                        <WITH> <LPAREN>
+                                                                                                                                                                                                                                                                                                partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                                                                                                                                                                                                                                                (
+                                                                                                                                                                                                                                                                                                <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                                                                                                                                                                                                                                                    )*
+                                                                                                                                                                                                                                                                                                    <RPAREN>
+
+                                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                                        <LPAREN>
+                                                                                                                                                                                                                                                                                                            <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                                                                                                                                                                                                                                                                <VALUES> <LPAREN>
+                                                                                                                                                                                                                                                                                                                        partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                                                                                                                                                                                                                                                                                        (
+                                                                                                                                                                                                                                                                                                                        <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                                                                                                                                                                                                                                                                                            )*
+                                                                                                                                                                                                                                                                                                                            <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                                                                                                                                                                                                                                                                                                                    (
+                                                                                                                                                                                                                                                                                                                                    <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                                                                                                                                                                                                                                                                                            <VALUES> <LPAREN>
+                                                                                                                                                                                                                                                                                                                                                    partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                                                                                                                                                                                                                                                                                                                    (
+                                                                                                                                                                                                                                                                                                                                                    <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                                                                                                                                                                                                                                                                                                                        )*
+                                                                                                                                                                                                                                                                                                                                                        <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                                                                                                                                                                                                                                                                                                                                                )*
+                                                                                                                                                                                                                                                                                                                                                                <RPAREN>
+                                                                                                                                                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                                                                                                                                                    ]
+                                                                                                                                                                                                                                                                                                                                                                    {
+                                                                                                                                                                                                                                                                                                                                                                    rawPartitionInfo = new RawPartitionInformation();
+                                                                                                                                                                                                                                                                                                                                                                    return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
+                                                                                                                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                                                                                                                                    <MERGE> <PARTITIONS>
+                                                                                                                                                                                                                                                                                                                                                                            {
+                                                                                                                                                                                                                                                                                                                                                                            return new SqlAlterTableMergePartitions(s.end(this), table);
+                                                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                            )
 }
 
-/**
+                                                                                                                                                                                                                                                                                                                                                                            /**
 * Parses the MODIFY COLUMN part of an ALTER TABLE statement.
 */
 SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, SqlIdentifier column) :
 {
-    SqlDataTypeSpec type = null;
-    Boolean nullable = null;
-    SqlIdentifier beforeColumn = null;
-    SqlIdentifier afterColumn = null;
-    SqlNode defaultValue = null;
-    Boolean dropDefault = null;
-    String collation = null;
+                                                                                                                                                                                                                                                                                                                                                                            SqlDataTypeSpec type = null;
+                                                                                                                                                                                                                                                                                                                                                                            Boolean nullable = null;
+                                                                                                                                                                                                                                                                                                                                                                            SqlIdentifier beforeColumn = null;
+                                                                                                                                                                                                                                                                                                                                                                            SqlIdentifier afterColumn = null;
+                                                                                                                                                                                                                                                                                                                                                                            SqlNode defaultValue = null;
+                                                                                                                                                                                                                                                                                                                                                                            Boolean dropDefault = null;
+                                                                                                                                                                                                                                                                                                                                                                            String collation = null;
 }
 {
-    (
-        <SET> <NOT> <NULL>
-        { nullable = false; }
-    |
-        <DROP> <NOT> <NULL>
-        { nullable = true; }
-    |
-        <SET> <TYPE>
-        type = DataType()
-    |
-        <SET> <POSITION>
-        (
-            <BEFORE>
-            beforeColumn = SimpleIdentifier()
-        |
-            <AFTER>
-            afterColumn = SimpleIdentifier()
-        )
-    |
-        <SET> <COLLATION>
-        (
-            <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
-        |
-            <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
-        )
-    |
-        <SET><DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
-    |
-        <DROP> <DEFAULT_> { dropDefault = true; }
-    )
-    {
-        return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
-    }
-}
-
-
-SqlAlterConfig SqlAlterConfig(Span s) :
-{
-    final SqlNode key;
-    final SqlNode value;
-}
-{
-    <CONFIG> key = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <SET> value = Expression(ExprContext.ACCEPT_NONCURSOR)
-    {
-        return new SqlAlterConfig(s.end(this), key, value);
-    }
+                                                                                                                                                                                                                                                                                                                                                                            (
+                                                                                                                                                                                                                                                                                                                                                                            <SET> <NOT> <NULL>
+                                                                                                                                                                                                                                                                                                                                                                                        { nullable = false; }
+                                                                                                                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                                                                                                                        <DROP> <NOT> <NULL>
+                                                                                                                                                                                                                                                                                                                                                                                                    { nullable = true; }
+                                                                                                                                                                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                                                                                                                                                                    <SET> <TYPE>
+                                                                                                                                                                                                                                                                                                                                                                                                            type = DataType()
+                                                                                                                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                                                                                                                            <SET> <POSITION>
+                                                                                                                                                                                                                                                                                                                                                                                                                    (
+                                                                                                                                                                                                                                                                                                                                                                                                                    <BEFORE>
+                                                                                                                                                                                                                                                                                                                                                                                                                        beforeColumn = SimpleIdentifier()
+                                                                                                                                                                                                                                                                                                                                                                                                                        |
+                                                                                                                                                                                                                                                                                                                                                                                                                        <AFTER>
+                                                                                                                                                                                                                                                                                                                                                                                                                            afterColumn = SimpleIdentifier()
+                                                                                                                                                                                                                                                                                                                                                                                                                            )
+                                                                                                                                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                                                                                                                                            <SET> <COLLATION>
+                                                                                                                                                                                                                                                                                                                                                                                                                                    (
+                                                                                                                                                                                                                                                                                                                                                                                                                                    <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
+                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                                                                                                                                                            <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    <SET><DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            <DROP> <DEFAULT_> { dropDefault = true; }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
 }
 
 
-SqlAlterAdaptersAdd SqlAlterAdaptersAdd(Span s) :
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    SqlAlterConfig SqlAlterConfig(Span s) :
 {
-    final SqlNode uniqueName;
-    final SqlNode adapterName;
-    final SqlNode config;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    final SqlNode key;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    final SqlNode value;
 }
 {
-    <ADAPTERS> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
-    {
-        return new SqlAlterAdaptersAdd(s.end(this), uniqueName, adapterName, config);
-    }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <CONFIG> key = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <SET> value = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return new SqlAlterConfig(s.end(this), key, value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
 }
 
 
-SqlAlterAdaptersDrop SqlAlterAdaptersDrop(Span s) :
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            SqlAlterAdaptersAdd SqlAlterAdaptersAdd(Span s) :
 {
-    final SqlNode uniqueName;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            final SqlNode uniqueName;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            final SqlNode adapterName;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            final SqlNode config;
 }
 {
-    <ADAPTERS> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    {
-        return new SqlAlterAdaptersDrop(s.end(this), uniqueName);
-    }
-}
-
-
-SqlAlterInterfacesAdd SqlAlterInterfacesAdd(Span s) :
-{
-    final SqlNode uniqueName;
-    final SqlNode clazzName;
-    final SqlNode config;
-}
-{
-    <INTERFACES> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <USING> clazzName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
-    {
-        return new SqlAlterInterfacesAdd(s.end(this), uniqueName, clazzName, config);
-    }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <ADAPTERS> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return new SqlAlterAdaptersAdd(s.end(this), uniqueName, adapterName, config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
 }
 
 
-SqlAlterInterfacesDrop SqlAlterInterfacesDrop(Span s) :
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            SqlAlterAdaptersDrop SqlAlterAdaptersDrop(Span s) :
 {
-    final SqlNode uniqueName;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            final SqlNode uniqueName;
 }
 {
-    <INTERFACES> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    {
-        return new SqlAlterInterfacesDrop(s.end(this), uniqueName);
-    }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <ADAPTERS> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return new SqlAlterAdaptersDrop(s.end(this), uniqueName);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+}
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    SqlAlterInterfacesAdd SqlAlterInterfacesAdd(Span s) :
+{
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    final SqlNode uniqueName;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    final SqlNode clazzName;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    final SqlNode config;
+}
+{
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <INTERFACES> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <USING> clazzName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return new SqlAlterInterfacesAdd(s.end(this), uniqueName, clazzName, config);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+}
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    SqlAlterInterfacesDrop SqlAlterInterfacesDrop(Span s) :
+{
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    final SqlNode uniqueName;
+}
+{
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <INTERFACES> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return new SqlAlterInterfacesDrop(s.end(this), uniqueName);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
 }
