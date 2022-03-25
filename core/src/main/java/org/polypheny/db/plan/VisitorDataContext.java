@@ -73,19 +73,19 @@ public class VisitorDataContext implements DataContext {
 
     @Override
     public SchemaPlus getRootSchema() {
-        throw new RuntimeException( "Unsupported" );
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
     public JavaTypeFactory getTypeFactory() {
-        throw new RuntimeException( "Unsupported" );
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
     public QueryProvider getQueryProvider() {
-        throw new RuntimeException( "Unsupported" );
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
@@ -101,7 +101,7 @@ public class VisitorDataContext implements DataContext {
 
     @Override
     public void addAll( Map<String, Object> map ) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
@@ -113,37 +113,37 @@ public class VisitorDataContext implements DataContext {
 
     @Override
     public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
-        throw new RuntimeException( "Unsupported" );
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
     public AlgDataType getParameterType( long index ) {
-        throw new RuntimeException( "Unsupported" );
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
     public List<Map<Long, Object>> getParameterValues() {
-        throw new RuntimeException( "Unsupported" );
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
     public void setParameterValues( List<Map<Long, Object>> values ) {
-
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
     public Map<Long, AlgDataType> getParameterTypes() {
-        return null;
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
     public void setParameterTypes( Map<Long, AlgDataType> types ) {
-
+        throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
