@@ -26,10 +26,10 @@ import org.polypheny.db.transaction.Statement;
 public class LogicalBatchIterator extends BatchIterator {
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates a <code>LogicalBatchIterator</code>.
      *
      * @param cluster Cluster this relational expression belongs to
-     * @param traits
+     * @param traits The trait set
      * @param input Input relational expression
      */
     protected LogicalBatchIterator( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {

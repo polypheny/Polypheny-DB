@@ -20,6 +20,8 @@ package org.polypheny.db.adapter.file.algebra;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.util.List;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
@@ -34,6 +36,7 @@ import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptRule;
@@ -77,7 +80,8 @@ public class FileRules {
 
         private static boolean supports( TableModify node ) {
             if ( node.getSourceExpressionList() != null ) {
-                return node.getSourceExpressionList().stream().noneMatch( DocumentRules::containsDocumentUpdate );
+                return node.getSourceExpressionList().stream().noneMatch( DocumentRules::containsDocumentUpdate )
+                        && node.getSourceExpressionList().stream().noneMatch( UnsupportedRexCallVisitor::containsUnsupportedCall );
             }
             return true;
         }
@@ -310,18 +314,44 @@ public class FileRules {
     }
 
 
+    private static class UnsupportedRexCallVisitor extends RexVisitorImpl<Void> {
+
+        @Getter
+        boolean containsUnsupportedRexCall = false;
+
+
+        protected UnsupportedRexCallVisitor() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            if ( call.op.getOperatorName() != OperatorName.ARRAY_VALUE_CONSTRUCTOR ) {
+                containsUnsupportedRexCall = true;
+            }
+            return super.visitCall( call );
+        }
+
+
+        static boolean containsUnsupportedCall( RexNode node ) {
+            UnsupportedRexCallVisitor visitor = new UnsupportedRexCallVisitor();
+            node.accept( visitor );
+            return visitor.containsUnsupportedRexCall;
+        }
+
+    }
+
+
     private static class CheckingFunctionVisitor extends RexVisitorImpl<Void> {
 
+        @Getter
+        @Accessors(fluent = true)
         private boolean containsFunction = false;
 
 
         CheckingFunctionVisitor() {
             super( true );
-        }
-
-
-        public boolean containsFunction() {
-            return containsFunction;
         }
 
 

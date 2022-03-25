@@ -426,10 +426,7 @@ public class MongoRules {
 
             }
 
-            throw new
-
-                    IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
-
+            throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
 
         }
 

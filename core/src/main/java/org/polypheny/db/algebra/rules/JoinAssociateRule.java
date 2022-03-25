@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,8 +132,8 @@ public class JoinAssociateRule extends AlgOptRule {
         JoinPushThroughJoinRule.split( bottomJoin.getCondition(), aBitSet, top, bottom );
 
         // Mapping for moving conditions from topJoin or bottomJoin to newBottomJoin.
-        // target: | B | C |
-        // source: | A | B | C      |
+        // target: | B | C      |
+        // source: | A       | B | C      |
         final Mappings.TargetMapping bottomMapping =
                 Mappings.createShiftMapping(
                         aCount + bCount + cCount,

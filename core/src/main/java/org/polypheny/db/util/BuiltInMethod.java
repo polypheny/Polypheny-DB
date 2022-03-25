@@ -137,7 +137,7 @@ import org.polypheny.db.type.PolyType;
  */
 public enum BuiltInMethod {
     BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
-    STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, List.class ),
+    STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
     ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", Enumerable.class, Enumerable.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),

@@ -35,12 +35,13 @@ public class EnumerableTableModifyToStreamerRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         TableModify modify = call.alg( 0 );
 
-        LogicalStreamer streamer = LogicalStreamer.create( modify, AlgFactories.LOGICAL_BUILDER.create( modify.getCluster(), modify.getCatalogReader() ) );
+        LogicalStreamer streamer = LogicalStreamer.create(
+                modify,
+                AlgFactories.LOGICAL_BUILDER.create( modify.getCluster(), modify.getCatalogReader() ) );
 
         if ( streamer != null ) {
             call.transformTo( streamer );
         }
     }
-
 
 }

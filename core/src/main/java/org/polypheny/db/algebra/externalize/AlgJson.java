@@ -92,6 +92,7 @@ public class AlgJson {
                     "org.polypheny.db.adapter.cottontail.",
                     "org.polypheny.db.adapter.cottontail.algebra.",
                     "org.polypheny.db.adapter.mongodb.",
+                    "org.polypheny.db.adapter.mongodb.MongoRules$",
                     "org.polypheny.db.adapter.file.algebra.",
                     "org.polypheny.db.adapter.enumerable.",
                     "org.polypheny.db.adapter.jdbc.",

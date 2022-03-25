@@ -39,7 +39,7 @@ import org.polypheny.db.webui.models.Result;
 public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test
-    public void ddlEnumerableTest() {
+    public void dmlEnumerableTest() {
         insert( "{\"hi\":3,\"stock\":3}" );
 
         MongoConnection.executeGetResponse( "db.test.update({ \"hi\": 3 },{\"$inc\": {\"stock\": 2}})" );
@@ -55,7 +55,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test
     @Category(MonetdbExcluded.class) // todo bug in closing adapter?
-    public void ddlEnumerableFilterTest() {
+    public void dmlEnumerableFilterTest() {
         insert( "{\"hi\":3,\"stock\":3}" );
         insert( "{\"hi\":5,\"stock\":3}" );
 
@@ -64,7 +64,8 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
         System.out.println( Arrays.deepToString( res.getData() ) );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet( res,
+                MongoConnection.checkUnorderedResultSet(
+                        res,
                         ImmutableList.of(
                                 new String[]{ "id_", "{\"hi\":3,\"stock\":6}" },
                                 new String[]{ "id_", "{\"hi\":5,\"stock\":3}" }
@@ -73,7 +74,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
-    public void ddlEnumerableTestFilter() {
+    public void dmlEnumerableTestFilter() {
         insert( "{\"hi\":3,\"stock\":3}" );
         insert( "{\"hi\":3,\"stock\":32}" );
         insert( "{\"hi\":5,\"stock\":3}" );
@@ -120,7 +121,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Ignore // this is only a reverence
+    @Ignore // this is only a reference
     public void ddlSqlUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -144,7 +145,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Ignore // this is only a reverence
+    @Ignore // this is only a reference
     public void ddlSqlCountTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

@@ -39,10 +39,10 @@ public abstract class BatchIterator extends SingleAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates a <code>BatchIterator</code>.
      *
      * @param cluster Cluster this relational expression belongs to
-     * @param traits
+     * @param traits The trait set
      * @param input Input relational expression
      */
     protected BatchIterator( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
