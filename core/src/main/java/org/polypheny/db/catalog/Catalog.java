@@ -1507,7 +1507,16 @@ public abstract class Catalog {
      * @param columnIds List of columnIds to be located on a specific store for the table
      * @param partitionIds List of partitionIds to be located on a specific store for the table
      */
-    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds );
+    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, DataPlacementRole dataPlacementRole );
+
+    /**
+     * Updates and overrides the dataPlacementRole for a given data placement
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param dataPlacementRole new DataPlacementRole
+     */
+    public abstract void updateDataPlacementRole( int adapterId, long tableId, DataPlacementRole dataPlacementRole );
 
     /**
      * Change physical names of a partition placement.

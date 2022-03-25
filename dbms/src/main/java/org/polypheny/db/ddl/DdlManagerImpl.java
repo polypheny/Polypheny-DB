@@ -119,6 +119,7 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.replication.properties.PlacementPropertyInformation;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -1367,6 +1368,26 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    /**
+     * Modifies the DataPlacement in respect to optional properties. Which may alter the behaviour of the placement in certain scenarios
+     *
+     * @param placementPropertyInfo condensed information which properties have been specified
+     * @param storeInstance the data store
+     * @param statement the used statement
+     */
+    @Override
+    public void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws LastPlacementException {
+
+        catalog.updateDataPlacementRole( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.dataPlacementRole );
+
+        //TODO @HENNLO IF role switched from REFRESHABLE to UPTODATE
+        // Trigger a REFRESH operation, to bring everything consequently to the MOST RECENT STATE = 'UPDTODATE'
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
     @Override
     public void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) throws LastPlacementException {
         int storeId = storeInstance.getAdapterId();
@@ -2290,6 +2311,9 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     DataPlacementRole.UPTODATE );
 
+            // TODO @HENNLO
+            // IF UPTODATE Is elected TRIGGER DATA REFRESH OPERATION on possibly outdated nodes.
+
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
 
@@ -2300,7 +2324,7 @@ public class DdlManagerImpl extends DdlManager {
             // TODO @HENNLO Check if this can be omitted
             catalog.updateDataPlacement( store.getAdapterId(), mergedTable.id,
                     catalog.getDataPlacement( store.getAdapterId(), mergedTable.id ).columnPlacementsOnAdapter,
-                    mergedTable.partitionProperty.partitionIds );
+                    mergedTable.partitionProperty.partitionIds, null );
             //
 
             dataMigrator.copySelectiveData(

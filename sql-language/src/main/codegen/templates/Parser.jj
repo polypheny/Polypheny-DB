@@ -5646,6 +5646,65 @@ SqlNode StandardFloorCeilOptions(Span s, boolean floorFlag) :
     )
 }
 
+
+/*
+* Parse an optional placement property clause
+*/
+Map<SqlIdentifier,SqlIdentifier> PlacementPropertyOpt() :
+{
+    Map<SqlIdentifier,SqlIdentifier> propertyMap = new HashMap<SqlIdentifier,SqlIdentifier>();
+    Map<SqlIdentifier,SqlIdentifier> tempPropertyMap = new HashMap<SqlIdentifier,SqlIdentifier>();
+    SqlIdentifier propertyName;
+}
+{
+     tempPropertyMap = PlacementPropertySpecification() { propertyMap.putAll(tempPropertyMap); }
+    (
+        <COMMA> tempPropertyMap = PlacementPropertySpecification() { propertyMap.putAll(tempPropertyMap); }
+    )*
+    {
+            return propertyMap;
+    }
+}
+
+
+/*
+* Parse an optional placement property specification
+*/
+Map<SqlIdentifier,SqlIdentifier> PlacementPropertySpecification() :
+{
+    Map<SqlIdentifier,SqlIdentifier> propertyMap = new HashMap<SqlIdentifier,SqlIdentifier>();
+    SqlIdentifier propertyName;
+    SqlIdentifier propertyValue;
+}
+{
+    (
+        <ROLE>
+        (
+            (
+                <PRIMARY>
+            |
+                <UPTODATE>
+            )
+            { propertyValue = new SqlIdentifier( "UPTODATE", getPos() ); }
+        |
+            (
+                <SECONDARY>
+            |
+                <REFRESHABLE>
+            )
+            { propertyValue = new SqlIdentifier( "REFRESHABLE", getPos() ); }
+        )
+        {
+            propertyName = new SqlIdentifier( "ROLE", getPos() );
+        }
+    )
+    {
+        propertyMap.put(propertyName, propertyValue );
+        return propertyMap;
+    }
+}
+
+
 /**
  * Parses the name of a JDBC function that is a token but is not reserved.
  */
@@ -6470,6 +6529,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < REAL: "REAL" >
 |   < RECURSIVE: "RECURSIVE" >
 |   < REF: "REF" >
+|   < REFRESHABLE: "REFRESHABLE" >
 |   < REFERENCES: "REFERENCES" >
 |   < REFERENCING: "REFERENCING" >
 |   < REGR_AVGX: "REGR_AVGX" >
@@ -6523,6 +6583,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SCROLL: "SCROLL" >
 |   < SEARCH: "SEARCH" >
 |   < SECOND: "SECOND" >
+|   < SECONDARY: "SECONDARY" >
 |   < SECTION: "SECTION" >
 |   < SECURITY: "SECURITY" >
 |   < SEEK: "SEEK" >
@@ -6675,6 +6736,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < UNNAMED: "UNNAMED" >
 |   < UNNEST: "UNNEST" >
 |   < UPDATE: "UPDATE" >
+|   < UPTODATE: "UPTODATE" >
 |   < UPPER: "UPPER" >
 |   < UPSERT: "UPSERT" >
 |   < USAGE: "USAGE" >

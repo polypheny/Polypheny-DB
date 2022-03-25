@@ -63,6 +63,7 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
+import org.polypheny.db.replication.properties.PlacementPropertyInformation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -374,6 +375,15 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+
+    /**
+     * Modifies the DataPlacement in respect to optional properties. Which may alter the behaviour of the placement in certain scenarios
+     *
+     * @param placementPropertyInfo condensed information which properties have been specified
+     * @param storeInstance the data store
+     * @param statement the used statement
+     */
+    public abstract void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws LastPlacementException;
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -720,5 +730,4 @@ public abstract class DdlManager {
         }
 
     }
-
 }

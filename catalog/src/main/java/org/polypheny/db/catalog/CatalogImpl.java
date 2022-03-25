@@ -4865,14 +4865,18 @@ public class CatalogImpl extends Catalog {
      * @param partitionIds List of partitionIds to be located on a specific store for the table
      */
     @Override
-    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds ) {
+    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, DataPlacementRole dataPlacementRole ) {
         CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
+
+        if ( dataPlacementRole == null || dataPlacementRole.equals( oldDataPlacement.dataPlacementRole ) ) {
+            dataPlacementRole = oldDataPlacement.dataPlacementRole;
+        }
 
         CatalogDataPlacement newDataPlacement = new CatalogDataPlacement(
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
-                oldDataPlacement.dataPlacementRole,
+                dataPlacementRole,
                 ImmutableList.copyOf( columnIds ),
                 ImmutableList.copyOf( partitionIds ) );
 
@@ -4880,6 +4884,37 @@ public class CatalogImpl extends Catalog {
 
         if ( log.isDebugEnabled() ) {
             log.debug( "Added columns {} & partitions: {} of table {}, to placement on adapter {}.", columnIds, partitionIds, tableId, adapterId );
+        }
+    }
+
+
+    /**
+     * Updates and overrides the dataPlacementRole for a given data placement
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param dataPlacementRole new DataPlacementRole
+     */
+    @Override
+    public void updateDataPlacementRole( int adapterId, long tableId, DataPlacementRole dataPlacementRole ) {
+        CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
+
+        if ( dataPlacementRole == null || dataPlacementRole.equals( oldDataPlacement.dataPlacementRole ) ) {
+            dataPlacementRole = oldDataPlacement.dataPlacementRole;
+        }
+
+        CatalogDataPlacement newDataPlacement = new CatalogDataPlacement(
+                oldDataPlacement.tableId,
+                oldDataPlacement.adapterId,
+                oldDataPlacement.placementType,
+                dataPlacementRole,
+                ImmutableList.copyOf( oldDataPlacement.columnPlacementsOnAdapter ),
+                ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
+
+        modifyDataPlacement( adapterId, tableId, newDataPlacement );
+
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Switched from placement role {} to {} for table {}, on adapter {}.", oldDataPlacement.dataPlacementRole, dataPlacementRole, tableId, adapterId );
         }
     }
 
