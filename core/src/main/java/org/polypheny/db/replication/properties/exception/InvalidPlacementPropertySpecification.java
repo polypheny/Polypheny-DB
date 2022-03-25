@@ -17,9 +17,14 @@
 package org.polypheny.db.replication.properties.exception;
 
 
-public class InvalidPlacementPropertySpecification extends Exception{
+public class InvalidPlacementPropertySpecification extends Exception {
 
-    public InvalidPlacementPropertySpecification( ) {
+    public InvalidPlacementPropertySpecification() {
         super( "The specified placement properties are not valid." );
+    }
+
+
+    public InvalidPlacementPropertySpecification( String e ) {
+        super( e );
     }
 }

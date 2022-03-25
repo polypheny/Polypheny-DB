@@ -91,7 +91,6 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -122,7 +121,6 @@ import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.replication.properties.PlacementPropertyInformation;
 import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
-import org.polypheny.db.replication.properties.exception.UnknownPlacementPropertyException;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -1389,8 +1387,31 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws InvalidPlacementPropertySpecification {
 
-        if ( placementPropertyInfo == null ){
+        if ( placementPropertyInfo == null ) {
             throw new InvalidPlacementPropertySpecification();
+        }
+        // If Role has not been specified
+        else if ( placementPropertyInfo.dataPlacementRole == null ) {
+            throw new InvalidPlacementPropertySpecification();
+        }
+
+        int adapterId = storeInstance.getAdapterId();
+
+        // Check constraints if ROLE is set TO REFRESHABLE
+        // Otherwise we could lose data on the primaries/UPTODATE copies.
+        if ( placementPropertyInfo.dataPlacementRole.equals( DataPlacementRole.REFRESHABLE ) ) {
+            List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByRole( placementPropertyInfo.table.id, DataPlacementRole.UPTODATE );
+            catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
+
+            // Gather all partitionIds to a set
+            Set<Long> accumulatedPartitionIds = new HashSet<>();
+            catalogDataPlacements.forEach( dp -> accumulatedPartitionIds.addAll( dp.getAllPartitionIds() ) );
+
+            // If not each partition has an UPTODATE copy
+            if ( accumulatedPartitionIds.size() != placementPropertyInfo.table.partitionProperty.partitionIds.size() ) {
+                throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
+                        + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough UPTODATE-copies left. " );
+            }
         }
 
         catalog.updateDataPlacementRole( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.dataPlacementRole );

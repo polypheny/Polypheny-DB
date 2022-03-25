@@ -146,7 +146,7 @@ public class PlacementPropertyTest {
                     Assert.assertEquals( allDataPlacements.get( 0 ).dataPlacementRole, DataPlacementRole.UPTODATE );
 
                     // Check assert False. Constraint violation because no other primaries would be in place
-                    /*boolean failed = false;
+                    boolean failed = false;
                     try {
                         statement.executeUpdate( "ALTER TABLE parsesqlalterplacementpropertyrole "
                                 + "MODIFY PLACEMENT "
@@ -156,7 +156,6 @@ public class PlacementPropertyTest {
                         failed = true;
                     }
                     Assert.assertTrue( failed );
-                    */
 
                     // Deploy a new store
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
