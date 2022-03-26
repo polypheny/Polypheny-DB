@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

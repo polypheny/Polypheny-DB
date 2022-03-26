@@ -16,14 +16,12 @@
 
 package org.polypheny.db.algebra.logical;
 
-
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.BatchIterator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.transaction.Statement;
-
 
 public class LogicalBatchIterator extends BatchIterator {
 

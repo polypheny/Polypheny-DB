@@ -16,13 +16,11 @@
 
 package org.polypheny.db.adapter.enumerable;
 
-
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.LogicalStreamer;
 import org.polypheny.db.plan.Convention;
-
 
 public class EnumerableStreamerRule extends ConverterRule {
 

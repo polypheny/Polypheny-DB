@@ -16,11 +16,9 @@
 
 package org.polypheny.db.adapter.enumerable;
 
-
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-
 
 public class BatchIteratorEnumerable<T> extends AbstractEnumerable<T> {
 

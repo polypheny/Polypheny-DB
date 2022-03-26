@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -93,7 +92,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-
 
 @Slf4j
 public class ConstraintEnforcer {

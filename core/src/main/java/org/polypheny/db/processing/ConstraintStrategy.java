@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-
 public enum ConstraintStrategy {
     BEFORE_QUERY_EXECUTION,
     AFTER_QUERY_EXECUTION

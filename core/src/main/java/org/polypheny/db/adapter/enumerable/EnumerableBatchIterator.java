@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.enumerable;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
@@ -31,7 +30,6 @@ import org.polypheny.db.algebra.core.BatchIterator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
-
 
 public class EnumerableBatchIterator extends BatchIterator implements EnumerableAlg {
 

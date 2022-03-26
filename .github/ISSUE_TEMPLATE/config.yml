@@ -3,7 +3,7 @@ contact_links:
   - name: 💬 Polypheny Community Support
     url: https://github.com/polypheny/Polypheny-DB/discussions
     about: If you have a question, or are seeking advice, please post on our discussions' forum! The community loves to chime in to help.
-  -   name: 🤝 Polypheny Discord Community
+  - name: 🤝 Polypheny Discord Community
     url: https://chat.polypheny.org/
     about: If you want to team up or engage with other contributors, join our Discord channel!
   - name: 📚 Documentation

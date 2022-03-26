@@ -16,14 +16,12 @@
 
 package org.polypheny.db.algebra.core;
 
-
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-
 
 public abstract class BatchIterator extends SingleAlg {
 
