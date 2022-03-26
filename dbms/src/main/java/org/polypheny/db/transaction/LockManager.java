@@ -47,14 +47,12 @@ public class LockManager {
 
 
     public void lock( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
-
         // Decide on which locking  approach to focus
         if ( transaction.acceptsOutdated() ) {
             handleSecondaryLocks( idAccessMap, transaction );
         } else {
             handlePrimaryLocks( idAccessMap, transaction );
         }
-
     }
 
 

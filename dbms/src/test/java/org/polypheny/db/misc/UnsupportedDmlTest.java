@@ -16,7 +16,6 @@
 
 package org.polypheny.db.misc;
 
-
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
@@ -35,7 +34,6 @@ import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.webui.models.Result;
-
 
 @Category({ AdapterTestSuite.class, CassandraExcluded.class, FileExcluded.class }) // todo fix error with filter in file
 public class UnsupportedDmlTest extends MqlTestTemplate {
