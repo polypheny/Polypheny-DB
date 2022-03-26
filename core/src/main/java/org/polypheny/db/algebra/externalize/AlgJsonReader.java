@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,7 +116,7 @@ public class AlgJsonReader {
 
     private void readAlg( final Map<String, Object> jsonAlg ) {
         String id = (String) jsonAlg.get( "id" );
-        String type = (String) jsonAlg.get( "algOp" );
+        String type = (String) jsonAlg.get( "relOp" );
         Constructor constructor = algJson.getConstructor( type );
         AlgInput input = new AlgInput() {
             @Override

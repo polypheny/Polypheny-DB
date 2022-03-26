@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -99,6 +100,7 @@ public class SqlLanguagelDependant extends LanguageManager {
 
     static {
         LanguageManager.setAndGetInstance( new SqlLanguagelDependant() );
+        Catalog.testMode = true;
     }
 
 

@@ -18,13 +18,18 @@ package org.polypheny.db.routing.routers;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.BatchIterator;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.SetOp;
+import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
@@ -34,6 +39,7 @@ import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -108,6 +114,8 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             throw new IllegalStateException( "Should never happen for DML" );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             throw new IllegalStateException( "Should never happen for conditional executes" );
+        } else if ( logicalRoot.alg instanceof BatchIterator ) {
+            throw new IllegalStateException( "Should never happen for Iterator" );
         } else {
             RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
             List<RoutedAlgBuilder> routedAlgBuilders = buildDql(
@@ -129,7 +137,12 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     protected List<RoutedAlgBuilder> buildDql( AlgNode node, List<RoutedAlgBuilder> builders, Statement statement, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         if ( node instanceof SetOp ) {
-            return buildSetOp( node, builders, statement, cluster, queryInformation );
+            if ( node instanceof Union ) {
+                // unions can have more than one child
+                return buildUnion( node, builders, statement, cluster, queryInformation );
+            } else {
+                return buildSetOp( node, builders, statement, cluster, queryInformation );
+            }
         } else {
             return buildSelect( node, builders, statement, cluster, queryInformation );
         }
@@ -186,6 +199,32 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
         builders.forEach(
                 builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek(), b0.build() ) ) )
+        );
+
+        return builders;
+    }
+
+
+    protected List<RoutedAlgBuilder> buildUnion( AlgNode node, List<RoutedAlgBuilder> builders, Statement statement, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        if ( cancelQuery ) {
+            return Collections.emptyList();
+        }
+        builders = buildDql( node.getInput( 0 ), builders, statement, cluster, queryInformation );
+
+        RoutedAlgBuilder builder0 = RoutedAlgBuilder.create( statement, cluster );
+        List<RoutedAlgBuilder> b0s = new ArrayList<>();
+        for ( AlgNode input : node.getInputs().subList( 1, node.getInputs().size() ) ) {
+            b0s.add( buildDql( input, Lists.newArrayList( builder0 ), statement, cluster, queryInformation ).get( 0 ) );
+        }
+
+        builders.forEach(
+                builder -> builder.replaceTop( node.copy(
+                        node.getTraitSet(),
+                        ImmutableList.copyOf(
+                                Stream.concat(
+                                                Stream.of( builder.peek() ),
+                                                b0s.stream().map( AlgBuilder::build ) )
+                                        .collect( Collectors.toList() ) ) ) )
         );
 
         return builders;

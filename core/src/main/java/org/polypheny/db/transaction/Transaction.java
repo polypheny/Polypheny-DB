@@ -18,11 +18,13 @@ package org.polypheny.db.transaction;
 
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
@@ -58,6 +60,8 @@ public interface Transaction {
 
     boolean isAnalyze();
 
+    void setAnalyze( boolean analyze );
+
     InformationManager getQueryAnalyzer();
 
     AtomicBoolean getCancelFlag();
@@ -77,6 +81,8 @@ public interface Transaction {
     void setUseCache( boolean useCache );
 
     boolean getUseCache();
+
+    Set<CatalogTable> getCatalogTables();
 
     void setAcceptsOutdated( boolean acceptsOutdated );
 

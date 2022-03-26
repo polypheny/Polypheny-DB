@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ public class BasicPolyType extends AbstractPolyType {
     /**
      * Constructs a type with nullability.
      */
-    BasicPolyType createWithNullability( boolean nullable ) {
+    public BasicPolyType createWithNullability( boolean nullable ) {
         if ( nullable == this.isNullable ) {
             return this;
         }

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
@@ -351,6 +352,14 @@ public enum RuntimeConfig {
             false,
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
+
+    CONSTRAINT_ENFORCEMENT_STRATEGY(
+            "runtime/constraintEnforcementStrategy",
+            "Adjusted used constraint enforcement strategy.",
+            ConstraintStrategy.AFTER_QUERY_EXECUTION,
+            ConfigType.ENUM,
+            "constraintEnforcementGroup"
+    ),
 
     POLYSTORE_INDEXES_ENABLED(
             "runtime/polystoreIndexesEnabled",
