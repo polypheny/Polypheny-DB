@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
     public final long schemaId;
     public final long databaseId;
     public final ImmutableList<Long> columnIds;
+    public final EnforcementTime enforcementTime;
 
 
     public CatalogKey(
@@ -41,21 +42,14 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
             final long tableId,
             final long schemaId,
             final long databaseId,
-            final List<Long> columnIds ) {
+            final List<Long> columnIds,
+            EnforcementTime enforcementTime ) {
         this.id = id;
         this.tableId = tableId;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
         this.columnIds = ImmutableList.copyOf( columnIds );
-    }
-
-
-    public CatalogKey(
-            final long id,
-            final long tableId,
-            final long schemaId,
-            final long databaseId ) {
-        this( id, tableId, schemaId, databaseId, null );
+        this.enforcementTime = enforcementTime;
     }
 
 
@@ -100,6 +94,12 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
             return (int) (this.id - o.id);
         }
         return -1;
+    }
+
+
+    public enum EnforcementTime {
+        ON_COMMIT,
+        ON_QUERY
     }
 
 }

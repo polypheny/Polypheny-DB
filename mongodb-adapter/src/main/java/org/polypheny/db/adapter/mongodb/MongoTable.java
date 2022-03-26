@@ -169,15 +169,15 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * @return Enumerator of results
      */
     private Enumerable<Object> find( MongoDatabase mongoDb, MongoTable table, String filterJson, String projectJson, List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields ) {
-        final MongoCollection collection = mongoDb.getCollection( collectionName );
-        final Bson filter = filterJson == null ? null : BsonDocument.parse( filterJson );
-        final Bson project = projectJson == null ? null : BsonDocument.parse( projectJson );
+        final MongoCollection<Document> collection = mongoDb.getCollection( collectionName );
+        final Bson filter = filterJson == null ? new BsonDocument() : BsonDocument.parse( filterJson );
+        final Bson project = projectJson == null ? new BsonDocument() : BsonDocument.parse( projectJson );
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
 
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
-                @SuppressWarnings("unchecked") final FindIterable<Document> cursor = collection.find( filter ).projection( project );
+                final FindIterable<Document> cursor = collection.find( filter ).projection( project );
                 return new MongoEnumerator( cursor.iterator(), getter, table.getMongoSchema().getBucket() );
             }
         };
@@ -199,7 +199,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * @param fields List of fields to project; or null to return map
      * @param operations One or more JSON strings
      * @param parameterValues the values pre-ordered
-     * @param filter tje filter in a BsonDocument form
      * @return Enumerator of results
      */
     private Enumerable<Object> aggregate(
@@ -210,7 +209,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             List<Entry<String, Class>> arrayFields,
             final List<String> operations,
             Map<Long, Object> parameterValues,
-            BsonDocument filter,
+            //BsonDocument filter,
             List<BsonDocument> preOps,
             List<String> logicalCols ) {
         final List<BsonDocument> list = new ArrayList<>();
@@ -218,10 +217,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         if ( parameterValues.size() == 0 ) {
             // direct query
             preOps.forEach( op -> list.add( new BsonDocument( "$addFields", op ) ) );
-
-            if ( !filter.isEmpty() ) {
-                list.add( new BsonDocument( "$match", filter ) );
-            }
 
             for ( String operation : operations ) {
                 list.add( BsonDocument.parse( operation ) );
@@ -231,11 +226,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             preOps.stream()
                     .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket(), dataContext ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
-
-            if ( !filter.isEmpty() ) {
-                MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket(), dataContext );
-                list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
-            }
 
             for ( String operation : operations ) {
                 MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket(), dataContext );
@@ -252,8 +242,9 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         if ( log.isDebugEnabled() ) {
             log.debug( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         }
+
         //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
                 final Iterator<Document> resultIterator;
@@ -349,7 +340,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, String filter, List<String> preProjections, List<String> logicalCols ) {
+        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getTable().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( this.getTable().getStoreId() ) );
 
@@ -367,7 +358,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     arrayClass,
                     operations,
                     values,
-                    BsonDocument.parse( filter ),
+                    //BsonDocument.parse( filter ),
                     preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ),
                     logicalCols );
         }
@@ -397,7 +388,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @return the enumerable which holds the result of the operation
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, Boolean onlyOne ) {
+        public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument ) {
             MongoTable mongoTable = getTable();
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( mongoTable.getStoreId() ) );
@@ -408,14 +399,14 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
             try {
                 // while this should not happen, we still can handle it and return a corrected message back and rollback
-                changes = doDML( operation, filter, operations, onlyOne, mongoTable, session, bucket, changes );
+                changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoTable, session, bucket, changes );
             } catch ( MongoException e ) {
                 mongoTable.getTransactionProvider().rollback( xid );
                 throw new RuntimeException( e.getMessage().replace( "_data.", "" ), e );
             }
 
             long finalChanges = changes;
-            return new AbstractEnumerable<Object>() {
+            return new AbstractEnumerable<>() {
                 @Override
                 public Enumerator<Object> enumerator() {
                     return new IterWrapper( Collections.singletonList( (Object) finalChanges ).iterator() );
@@ -424,7 +415,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         }
 
 
-        private long doDML( Operation operation, String filter, List<String> operations, Boolean onlyOne, MongoTable mongoTable, ClientSession session, GridFSBucket bucket, long changes ) {
+        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoTable mongoTable, ClientSession session, GridFSBucket bucket, long changes ) {
             switch ( operation ) {
                 case INSERT:
                     if ( dataContext.getParameterValues().size() != 0 ) {
@@ -446,20 +437,34 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     assert operations.size() == 1;
                     // we use only update docs
                     if ( dataContext.getParameterValues().size() != 0 ) {
-                        // prepared
+                        // prepared we use document update not pipeline
                         MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
                         MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
                         for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
                             if ( onlyOne ) {
-                                changes += mongoTable
-                                        .getCollection()
-                                        .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
-                                        .getModifiedCount();
+                                if ( needsDocument ) {
+                                    changes += mongoTable
+                                            .getCollection()
+                                            .updateOne( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                            .getModifiedCount();
+                                } else {
+                                    changes += mongoTable
+                                            .getCollection()
+                                            .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                            .getModifiedCount();
+                                }
                             } else {
-                                changes += mongoTable
-                                        .getCollection()
-                                        .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
-                                        .getModifiedCount();
+                                if ( needsDocument ) {
+                                    changes += mongoTable
+                                            .getCollection()
+                                            .updateMany( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                            .getModifiedCount();
+                                } else {
+                                    changes += mongoTable
+                                            .getCollection()
+                                            .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                            .getModifiedCount();
+                                }
                             }
                         }
                     } else {

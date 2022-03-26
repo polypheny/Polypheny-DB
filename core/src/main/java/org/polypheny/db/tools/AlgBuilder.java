@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.bson.BsonValue;
@@ -117,6 +118,7 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
@@ -124,6 +126,8 @@ import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.mapping.Mapping;
@@ -145,6 +149,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AlgBuilder {
 
+    @Getter
     protected final AlgOptCluster cluster;
     protected final AlgOptSchema algOptSchema;
     private final AlgFactories.FilterFactory filterFactory;
@@ -348,6 +353,18 @@ public class AlgBuilder {
 
 
     /**
+     * Adds an alg node to the top of the stack while preserving the field names and aliases.
+     */
+    public void replaceTop( AlgNode node, int amount ) {
+        final Frame frame = stack.pop();
+        for ( int i = 0; i < amount - 1; i++ ) {
+            stack.pop();
+        }
+        stack.push( new Frame( node, frame.fields ) );
+    }
+
+
+    /**
      * Pushes a collection of relational expressions.
      */
     public AlgBuilder pushAll( Iterable<? extends AlgNode> nodes ) {
@@ -441,6 +458,15 @@ public class AlgBuilder {
             return rexBuilder.makeExactLiteral( BigDecimal.valueOf( ((Number) value).longValue() ) );
         } else if ( value instanceof String ) {
             return rexBuilder.makeLiteral( (String) value );
+        } else if ( value instanceof byte[] ) {
+            // multimedia stream
+            return rexBuilder.makeFileLiteral( (byte[]) value );
+        } else if ( value instanceof DateString ) {
+            return rexBuilder.makeDateLiteral( (DateString) value );
+        } else if ( value instanceof TimeString ) {
+            return rexBuilder.makeTimeLiteral( (TimeString) value, value.toString().length() );
+        } else if ( value instanceof TimestampString ) {
+            return rexBuilder.makeTimestampLiteral( (TimestampString) value, value.toString().length() );
         } else {
             throw new IllegalArgumentException( "cannot convert " + value + " (" + value.getClass() + ") to a constant" );
         }

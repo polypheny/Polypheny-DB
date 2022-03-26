@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.algebra;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.FlatLists;
@@ -45,6 +46,7 @@ import org.polypheny.db.runtime.FlatLists;
  *
  * It is not required that two-input relational expressions use this class as a base class. However, default implementations of methods make life easier.
  */
+@Getter
 public abstract class BiAlg extends AbstractAlgNode {
 
     protected AlgNode left;
@@ -68,16 +70,6 @@ public abstract class BiAlg extends AbstractAlgNode {
     @Override
     public List<AlgNode> getInputs() {
         return FlatLists.of( left, right );
-    }
-
-
-    public AlgNode getLeft() {
-        return left;
-    }
-
-
-    public AlgNode getRight() {
-        return right;
     }
 
 
