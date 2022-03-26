@@ -1094,8 +1094,12 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ){ throw new NotImplementedException(); }
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
+        throw new NotImplementedException();
+    }
+
 
     @Override
     public void addDataPlacement( int adapterId, long tableId ) {
@@ -1216,8 +1220,10 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
         throw new NotImplementedException();
     }
+
 }

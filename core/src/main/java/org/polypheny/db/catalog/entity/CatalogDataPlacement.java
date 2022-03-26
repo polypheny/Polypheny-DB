@@ -53,8 +53,9 @@ public class CatalogDataPlacement implements CatalogEntity {
 
     public final ImmutableList<Long> columnPlacementsOnAdapter;
 
-    // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important and frequent than writes
-    public final ImmutableMap<DataPlacementRole,ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
+    // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important
+    // and frequent than writes
+    public final ImmutableMap<DataPlacementRole, ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
 
 
     // The newest commit timestamp when any partitions inside this placement has been updated or refreshed
@@ -96,10 +97,7 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     public boolean hasFullPlacement() {
-        if ( hasColumnFullPlacement() && hasPartitionFullPlacement() ) {
-            return true;
-        }
-        return false;
+        return hasColumnFullPlacement() && hasPartitionFullPlacement();
     }
 
 
@@ -112,12 +110,14 @@ public class CatalogDataPlacement implements CatalogEntity {
         return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
     }
 
-    public List<Long> getAllPartitionIds(){
+
+    public List<Long> getAllPartitionIds() {
         return partitionPlacementsOnAdapterByRole.values()
                 .stream()
-                .flatMap(List::stream)
+                .flatMap( List::stream )
                 .collect( Collectors.toList() );
     }
+
 
     @Override
     public Serializable[] getParameterArray() {
@@ -126,18 +126,14 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final ImmutableList<Long> unsortedPartitionIds ) {
-
         // Since this shall only be called after initialization of dataPlacement object,
         // we need to clear the contents of partitionPlacementsOnAdapterByRole
-        Map<DataPlacementRole,ImmutableList<Long>> partitionsPerRole = new HashMap<>();
+        Map<DataPlacementRole, ImmutableList<Long>> partitionsPerRole = new HashMap<>();
 
         try {
             Catalog catalog = Catalog.getInstance();
-
             if ( !unsortedPartitionIds.isEmpty() ) {
-
                 CatalogPartitionPlacement partitionPlacement;
-
                 for ( long partitionId : unsortedPartitionIds ) {
                     partitionPlacement = catalog.getPartitionPlacement( this.adapterId, partitionId );
                     DataPlacementRole role = partitionPlacement.role;
@@ -153,15 +149,15 @@ public class CatalogDataPlacement implements CatalogEntity {
                     partitionsPerRole.replace( role, ImmutableList.copyOf( partitions ) );
                 }
             }
-        }catch (RuntimeException e){
+        } catch ( RuntimeException e ) {
             // Catalog is not ready
             // Happens only for defaultColumns during setAndGetInstance of Catalog
             // Just assume UPTODATE for all.
             partitionsPerRole.put( DataPlacementRole.UPTODATE, ImmutableList.copyOf( unsortedPartitionIds ) );
         }
 
-
         // Finally, overwrite entire partitionPlacementsOnAdapterByRole at Once
         return ImmutableMap.copyOf( partitionsPerRole );
     }
+
 }

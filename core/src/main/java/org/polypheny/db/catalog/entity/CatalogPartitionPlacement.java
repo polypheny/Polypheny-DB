@@ -39,7 +39,6 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     public final String physicalSchemaName;
     public final String physicalTableName;
 
-
     // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
     // If false, physical partition placements are considered to be refreshable and can therefore become outdated and need to be lazily updated.
     // This attribute is derived from an effective data placement (table entity on a store)

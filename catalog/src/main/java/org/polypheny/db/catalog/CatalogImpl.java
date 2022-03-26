@@ -865,7 +865,7 @@ public class CatalogImpl extends Catalog {
             updateColumnPlacementPhysicalPosition( csv.id, colId, position );
 
             long partitionId = table.partitionProperty.partitionIds.get( 0 );
-            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE);
+            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE );
         }
     }
 
@@ -1940,7 +1940,7 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     old.partitionId,
-                    old.role);
+                    old.role );
 
             synchronized ( this ) {
                 partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
@@ -4177,7 +4177,7 @@ public class CatalogImpl extends Catalog {
         CatalogDataPlacement dataPlacement = getDataPlacement( adapterId, tableId );
 
         dataPlacement.getAllPartitionIds().forEach(
-                        partitionId -> partitionGroups.add( getPartitionGroupByPartition( partitionId )
+                partitionId -> partitionGroups.add( getPartitionGroupByPartition( partitionId )
                 )
         );
 
@@ -4415,7 +4415,6 @@ public class CatalogImpl extends Catalog {
                 List<Long> effectiveColumnsOnStore = dataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toList() );
                 List<Long> effectivePartitionsOnStore = dataPlacement.getAllPartitionIds();
 
-
                 // Remove columns and partitions from store to not evaluate them
                 if ( dataPlacement.adapterId == adapterId ) {
 
@@ -4504,7 +4503,7 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     partitionId,
-                    role);
+                    role );
 
             synchronized ( this ) {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );

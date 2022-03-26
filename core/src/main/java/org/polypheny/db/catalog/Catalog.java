@@ -1128,7 +1128,6 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
-
     /**
      * Retrieves a list of partitions which are associated with a specific table
      *
@@ -1215,7 +1214,6 @@ public abstract class Catalog {
      */
     public abstract void updatePartition( long partitionId, Long partitionGroupId );
 
-
     /**
      * Get a List of all partitions belonging to a specific table
      *
@@ -1291,7 +1289,6 @@ public abstract class Catalog {
      */
     public abstract List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId );
 
-
     /**
      * Returns a specific DataPlacement of a given table.
      *
@@ -1342,7 +1339,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
 
-
     /**
      * Returns all PartitionPlacements of a given table that are associated with a given role.
      *
@@ -1352,17 +1348,15 @@ public abstract class Catalog {
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role );
 
-
     /**
      * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
      *
      * @param tableId table to retrieve the placements from
      * @param role role to specifically filter
-     * @param partitionId  filter by ID
+     * @param partitionId filter by ID
      * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role );
-
 
     /**
      * Checks if the planned changes are allowed in term sof placements that need to be present
@@ -1545,7 +1539,6 @@ public abstract class Catalog {
      * @return A list of all Partition Placements, that are currently located  on that specific store
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId );
-
 
     /**
      * Returns a list of all Partition Placements which currently reside on a adapter, for a specific table.

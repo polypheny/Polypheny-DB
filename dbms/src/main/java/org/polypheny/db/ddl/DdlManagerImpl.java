@@ -286,7 +286,7 @@ public class DdlManagerImpl extends DdlManager {
                             PlacementType.AUTOMATIC,
                             physicalSchemaName,
                             physicalTableName,
-                            DataPlacementRole.UPTODATE);
+                            DataPlacementRole.UPTODATE );
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }

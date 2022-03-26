@@ -300,7 +300,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     PlacementType.AUTOMATIC,
                                     null,
                                     null,
-                                    DataPlacementRole.UPTODATE);
+                                    DataPlacementRole.UPTODATE );
                         }
 
                         store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
@@ -348,7 +348,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     partitionId,
                                     PlacementType.AUTOMATIC,
                                     null,
-                                    null, DataPlacementRole.UPTODATE);
+                                    null, DataPlacementRole.UPTODATE );
                         }
                         store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
 
