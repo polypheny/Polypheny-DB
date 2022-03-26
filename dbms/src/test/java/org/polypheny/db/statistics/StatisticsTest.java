@@ -293,7 +293,7 @@ public class StatisticsTest {
                     continue;
                 }
                 inCatalog = true;
-                CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
+                CatalogEntity catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
                 Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {
@@ -312,7 +312,7 @@ public class StatisticsTest {
                 log.warn( "Collection was already removed from the catalog, therefore the count will be null, which is correct" );
             }
 
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | InterruptedException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException | InterruptedException e ) {
             log.error( "Caught exception test", e );
         }
     }
