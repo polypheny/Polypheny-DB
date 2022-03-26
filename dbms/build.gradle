@@ -37,6 +37,7 @@ dependencies {
     implementation project(":ethereum-adapter")
     implementation project(":file-adapter")
     implementation project(":jdbc-adapter")
+    implementation project(":neo4j-adapter")
     implementation project(":mongodb-adapter")
     implementation project(":catalog")
     implementation project(":webui")

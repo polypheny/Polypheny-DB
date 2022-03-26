@@ -50,7 +50,6 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
@@ -362,7 +361,7 @@ public class MongoStore extends DataStore {
             Document field = new Document().append( partitionPlacement.physicalTableName, 1 );
             Document filter = new Document().append( "$unset", field );
 
-            context.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( getAdapterId() ) );
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
             // DDL is auto-commit
             this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( new Document(), filter );
         }
@@ -394,7 +393,7 @@ public class MongoStore extends DataStore {
             case TEXT:
                 // stemd and stop words removed
             case HASHED:
-                throw new UnsupportedOperationException( "The mongodb adapter does not yet support this index" );
+                throw new UnsupportedOperationException( "The neo4j adapter does not yet support this index" );
         }
 
         Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, catalogIndex.name );
