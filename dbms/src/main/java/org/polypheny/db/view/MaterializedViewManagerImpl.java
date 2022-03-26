@@ -60,12 +60,12 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.EntityAccessMap;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
@@ -89,13 +89,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     @Getter
     private final List<Long> intervalToUpdate;
 
-    final Map<PolyXid, Long> potentialInteresting;
+    final Map<PolyXid, Long> updateCandidates;
 
 
     public MaterializedViewManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         this.materializedInfo = new ConcurrentHashMap<>();
-        this.potentialInteresting = new HashMap<>();
+        this.updateCandidates = new HashMap<>();
         this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
         registerFreshnessLoop();
     }
@@ -168,8 +168,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * If a change is committed to the transactionId and the tableId are saved as potential interesting for
-     * materialized view with freshness update
+     * If a change is committed to the transactionId and the tableId are saved as potential interesting
+     * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
      * @param tableNames table that was changed
@@ -181,7 +181,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
                 long id = catalogTable.id;
                 if ( !catalogTable.getConnectedViews().isEmpty() ) {
-                    potentialInteresting.put( transaction.getXid(), id );
+                    updateCandidates.put( transaction.getXid(), id );
                 }
             } catch ( UnknownTableException e ) {
                 throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
@@ -198,8 +198,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public void updateCommittedXid( PolyXid xid ) {
-        if ( potentialInteresting.containsKey( xid ) ) {
-            materializedUpdate( potentialInteresting.remove( xid ) );
+        if ( updateCandidates.containsKey( xid ) ) {
+            materializedUpdate( updateCandidates.remove( xid ) );
         }
     }
 
@@ -283,12 +283,12 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
             try {
                 Statement statement = transaction.createStatement();
-                Collection<Entry<TableIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+                Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
                 // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
                 idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
                 // Get locks for individual tables
-                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition() );
-                idAccessMap.addAll( accessMap.getTablesAccessedPair() );
+                EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
+                idAccessMap.addAll( accessMap.getAccessedEntityPair() );
                 LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
 
             } catch ( DeadlockException e ) {

@@ -111,6 +111,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
 
+    private boolean acceptsOutdated = false;
+
+    private AccessMode accessMode = AccessMode.NO_ACCESS;
+
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
 
@@ -339,6 +343,63 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean getUseCache() {
         return this.useCache;
+    }
+
+
+    /**
+     * Used to specify if a TX was started using freshness tolerance levels and
+     * therefore allows the usage of outdated replicas.
+     *
+     * If this is active no DML operations are possible for this TX.
+     * If however a DML operation was already executed by this TX.
+     * This TX can now support no more freshness-related queries.
+     */
+    @Override
+    public void setAcceptsOutdated( boolean acceptsOutdated ) {
+        this.acceptsOutdated = acceptsOutdated;
+    }
+
+
+    @Override
+    public boolean acceptsOutdated() {
+        return this.acceptsOutdated;
+    }
+
+
+    @Override
+    public AccessMode getAccessMode() {
+        return accessMode;
+    }
+
+
+    @Override
+    public void updateAccessMode( AccessMode accessModeCandidate ) {
+
+        // If TX is already in RW access we can skip immediately
+        if ( this.accessMode.equals( AccessMode.READWRITE_ACCESS ) || this.accessMode.equals( accessModeCandidate ) ) {
+            return;
+        }
+
+        switch ( accessModeCandidate ) {
+            case WRITE_ACCESS:
+                if ( this.accessMode.equals( AccessMode.READ_ACCESS ) ) {
+                    accessModeCandidate = AccessMode.READWRITE_ACCESS;
+                }
+                break;
+
+            case READ_ACCESS:
+                if ( this.accessMode.equals( AccessMode.WRITE_ACCESS ) ) {
+                    accessModeCandidate = AccessMode.READWRITE_ACCESS;
+                }
+                break;
+
+            case NO_ACCESS:
+                throw new RuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
+        }
+
+        // If nothing else has matched so far. It's safe to simply use the input
+        this.accessMode = accessModeCandidate;
+
     }
 
     //

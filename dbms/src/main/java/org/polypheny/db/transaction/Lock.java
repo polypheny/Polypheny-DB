@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import org.polypheny.db.transaction.Transaction.AccessMode;
+
 
 // Based on code taken from https://github.com/dstibrany/LockManager
 public class Lock {
@@ -41,8 +43,10 @@ public class Lock {
     void acquire( TransactionImpl txn, LockMode lockMode ) throws InterruptedException {
         if ( lockMode == LockMode.SHARED ) {
             acquireSLock( txn );
+            txn.updateAccessMode( AccessMode.READ_ACCESS );
         } else if ( lockMode == LockMode.EXCLUSIVE ) {
             acquireXLock( txn );
+            txn.updateAccessMode( AccessMode.WRITE_ACCESS );
         } else {
             throw new RuntimeException( "Lock mode does not exist" );
         }

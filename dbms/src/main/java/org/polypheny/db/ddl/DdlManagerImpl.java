@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
@@ -284,7 +285,8 @@ public class DdlManagerImpl extends DdlManager {
                             catalogTable.partitionProperty.partitionIds.get( 0 ),
                             PlacementType.AUTOMATIC,
                             physicalSchemaName,
-                            physicalTableName );
+                            physicalTableName,
+                            DataPlacementRole.UPTODATE );
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }
@@ -782,7 +784,8 @@ public class DdlManagerImpl extends DdlManager {
                     partitionId,
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    DataPlacementRole.UPTODATE );
         }
 
         // Make sure that the stores have created the schema
@@ -994,7 +997,7 @@ public class DdlManagerImpl extends DdlManager {
 
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
         if ( !catalog.validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(),
-                dataPlacement.columnPlacementsOnAdapter, dataPlacement.partitionPlacementsOnAdapter ) ) {
+                dataPlacement.columnPlacementsOnAdapter, dataPlacement.getAllPartitionIds() ) ) {
 
             throw new LastPlacementException();
         }
@@ -1320,7 +1323,7 @@ public class DdlManagerImpl extends DdlManager {
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
         List<Long> removedPartitionIdsFromDataPlacement = new ArrayList<>();
         // Removed Partition Ids
-        for ( long partitionId : dataPlacement.partitionPlacementsOnAdapter ) {
+        for ( long partitionId : dataPlacement.getAllPartitionIds() ) {
             if ( !intendedPartitionIds.contains( partitionId ) ) {
                 removedPartitionIdsFromDataPlacement.add( partitionId );
             }
@@ -1329,7 +1332,7 @@ public class DdlManagerImpl extends DdlManager {
         List<Long> newPartitionIdsOnDataPlacement = new ArrayList<>();
         // Added Partition Ids
         for ( long partitionId : intendedPartitionIds ) {
-            if ( !dataPlacement.partitionPlacementsOnAdapter.contains( partitionId ) ) {
+            if ( !dataPlacement.getAllPartitionIds().contains( partitionId ) ) {
                 newPartitionIdsOnDataPlacement.add( partitionId );
             }
         }
@@ -1346,7 +1349,8 @@ public class DdlManagerImpl extends DdlManager {
                     partitionId,
                     PlacementType.MANUAL,
                     null,
-                    null )
+                    null,
+                    DataPlacementRole.UPTODATE )
             );
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
@@ -1400,7 +1404,8 @@ public class DdlManagerImpl extends DdlManager {
                         partitionId,
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE );
             }
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
@@ -1733,7 +1738,8 @@ public class DdlManagerImpl extends DdlManager {
                     catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    DataPlacementRole.UPTODATE );
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
@@ -1919,7 +1925,8 @@ public class DdlManagerImpl extends DdlManager {
                         catalogTable.partitionProperty.partitionIds.get( 0 ),
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE );
 
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
             }
@@ -2198,7 +2205,8 @@ public class DdlManagerImpl extends DdlManager {
                         partitionId,
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE );
             }
 
             // First create new tables
@@ -2279,7 +2287,8 @@ public class DdlManagerImpl extends DdlManager {
                     mergedTable.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    DataPlacementRole.UPTODATE );
 
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );

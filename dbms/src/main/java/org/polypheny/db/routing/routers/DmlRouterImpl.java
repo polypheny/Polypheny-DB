@@ -84,8 +84,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     /**
      * Default implementation: Execute DML on all placements
-     *
-     * @return
      */
     @Override
     public AlgNode routeDml( AlgNode node, Statement statement ) {

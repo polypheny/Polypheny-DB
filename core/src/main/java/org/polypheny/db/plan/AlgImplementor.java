@@ -48,8 +48,6 @@ public interface AlgImplementor {
 
     /**
      * Returns the desired SQL conformance.
-     *
-     * @return
      */
     Conformance getConformance();
 

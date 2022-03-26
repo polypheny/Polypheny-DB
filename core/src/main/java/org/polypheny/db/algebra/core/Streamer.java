@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.core;
 
+
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
@@ -23,6 +24,7 @@ import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+
 
 @Slf4j
 public abstract class Streamer extends BiAlg {
@@ -35,8 +37,6 @@ public abstract class Streamer extends BiAlg {
      * Provider    Collector
      * }
      *
-     * @param cluster
-     * @param traitSet
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */

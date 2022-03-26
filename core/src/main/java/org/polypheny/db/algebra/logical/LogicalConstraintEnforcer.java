@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.logical;
 
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -56,6 +57,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
+
 @Slf4j
 public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
@@ -68,8 +70,6 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
      *
      * @param modify is the initial dml query, which modifies the entity
      * @param control is the control query, which tests if still all conditions are correct
-     * @param exceptionClasses
-     * @param exceptionMessages
      */
     public LogicalConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClasses, List<String> exceptionMessages ) {
         super(

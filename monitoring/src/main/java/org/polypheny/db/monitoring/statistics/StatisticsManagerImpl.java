@@ -573,8 +573,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     /**
      * Queries the database with an aggregate query, to get the min value or max value.
-     *
-     * @return
      */
     private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {

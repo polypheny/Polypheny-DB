@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.enumerable;
 
+
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
+
 public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
     /**
@@ -49,8 +51,6 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
      *  Provider        Collector
      * </pre>
      *
-     * @param cluster
-     * @param traitSet
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */

@@ -1128,7 +1128,6 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
-
     /**
      * Retrieves a list of partitions which are associated with a specific table
      *
@@ -1341,6 +1340,25 @@ public abstract class Catalog {
     public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
 
     /**
+     * Returns all PartitionPlacements of a given table that are associated with a given role.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param role role to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific role
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role );
+
+    /**
+     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param role role to specifically filter
+     * @param partitionId filter by ID
+     * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role );
+
+    /**
      * Checks if the planned changes are allowed in term sof placements that need to be present
      *
      * @param tableId Table to be checked
@@ -1380,7 +1398,7 @@ public abstract class Catalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName );
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store

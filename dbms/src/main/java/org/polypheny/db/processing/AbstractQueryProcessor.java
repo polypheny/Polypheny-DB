@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
@@ -130,11 +131,11 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
+import org.polypheny.db.transaction.EntityAccessMap;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Conformance;
@@ -320,7 +321,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().start( "Locking" );
             }
             if ( lock ) {
-                this.acquireLock( isAnalyze, logicalRoot );
+                this.acquireLock( isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions() );
             }
 
             //
@@ -585,16 +586,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot ) {
+    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Integer, List<Long>> accessedPartitions ) {
+        // TODO @HENNLO Check if this is this is necessary to pass the partitions explicitly.
+        // This currently only works for queries. Since DMLs are evaluated during routing.
+        // This SHOULD be adjusted
+
         // Locking
         try {
-            Collection<Entry<TableIdentifier, LockMode>> idAccessMap = new ArrayList<>();
-            // Get locks for individual tables
-            TableAccessMap accessMap = new TableAccessMap( logicalRoot.alg );
+            Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+            // Get locks for individual entities
+            EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
             idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
 
-            idAccessMap.addAll( accessMap.getTablesAccessedPair() );
+            idAccessMap.addAll( accessMap.getAccessedEntityPair() );
             LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new RuntimeException( e );
