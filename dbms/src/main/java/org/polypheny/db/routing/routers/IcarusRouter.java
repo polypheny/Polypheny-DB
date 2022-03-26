@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,10 +85,11 @@ public class IcarusRouter extends FullPlacementQueryRouter {
             // Add placement in order of list to combine full placements of one store
             if ( placements.size() != builders.size() ) {
                 log.error( "Not allowed! With Icarus, this should not happen" );
+                throw new RuntimeException( "Not allowed! With Icarus, this should not happen" );
             }
 
             for ( List<CatalogColumnPlacement> currentPlacement : placements ) {
-                final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
+                final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
                 currentPlacementDistribution.put( catalogEntity.partitionProperty.partitionIds.get( 0 ), currentPlacement );
 
                 // AdapterId for all col placements same
@@ -117,6 +118,13 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 newBuilder.push( super.buildJoinedScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
+            if ( newBuilders.isEmpty() ) {
+                // apparently we have a problem and no builder fits
+                cancelQuery = true;
+                log.error( "Icarus did not find a suitable builder!" );
+                return Collections.emptyList();
+            }
+
         }
 
         builders.clear();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
@@ -86,11 +87,16 @@ public abstract class Modify extends SingleAlg {
     /**
      * The table definition.
      */
+    @Getter
     protected final AlgOptTable table;
+    @Getter
     private final Operation operation;
+    @Getter
     private final List<String> updateColumnList;
+    @Getter
     private final List<RexNode> sourceExpressionList;
     private AlgDataType inputRowType;
+    @Getter
     private final boolean flattened;
 
 
@@ -136,32 +142,6 @@ public abstract class Modify extends SingleAlg {
 
     public Prepare.CatalogReader getCatalogReader() {
         return catalogReader;
-    }
-
-
-    @Override
-    public AlgOptTable getTable() {
-        return table;
-    }
-
-
-    public List<String> getUpdateColumnList() {
-        return updateColumnList;
-    }
-
-
-    public List<RexNode> getSourceExpressionList() {
-        return sourceExpressionList;
-    }
-
-
-    public boolean isFlattened() {
-        return flattened;
-    }
-
-
-    public Operation getOperation() {
-        return operation;
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalExchange;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -50,6 +51,7 @@ import org.polypheny.db.algebra.logical.LogicalIntersect;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalUnion;
@@ -187,6 +189,18 @@ public class AlgShuttleImpl implements AlgShuttle {
     @Override
     public AlgNode visit( LogicalConditionalExecute lce ) {
         return visitChildren( lce );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalModify modify ) {
+        return visitChildren( modify );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
+        return visitChildren( enforcer );
     }
 
 

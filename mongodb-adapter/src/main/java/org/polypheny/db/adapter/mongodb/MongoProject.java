@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,12 +107,10 @@ public class MongoProject extends Project implements MongoAlg {
         }
 
         for ( Pair<RexNode, String> pair : getNamedProjects() ) {
-            final String name = pair.right.startsWith( "$" )
-                    ? "_" + MongoRules.maybeFix( pair.right.substring( 2 ) )
-                    : MongoRules.maybeFix( pair.right );
+            final String name = MongoRules.adjustName( pair.right );
 
             if ( pair.left.getKind() == Kind.DISTANCE ) {
-                documents.put( pair.right, BsonFunctionHelper.getFunction( (RexCall) pair.left, mongoRowType, implementor ) );
+                documents.put( name, BsonFunctionHelper.getFunction( (RexCall) pair.left, mongoRowType, implementor ) );
                 continue;
             }
 

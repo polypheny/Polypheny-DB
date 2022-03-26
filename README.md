@@ -6,7 +6,7 @@
 
 _Polypheny-DB_ is a self-adaptive Polystore that provides cost- and workload aware access to heterogeneous data. As a Polystore, Polypheny-DB seamlessly combines different underlying data storage engines to provide good query performance independent of the type of workload.
 
-If you want to learn more about Polypheny-DB, we recommend having a look on our [vision paper](https://ieeexplore.ieee.org/document/8622353).
+If you want to learn more about Polypheny-DB, we recommend having a look on our [website](https://polypheny.org) or on [this paper](http://dx.doi.org/10.1007/978-3-030-71055-2_2).
 
 ## Getting Started ##
 

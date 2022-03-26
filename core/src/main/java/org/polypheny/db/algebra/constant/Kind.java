@@ -1284,31 +1284,31 @@ public enum Kind {
 
     /**
      * Document model {@code UPDATE} operator, which handles only REPLACE during updates
-     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     *
      */
     MQL_UPDATE_REPLACE,
 
     /**
      * Document model {@code UPDATE} operator, which handles new DOCUMENTS during updates
-     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     *
      */
     MQL_ADD_FIELDS,
 
     /**
      * Document model {@code UPDATE} operator, which handles removing DOCUMENTS during updates
-     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     *
      */
     MQL_UPDATE_REMOVE,
 
     /**
      * Document model {@code UPDATE} operator, which handles rename DOCUMENTS during updates
-     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     *
      */
     MQL_UPDATE_RENAME,
 
     /**
      * Document model {@code UPDATE} operator, which wrapes the other UPDATE operations
-     * // TODO DL: REFACTOR AFTER DML ENUMERABLE
+     *
      */
     MQL_UPDATE,
 

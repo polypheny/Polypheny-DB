@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,11 @@ package org.polypheny.db.algebra.logical;
 
 
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
@@ -49,6 +53,12 @@ import org.polypheny.db.rex.RexNode;
  * Sub-class of {@link Modify} not targeted at any particular engine or calling convention.
  */
 public final class LogicalModify extends Modify {
+
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    boolean isStreamed = false;
+
 
     /**
      * Creates a LogicalModify.
@@ -73,7 +83,13 @@ public final class LogicalModify extends Modify {
     @Override
     public LogicalModify copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalModify( getCluster(), traitSet, table, catalogReader, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
+        return new LogicalModify( getCluster(), traitSet, table, catalogReader, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() ).isStreamed( isStreamed );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

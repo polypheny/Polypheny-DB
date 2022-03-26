@@ -2683,6 +2683,9 @@ public class DdlManagerImpl extends DdlManager {
         // Monitor dropTables for statistics
         prepareMonitoring( statement, Kind.DROP_TABLE, catalogEntity );
 
+        // ON_COMMIT constraint needs no longer to be enforced if entity does no longer exist
+        statement.getTransaction().getCatalogTables().remove( catalogEntity );
+
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }

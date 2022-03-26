@@ -16,6 +16,7 @@
 
 package org.polypheny.db.schema.document;
 
+import java.util.Arrays;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.algebra.SingleAlg;
@@ -53,6 +54,36 @@ public class DocumentRules {
             }
         }
         return false;
+    }
+
+
+    public static boolean containsDocumentUpdate( RexNode node ) {
+        DocUpdateVisitor visitor = new DocUpdateVisitor();
+        node.accept( visitor );
+        return visitor.containsUpdate;
+    }
+
+
+    public static class DocUpdateVisitor extends RexVisitorImpl<Void> {
+
+        @Getter
+        boolean containsUpdate = false;
+
+
+        protected DocUpdateVisitor() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            if ( Arrays.asList( Kind.MQL_UPDATE, Kind.MQL_UPDATE_REMOVE, Kind.MQL_UPDATE_RENAME, Kind.MQL_UPDATE_REPLACE ).contains( call.op.getKind() ) ) {
+                containsUpdate = true;
+            }
+
+            return super.visitCall( call );
+        }
+
     }
 
 

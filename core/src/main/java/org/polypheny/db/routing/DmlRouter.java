@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,5 +38,9 @@ public interface DmlRouter {
     AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation );
 
     AlgNode routeGraphDml( LogicalGraphModify alg, Statement statement );
+
+    AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
+
+    AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
 
 }

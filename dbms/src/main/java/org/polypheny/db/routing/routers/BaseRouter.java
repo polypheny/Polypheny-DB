@@ -133,7 +133,7 @@ public abstract class BaseRouter {
             );
         } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations
             builders.forEach(
-                    builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ) )
+                    builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ), 2 )
             );
         } else {
             throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
+import com.google.common.base.Joiner;
 import com.google.gson.Gson;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
@@ -70,6 +71,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -94,20 +96,25 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists.ComparableList;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
@@ -265,6 +272,108 @@ public class Functions {
             }
         }
         return null;
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Enumerable<?> batch( final DataContext context, final Enumerable<Object> baz ) {
+        List<Object> results = new ArrayList<>();
+
+        List<Map<Long, Object>> values = new ArrayList<>( context.getParameterValues() );
+
+        if ( values.size() == 0 ) {
+            return baz;
+        }
+
+        Set<Long> keys = values.get( 0 ).keySet();
+        // due to the fact that the standard collector Collectors.toMap crashes with null values,
+        // we use the old school way here
+        Map<Long, AlgDataType> types = new HashMap<>();
+        keys.forEach( k -> types.put( k, context.getParameterType( k ) ) );
+
+        for ( Map<Long, Object> value : values ) {
+            context.resetParameterValues();
+            value.forEach( ( k, v ) -> context.addParameterValues( k, types.get( k ), Collections.singletonList( v ) ) );
+
+            Iterator<Object> iter = baz.iterator();
+            results.add( iter.next() );
+        }
+        return Linq4j.asEnumerable( results );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<Object> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
+        PolyTypeFactoryImpl factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
+
+        boolean single = polyTypes.size() == 1;
+
+        List<Object[]> values = new ArrayList<>();
+        for ( Object o : baz ) {
+            if ( single ) {
+                values.add( new Object[]{ o } );
+            } else {
+                values.add( (Object[]) o );
+            }
+        }
+        if ( values.isEmpty() ) {
+            // there are no updates to make, we don't execute the right executor
+            return Linq4j.asEnumerable( List.of( 0 ) );
+        }
+
+        List<Map<Long, Object>> valuesBackup = context.getParameterValues();
+        Map<Long, AlgDataType> typesBackup = context.getParameterTypes();
+
+        context.resetParameterValues();
+        Map<Integer, List<Object>> vals = new HashMap<>();
+        for ( int i = 0; i < values.get( 0 ).length; i++ ) {
+            vals.put( i, new ArrayList<>() );
+        }
+        for ( Object[] value : values ) {
+            int i = 0;
+            for ( Object o1 : value ) {
+                vals.get( i ).add( o1 );
+                i++;
+            }
+        }
+        for ( int i = 0; i < values.get( 0 ).length; i++ ) {
+            context.addParameterValues( i, algDataTypes.get( i ), vals.get( i ) );
+        }
+
+        List<Object> results = new ArrayList<>();
+        Enumerable<Object> executor = executorCall.apply();
+        for ( Object o : executor ) {
+            results.add( o );
+        }
+
+        context.resetParameterValues();
+
+        context.setParameterTypes( typesBackup );
+        context.setParameterValues( valuesBackup );
+
+        return Linq4j.asEnumerable( results );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Enumerable<?> enforceConstraint( Enumerable<Object[]> modify, Enumerable<Object[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+        List<Object> results = new ArrayList<>();
+        for ( Object object : modify ) {
+            results.add( object );
+        }
+
+        List<Integer> validationIndexes = new ArrayList<>();
+        for ( Object object : control ) {
+            validationIndexes.add( (Integer) ((Object[]) object)[1] );
+        }
+        if ( validationIndexes.size() == 0 ) {
+            return Linq4j.asEnumerable( results );
+        } else {
+            // force rollback
+            throw new ConstraintViolationException( Joiner.on( "\n" )
+                    .join( validationIndexes.stream().map( msgs::get ).collect( Collectors.toList() ) ) );
+        }
     }
 
 

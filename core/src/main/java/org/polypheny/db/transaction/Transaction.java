@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,12 @@ package org.polypheny.db.transaction;
 
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -58,6 +60,8 @@ public interface Transaction {
 
     boolean isAnalyze();
 
+    void setAnalyze( boolean analyze );
+
     InformationManager getQueryAnalyzer();
 
     AtomicBoolean getCancelFlag();
@@ -77,6 +81,8 @@ public interface Transaction {
     void setUseCache( boolean useCache );
 
     boolean getUseCache();
+
+    Set<CatalogEntity> getCatalogTables();
 
     /**
      * Flavor, how multimedia results should be returned from a store.

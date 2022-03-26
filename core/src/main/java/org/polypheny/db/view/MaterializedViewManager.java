@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -90,23 +89,23 @@ public abstract class MaterializedViewManager {
 
 
         @Override
-        public AlgNode visit( AlgNode other ) {
-            if ( other instanceof LogicalModify ) {
-                if ( ((Modify) other).getOperation() != Operation.MERGE ) {
-                    if ( (other.getTable().getTable() instanceof LogicalTable) ) {
-                        List<String> qualifiedName = other.getTable().getQualifiedName();
-                        if ( qualifiedName.size() < 2 ) {
-                            names.add( ((LogicalTable) other.getTable().getTable()).getLogicalSchemaName() );
-                            names.add( ((LogicalTable) other.getTable().getTable()).getLogicalTableName() );
-                        } else {
-                            names.addAll( qualifiedName );
-                        }
+        public AlgNode visit( LogicalModify modify ) {
+            if ( modify.getOperation() != Operation.MERGE ) {
+                if ( (modify.getTable().getTable() instanceof LogicalTable) ) {
+                    List<String> qualifiedName = modify.getTable().getQualifiedName();
+                    if ( qualifiedName.size() < 2 ) {
+                        names.add( ((LogicalTable) modify.getTable().getTable()).getLogicalSchemaName() );
+                        names.add( ((LogicalTable) modify.getTable().getTable()).getLogicalTableName() );
+                    } else {
+                        names.addAll( qualifiedName );
                     }
                 }
             }
-            return super.visit( other );
+            return super.visit( modify );
         }
 
+
     }
+
 
 }

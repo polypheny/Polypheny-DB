@@ -190,6 +190,15 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
     }
 
 
+    static String getEnumNameOrNull( Enum<?> theEnum ) {
+        if ( theEnum == null ) {
+            return null;
+        } else {
+            return theEnum.name();
+        }
+    }
+
+
     public CatalogEntity getRenamed( String newName ) {
         return new CatalogEntity(
                 id,

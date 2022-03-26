@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public final class CatalogForeignKey extends CatalogKey {
             final List<Long> referencedKeyColumnIds,
             final ForeignKeyOption updateRule,
             final ForeignKeyOption deleteRule ) {
-        super( id, tableId, schemaId, databaseId, columnIds );
+        super( id, tableId, schemaId, databaseId, columnIds, EnforcementTime.ON_COMMIT );
         this.name = name;
         this.referencedKeyId = referencedKeyId;
         this.referencedKeyTableId = referencedKeyTableId;

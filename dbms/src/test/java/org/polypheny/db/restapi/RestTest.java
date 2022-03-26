@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,7 +200,7 @@ public class RestTest {
 
         // Update
         Map<String, String> where2 = new LinkedHashMap<>();
-        where.put( "restschema.resttest.tsmallint", "=" + 46 );
+        where2.put( "restschema.resttest.tsmallint", "=" + 46 );
         request = buildRestUpdate( "restschema.resttest", getTestRow( 0 ), where2 );
         Assert.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -903,6 +903,15 @@ public class RexBuilder {
     }
 
 
+    public RexLiteral makeFileLiteral( byte[] bytes ) {
+        ByteString byteString = new ByteString( bytes );
+        return makeLiteral(
+                new ByteString( bytes ),
+                typeFactory.createPolyType( PolyType.BINARY, byteString.length() ),
+                PolyType.BINARY );
+    }
+
+
     /**
      * Creates a double-precision literal.
      */
@@ -1236,6 +1245,8 @@ public class RexBuilder {
                 } else {
                     return literal;
                 }
+            case FILE:
+                return makeFileLiteral( (byte[]) value );
             case TINYINT:
             case SMALLINT:
             case INTEGER:

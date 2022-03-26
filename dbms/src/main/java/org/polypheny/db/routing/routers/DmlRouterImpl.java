@@ -32,9 +32,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.BatchIterator;
+import org.polypheny.db.algebra.core.ConditionalExecute;
+import org.polypheny.db.algebra.core.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModify;
@@ -80,6 +85,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     /**
      * Default implementation: Execute DML on all placements
+     *
+     * @return
      */
     @Override
     public AlgNode routeDml( LogicalModify modify, Statement statement ) {
@@ -706,6 +713,48 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         return LogicalConditionalExecute.create( builder.build(), action, lce );
+    }
+
+
+    @Override
+    public AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation ) {
+        LogicalConstraintEnforcer constraint = (LogicalConstraintEnforcer) alg;
+        RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, alg.getCluster() );
+        builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, statement, alg.getCluster(), queryInformation );
+
+        if ( constraint.getLeft() instanceof Modify ) {
+            return LogicalConstraintEnforcer.create(
+                    routeDml( (LogicalModify) constraint.getLeft(), statement ),
+                    builder.build(),
+                    constraint.getExceptionClasses(),
+                    constraint.getExceptionMessages() );
+        } else if ( constraint.getLeft() instanceof BatchIterator ) {
+            return LogicalConstraintEnforcer.create(
+                    handleBatchIterator( constraint.getLeft(), statement, queryInformation ),
+                    builder.build(),
+                    constraint.getExceptionClasses(),
+                    constraint.getExceptionMessages() );
+        } else {
+            throw new RuntimeException( "The provided modify query for the ConstraintEnforcer was not recognized!" );
+        }
+    }
+
+
+    @Override
+    public AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation ) {
+        LogicalBatchIterator iterator = (LogicalBatchIterator) alg;
+        AlgNode input;
+        if ( iterator.getInput() instanceof Modify ) {
+            input = routeDml( (LogicalModify) iterator.getInput(), statement );
+        } else if ( iterator.getInput() instanceof ConditionalExecute ) {
+            input = handleConditionalExecute( iterator.getInput(), statement, queryInformation );
+        } else if ( iterator.getInput() instanceof ConstraintEnforcer ) {
+            input = handleConstraintEnforcer( iterator.getInput(), statement, queryInformation );
+        } else {
+            throw new RuntimeException( "BachIterator had an unknown child!" );
+        }
+
+        return LogicalBatchIterator.create( input, statement );
     }
 
 

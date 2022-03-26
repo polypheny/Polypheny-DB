@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -287,7 +287,10 @@ public class EnumerableScan extends Scan implements EnumerableAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         if ( Catalog.testMode ) {
-            return super.computeSelfCost( planner, mq ).multiplyBy( 2 );
+            // normally this enumerable is not used by Polypheny and is therefore "removed" by an infinite cost,
+            // but theoretically it is able to handle scans on the application layer
+            // this is tested by different instances and should then lead to a finite selfCost
+            return super.computeSelfCost( planner, mq );
         }
         return VolcanoCost.FACTORY.makeInfiniteCost();
     }

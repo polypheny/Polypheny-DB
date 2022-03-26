@@ -74,6 +74,7 @@ import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartition;
@@ -3261,7 +3262,7 @@ public class CatalogImpl extends Catalog {
                     deleteKeyIfNoLongerUsed( table.primaryKey );
                 }
             }
-            long keyId = getOrAddKey( tableId, columnIds );
+            long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
             setPrimaryKey( tableId, keyId );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -3401,7 +3402,7 @@ public class CatalogImpl extends Catalog {
                     }
                     // TODO same keys for key and foreign key
                     if ( getKeyUniqueCount( refKey.id ) > 0 ) {
-                        long keyId = getOrAddKey( tableId, columnIds );
+                        long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
                         //List<String> keyColumnNames = columnIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
                         //List<String> referencesNames = referencesIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
                         CatalogForeignKey key = new CatalogForeignKey(
@@ -3442,9 +3443,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
-        // TODO DL check with statements
         try {
-            long keyId = getOrAddKey( tableId, columnIds );
+            long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
             // Check if there is already a unique constraint
             List<CatalogConstraint> catalogConstraints = constraints.values().stream()
                     .filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE )
@@ -3561,7 +3561,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException {
-        long keyId = getOrAddKey( tableId, columnIds );
+        long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         if ( unique ) {
             // TODO: Check if the current values are unique
         }
@@ -5541,23 +5541,24 @@ public class CatalogImpl extends Catalog {
      *
      * @param tableId on which the key is defined
      * @param columnIds all involved columns
+     * @param enforcementTime at which point during execution the key should be enforced
      * @return the id of the key
      * @throws GenericCatalogException if the key does not exist
      */
-    private long getOrAddKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+    private long getOrAddKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) throws GenericCatalogException {
         Long keyId = keyColumns.get( columnIds.stream().mapToLong( Long::longValue ).toArray() );
         if ( keyId != null ) {
             return keyId;
         }
-        return addKey( tableId, columnIds );
+        return addKey( tableId, columnIds, enforcementTime );
     }
 
 
-    private long addKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+    private long addKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) throws GenericCatalogException {
         try {
             CatalogEntity table = Objects.requireNonNull( tables.get( tableId ) );
             long id = keyIdBuilder.getAndIncrement();
-            CatalogKey key = new CatalogKey( id, table.id, table.namespaceId, table.databaseId, columnIds );
+            CatalogKey key = new CatalogKey( id, table.id, table.namespaceId, table.databaseId, columnIds, enforcementTime );
             synchronized ( this ) {
                 keys.put( id, key );
                 keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );

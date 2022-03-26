@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,11 @@ package org.polypheny.db.schema.document;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 
@@ -40,6 +43,18 @@ public class DataModelShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalValues values ) {
         return super.visit( values );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalModify modify ) {
+        if ( modify.getTable().getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
+            if ( modify.getInput() instanceof LogicalValues && !(modify.getInput() instanceof LogicalDocuments) ) {
+                modify.replaceInput( 0, LogicalDocuments.create( (LogicalValues) modify.getInput() ) );
+            }
+            return super.visit( modify );
+        }
+        return super.visit( modify );
     }
 
 

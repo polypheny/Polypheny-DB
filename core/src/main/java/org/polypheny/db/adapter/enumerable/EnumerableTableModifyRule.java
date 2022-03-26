@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,13 @@ public class EnumerableTableModifyRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         final LogicalModify modify = (LogicalModify) alg;
+        // EnumerableTableModify uses getModifiableCollection, which no store implements correctly
+        // the streamer should be able to handles it without this method
+        if ( true ) {
+            // this is something, which is not supported therefore we can just substitute it
+            // return EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE.convert( alg );
+            return null;
+        }
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
         if ( modifiableTable == null ) {
             return null;

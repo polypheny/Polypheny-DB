@@ -159,10 +159,9 @@ public class MongoDynamic {
      * Insert operation, which replaces the initially defined dynamic/prepared objects the provided values.
      *
      * @param parameterValues the dynamic parameters
-     * @param dataContext
      * @return a final BsonObject with the correct values inserted
      */
-    public BsonDocument insert( Map<Long, Object> parameterValues, DataContext dataContext ) {
+    public BsonDocument insert( Map<Long, Object> parameterValues ) {
         for ( Entry<Long, Object> entry : parameterValues.entrySet() ) {
             if ( arrayHandles.containsKey( entry.getKey() ) ) {
                 Boolean isRegex = isRegexMap.get( entry.getKey() );
@@ -202,13 +201,13 @@ public class MongoDynamic {
             List<Map<Long, Object>> parameterValues,
             Function<Document, ? extends WriteModel<Document>> constructor ) {
         return parameterValues.stream()
-                .map( value -> constructor.apply( BsonUtil.asDocument( insert( value, dataContext ) ) ) )
+                .map( value -> constructor.apply( BsonUtil.asDocument( insert( value ) ) ) )
                 .collect( Collectors.toList() );
     }
 
 
     public List<Document> getAll( List<Map<Long, Object>> parameterValues ) {
-        return parameterValues.stream().map( value -> BsonUtil.asDocument( insert( value, dataContext ) ) ).collect( Collectors.toList() );
+        return parameterValues.stream().map( value -> BsonUtil.asDocument( insert( value ) ) ).collect( Collectors.toList() );
     }
 
 
