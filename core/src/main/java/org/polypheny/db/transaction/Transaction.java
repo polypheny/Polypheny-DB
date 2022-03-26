@@ -52,6 +52,8 @@ public interface Transaction {
 
     boolean isActive();
 
+    long getCommitTimestamp();
+
     JavaTypeFactory getTypeFactory();
 
     PolyphenyDbCatalogReader getCatalogReader();

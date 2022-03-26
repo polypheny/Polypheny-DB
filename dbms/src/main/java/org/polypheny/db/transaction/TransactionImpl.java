@@ -114,6 +114,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private boolean acceptsOutdated = false;
 
     private AccessMode accessMode = AccessMode.NO_ACCESS;
+    private long commitTimestamp;
 
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
@@ -195,6 +196,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             for ( Adapter adapter : involvedAdapters ) {
                 adapter.commit( xid );
             }
+            setCommitTimestamp( System.currentTimeMillis() );
 
             this.statements.forEach( statement -> {
                 if ( statement.getMonitoringEvent() != null ) {
@@ -205,6 +207,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             } );
 
             IndexManager.getInstance().commit( this.xid );
+
+            // TODO @HENNLO insert applied changes to ShadowTable since they are now save to commit
+
         } else {
             log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
             rollback();
@@ -257,6 +262,26 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean isActive() {
         return transactionManager.isActive( xid );
+    }
+
+
+    @Override
+    public long getCommitTimestamp() {
+        return commitTimestamp;
+    }
+
+
+    private void setCommitTimestamp( long commitTimestamp ) {
+        //TODO @HENNLO
+        // Check that commitTimestamp is not too much in the past
+        // That information will not be altered
+
+        // If it has already been set
+        if ( this.commitTimestamp > 0 ) {
+            // TODO @HENNLO throw more sophisticate exception
+            throw new RuntimeException( "Commit Timestamp has already been set and cannot be altered!" );
+        }
+        this.commitTimestamp = commitTimestamp;
     }
 
 
