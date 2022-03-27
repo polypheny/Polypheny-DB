@@ -53,9 +53,49 @@ public class NeoModify extends Modify implements NeoAlg {
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
-        this.input.accept( implementor );
+        implementor.visitChild( 0, getInput() );
+
+        assert getTable() != null;
+        implementor.setTable( getTable() );
+
+        switch ( getOperation() ) {
+            case INSERT:
+                handleInsert( implementor );
+                break;
+            case UPDATE:
+                break;
+            case DELETE:
+                break;
+            case MERGE:
+                break;
+        }
+    }
 
 
+    private void handleInsert( NeoRelationalImplementor implementor ) {
+        // insert
+        if ( implementor.hasValues() ) {
+            // normal insert
+            implementor.addCreate();
+        } else {
+            // prepared insert
+            implementor.addPreparedCreate();
+        }
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoModify(
+                inputs.get( 0 ).getCluster(),
+                traitSet,
+                table,
+                catalogReader,
+                inputs.get( 0 ),
+                getOperation(),
+                getUpdateColumnList(),
+                getSourceExpressionList(),
+                isFlattened() );
     }
 
 }

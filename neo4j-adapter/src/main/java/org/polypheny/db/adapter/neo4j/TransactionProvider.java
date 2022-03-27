@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.driver.Driver;
@@ -38,7 +39,32 @@ public class TransactionProvider {
 
 
     public Transaction get( PolyXid xid ) {
-        return register.get( xid );
+        if ( register.containsKey( xid ) ) {
+            return register.get( xid );
+        }
+        commitAll();
+        Transaction trx = session.beginTransaction();
+        put( xid, trx );
+        return trx;
+    }
+
+
+    void commit( PolyXid xid ) {
+        register.get( xid ).commit();
+        register.remove( xid );
+    }
+
+
+    void rollback( PolyXid xid ) {
+        register.get( xid ).rollback();
+        register.remove( xid );
+    }
+
+
+    private void commitAll() {
+        for ( PolyXid polyXid : new ArrayList<>( register.keySet() ) ) {
+            commit( polyXid );
+        }
     }
 
 

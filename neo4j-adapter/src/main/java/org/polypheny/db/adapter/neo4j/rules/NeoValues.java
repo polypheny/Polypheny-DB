@@ -17,7 +17,9 @@
 package org.polypheny.db.adapter.neo4j.rules;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -33,7 +35,16 @@ public class NeoValues extends Values implements NeoAlg {
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
+        if ( getRowType().getFieldCount() == 1 && getRowType().getFieldList().get( 0 ).getName().equals( "ZERO" ) ) {
+            return;
+        }
+        implementor.addValues( tuples );
+    }
 
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoValues( getCluster(), rowType, tuples, traitSet );
     }
 
 }

@@ -16,9 +16,11 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
+import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoEntity;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
-import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor.MatchStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil.MatchStatement;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
@@ -40,11 +42,16 @@ public class NeoScan extends Scan implements NeoAlg {
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
         implementor.setTable( table );
-        implementor.setEntity( neoEntity );
 
         implementor.add( new MatchStatement(
                 String.format( "(%s:%s)", neoEntity.phsicalEntityName, neoEntity.phsicalEntityName ),
-                Pair.of( neoEntity.phsicalEntityName, null ) ) );
+                List.of( Pair.of( neoEntity.phsicalEntityName, null ) ) ) );
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoScan( getCluster(), traitSet, getTable(), neoEntity );
     }
 
 }

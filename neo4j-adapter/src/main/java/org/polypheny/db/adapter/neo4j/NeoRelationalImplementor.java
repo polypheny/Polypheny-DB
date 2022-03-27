@@ -16,121 +16,107 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.enumerable.EnumUtils;
+import org.polypheny.db.adapter.neo4j.rules.NeoAlg;
+import org.polypheny.db.adapter.neo4j.rules.NeoProject;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil.CreateStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil.NeoStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil.PreparedCreate;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil.ReturnStatement;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
 public class NeoRelationalImplementor extends AlgShuttleImpl {
 
+    public static final List<Pair<String, String>> ROWCOUNT = List.of( Pair.of( null, "ROWCOUNT" ) );
     private final List<NeoStatement> statements = new ArrayList<>();
     @Getter
-    private Pair<String, String> tableCol;
+    private List<Pair<String, String>> tableCols;
 
-    @Setter
     @Getter
     private AlgOptTable table;
 
-    @Setter
     @Getter
     private NeoEntity entity;
 
 
+    private ImmutableList<ImmutableList<RexLiteral>> values;
+
+    @Setter
+    @Getter
+    private AlgNode last;
+
+
     public void add( NeoStatement statement ) {
         this.statements.add( statement );
-        this.tableCol = statement.tableCol;
+        this.tableCols = statement.tableCols;
     }
 
 
-    enum StatementType {
-        MATCH,
-        CREATE,
-        WHERE,
-        RETURN,
-        WITH
+    public void setTable( AlgOptTable table ) {
+        this.table = table;
+        this.entity = (NeoEntity) table.getTable();
     }
 
 
-    @Getter
-    public abstract static class NeoStatement {
-
-        final StatementType type;
-        final String query;
-        private final Pair<String, String> tableCol;
-
-
-        protected NeoStatement( StatementType type, String query, Pair<String, String> tableCol ) {
-            this.type = type;
-            this.query = query;
-            this.tableCol = tableCol;
-        }
-
-
-        public abstract String build();
-
+    public void addValues( ImmutableList<ImmutableList<RexLiteral>> tuples ) {
+        this.values = tuples;
     }
 
 
-    public static class MatchStatement extends NeoStatement {
-
-        public MatchStatement( String query, Pair<String, String> tableCol ) {
-            super( StatementType.MATCH, query, tableCol );
-        }
-
-
-        @Override
-        public String build() {
-            return "MATCH " + query;
-        }
-
+    public boolean hasValues() {
+        return this.values != null && !this.values.isEmpty();
     }
 
 
-    public static class WhereStatement extends NeoStatement {
-
-        public WhereStatement( String query, Pair<String, String> tableCol ) {
-            super( StatementType.WHERE, query, tableCol );
-        }
-
-
-        @Override
-        public String build() {
-            return "WHERE " + query;
-        }
-
+    public void addCreate() {
+        CreateStatement statement = NeoUtil.CreateStatement.create( values, entity );
+        add( statement );
+        add( new ReturnStatement( tableCols.size() + " AS ROWCOUNT", ROWCOUNT ) );
     }
 
 
-    public static class CreateStatement extends NeoStatement {
-
-        protected CreateStatement( String query, Pair<String, String> tableCol ) {
-            super( StatementType.CREATE, query, tableCol );
+    public void addPreparedCreate() {
+        if ( last instanceof NeoProject ) {
+            PreparedCreate statement = PreparedCreate.createPrepared( ((NeoProject) last), entity );
+            add( statement );
+            add( new ReturnStatement( tableCols.size() + " AS ROWCOUNT", ROWCOUNT ) );
+            return;
         }
-
-
-        @Override
-        public String build() {
-            return "CREATE " + query;
-        }
-
+        throw new RuntimeException();
     }
 
 
-    public static class ReturnStatement extends NeoStatement {
+    public Expression asExpression() {
+        return EnumUtils.constantArrayList( statements
+                .stream()
+                .map( NeoUtil.NeoStatement::asExpression )
+                .collect( Collectors.toList() ), NeoStatement.class );
+    }
 
-        protected ReturnStatement( String query, Pair<String, String> tableCol ) {
-            super( StatementType.RETURN, query, tableCol );
-        }
+
+    public void visitChild( int ordinal, AlgNode input ) {
+        assert ordinal == 0;
+        ((NeoAlg) input).implement( this );
+    }
 
 
-        @Override
-        public String build() {
-            return "RETURN " + query;
-        }
-
+    public void addReturn( List<RexNode> projects ) {
+        NeoStatement statement = NeoStatement.createReturn( projects, entity, tableCols );
+        add( statement );
+        tableCols = statement.tableCols;
     }
 
 }

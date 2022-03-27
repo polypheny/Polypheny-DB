@@ -146,7 +146,7 @@ public abstract class AbstractAlgNode implements AlgNode {
         if ( getInputs().equals( inputs ) && traitSet == getTraitSet() ) {
             return this;
         }
-        throw new AssertionError( "Relational expression should override copy. Class=[" + getClass() + "]; traits=[" + getTraitSet() + "]; desired traits=[" + traitSet + "]" );
+        throw new AssertionError( "Algebra expression should override copy. Class=[" + getClass() + "]; traits=[" + getTraitSet() + "]; desired traits=[" + traitSet + "]" );
     }
 
 

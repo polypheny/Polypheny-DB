@@ -18,10 +18,11 @@ package org.polypheny.db.adapter.neo4j;
 
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Method;
+import java.util.List;
 import org.apache.calcite.linq4j.tree.Types;
 
 public enum NeoMethod {
-    ;
+    EXECUTE( NeoEntity.NeoQueryable.class, "execute", List.class, List.class, List.class );
     //MONGO_QUERYABLE_FIND( MongoTable.MongoQueryable.class, "find", String.class, String.class, List.class, List.class ),
     //MONGO_QUERYABLE_AGGREGATE( MongoTable.MongoQueryable.class, "aggregate", List.class, List.class, List.class, List.class, List.class ),
     //HANDLE_DIRECT_DML( MongoTable.MongoQueryable.class, "handleDirectDML", Operation.class, String.class, List.class, boolean.class, boolean.class );

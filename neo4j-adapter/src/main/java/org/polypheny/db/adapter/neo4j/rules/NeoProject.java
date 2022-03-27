@@ -40,7 +40,11 @@ public class NeoProject extends Project implements NeoAlg {
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
-
+        implementor.visitChild( 0, getInput() );
+        implementor.setLast( this );
+        if ( !implementor.hasValues() ) {
+            implementor.addReturn( getProjects() );
+        }
     }
 
 }

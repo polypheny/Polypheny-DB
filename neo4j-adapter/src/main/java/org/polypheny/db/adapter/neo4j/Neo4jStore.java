@@ -33,7 +33,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataStore;
@@ -116,12 +115,7 @@ public class Neo4jStore extends DataStore {
         if ( this.db == null ) {
             return false;
         }
-        Transaction trx;
-        try {
-            trx = this.db.session().beginTransaction();
-        } catch ( ServiceUnavailableException e ) {
-            return false;
-        }
+
         try {
             this.db.verifyConnectivity();
             return true;
@@ -315,7 +309,7 @@ public class Neo4jStore extends DataStore {
         }
 
         try {
-            this.currentSchema = new NeoNamespace( db, expression, this, Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, namespaceName ).id );
+            this.currentSchema = new NeoNamespace( db, expression, transactionProvider, this, Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, namespaceName ).id );
         } catch ( UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while generating new namespace" );
         }
@@ -345,13 +339,13 @@ public class Neo4jStore extends DataStore {
 
     @Override
     public void commit( PolyXid xid ) {
-        this.transactionProvider.get( xid ).commit();
+        this.transactionProvider.commit( xid );
     }
 
 
     @Override
     public void rollback( PolyXid xid ) {
-        this.transactionProvider.get( xid ).rollback();
+        this.transactionProvider.rollback( xid );
     }
 
 
@@ -370,7 +364,7 @@ public class Neo4jStore extends DataStore {
 
 
     public static String getPhysicalEntityName( long namespaceId, long entityId, long partitionId ) {
-        return String.format( "%d_entity_%d_%d", namespaceId, entityId, partitionId );
+        return String.format( "n_%d_entity_%d_%d", namespaceId, entityId, partitionId );
     }
 
 

@@ -41,6 +41,7 @@ import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.BlockStatement;
@@ -48,6 +49,7 @@ import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ForStatement;
+import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -289,6 +291,26 @@ public class EnumUtils {
                 Expressions.postIncrementAssign( i_ ),
                 statement
         );
+    }
+
+
+    /**
+     * E.g. {@code constantArrayList("x", "y")} returns "Arrays.asList('x', 'y')".
+     *
+     * @param values List of values
+     * @param clazz Type of values
+     * @return expression
+     */
+    public static <T> MethodCallExpression constantArrayList( List<T> values, Class<?> clazz ) {
+        return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit( clazz, constantList( values ) ) );
+    }
+
+
+    /**
+     * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
+     */
+    public static <T> List<Expression> constantList( List<T> values ) {
+        return values.stream().map( Expressions::constant ).collect( Collectors.toList() );
     }
 
 }

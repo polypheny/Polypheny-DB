@@ -36,26 +36,23 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 public class NeoNamespace extends AbstractSchema {
 
-    public static final String CREATE_DATABASE = "CREATE DATABASE ";
     public final Driver graph;
     public final Neo4jStore store;
     public final String physicalName;
     public final long id;
-    private final Expression rootSchemaRetrieval;
+    public final Expression rootSchemaRetrieval;
     public final Session session;
+    public final TransactionProvider transactionProvider;
 
 
-    public NeoNamespace( Driver db, Expression expression, Neo4jStore neo4jStore, long namespaceId ) {
+    public NeoNamespace( Driver db, Expression expression, TransactionProvider transactionProvider, Neo4jStore neo4jStore, long namespaceId ) {
         this.graph = db;
         this.store = neo4jStore;
         this.id = namespaceId;
         this.rootSchemaRetrieval = expression;
         this.physicalName = Neo4jStore.getPhysicalNamespaceName( id );
         this.session = graph.session( SessionConfig.builder().withDatabase( Neo4jStore.getPhysicalNamespaceName( id ) ).build() );
-
-        // Transaction trx = this.graph.session().beginTransaction();
-        // trx.run( CREATE_DATABASE + Neo4jStore.getPhysicalNamespaceName( id ) );
-        // trx.commit();
+        this.transactionProvider = transactionProvider;
     }
 
 
