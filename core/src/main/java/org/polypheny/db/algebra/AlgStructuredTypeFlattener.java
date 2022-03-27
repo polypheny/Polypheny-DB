@@ -38,8 +38,10 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.LogicalCalc;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalIntersect;
@@ -49,6 +51,7 @@ import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalStreamer;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalUnion;
@@ -122,8 +125,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     private final RexBuilder rexBuilder;
     private final boolean restructure;
 
-    private final Map<AlgNode, AlgNode> oldToNewRelMap = new HashMap<>();
-    private AlgNode currentRel;
+    private final Map<AlgNode, AlgNode> oldTonewAlgMap = new HashMap<>();
+    private AlgNode currentAlg;
     private int iRestructureInput;
     private AlgDataType flattenedRootType;
     boolean restructured;
@@ -144,9 +147,9 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     public void updateRelInMap( SortedSetMultimap<AlgNode, CorrelationId> mapRefRelToCorVar ) {
         for ( AlgNode alg : Lists.newArrayList( mapRefRelToCorVar.keySet() ) ) {
-            if ( oldToNewRelMap.containsKey( alg ) ) {
+            if ( oldTonewAlgMap.containsKey( alg ) ) {
                 SortedSet<CorrelationId> corVarSet = mapRefRelToCorVar.removeAll( alg );
-                mapRefRelToCorVar.putAll( oldToNewRelMap.get( alg ), corVarSet );
+                mapRefRelToCorVar.putAll( oldTonewAlgMap.get( alg ), corVarSet );
             }
         }
     }
@@ -155,10 +158,10 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void updateRelInMap( SortedMap<CorrelationId, LogicalCorrelate> mapCorVarToCorRel ) {
         for ( CorrelationId corVar : mapCorVarToCorRel.keySet() ) {
             LogicalCorrelate oldRel = mapCorVarToCorRel.get( corVar );
-            if ( oldToNewRelMap.containsKey( oldRel ) ) {
-                AlgNode newRel = oldToNewRelMap.get( oldRel );
-                assert newRel instanceof LogicalCorrelate;
-                mapCorVarToCorRel.put( corVar, (LogicalCorrelate) newRel );
+            if ( oldTonewAlgMap.containsKey( oldRel ) ) {
+                AlgNode newAlg = oldTonewAlgMap.get( oldRel );
+                assert newAlg instanceof LogicalCorrelate;
+                mapCorVarToCorRel.put( corVar, (LogicalCorrelate) newAlg );
             }
         }
     }
@@ -166,7 +169,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     public AlgNode rewrite( AlgNode root ) {
         // Perform flattening.
-        final RewriteRelVisitor visitor = new RewriteRelVisitor();
+        final RewriteAlgVisitor visitor = new RewriteAlgVisitor();
         visitor.visit( root, 0, null );
         AlgNode flattened = getNewForOldRel( root );
         flattenedRootType = flattened.getRowType();
@@ -234,13 +237,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    protected void setNewForOldRel( AlgNode oldRel, AlgNode newRel ) {
-        oldToNewRelMap.put( oldRel, newRel );
+    protected void setNewForOldRel( AlgNode oldRel, AlgNode newAlg ) {
+        oldTonewAlgMap.put( oldRel, newAlg );
     }
 
 
     protected AlgNode getNewForOldRel( AlgNode oldRel ) {
-        return oldToNewRelMap.get( oldRel );
+        return oldTonewAlgMap.get( oldRel );
     }
 
 
@@ -263,13 +266,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
      * @return Post-flattening ordinal and type
      */
     protected Ord<AlgDataType> getNewFieldForOldInput( int oldOrdinal ) {
-        assert currentRel != null;
+        assert currentAlg != null;
         int newOrdinal = 0;
 
         // determine which input alg oldOrdinal references, and adjust oldOrdinal to be relative to that input rel
         AlgNode oldInput = null;
         AlgNode newInput = null;
-        for ( AlgNode oldInput1 : currentRel.getInputs() ) {
+        for ( AlgNode oldInput1 : currentAlg.getInputs() ) {
             newInput = getNewForOldRel( oldInput1 );
             AlgDataType oldInputType = oldInput1.getRowType();
             int n = oldInputType.getFieldCount();
@@ -298,11 +301,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
      * @return Mapping between fields of old and new
      */
     private Mappings.TargetMapping getNewForOldInputMapping( AlgNode oldRel ) {
-        final AlgNode newRel = getNewForOldRel( oldRel );
+        final AlgNode newAlg = getNewForOldRel( oldRel );
         return Mappings.target(
                 this::getNewForOldInput,
                 oldRel.getRowType().getFieldCount(),
-                newRel.getRowType().getFieldCount() );
+                newAlg.getRowType().getFieldCount() );
     }
 
 
@@ -332,14 +335,32 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalConditionalExecute alg ) {
-        LogicalConditionalExecute newRel = LogicalConditionalExecute.create( alg.getLeft(), alg.getRight(), alg );
-        setNewForOldRel( alg, newRel );
+    public void rewriteAlg( LogicalConditionalExecute alg ) {
+        LogicalConditionalExecute newAlg = LogicalConditionalExecute.create( alg.getLeft(), alg.getRight(), alg );
+        setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteRel( LogicalTableModify alg ) {
-        LogicalTableModify newRel =
+    public void rewriteAlg( LogicalStreamer alg ) {
+        LogicalStreamer newAlg = LogicalStreamer.create( alg.getLeft(), alg.getRight() );
+        setNewForOldRel( alg, newAlg );
+    }
+
+
+    public void rewriteAlg( LogicalBatchIterator alg ) {
+        LogicalBatchIterator newAlg = LogicalBatchIterator.create( alg.getInput() );
+        setNewForOldRel( alg, newAlg );
+    }
+
+
+    public void rewriteAlg( LogicalConstraintEnforcer alg ) {
+        LogicalConstraintEnforcer newAlg = LogicalConstraintEnforcer.create( alg.getLeft(), alg.getRight(), alg.getExceptionClasses(), alg.getExceptionMessages() );
+        setNewForOldRel( alg, newAlg );
+    }
+
+
+    public void rewriteAlg( LogicalTableModify alg ) {
+        LogicalTableModify newAlg =
                 LogicalTableModify.create(
                         alg.getTable(),
                         alg.getCatalogReader(),
@@ -348,11 +369,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                         alg.getUpdateColumnList(),
                         alg.getSourceExpressionList(),
                         true );
-        setNewForOldRel( alg, newRel );
+        setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteRel( LogicalAggregate alg ) {
+    public void rewriteAlg( LogicalAggregate alg ) {
         AlgDataType inputType = alg.getInput().getRowType();
         for ( AlgDataTypeField field : inputType.getFieldList() ) {
             if ( field.getType().isStruct() ) {
@@ -365,7 +386,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( Sort alg ) {
+    public void rewriteAlg( Sort alg ) {
         AlgCollation oldCollation = alg.getCollation();
         final AlgNode oldChild = alg.getInput();
         final AlgNode newChild = getNewForOldRel( oldChild );
@@ -381,34 +402,34 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             }
         }
         AlgCollation newCollation = RexUtil.apply( mapping, oldCollation );
-        Sort newRel = LogicalSort.create( newChild, newCollation, alg.offset, alg.fetch );
-        setNewForOldRel( alg, newRel );
+        Sort newAlg = LogicalSort.create( newChild, newCollation, alg.offset, alg.fetch );
+        setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteRel( LogicalFilter alg ) {
-        AlgNode newRel =
+    public void rewriteAlg( LogicalFilter alg ) {
+        AlgNode newAlg =
                 alg.copy(
                         alg.getTraitSet(),
                         getNewForOldRel( alg.getInput() ),
                         alg.getCondition().accept( new RewriteRexShuttle() ) );
-        setNewForOldRel( alg, newRel );
+        setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteRel( LogicalJoin alg ) {
-        LogicalJoin newRel =
+    public void rewriteAlg( LogicalJoin alg ) {
+        LogicalJoin newAlg =
                 LogicalJoin.create(
                         getNewForOldRel( alg.getLeft() ),
                         getNewForOldRel( alg.getRight() ),
                         alg.getCondition().accept( new RewriteRexShuttle() ),
                         alg.getVariablesSet(),
                         alg.getJoinType() );
-        setNewForOldRel( alg, newRel );
+        setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteRel( LogicalCorrelate alg ) {
+    public void rewriteAlg( LogicalCorrelate alg ) {
         Builder newPos = ImmutableBitSet.builder();
         for ( int pos : alg.getRequiredColumns() ) {
             AlgDataType corrFieldType = alg.getLeft().getRowType().getFieldList().get( pos ).getType();
@@ -417,65 +438,65 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             }
             newPos.set( getNewForOldInput( pos ) );
         }
-        LogicalCorrelate newRel =
+        LogicalCorrelate newAlg =
                 LogicalCorrelate.create(
                         getNewForOldRel( alg.getLeft() ),
                         getNewForOldRel( alg.getRight() ),
                         alg.getCorrelationId(),
                         newPos.build(),
                         alg.getJoinType() );
-        setNewForOldRel( alg, newRel );
+        setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteRel( Collect alg ) {
+    public void rewriteAlg( Collect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( Uncollect alg ) {
+    public void rewriteAlg( Uncollect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalIntersect alg ) {
+    public void rewriteAlg( LogicalIntersect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalMinus alg ) {
+    public void rewriteAlg( LogicalMinus alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalUnion alg ) {
+    public void rewriteAlg( LogicalUnion alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalModifyCollect alg ) {
+    public void rewriteAlg( LogicalModifyCollect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalValues alg ) {
+    public void rewriteAlg( LogicalValues alg ) {
         // NOTE: UDT instances require invocation of a constructor method, which can't be represented by
         // the tuples stored in a LogicalValues, so we don't have to worry about them here.
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalTableFunctionScan alg ) {
+    public void rewriteAlg( LogicalTableFunctionScan alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( Sample alg ) {
+    public void rewriteAlg( Sample alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalProject alg ) {
+    public void rewriteAlg( LogicalProject alg ) {
         final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
         flattenProjections(
                 new RewriteRexShuttle(),
@@ -492,7 +513,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalCalc alg ) {
+    public void rewriteAlg( LogicalCalc alg ) {
         // Translate the child.
         final AlgNode newInput = getNewForOldRel( alg.getInput() );
 
@@ -534,23 +555,23 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         RexProgram newProgram = programBuilder.getProgram();
 
         // Create a new calc relational expression.
-        LogicalCalc newRel = LogicalCalc.create( newInput, newProgram );
-        setNewForOldRel( alg, newRel );
+        LogicalCalc newAlg = LogicalCalc.create( newInput, newProgram );
+        setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteRel( SelfFlatteningRel alg ) {
+    public void rewriteAlg( SelfFlatteningRel alg ) {
         alg.flattenRel( this );
     }
 
 
     public void rewriteGeneric( AlgNode alg ) {
-        AlgNode newRel = alg.copy( alg.getTraitSet(), alg.getInputs() );
+        AlgNode newAlg = alg.copy( alg.getTraitSet(), alg.getInputs() );
         List<AlgNode> oldInputs = alg.getInputs();
         for ( int i = 0; i < oldInputs.size(); ++i ) {
-            newRel.replaceInput( i, getNewForOldRel( oldInputs.get( i ) ) );
+            newAlg.replaceInput( i, getNewForOldRel( oldInputs.get( i ) ) );
         }
-        setNewForOldRel( alg, newRel );
+        setNewForOldRel( alg, newAlg );
     }
 
 
@@ -656,33 +677,33 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( TableScan alg ) {
-        AlgNode newRel = alg.getTable().toAlg( toAlgContext );
+    public void rewriteAlg( TableScan alg ) {
+        AlgNode newAlg = alg.getTable().toAlg( toAlgContext );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(
                     alg.getRowType().getFieldList(),
-                    rexBuilder.makeRangeReference( newRel ),
+                    rexBuilder.makeRangeReference( newAlg ),
                     flattenedExpList );
-            newRel = algBuilder.push( newRel )
+            newAlg = algBuilder.push( newAlg )
                     .projectNamed( Pair.left( flattenedExpList ), Pair.right( flattenedExpList ), true )
                     .build();
         }
-        setNewForOldRel( alg, newRel );
+        setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteRel( LogicalDelta alg ) {
+    public void rewriteAlg( LogicalDelta alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalChi alg ) {
+    public void rewriteAlg( LogicalChi alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalMatch alg ) {
+    public void rewriteAlg( LogicalMatch alg ) {
         rewriteGeneric( alg );
     }
 
@@ -715,7 +736,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     /**
      * Visitor that flattens each relational expression in a tree.
      */
-    private class RewriteRelVisitor extends AlgVisitor {
+    private class RewriteAlgVisitor extends AlgVisitor {
 
         private final ReflectiveVisitDispatcher<AlgStructuredTypeFlattener,
                 AlgNode> dispatcher =
@@ -729,14 +750,14 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             // Rewrite children first
             super.visit( p, ordinal, parent );
 
-            currentRel = p;
-            final String visitMethodName = "rewriteRel";
+            currentAlg = p;
+            final String visitMethodName = "rewriteAlg";
             boolean found =
                     dispatcher.invokeVisitor(
                             AlgStructuredTypeFlattener.this,
-                            currentRel,
+                            currentAlg,
                             visitMethodName );
-            currentRel = null;
+            currentAlg = null;
             if ( !found ) {
                 if ( p.getInputs().size() == 0 ) {
                     // For leaves, it's usually safe to assume that no transformation is required

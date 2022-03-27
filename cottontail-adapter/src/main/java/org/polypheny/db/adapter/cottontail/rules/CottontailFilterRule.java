@@ -40,8 +40,8 @@ public class CottontailFilterRule extends CottontailConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final Filter filter = (Filter) alg;
-        final AlgTraitSet traitSet = ((Filter) alg).getTraitSet().replace( out );
+        Filter filter = (Filter) alg;
+        final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
 
         return new CottontailFilter(
                 filter.getCluster(),

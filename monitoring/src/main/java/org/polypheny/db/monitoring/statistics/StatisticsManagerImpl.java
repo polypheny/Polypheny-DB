@@ -39,6 +39,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
@@ -94,7 +95,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
  * DELETEs and UPDATEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsManager<T> {
+public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsManager {
 
     private static StatisticQueryProcessor statisticQueryInterface;
 
@@ -191,7 +192,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private Transaction getTransaction() {
-        Transaction transaction = null;
+        Transaction transaction;
         try {
             transaction = statisticQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -474,7 +475,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private void put( QueryResult queryResult, StatisticColumn<T> statisticColumn ) {
-        put( this.statisticSchemaMap,
+        put(
+                this.statisticSchemaMap,
                 queryResult.getSchemaId(),
                 queryResult.getTableId(),
                 queryResult.getColumnId(),
@@ -486,7 +488,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> statisticSchemaMapCopy,
             QueryResult queryResult,
             StatisticColumn<T> statisticColumn ) {
-        put( statisticSchemaMapCopy,
+        put(
+                statisticSchemaMapCopy,
                 queryResult.getSchemaId(),
                 queryResult.getTableId(),
                 queryResult.getColumnId(),
@@ -506,47 +509,56 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         if ( !map.containsKey( schemaId ) ) {
             map.put( schemaId, new HashMap<>() );
         }
-        if ( !map.get( schemaId ).containsKey( tableId ) ) {
-            map.get( schemaId ).put( tableId, new HashMap<>() );
+        Map<Long, Map<Long, StatisticColumn<T>>> mapMap = map.get( schemaId );
+        if ( !mapMap.containsKey( tableId ) ) {
+            mapMap.put( tableId, new HashMap<>() );
         }
-        map.get( schemaId ).get( tableId ).put( columnId, statisticColumn );
+        mapMap.get( tableId ).put( columnId, statisticColumn );
 
         if ( !tableStatistic.containsKey( tableId ) ) {
-            tableStatistic.put( tableId, new StatisticTable<T>( tableId ) );
+            tableStatistic.put( tableId, new StatisticTable<>( tableId ) );
         }
     }
 
 
     private StatisticQueryResult prepareNode( QueryResult queryResult, NodeType nodeType ) {
+        StatisticQueryResult statisticQueryColumn = null;
+        if ( Catalog.getInstance().checkIfExistsTable( queryResult.getTableId() ) ) {
+            AlgNode queryNode = getQueryNode( queryResult, nodeType );
+            //queryNode = getQueryNode( queryResult, nodeType );
+            statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
+        }
+        return statisticQueryColumn;
+    }
 
+
+    @Nullable
+    private AlgNode getQueryNode( QueryResult queryResult, NodeType nodeType ) {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
         AlgBuilder relBuilder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = relBuilder.getRexBuilder();
         final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
-        if ( Catalog.getInstance().checkIfExistsTable( queryResult.getTableId() ) ) {
-            LogicalTableScan tableScan = getLogicalTableScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );
-
-            StatisticQueryResult statisticQueryColumn;
-            switch ( nodeType ) {
-                case MIN:
-                case MAX:
-                    statisticQueryColumn = getAggregateColumn( queryResult, nodeType, tableScan, rexBuilder, cluster, transaction, statement );
-                    return statisticQueryColumn;
-                case UNIQUE_VALUE:
-                    statisticQueryColumn = getUniqueValues( queryResult, tableScan, rexBuilder, transaction, statement );
-                    return statisticQueryColumn;
-                case ROW_COUNT_COLUMN:
-                    statisticQueryColumn = getColumnCount( queryResult, tableScan, rexBuilder, cluster, transaction, statement );
-                    return statisticQueryColumn;
-                case ROW_COUNT_TABLE:
-                    statisticQueryColumn = getTableCount( queryResult, tableScan, cluster, transaction, statement );
-                    return statisticQueryColumn;
-                default:
-                    throw new RuntimeException( "Used nodeType is not defined in statistics." );
-            }
+        AlgNode queryNode;
+        LogicalTableScan tableScan = getLogicalTableScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );
+        switch ( nodeType ) {
+            case MIN:
+            case MAX:
+                queryNode = getAggregateColumn( queryResult, nodeType, tableScan, rexBuilder, cluster );
+                break;
+            case UNIQUE_VALUE:
+                queryNode = getUniqueValues( queryResult, tableScan, rexBuilder );
+                break;
+            case ROW_COUNT_COLUMN:
+                queryNode = getColumnCount( queryResult, tableScan, rexBuilder, cluster );
+                break;
+            case ROW_COUNT_TABLE:
+                queryNode = getTableCount( tableScan, cluster );
+                break;
+            default:
+                throw new RuntimeException( "Used nodeType is not defined in statistics." );
         }
-        return null;
+        return queryNode;
     }
 
 
@@ -562,7 +574,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * Queries the database with an aggregate query, to get the min value or max value.
      */
-    private StatisticQueryResult getAggregateColumn( QueryResult queryResult, NodeType nodeType, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster, Transaction transaction, Statement statement ) {
+    private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -570,7 +582,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
                         Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
 
-                AggFunction operator = null;
+                AggFunction operator;
                 if ( nodeType == NodeType.MAX ) {
                     operator = OperatorRegistry.getAgg( OperatorName.MAX );
                 } else if ( nodeType == NodeType.MIN ) {
@@ -601,21 +613,18 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         dataType,
                         "min-max" );
 
-                AlgNode relNode = LogicalAggregate.create(
+                return LogicalAggregate.create(
                         logicalProject,
                         ImmutableBitSet.of(),
                         Collections.singletonList( ImmutableBitSet.of() ),
                         Collections.singletonList( aggregateCall ) );
-
-                return statisticQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryResult );
             }
         }
         return null;
     }
 
 
-    private StatisticQueryResult getUniqueValues( QueryResult queryResult, TableScan tableScan, RexBuilder rexBuilder, Transaction transaction, Statement statement ) {
-
+    private AlgNode getUniqueValues( QueryResult queryResult, TableScan tableScan, RexBuilder rexBuilder ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -630,13 +639,11 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
                 Pair<BigDecimal, PolyType> valuePair = new Pair<>( new BigDecimal( (int) 6 ), PolyType.DECIMAL );
 
-                AlgNode relNode = LogicalSort.create(
+                return LogicalSort.create(
                         logicalAggregate,
                         AlgCollations.of(),
                         null,
                         new RexLiteral( valuePair.left, rexBuilder.makeInputRef( tableScan, i ).getType(), valuePair.right ) );
-
-                return statisticQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryResult );
             }
         }
         return null;
@@ -645,8 +652,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     /**
      * Gets the amount of entries for a column
+     *
+     * @return
      */
-    private StatisticQueryResult getColumnCount( QueryResult queryResult, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster, Transaction transaction, Statement statement ) {
+    private AlgNode getColumnCount( QueryResult queryResult, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -656,13 +665,11 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
                 AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
 
-                AlgNode relNode = LogicalAggregate.create(
+                return LogicalAggregate.create(
                         logicalProject,
                         ImmutableBitSet.of(),
                         Collections.singletonList( ImmutableBitSet.of() ),
                         Collections.singletonList( aggregateCall ) );
-
-                return statisticQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryResult );
             }
         }
         return null;
@@ -671,15 +678,16 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     /**
      * Gets the amount of entries for a table.
+     *
+     * @return
      */
-    private StatisticQueryResult getTableCount( QueryResult queryResult, TableScan tableScan, AlgOptCluster cluster, Transaction transaction, Statement statement ) {
+    private AlgNode getTableCount( TableScan tableScan, AlgOptCluster cluster ) {
         AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
-        AlgNode relNode = LogicalAggregate.create(
+        return LogicalAggregate.create(
                 tableScan,
                 ImmutableBitSet.of(),
                 Collections.singletonList( ImmutableBitSet.of() ),
                 Collections.singletonList( aggregateCall ) );
-        return statisticQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryResult );
     }
 
 
@@ -1020,7 +1028,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
                     statisticTable.setNumberOfRows( totalRows );
                 } else {
-                    statisticTable = new StatisticTable<T>( tableId );
+                    statisticTable = new StatisticTable<>( tableId );
                     statisticTable.setNumberOfRows( number );
                 }
                 break;
@@ -1028,12 +1036,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 if ( tableStatistic.containsKey( tableId ) ) {
                     statisticTable = tableStatistic.get( tableId );
                     int totalRows = statisticTable.getNumberOfRows() - number;
-                    if ( totalRows < 0 ) {
-                        totalRows = 0;
-                    }
+
                     statisticTable.setNumberOfRows( totalRows );
                 } else {
-                    statisticTable = new StatisticTable<T>( tableId );
+                    statisticTable = new StatisticTable<>( tableId );
                 }
                 break;
             case "SET-ROW-COUNT":
@@ -1041,7 +1047,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 if ( tableStatistic.containsKey( tableId ) ) {
                     statisticTable = tableStatistic.get( tableId );
                 } else {
-                    statisticTable = new StatisticTable<T>( tableId );
+                    statisticTable = new StatisticTable<>( tableId );
                 }
                 statisticTable.setNumberOfRows( number );
                 break;
@@ -1270,6 +1276,29 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         MIN,
         MAX,
         UNIQUE_VALUE
+    }
+
+
+    @Override
+    public Map<String, Map<String, Map<String, StatisticColumn<?>>>> getQualifiedStatisticMap() {
+        Map<String, Map<String, Map<String, StatisticColumn<?>>>> map = new HashMap<>();
+        for ( Entry<Long, Map<Long, Map<Long, StatisticColumn<T>>>> namespace : statisticSchemaMap.entrySet() ) {
+            for ( Entry<Long, Map<Long, StatisticColumn<T>>> entity : namespace.getValue().entrySet() ) {
+                for ( Entry<Long, StatisticColumn<T>> field : entity.getValue().entrySet() ) {
+                    StatisticColumn<T> val = field.getValue();
+                    if ( !map.containsKey( val.getSchema() ) ) {
+                        map.put( val.getSchema(), new HashMap<>() );
+                    }
+                    Map<String, Map<String, StatisticColumn<?>>> nVal = map.get( val.getSchema() );
+                    if ( !nVal.containsKey( val.getTable() ) ) {
+                        nVal.put( val.getTable(), new HashMap<>() );
+                    }
+                    Map<String, StatisticColumn<?>> eVal = nVal.get( val.getTable() );
+                    eVal.put( val.getColumn(), val );
+                }
+            }
+        }
+        return map;
     }
 
 }

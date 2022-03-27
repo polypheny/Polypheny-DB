@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,6 +218,7 @@ public class MqlToAlgConverter {
     private String defaultDatabase;
     private boolean notActive = false;
     private boolean usesDocumentModel;
+    private AlgOptTable table;
 
 
     public MqlToAlgConverter( Processor mqlProcessor, PolyphenyDbCatalogReader catalogReader, AlgOptCluster cluster ) {
@@ -241,6 +242,7 @@ public class MqlToAlgConverter {
         _dataExists = true;
         notActive = false;
         elemMatchActive = false;
+        table = null;
     }
 
 
@@ -262,7 +264,7 @@ public class MqlToAlgConverter {
      */
     public AlgRoot convert( MqlCollectionStatement query ) {
         Type kind = query.getMqlKind();
-        AlgOptTable table = getTable( query, defaultDatabase );
+        this.table = getTable( query, defaultDatabase );
         if ( table == null ) {
             throw new RuntimeException( "The used collection does not exist." );
         }
@@ -502,44 +504,55 @@ public class MqlToAlgConverter {
      * @return the unified UPDATE AlgNode
      */
     private AlgNode finalizeUpdates( String key, Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates, AlgDataType rowType, AlgNode node, AlgOptTable table ) {
-        RexNode id = getIdentifier( key, rowType );
+        RexNode updateChain = getIdentifier( key, rowType );
         // replace
         List<Pair<String, RexNode>> replaceNodes = mergedUpdates.get( UpdateOperation.REPLACE );
 
-        RexNode replace = new RexCall(
-                jsonType,
-                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REPLACE ),
-                Arrays.asList(
-                        id,
-                        getStringArray( Pair.left( replaceNodes ) ),
-                        getArray( Pair.right( replaceNodes ), jsonType ) ) );
+        if ( replaceNodes.size() > 0 ) {
+            updateChain = new RexCall(
+                    jsonType,
+                    OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REPLACE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( Pair.left( replaceNodes ) ),
+                            getArray( Pair.right( replaceNodes ), jsonType ) ) );
+        }
 
         // rename
-        mergedUpdates.get( UpdateOperation.RENAME );
-
         List<Pair<String, RexNode>> renameNodes = mergedUpdates.get( UpdateOperation.RENAME );
 
-        RexNode rename = new RexCall(
-                jsonType,
-                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_RENAME ),
-                Arrays.asList(
-                        id,
-                        getStringArray( Pair.left( renameNodes ) ),
-                        getArray( Pair.right( renameNodes ), jsonType ) ) );
+        if ( renameNodes.size() > 0 ) {
+            updateChain = new RexCall(
+                    jsonType,
+                    OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_RENAME ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( Pair.left( renameNodes ) ),
+                            getArray( Pair.right( renameNodes ), jsonType ) ) );
+        }
 
         // remove
-        mergedUpdates.get( UpdateOperation.REMOVE );
-
         List<String> removeNodes = Pair.left( mergedUpdates.get( UpdateOperation.REMOVE ) );
 
-        RexNode remove = new RexCall(
-                jsonType,
-                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REMOVE ),
-                Arrays.asList(
-                        id,
-                        getStringArray( removeNodes ) ) );
+        if ( removeNodes.size() > 0 ) {
+            updateChain = new RexCall(
+                    jsonType,
+                    OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REMOVE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( removeNodes ) ) );
+        }
 
-        RexCall combination = new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE ), Arrays.asList( id, replace, rename, remove ) );
+        if ( removeNodes.size() > 0 ) {
+            updateChain = new RexCall(
+                    jsonType,
+                    OperatorRegistry.get(
+                            QueryLanguage.MONGO_QL,
+                            OperatorName.MQL_UPDATE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( removeNodes ) ) );
+        }
 
         return LogicalTableModify.create(
                 table,
@@ -547,7 +560,7 @@ public class MqlToAlgConverter {
                 node,
                 Operation.UPDATE,
                 Collections.singletonList( key ),
-                Collections.singletonList( combination ),
+                Collections.singletonList( createJsonify( updateChain ) ),
                 false );
     }
 
@@ -815,6 +828,11 @@ public class MqlToAlgConverter {
     }
 
 
+    private RexCall createJsonify( RexNode ref ) {
+        return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSONIFY ), Collections.singletonList( ref ) );
+    }
+
+
     /**
      * Starts converting of aggregation pipeline
      *
@@ -889,7 +907,7 @@ public class MqlToAlgConverter {
                         .map( el -> {
                             RexInputRef ref = new RexInputRef( el.getIndex(), finalNode.getRowType().getFieldList().get( el.getIndex() ).getType() );
                             if ( !el.getName().equals( "_id" ) ) {
-                                return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSONIFY ), Collections.singletonList( ref ) );
+                                return createJsonify( ref );
                             } else {
                                 return ref;
                             }
@@ -1690,7 +1708,7 @@ public class MqlToAlgConverter {
         List<String> rowNames = rowType.getFieldNames();
         if ( rowNames.contains( parentKey ) ) {
             if ( useAccess ) {
-                return attachCorrel( parentKey, rowType );
+                return attachAccess( parentKey, rowType );
             } else {
                 return attachRef( parentKey, rowType );
             }
@@ -1727,9 +1745,16 @@ public class MqlToAlgConverter {
     }
 
 
-    private RexNode attachCorrel( String parentKey, AlgDataType rowType ) {
+    private RexNode attachAccess( String parentKey, AlgDataType rowType ) {
         AlgDataTypeField field = rowType.getField( parentKey, false, false );
-        return builder.makeCorrel( rowType, new CorrelationId( field.getIndex() ) );
+        return attachAccess( field.getIndex(), rowType );
+    }
+
+
+    private RexNode attachAccess( int index, AlgDataType rowType ) {
+        CorrelationId correlId = cluster.createCorrel();
+        cluster.getMapCorrelToAlg().put( correlId, LogicalTableScan.create( cluster, table ) );
+        return builder.makeFieldAccess( builder.makeCorrel( rowType, correlId ), index );
     }
 
 
@@ -2103,9 +2128,9 @@ public class MqlToAlgConverter {
                 any,
                 OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_QUERY_VALUE ),
                 Arrays.asList(
-                        useAccess
-                                ? builder.makeCorrel( rowType, new CorrelationId( index ) )
-                                : RexInputRef.of( index, rowType ),
+                        /*useAccess
+                                ? attachAccess( index, rowType )
+                                : */RexInputRef.of( index, rowType ),
                         filter ) );
     }
 

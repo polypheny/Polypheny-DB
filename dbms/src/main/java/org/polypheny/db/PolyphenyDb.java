@@ -16,7 +16,7 @@
 
 package org.polypheny.db;
 
-
+import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
@@ -24,6 +24,7 @@ import com.github.rvesse.airline.annotations.OptionType;
 import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
+import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService.ErrorConfig;
@@ -63,6 +64,7 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
+import org.polypheny.db.processing.ConstraintEnforcer.ConstraintTracker;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -84,7 +86,10 @@ public class PolyphenyDb {
 
     private PUID shutdownHookId;
 
-    private final TransactionManager transactionManager = new TransactionManagerImpl();
+    private final TransactionManager transactionManager = TransactionManagerImpl.getInstance();
+
+    @Inject
+    public HelpOption helpOption;
 
     @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
     public boolean resetCatalog = false;
@@ -100,6 +105,9 @@ public class PolyphenyDb {
 
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
+
+    @Option(name = { "-daemon" }, description = "Disable splash screen")
+    public boolean daemonMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default store")
     public String defaultStoreName = "hsqldb";
@@ -130,6 +138,10 @@ public class PolyphenyDb {
             // Hide dock icon on macOS systems
             System.setProperty( "apple.awt.UIElement", "true" );
 
+            if ( polyphenyDb.helpOption.showHelpIfRequested() ) {
+                return;
+            }
+
             polyphenyDb.runPolyphenyDb();
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
@@ -147,14 +159,39 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        // Select behavior depending on arguments
+        boolean showSplashScreen;
+        boolean trayMenu;
+        boolean openUiInBrowser;
+        if ( daemonMode ) {
+            showSplashScreen = false;
+            trayMenu = false;
+            openUiInBrowser = false;
+        } else if ( desktopMode ) {
+            showSplashScreen = true;
+            try {
+                trayMenu = SystemTray.isSupported();
+            } catch ( Exception e ) {
+                trayMenu = false;
+            }
+            openUiInBrowser = true;
+        } else {
+            showSplashScreen = false;
+            trayMenu = false;
+            openUiInBrowser = false;
+        }
+
         // Open splash screen
-        if ( desktopMode ) {
+        if ( showSplashScreen ) {
             this.splashScreen = new SplashHelper();
         }
 
         // Check if Polypheny is already running
-        if ( desktopMode && GuiUtils.checkPolyphenyAlreadyRunning() ) {
-            GuiUtils.openUiInBrowser();
+        if ( GuiUtils.checkPolyphenyAlreadyRunning() ) {
+            if ( openUiInBrowser ) {
+                GuiUtils.openUiInBrowser();
+            }
+            System.err.println( "There is already an instance of Polypheny running on this system." );
             System.exit( 0 );
         }
 
@@ -356,10 +393,15 @@ public class PolyphenyDb {
         MonitoringServiceProvider.getInstance();
 
         // Add icon to system tray
-        if ( desktopMode && SystemTray.isSupported() ) {
+        if ( trayMenu ) {
             // Init TrayGUI
             TrayGui.getInstance();
         }
+
+        // Add tracker, which rechecks constraints after enabling
+        ConstraintTracker tracker = new ConstraintTracker( transactionManager );
+        RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.addObserver( tracker );
+        RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.addObserver( tracker );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
@@ -369,7 +411,7 @@ public class PolyphenyDb {
         isReady = true;
 
         // Close splash screen
-        if ( desktopMode ) {
+        if ( showSplashScreen ) {
             splashScreen.setComplete();
         }
 
@@ -385,7 +427,7 @@ public class PolyphenyDb {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
 
-        if ( desktopMode && SystemTray.isSupported() ) {
+        if ( trayMenu ) {
             TrayGui.getInstance().shutdown();
         }
     }

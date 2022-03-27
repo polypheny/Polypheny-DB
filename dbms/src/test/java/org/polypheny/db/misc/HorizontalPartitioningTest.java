@@ -44,6 +44,7 @@ import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
@@ -683,10 +684,13 @@ public class HorizontalPartitioningTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
+                // Cleans all dataPoints that the monitoring has aggregated so far
+                MonitoringServiceProvider.getInstance().resetAllDataPoints();
+
                 // Sets the background processing of Workload Monitoring a Temperature monitoring to one second to get immediate results
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
-                c1.setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
+                c1.setEnum( TaskSchedulingType.EVERY_SECOND );
 
                 statement.executeUpdate( "CREATE TABLE temperaturetest( "
                         + "tprimary INTEGER NOT NULL, "
@@ -1185,7 +1189,7 @@ public class HorizontalPartitioningTest {
                     Assert.assertEquals( table.columnIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
-                    Assert.assertEquals( partitionsToCreate, dataPlacement.partitionPlacementsOnAdapter.size() );
+                    Assert.assertEquals( partitionsToCreate, dataPlacement.getAllPartitionIds().size() );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
@@ -1207,10 +1211,10 @@ public class HorizontalPartitioningTest {
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.getAdapterName().equals( "anotherstore" ) ) {
                             adapterId = dp.adapterId;
-                            Assert.assertEquals( 1, dp.partitionPlacementsOnAdapter.size() );
+                            Assert.assertEquals( 1, dp.getAllPartitionIds().size() );
                         } else {
                             initialAdapterId = dp.adapterId;
-                            Assert.assertEquals( 4, dp.partitionPlacementsOnAdapter.size() );
+                            Assert.assertEquals( 4, dp.getAllPartitionIds().size() );
                         }
                     }
 
@@ -1222,12 +1226,12 @@ public class HorizontalPartitioningTest {
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, dp.partitionPlacementsOnAdapter.size() );
+                            Assert.assertEquals( 3, dp.getAllPartitionIds().size() );
                             Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                             Assert.assertEquals( 3, Catalog.getInstance().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 4, dp.partitionPlacementsOnAdapter.size() );
+                            Assert.assertEquals( 4, dp.getAllPartitionIds().size() );
                             Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                             Assert.assertEquals( 4, Catalog.getInstance().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
@@ -1238,7 +1242,7 @@ public class HorizontalPartitioningTest {
                     dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
 
                     for ( CatalogDataPlacement dp : dataPlacements ) {
-                        Assert.assertEquals( 1, dp.partitionPlacementsOnAdapter.size() );
+                        Assert.assertEquals( 1, dp.getAllPartitionIds().size() );
                     }
 
                     //Still two data placements left

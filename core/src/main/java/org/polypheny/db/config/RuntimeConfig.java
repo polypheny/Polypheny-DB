@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
@@ -352,6 +353,14 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
+    CONSTRAINT_ENFORCEMENT_STRATEGY(
+            "runtime/constraintEnforcementStrategy",
+            "Adjusted used constraint enforcement strategy.",
+            ConstraintStrategy.AFTER_QUERY_EXECUTION,
+            ConfigType.ENUM,
+            "constraintEnforcementGroup"
+    ),
+
     POLYSTORE_INDEXES_ENABLED(
             "runtime/polystoreIndexesEnabled",
             "Enable and maintain indexes on the polystore level.",
@@ -391,7 +400,7 @@ public enum RuntimeConfig {
     MONITORING_MAXIMUM_POOL_SIZE(
             "runtime/maximumPoolSize",
             "The maximum number of threads to allow in the pool used for processing workload monitoring events.",
-            5000,
+            8,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 

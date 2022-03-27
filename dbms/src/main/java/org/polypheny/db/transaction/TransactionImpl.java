@@ -22,19 +22,28 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
@@ -43,11 +52,13 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.processing.ConstraintEnforcer;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
 import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -84,17 +95,25 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final MultimediaFlavor flavor;
 
     @Getter
-    private final boolean analyze;
+    @Setter
+    private boolean analyze;
 
     private final List<Statement> statements = new ArrayList<>();
 
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter
+    private final Set<CatalogTable> catalogTables = new TreeSet<>();
+
+    @Getter
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
 
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
+
+    private boolean acceptsOutdated = false;
+
+    private AccessMode accessMode = AccessMode.NO_ACCESS;
 
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
@@ -152,6 +171,22 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             for ( Adapter adapter : involvedAdapters ) {
                 okToCommit &= adapter.prepare( xid );
+            }
+        }
+
+        if ( !catalogTables.isEmpty() ) {
+            Statement statement = createStatement();
+            QueryProcessor processor = statement.getQueryProcessor();
+            List<EnforcementInformation> infos = ConstraintEnforcer
+                    .getConstraintAlg( catalogTables, statement, EnforcementTime.ON_COMMIT );
+            List<PolyResult> results = infos
+                    .stream()
+                    .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );
+            List<List<List<Object>>> rows = results.stream().map( r -> r.getRows( statement, -1 ) ).filter( r -> r.size() != 0 ).collect( Collectors.toList() );
+            if ( rows.size() != 0 ) {
+                Integer index = (Integer) rows.get( 0 ).get( 0 ).get( 1 );
+                rollback();
+                throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
             }
         }
 
@@ -308,6 +343,63 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean getUseCache() {
         return this.useCache;
+    }
+
+
+    /**
+     * Used to specify if a TX was started using freshness tolerance levels and
+     * therefore allows the usage of outdated replicas.
+     *
+     * If this is active no DML operations are possible for this TX.
+     * If however a DML operation was already executed by this TX.
+     * This TX can now support no more freshness-related queries.
+     */
+    @Override
+    public void setAcceptsOutdated( boolean acceptsOutdated ) {
+        this.acceptsOutdated = acceptsOutdated;
+    }
+
+
+    @Override
+    public boolean acceptsOutdated() {
+        return this.acceptsOutdated;
+    }
+
+
+    @Override
+    public AccessMode getAccessMode() {
+        return accessMode;
+    }
+
+
+    @Override
+    public void updateAccessMode( AccessMode accessModeCandidate ) {
+
+        // If TX is already in RW access we can skip immediately
+        if ( this.accessMode.equals( AccessMode.READWRITE_ACCESS ) || this.accessMode.equals( accessModeCandidate ) ) {
+            return;
+        }
+
+        switch ( accessModeCandidate ) {
+            case WRITE_ACCESS:
+                if ( this.accessMode.equals( AccessMode.READ_ACCESS ) ) {
+                    accessModeCandidate = AccessMode.READWRITE_ACCESS;
+                }
+                break;
+
+            case READ_ACCESS:
+                if ( this.accessMode.equals( AccessMode.WRITE_ACCESS ) ) {
+                    accessModeCandidate = AccessMode.READWRITE_ACCESS;
+                }
+                break;
+
+            case NO_ACCESS:
+                throw new RuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
+        }
+
+        // If nothing else has matched so far. It's safe to simply use the input
+        this.accessMode = accessModeCandidate;
+
     }
 
     //

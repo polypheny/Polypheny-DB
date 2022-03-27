@@ -85,6 +85,7 @@ import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
@@ -128,6 +129,11 @@ import org.polypheny.db.util.Util;
  * Unit tests for {@link Planner}.
  */
 public class PlannerTest extends SqlLanguagelDependant {
+
+    static {
+        Catalog.testMode = true;
+    }
+
 
     private void checkParseAndConvert( String query, String queryFromParseTree, String expectedRelExpr ) throws Exception {
         Planner planner = getPlanner( null );

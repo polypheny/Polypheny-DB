@@ -1,19 +1,12 @@
-<p align="center">
-<picture>
-  <source 
-    srcset="https://raw.githubusercontent.com/polypheny/Admin/master/Logo/logo-white-text.png" 
-    media="(prefers-color-scheme: dark)">
-  <a href="https://polypheny.org/">
-    <img align="center" width="300" height="300" src="https://raw.githubusercontent.com/polypheny/Admin/master/Logo/logo-transparent.png">
-   </a>
-</picture>
-</p>
+<a href="https://polypheny.org/">
+    <img align="right" width="200" height="200" src="https://polypheny.org/community/logo/logo.png" alt="Resume application project app icon">
+</a>
 
 # Polypheny-DB
 
 _Polypheny-DB_ is a self-adaptive Polystore that provides cost- and workload aware access to heterogeneous data. As a Polystore, Polypheny-DB seamlessly combines different underlying data storage engines to provide good query performance independent of the type of workload.
 
-If you want to learn more about Polypheny-DB, we recommend having a look on our [vision paper](https://ieeexplore.ieee.org/document/8622353).
+If you want to learn more about Polypheny-DB, we recommend having a look on our [website](https://polypheny.org) or on [this paper](http://dx.doi.org/10.1007/978-3-030-71055-2_2).
 
 ## Getting Started ##
 The easiest way to setup Polypheny-DB is to use a [release](https://github.com/polypheny/Polypheny-DB/releases/latest). Alternatively, you can use [Polypheny Control](https://github.com/polypheny/Polypheny-Control) to automatically build Polypheny-DB.

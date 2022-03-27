@@ -20,11 +20,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -58,18 +60,18 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.EntityAccessMap;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.Mode;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -87,13 +89,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     @Getter
     private final List<Long> intervalToUpdate;
 
-    final Map<PolyXid, Long> potentialInteresting;
+    final Map<PolyXid, Long> updateCandidates;
 
 
     public MaterializedViewManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         this.materializedInfo = new ConcurrentHashMap<>();
-        this.potentialInteresting = new HashMap<>();
+        this.updateCandidates = new HashMap<>();
         this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
         registerFreshnessLoop();
     }
@@ -166,8 +168,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * If a change is committed to the transactionId and the tableId are saved as potential interesting for
-     * materialized view with freshness update
+     * If a change is committed to the transactionId and the tableId are saved as potential interesting
+     * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
      * @param tableNames table that was changed
@@ -179,7 +181,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
                 long id = catalogTable.id;
                 if ( !catalogTable.getConnectedViews().isEmpty() ) {
-                    potentialInteresting.put( transaction.getXid(), id );
+                    updateCandidates.put( transaction.getXid(), id );
                 }
             } catch ( UnknownTableException e ) {
                 throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
@@ -196,8 +198,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public void updateCommittedXid( PolyXid xid ) {
-        if ( potentialInteresting.containsKey( xid ) ) {
-            materializedUpdate( potentialInteresting.remove( xid ) );
+        if ( updateCandidates.containsKey( xid ) ) {
+            materializedUpdate( updateCandidates.remove( xid ) );
         }
     }
 
@@ -281,18 +283,14 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
             try {
                 Statement statement = transaction.createStatement();
-                // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+                // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
+                idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
                 // Get locks for individual tables
-                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition() );
-                for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                    Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                    if ( mode == Mode.READ_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                    } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                    }
-                }
+                EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
+                idAccessMap.addAll( accessMap.getAccessedEntityPair() );
+                LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
+
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }
@@ -428,7 +426,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             }
         } finally {
             // Release lock
-            LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
+            LockManager.INSTANCE.unlock( Collections.singletonList( LockManager.GLOBAL_LOCK ), (TransactionImpl) transaction );
         }
     }
 
