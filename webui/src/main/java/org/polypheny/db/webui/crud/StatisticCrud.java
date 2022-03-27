@@ -18,11 +18,14 @@ package org.polypheny.db.webui.crud;
 
 import com.google.gson.Gson;
 import io.javalin.http.Context;
+
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
@@ -129,6 +132,7 @@ public class StatisticCrud {
         boolean notInserted;
         Timestamp startTime;
         Timestamp endTime = new Timestamp( System.currentTimeMillis() );
+        Timestamp startTimeOneHour;
 
         if ( queryData.size() > 0 && dmlData.size() > 0 ) {
             startTime = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
@@ -140,13 +144,25 @@ public class StatisticCrud {
             throw new RuntimeException( "No Data available for Dashboard Diagram" );
         }
 
-        long interval = calculateInterval( startTime, endTime );
+//        long interval = calculateInterval( startTime, endTime );
+        long interval = convertIntervalMinuteToLong(60);
+//        Timestamp timeOneHour = startTimeOneHour;
+        startTimeOneHour = calculateStartTime(60,endTime);
 
-        Timestamp time = startTime;
+//        Timestamp time = startTime;
+        Timestamp time = startTimeOneHour;
         while ( endTime.getTime() - time.getTime() >= 0 ) {
             info.put( time, new Pair<>( 0, 0 ) );
-            time = new Timestamp( time.getTime() + interval );
+            time = new Timestamp( time.getTime() + convertIntervalMinuteToLong(60) );
+            System.out.println(time);
         }
+
+//        int numberOfInterval = 10;
+//        while ( endTime.getTime() - convertIntervalMinuteToLong(60) > 0 &&  numberOfInterval > 0 ) {
+//            timeOneHour = new Timestamp(timeOneHour.getTime() - convertIntervalMinuteToLong(60));
+//            info.put( timeOneHour, new Pair<>( 0, 0 ) );
+//            numberOfInterval --;
+//        }
 
         dashboardInfo.putAll( info );
 
@@ -182,6 +198,21 @@ public class StatisticCrud {
 
     private long calculateInterval( Timestamp startTime, Timestamp endTime ) {
         return (endTime.getTime() - startTime.getTime()) / 10;
+    }
+
+    private long convertIntervalMinuteToLong( int minutes ){
+        return TimeUnit.MINUTES.toMillis(minutes);
+    }
+
+    private Timestamp calculateStartTime( int intervalInMinutes, Timestamp endTime ){
+        long startTime = endTime.getTime();
+//        Timestamp startTimeStamp;
+        long a = convertIntervalMinuteToLong(intervalInMinutes);
+        for ( int numberOfInterval = 10; numberOfInterval > 0; numberOfInterval -- ){
+            startTime = startTime - convertIntervalMinuteToLong(intervalInMinutes);
+//            startTimeStamp = new Timestamp(startTime);
+        }
+        return new Timestamp(startTime);
     }
 
 }
