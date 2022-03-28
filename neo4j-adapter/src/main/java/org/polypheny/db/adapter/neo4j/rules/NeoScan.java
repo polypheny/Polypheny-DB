@@ -16,16 +16,24 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
+
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoEntity;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
-import org.polypheny.db.adapter.neo4j.util.NeoUtil.MatchStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.Pair;
 
 public class NeoScan extends Scan implements NeoAlg {
 
@@ -43,9 +51,15 @@ public class NeoScan extends Scan implements NeoAlg {
     public void implement( NeoRelationalImplementor implementor ) {
         implementor.setTable( table );
 
-        implementor.add( new MatchStatement(
-                String.format( "(%s:%s)", neoEntity.phsicalEntityName, neoEntity.phsicalEntityName ),
-                List.of( Pair.of( neoEntity.phsicalEntityName, null ) ) ) );
+        implementor.add( match_( node_( neoEntity.phsicalEntityName, labels_( neoEntity.phsicalEntityName ) ) ) );
+
+        List<NeoStatement> mapping = table
+                .getRowType()
+                .getFieldList()
+                .stream().map( f -> as_( literal_( neoEntity.phsicalEntityName + "." + f.getPhysicalName() ), literal_( f.getName() ) ) )
+                .collect( Collectors.toList() );
+
+        implementor.add( with_( list_( mapping ) ) );
     }
 
 

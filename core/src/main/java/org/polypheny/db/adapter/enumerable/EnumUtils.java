@@ -306,6 +306,11 @@ public class EnumUtils {
     }
 
 
+    public static MethodCallExpression expressionList( List<Expression> expressions ) {
+        return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, expressions );
+    }
+
+
     /**
      * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
      */

@@ -69,13 +69,13 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
         final Expression arrayFields = getFields( blockBuilder, rowType, NeoUtil::getComponentTypeOrParent );
 
-        final Expression statements = neoImplementor.asExpression();
+        final String query = neoImplementor.build();
 
         final Expression enumerable = blockBuilder.append(
                 blockBuilder.newName( "enumerable" ),
                 Expressions.call(
                         table,
-                        NeoMethod.EXECUTE.method, statements, fields, arrayFields ) );
+                        NeoMethod.EXECUTE.method, Expressions.constant( query ), fields, arrayFields ) );
 
         blockBuilder.add( Expressions.return_( null, enumerable ) );
 

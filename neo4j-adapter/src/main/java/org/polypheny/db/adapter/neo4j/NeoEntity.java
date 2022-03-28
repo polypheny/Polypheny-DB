@@ -17,8 +17,10 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Map.Entry;
 import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -31,9 +33,8 @@ import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.neo4j.rules.NeoScan;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
-import org.polypheny.db.adapter.neo4j.util.NeoUtil.NeoStatement;
-import org.polypheny.db.adapter.neo4j.util.NeoUtil.NormalStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
@@ -131,10 +132,15 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
 
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> execute( List<NeoStatement> statements, List<PolyType> types, List<PolyType> componentTypes ) {
+        public Enumerable<Object> execute( String query, List<PolyType> types, List<PolyType> componentTypes ) {
             Transaction trx = getTrx();
 
-            Result res = trx.run( unwrap( statements, dataContext ) );
+            Result res;
+            if ( dataContext.getParameterValues().size() > 0 ) {
+                res = trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ) ) );
+            } else {
+                res = trx.run( query );
+            }
 
             Function1<Record, Object> getter = NeoQueryable.getter( types, componentTypes );
 
@@ -144,6 +150,15 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
                     return new NeoEnumerator( res, getter );
                 }
             };
+        }
+
+
+        private Map<String, Object> toParameters( Map<Long, Object> values ) {
+            Map<String, Object> parameters = new HashMap<>();
+            for ( Entry<Long, Object> entry : values.entrySet() ) {
+                parameters.put( NeoUtil.asParameter( entry.getKey(), false ), entry.getValue() );
+            }
+            return parameters;
         }
 
 
@@ -158,12 +173,10 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
 
         private String unwrap( List<NeoStatement> statements, DataContext dataContext ) {
-            return statements.stream().map( s -> {
-                if ( s.isPrepare() ) {
-                    return s.build( dataContext.getParameterTypes(), dataContext.getParameterValues().get( 0 ) );
-                }
-                return ((NormalStatement) s).build();
-            } ).collect( Collectors.joining( "\n " ) );
+            return null; /* statements
+                    .stream()
+                    .map( s -> s.build().apply( dataContext.getParameterValues().get( 0 ) ) )
+                    .collect( Collectors.joining( "\n " ) );*/
         }
 
 
