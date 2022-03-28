@@ -492,7 +492,7 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
 
     {
-        return SqlDdlNodes.createProcedure(s.end(this), replace, ifNotExists, id, className, usingList);
+        return SqlDdlNodes.createProcedure(s.end(this), replace, ifNotExists, id, query);
     }
 }
 

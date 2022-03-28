@@ -52,9 +52,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement {
 
     private final SqlIdentifier name;
-    private final SqlNodeList argumentList;
     private final SqlNode query;
-    private final List<String> arguments;
 
     private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "CREATE PROCEDURE", Kind.CREATE_PROCEDURE );
 
@@ -62,13 +60,10 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
     /**
      * Creates a SqlCreateFunction.
      */
-    public SqlCreateProcedure(ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList argumentList, SqlNode query) {
+    public SqlCreateProcedure(ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode query) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
-        this.argumentList = Objects.requireNonNull(argumentList);
         this.query = Objects.requireNonNull( query );
-        this.arguments = Collections.unmodifiableList(Lists.newArrayList());
-        Preconditions.checkArgument( argumentList.size() % 2 == 0 );
     }
 
 
@@ -81,7 +76,7 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
         }
         name.unparse( writer, 0, 0 );
         // parse ParamList
-        if ( argumentList.size() > 0 ) {
+/*        if ( argumentList.size() > 0 ) {
             final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE );
             for ( SqlNode argument : argumentList.getSqlList() ) {
                 writer.sep( "," );
@@ -89,19 +84,12 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
                 argument.unparse( writer, 0, 0 );
             }
             writer.endList( frame );
-        }
+        }*/
         writer.keyword( "AS" );
         // parse query
         query.unparse( writer, 0, 0 );
         writer.keyword("GO");
     }
-
-
-    @SuppressWarnings("unchecked")
-    private List<Pair<SqlLiteral, SqlLiteral>> pairs() {
-        return Util.pairs( (List) argumentList.getList() );
-    }
-
 
     @Override
     public Operator getOperator() {
@@ -111,13 +99,13 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
 
     @Override
     public List<Node> getOperandList() {
-        return Arrays.asList( name, argumentList);
+        return Arrays.asList( name, query);
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return Arrays.asList( name, argumentList);
+        return Arrays.asList( name, query);
     }
 
     @Override
@@ -148,7 +136,7 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
 
         try {
             // TODO refactor Procedure to use proper syntax to extract params and query
-            instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, "", arguments.toArray(new String[0]));
+            instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, "");
         } catch (GenericCatalogException | UnknownColumnException e) {
             e.printStackTrace();
         }

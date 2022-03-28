@@ -18,10 +18,12 @@ package org.polypheny.db.docker;
 
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.CatalogProcedure;
 
 /**
  * This is a bare-bone catalog which allows to mock register adapters
@@ -38,6 +40,16 @@ public class MockCatalogDocker extends MockCatalog {
         i++;
         adapters.put( i, new CatalogAdapter( i, uniqueName, clazz, type, settings ) );
         return i;
+    }
+
+    @Override
+    public void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<CatalogProcedure> getProcedures(Long schemaId) {
+        throw new UnsupportedOperationException();
     }
 
 
