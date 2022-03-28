@@ -82,6 +82,9 @@ public class FileTableModify extends TableModify implements FileAlg {
         implementor.setFileTable( fileTable );
         if ( getOperation() == Operation.UPDATE ) {
             if ( getSourceExpressionList() != null ) {
+                if ( implementor.getUpdates() == null ) {
+                    implementor.setUpdates( new ArrayList<>() );
+                }
                 implementor.getUpdates().clear();
                 List<Value> values = new ArrayList<>();
                 int i = 0;

@@ -16,20 +16,26 @@
 
 package org.polypheny.db.transaction;
 
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
+
 
 // Based on code taken from https://github.com/dstibrany/LockManager
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
-    public static final TableIdentifier GLOBAL_LOCK = new TableIdentifier( -1L ); // For locking whole schema
+    public static final EntityIdentifier GLOBAL_LOCK = new EntityIdentifier( -1L, -1L ); // For locking whole schema
 
-    private final ConcurrentHashMap<TableIdentifier, Lock> lockTable;
+    private final ConcurrentHashMap<EntityIdentifier, Lock> lockTable;
     @Getter
     private final WaitForGraph waitForGraph;
 
@@ -40,36 +46,74 @@ public class LockManager {
     }
 
 
-    public void lock( @NonNull TableIdentifier tableIdentifier, @NonNull TransactionImpl transaction, @NonNull Lock.LockMode requestedMode ) throws DeadlockException {
-        lockTable.putIfAbsent( tableIdentifier, new Lock( waitForGraph ) );
-
-        Lock lock = lockTable.get( tableIdentifier );
-
-        try {
-            if ( hasLock( transaction, tableIdentifier ) && (requestedMode == lock.getMode()) ) {
-                return;
-            } else if ( requestedMode == Lock.LockMode.SHARED && hasLock( transaction, tableIdentifier ) && lock.getMode() == Lock.LockMode.EXCLUSIVE ) {
-                return;
-            } else if ( requestedMode == Lock.LockMode.EXCLUSIVE && hasLock( transaction, tableIdentifier ) && lock.getMode() == Lock.LockMode.SHARED ) {
-                lock.upgrade( transaction );
-            } else {
-                lock.acquire( transaction, requestedMode );
-            }
-        } catch ( InterruptedException e ) {
-            removeTransaction( transaction );
-            throw new DeadlockException( e );
+    public void lock( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
+        // Decide on which locking  approach to focus
+        if ( transaction.acceptsOutdated() ) {
+            handleSecondaryLocks( idAccessMap, transaction );
+        } else {
+            handlePrimaryLocks( idAccessMap, transaction );
         }
-
-        transaction.addLock( lock );
     }
 
 
-    public void unlock( @NonNull TableIdentifier tableIdentifier, @NonNull TransactionImpl transaction ) {
-        Lock lock = lockTable.get( tableIdentifier );
-        if ( lock != null ) {
-            lock.release( transaction );
+    /**
+     * Used in traditional transactional workload to lck all entities that will eagerly receive any update
+     */
+    private void handlePrimaryLocks( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
+        Iterator<Entry<EntityIdentifier, LockMode>> iter = idAccessMap.iterator();
+        Entry<EntityIdentifier, LockMode> pair;
+        while ( iter.hasNext() ) {
+            pair = iter.next();
+            lockTable.putIfAbsent( pair.getKey(), new Lock( waitForGraph ) );
+
+            Lock lock = lockTable.get( pair.getKey() );
+
+            try {
+                if ( hasLock( transaction, pair.getKey() ) && (pair.getValue() == lock.getMode()) ) {
+                    return;
+                } else if ( pair.getValue() == Lock.LockMode.SHARED && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.EXCLUSIVE ) {
+                    return;
+                } else if ( pair.getValue() == Lock.LockMode.EXCLUSIVE && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.SHARED ) {
+                    lock.upgrade( transaction );
+                } else {
+                    lock.acquire( transaction, pair.getValue() );
+                }
+            } catch ( InterruptedException e ) {
+                removeTransaction( transaction );
+                throw new DeadlockException( e );
+            }
+
+            transaction.addLock( lock );
         }
-        transaction.removeLock( lock );
+    }
+
+
+    /**
+     * Used in freshness related workload to lock all entities that will lazily receive updates (considered secondaries)
+     */
+    private void handleSecondaryLocks( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
+        // Try locking secondaries first.
+        // If this cannot be fulfilled by data distribution fallback and try to acquire a regular primary lock
+        // TODO @HENNLO Check if this decision should even be made here or somewhere else
+
+        // This is mainly relevant for Queries on secondaries/outdated nodes.
+        // In theory, we already know for each query which partitions are going to be accessed.
+        // The FreshnessManager could therefore already be invoked prior to Routing to decide if the Freshness can be
+        // guaranteed or if we need to fall back to primary locking mechanisms.
+    }
+
+
+    public void unlock( @NonNull Collection<EntityIdentifier> ids, @NonNull TransactionImpl transaction ) {
+        Iterator<EntityIdentifier> iter = ids.iterator();
+        EntityIdentifier entityIdentifier;
+        while ( iter.hasNext() ) {
+            entityIdentifier = iter.next();
+            Lock lock = lockTable.get( entityIdentifier );
+            if ( lock != null ) {
+                lock.release( transaction );
+            }
+            transaction.removeLock( lock );
+        }
     }
 
 
@@ -81,13 +125,13 @@ public class LockManager {
     }
 
 
-    public boolean hasLock( @NonNull TransactionImpl transaction, @NonNull TableIdentifier tableIdentifier ) {
+    public boolean hasLock( @NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
         Set<Lock> lockList = transaction.getLocks();
         if ( lockList == null ) {
             return false;
         }
         for ( Lock txnLock : lockList ) {
-            if ( txnLock == lockTable.get( tableIdentifier ) ) {
+            if ( txnLock == lockTable.get( entityIdentifier ) ) {
                 return true;
             }
         }
@@ -95,9 +139,8 @@ public class LockManager {
     }
 
 
-    Lock.LockMode getLockMode( @NonNull TableIdentifier tableIdentifier ) {
-        return lockTable.get( tableIdentifier ).getMode();
+    Lock.LockMode getLockMode( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
+        return lockTable.get( entityIdentifier ).getMode();
     }
-
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,9 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -90,6 +92,8 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
     public final Map<String, Object> map;
     private final Map<String, RexToLixTranslator.InputGetter> corrVars = new HashMap<>();
     private final Map<Object, ParameterExpression> stashedParameters = new IdentityHashMap<>();
+    @Getter
+    private final Map<ParameterExpression, Object> nodes = new HashMap<>();
 
     protected final Function1<String, RexToLixTranslator.InputGetter> allCorrelateVariables = this::getCorrelVariableGetter;
 
@@ -144,6 +148,11 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                                         input.type ) ) );
 
         final BlockStatement block = Expressions.block( Iterables.concat( stashed, result.block.statements ) );
+        // add values
+        for ( Entry<ParameterExpression, Object> entry : nodes.entrySet() ) {
+            memberDeclarations.add( Expressions.fieldDecl( Modifier.PRIVATE, entry.getKey(), Expressions.constant( entry.getValue() ) ) );
+        }
+
         memberDeclarations.add(
                 Expressions.methodDecl(
                         Modifier.PUBLIC,

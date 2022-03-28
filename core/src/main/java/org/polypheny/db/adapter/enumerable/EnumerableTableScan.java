@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,12 +52,17 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.schema.QueryableTable;
@@ -276,6 +281,18 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
                         format() );
         final Expression expression = getExpression( physType );
         return implementor.result( physType, Blocks.toBlock( expression ) );
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        if ( Catalog.testMode ) {
+            // normally this enumerable is not used by Polypheny and is therefore "removed" by an infinite cost,
+            // but theoretically it is able to handle scans on the application layer
+            // this is tested by different instances and should then lead to a finite selfCost
+            return super.computeSelfCost( planner, mq );
+        }
+        return VolcanoCost.FACTORY.makeInfiniteCost();
     }
 
 }

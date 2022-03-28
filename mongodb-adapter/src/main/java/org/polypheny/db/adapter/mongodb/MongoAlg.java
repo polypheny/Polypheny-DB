@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,10 @@ import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.Convention;
@@ -71,10 +74,11 @@ public interface MongoAlg extends AlgNode {
     /**
      * Callback for the implementation process that converts a tree of {@link MongoAlg} nodes into a MongoDB query.
      */
-    class Implementor implements Serializable {
+    class Implementor extends AlgShuttleImpl implements Serializable {
 
         final List<Pair<String, String>> list = new ArrayList<>();
         public List<BsonDocument> operations = new ArrayList<>();
+        public List<BsonDocument> groups = new ArrayList<>();
         public BsonArray filter = new BsonArray();
         @Getter
         @Setter
@@ -85,6 +89,7 @@ public interface MongoAlg extends AlgNode {
         // and need to be projected beforehand from their physical names
         public Set<String> physicalMapper = new TreeSet<>();
         public boolean onlyOne = false;
+        public boolean isDocumentUpdate = false;
 
         AlgOptTable table;
         @Setter
@@ -161,17 +166,51 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getFilterSerialized() {
-            return getFilter().toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
+            return toJson( getFilter() );
         }
 
 
         public List<String> getPreProjects() {
-            return preProjections.stream().map( p -> p.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() ) ).collect( Collectors.toList() );
+            return preProjections.stream().map( Implementor::toJson ).collect( Collectors.toList() );
         }
 
 
         public List<String> getOperations() {
-            return operations.stream().map( p -> p.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() ) ).collect( Collectors.toList() );
+            return operations.stream().map( Implementor::toJson ).collect( Collectors.toList() );
+        }
+
+
+        public static String toJson( BsonDocument doc ) {
+            return doc.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
+        }
+
+
+        @Override
+        public AlgNode visit( LogicalProject project ) {
+            super.visit( project );
+
+            return project;
+        }
+
+
+        @Override
+        public AlgNode visit( TableScan scan ) {
+            super.visit( scan );
+
+            return scan;
+        }
+
+
+        public List<String> getNecessaryPhysicalFields() {
+            return new ArrayList<>( physicalMapper );
+        }
+
+
+        public List<String> reorderPhysical() {
+            // this is only needed if there is a basic scan without project or group,
+            // where we cannot be sure if the fields are all ordered as intended
+            assert table.getRowType().getFieldCount() == physicalMapper.size();
+            return table.getRowType().getFieldNames();
         }
 
     }

@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalExchange;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -120,6 +121,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalAggregate aggregate ) {
         hashBasis.add( "LogicalAggregate#" + aggregate.getAggCallList() );
         return visitChild( aggregate, 0, aggregate.getInput() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
+        hashBasis.add( "LogicalConstraintEnforcer#" + enforcer.algCompareString() );
+        return super.visit( enforcer );
     }
 
 
@@ -220,21 +228,22 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
+    public AlgNode visit( LogicalTableModify modify ) {
+        hashBasis.add( "LogicalModify" );
+        // e.g. inserts only have underlying values and need to attach the table correctly
+        this.getAvailableColumns( modify );
+        return visitChildren( modify );
+    }
+
+
+    @Override
     public AlgNode visit( AlgNode other ) {
         hashBasis.add( "other#" + other.getClass().getSimpleName() );
-        if ( other instanceof LogicalTableModify ) {
-            // Add all columns to availableColumnsWithTable for statistics
-            if ( (other.getTable().getTable() instanceof LogicalTable) ) {
-                LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
-                Long tableId = logicalTable.getTableId();
-                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable.put( v, tableId ) );
-            }
-        }
         return visitChildren( other );
     }
 
 
-    private void getAvailableColumns( TableScan scan ) {
+    private void getAvailableColumns( AlgNode scan ) {
         this.tables.addAll( scan.getTable().getQualifiedName() );
         final Table table = scan.getTable().getTable();
         LogicalTable logicalTable = (table instanceof LogicalTable) ? (LogicalTable) table : null;

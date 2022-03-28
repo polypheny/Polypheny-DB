@@ -31,6 +31,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -299,7 +300,8 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     partitionId,
                                     PlacementType.AUTOMATIC,
                                     null,
-                                    null );
+                                    null,
+                                    DataPlacementRole.UPTODATE );
                         }
 
                         store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
@@ -348,7 +350,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     partitionId,
                                     PlacementType.AUTOMATIC,
                                     null,
-                                    null );
+                                    null, DataPlacementRole.UPTODATE );
                         }
                         store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
 

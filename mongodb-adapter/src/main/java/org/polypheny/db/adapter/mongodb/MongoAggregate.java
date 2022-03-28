@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link org.polypheny.db.algebra.core.Aggregate} relational expression in MongoDB.
+ * Implementation of {@link Aggregate} relational expression in MongoDB.
  */
 public class MongoAggregate extends Aggregate implements MongoAlg {
 
@@ -116,7 +116,7 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
         implementor.add( null, "{$group: " + Util.toString( list, "{", ", ", "}" ) + "}" );
         final List<String> fixups;
         if ( groupSet.cardinality() == 1 ) {
-            fixups = new AbstractList<String>() {
+            fixups = new AbstractList<>() {
                 @Override
                 public String get( int index ) {
                     final String outName = outNames.get( index );

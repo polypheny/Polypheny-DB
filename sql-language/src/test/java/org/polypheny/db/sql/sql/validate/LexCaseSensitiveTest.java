@@ -44,6 +44,7 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -56,7 +57,7 @@ import org.polypheny.db.tools.ValidationException;
 /**
  * Testing {@link SqlValidator} and {@link Lex}.
  */
-public class LexCaseSensitiveTest {
+public class LexCaseSensitiveTest extends SqlLanguagelDependant {
 
     private static Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );

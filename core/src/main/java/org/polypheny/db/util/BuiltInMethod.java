@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.AggregateLambdaFactory;
+import org.polypheny.db.adapter.enumerable.BatchIteratorEnumerable;
 import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
@@ -135,12 +136,17 @@ import org.polypheny.db.type.PolyType;
  * Built-in methods.
  */
 public enum BuiltInMethod {
+    BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
+    STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
+    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", Enumerable.class, Enumerable.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
     QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),
     AS_QUERYABLE( Enumerable.class, "asQueryable" ),
     ABSTRACT_ENUMERABLE_CTOR( AbstractEnumerable.class ),
+    BATCH_ITERATOR_CTOR( BatchIteratorEnumerable.class ),
+    BATCH_ITERATOR_GET_ENUM( BatchIteratorEnumerable.class, "getEnumerable" ),
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
     SCHEMA_GET_SUB_SCHEMA( Schema.class, "getSubSchema", String.class ),
@@ -428,7 +434,7 @@ public enum BuiltInMethod {
     DOC_UPDATE_REPLACE( MqlFunctions.class, "docUpdateReplace", Object.class, List.class, List.class ),
     DOC_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
     DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class ),
-    DOC_JSONIZE( MqlFunctions.class, "docJsonize", Object.class ),
+    DOC_JSONIZE( MqlFunctions.class, "docJsonify", Object.class ),
     DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class );
 
     public final Method method;
