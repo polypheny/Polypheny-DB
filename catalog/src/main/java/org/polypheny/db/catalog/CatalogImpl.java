@@ -895,6 +895,11 @@ public class CatalogImpl extends Catalog {
         }
     }
 
+    @Override
+    public List<CatalogProcedure> getProcedures(Long schemaId) {
+        return List.copyOf(procedures.getValues());
+    }
+
 
     /**
      * Adds a database

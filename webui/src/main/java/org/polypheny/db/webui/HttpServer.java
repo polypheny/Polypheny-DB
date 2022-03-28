@@ -243,6 +243,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getTables", crud::getTables );
 
+        webuiServer.post( "/getProcedures", crud::getProcedures );
+
         webuiServer.post( "/renameTable", crud::renameTable );
 
         webuiServer.post( "/dropTruncateTable", crud::dropTruncateTable );

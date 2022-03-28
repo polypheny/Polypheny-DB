@@ -1586,6 +1586,8 @@ public abstract class Catalog {
 
     public abstract void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments);
 
+    public abstract List<CatalogProcedure> getProcedures(Long schemaId);
+
 
     public enum TableType {
         TABLE( 1 ),

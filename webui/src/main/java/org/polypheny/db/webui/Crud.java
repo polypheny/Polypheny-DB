@@ -89,6 +89,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.eclipse.jetty.websocket.api.Session;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
@@ -117,18 +118,8 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -181,30 +172,10 @@ import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.crud.StatisticCrud;
-import org.polypheny.db.webui.models.AdapterModel;
-import org.polypheny.db.webui.models.DbColumn;
-import org.polypheny.db.webui.models.DbTable;
-import org.polypheny.db.webui.models.ExploreResult;
-import org.polypheny.db.webui.models.ForeignKey;
-import org.polypheny.db.webui.models.HubMeta;
+import org.polypheny.db.webui.models.*;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
-import org.polypheny.db.webui.models.HubResult;
-import org.polypheny.db.webui.models.Index;
-import org.polypheny.db.webui.models.MaterializedInfos;
-import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
-import org.polypheny.db.webui.models.Placement;
-import org.polypheny.db.webui.models.QueryInterfaceModel;
-import org.polypheny.db.webui.models.Result;
-import org.polypheny.db.webui.models.ResultType;
-import org.polypheny.db.webui.models.Schema;
-import org.polypheny.db.webui.models.SidebarElement;
-import org.polypheny.db.webui.models.SortState;
-import org.polypheny.db.webui.models.Status;
-import org.polypheny.db.webui.models.TableConstraint;
-import org.polypheny.db.webui.models.Uml;
-import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
@@ -459,6 +430,18 @@ public class Crud implements InformationObserver {
             result.add( new DbTable( t.name, t.getSchemaName(), t.modifiable, t.tableType ) );
         }
         ctx.json( result );
+    }
+
+    void getProcedures(final Context ctx) {
+        CatalogSchema schema = catalog.getSchema(getTransaction().getDefaultSchema().id);
+        List<Procedure> procedures = catalog.getProcedures(schema.id).stream()
+                .map(this::mapToApi)
+                .collect(Collectors.toList());
+        ctx.json( procedures );
+    }
+    
+    private Procedure mapToApi(CatalogProcedure procedure) {
+        return new Procedure(procedure.getName(), procedure.getSchemaName());
     }
 
 

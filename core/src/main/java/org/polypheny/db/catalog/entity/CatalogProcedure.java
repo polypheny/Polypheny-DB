@@ -47,6 +47,7 @@ public final class CatalogProcedure implements CatalogEntity {
 
     @Override
     public Serializable[] getParameterArray() {
+        // throw UOE because should not be used.
         return new Serializable[]{
                 getDatabaseName(), getSchemaName(), name, query, arguments };
     }
@@ -65,6 +66,10 @@ public final class CatalogProcedure implements CatalogEntity {
     @SneakyThrows
     public Catalog.SchemaType getSchemaType() {
         return Catalog.getInstance().getSchema( schemaId ).schemaType;
+    }
+
+    public String getName() {
+        return name;
     }
 
     static class ProcedureArguments implements CatalogEntity{
