@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.logical;
 
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -55,6 +56,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
+
 
 @Slf4j
 public class LogicalConstraintEnforcer extends ConstraintEnforcer {

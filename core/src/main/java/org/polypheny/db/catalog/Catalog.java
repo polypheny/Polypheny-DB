@@ -1128,7 +1128,6 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
-
     /**
      * Retrieves a list of partitions which are associated with a specific table
      *

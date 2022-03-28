@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.logical;
 
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
+
 
 public class LogicalStreamer extends Streamer {
 

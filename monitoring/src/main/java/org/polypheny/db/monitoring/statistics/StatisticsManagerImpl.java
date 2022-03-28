@@ -522,13 +522,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private StatisticQueryResult prepareNode( QueryResult queryResult, NodeType nodeType ) {
-
         StatisticQueryResult statisticQueryColumn = null;
-
         if ( Catalog.getInstance().checkIfExistsTable( queryResult.getTableId() ) ) {
-
             AlgNode queryNode = getQueryNode( queryResult, nodeType );
-
             //queryNode = getQueryNode( queryResult, nodeType );
             statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
         }
@@ -631,7 +627,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private AlgNode getUniqueValues( QueryResult queryResult, TableScan tableScan, RexBuilder rexBuilder ) {
-
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -1305,7 +1300,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 }
             }
         }
-
         return map;
     }
 

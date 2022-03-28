@@ -4322,9 +4322,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
-
         List<CatalogDataPlacement> catalogDataPlacements = new ArrayList<>();
-
         for ( CatalogDataPlacement dataPlacement : getDataPlacements( tableId ) ) {
             if ( dataPlacement.dataPlacementRole.equals( role ) ) {
                 catalogDataPlacements.add( dataPlacement );
@@ -4343,9 +4341,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
-
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-
         for ( CatalogDataPlacement dataPlacement : getDataPlacementsByRole( tableId, role ) ) {
             if ( dataPlacement.partitionPlacementsOnAdapterByRole.containsKey( role ) ) {
                 dataPlacement.partitionPlacementsOnAdapterByRole.get( role )
@@ -4369,7 +4365,6 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-
         for ( CatalogPartitionPlacement partitionPlacement : getPartitionPlacements( partitionId ) ) {
             if ( partitionPlacement.role.equals( role ) ) {
                 partitionPlacements.add( partitionPlacement );
@@ -4402,7 +4397,6 @@ public class CatalogImpl extends Catalog {
 
         // Checks for every column on every DataPlacement if each column is placed with all partitions
         for ( long columnId : table.columnIds ) {
-
             List<Long> partitionsToBeCheckedForColumn = table.partitionProperty.partitionIds.stream().collect( Collectors.toList() );
 
             // Check for every column if it has every partition
@@ -4612,8 +4606,8 @@ public class CatalogImpl extends Catalog {
         }
 
         if ( !dataPlacements.containsKey( new Object[]{ adapterId, tableId } ) ) {
-
-            CatalogDataPlacement dataPlacement = new CatalogDataPlacement( tableId,
+            CatalogDataPlacement dataPlacement = new CatalogDataPlacement(
+                    tableId,
                     adapterId,
                     PlacementType.AUTOMATIC,
                     DataPlacementRole.UPTODATE,

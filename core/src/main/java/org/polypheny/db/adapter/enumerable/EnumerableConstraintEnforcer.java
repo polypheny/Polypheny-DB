@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.enumerable;
 
+
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -25,6 +26,7 @@ import org.polypheny.db.algebra.core.ConstraintEnforcer;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
+
 
 public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements EnumerableAlg {
 

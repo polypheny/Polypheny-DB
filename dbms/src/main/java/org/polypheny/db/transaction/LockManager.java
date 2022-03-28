@@ -28,11 +28,12 @@ import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
 
+
 // Based on code taken from https://github.com/dstibrany/LockManager
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
-    public static final EntityIdentifier GLOBAL_LOCK = new EntityIdentifier( -1, -1 ); // For locking whole schema
+    public static final EntityIdentifier GLOBAL_LOCK = new EntityIdentifier( -1L, -1L ); // For locking whole schema
 
     private final ConcurrentHashMap<EntityIdentifier, Lock> lockTable;
     @Getter
@@ -46,6 +47,19 @@ public class LockManager {
 
 
     public void lock( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
+        // Decide on which locking  approach to focus
+        if ( transaction.acceptsOutdated() ) {
+            handleSecondaryLocks( idAccessMap, transaction );
+        } else {
+            handlePrimaryLocks( idAccessMap, transaction );
+        }
+    }
+
+
+    /**
+     * Used in traditional transactional workload to lck all entities that will eagerly receive any update
+     */
+    private void handlePrimaryLocks( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
         Iterator<Entry<EntityIdentifier, LockMode>> iter = idAccessMap.iterator();
         Entry<EntityIdentifier, LockMode> pair;
         while ( iter.hasNext() ) {
@@ -71,6 +85,21 @@ public class LockManager {
 
             transaction.addLock( lock );
         }
+    }
+
+
+    /**
+     * Used in freshness related workload to lock all entities that will lazily receive updates (considered secondaries)
+     */
+    private void handleSecondaryLocks( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
+        // Try locking secondaries first.
+        // If this cannot be fulfilled by data distribution fallback and try to acquire a regular primary lock
+        // TODO @HENNLO Check if this decision should even be made here or somewhere else
+
+        // This is mainly relevant for Queries on secondaries/outdated nodes.
+        // In theory, we already know for each query which partitions are going to be accessed.
+        // The FreshnessManager could therefore already be invoked prior to Routing to decide if the Freshness can be
+        // guaranteed or if we need to fall back to primary locking mechanisms.
     }
 
 
@@ -113,6 +142,5 @@ public class LockManager {
     Lock.LockMode getLockMode( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
         return lockTable.get( entityIdentifier ).getMode();
     }
-
 
 }

@@ -53,7 +53,8 @@ public class CatalogDataPlacement implements CatalogEntity {
 
     public final ImmutableList<Long> columnPlacementsOnAdapter;
 
-    // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important and frequent than writes
+    // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important
+    // and frequent than writes
     public final ImmutableMap<DataPlacementRole, ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
 
 
@@ -96,10 +97,7 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     public boolean hasFullPlacement() {
-        if ( hasColumnFullPlacement() && hasPartitionFullPlacement() ) {
-            return true;
-        }
-        return false;
+        return hasColumnFullPlacement() && hasPartitionFullPlacement();
     }
 
 
@@ -128,18 +126,14 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final ImmutableList<Long> unsortedPartitionIds ) {
-
         // Since this shall only be called after initialization of dataPlacement object,
         // we need to clear the contents of partitionPlacementsOnAdapterByRole
         Map<DataPlacementRole, ImmutableList<Long>> partitionsPerRole = new HashMap<>();
 
         try {
             Catalog catalog = Catalog.getInstance();
-
             if ( !unsortedPartitionIds.isEmpty() ) {
-
                 CatalogPartitionPlacement partitionPlacement;
-
                 for ( long partitionId : unsortedPartitionIds ) {
                     partitionPlacement = catalog.getPartitionPlacement( this.adapterId, partitionId );
                     DataPlacementRole role = partitionPlacement.role;
@@ -165,4 +159,5 @@ public class CatalogDataPlacement implements CatalogEntity {
         // Finally, overwrite entire partitionPlacementsOnAdapterByRole at Once
         return ImmutableMap.copyOf( partitionsPerRole );
     }
+
 }
