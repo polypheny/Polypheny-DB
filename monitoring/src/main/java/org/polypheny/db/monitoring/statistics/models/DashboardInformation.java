@@ -33,7 +33,7 @@ public class DashboardInformation {
 
     @Setter
     @Getter
-    private int numberOfCommits;
+    private int numberOfCommits ;
 
     @Setter
     @Getter

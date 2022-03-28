@@ -147,7 +147,7 @@ public class CatalogView extends CatalogTable {
         AlgNode viewLogicalRoot = getDefinition();
         prepareView( viewLogicalRoot, cluster );
 
-        ViewVisitor materializedVisitor = new ViewVisitor( false );
+        ViewVisitor materializedVisitor = new ViewVisitor( false, null );
         viewLogicalRoot.accept( materializedVisitor );
 
         return viewLogicalRoot;

@@ -675,7 +675,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check Policies if placement is against the policy or not
         // TODO IG: at the moment it redos the decision again here, if preselct only check the policy and no need to redo the adaptiv part
-        List<DataStore> ids = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, catalogTable.schemaId, catalogTable.id, dataStore );
+        List<DataStore> ids = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.SELECT_STORE_ADDITION, catalogTable.schemaId, catalogTable.id, dataStore );
         if ( ids.isEmpty() ) {
             throw new RuntimeException( "Not possible to add Placement because the Datastore is not persistent." );
         }
@@ -1006,7 +1006,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check if Policy goes against dropping the table
         try{
-            PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_DELETE, catalogTable.schemaId, catalogTable.id, storeInstance );
+            PoliciesManager.getInstance().makeDecision( DataStore.class, Action.SELECT_STORE_DELETION, catalogTable.schemaId, catalogTable.id, storeInstance );
         }catch ( PolicyRuntimeException e ){
             throw new RuntimeException(e);
         }
@@ -1648,7 +1648,19 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException {
+    public void createMaterializedView( String viewName,
+            long schemaId,
+            AlgRoot algRoot,
+            boolean replace,
+            Statement statement,
+            List<DataStore> stores,
+            PlacementType placementType,
+            List<String> projectedColumns,
+            MaterializedCriteria materializedCriteria,
+            String query,
+            QueryLanguage language,
+            boolean ifNotExists,
+            boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException {
         // Check if there is already a table with this name
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( ifNotExists ) {
@@ -2203,7 +2215,7 @@ public class DdlManagerImpl extends DdlManager {
         boolean fillStores = false;
         List<DataStore> dataStores = new ArrayList<>();
         if ( stores == null ) {
-            dataStores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, partitionInfo.table.schemaId, partitionInfo.table.id );
+            dataStores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.SELECT_STORE_ADDITION, partitionInfo.table.schemaId, partitionInfo.table.id );
             if ( dataStores.isEmpty() ) {
                 throw new RuntimeException( "Not possible to add Placement, there is no DataStore available." );
             }
@@ -2212,7 +2224,7 @@ public class DdlManagerImpl extends DdlManager {
             fillStores = true;
         } else {
             for ( DataStore store : stores ) {
-                dataStores.addAll( PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, partitionInfo.table.schemaId, partitionInfo.table.id, store ) );
+                dataStores.addAll( PoliciesManager.getInstance().makeDecision( DataStore.class, Action.SELECT_STORE_ADDITION, partitionInfo.table.schemaId, partitionInfo.table.id, store ) );
             }
             if ( dataStores.isEmpty() ) {
                 throw new RuntimeException( "Not possible to add Placement, there is no DataStore available." );

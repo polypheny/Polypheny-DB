@@ -16,6 +16,9 @@
 
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
+import static org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.DecisionStatus.CREATED;
+
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,36 +32,47 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adaptiveness.exception.SelfAdaptiveRuntimeException;
+import org.polypheny.db.adaptiveness.policy.BooleanClause;
+import org.polypheny.db.adaptiveness.policy.Clause;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseType;
 import org.polypheny.db.adaptiveness.policy.PoliciesManager;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.AdaptiveKind;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.DecisionStatus;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.Trigger;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.view.SelfAdaptivAgent;
 
 @Slf4j
 @Getter
-public class SelfAdaptivAgent {
+public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
 
     private static AdaptiveQueryProcessor adaptiveQueryInterface;
-    private static SelfAdaptivAgent INSTANCE = null;
+    private static SelfAdaptivAgentImpl INSTANCE = null;
 
 
-    public static SelfAdaptivAgent getInstance() {
+    public static SelfAdaptivAgentImpl getInstance() {
         if ( INSTANCE == null ) {
-            INSTANCE = new SelfAdaptivAgent();
+            INSTANCE = new SelfAdaptivAgentImpl();
         }
         return INSTANCE;
     }
 
 
     private final Map<Pair<String, Action>, List<ManualDecision>> manualDecisions = new HashMap<>();
+
+    private final Map<String, List<AutomaticDecision>> automaticDecisions = new HashMap<>();
     private final Map<Pair<String, Action>, ManualDecision> newlyAddedManualDecision = new HashMap<>();
 
     private final Queue<ManualDecision> adaptingQueue = new ConcurrentLinkedQueue<>();
+
+    private final Map<String, AlgNode> materializedViews = new HashMap<>();
 
 
     public void initialize( TransactionManager transactionManager, Authenticator authenticator ) {
@@ -71,7 +85,12 @@ public class SelfAdaptivAgent {
     }
 
 
-    public <T> void addDecision( ManualDecision<T> manualDecision ) {
+    public void addMaterializedViews( String algCompareString, LogicalTableScan tableScan ) {
+        materializedViews.put( algCompareString, tableScan );
+    }
+
+
+    public <T> void addManualDecision( ManualDecision<T> manualDecision ) {
         if ( this.manualDecisions.containsKey( manualDecision.getKey() ) ) {
             List<ManualDecision> decisionsList = new ArrayList<>( manualDecisions.remove( manualDecision.getKey() ) );
             decisionsList.add( manualDecision );
@@ -79,9 +98,24 @@ public class SelfAdaptivAgent {
             manualDecisions.put( manualDecision.getKey(), decisionsList );
             newDecision( manualDecision );
         } else {
-            manualDecision.setDecisionStatus( DecisionStatus.CREATED );
+            manualDecision.setDecisionStatus( CREATED );
             manualDecisions.put( manualDecision.getKey(), Collections.singletonList( manualDecision ) );
             log.warn( "add first decision" );
+        }
+
+    }
+
+
+    public <T> void addAutomaticDecision( AutomaticDecision<T> automaticDecision ) {
+        if ( this.automaticDecisions.containsKey( automaticDecision.getKey() ) ) {
+            List<AutomaticDecision> decisionsList = new ArrayList<>( automaticDecisions.remove( automaticDecision.getKey() ) );
+            decisionsList.add( automaticDecision );
+            log.warn( "add second decision AUTO" );
+            automaticDecisions.put( automaticDecision.getKey(), decisionsList );
+        } else {
+            automaticDecision.setDecisionStatus( CREATED );
+            automaticDecisions.put( automaticDecision.getKey(), Collections.singletonList( automaticDecision ) );
+            log.warn( "add first decision AUTO" );
         }
 
     }
@@ -173,10 +207,8 @@ public class SelfAdaptivAgent {
         if ( newManualDecision != null && weightedList.equals( newManualDecision.getWeightedList() ) ) {
             log.warn( "It is the same weighted List." );
         }
-
-        //
         if ( isNewDecisionBetter( getOrdered( manualDecision.getWeightedList() ), getOrdered( weightedList ) ) ) {
-            manualDecision.getAction().redo( newManualDecision, adaptiveQueryInterface.getTransaction() );
+            manualDecision.getAction().doChange( newManualDecision, adaptiveQueryInterface.getTransaction() );
         }
     }
 
@@ -190,18 +222,14 @@ public class SelfAdaptivAgent {
 
 
     private boolean isNewDecisionBetter( WeightedList<?> oldWeightedList, WeightedList<?> newWeightedList ) {
-
         // Overall better
         Pair<Double, Double> overallBetter = WeightedList.compareOverall( oldWeightedList, newWeightedList );
-
         // Only first better
         Pair<Object, Object> firstBetter = WeightedList.comparefirst( oldWeightedList, newWeightedList );
-
         if ( overallBetter.left < overallBetter.right || !firstBetter.left.equals( firstBetter.right ) ) {
             return true;
         }
         return false;
-
     }
 
 
@@ -217,45 +245,84 @@ public class SelfAdaptivAgent {
     }
 
 
-    public void makeWorkloadDecision( Class clazz, Action action, AlgNode algNode ) {
-        switch ( action ) {
-            case LESS_COMPLEX_QUERIES:
+    public <T> void makeWorkloadDecision( Class<T> clazz, Trigger trigger, T selected, boolean increase ) {
 
-                break;
-            case MORE_COMPLEX_QUERIES:
+        switch ( trigger ) {
+            case REPEATING_QUERY:
+                // there are more repeating queries detected
+                if ( increase ) {
 
+                    List<Object> possibleActions = List.of( Action.MATERIALIZED_VIEW_ADDITION, Action.INDEX_ADDITION );
 
-/*
+                    InformationContext context = new InformationContext();
+                    context.setPossibilities( possibleActions, Action.class );
+                    String decisionKey = trigger.name() + ((AlgNode) selected).algCompareString();
 
-                InformationContext context = new InformationContext();
-                context.setPossibilities( possibleStores, DataStore.class );
-                context.setNameSpaceModel( Catalog.getInstance().getSchema( namespaceId ).schemaType );
-
-
-                if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() ) {
-                    Decision decision = new Decision(
-
+                    AutomaticDecision automaticDecision = new AutomaticDecision(
                             new Timestamp( System.currentTimeMillis() ),
-                            ClauseCategory.STORE,
-                            AdaptiveKind.PASSIVE,
-                            DataStore.class,
-                            Action.CHECK_STORES_ADD,
-                            namespaceId,
-                            entityId,
-                            preSelection );
+                            AdaptiveKind.AUTOMATIC,
+                            clazz,
+                            selected,
+                            decisionKey
+                    );
 
-                    return rank( context, Optimization.SELECT_STORE, decision );
+                    WeightedList<T> weightedList = rankPossibleActions( context, Optimization.WORKLOAD_REPEATING_QUERY );
+                    if ( weightedList != null ) {
+                        Action bestAction = WeightedList.getBest( weightedList );
+                        automaticDecision.setWeightedList( weightedList );
+                        automaticDecision.setBestAction( bestAction );
+                        addAutomaticDecision( automaticDecision );
+
+                        if ( automaticDecisions.containsKey( decisionKey ) ) {
+                            if ( automaticDecisions.get( decisionKey ).size() == 1 ) {
+                                bestAction.doChange( automaticDecision, adaptiveQueryInterface.getTransaction() );
+                                log.warn( "CREATE MATERIALIZED" );
+                            }
+                            log.warn( "do nothing, materialized is already created" );
+                        }
+
+
+                    }
+
+                    //there are less repeating queries
+                } else {
+
                 }
 
+                break;
+            case JOIN_FREQUENCY:
 
- */
+                break;
+            case AVG_TIME_CHANGE:
                 break;
             default:
-                log.warn( "This Action " + action.name() + " is not defined in makeWorkloadDecision." );
-                throw new SelfAdaptiveRuntimeException( "This Action " + action.name() + " is not defined in makeWorkloadDecision." );
+                log.warn( "This Trigger " + trigger.name() + " is not defined in makeWorkloadDecision." );
+                throw new SelfAdaptiveRuntimeException( "This Trigger" + trigger.name() + " is not defined in makeWorkloadDecision." );
+
+        }
+    }
+
+
+    private <T> WeightedList<T> rankPossibleActions( InformationContext informationContext, Optimization optimization ) {
+        List<WeightedList<?>> rankings = new ArrayList<>();
+        List<Clause> interestingClauses = PoliciesManager.getInstance().getSelfAdaptiveClauses();
+
+        if ( interestingClauses.isEmpty() ) {
+            log.warn( "No Self-Adaptive Options Selected, System can not adapt itself." );
+        } else {
+            for ( Clause interestingClause : interestingClauses ) {
+                if ( interestingClause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) interestingClause).isValue() && optimization.getRank().containsKey( interestingClause.getClauseName() ) ) {
+                    rankings.add( optimization.getRank().get( interestingClause.getClauseName() ).apply( informationContext ) );
+                }
+            }
+
+            WeightedList<T> avgRankings = WeightedList.avg( rankings );
+
+            return avgRankings;
+
         }
 
-
+        return null;
     }
 
 
@@ -279,20 +346,5 @@ public class SelfAdaptivAgent {
 
     }
 
-
-    /**
-     * CREATED: new decision added for the first time
-     * ADJUSTED: redo of the decision was done
-     * NOT_APPLICABLE: not all involved components are still available
-     * OLD_DECISION: since the decision was added to the list it was redone manually
-     */
-    public enum DecisionStatus {
-        CREATED, ADJUSTED, NOT_APPLICABLE, OLD_DECISION
-    }
-
-
-    public enum WorkloadAdaptions {
-        ADD_INDEX, DELETE_INDEX, ADD_MATERIALIZED_VIEW, DELETE_MATERIALIZED_VIEW
-    }
 
 }

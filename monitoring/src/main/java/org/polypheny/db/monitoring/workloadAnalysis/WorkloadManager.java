@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.workloadAnalysis;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -23,11 +24,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
-import org.polypheny.db.adaptiveness.selfadaptiveness.Action;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.Trigger;
 import org.polypheny.db.algebra.AlgNode;
 
 
@@ -86,20 +88,29 @@ public class WorkloadManager {
 
             ComplexQuery complexQuery = complexQueries.remove( algNode.algCompareString() );
             complexQuery.setAmount( complexQuery.getAmount() + 1 );
-            complexQuery.getTimestamps().add( new Timestamp( System.currentTimeMillis() ) );
+            List<Timestamp> timestampList = complexQuery.getTimestamps();
+            //complexQuery.getTimestamps().add( new Timestamp( System.currentTimeMillis() ) );
+            timestampList.add( new Timestamp( System.currentTimeMillis() ) );
+            complexQuery.setTimestamps( timestampList );
             complexQueries.put( algNode.algCompareString(), complexQuery );
 
+
+            // After a decision it does not make to sense to change it again straight away, so at the moment it waits for 30 seconds && (complexQuery.getLastTime() == null ) || complexQuery.getLastTime().getTime() + TimeUnit.MINUTES.toMillis( 30 ) < System.currentTimeMillis())
             if ( complexQuery.getAmount() > 10 ) {
                 double avgLast = complexQuery.getAvgLast();
                 double avgComparison = complexQuery.getAvgComparison();
 
                 if ( avgLast / avgComparison > 1.2 ) {
                     log.warn( "Query is often used: " + algNode );
-                   SelfAdaptivAgent.getInstance().makeWorkloadDecision(AlgNode.class, Action.MORE_COMPLEX_QUERIES, algNode);
+                    SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, true );
                 } else if ( avgComparison / avgLast > 1.2 ) {
                     log.warn( "Query is not used anymore: " + algNode );
-                    //SelfAdaptivAgent.getInstance().makeWorkloadDecision(AlgNode.class, Action.LESS_COMPLEX_QUERIES, algNode);
+                    SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, false );
                 }
+
+                complexQuery = complexQueries.remove( algNode.algCompareString() );
+                complexQuery.setLastTime( new Timestamp(System.currentTimeMillis() ));
+                complexQueries.put( algNode.algCompareString(), complexQuery );
             }
 
         } else {

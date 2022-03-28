@@ -918,7 +918,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
             PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
             QueryResult queryResult = new QueryResult( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
-            if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
+            if ( this.statisticSchemaMap.get( schemaId ) != null &&
+                    this.statisticSchemaMap.get( schemaId ).get( tableId ) != null &&
+                    catalogTable.columnIds.get( i ) != null &&
+                    this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
                 StatisticColumn<T> statisticColumn = createNewStatisticColumns( polyType, queryResult );
                 if ( statisticColumn != null ) {
                     put( queryResult, statisticColumn );

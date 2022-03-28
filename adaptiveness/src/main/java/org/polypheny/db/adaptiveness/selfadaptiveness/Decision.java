@@ -20,8 +20,8 @@ import java.sql.Timestamp;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent.DecisionStatus;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.AdaptiveKind;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.DecisionStatus;
 
 @Getter
 public class Decision {

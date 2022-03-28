@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adaptiveness.models.PolicyChangeRequest;
 import org.polypheny.db.adaptiveness.policy.PoliciesManager;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -99,7 +99,7 @@ public class AdaptiveTest {
     }
 
 
-    @Test
+    @Ignore
     public void testAdaptBasedOnModel() throws SQLException {
         PoliciesManager policiesManager = PoliciesManager.getInstance();
         PolicyChangeRequest policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "LANGUAGE_OPTIMIZATION", "POLYPHENY", true, -1L );
@@ -131,7 +131,7 @@ public class AdaptiveTest {
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"hsqldb2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-                    SelfAdaptivAgent.getInstance().addAllDecisionsToQueue();
+                    SelfAdaptivAgentImpl.getInstance().addAllDecisionsToQueue();
 
                     Assert.assertEquals( 1, Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).dataPlacements.size() );
 

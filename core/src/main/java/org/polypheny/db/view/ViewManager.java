@@ -16,6 +16,8 @@
 
 package org.polypheny.db.view;
 
+import static org.reflections.Reflections.log;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgCollations;
@@ -91,12 +93,14 @@ public class ViewManager {
 
     public static class ViewVisitor extends AlgShuttleImpl {
 
+        private final SelfAdaptivAgent selfAdaptingAgent;
         int depth = 0;
         final boolean doesSubstituteOrderBy;
 
 
-        public ViewVisitor( boolean doesSubstituteOrderBy ) {
+        public ViewVisitor( boolean doesSubstituteOrderBy, SelfAdaptivAgent selfAdaptivAgent ) {
             this.doesSubstituteOrderBy = doesSubstituteOrderBy;
+            this.selfAdaptingAgent = selfAdaptivAgent;
         }
 
 
@@ -242,6 +246,10 @@ public class ViewManager {
 
 
         public AlgNode checkNode( AlgNode other ) {
+            AlgNode node = checkSelfAdapting( other );
+            if ( node != null ) {
+                return node;
+            }
             if ( other instanceof LogicalViewScan ) {
                 return expandViewNode( other );
             } else if ( doesSubstituteOrderBy && other instanceof LogicalTableScan ) {
@@ -257,6 +265,16 @@ public class ViewManager {
             }
             handleNodeType( other );
             return other;
+        }
+
+
+        private AlgNode checkSelfAdapting( AlgNode algNode ) {
+            if ( selfAdaptingAgent != null && selfAdaptingAgent.getMaterializedViews().containsKey( algNode.algCompareString() ) ) {
+                log.warn("replace this view");
+                return selfAdaptingAgent.getMaterializedViews().get( algNode.algCompareString() );
+            }
+            log.warn( "return without exchanging" );
+            return algNode;
         }
 
 

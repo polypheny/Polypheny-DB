@@ -21,7 +21,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adaptiveness.policy.PoliceUtil.Target;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -41,7 +41,7 @@ public class AdaptivenessCrud {
     private static Crud crud;
 
     private final PoliciesManager policiesManager = PoliciesManager.getInstance();
-    private final SelfAdaptivAgent selfAdaptivAgent = SelfAdaptivAgent.getInstance();
+    private final SelfAdaptivAgentImpl selfAdaptivAgent = SelfAdaptivAgentImpl.getInstance();
 
 
     public AdaptivenessCrud( Crud crud ) {

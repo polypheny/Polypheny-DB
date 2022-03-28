@@ -31,7 +31,7 @@ import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
-import org.polypheny.db.adaptiveness.selfadaptiveness.AdaptiveQueryProcessor;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -66,7 +66,6 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.adaptiveness.policy.PoliciesManager;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
@@ -383,7 +382,7 @@ public class PolyphenyDb {
 
         //start the policy manager
         PoliciesManager.getInstance().initialize();
-        SelfAdaptivAgent.getInstance().initialize(transactionManager, authenticator);
+        SelfAdaptivAgentImpl.getInstance().initialize(transactionManager, authenticator);
 
         WorkloadManager.getInstance();
 

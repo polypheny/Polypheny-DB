@@ -39,8 +39,8 @@ import org.polypheny.db.adaptiveness.policy.PoliceUtil.Target;
 import org.polypheny.db.adaptiveness.selfadaptiveness.Action;
 import org.polypheny.db.adaptiveness.selfadaptiveness.ManualDecision;
 import org.polypheny.db.adaptiveness.selfadaptiveness.Optimization;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent.InformationContext;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl.InformationContext;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.AdaptiveKind;
 import org.polypheny.db.adaptiveness.selfadaptiveness.WeightedList;
 import org.polypheny.db.catalog.Catalog;
@@ -456,7 +456,7 @@ public class PoliciesManager {
         List<Object> possibleStores;
 
         switch ( action ) {
-            case CHECK_STORES_ADD:
+            case SELECT_STORE_ADDITION:
                 clauseNames = Arrays.asList( ClauseName.FULLY_PERSISTENT, ClauseName.PERSISTENT, ClauseName.ONLY_DOCKER, ClauseName.ONLY_EMBEDDED );
                 // Check if there are relevant policies and add it to potentiallyInteresting
                 potentiallyInteresting = findPotentiallyInteresting( clauseNames, namespaceId, entityId );
@@ -482,6 +482,7 @@ public class PoliciesManager {
                     if ( clause.getClauseName() == ClauseName.PERSISTENT ) {
                         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
                         List<Object> allStores = new ArrayList<>( availableStores.values() );
+                        //todo ige: fix isssue should also be ranked
                         return WeightedList.listToWeighted( checkMinimumPersistence( allStores, (DataStore) preSelection, possibleStores, clause, namespaceId, entityId ) );
                     }
                 }
@@ -490,14 +491,14 @@ public class PoliciesManager {
                 context.setPossibilities( possibleStores, DataStore.class );
                 context.setNameSpaceModel( Catalog.getInstance().getSchema( namespaceId ).schemaType );
 
-                if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() ) {
+                if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() && !possibleStores.isEmpty()) {
                     ManualDecision manualDecision = new ManualDecision(
                             new Timestamp( System.currentTimeMillis() ),
                             ClauseCategory.STORE,
                             "entity" + entityId,
                             AdaptiveKind.MANUAL,
                             DataStore.class,
-                            Action.CHECK_STORES_ADD,
+                            Action.SELECT_STORE_ADDITION,
                             namespaceId,
                             entityId,
                             preSelection );
@@ -507,7 +508,7 @@ public class PoliciesManager {
                     return WeightedList.listToWeighted( possibleStores );
                 }
 
-            case CHECK_STORES_DELETE:
+            case SELECT_STORE_DELETION:
                 List<CatalogPartitionPlacement> partitionPlacements = Catalog.getInstance().getAllPartitionPlacement();
                 boolean canBeDeleted = false;
                 List<Object> persistentStore = new ArrayList<>();
@@ -570,13 +571,7 @@ public class PoliciesManager {
     public <T> WeightedList<T> rank( InformationContext informationContext, Optimization optimization, ManualDecision manualDecision ) {
         List<WeightedList<?>> rankings = new ArrayList<>();
 
-        //todo ig: now self adaptive policies are only defined for the whole system as soon as this changes, the different policies need to be checked.
-        List<Clause> interestingClauses = new ArrayList<>();
-        policies.get( polyphenyPolicyId ).getClauses().forEach( ( k, v ) -> {
-            if ( v.getClauseCategory() == ClauseCategory.SELF_ADAPTING && ((BooleanClause) v).isValue() ) {
-                interestingClauses.add( v );
-            }
-        } );
+        List<Clause> interestingClauses = getSelfAdaptiveClauses();
 
         if ( interestingClauses.isEmpty() ) {
             return WeightedList.listToWeighted( informationContext.getPossibilities() );
@@ -587,13 +582,27 @@ public class PoliciesManager {
                 rankings.add( optimization.getRank().get( interestingClause.getClauseName() ).apply( informationContext ) );
             }
         }
-
+        if(rankings.isEmpty()){
+            return WeightedList.listToWeighted( informationContext.getPossibilities() );
+        }
         WeightedList<T> avgRankings = WeightedList.avg( rankings );
 
         manualDecision.setWeightedList( avgRankings );
-        SelfAdaptivAgent.getInstance().addDecision( manualDecision );
+        SelfAdaptivAgentImpl.getInstance().addManualDecision( manualDecision );
 
         return avgRankings;
+    }
+
+    //todo ig: now self adaptive policies are only defined for the whole system as soon as this changes, the different policies need to be checked.
+    public List<Clause> getSelfAdaptiveClauses() {
+        List<Clause> clauses = new ArrayList<>();
+        policies.get( polyphenyPolicyId ).getClauses().forEach( ( k, v ) -> {
+            if ( v.getClauseCategory() == ClauseCategory.SELF_ADAPTING && ((BooleanClause) v).isValue() ) {
+                clauses.add( v );
+            }
+        } );
+
+        return clauses;
     }
 
 

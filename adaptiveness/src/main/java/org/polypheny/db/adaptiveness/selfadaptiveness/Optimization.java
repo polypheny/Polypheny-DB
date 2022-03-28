@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseName;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent.InformationContext;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl.InformationContext;
 
 @Getter
 public enum Optimization {
@@ -46,21 +46,35 @@ public enum Optimization {
             }}
     ),
 
-    WORKLOAD_COMPLEX_QUERY( "workloadComplexQuery",
-            "Rank options form workload trigger",
+    WORKLOAD_REPEATING_QUERY( "workloadRepeatingQuery",
+            "Rank options form workload trigger repeating Query",
             new HashMap<>() {{
                 put( ClauseName.SPEED_OPTIMIZATION, (( c ) -> {
                     WeightedList<Object> list = new WeightedList<>();
                     list.putAll( c.getPossibilities().stream().collect( Collectors.toMap( e -> e, e -> {
-                        if ( ((DataStore) e).getAdapterDefault().getPreferredSchemaType() == c.getNameSpaceModel() ) {
-                            return 1.0;
+                        if ( e == Action.INDEX_ADDITION ) {
+                            return 1.00;
+                        } else if(e == Action.MATERIALIZED_VIEW_ADDITION ){
+                            return 0.75;
                         } else {
                             return -1.0;
                         }
                     } ) ) );
                     return list;
                 }) );
-                //put(ClauseName.SPACE_OPTIMIZATION, )
+                put( ClauseName.SPACE_OPTIMIZATION, (( c ) -> {
+                    WeightedList<Object> list = new WeightedList<>();
+                    list.putAll( c.getPossibilities().stream().collect( Collectors.toMap( e -> e, e -> {
+                        if ( e == Action.INDEX_ADDITION ) {
+                            return -0.50;
+                        } else if(e == Action.MATERIALIZED_VIEW_ADDITION ){
+                            return -1.0;
+                        } else {
+                            return 1.0;
+                        }
+                    } ) ) );
+                    return list;
+                }) );
 
             }} );
 

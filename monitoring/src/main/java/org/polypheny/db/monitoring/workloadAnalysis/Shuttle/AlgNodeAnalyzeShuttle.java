@@ -47,11 +47,12 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
     protected final AlgNodeAnalyzeRexShuttle rexShuttle;
 
     private final AggregateInformation aggregateInformation = new AggregateInformation();
-    private JoinInformation joinInformation = new JoinInformation(  );
-    private final TableScanInformation tableScanInformation = new TableScanInformation(  );
+    private JoinInformation joinInformation = new JoinInformation();
+    private final TableScanInformation tableScanInformation = new TableScanInformation();
     private int projectCount;
     private int sortCount;
     private int filterCount;
+    private boolean modify = false;
 
 
     public AlgNodeAnalyzeShuttle() {
@@ -119,7 +120,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalJoin join ) {
         if ( join.getLeft() instanceof LogicalTableScan && join.getRight() instanceof LogicalTableScan ) {
             //log.warn( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
-            joinInformation.updateJoinInformation(join.getLeft().getTable().getTable().getTableId(),join.getRight().getTable().getTable().getTableId() );
+            joinInformation.updateJoinInformation( join.getLeft().getTable().getTable().getTableId(), join.getRight().getTable().getTable().getTableId() );
         }
 
         super.visit( join );
@@ -172,6 +173,7 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( AlgNode other ) {
         //log.warn( "other#" + other.getClass().getSimpleName() );
         if ( other instanceof LogicalTableModify ) {
+            modify = true;
             // Add all columns to availableColumnsWithTable for statistics
             if ( (other.getTable().getTable() instanceof LogicalTable) ) {
                 LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());

@@ -17,15 +17,28 @@
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
 import java.sql.Timestamp;
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.AdaptiveKind;
 
 /**
  * AutomaticDecision is used if the trigger is automatically through the workload monitoring.
  */
-public class AutomaticDecision extends Decision {
+@Getter
+public class AutomaticDecision<T> extends Decision {
 
-    public AutomaticDecision( Timestamp timestamp, AdaptiveKind adaptiveKind ) {
+    private final Class<T> clazz;
+    private final T selected;
+    private final String key;
+    @Setter
+    private Action bestAction;
+
+    public AutomaticDecision( Timestamp timestamp, AdaptiveKind adaptiveKind, Class<T> clazz, T selected, String key ) {
         super( timestamp, adaptiveKind );
+        this.clazz = clazz;
+        this.selected = selected;
+        this.key = key;
+
     }
 
 }

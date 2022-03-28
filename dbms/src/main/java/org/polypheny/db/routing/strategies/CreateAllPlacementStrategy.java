@@ -44,7 +44,7 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewTable( long schemaId, long tableId ) {
-        List<DataStore> stores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES_ADD, schemaId, tableId );
+        List<DataStore> stores = PoliciesManager.getInstance().makeDecision( DataStore.class, Action.SELECT_STORE_ADDITION, schemaId, tableId );
         if ( stores.isEmpty() ) {
             throw new PolicyRuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
         } else {

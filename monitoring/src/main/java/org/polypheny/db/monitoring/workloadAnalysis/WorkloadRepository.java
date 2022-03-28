@@ -19,6 +19,7 @@ package org.polypheny.db.monitoring.workloadAnalysis;
 import java.sql.Timestamp;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.WorkloadDataPoint;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
@@ -35,10 +36,15 @@ public class WorkloadRepository implements MonitoringRepository {
         WorkloadManager workloadManager = WorkloadManager.getInstance();
         // Analyze logical query
         if ( ((WorkloadDataPoint) dataPoint).getAlgNode() != null && dataPoint.isCommitted() ) {
+            // Shuttle to analyze processed nodes to figure
             AlgNodeAnalyzeShuttle analyzeRelShuttle = new AlgNodeAnalyzeShuttle();
             ((WorkloadDataPoint) dataPoint).getAlgNode().accept( analyzeRelShuttle );
-            if(((WorkloadDataPoint) dataPoint).getAlgNode().algCompareString().length() > 500 && !analyzeRelShuttle.getRexShuttle().isUsesDynamicParam()){
-                workloadManager.findOftenUsedComplexQueries(((WorkloadDataPoint) dataPoint).getAlgNode());
+            // Check if self-adaptive is active, check if the queries is complex (long) enough, check that it is not a parameterized query
+            if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() &&
+                    ((WorkloadDataPoint) dataPoint).getAlgNode().algCompareString().length() > 150 &&
+                    !analyzeRelShuttle.getRexShuttle().isUsesDynamicParam() &&
+                    !analyzeRelShuttle.isModify() ) {
+                workloadManager.findOftenUsedComplexQueries( ((WorkloadDataPoint) dataPoint).getAlgNode() );
             }
 
             Timestamp timestamp = ((WorkloadDataPoint) dataPoint).getRecordedTimestamp();

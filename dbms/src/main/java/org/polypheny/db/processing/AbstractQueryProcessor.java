@@ -48,6 +48,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
@@ -284,13 +285,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // Check if the relRoot includes Views or Materialized Views and replaces what necessary
         // View: replace LogicalViewTableScan with underlying information
         // Materialized View: add order by if Materialized View includes Order by
-        ViewVisitor viewVisitor = new ViewVisitor( false );
+        ViewVisitor viewVisitor = new ViewVisitor( false, SelfAdaptivAgentImpl.getInstance() );
         logicalRoot = viewVisitor.startSubstitution( logicalRoot );
 
         // Update which tables where changed used for Materialized Views
         TableUpdateVisitor visitor = new TableUpdateVisitor();
         logicalRoot.alg.accept( visitor );
         MaterializedViewManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
+
 
         SchemaTypeVisitor schemaTypeVisitor = new SchemaTypeVisitor();
         logicalRoot.alg.accept( schemaTypeVisitor );

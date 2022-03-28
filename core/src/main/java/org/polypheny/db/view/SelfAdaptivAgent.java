@@ -14,29 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptiveness.selfadaptiveness;
+package org.polypheny.db.view;
 
-public interface SelfAdaptiveUtil {
+import java.util.Map;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
 
-    enum Trigger {
-        JOIN_FREQUENCY, REPEATING_QUERY, AVG_TIME_CHANGE
-    }
+public interface SelfAdaptivAgent {
 
-    enum AdaptiveKind {
-
-        AUTOMATIC, MANUAL
-    }
-
-
-    /**
-     * CREATED: new decision added for the first time
-     * ADJUSTED: redo of the decision was done
-     * NOT_APPLICABLE: not all involved components are still available
-     * OLD_DECISION: since the decision was added to the list it was redone manually
-     */
-    enum DecisionStatus {
-        CREATED, ADJUSTED, NOT_APPLICABLE, OLD_DECISION
-    }
-
+    Map<String, AlgNode> getMaterializedViews();
 
 }

@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.workloadAnalysis;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
@@ -29,7 +30,12 @@ public class ComplexQuery {
     private final String query;
 
     @Getter
-    private final List<Timestamp> timestamps;
+    @Setter
+    private List<Timestamp> timestamps = new ArrayList<>();
+
+    @Getter
+    @Setter
+    private Timestamp lastTime ;
 
     @Getter
     @Setter
@@ -38,9 +44,8 @@ public class ComplexQuery {
 
     public ComplexQuery( String query, Timestamp timestamp, int amount ) {
         this.query = query;
-        this.timestamps = Arrays.asList( timestamp );
+        this.timestamps.add( timestamp );
         this.amount = amount;
-
     }
 
 
@@ -48,7 +53,7 @@ public class ComplexQuery {
         if ( timestamps.size() > 10 ) {
             double timeDifference = 0;
             for ( int i = timestamps.size() - 5; i < timestamps.size(); i++ ) {
-                timeDifference += timestamps.get( i - 1 ).getTime() - timestamps.get( i ).getTime();
+                timeDifference += timestamps.get( i ).getTime() - timestamps.get( i - 1 ).getTime();
             }
             return timeDifference / 5;
         } else {
@@ -61,8 +66,8 @@ public class ComplexQuery {
     public double getAvgComparison() {
         if ( timestamps.size() > 10 ) {
             double timeDifference = 0;
-            for ( int i = timestamps.size() - 10; i < timestamps.size()-5; i++ ) {
-                timeDifference += timestamps.get( i - 1 ).getTime() - timestamps.get( i ).getTime();
+            for ( int i = timestamps.size() - 10; i < timestamps.size() - 5; i++ ) {
+                timeDifference += timestamps.get( i ).getTime() -  timestamps.get( i - 1 ).getTime();
             }
             return timeDifference / 5;
         } else {
