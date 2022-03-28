@@ -484,24 +484,14 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
-    final SqlNode className;
-    SqlNodeList usingList = SqlNodeList.EMPTY;
+    final SqlNode query;
 }
 {
     <PROCEDURE> ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
-    <AS>
-    className = StringLiteral()
-    [
-        <USING> {
-            usingList = new SqlNodeList(getPos());
-        }
-        FunctionJarDef(usingList)
-        (
-            <COMMA>
-            FunctionJarDef(usingList)
-        )*
-    ] {
+    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+
+    {
         return SqlDdlNodes.createProcedure(s.end(this), replace, ifNotExists, id, className, usingList);
     }
 }
