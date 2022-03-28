@@ -18,9 +18,9 @@ package org.polypheny.db.adaptiveness.models;
 
 import org.polypheny.db.adaptiveness.policy.BooleanClause;
 import org.polypheny.db.adaptiveness.policy.Clause;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseType;
 import org.polypheny.db.adaptiveness.policy.NumberClause;
-import org.polypheny.db.adaptiveness.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseType;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.Target;
 
 public class UiPolicy {
 

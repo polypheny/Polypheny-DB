@@ -22,7 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.adaptiveness.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.AffectedOperations;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseCategory;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseName;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseType;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.Target;
 
 @Getter
 public abstract class Clause {
@@ -91,25 +95,5 @@ public abstract class Clause {
     public abstract boolean compareClause( Clause clauseAddition );
 
 
-    /**
-     * Different Categories are used to describe the different policies used in Polypheny
-     */
-    public enum ClauseCategory {
-        STORE, SELF_ADAPTING
-    }
-
-    public enum AffectedOperations {
-        STORE
-    }
-
-    public enum ClauseName {
-        FULLY_PERSISTENT, ONLY_EMBEDDED, ONLY_DOCKER, PERSISTENT, SPEED_OPTIMIZATION, REDUNDANCY_OPTIMIZATION, SPACE_OPTIMIZATION, LANGUAGE_OPTIMIZATION
-
-    }
-
-
-    public enum ClauseType {
-        BOOLEAN, NUMBER
-    }
 
 }

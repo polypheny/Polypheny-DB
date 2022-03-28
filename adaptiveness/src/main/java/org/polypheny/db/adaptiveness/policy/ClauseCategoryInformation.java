@@ -20,7 +20,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseCategory;
 
 @Slf4j
 public class ClauseCategoryInformation {

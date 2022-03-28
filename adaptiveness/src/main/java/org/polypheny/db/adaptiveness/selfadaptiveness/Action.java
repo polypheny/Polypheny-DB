@@ -38,16 +38,16 @@ public enum Action {
      */
     CHECK_STORES_ADD {
         @Override
-        public <T> void redo( Decision decision, Transaction transaction ) {
-            if ( decision.getPreSelection() != null ) {
+        public <T> void redo( ManualDecision manualDecision, Transaction transaction ) {
+            if ( manualDecision.getPreSelection() != null ) {
                 // Do nothing, User selected something do not change that
                 return;
             }
             Catalog catalog = Catalog.getInstance();
             DdlManager ddlManager = DdlManager.getInstance();
             AdapterManager adapterManager = AdapterManager.getInstance();
-            CatalogTable catalogTable = catalog.getTable( decision.getEntityId() );
-            DataStore bestDataStore = WeightedList.getBest( decision.getWeightedList() );
+            CatalogTable catalogTable = catalog.getTable( manualDecision.getEntityId() );
+            DataStore bestDataStore = WeightedList.getBest( manualDecision.getWeightedList() );
 
             if ( !catalogTable.dataPlacements.contains( bestDataStore.getAdapterId() ) ) {
 
@@ -68,9 +68,9 @@ public enum Action {
                 for ( Integer dataPlacement : catalogTable.dataPlacements ) {
 
                     DataStore dataStore = adapterManager.getStore( dataPlacement );
-                    Double storeRanking = (Double) decision.getWeightedList().get( dataStore );
+                    Double storeRanking = (Double) manualDecision.getWeightedList().get( dataStore );
 
-                    if ( decision.getWeightedList().containsKey( dataStore ) ) {
+                    if ( manualDecision.getWeightedList().containsKey( dataStore ) ) {
                         if ( worstDataPlacement == null ) {
                             worstDataPlacement = new Pair<>( dataStore, storeRanking );
                         } else if ( worstDataPlacement.right < storeRanking ) {
@@ -95,14 +95,25 @@ public enum Action {
     },
     CHECK_STORES_DELETE {
         @Override
-        public <T> void redo( Decision decision, Transaction transaction ) {
+        public <T> void redo( ManualDecision manualDecision, Transaction transaction ) {
 
         }
 
-    };
+    },
+    MORE_COMPLEX_QUERIES {
+        @Override
+        public <T> void redo( ManualDecision manualDecision, Transaction transaction ) {
+
+        }
+    },
+    LESS_COMPLEX_QUERIES {
+        @Override
+        public <T> void redo( ManualDecision manualDecision, Transaction transaction ) {
+
+        }};
 
 
-    public abstract <T> void redo( Decision decision, Transaction transaction );
+    public abstract <T> void redo( ManualDecision manualDecision, Transaction transaction );
 
 
 }

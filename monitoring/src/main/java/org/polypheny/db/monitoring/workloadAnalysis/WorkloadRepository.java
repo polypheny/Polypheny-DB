@@ -37,7 +37,7 @@ public class WorkloadRepository implements MonitoringRepository {
         if ( ((WorkloadDataPoint) dataPoint).getAlgNode() != null && dataPoint.isCommitted() ) {
             AlgNodeAnalyzeShuttle analyzeRelShuttle = new AlgNodeAnalyzeShuttle();
             ((WorkloadDataPoint) dataPoint).getAlgNode().accept( analyzeRelShuttle );
-            if(((WorkloadDataPoint) dataPoint).getAlgNode().algCompareString().length() > 500){
+            if(((WorkloadDataPoint) dataPoint).getAlgNode().algCompareString().length() > 500 && !analyzeRelShuttle.getRexShuttle().isUsesDynamicParam()){
                 workloadManager.findOftenUsedComplexQueries(((WorkloadDataPoint) dataPoint).getAlgNode());
             }
 

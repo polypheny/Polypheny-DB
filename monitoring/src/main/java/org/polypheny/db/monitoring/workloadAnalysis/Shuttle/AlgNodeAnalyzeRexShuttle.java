@@ -29,6 +29,7 @@ import org.polypheny.db.rex.RexShuttle;
 public class AlgNodeAnalyzeRexShuttle extends RexShuttle {
 
     protected final HashSet<Integer> usedIds = new HashSet<>();
+    protected boolean usesDynamicParam = false;
 
 
     @Override
@@ -60,6 +61,7 @@ public class AlgNodeAnalyzeRexShuttle extends RexShuttle {
     @Override
     public RexNode visitDynamicParam( RexDynamicParam dynamicParam ) {
         if ( dynamicParam != null ) {
+            usesDynamicParam = true;
             this.usedIds.add( (int) dynamicParam.getIndex() );
         }
         return super.visitDynamicParam( dynamicParam );

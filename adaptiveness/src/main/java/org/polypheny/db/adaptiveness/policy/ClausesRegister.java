@@ -26,10 +26,10 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adaptiveness.policy.Clause.AffectedOperations;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
-import org.polypheny.db.adaptiveness.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.AffectedOperations;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseCategory;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseName;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.Target;
 
 public class ClausesRegister {
 

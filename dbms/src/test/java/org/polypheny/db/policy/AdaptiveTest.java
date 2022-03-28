@@ -61,7 +61,7 @@ public class AdaptiveTest {
     }
 
 
-    @Ignore
+    @Test
     public void testStoreSelectionBasedOnModel() throws SQLException {
         PoliciesManager policiesManager = PoliciesManager.getInstance();
         PolicyChangeRequest policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "LANGUAGE_OPTIMIZATION", "POLYPHENY", true, -1L );
@@ -90,8 +90,8 @@ public class AdaptiveTest {
                 } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Caught exception test", e );
                 } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS statisticschema.nation" );
-                    statement.executeUpdate( "DROP SCHEMA statisticschema" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS \"statisticschema\".\"nation\"" );
+                    statement.executeUpdate( "DROP SCHEMA \"statisticschema\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"mongodb1\"");
                 }
             }
@@ -143,8 +143,8 @@ public class AdaptiveTest {
                 } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Caught exception test", e );
                 } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS statisticschema.nation" );
-                    statement.executeUpdate( "DROP SCHEMA statisticschema" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS \"statisticschema\".\"nation\"" );
+                    statement.executeUpdate( "DROP SCHEMA \"statisticschema\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"hsqldb2\"");
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"mongodb2\"");
                 }

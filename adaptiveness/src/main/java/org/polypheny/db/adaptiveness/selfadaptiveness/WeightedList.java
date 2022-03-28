@@ -17,16 +17,11 @@
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.util.Pair;
 
 
@@ -42,7 +37,7 @@ public class WeightedList<T> extends HashMap<T, Double> {
         List<Object> possibilities = new ArrayList<>();
         WeightedList<T> weightedList = new WeightedList<>();
 
-        list.get( 0 ).forEach( ( k, v ) -> possibilities.add( k) );
+        list.get( 0 ).forEach( ( k, v ) -> possibilities.add( k ) );
         for ( Object possibility : possibilities ) {
             double avg = 0L;
             for ( WeightedList<?> value : list ) {
@@ -50,24 +45,21 @@ public class WeightedList<T> extends HashMap<T, Double> {
                     avg += value.get( possibility );
                 }
             }
-            weightedList.put( (T)possibility, avg / list.size() );
+            weightedList.put( (T) possibility, avg / list.size() );
         }
         return weightedList;
     }
 
 
-
-    public static <T> List<T> weightedToList(WeightedList<T> list){
+    public static <T> List<T> weightedToList( WeightedList<T> list ) {
         Map<T, Double> orderedList = new LinkedHashMap<>();
-        ((WeightedList<Object>)list).entrySet().stream().sorted( Map.Entry.comparingByValue( Comparator.reverseOrder()) ).forEachOrdered( x -> orderedList.put( (T) x.getKey(), x.getValue()));
+        ((WeightedList<Object>) list).entrySet().stream().sorted( Map.Entry.comparingByValue( Comparator.reverseOrder() ) ).forEachOrdered( x -> orderedList.put( (T) x.getKey(), x.getValue() ) );
 
         List<T> withoutWeight = new ArrayList<>();
-        orderedList.forEach( (k, v) -> withoutWeight.add( (T)k ) );
+        orderedList.forEach( ( k, v ) -> withoutWeight.add( (T) k ) );
 
         return withoutWeight;
     }
-
-
 
 
     public static <T> WeightedList<T> listToWeighted( List<Object> possibilities ) {
@@ -75,7 +67,7 @@ public class WeightedList<T> extends HashMap<T, Double> {
         WeightedList<T> weightedList = new WeightedList<>();
 
         for ( Object possibility : possibilities ) {
-            weightedList.put( (T)possibility, 0D );
+            weightedList.put( (T) possibility, 0D );
         }
 
         return weightedList;
@@ -84,8 +76,8 @@ public class WeightedList<T> extends HashMap<T, Double> {
 
 
     public static Pair<Double, Double> compareOverall( WeightedList<?> oldWeightedList, WeightedList<?> newWeightedList ) {
-        double oldOverall = oldWeightedList.values().stream().mapToDouble( Double::doubleValue ).sum()/ oldWeightedList.size();
-        double newOverall = newWeightedList.values().stream().mapToDouble( Double::doubleValue ).sum()/ newWeightedList.size();
+        double oldOverall = oldWeightedList.values().stream().mapToDouble( Double::doubleValue ).sum() / oldWeightedList.size();
+        double newOverall = newWeightedList.values().stream().mapToDouble( Double::doubleValue ).sum() / newWeightedList.size();
 
         return new Pair<>( oldOverall, newOverall );
     }

@@ -22,7 +22,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 import lombok.Getter;
-import org.polypheny.db.adaptiveness.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.AffectedOperations;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseCategory;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseName;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseType;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.Target;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -33,7 +37,15 @@ public class NumberClause extends Clause {
     private final HashMap<ClauseCategory, Pair<Integer, Integer>> categoryRange;
 
 
-    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<ClauseCategory, Pair<Integer, Integer>> categoryRange, ClauseCategory clauseCategory, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide, HashMap<Clause, Clause> interfering ) {
+    public NumberClause( ClauseName clauseName,
+            int defaultValue,
+            boolean isDefault,
+            HashMap<ClauseCategory, Pair<Integer, Integer>> categoryRange,
+            ClauseCategory clauseCategory,
+            List<Target> possibleTargets,
+            String description,
+            HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide,
+            HashMap<Clause, Clause> interfering ) {
         super( clauseName, isDefault, ClauseType.NUMBER, clauseCategory, possibleTargets, description, decide, interfering );
         this.value = defaultValue;
         this.categoryRange = categoryRange;

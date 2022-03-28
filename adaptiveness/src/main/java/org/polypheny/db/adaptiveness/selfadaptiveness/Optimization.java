@@ -21,7 +21,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseName;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent.InformationContext;
 
 @Getter
@@ -41,15 +41,15 @@ public enum Optimization {
                         }
                     } ) ) );
                     return list;
-                }));
+                }) );
 
             }}
     ),
 
-    INDEX( "index",
-            "Rank the Stores to find the best to use",
+    WORKLOAD_COMPLEX_QUERY( "workloadComplexQuery",
+            "Rank options form workload trigger",
             new HashMap<>() {{
-                put( ClauseName.LANGUAGE_OPTIMIZATION, (( c ) -> {
+                put( ClauseName.SPEED_OPTIMIZATION, (( c ) -> {
                     WeightedList<Object> list = new WeightedList<>();
                     list.putAll( c.getPossibilities().stream().collect( Collectors.toMap( e -> e, e -> {
                         if ( ((DataStore) e).getAdapterDefault().getPreferredSchemaType() == c.getNameSpaceModel() ) {
@@ -59,7 +59,8 @@ public enum Optimization {
                         }
                     } ) ) );
                     return list;
-                }));
+                }) );
+                //put(ClauseName.SPACE_OPTIMIZATION, )
 
             }} );
 

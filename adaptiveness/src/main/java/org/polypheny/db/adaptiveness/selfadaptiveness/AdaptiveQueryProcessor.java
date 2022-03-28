@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
-import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -38,9 +37,11 @@ public class AdaptiveQueryProcessor {
         this.userName = userName;
     }
 
+
     public AdaptiveQueryProcessor( TransactionManager transactionManager, Authenticator authenticator ) {
         this( transactionManager, "pa", "APP" );
     }
+
 
     public Transaction getTransaction() {
         try {

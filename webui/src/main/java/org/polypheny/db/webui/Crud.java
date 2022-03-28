@@ -157,7 +157,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.PartitionFunctionInfo;
@@ -181,7 +180,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.crud.PolicyCrud;
+import org.polypheny.db.webui.crud.AdaptivenessCrud;
 import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.crud.WorkloadCrud;
 import org.polypheny.db.webui.models.AdapterModel;
@@ -238,7 +237,7 @@ public class Crud implements InformationObserver {
     private final String userName;
 
     public final LanguageCrud languageCrud;
-    public final PolicyCrud policyCrud;
+    public final AdaptivenessCrud adaptivenessCrud;
     private boolean isActiveTracking = false;
     public final StatisticCrud statisticCrud;
     public final WorkloadCrud workloadCrud;
@@ -255,7 +254,7 @@ public class Crud implements InformationObserver {
         this.databaseName = databaseName;
         this.userName = userName;
         this.languageCrud = new LanguageCrud( this );
-        this.policyCrud = new PolicyCrud( this );
+        this.adaptivenessCrud = new AdaptivenessCrud( this );
         this.statisticCrud = new StatisticCrud( this );
         this.workloadCrud = new WorkloadCrud( this );
     }

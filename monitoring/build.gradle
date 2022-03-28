@@ -8,6 +8,7 @@ apply plugin: "io.freefair.lombok"
 
 dependencies {
     implementation project(":core")
+    implementation project(":adaptiveness")
 
     implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
 

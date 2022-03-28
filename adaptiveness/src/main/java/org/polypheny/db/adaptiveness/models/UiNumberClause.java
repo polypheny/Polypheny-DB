@@ -18,10 +18,10 @@ package org.polypheny.db.adaptiveness.models;
 
 import java.util.HashMap;
 import java.util.List;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseType;
-import org.polypheny.db.adaptiveness.policy.Policies.Target;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseCategory;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseName;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseType;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.Target;
 import org.polypheny.db.util.Pair;
 
 public class UiNumberClause extends UiClause {

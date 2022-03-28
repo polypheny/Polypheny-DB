@@ -25,7 +25,11 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+
+import org.polypheny.db.adaptiveness.selfadaptiveness.Action;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent;
 import org.polypheny.db.algebra.AlgNode;
+
 
 @Slf4j
 public class WorkloadManager {
@@ -77,27 +81,30 @@ public class WorkloadManager {
     }
 
 
-    public void findOftenUsedComplexQueries( AlgNode algCompareString ) {
-        if ( complexQueries.containsKey( algCompareString.algCompareString() ) ) {
-            ComplexQuery complexQuery = complexQueries.remove( algCompareString.algCompareString() );
+    public void findOftenUsedComplexQueries( AlgNode algNode ) {
+        if ( complexQueries.containsKey( algNode.algCompareString() ) ) {
+
+            ComplexQuery complexQuery = complexQueries.remove( algNode.algCompareString() );
             complexQuery.setAmount( complexQuery.getAmount() + 1 );
             complexQuery.getTimestamps().add( new Timestamp( System.currentTimeMillis() ) );
-            complexQueries.put( algCompareString.algCompareString(), complexQuery );
+            complexQueries.put( algNode.algCompareString(), complexQuery );
 
             if ( complexQuery.getAmount() > 10 ) {
                 double avgLast = complexQuery.getAvgLast();
                 double avgComparison = complexQuery.getAvgComparison();
 
                 if ( avgLast / avgComparison > 1.2 ) {
-                    log.warn( "Query is often used: " + algCompareString );
+                    log.warn( "Query is often used: " + algNode );
+                   SelfAdaptivAgent.getInstance().makeWorkloadDecision(AlgNode.class, Action.MORE_COMPLEX_QUERIES, algNode);
                 } else if ( avgComparison / avgLast > 1.2 ) {
-                    log.warn( "Query is not used anymore: " + algCompareString );
+                    log.warn( "Query is not used anymore: " + algNode );
+                    //SelfAdaptivAgent.getInstance().makeWorkloadDecision(AlgNode.class, Action.LESS_COMPLEX_QUERIES, algNode);
                 }
             }
 
         } else {
-            ComplexQuery complexQuery = new ComplexQuery( algCompareString.algCompareString(), new Timestamp( System.currentTimeMillis() ), 1 );
-            complexQueries.put( algCompareString.algCompareString(), complexQuery );
+            ComplexQuery complexQuery = new ComplexQuery( algNode.algCompareString(), new Timestamp( System.currentTimeMillis() ), 1 );
+            complexQueries.put( algNode.algCompareString(), complexQuery );
         }
 
 

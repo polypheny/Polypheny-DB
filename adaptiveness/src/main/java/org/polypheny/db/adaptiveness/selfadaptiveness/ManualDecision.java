@@ -17,29 +17,19 @@
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
 import java.sql.Timestamp;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
-import lombok.Setter;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseCategory;
-import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgent.DecisionStatus;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseCategory;
+import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.AdaptiveKind;
 import org.polypheny.db.util.Pair;
 
+/**
+ * ManualDecision is used if the trigger is manually through a system change via policies.
+ */
 @Getter
-public class Decision <T>{
+public class ManualDecision<T> extends Decision {
 
-    private static final AtomicInteger atomicId = new AtomicInteger();
-
-    /**
-     * Unique id of Decision.
-     */
-    private final int id;
-    private final Pair<Long, Action> key;
-    private final Timestamp timestamp;
+    private final Pair<String, Action> key;
     private final ClauseCategory clauseCategory;
-    @Setter
-    private DecisionStatus decisionStatus;
-    @Setter
-    private WeightedList<?> weightedList;
 
 
     // information needed to makeDecision
@@ -53,19 +43,18 @@ public class Decision <T>{
     private long gainValue;
 
 
-    public Decision(
-
-            Pair<Long, Action> key,
+    public ManualDecision(
             Timestamp timestamp,
             ClauseCategory clauseCategory,
+            String keyPart,
+            AdaptiveKind adaptiveKind,
             Class<T> clazz,
             Action action,
             long nameSpaceId,
             long entityId,
             T preSelection ) {
-        this.id = atomicId.getAndIncrement();
-        this.key = key;
-        this.timestamp = timestamp;
+        super( timestamp, adaptiveKind );
+        this.key = new Pair<>( keyPart, action );
         this.clauseCategory = clauseCategory;
         this.clazz = clazz;
         this.action = action;

@@ -22,7 +22,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adaptiveness.policy.Clause.ClauseName;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.ClauseName;
+import org.polypheny.db.adaptiveness.policy.PoliceUtil.Target;
 
 @Slf4j
 public class Policies {
@@ -97,14 +98,6 @@ public class Policies {
             default:
                 log.debug( "No default policies are defined for the target: " + target.name() );
         }
-    }
-
-
-    /**
-     * Describes for what the policy is used, either only for one table, a store or for everything.
-     */
-    public enum Target {
-        ENTITY, NAMESPACE, POLYPHENY
     }
 
 
