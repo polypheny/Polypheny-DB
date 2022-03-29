@@ -36,7 +36,7 @@ public class NeoValues extends Values implements NeoAlg {
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
         if ( getRowType().getFieldCount() == 1 && getRowType().getFieldList().get( 0 ).getName().equals( "ZERO" ) ) {
-            implementor.isPrepared = true;
+            implementor.setPrepared( true );
         }
 
         implementor.addValues( tuples );

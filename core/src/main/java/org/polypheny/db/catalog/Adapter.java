@@ -67,7 +67,10 @@ public enum Adapter {
                 settings.put( "trxLifetimeLimit", "1209600" );
                 break;
             case NEO4J:
+                settings.put( "persistent", "true" );
                 settings.put( "port", "7687" );
+                settings.put( "mode", "docker" );
+                settings.put( "instanceId", "0" );
                 settings.put( "type", "neo4j" );
                 break;
             case HSQLDB:

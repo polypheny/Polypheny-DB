@@ -33,7 +33,6 @@ import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.neo4j.rules.NeoScan;
-import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
@@ -135,6 +134,8 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
         public Enumerable<Object> execute( String query, List<PolyType> types, List<PolyType> componentTypes ) {
             Transaction trx = getTrx();
 
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( namespace.store );
+
             Result res;
             if ( dataContext.getParameterValues().size() > 0 ) {
                 res = trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ) ) );
@@ -156,7 +157,7 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
         private Map<String, Object> toParameters( Map<Long, Object> values ) {
             Map<String, Object> parameters = new HashMap<>();
             for ( Entry<Long, Object> entry : values.entrySet() ) {
-                parameters.put( NeoUtil.asParameter( entry.getKey(), false ), entry.getValue() );
+                parameters.put( NeoUtil.asParameter( entry.getKey(), false ), NeoUtil.fixParameterValue( entry.getValue() ) );
             }
             return parameters;
         }
@@ -169,14 +170,6 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
         private Transaction getTrx() {
             return namespace.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
-        }
-
-
-        private String unwrap( List<NeoStatement> statements, DataContext dataContext ) {
-            return null; /* statements
-                    .stream()
-                    .map( s -> s.build().apply( dataContext.getParameterValues().get( 0 ) ) )
-                    .collect( Collectors.joining( "\n " ) );*/
         }
 
 

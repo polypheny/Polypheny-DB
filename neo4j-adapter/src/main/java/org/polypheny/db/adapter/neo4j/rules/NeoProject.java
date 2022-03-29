@@ -22,6 +22,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
@@ -41,8 +42,13 @@ public class NeoProject extends Project implements NeoAlg {
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        if ( !implementor.hasValues() ) {
-            implementor.addReturn( this );
+
+        if ( AlgOptUtil.areRowTypesEqual( implementor.getLast().getRowType(), this.rowType, false ) ) {
+            return;
+        }
+
+        if ( !implementor.isDml() ) {
+            implementor.addWith( this );
         }
     }
 

@@ -22,6 +22,7 @@ import org.polypheny.db.adapter.neo4j.rules.NeoFilter;
 import org.polypheny.db.adapter.neo4j.rules.NeoModify;
 import org.polypheny.db.adapter.neo4j.rules.NeoProject;
 import org.polypheny.db.adapter.neo4j.rules.NeoValues;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -112,7 +113,7 @@ public class NeoRules {
 
     public static class NeoFilterRule extends NeoConverterRule {
 
-        public static NeoFilterRule INSTANCE = new NeoFilterRule( Filter.class, r -> true, "NeoFilterRule" );
+        public static NeoFilterRule INSTANCE = new NeoFilterRule( Filter.class, NeoUtil::supports, "NeoFilterRule" );
 
 
         private <R extends AlgNode> NeoFilterRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

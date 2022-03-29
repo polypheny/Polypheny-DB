@@ -17,7 +17,9 @@
 package org.polypheny.db.adapter.neo4j;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.assign_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.create_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.delete_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
@@ -25,40 +27,56 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.prepared_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.property_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.return_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.set_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.where_;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.adapter.enumerable.EnumUtils;
+import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.neo4j.rules.NeoAlg;
+import org.polypheny.db.adapter.neo4j.rules.NeoFilter;
+import org.polypheny.db.adapter.neo4j.rules.NeoModify;
 import org.polypheny.db.adapter.neo4j.rules.NeoProject;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.ListStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.PropertyStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.StatementType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
-import org.polypheny.db.adapter.neo4j.util.TypeFrame;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.util.Pair;
 
 public class NeoRelationalImplementor extends AlgShuttleImpl {
 
-    public static final List<Pair<String, String>> ROWCOUNT = List.of( Pair.of( null, "ROWCOUNT" ) );
-    private final List<NeoStatements.NeoStatement> statements = new ArrayList<>();
-    public boolean isPrepared;
+    private final List<OperatorStatement> statements = new ArrayList<>();
+
+    @Setter
     @Getter
-    private TypeFrame frame;
+    private boolean isPrepared;
+
+    @Setter
+    @Getter
+    private boolean isDml;
 
     @Getter
     private AlgOptTable table;
@@ -74,7 +92,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     private AlgNode last;
 
 
-    public void add( NeoStatements.NeoStatement statement ) {
+    public void add( OperatorStatement statement ) {
         this.statements.add( statement );
     }
 
@@ -96,7 +114,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addCreate() {
-        Pair<Integer, NeoStatement> res = createCreate( values, entity );
+        Pair<Integer, OperatorStatement> res = createCreate( values, entity );
         add( res.right );
         addRowCount( res.left );
     }
@@ -117,14 +135,6 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    public Expression asExpression() {
-        return EnumUtils.constantArrayList( statements
-                .stream()
-                .map( NeoStatements.NeoStatement::asExpression )
-                .collect( Collectors.toList() ), NeoStatements.NeoStatement.class );
-    }
-
-
     public void visitChild( int ordinal, AlgNode input ) {
         assert ordinal == 0;
         ((NeoAlg) input).implement( this );
@@ -132,12 +142,12 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    public void addReturn( NeoProject project ) {
-        add( createReturn( project, entity ) );
+    public void addWith( NeoProject project ) {
+        add( create( NeoStatements::with_, project, last ) );
     }
 
 
-    public static Pair<Integer, NeoStatements.NeoStatement> createCreate( ImmutableList<ImmutableList<RexLiteral>> values, NeoEntity entity ) {
+    public static Pair<Integer, NeoStatements.OperatorStatement> createCreate( ImmutableList<ImmutableList<RexLiteral>> values, NeoEntity entity ) {
         int nodeI = 0;
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
         AlgDataType rowType = entity.getRowType( entity.getTypeFactory() );
@@ -157,32 +167,25 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    public static NeoStatements.NeoStatement createReturn( NeoProject neoProject, NeoEntity entity ) {
-        List<AlgDataTypeField> fields = entity.getRowType( entity.getTypeFactory() ).getFieldList();
+    public static NeoStatements.OperatorStatement create( Function1<ListStatement<?>, OperatorStatement> transformer, NeoProject neoProject, AlgNode last ) {
+        List<AlgDataTypeField> fields = neoProject.getRowType().getFieldList();
 
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
         int i = 0;
         for ( RexNode project : neoProject.getProjects() ) {
-            String key = fields.get( i ).getName();
-            NeoStatement statement;
-            if ( project.isA( Kind.LITERAL ) ) {
-                statement = literal_( (RexLiteral) project );
-            } else if ( project.isA( Kind.DYNAMIC_PARAM ) ) {
-                statement = prepared_( (RexDynamicParam) project );
-            } else if ( project.isA( Kind.INPUT_REF ) ) {
-                statement = literal_( fields.get( i ).getName() );
-            } else {
-                throw new UnsupportedOperationException( "This operation is not supported." );
-            }
-            nodes.add( as_( statement, literal_( fields.get( i ).getName() ) ) );
+            Translator translator = new Translator( last.getRowType(), new HashMap<>() );
+            String res = project.accept( translator );
+            assert res != null : "Unsupported operation encountered for projects in Neo4j.";
+
+            nodes.add( as_( literal_( res ), literal_( fields.get( i ).getName() ) ) );
             i++;
         }
 
-        return return_( list_( nodes ) );
+        return transformer.apply( list_( nodes ) );
     }
 
 
-    public static NeoStatement createProjectValues( NeoProject last, NeoEntity entity ) {
+    public static OperatorStatement createProjectValues( NeoProject last, NeoEntity entity ) {
         List<PropertyStatement> properties = new ArrayList<>();
         List<AlgDataTypeField> fields = entity.getRowType( entity.getTypeFactory() ).getFieldList();
 
@@ -205,7 +208,130 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public String build() {
+        addReturnIfNecessary();
         return statements.stream().map( NeoStatement::build ).collect( Collectors.joining( "\n" ) );
+
+    }
+
+
+    private void addReturnIfNecessary() {
+        OperatorStatement statement = statements.get( statements.size() - 1 );
+        if ( statements.get( statements.size() - 1 ).type != StatementType.RETURN ) {
+            if ( isDml ) {
+                addRowCount( 1 );
+            } else if ( statement.type == StatementType.WITH ) {
+                // can replace
+                statements.remove( statements.size() - 1 );
+                statements.add( return_( statement.statements ) );
+            } else {//if ( statement.type == StatementType.WHERE ) {
+                // have to add
+                statements.add( return_( list_( last.getRowType().getFieldNames().stream().map( f -> literal_( NeoUtil.fixParameter( f ) ) ).collect( Collectors.toList() ) ) ) );
+            }
+        }
+    }
+
+
+    public void addFilter( NeoFilter filter ) {
+        Translator translator = new Translator( last.getRowType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>() );
+        add( where_( literal_( filter.getCondition().accept( translator ) ) ) );
+    }
+
+
+    private Map<String, String> getToPhysicalMapping( @Nullable NeoProject project ) {
+        Map<String, String> mapping = new HashMap<>();
+        for ( AlgDataTypeField field : table.getRowType().getFieldList() ) {
+            mapping.put( field.getName(), entity.phsicalEntityName + "." + field.getPhysicalName() );
+        }
+
+        if ( project != null ) {
+            for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+                if ( !mapping.containsKey( field.getName() ) ) {
+                    Translator translator = new Translator( project.getRowType(), new HashMap<>() );
+                    mapping.put( field.getName(), project.getProjects().get( field.getIndex() ).accept( translator ) );
+                }
+            }
+        }
+
+        return mapping;
+    }
+
+
+    public void addDelete() {
+        add( delete_( literal_( entity.phsicalEntityName ) ) );
+    }
+
+
+    public void addUpdate( NeoModify neoModify ) {
+        NeoProject project = (NeoProject) last;
+
+        Map<String, String> mapping = getToPhysicalMapping( project );
+
+        List<NeoStatement> nodes = new ArrayList<>();
+        int i = 0;
+        for ( RexNode node : neoModify.getSourceExpressionList() ) {
+            Translator translator = new Translator( last.getRowType(), mapping );
+            nodes.add( assign_( literal_( mapping.get( neoModify.getUpdateColumnList().get( i ) ) ), literal_( node.accept( translator ) ) ) );
+            i++;
+        }
+
+        add( set_( list_( nodes ) ) );
+    }
+
+
+    private static class Translator extends RexVisitorImpl<String> {
+
+
+        private final List<AlgDataTypeField> fields;
+        private final Map<String, String> mapping;
+
+
+        protected Translator( AlgDataType rowType, Map<String, String> mapping ) {
+            super( true );
+            this.fields = rowType.getFieldList();
+            this.mapping = mapping;
+        }
+
+
+        @Override
+        public String visitLiteral( RexLiteral literal ) {
+            return NeoUtil.rexAsString( literal );
+        }
+
+
+        @Override
+        public String visitInputRef( RexInputRef inputRef ) {
+            String name = fields.get( inputRef.getIndex() ).getName();
+            if ( mapping.containsKey( name ) ) {
+                return mapping.get( name );
+            }
+            return name;
+        }
+
+
+        @Override
+        public String visitLocalRef( RexLocalRef localRef ) {
+            String name = fields.get( localRef.getIndex() ).getName();
+            if ( mapping.containsKey( name ) ) {
+                return mapping.get( name );
+            }
+            return name;
+        }
+
+
+        @Override
+        public String visitDynamicParam( RexDynamicParam dynamicParam ) {
+            return NeoUtil.asParameter( dynamicParam.getIndex(), true );
+        }
+
+
+        @Override
+        public String visitCall( RexCall call ) {
+            List<String> ops = call.operands.stream().map( o -> o.accept( this ) ).collect( Collectors.toList() );
+
+            Function1<List<String>, String> getter = NeoUtil.getOpAsNeo( call.op.getOperatorName() );
+            assert getter != null : "Function is not supported by the Neo4j adapter.";
+            return "(" + getter.apply( ops ) + ")";
+        }
 
     }
 

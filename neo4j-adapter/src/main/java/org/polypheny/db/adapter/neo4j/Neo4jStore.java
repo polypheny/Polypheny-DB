@@ -97,6 +97,14 @@ public class Neo4jStore extends DataStore {
 
         DockerManager.getInstance().initialize( container ).start();
 
+        if ( this.db == null ) {
+            try {
+                this.db = GraphDatabase.driver( new URI( "bolt://localhost:" + port ), auth );
+            } catch ( URISyntaxException e ) {
+                throw new RuntimeException( "Error while restoring the Neo4j database." );
+            }
+        }
+
         this.session = this.db.session();
         this.transactionProvider = new TransactionProvider( this.db, this.session );
 
@@ -161,16 +169,15 @@ public class Neo4jStore extends DataStore {
     }
 
 
-    public void executeDdlTrx( Session session, List<String> queries ) {
-        Transaction trx = session.beginTransaction();
+    public void executeDdlTrx( PolyXid xid, List<String> queries ) {
+        Transaction trx = transactionProvider.get( xid );
         for ( String query : queries ) {
             trx.run( query );
         }
-        trx.commit();
     }
 
 
-    public void executeDdlTrx( Session session, String query ) {
+    public void executeDdlTrx( PolyXid session, String query ) {
         executeDdlTrx( session, List.of( query ) );
     }
 
@@ -183,7 +190,7 @@ public class Neo4jStore extends DataStore {
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
-            executeDdlTrx( this.currentSchema.session, String.format( "MATCH (n:%s) DELETE n", partitionPlacement.physicalTableName ) );
+            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "MATCH (n:%s) DELETE n", partitionPlacement.physicalTableName ) );
         }
     }
 
@@ -201,7 +208,7 @@ public class Neo4jStore extends DataStore {
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             if ( catalogColumn.defaultValue != null ) {
-                executeDdlTrx( this.currentSchema.session, String.format(
+                executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format(
                         "MATCH (n:%s) SET += {%s:'%s'}",
                         getPhysicalEntityName( catalogColumn.schemaId, catalogColumn.tableId, partitionPlacement.partitionId ),
                         getPhysicalFieldName( catalogColumn.id ),
@@ -224,8 +231,7 @@ public class Neo4jStore extends DataStore {
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            executeDdlTrx(
-                    this.currentSchema.session, String.format( "MATCH (n:%s) REMOVE n.%s", partitionPlacement.physicalTableName, columnPlacement.physicalColumnName ) );
+            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "MATCH (n:%s) REMOVE n.%s", partitionPlacement.physicalTableName, columnPlacement.physicalColumnName ) );
         }
     }
 
@@ -240,7 +246,7 @@ public class Neo4jStore extends DataStore {
             switch ( type ) {
                 case DEFAULT:
                 case COMPOSITE:
-                    addCompositeIndex( catalogIndex, columns, catalog.getPartitionPlacement( getAdapterId(), partitionId ) );
+                    addCompositeIndex( context.getStatement().getTransaction().getXid(), catalogIndex, columns, catalog.getPartitionPlacement( getAdapterId(), partitionId ) );
                     break;
             }
         }
@@ -249,9 +255,9 @@ public class Neo4jStore extends DataStore {
     }
 
 
-    private void addCompositeIndex( CatalogIndex catalogIndex, List<Long> columnIds, CatalogPartitionPlacement partitionPlacement ) {
+    private void addCompositeIndex( PolyXid xid, CatalogIndex catalogIndex, List<Long> columnIds, CatalogPartitionPlacement partitionPlacement ) {
         String fields = columnIds.stream().map( id -> String.format( "n.%s", getPhysicalFieldName( id ) ) ).collect( Collectors.joining( ", " ) );
-        executeDdlTrx( this.currentSchema.session, String.format(
+        executeDdlTrx( xid, String.format(
                 "CREATE INDEX %s FOR (n:%s) on (%s)",
                 catalogIndex.name,
                 getPhysicalEntityName( catalogIndex.key.schemaId, catalogIndex.key.tableId, partitionPlacement.partitionId ),
@@ -268,7 +274,7 @@ public class Neo4jStore extends DataStore {
                 .collect( Collectors.toList() );
 
         for ( CatalogPartitionPlacement ignored : partitionPlacements ) {
-            executeDdlTrx( this.currentSchema.session, String.format( "DROP INDEX %s", catalogIndex.physicalName ) );
+            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "DROP INDEX %s", catalogIndex.physicalName ) );
         }
     }
 
@@ -326,7 +332,7 @@ public class Neo4jStore extends DataStore {
     public void truncate( Context context, CatalogEntity table ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
-            executeDdlTrx( currentSchema.session, String.format( "MATCH (n:%s) DELETE n", partitionPlacement.physicalTableName ) );
+            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "MATCH (n:%s) DELETE n", partitionPlacement.physicalTableName ) );
         }
     }
 

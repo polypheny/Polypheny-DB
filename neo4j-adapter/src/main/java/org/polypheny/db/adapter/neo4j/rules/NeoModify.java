@@ -55,6 +55,7 @@ public class NeoModify extends Modify implements NeoAlg {
     public void implement( NeoRelationalImplementor implementor ) {
         assert getTable() != null;
         implementor.setTable( getTable() );
+        implementor.setDml( true );
 
         implementor.visitChild( 0, getInput() );
 
@@ -66,6 +67,7 @@ public class NeoModify extends Modify implements NeoAlg {
                 handleUpdate( implementor );
                 break;
             case DELETE:
+                handleDelete( implementor );
                 break;
             case MERGE:
                 throw new UnsupportedOperationException( "Merge is not supported" );
@@ -73,14 +75,19 @@ public class NeoModify extends Modify implements NeoAlg {
     }
 
 
-    private void handleUpdate( NeoRelationalImplementor implementor ) {
+    private void handleDelete( NeoRelationalImplementor implementor ) {
+        implementor.addDelete();
+    }
 
+
+    private void handleUpdate( NeoRelationalImplementor implementor ) {
+        implementor.addUpdate( this );
     }
 
 
     private void handleInsert( NeoRelationalImplementor implementor ) {
         // insert
-        if ( !implementor.isPrepared ) {
+        if ( !implementor.isPrepared() ) {
             implementor.addCreate();
         } else {
             implementor.addPreparedValues();

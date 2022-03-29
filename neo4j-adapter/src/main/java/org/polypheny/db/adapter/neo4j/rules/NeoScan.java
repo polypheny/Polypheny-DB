@@ -53,13 +53,15 @@ public class NeoScan extends Scan implements NeoAlg {
 
         implementor.add( match_( node_( neoEntity.phsicalEntityName, labels_( neoEntity.phsicalEntityName ) ) ) );
 
-        List<NeoStatement> mapping = table
-                .getRowType()
-                .getFieldList()
-                .stream().map( f -> as_( literal_( neoEntity.phsicalEntityName + "." + f.getPhysicalName() ), literal_( f.getName() ) ) )
-                .collect( Collectors.toList() );
+        if ( !implementor.isDml() ) {
+            List<NeoStatement> mapping = table
+                    .getRowType()
+                    .getFieldList()
+                    .stream().map( f -> as_( literal_( neoEntity.phsicalEntityName + "." + f.getPhysicalName() ), literal_( f.getName() ) ) )
+                    .collect( Collectors.toList() );
 
-        implementor.add( with_( list_( mapping ) ) );
+            implementor.add( with_( list_( mapping ) ) );
+        }
     }
 
 

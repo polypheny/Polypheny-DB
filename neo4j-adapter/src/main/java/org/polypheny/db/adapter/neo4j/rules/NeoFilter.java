@@ -38,7 +38,9 @@ public class NeoFilter extends Filter implements NeoAlg {
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
+        implementor.visitChild( 0, getInput() );
 
+        implementor.addFilter( this );
     }
 
 }

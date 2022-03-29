@@ -32,7 +32,9 @@ public interface NeoStatements {
         CREATE( "CREATE" ),
         WHERE( "WHERE" ),
         RETURN( "RETURN" ),
-        WITH( "WITH" );
+        WITH( "WITH" ),
+        SET( "SET" ),
+        DELETE( "DELETE" );
 
         public final String identifier;
 
@@ -53,6 +55,12 @@ public interface NeoStatements {
 
         protected NeoStatement( StatementType type ) {
             this.type = type;
+        }
+
+
+        @Override
+        public String toString() {
+            return build();
         }
 
 
@@ -226,6 +234,38 @@ public interface NeoStatements {
         return new LabelsStatement( Arrays.asList( label ) );
     }
 
+    class AssignStatement extends NeoStatement {
+
+
+        private final NeoStatement source;
+        private final NeoStatement target;
+
+
+        protected AssignStatement( NeoStatement source, NeoStatement target ) {
+            super( null );
+            this.source = source;
+            this.target = target;
+        }
+
+
+        @Override
+        public String build() {
+            return source.build() + " = " + target.build();
+        }
+
+
+        @Override
+        public Expression asExpression() {
+            return null;//Expressions.new_( getClass(), EnumUtils.constantArrayList( labels, String.class ) );
+        }
+
+    }
+
+    static AssignStatement assign_( NeoStatement target, NeoStatement source ) {
+        return new AssignStatement( target, source );
+    }
+
+
     class LiteralStatement extends NeoStatement {
 
         private final String value;
@@ -273,7 +313,7 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return key.build() + " AS " + alias.build();
+            return key.build() + " AS " + NeoUtil.fixParameter( alias.build() );
         }
 
 
@@ -389,6 +429,30 @@ public interface NeoStatements {
 
     static WithStatement with_( NeoStatement... statement ) {
         return new WithStatement( list_( Arrays.asList( statement ) ) );
+    }
+
+    class SetStatement extends OperatorStatement {
+
+        protected SetStatement( ListStatement<?> statements ) {
+            super( StatementType.SET, statements );
+        }
+
+    }
+
+    static SetStatement set_( NeoStatement... statement ) {
+        return new SetStatement( list_( Arrays.asList( statement ) ) );
+    }
+
+    class DeleteStatement extends OperatorStatement {
+
+        protected DeleteStatement( ListStatement<?> statements ) {
+            super( StatementType.DELETE, statements );
+        }
+
+    }
+
+    static DeleteStatement delete_( NeoStatement... statement ) {
+        return new DeleteStatement( list_( Arrays.asList( statement ) ) );
     }
 
 }

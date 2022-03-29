@@ -20,7 +20,6 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.SessionConfig;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -51,7 +50,7 @@ public class NeoNamespace extends AbstractSchema {
         this.id = namespaceId;
         this.rootSchemaRetrieval = expression;
         this.physicalName = Neo4jStore.getPhysicalNamespaceName( id );
-        this.session = graph.session( SessionConfig.builder().withDatabase( Neo4jStore.getPhysicalNamespaceName( id ) ).build() );
+        this.session = graph.session();
         this.transactionProvider = transactionProvider;
     }
 
