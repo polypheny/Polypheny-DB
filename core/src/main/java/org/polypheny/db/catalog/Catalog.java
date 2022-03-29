@@ -1437,7 +1437,11 @@ public abstract class Catalog {
 
     public abstract void deleteGraphPlacements( int adapterId, long partitionId );
 
+    public abstract void updateGraphPlacementPhysicalNames( int adapterId, long placement, String physicalGraphName );
+
     public abstract CatalogGraphPlacement getGraphPlacement( int adapterId, long partitionId );
+
+    public abstract boolean containsGraphOnAdapter( int adapterId, long partitionId );
 
     /**
      * Removes a  DataPlacement for a given table on a specific store

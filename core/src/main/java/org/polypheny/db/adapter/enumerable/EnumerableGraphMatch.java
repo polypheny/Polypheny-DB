@@ -30,7 +30,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.GraphMatch;
+import org.polypheny.db.algebra.logical.graph.GraphMatch;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
@@ -139,12 +139,6 @@ public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
     @Override
     public String algCompareString() {
         return "$" + getClass().getSimpleName() + "$" + matches.hashCode() + "$" + names.hashCode();
-    }
-
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.MATCH;
     }
 
 

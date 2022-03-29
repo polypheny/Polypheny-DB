@@ -16,25 +16,119 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import com.google.common.collect.ImmutableList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.SchemaVersion;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TranslatableGraph;
+import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.type.PolyType;
 
 @Getter
-public class LogicalGraph implements RelationalTransformable {
+public class LogicalGraph implements RelationalTransformable, Schema, Graph, TranslatableGraph {
 
-    private final long namespaceId;
+    private final long id;
 
 
-    public LogicalGraph( long namespaceId ) {
-        this.namespaceId = namespaceId;
+    public LogicalGraph( long id ) {
+        this.id = id;
     }
 
 
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities ) {
         return null;
+    }
+
+
+    @Override
+    public Table getTable( String name ) {
+        return null;
+    }
+
+
+    @Override
+    public Set<String> getTableNames() {
+        return Set.of();
+    }
+
+
+    @Override
+    public AlgProtoDataType getType( String name ) {
+        return AlgDataTypeImpl.proto( PolyType.GRAPH, false );
+    }
+
+
+    @Override
+    public Set<String> getTypeNames() {
+        return Set.of();
+    }
+
+
+    @Override
+    public Collection<Function> getFunctions( String name ) {
+        return ImmutableList.of();
+    }
+
+
+    @Override
+    public Set<String> getFunctionNames() {
+        return Set.of();
+    }
+
+
+    @Override
+    public Schema getSubSchema( String name ) {
+        return null;
+    }
+
+
+    @Override
+    public Set<String> getSubSchemaNames() {
+        return Set.of();
+    }
+
+
+    @Override
+    public Expression getExpression( SchemaPlus parentSchema, String name ) {
+        return Schemas.subSchemaExpression( parentSchema, name, LogicalGraph.class );
+    }
+
+
+    @Override
+    public boolean isMutable() {
+        return true;
+    }
+
+
+    @Override
+    public Schema snapshot( SchemaVersion version ) {
+        return new LogicalGraph( id );
+    }
+
+
+    @Override
+    public <C> C unwrap( Class<C> aClass ) {
+        return null;
+    }
+
+
+    @Override
+    public AlgNode toAlg( ToAlgContext context, Graph graph ) {
+        throw new RuntimeException( "toAlg() is not implemented for Logical Graphs!" );
     }
 
 }

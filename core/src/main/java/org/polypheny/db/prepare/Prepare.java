@@ -74,6 +74,7 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.Holder;
@@ -368,6 +369,8 @@ public abstract class Prepare {
 
         @Override
         PreparingTable getTable( List<String> names );
+
+        Graph getGraph( String name );
 
         ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();
 

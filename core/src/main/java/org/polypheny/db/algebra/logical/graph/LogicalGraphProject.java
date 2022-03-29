@@ -20,8 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
-import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -33,9 +31,8 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 
 @Getter
-public class LogicalGraphProject extends SingleAlg implements GraphAlg {
+public class LogicalGraphProject extends GraphProject {
 
-    private final List<? extends RexNode> projects;
     private final List<String> names;
 
 
@@ -47,9 +44,8 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
      * @param input Input relational expression
      */
     public LogicalGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
-        super( cluster, traits.replace( Convention.NONE ), input );
+        super( cluster, traits.replace( Convention.NONE ), input, projects );
         assertLogicalGraphTrait( traits );
-        this.projects = projects;
         this.names = names;
         assert (this.names == null || this.projects == null) || this.names.size() == this.projects.size();
     }
@@ -73,20 +69,6 @@ public class LogicalGraphProject extends SingleAlg implements GraphAlg {
         }
 
         return new AlgRecordType( fields );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
-                "$" + projects.hashCode() +
-                "$" + input.algCompareString();
-    }
-
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.PROJECT;
     }
 
 

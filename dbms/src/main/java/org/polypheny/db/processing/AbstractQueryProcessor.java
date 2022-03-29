@@ -980,8 +980,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgNode routedDml = dmlRouter.routeGraphDml( (LogicalGraphModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
         } else if ( logicalRoot.alg.getTraitSet().contains( ModelTrait.GRAPH ) ) {
-            AlgNode routed = RoutingManager.getInstance().getRouters().get( 0 ).routeGraph( (AlgNode & GraphAlg) logicalRoot.alg, statement );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routed, logicalRoot, queryInformation.getQueryClass() ) );
+            RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
+            AlgNode node = RoutingManager.getInstance().getRouters().get( 0 ).routeGraph( builder, (AlgNode & GraphAlg) logicalRoot.alg, statement );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryClass() ) );
         } else if ( logicalRoot.alg instanceof LogicalModify ) {
             AlgNode routedDml = dmlRouter.routeDml( (LogicalModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
@@ -991,7 +992,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else if ( logicalRoot.alg instanceof BatchIterator ) {
             AlgNode routedIterator = dmlRouter.handleBatchIterator( logicalRoot.alg, statement, queryInformation );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedIterator, logicalRoot, queryInformation.getQueryClass() ) );
-        } else if ( logicalRoot.alg instanceof org.polypheny.db.algebra.core.ConstraintEnforcer ) {
+        } else if ( logicalRoot.alg instanceof ConstraintEnforcer ) {
             AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalRoot.alg, statement, queryInformation );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryClass() ) );
         } else {
@@ -1107,7 +1108,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private AlgNode optimize( AlgRoot logicalRoot, Convention resultConvention ) {
         AlgNode logicalPlan = logicalRoot.alg;
-
 
         final AlgTraitSet desiredTraits = logicalPlan.getTraitSet()
                 .replace( resultConvention )

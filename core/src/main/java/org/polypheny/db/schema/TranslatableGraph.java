@@ -14,28 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra;
+package org.polypheny.db.schema;
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.schema.graph.Graph;
 
-public interface GraphAlg {
+public interface TranslatableGraph extends Graph {
 
-    NodeType getNodeType();
-
-    default Graph getGraph() {
-        return null;
-    }
-
-    enum NodeType {
-        MATCH,
-        FILTER,
-        SCAN,
-        UNWIND,
-        PROJECT,
-        MODIFY,
-        VALUES,
-        AGGREGATE,
-        MERGE, VALUES_DYNAMIC, SORT
-    }
+    /**
+     * Converts this table into a {@link AlgNode relational expression}.
+     */
+    AlgNode toAlg( ToAlgContext context, Graph graph );
 
 }

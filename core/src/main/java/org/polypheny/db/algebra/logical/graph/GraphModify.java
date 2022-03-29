@@ -20,14 +20,18 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.graph.Graph;
 
-public class LogicalGraphDynamicValues extends SingleAlg implements GraphAlg {
+public abstract class GraphModify extends SingleAlg implements GraphAlg {
 
-    private final List<RexNode> nodeOperations;
-    private final List<RexNode> edgeOperations;
+    public final Operation operation;
+    public final List<String> ids;
+    public final List<? extends RexNode> operations;
+    private final Graph graph;
 
 
     /**
@@ -37,30 +41,28 @@ public class LogicalGraphDynamicValues extends SingleAlg implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    public LogicalGraphDynamicValues(
-            AlgOptCluster cluster,
-            AlgTraitSet traits,
-            AlgNode input,
-            List<RexNode> nodeOperations,
-            List<RexNode> edgeOperations ) {
+    protected GraphModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, input );
-        this.nodeOperations = nodeOperations;
-        this.edgeOperations = edgeOperations;
-
+        this.operation = operation;
+        this.ids = ids;
+        this.operations = operations;
+        this.graph = graph;
     }
 
 
     @Override
     public String algCompareString() {
         return "$" + getClass().getSimpleName() +
-                "$" + (this.nodeOperations != null ? this.nodeOperations.hashCode() : "[]") +
-                "$" + (this.edgeOperations != null ? this.edgeOperations.hashCode() : "[]");
+                "$" + (ids != null ? ids.hashCode() : "[]") +
+                "$" + (operations != null ? operations.hashCode() : "[]") +
+                "{" + input.algCompareString() + "}";
     }
 
 
     @Override
     public NodeType getNodeType() {
-        return NodeType.VALUES_DYNAMIC;
+        return NodeType.MODIFY;
     }
+
 
 }

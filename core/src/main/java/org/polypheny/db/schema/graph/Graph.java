@@ -14,28 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra;
+package org.polypheny.db.schema.graph;
 
-import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.schema.Wrapper;
 
-public interface GraphAlg {
+public interface Graph extends Wrapper {
 
-    NodeType getNodeType();
-
-    default Graph getGraph() {
-        return null;
-    }
-
-    enum NodeType {
-        MATCH,
-        FILTER,
-        SCAN,
-        UNWIND,
-        PROJECT,
-        MODIFY,
-        VALUES,
-        AGGREGATE,
-        MERGE, VALUES_DYNAMIC, SORT
-    }
+    long getId();
 
 }

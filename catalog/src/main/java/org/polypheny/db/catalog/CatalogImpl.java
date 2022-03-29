@@ -2282,10 +2282,7 @@ public class CatalogImpl extends Catalog {
                 placementType,
                 physicalSchemaName,
                 physicalColumnName,
-                physicalPositionBuilder.getAndIncrement(),
-                store.unsupportedTypes.contains( column.type )
-                        || (column.collectionsType != null && store.unsupportedTypes.contains( column.collectionsType ))
-                        ? store.substitutionType : null );
+                physicalPositionBuilder.getAndIncrement() );
 
         synchronized ( this ) {
             columnPlacements.put( new Object[]{ adapterId, columnId }, columnPlacement );
@@ -2591,8 +2588,7 @@ public class CatalogImpl extends Catalog {
                     placementType,
                     old.physicalSchemaName,
                     old.physicalColumnName,
-                    old.physicalPosition,
-                    old.substitutionType );
+                    old.physicalPosition );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
@@ -2624,8 +2620,7 @@ public class CatalogImpl extends Catalog {
                     old.placementType,
                     old.physicalSchemaName,
                     old.physicalColumnName,
-                    position,
-                    old.substitutionType );
+                    position );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
@@ -2657,8 +2652,7 @@ public class CatalogImpl extends Catalog {
                     old.placementType,
                     old.physicalSchemaName,
                     old.physicalColumnName,
-                    physicalPositionBuilder.getAndIncrement(),
-                    old.substitutionType );
+                    physicalPositionBuilder.getAndIncrement() );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
@@ -2692,8 +2686,7 @@ public class CatalogImpl extends Catalog {
                     old.placementType,
                     physicalSchemaName,
                     physicalColumnName,
-                    updatePhysicalColumnPosition ? physicalPositionBuilder.getAndIncrement() : old.physicalPosition,
-                    old.substitutionType );
+                    updatePhysicalColumnPosition ? physicalPositionBuilder.getAndIncrement() : old.physicalPosition );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
@@ -4926,7 +4919,7 @@ public class CatalogImpl extends Catalog {
             throw new UnknownGraphPlacementsException( adapterId, graphId );
         }
 
-        CatalogGraphDatabase graph = old.addPlacement( adapterId );
+        CatalogGraphDatabase graph = old.addPlacement( id );
 
         //addGraphPlacementLogistics( adapterId, graphId );
 
@@ -4940,16 +4933,20 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void addGraphPlacementLogistics( int adapterId, long graphId ) {
-        if ( !graphMappings.containsKey( graphId ) ) {
-            throw new UnknownGraphException( graphId );
+    public void updateGraphPlacementPhysicalNames( int adapterId, long placementId, String physicalGraphName ) {
+        if ( !graphPlacements.containsKey( new Object[]{ adapterId, placementId } ) ) {
+            throw new UnknownGraphPlacementsException( adapterId, placementId );
         }
 
-        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
-        addSingleDataPlacementToTable( adapterId, mapping.nodesId );
-        addSingleDataPlacementToTable( adapterId, mapping.nodesPropertyId );
-        addSingleDataPlacementToTable( adapterId, mapping.edgesId );
-        addSingleDataPlacementToTable( adapterId, mapping.edgesPropertyId );
+        CatalogGraphPlacement old = Objects.requireNonNull( graphPlacements.get( new Object[]{ adapterId, placementId } ) );
+
+        CatalogGraphPlacement placement = old.replacePhysicalName( physicalGraphName );
+
+        synchronized ( this ) {
+            graphPlacements.replace( new Object[]{ adapterId, placementId }, placement );
+        }
+
+        listeners.firePropertyChange( "graphPlacement", null, placement );
     }
 
 
@@ -4988,6 +4985,12 @@ public class CatalogImpl extends Catalog {
         }
 
         return graphPlacements.get( new Object[]{ adapterId, partitionId } );
+    }
+
+
+    @Override
+    public boolean containsGraphOnAdapter( int adapterId, long partitionId ) {
+        return graphPlacements.containsKey( new Object[]{ adapterId, partitionId } );
     }
 
 

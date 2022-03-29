@@ -73,9 +73,7 @@ import org.polypheny.db.type.PolyType;
 @AdapterProperties(
         name = "Cassandra",
         description = "Apache Cassandra is an open-source wide-column store (i.e. a two-dimensional key–value store) designed to handle large amount of data. Cassandra can be deployed in a distributed manner.",
-        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE, DeployMode.DOCKER },
-        unsupportedTypes = { PolyType.MAP },
-        substitutionType = PolyType.VARCHAR)
+        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 0, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "port", defaultValue = 9042, position = 1, appliesTo = { DeploySetting.REMOTE, DeploySetting.DOCKER })
 @AdapterSettingString(name = "keyspace", defaultValue = "cassandra", position = 2, appliesTo = DeploySetting.REMOTE)

@@ -18,14 +18,13 @@ package org.polypheny.db.algebra.logical.graph;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 
-public class LogicalGraphAggregate extends Aggregate implements GraphAlg {
+public class LogicalGraphAggregate extends GraphAggregate {
 
 
     public LogicalGraphAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
@@ -38,16 +37,5 @@ public class LogicalGraphAggregate extends Aggregate implements GraphAlg {
         return new LogicalGraphAggregate( input.getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
     }
 
-
-    @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + super.algCompareString();
-    }
-
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.AGGREGATE;
-    }
 
 }

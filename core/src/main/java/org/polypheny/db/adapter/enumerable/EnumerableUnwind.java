@@ -32,12 +32,12 @@ import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.CypherUnwind;
+import org.polypheny.db.algebra.logical.graph.GraphUnwind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
-public class EnumerableUnwind extends CypherUnwind implements EnumerableAlg {
+public class EnumerableUnwind extends GraphUnwind implements EnumerableAlg {
 
     /**
      * Creates a <code>SingleRel</code>.

@@ -81,7 +81,8 @@ public abstract class DataStore extends Adapter {
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity );
 
 
-    public void createGraphDatabase( Context context, CatalogGraphDatabase graphDatabase ) {
+    @Override
+    public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
         // overwrite this if the datastore supports graph
         createGraphSubstitution( context, graphDatabase );
     }

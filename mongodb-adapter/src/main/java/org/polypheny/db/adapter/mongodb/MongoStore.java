@@ -80,9 +80,7 @@ import org.polypheny.db.util.BsonUtil;
 @AdapterProperties(
         name = "MongoDB",
         description = "MongoDB is a document-based database system.",
-        usedModes = { DeployMode.REMOTE, DeployMode.DOCKER },
-        unsupportedTypes = {},
-        substitutionType = PolyType.BINARY)
+        usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingBoolean(name = "persistent", defaultValue = false)
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
 @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)

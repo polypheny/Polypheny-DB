@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
@@ -132,12 +133,16 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     @Override
-    public <T extends AlgNode & GraphAlg> AlgNode routeGraph( T alg, Statement statement ) {
+    public <T extends AlgNode & GraphAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement ) {
         if ( alg.getInputs().size() == 1 ) {
-            routeGraph( (AlgNode & GraphAlg) alg.getInput( 0 ), statement );
+            routeGraph( builder, (AlgNode & GraphAlg) alg.getInput( 0 ), statement );
+            if ( builder.stackSize() > 0 ) {
+                alg.replaceInput( 0, builder.build() );
+            }
             return alg;
         } else if ( alg.getNodeType() == NodeType.SCAN ) {
             attachMappingsIfNecessary( alg );
+            builder.push( handleGraphScan( (LogicalGraphScan) alg, statement ) );
             return alg;
         } else if ( alg.getNodeType() == NodeType.VALUES ) {
             return alg;

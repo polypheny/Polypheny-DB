@@ -59,9 +59,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 @AdapterProperties(
         name = "PostgreSQL",
         description = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.",
-        usedModes = { DeployMode.REMOTE, DeployMode.DOCKER },
-        unsupportedTypes = { PolyType.MAP, PolyType.DOCUMENT },
-        substitutionType = PolyType.VARCHAR)
+        usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote PostgreSQL instance.", appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "port", defaultValue = 5432, position = 2,

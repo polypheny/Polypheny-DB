@@ -16,31 +16,27 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
-import java.util.List;
-import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexNode;
 
-public class LogicalGraphMatch extends GraphMatch {
-
+public abstract class GraphValues extends AbstractAlgNode implements GraphAlg {
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates an <code>AbstractRelNode</code>.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * @param cluster
+     * @param traitSet
      */
-    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
-        super( cluster, traits, input, matches, names );
-        assertLogicalGraphTrait( traits );
+    public GraphValues( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+        super( cluster, traitSet );
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+    public NodeType getNodeType() {
+        return NodeType.VALUES;
     }
 
 }

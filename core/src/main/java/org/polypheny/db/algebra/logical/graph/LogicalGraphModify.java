@@ -21,8 +21,6 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
-import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
@@ -33,15 +31,11 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.graph.Graph;
 
-public class LogicalGraphModify extends SingleAlg implements GraphAlg, RelationalTransformable {
+public class LogicalGraphModify extends GraphModify implements RelationalTransformable {
 
 
-    public final Operation operation;
-    public final List<String> ids;
-    public final List<? extends RexNode> operations;
-    @Getter
-    private final LogicalGraph graph;
     @Getter
     public final PolyphenyDbCatalogReader catalogReader;
 
@@ -71,32 +65,19 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
      * @param catalogReader
      * @param input Input relational expression
      */
-    public LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, LogicalGraph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
-        super( cluster, traits, input );
-        assertLogicalGraphTrait( traits );
-        this.operation = operation;
-        this.operations = operations;
-        this.ids = ids;
-        this.graph = graph;
+    public LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+        super( cluster, traits, graph, input, operation, ids, operations );
         // for the moment
         this.catalogReader = catalogReader;
         // for now
         this.rowType = AlgOptUtil.createDmlRowType( Kind.INSERT, getCluster().getTypeFactory() );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
-                "$" + (ids != null ? ids.hashCode() : "[]") +
-                "$" + (operations != null ? operations.hashCode() : "[]") +
-                "{" + input.algCompareString() + "}";
+        assertLogicalGraphTrait( traits );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        LogicalGraphModify modify = new LogicalGraphModify( inputs.get( 0 ).getCluster(), traitSet, graph, catalogReader, inputs.get( 0 ), operation, ids, operations );
+        LogicalGraphModify modify = new LogicalGraphModify( inputs.get( 0 ).getCluster(), traitSet, getGraph(), catalogReader, inputs.get( 0 ), operation, ids, operations );
         modify.setEdgeTable( edgeTable );
         modify.setEdgePropertyTable( edgePropertyTable );
         modify.setNodeTable( nodeTable );
@@ -144,10 +125,5 @@ public class LogicalGraphModify extends SingleAlg implements GraphAlg, Relationa
         return table.unwrap( ModifiableTable.class ).toModificationAlg( alg.getCluster(), table, catalogReader, alg, operation, null, null, true );
     }
 
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.MODIFY;
-    }
 
 }

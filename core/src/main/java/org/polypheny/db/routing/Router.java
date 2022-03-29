@@ -39,7 +39,7 @@ public interface Router {
      */
     void resetCaches();
 
-    <T extends AlgNode & GraphAlg> AlgNode routeGraph( T alg, Statement statement );
+    <T extends AlgNode & GraphAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement );
 
 }
 

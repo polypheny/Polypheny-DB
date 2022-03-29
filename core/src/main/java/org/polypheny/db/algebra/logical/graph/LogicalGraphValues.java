@@ -25,9 +25,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -49,7 +47,7 @@ import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
 @Getter
-public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
+public class LogicalGraphValues extends GraphValues implements RelationalTransformable {
 
     public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 36 );
     public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 );
@@ -220,12 +218,6 @@ public class LogicalGraphValues extends AbstractAlgNode implements GraphAlg, Rel
             }
         }
         return rows.build();
-    }
-
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.VALUES;
     }
 
 

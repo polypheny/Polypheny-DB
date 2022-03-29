@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -49,6 +50,7 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
@@ -60,8 +62,7 @@ import org.polypheny.db.type.PolyType;
         name = "Neo4j",
         description = "Neo4j is a graph-model based database system. If stores data in a graph structure which consists of nodes and edges.",
         usedModes = { DeployMode.DOCKER },
-        unsupportedTypes = {},
-        substitutionType = PolyType.BINARY)
+        supportedSchemaTypes = { NamespaceType.GRAPH, NamespaceType.RELATIONAL })
 @AdapterSettingInteger(name = "port", defaultValue = 7687)
 public class Neo4jStore extends DataStore {
 
@@ -76,6 +77,9 @@ public class Neo4jStore extends DataStore {
     private final AuthToken auth;
     @Getter
     private NeoNamespace currentSchema;
+
+    @Getter
+    private NeoGraph currentGraph;
 
     private final TransactionProvider transactionProvider;
 
@@ -338,6 +342,31 @@ public class Neo4jStore extends DataStore {
 
 
     @Override
+    public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
+        for ( long placement : graphDatabase.placements ) {
+            if ( Catalog.getInstance().containsGraphOnAdapter( getAdapterId(), placement ) ) {
+                continue;
+            }
+            catalog.updateGraphPlacementPhysicalNames( getAdapterId(), placement, getPhysicalGraphName( graphDatabase.id ) );
+
+        }
+
+    }
+
+
+    @Override
+    public void createGraphNamespace( SchemaPlus rootSchema, String name, long id ) {
+        this.currentGraph = new NeoGraph( name, this.transactionProvider, this.db, id );
+    }
+
+
+    @Override
+    public Schema getCurrentGraphNamespace() {
+        return currentGraph;
+    }
+
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         return true;
     }
@@ -381,6 +410,11 @@ public class Neo4jStore extends DataStore {
 
     public static String getPhysicalFieldName( long id ) {
         return String.format( "field_%d", id );
+    }
+
+
+    private static String getPhysicalGraphName( long id ) {
+        return String.format( "graph_%d", id );
     }
 
 

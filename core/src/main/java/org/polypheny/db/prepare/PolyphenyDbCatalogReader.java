@@ -68,6 +68,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.schema.impl.ScalarFunctionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -138,6 +139,13 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
             return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, null );
         }
         return null;
+    }
+
+
+    @Override
+    public Graph getGraph( final String name ) {
+        PolyphenyDbSchema schema = rootSchema.getSubSchema( name, true );
+        return (Graph) schema.getSchema();
     }
 
 

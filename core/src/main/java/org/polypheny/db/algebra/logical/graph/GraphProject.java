@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core;
+package org.polypheny.db.algebra.logical.graph;
 
-import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public abstract class GraphMatch extends SingleAlg implements GraphAlg {
+public abstract class GraphProject extends SingleAlg implements GraphAlg {
 
     @Getter
-    protected final List<RexNode> matches;
-    @Getter
-    protected final List<String> names;
+    protected final List<? extends RexNode> projects;
 
 
     /**
@@ -45,23 +38,23 @@ public abstract class GraphMatch extends SingleAlg implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected GraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
+    protected GraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects ) {
         super( cluster, traits, input );
-        this.matches = matches;
-        this.names = names;
+        this.projects = projects;
     }
 
 
     @Override
-    protected AlgDataType deriveRowType() {
-        List<AlgDataTypeField> fields = new ArrayList<>();
+    public String algCompareString() {
+        return "$" + getClass().getSimpleName() +
+                "$" + projects.hashCode() +
+                "$" + input.algCompareString();
+    }
 
-        int i = 0;
-        for ( RexNode match : matches ) {
-            fields.add( new AlgDataTypeFieldImpl( names.get( i ), i, match.getType() ) );
-            i++;
-        }
-        return new AlgRecordType( fields );
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.PROJECT;
     }
 
 }

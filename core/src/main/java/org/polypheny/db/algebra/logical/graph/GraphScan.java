@@ -16,31 +16,40 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
-import java.util.List;
-import org.polypheny.db.algebra.AlgNode;
+import lombok.Getter;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.TranslatableGraph;
 
-public class LogicalGraphMatch extends GraphMatch {
+public abstract class GraphScan extends AbstractAlgNode implements GraphAlg {
+
+    @Getter
+    protected final TranslatableGraph graph;
 
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates an <code>AbstractRelNode</code>.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * @param cluster
+     * @param traitSet
      */
-    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
-        super( cluster, traits, input, matches, names );
-        assertLogicalGraphTrait( traits );
+    public GraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
+        super( cluster, traitSet );
+        this.graph = graph;
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+    public String algCompareString() {
+        return "$" + getClass().getSimpleName() + "$" + graph.getId();
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.SCAN;
     }
 
 }

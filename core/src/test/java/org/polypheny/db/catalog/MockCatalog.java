@@ -213,6 +213,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public boolean containsGraphOnAdapter( int adapterId, long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public CatalogGraphDatabase getGraph( long id ) {
         throw new NotImplementedException();
     }

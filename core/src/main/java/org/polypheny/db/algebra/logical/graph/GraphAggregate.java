@@ -18,29 +18,29 @@ package org.polypheny.db.algebra.logical.graph;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.ImmutableBitSet;
 
-public class LogicalGraphMatch extends GraphMatch {
+public abstract class GraphAggregate extends Aggregate implements GraphAlg {
 
-
-    /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
-     */
-    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
-        super( cluster, traits, input, matches, names );
-        assertLogicalGraphTrait( traits );
+    protected GraphAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+    public String algCompareString() {
+        return "$" + getClass().getSimpleName() + "$" + super.algCompareString();
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.AGGREGATE;
     }
 
 }

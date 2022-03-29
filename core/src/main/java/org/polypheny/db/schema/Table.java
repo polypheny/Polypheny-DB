@@ -33,15 +33,12 @@
 
 package org.polypheny.db.schema;
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -113,19 +110,6 @@ public interface Table {
     default NamespaceType getSchemaType() {
         return NamespaceType.RELATIONAL;
     }
-
-
-    List<PolyType> getUnsupportedTypes();
-
-    void setUnsupportedTypes( ImmutableList<PolyType> types );
-
-    PolyType getSubstitutionType();
-
-    void setSubstitutionType( PolyType polyType );
-
-    boolean needsTypeSubstitution();
-
-    AlgDataType getSubstitutedRowType();
 
 }
 

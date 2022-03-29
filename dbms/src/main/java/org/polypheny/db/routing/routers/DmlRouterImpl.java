@@ -50,11 +50,15 @@ import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.partition.PartitionManager;
@@ -62,6 +66,7 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexCall;
@@ -73,9 +78,11 @@ import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.ModifiableGraph;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -760,12 +767,44 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeGraphDml( LogicalGraphModify alg, Statement statement ) {
-        // todo dl add partition logic
         if ( alg.getGraph() == null ) {
             throw new RuntimeException( "Error while routing graph" );
         }
 
         attachMappingsIfNecessary( alg );
+
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+
+        List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
+        CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
+        for ( long placement : catalogGraph.placements ) {
+            for ( CatalogAdapter adapter : adapters ) {
+                if ( !Catalog.getInstance().containsGraphOnAdapter( adapter.id, placement ) ) {
+                    continue;
+                }
+                CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( adapter.id, placement );
+                String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
+
+                Graph graph = reader.getGraph( name );
+
+                if ( !(graph instanceof ModifiableGraph) ) {
+                    throw new RuntimeException( "Graph is not modifiable." );
+                }
+
+                return ((ModifiableGraph) graph).toModificationAlg(
+                        alg.getCluster(),
+                        alg.getTraitSet(),
+                        graph,
+                        alg.catalogReader,
+                        alg.getInput(),
+                        alg.operation,
+                        alg.ids,
+                        alg.operations );
+
+            }
+
+        }
+
         return alg;
     }
 

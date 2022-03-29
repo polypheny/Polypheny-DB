@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.logical.graph;
+package org.polypheny.db.adapter.neo4j.rules.graph;
 
-import java.util.List;
+import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
+import org.polypheny.db.adapter.neo4j.rules.NeoAlg;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.graph.GraphFilter;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public class LogicalGraphMatch extends GraphMatch {
+public class NeoGraphFilter extends GraphFilter implements NeoAlg {
 
 
     /**
@@ -32,15 +34,14 @@ public class LogicalGraphMatch extends GraphMatch {
      * @param traits
      * @param input Input relational expression
      */
-    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
-        super( cluster, traits, input, matches, names );
-        assertLogicalGraphTrait( traits );
+    protected NeoGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+        super( cluster, traits, input, condition );
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+    public void implement( NeoRelationalImplementor implementor ) {
+
     }
 
 }

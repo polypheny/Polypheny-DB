@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalScan;
@@ -38,11 +36,9 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.TranslatableGraph;
 
-public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, RelationalTransformable {
-
-    @Getter
-    private final LogicalGraph graph;
+public class LogicalGraphScan extends GraphScan implements RelationalTransformable {
 
     @Getter
     private final PolyphenyDbCatalogReader catalogReader;
@@ -64,17 +60,10 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
     private AlgOptTable edgePropertyTable;
 
 
-    public LogicalGraphScan( AlgOptCluster cluster, PolyphenyDbCatalogReader catalogReader, AlgTraitSet traitSet, LogicalGraph graph, AlgDataType rowType ) {
-        super( cluster, traitSet );
-        this.graph = graph;
+    public LogicalGraphScan( AlgOptCluster cluster, PolyphenyDbCatalogReader catalogReader, AlgTraitSet traitSet, TranslatableGraph graph, AlgDataType rowType ) {
+        super( cluster, traitSet, graph );
         this.rowType = rowType;
         this.catalogReader = catalogReader;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + graph.getNamespaceId();
     }
 
 
@@ -109,12 +98,6 @@ public class LogicalGraphScan extends AbstractAlgNode implements GraphAlg, Relat
         LogicalJoin edgeJoin = new LogicalJoin( getCluster(), out, edges, edgesProperty, edgeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
 
         return List.of( nodeJoin, edgeJoin );
-    }
-
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.SCAN;
     }
 
 

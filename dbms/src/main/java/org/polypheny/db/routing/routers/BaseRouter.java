@@ -35,20 +35,27 @@ import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.graph.RelationalTransformable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolySchemaBuilder;
+import org.polypheny.db.schema.TranslatableGraph;
+import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -114,7 +121,6 @@ public abstract class BaseRouter {
     protected RoutedAlgBuilder handleDocuments( LogicalDocuments node, RoutedAlgBuilder builder ) {
         return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
     }
-
 
 
     public RoutedAlgBuilder handleGeneric( AlgNode node, RoutedAlgBuilder builder ) {
@@ -280,7 +286,7 @@ public abstract class BaseRouter {
             return;
         }
         G alg = (G) input;
-        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getNamespaceId() );
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
 
         // --- nodes
         CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodesId );
@@ -340,6 +346,35 @@ public abstract class BaseRouter {
 
         PreparingTable edgeProperty = alg.getCatalogReader().getTableForMember( qualifiedTableName );
         alg.setEdgePropertyTable( edgeProperty );
+    }
+
+
+    protected AlgNode handleGraphScan( LogicalGraphScan alg, Statement statement ) {
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+
+        List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
+        CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
+        for ( long placement : catalogGraph.placements ) {
+            for ( CatalogAdapter adapter : adapters ) {
+                if ( !Catalog.getInstance().containsGraphOnAdapter( adapter.id, placement ) ) {
+                    continue;
+                }
+                CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( adapter.id, placement );
+                String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
+
+                Graph graph = reader.getGraph( name );
+
+                if ( !(graph instanceof TranslatableGraph) ) {
+                    throw new RuntimeException( "Graph is not translatable." );
+                }
+
+                return new LogicalGraphScan( alg.getCluster(), reader, alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
+
+            }
+
+        }
+        // substituted on optimization
+        return alg;
     }
 
 }

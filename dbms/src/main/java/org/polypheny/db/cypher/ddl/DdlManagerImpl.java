@@ -546,8 +546,6 @@ public class DdlManagerImpl extends DdlManager {
                     null, // Will be set later
                     null // Will be set later
             );//Not a valid partitionID --> placeholder
-            AdapterManager.getInstance().getStore( store.getAdapterId() )
-                    .addColumn( statement.getPrepareContext(), catalogEntity, addedColumn.substituteUnsupportedTypes( store.getUnsupportedTypes() ) );
         }
 
         // Reset plan cache implementation cache & routing cache
@@ -1797,7 +1795,9 @@ public class DdlManagerImpl extends DdlManager {
         afterGraphLogistics( stores, graphId, statement );
 
         for ( DataStore store : stores ) {
-            store.createGraphDatabase( statement.getPrepareContext(), graph );
+            catalog.addGraphPlacement( store.getAdapterId(), graphId );
+
+            store.createGraph( statement.getPrepareContext(), graph );
         }
 
         return graphId;

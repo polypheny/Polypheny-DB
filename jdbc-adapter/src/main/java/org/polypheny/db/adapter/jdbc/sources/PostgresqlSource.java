@@ -32,16 +32,13 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.sql.dialect.PostgresqlSqlDialect;
-import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
 @AdapterProperties(
         name = "PostgreSQL",
         description = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.",
-        usedModes = DeployMode.REMOTE,
-        unsupportedTypes = { PolyType.MAP, PolyType.DOCUMENT },
-        substitutionType = PolyType.VARCHAR)
+        usedModes = DeployMode.REMOTE)
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote PostgreSQL instance.")
 @AdapterSettingInteger(name = "port", defaultValue = 5432, position = 2,

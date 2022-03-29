@@ -20,13 +20,11 @@ import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
-import org.polypheny.db.algebra.core.CypherUnwind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Getter
-public class LogicalGraphUnwind extends CypherUnwind implements GraphAlg {
+public class LogicalGraphUnwind extends GraphUnwind {
 
 
     /**
@@ -47,10 +45,5 @@ public class LogicalGraphUnwind extends CypherUnwind implements GraphAlg {
         return new LogicalGraphUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
     }
 
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.UNWIND;
-    }
 
 }

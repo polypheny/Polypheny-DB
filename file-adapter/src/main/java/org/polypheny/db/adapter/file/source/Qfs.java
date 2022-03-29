@@ -59,9 +59,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterProperties(
         name = "QFS",
         description = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.",
-        usedModes = DeployMode.EMBEDDED,
-        unsupportedTypes = { PolyType.MAP, PolyType.DOCUMENT },
-        substitutionType = PolyType.BINARY)
+        usedModes = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "rootDir", defaultValue = "")
 public class Qfs extends DataSource {
 

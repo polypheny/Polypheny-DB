@@ -14,39 +14,29 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.logical.graph;
+package org.polypheny.db.schema;
 
 import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.graph.GraphModify;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.graph.Graph;
 
-public class LogicalGraphFilter extends GraphFilter {
+public interface ModifiableGraph extends Graph {
 
+    GraphModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations );
 
-    /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
-     */
-    public LogicalGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
-        super( cluster, traits, input, condition );
-    }
+    Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz );
 
+    AlgDataType getRowType( AlgDataTypeFactory typeFactory );
 
-    @Override
-    protected AlgDataType deriveRowType() {
-        return input.getRowType();
-    }
-
-
-    @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphFilter( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getCondition() );
-    }
+    Statistic getStatistic();
 
 }

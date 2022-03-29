@@ -38,4 +38,9 @@ public class CatalogGraphPlacement implements CatalogObject {
         return new Serializable[0];
     }
 
+
+    public CatalogGraphPlacement replacePhysicalName( String physicalName ) {
+        return new CatalogGraphPlacement( adapterId, graphId, physicalName );
+    }
+
 }

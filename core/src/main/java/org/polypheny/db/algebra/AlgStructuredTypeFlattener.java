@@ -379,7 +379,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( LogicalGraphScan scan ) {
-        setNewForOldRel( scan, scan );
+        AlgNode alg = scan.getGraph().toAlg( toAlgContext, scan.getGraph() );
+        setNewForOldRel( scan, alg );
     }
 
 

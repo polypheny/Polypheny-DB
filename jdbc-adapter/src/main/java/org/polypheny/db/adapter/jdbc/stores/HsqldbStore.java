@@ -38,9 +38,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterProperties(
         name = "HSQLDB",
         description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
-        usedModes = DeployMode.EMBEDDED,
-        unsupportedTypes = { PolyType.MAP, PolyType.DOCUMENT },
-        substitutionType = PolyType.VARCHAR)
+        usedModes = DeployMode.EMBEDDED)
 @AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
 @AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" })

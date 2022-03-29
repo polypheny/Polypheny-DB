@@ -32,16 +32,13 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.sql.dialect.MysqlSqlDialect;
-import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
 @AdapterProperties(
         name = "MySQL",
         description = "Data source adapter for the relational database systems MariaDB and MySQL.",
-        usedModes = DeployMode.REMOTE,
-        unsupportedTypes = { PolyType.MAP, PolyType.DOCUMENT },
-        substitutionType = PolyType.VARCHAR)
+        usedModes = DeployMode.REMOTE)
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote MariaDB / MySQL instance.")
 @AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,

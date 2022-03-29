@@ -16,13 +16,18 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
-import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public class LogicalGraphMatch extends GraphMatch {
+public abstract class GraphFilter extends SingleAlg implements GraphAlg {
+
+    @Getter
+    private final RexNode condition;
 
 
     /**
@@ -31,16 +36,23 @@ public class LogicalGraphMatch extends GraphMatch {
      * @param cluster Cluster this relational expression belongs to
      * @param traits
      * @param input Input relational expression
+     * @param condition
      */
-    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
-        super( cluster, traits, input, matches, names );
-        assertLogicalGraphTrait( traits );
+    protected GraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+        super( cluster, traits, input );
+        this.condition = condition;
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+    public String algCompareString() {
+        return "$" + getClass().getSimpleName() + "$" + this.condition.hashCode();
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.FILTER;
     }
 
 }

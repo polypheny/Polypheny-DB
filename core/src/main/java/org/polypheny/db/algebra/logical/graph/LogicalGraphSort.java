@@ -20,7 +20,6 @@ import java.math.BigDecimal;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -28,19 +27,13 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 @Getter
-public class LogicalGraphSort extends Sort implements GraphAlg {
+public class LogicalGraphSort extends GraphSort {
 
 
     public LogicalGraphSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgCollation collation, AlgNode input, Integer skip, Integer limit ) {
         super( cluster, traitSet, input, collation,
                 skip != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( skip ) ) : null,
                 limit != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( limit ) ) : null );
-    }
-
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.SORT;
     }
 
 

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core;
+package org.polypheny.db.algebra.logical.graph;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -35,7 +35,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
-public abstract class CypherUnwind extends SingleAlg {
+public abstract class GraphUnwind extends SingleAlg implements GraphAlg {
 
     public final String alias;
     public final int index;
@@ -48,7 +48,7 @@ public abstract class CypherUnwind extends SingleAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected CypherUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+    protected GraphUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, adjustInputIfNecessary( input, index ) );
         assert this.input.getRowType().getFieldCount() == 1 : "Unwind is for now only able on a single field.";
 
@@ -96,6 +96,12 @@ public abstract class CypherUnwind extends SingleAlg {
         List<AlgDataTypeField> fields = new ArrayList<>();
         fields.add( new AlgDataTypeFieldImpl( alias, 0, input.getRowType().getFieldList().get( index ).getType().getComponentType() ) );
         return new AlgRecordType( fields );
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.UNWIND;
     }
 
 }
