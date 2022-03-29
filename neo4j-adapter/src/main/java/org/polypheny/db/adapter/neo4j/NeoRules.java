@@ -89,7 +89,7 @@ public class NeoRules {
 
     public static class NeoProjectRule extends NeoConverterRule {
 
-        public static NeoProjectRule INSTANCE = new NeoProjectRule( Project.class, r -> true, "NeoProjectRule" );
+        public static NeoProjectRule INSTANCE = new NeoProjectRule( Project.class, NeoUtil::supports, "NeoProjectRule" );
 
 
         private <R extends AlgNode> NeoProjectRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

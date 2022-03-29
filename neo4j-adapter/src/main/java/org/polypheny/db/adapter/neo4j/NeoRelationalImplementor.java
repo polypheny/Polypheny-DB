@@ -64,6 +64,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 public class NeoRelationalImplementor extends AlgShuttleImpl {
@@ -83,6 +84,9 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     @Getter
     private NeoEntity entity;
+
+    @Getter
+    private final Map<Long, Pair<PolyType, PolyType>> preparedTypes = new HashMap<>();
 
 
     private ImmutableList<ImmutableList<RexLiteral>> values;
@@ -127,7 +131,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public void addPreparedValues() {
         if ( last instanceof NeoProject ) {
-            add( createProjectValues( (NeoProject) last, entity ) );
+            add( createProjectValues( (NeoProject) last, entity, this ) );
             addRowCount( 1 );
             return;
         }
@@ -143,7 +147,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addWith( NeoProject project ) {
-        add( create( NeoStatements::with_, project, last ) );
+        add( create( NeoStatements::with_, project, last, this ) );
     }
 
 
@@ -167,13 +171,13 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    public static NeoStatements.OperatorStatement create( Function1<ListStatement<?>, OperatorStatement> transformer, NeoProject neoProject, AlgNode last ) {
+    public static NeoStatements.OperatorStatement create( Function1<ListStatement<?>, OperatorStatement> transformer, NeoProject neoProject, AlgNode last, NeoRelationalImplementor implementor ) {
         List<AlgDataTypeField> fields = neoProject.getRowType().getFieldList();
 
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
         int i = 0;
         for ( RexNode project : neoProject.getProjects() ) {
-            Translator translator = new Translator( last.getRowType(), new HashMap<>() );
+            Translator translator = new Translator( last.getRowType(), new HashMap<>(), implementor );
             String res = project.accept( translator );
             assert res != null : "Unsupported operation encountered for projects in Neo4j.";
 
@@ -185,7 +189,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    public static OperatorStatement createProjectValues( NeoProject last, NeoEntity entity ) {
+    public static OperatorStatement createProjectValues( NeoProject last, NeoEntity entity, NeoRelationalImplementor implementor ) {
         List<PropertyStatement> properties = new ArrayList<>();
         List<AlgDataTypeField> fields = entity.getRowType( entity.getTypeFactory() ).getFieldList();
 
@@ -195,6 +199,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             if ( project.isA( Kind.LITERAL ) ) {
                 properties.add( property_( key, literal_( (RexLiteral) project ) ) );
             } else if ( project.isA( Kind.DYNAMIC_PARAM ) ) {
+                implementor.addPreparedType( (RexDynamicParam) project );
                 properties.add( property_( key, prepared_( (RexDynamicParam) project ) ) );
             } else {
                 throw new UnsupportedOperationException( "This operation is not supported." );
@@ -204,6 +209,13 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         String name = entity.phsicalEntityName;
 
         return create_( node_( name, labels_( name ), properties ) );
+    }
+
+
+    private void addPreparedType( RexDynamicParam dynamicParam ) {
+        preparedTypes.put(
+                dynamicParam.getIndex(),
+                Pair.of( dynamicParam.getType().getPolyType(), NeoUtil.getComponentTypeOrParent( dynamicParam.getType() ) ) );
     }
 
 
@@ -232,7 +244,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addFilter( NeoFilter filter ) {
-        Translator translator = new Translator( last.getRowType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>() );
+        Translator translator = new Translator( last.getRowType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>(), this );
         add( where_( literal_( filter.getCondition().accept( translator ) ) ) );
     }
 
@@ -246,7 +258,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         if ( project != null ) {
             for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
                 if ( !mapping.containsKey( field.getName() ) ) {
-                    Translator translator = new Translator( project.getRowType(), new HashMap<>() );
+                    Translator translator = new Translator( project.getRowType(), new HashMap<>(), this );
                     mapping.put( field.getName(), project.getProjects().get( field.getIndex() ).accept( translator ) );
                 }
             }
@@ -269,7 +281,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         List<NeoStatement> nodes = new ArrayList<>();
         int i = 0;
         for ( RexNode node : neoModify.getSourceExpressionList() ) {
-            Translator translator = new Translator( last.getRowType(), mapping );
+            Translator translator = new Translator( last.getRowType(), mapping, this );
             nodes.add( assign_( literal_( mapping.get( neoModify.getUpdateColumnList().get( i ) ) ), literal_( node.accept( translator ) ) ) );
             i++;
         }
@@ -283,12 +295,14 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
         private final List<AlgDataTypeField> fields;
         private final Map<String, String> mapping;
+        private final NeoRelationalImplementor implementor;
 
 
-        protected Translator( AlgDataType rowType, Map<String, String> mapping ) {
+        protected Translator( AlgDataType rowType, Map<String, String> mapping, NeoRelationalImplementor implementor ) {
             super( true );
             this.fields = rowType.getFieldList();
             this.mapping = mapping;
+            this.implementor = implementor;
         }
 
 
@@ -320,6 +334,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
         @Override
         public String visitDynamicParam( RexDynamicParam dynamicParam ) {
+            implementor.addPreparedType( dynamicParam );
             return NeoUtil.asParameter( dynamicParam.getIndex(), true );
         }
 

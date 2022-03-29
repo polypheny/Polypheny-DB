@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -36,6 +37,8 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
 
 public class NeoToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
@@ -69,17 +72,38 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
         final Expression arrayFields = getFields( blockBuilder, rowType, NeoUtil::getComponentTypeOrParent );
 
+        final Expression parameterClasses = getPolyMap( blockBuilder, neoImplementor.getPreparedTypes() );
+
         final String query = neoImplementor.build();
 
         final Expression enumerable = blockBuilder.append(
                 blockBuilder.newName( "enumerable" ),
                 Expressions.call(
                         table,
-                        NeoMethod.EXECUTE.method, Expressions.constant( query ), fields, arrayFields ) );
+                        NeoMethod.EXECUTE.method, Expressions.constant( query ), fields, arrayFields, parameterClasses ) );
 
         blockBuilder.add( Expressions.return_( null, enumerable ) );
 
         return implementor.result( physType, blockBuilder.toBlock() );
+    }
+
+
+    private Expression getPolyMap( BlockBuilder builder, Map<Long, Pair<PolyType, PolyType>> map ) {
+        return builder.append(
+                builder.newName( "map" ),
+                Expressions.call(
+                        BuiltInMethod.MAP_OF_ENTRIES.method,
+                        EnumUtils.expressionList(
+                                map.entrySet()
+                                        .stream()
+                                        .map( p ->
+                                                Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( p.getKey(), Long.class ),
+                                                        getPair( p.getValue(), PolyType.class, PolyType.class ) ) ).collect( Collectors.toList() ) ) ) );
+    }
+
+
+    public <T, E> Expression getPair( Pair<T, E> pair, Class<T> classLeft, Class<E> classRight ) {
+        return Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( pair.left, classLeft ), Expressions.constant( pair.left, classRight ) );
     }
 
 

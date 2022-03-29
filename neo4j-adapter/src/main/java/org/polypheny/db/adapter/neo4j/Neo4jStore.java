@@ -106,7 +106,7 @@ public class Neo4jStore extends DataStore {
         }
 
         this.session = this.db.session();
-        this.transactionProvider = new TransactionProvider( this.db, this.session );
+        this.transactionProvider = new TransactionProvider( this.db );
 
         addInformationPhysicalNames();
         enableInformationPage();

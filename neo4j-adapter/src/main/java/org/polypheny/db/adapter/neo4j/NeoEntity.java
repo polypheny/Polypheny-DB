@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +54,7 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 public class NeoEntity extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
@@ -126,45 +128,50 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
         @Override
         public Enumerator<T> enumerator() {
-            throw new UnsupportedOperationException();
+            return execute( String.format( "MATCH (n:%s) RETURN n", entity.phsicalEntityName ), List.of(), List.of(), Map.of() ).enumerator();
         }
 
 
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> execute( String query, List<PolyType> types, List<PolyType> componentTypes ) {
+        public Enumerable<T> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( namespace.store );
 
-            Result res;
-            if ( dataContext.getParameterValues().size() > 0 ) {
-                res = trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ) ) );
+            List<Result> results = new ArrayList<>();
+            if ( dataContext.getParameterValues().size() == 1 ) {
+                results.add( trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ), prepared ) ) );
+            } else if ( dataContext.getParameterValues().size() > 0 ) {
+                for ( Map<Long, Object> value : dataContext.getParameterValues() ) {
+                    results.add( trx.run( query, toParameters( value, prepared ) ) );
+                }
             } else {
-                res = trx.run( query );
+                results.add( trx.run( query ) );
             }
 
-            Function1<Record, Object> getter = NeoQueryable.getter( types, componentTypes );
+            Function1<Record, T> getter = NeoQueryable.getter( types, componentTypes );
 
             return new AbstractEnumerable<>() {
                 @Override
-                public Enumerator<Object> enumerator() {
-                    return new NeoEnumerator( res, getter );
+                public Enumerator<T> enumerator() {
+                    return new NeoEnumerator<>( results, getter );
                 }
             };
         }
 
 
-        private Map<String, Object> toParameters( Map<Long, Object> values ) {
+        private Map<String, Object> toParameters( Map<Long, Object> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
             Map<String, Object> parameters = new HashMap<>();
             for ( Entry<Long, Object> entry : values.entrySet() ) {
-                parameters.put( NeoUtil.asParameter( entry.getKey(), false ), NeoUtil.fixParameterValue( entry.getValue() ) );
+                parameters.put( NeoUtil.asParameter( entry.getKey(), false ), NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ) ) );
             }
             return parameters;
         }
 
 
-        private static Function1<Record, Object> getter( List<PolyType> types, List<PolyType> componentTypes ) {
-            return NeoUtil.getTypesFunction( types, componentTypes );
+        private static <T> Function1<Record, T> getter( List<PolyType> types, List<PolyType> componentTypes ) {
+            //noinspection unchecked
+            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, componentTypes );
         }
 
 
@@ -173,21 +180,25 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
         }
 
 
-        public static class NeoEnumerator implements Enumerator<Object> {
+        public static class NeoEnumerator<T> implements Enumerator<T> {
 
-            private final Result result;
-            private final Function1<Record, Object> getter;
-            private Object current;
+            private final List<Result> results;
+            private final Function1<Record, T> getter;
+            private Result result;
+            private T current;
+            private int pos = 0;
 
 
-            public NeoEnumerator( Result result, Function1<Record, Object> getter ) {
-                this.result = result;
+            public NeoEnumerator( List<Result> results, Function1<Record, T> getter ) {
+                this.results = results;
+                this.result = results.get( pos );
+                pos++;
                 this.getter = getter;
             }
 
 
             @Override
-            public Object current() {
+            public T current() {
                 return current;
             }
 
@@ -197,6 +208,12 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
                 if ( result.hasNext() ) {
                     this.current = getter.apply( result.next() );
                     return true;
+                }
+                if ( results.size() > pos ) {
+                    this.result = results.get( pos );
+                    pos++;
+
+                    return moveNext();
                 }
 
                 return false;

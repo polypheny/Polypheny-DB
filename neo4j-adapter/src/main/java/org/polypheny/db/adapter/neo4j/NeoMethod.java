@@ -19,10 +19,11 @@ package org.polypheny.db.adapter.neo4j;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import org.apache.calcite.linq4j.tree.Types;
 
 public enum NeoMethod {
-    EXECUTE( NeoEntity.NeoQueryable.class, "execute", String.class, List.class, List.class );
+    EXECUTE( NeoEntity.NeoQueryable.class, "execute", String.class, List.class, List.class, Map.class );
 
     public final Method method;
 

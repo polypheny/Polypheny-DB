@@ -16,60 +16,61 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.util.Pair;
 
+@Slf4j
 public class TransactionProvider {
 
     private final Driver db;
 
-    private final Map<PolyXid, Transaction> register = new HashMap<>();
-    private final Session session;
+    private final ConcurrentHashMap<PolyXid, Pair<Session, Transaction>> register = new ConcurrentHashMap<>();
 
 
-    public TransactionProvider( Driver db, Session session ) {
+    public TransactionProvider( Driver db ) {
         this.db = db;
-        this.session = session;
     }
 
 
-    public Transaction get( PolyXid xid ) {
+    synchronized public Transaction get( PolyXid xid ) {
         if ( register.containsKey( xid ) ) {
-            return register.get( xid );
+            return register.get( xid ).right;
         }
-        commitAll();
+        return startSession( xid );
+    }
+
+
+    synchronized void commit( PolyXid xid ) {
+        if ( register.containsKey( xid ) ) {
+            Pair<Session, Transaction> pair = register.get( xid );
+            pair.right.commit();
+            pair.right.close();
+            pair.left.close();
+        }
+    }
+
+
+    synchronized void rollback( PolyXid xid ) {
+        if ( register.containsKey( xid ) ) {
+            Pair<Session, Transaction> pair = register.get( xid );
+            pair.right.rollback();
+            pair.right.close();
+            pair.left.close();
+        }
+    }
+
+
+    synchronized public Transaction startSession( PolyXid xid ) {
+        Session session = db.session();
         Transaction trx = session.beginTransaction();
-        put( xid, trx );
+        ;
+        register.put( xid, Pair.of( session, trx ) );
         return trx;
-    }
-
-
-    void commit( PolyXid xid ) {
-        register.get( xid ).commit();
-        register.remove( xid );
-    }
-
-
-    void rollback( PolyXid xid ) {
-        register.get( xid ).rollback();
-        register.remove( xid );
-    }
-
-
-    private void commitAll() {
-        for ( PolyXid polyXid : new ArrayList<>( register.keySet() ) ) {
-            commit( polyXid );
-        }
-    }
-
-
-    public void put( PolyXid xid, Transaction transaction ) {
-        register.put( xid, transaction );
     }
 
 }

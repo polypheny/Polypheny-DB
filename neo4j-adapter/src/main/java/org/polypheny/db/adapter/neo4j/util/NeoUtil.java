@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j.util;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,16 +30,21 @@ import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 
 public interface NeoUtil {
 
@@ -76,47 +82,31 @@ public interface NeoUtil {
             case TINYINT:
             case SMALLINT:
             case INTEGER:
-                return Value::asInt;
-            case BIGINT:
-                return Value::asLong;
-            case DECIMAL:
-            case FLOAT:
-                return Value::asFloat;
-            case REAL:
-            case DOUBLE:
-                return Value::asDouble;
             case DATE:
-                return Value::asInt;
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return Value::asLong;
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return Value::asInt;
+            case BIGINT:
+            case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                return Value::asLong;
+            case DECIMAL:
+            case FLOAT:
+            case REAL:
+            case DOUBLE:
+                return Value::asDouble;
             case INTERVAL_YEAR:
-                break;
             case INTERVAL_YEAR_MONTH:
-                break;
             case INTERVAL_MONTH:
-                break;
             case INTERVAL_DAY:
-                break;
             case INTERVAL_DAY_HOUR:
-                break;
             case INTERVAL_DAY_MINUTE:
-                break;
             case INTERVAL_DAY_SECOND:
-                break;
             case INTERVAL_HOUR:
-                break;
             case INTERVAL_HOUR_MINUTE:
-                break;
             case INTERVAL_HOUR_SECOND:
-                break;
             case INTERVAL_MINUTE:
-                break;
             case INTERVAL_MINUTE_SECOND:
-                break;
             case INTERVAL_SECOND:
                 break;
             case CHAR:
@@ -293,6 +283,7 @@ public interface NeoUtil {
             case DIVIDE_INTEGER:
                 return o -> String.format( "%s / %s", o.get( 0 ), o.get( 1 ) );
             case EQUALS:
+            case IS_DISTINCT_FROM:
                 return o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
             case GREATER_THAN:
                 return o -> String.format( "%s > %s", o.get( 0 ), o.get( 1 ) );
@@ -311,6 +302,7 @@ public interface NeoUtil {
             case MULTIPLY:
                 return o -> String.format( "%s * %s", o.get( 0 ), o.get( 1 ) );
             case NOT_EQUALS:
+            case IS_NOT_DISTINCT_FROM:
                 return o -> String.format( "%s <> %s", o.get( 0 ), o.get( 1 ) );
             case OR:
                 return o -> String.join( " OR ", o );
@@ -318,15 +310,15 @@ public interface NeoUtil {
             case DATETIME_PLUS:
                 return o -> String.format( "%s + %s", o.get( 0 ), o.get( 1 ) );
             case IS_NOT_NULL:
-                return o -> String.format( "%s IS NOT NULL %s", o.get( 0 ), o.get( 1 ) );
+                return o -> String.format( "%s IS NOT NULL ", o.get( 0 ) );
             case IS_NULL:
-                return o -> String.format( "%s IS NOT NULL %s", o.get( 0 ), o.get( 1 ) );
+                return o -> String.format( "%s IS NULL", o.get( 0 ) );
             case IS_NOT_TRUE:
             case IS_FALSE:
-                return o -> String.format( "%s", o.get( 0 ) );
+                return o -> String.format( "NOT %s", o.get( 0 ) );
             case IS_TRUE:
             case IS_NOT_FALSE:
-                return o -> String.format( "NOT %s", o.get( 0 ) );
+                return o -> String.format( "%s", o.get( 0 ) );
             case IS_EMPTY:
                 return o -> String.format( "%s = []", o.get( 0 ) );
             case IS_NOT_EMPTY:
@@ -350,13 +342,11 @@ public interface NeoUtil {
             case SQRT:
                 return o -> String.format( "sqrt(%s)", o.get( 0 ) );
             case MOD:
-                return o -> String.format( "%s%%s)", o.get( 0 ) );
+                return o -> o.get( 0 ) + " % " + o.get( 1 );
             case FLOOR:
                 return o -> "floor(" + o.get( 0 ) + ")";
             case CEIL:
                 return o -> "ceil(" + o.get( 0 ) + ")";
-            case LN:
-                return o -> String.format( "ln(toFloat(%s))", o.get( 0 ) );
             case LOG10:
                 return o -> String.format( "log10(toFloat(%s))", o.get( 0 ) );
             case ABS:
@@ -378,11 +368,11 @@ public interface NeoUtil {
             case ROUND:
                 return o -> String.format( "radians(toFloat(%s))", o.get( 0 ) );
             case SIGN:
-                return o -> String.format( "sign(%s)", o.get( 0 ) );
+                return o -> String.format( "sign(toFloat(%s))", o.get( 0 ) );
             case SIN:
-                return o -> String.format( "sin(%s)", o.get( 0 ) );
+                return o -> String.format( "sin(toFloat(%s))", o.get( 0 ) );
             case TAN:
-                return o -> String.format( "tan(%s)", o.get( 0 ) );
+                return o -> String.format( "tan(toFloat(%s))", o.get( 0 ) );
             case CAST:
                 return o -> o.get( 0 );
             case ITEM:
@@ -404,7 +394,7 @@ public interface NeoUtil {
         adjusted = adjusted.replace( ".", "_" );
         adjusted = adjusted.replace( "_dot_", "." );
         adjusted = adjusted.replace( "_star_", "*" );
-        return "'" + adjusted + "'";
+        return adjusted;
     }
 
     static boolean supports( Filter r ) {
@@ -413,9 +403,34 @@ public interface NeoUtil {
         return visitor.supports;
     }
 
-    static Object fixParameterValue( Object value ) {
+    static boolean supports( Project r ) {
+        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        for ( RexNode project : r.getProjects() ) {
+            project.accept( visitor );
+        }
+        return visitor.supports;
+    }
+
+    static Object fixParameterValue( Object value, Pair<PolyType, PolyType> type ) {
         if ( value instanceof BigDecimal ) {
             return ((BigDecimal) value).doubleValue();
+        }
+        if ( type == null ) {
+            return value;
+        }
+        switch ( type.left ) {
+            case DATE:
+                if ( value instanceof Date ) {
+                    return ((Date) value).toLocalDate().toEpochDay();
+                }
+                return ((DateString) value).getDaysSinceEpoch();
+            case TIME:
+                return ((TimeString) value).getMillisOfDay();
+            case TIMESTAMP:
+                if ( value instanceof java.sql.Timestamp ) {
+                    return ((java.sql.Timestamp) value).toInstant().getEpochSecond();
+                }
+                return ((TimestampString) value).getMillisSinceEpoch();
         }
         return value;
     }

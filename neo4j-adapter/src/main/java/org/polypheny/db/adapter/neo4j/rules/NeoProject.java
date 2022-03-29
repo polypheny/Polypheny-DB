@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.neo4j.rules;
 import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -43,7 +44,8 @@ public class NeoProject extends Project implements NeoAlg {
     public void implement( NeoRelationalImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
 
-        if ( AlgOptUtil.areRowTypesEqual( implementor.getLast().getRowType(), this.rowType, false ) ) {
+        if ( AlgOptUtil.areRowTypesEqual( implementor.getLast().getRowType(), this.rowType, false )
+                && getProjects().stream().allMatch( p -> p.isA( Kind.INPUT_REF ) ) ) {
             return;
         }
 
