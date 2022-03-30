@@ -220,7 +220,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
     protected AlgDataType deriveRowType() {
         // This method is only called if rowType is null, so you don't NEED to implement it if rowType is always set.
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "The rowType could not be derived." );
     }
 
 

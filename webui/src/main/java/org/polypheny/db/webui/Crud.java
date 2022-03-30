@@ -378,7 +378,7 @@ public class Crud implements InformationObserver {
 
         List<CatalogNamespace> schemas = catalog.getSchemas( databaseId, null );
         for ( CatalogNamespace schema : schemas ) {
-            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", schema.namespaceType == NamespaceType.RELATIONAL ? "cui-layers" : "cui-folder" );
+            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", getIconName( schema.namespaceType ) );
 
             if ( request.depth > 1 ) {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
@@ -427,6 +427,19 @@ public class Crud implements InformationObserver {
         }
 
         ctx.json( result );
+    }
+
+
+    private String getIconName( NamespaceType namespaceType ) {
+        switch ( namespaceType ) {
+            case RELATIONAL:
+                return "cui-layers";
+            case DOCUMENT:
+                return "cui-folder";
+            case GRAPH:
+                return "cui-graph";
+        }
+        throw new UnsupportedOperationException( "Namespace type is not supported." );
     }
 
 

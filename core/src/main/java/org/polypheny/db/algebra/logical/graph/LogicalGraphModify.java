@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
@@ -66,11 +67,9 @@ public class LogicalGraphModify extends GraphModify implements RelationalTransfo
      * @param input Input relational expression
      */
     public LogicalGraphModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
-        super( cluster, traits, graph, input, operation, ids, operations );
+        super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
         // for the moment
         this.catalogReader = catalogReader;
-        // for now
-        this.rowType = AlgOptUtil.createDmlRowType( Kind.INSERT, getCluster().getTypeFactory() );
         assertLogicalGraphTrait( traits );
     }
 
@@ -89,35 +88,41 @@ public class LogicalGraphModify extends GraphModify implements RelationalTransfo
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities ) {
         PolyphenyDbCatalogReader catalogReader = this.catalogReader;
-        List<AlgNode> modifes = new ArrayList<>();
+        List<AlgNode> modifies = new ArrayList<>();
 
         //modify of nodes
 
         Modify nodeModify = getModify( nodeTable, catalogReader, inputs.get( 0 ) );
-        modifes.add( nodeModify );
+        modifies.add( nodeModify );
 
         //modify of properties
         if ( inputs.get( 1 ) != null ) {
             Modify nodePropertyModify = getModify( nodePropertyTable, catalogReader, inputs.get( 1 ) );
-            modifes.add( nodePropertyModify );
+            modifies.add( nodePropertyModify );
         }
 
         if ( inputs.size() == 2 ) {
-            return modifes;
+            return modifies;
         }
 
         // modify of edges
 
         Modify edgeModify = getModify( edgeTable, catalogReader, inputs.get( 2 ) );
-        modifes.add( edgeModify );
+        modifies.add( edgeModify );
 
         // modify of edge properties
         if ( inputs.get( 3 ) != null ) {
             Modify edgePropertyModify = getModify( edgePropertyTable, catalogReader, inputs.get( 3 ) );
-            modifes.add( edgePropertyModify );
+            modifies.add( edgePropertyModify );
         }
 
-        return modifes;
+        return modifies;
+    }
+
+
+    @Override
+    public boolean canTransform() {
+        return edgeTable != null;
     }
 
 
@@ -125,5 +130,10 @@ public class LogicalGraphModify extends GraphModify implements RelationalTransfo
         return table.unwrap( ModifiableTable.class ).toModificationAlg( alg.getCluster(), table, catalogReader, alg, operation, null, null, true );
     }
 
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
+    }
 
 }

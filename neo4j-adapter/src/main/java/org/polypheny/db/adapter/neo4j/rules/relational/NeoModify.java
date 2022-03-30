@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.neo4j.rules;
+package org.polypheny.db.adapter.neo4j.rules.relational;
 
 import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
+import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -26,7 +27,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
-public class NeoModify extends Modify implements NeoAlg {
+public class NeoModify extends Modify implements NeoRelAlg {
 
     /**
      * Creates a {@code Modify}.

@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.graph;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -47,6 +48,12 @@ public class LogicalGraphFilter extends GraphFilter {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalGraphFilter( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getCondition() );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

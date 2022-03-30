@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.neo4j.rules;
+package org.polypheny.db.adapter.neo4j.rules.relational;
 
 import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
+import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Project;
@@ -27,7 +28,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public class NeoProject extends Project implements NeoAlg {
+public class NeoProject extends Project implements NeoRelAlg {
 
     public NeoProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input, projects, rowType );

@@ -16,27 +16,52 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyNode;
 
+@Getter
 public abstract class GraphValues extends AbstractAlgNode implements GraphAlg {
+
+    protected final ImmutableList<PolyNode> nodes;
+    protected final ImmutableList<PolyEdge> edges;
+    private final ImmutableList<ImmutableList<RexLiteral>> values;
+
 
     /**
      * Creates an <code>AbstractRelNode</code>.
      *
      * @param cluster
      * @param traitSet
+     * @param values
+     * @param rowType
      */
-    public GraphValues( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public GraphValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet );
+        this.nodes = ImmutableList.copyOf( nodes );
+        this.edges = ImmutableList.copyOf( edges );
+        this.values = values;
+        this.rowType = rowType;
     }
 
 
     @Override
     public NodeType getNodeType() {
         return NodeType.VALUES;
+    }
+
+
+    @Override
+    public String algCompareString() {
+        return "$" + getClass().getSimpleName() + "$" + nodes.hashCode() + "$" + edges.hashCode() + "$" + values.hashCode();
     }
 
 }

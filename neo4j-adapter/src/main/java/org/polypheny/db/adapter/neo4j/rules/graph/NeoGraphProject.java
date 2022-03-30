@@ -16,42 +16,39 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
-import org.polypheny.db.adapter.neo4j.NeoGraph;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
+
+import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.algebra.logical.graph.GraphScan;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.graph.GraphProject;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.TranslatableGraph;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.rex.RexNode;
 
-public class NeoGraphScan extends GraphScan implements NeoGraphAlg {
-
+public class NeoGraphProject extends GraphProject implements NeoGraphAlg {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates a <code>SingleRel</code>.
      *
-     * @param cluster
-     * @param traitSet
-     * @param graph
+     * @param cluster Cluster this relational expression belongs to
+     * @param traits
+     * @param input Input relational expression
+     * @param projects
      */
-    public NeoGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
-        super( cluster, traitSet, graph );
+    public NeoGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects ) {
+        super( cluster, traits, input, projects );
     }
 
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
-        implementor.setGraph( (NeoGraph) getGraph() );
+        implementor.visitChild( 0, getInput() );
 
-        if ( rowType.getFieldList().size() == 1 ) {
-            AlgDataTypeField field = rowType.getFieldList().get( 0 );
-            if ( field.getType().getPolyType() == PolyType.GRAPH ) {
-                implementor.setAll( true );
-            }
+        if ( !implementor.isDml() ) {
+            implementor.add( with_() );
         }
-
     }
 
 }

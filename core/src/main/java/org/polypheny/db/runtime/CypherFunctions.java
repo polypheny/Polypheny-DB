@@ -32,7 +32,7 @@ import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
 import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
+import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
@@ -101,7 +101,7 @@ public class CypherFunctions {
 
             if ( !id.equals( oldId ) ) {
                 if ( oldId != null ) {
-                    edges.add( new PolyEdge( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, RelationshipDirection.LEFT_TO_RIGHT ) );
+                    edges.add( new PolyEdge( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT ) );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
@@ -119,7 +119,7 @@ public class CypherFunctions {
         }
 
         if ( oldId != null ) {
-            edges.add( new PolyEdge( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, RelationshipDirection.LEFT_TO_RIGHT ) );
+            edges.add( new PolyEdge( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT ) );
         }
 
         return Linq4j.asEnumerable( edges );

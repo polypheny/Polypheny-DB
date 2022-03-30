@@ -55,6 +55,12 @@ public class LogicalGraph implements RelationalTransformable, Schema, Graph, Tra
 
 
     @Override
+    public boolean canTransform() {
+        return true;
+    }
+
+
+    @Override
     public Table getTable( String name ) {
         return null;
     }

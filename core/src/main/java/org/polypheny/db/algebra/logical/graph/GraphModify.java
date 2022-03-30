@@ -17,10 +17,12 @@
 package org.polypheny.db.algebra.logical.graph;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -31,7 +33,8 @@ public abstract class GraphModify extends SingleAlg implements GraphAlg {
     public final Operation operation;
     public final List<String> ids;
     public final List<? extends RexNode> operations;
-    private final Graph graph;
+    @Getter
+    public final Graph graph;
 
 
     /**
@@ -40,13 +43,15 @@ public abstract class GraphModify extends SingleAlg implements GraphAlg {
      * @param cluster Cluster this relational expression belongs to
      * @param traits
      * @param input Input relational expression
+     * @param dmlRowType
      */
-    protected GraphModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+    protected GraphModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
         super( cluster, traits, input );
         this.operation = operation;
         this.ids = ids;
         this.operations = operations;
         this.graph = graph;
+        this.rowType = dmlRowType;
     }
 
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.neo4j.rules;
+package org.polypheny.db.adapter.neo4j.rules.relational;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoEntity;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
+import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Scan;
@@ -35,7 +36,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class NeoScan extends Scan implements NeoAlg {
+public class NeoScan extends Scan implements NeoRelAlg {
 
 
     private final NeoEntity neoEntity;

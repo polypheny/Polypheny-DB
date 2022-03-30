@@ -16,15 +16,15 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
-import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
-import org.polypheny.db.adapter.neo4j.rules.NeoAlg;
+import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
+import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.graph.GraphFilter;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public class NeoGraphFilter extends GraphFilter implements NeoAlg {
+public class NeoGraphFilter extends GraphFilter implements NeoGraphAlg {
 
 
     /**
@@ -34,13 +34,13 @@ public class NeoGraphFilter extends GraphFilter implements NeoAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected NeoGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    public NeoGraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );
     }
 
 
     @Override
-    public void implement( NeoRelationalImplementor implementor ) {
+    public void implement( NeoGraphImplementor implementor ) {
 
     }
 

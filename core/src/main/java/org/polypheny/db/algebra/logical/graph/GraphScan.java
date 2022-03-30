@@ -16,12 +16,16 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.TranslatableGraph;
+import org.polypheny.db.type.PolyType;
 
 public abstract class GraphScan extends AbstractAlgNode implements GraphAlg {
 
@@ -38,6 +42,7 @@ public abstract class GraphScan extends AbstractAlgNode implements GraphAlg {
     public GraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
         super( cluster, traitSet );
         this.graph = graph;
+        this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "g", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) );
     }
 
 

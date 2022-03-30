@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
-import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
+import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyPath.PolySegment;
 
 @Getter
@@ -173,8 +173,8 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
             // for one only edges, which have matching nodes are considered,
             // additionally only not used edges can be use, relationship isomorphism prohibits this
             BiPredicate<PolyEdge, TreePart> filter =
-                    segment.direction == RelationshipDirection.LEFT_TO_RIGHT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.source.equals( p.targetId )) :
-                            segment.direction == RelationshipDirection.RIGHT_TO_LEFT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.target.equals( p.targetId )) :
+                    segment.direction == EdgeDirection.LEFT_TO_RIGHT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.source.equals( p.targetId )) :
+                            segment.direction == EdgeDirection.RIGHT_TO_LEFT ? (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && e.target.equals( p.targetId )) :
                                     (( e, p ) -> !p.usedEdgesIds.contains( e.id ) && (e.target.equals( p.targetId ) || e.source.equals( p.targetId )));
 
             for ( TreePart part : last ) {
@@ -183,12 +183,12 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
                     PolyNode left = nodes.get( edge.source );
                     PolyNode right = nodes.get( edge.target );
                     // then check if it matches pattern of segment either ()->() or ()-() depending if direction is specified
-                    if ( segment.direction == RelationshipDirection.LEFT_TO_RIGHT || segment.direction == RelationshipDirection.NONE ) {
+                    if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
                         if ( segment.matches( left, edge, right ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.source ) ) {
                             matches.add( new TreePart( part, edge.id, edge.target ) );
                         }
                     }
-                    if ( segment.direction == RelationshipDirection.RIGHT_TO_LEFT || segment.direction == RelationshipDirection.NONE ) {
+                    if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
                         if ( segment.matches( right, edge, left ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.target ) ) {
                             matches.add( new TreePart( part, edge.id, edge.source ) );
                         }
@@ -216,13 +216,13 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
             PolyNode left = nodes.get( edge.source );
             PolyNode right = nodes.get( edge.target );
             // we attach stubs, which allows ()->() and ()-()
-            if ( segment.direction == RelationshipDirection.LEFT_TO_RIGHT || segment.direction == RelationshipDirection.NONE ) {
+            if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( left, edge, right ) ) {
                     root.add( new TreePart( null, null, edge.source ) );
                 }
             }
             // we attach stubs, which allows ()<-() and ()-() AKA inverted
-            if ( segment.direction == RelationshipDirection.RIGHT_TO_LEFT || segment.direction == RelationshipDirection.NONE ) {
+            if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( right, edge, left ) ) {
                     root.add( new TreePart( null, null, edge.target ) );
                 }

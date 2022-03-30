@@ -145,7 +145,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     @Override
     public Graph getGraph( final String name ) {
         PolyphenyDbSchema schema = rootSchema.getSubSchema( name, true );
-        return (Graph) schema.getSchema();
+        return schema == null ? null : (Graph) schema.getSchema();
     }
 
 

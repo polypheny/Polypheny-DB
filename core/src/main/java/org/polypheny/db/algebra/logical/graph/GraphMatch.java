@@ -28,12 +28,13 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 
 public abstract class GraphMatch extends SingleAlg implements GraphAlg {
 
     @Getter
-    protected final List<RexNode> matches;
+    protected final List<RexCall> matches;
     @Getter
     protected final List<String> names;
 
@@ -45,7 +46,7 @@ public abstract class GraphMatch extends SingleAlg implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected GraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
+    protected GraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
         super( cluster, traits, input );
         this.matches = matches;
         this.names = names;

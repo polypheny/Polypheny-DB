@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -65,6 +66,12 @@ public class LogicalGraphSort extends GraphSort {
 
     public RexNode getRexSkip() {
         return this.offset;
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

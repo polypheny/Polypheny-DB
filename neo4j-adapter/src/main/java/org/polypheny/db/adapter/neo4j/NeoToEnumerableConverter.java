@@ -23,12 +23,14 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg;
 import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
+import org.polypheny.db.adapter.neo4j.NeoGraph.NeoQueryable;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
@@ -36,6 +38,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -57,6 +62,68 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder blockBuilder = new BlockBuilder();
+        if ( this.getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
+            return getRelationalImplement( implementor, pref, blockBuilder );
+        } else {
+            return getGraphImplement( implementor, pref, blockBuilder );
+        }
+
+    }
+
+
+    private Result getGraphImplement( EnumerableAlgImplementor implementor, Prefer pref, BlockBuilder blockBuilder ) {
+        final NeoGraphImplementor graphImplementor = new NeoGraphImplementor();
+
+        graphImplementor.visitChild( 0, getInput() );
+
+        final AlgDataType rowType = getRowType();
+
+        // PhysType is Enumerable Adapter class that maps database types (getRowType) with physical Java types (getJavaTypes())
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
+
+        final Expression graph = blockBuilder.append( "graph", Expressions.convert_(
+                Expressions.call( Schemas.class, "graph", DataContext.ROOT,
+                        Expressions.convert_(
+                                Expressions.call(
+                                        Expressions.call(
+                                                DataContext.ROOT,
+                                                BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method ),
+                                        BuiltInMethod.SCHEMA_GET_SUB_SCHEMA.method,
+                                        Expressions.constant( graphImplementor.getGraph().name, String.class ) ), SchemaPlus.class ) ), NeoQueryable.class ) );
+
+        Expression enumerable;
+        if ( graphImplementor.isAll() && rowType.getFieldCount() == 1 && rowType.getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
+            Pair<String, String> queries = graphImplementor.getAllQueries();
+
+            enumerable = blockBuilder.append(
+                    blockBuilder.newName( "enumerable" ),
+                    Expressions.call(
+                            graph,
+                            NeoMethod.GRAPH_ALL.method, Expressions.constant( queries.left ), Expressions.constant( queries.right ) ) );
+
+        } else {
+            final Expression fields = getFields( blockBuilder, rowType, AlgDataType::getPolyType );
+
+            final Expression arrayFields = getFields( blockBuilder, rowType, NeoUtil::getComponentTypeOrParent );
+
+            final Expression parameterClasses = Expressions.constant( null );
+
+            final String query = graphImplementor.build();
+
+            enumerable = blockBuilder.append(
+                    blockBuilder.newName( "enumerable" ),
+                    Expressions.call(
+                            graph,
+                            NeoMethod.GRAPH_EXECUTE.method, Expressions.constant( query ), fields, arrayFields, parameterClasses ) );
+        }
+
+        blockBuilder.add( Expressions.return_( null, enumerable ) );
+
+        return implementor.result( physType, blockBuilder.toBlock() );
+    }
+
+
+    private Result getRelationalImplement( EnumerableAlgImplementor implementor, Prefer pref, BlockBuilder blockBuilder ) {
         final NeoRelationalImplementor neoImplementor = new NeoRelationalImplementor();
 
         neoImplementor.visitChild( 0, getInput() );

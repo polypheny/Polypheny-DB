@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.schema;
+package org.polypheny.db.schema.graph;
 
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -27,7 +27,8 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Statistic;
 
 public interface ModifiableGraph extends Graph {
 

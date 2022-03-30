@@ -40,10 +40,10 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.function.Function1;
-import org.polypheny.db.adapter.neo4j.rules.NeoAlg;
-import org.polypheny.db.adapter.neo4j.rules.NeoFilter;
-import org.polypheny.db.adapter.neo4j.rules.NeoModify;
-import org.polypheny.db.adapter.neo4j.rules.NeoProject;
+import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
+import org.polypheny.db.adapter.neo4j.rules.relational.NeoFilter;
+import org.polypheny.db.adapter.neo4j.rules.relational.NeoModify;
+import org.polypheny.db.adapter.neo4j.rules.relational.NeoProject;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ListStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
@@ -141,7 +141,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public void visitChild( int ordinal, AlgNode input ) {
         assert ordinal == 0;
-        ((NeoAlg) input).implement( this );
+        ((NeoRelAlg) input).implement( this );
         this.setLast( input );
     }
 
@@ -226,7 +226,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    private void addReturnIfNecessary() {
+    public void addReturnIfNecessary() {
         OperatorStatement statement = statements.get( statements.size() - 1 );
         if ( statements.get( statements.size() - 1 ).type != StatementType.RETURN ) {
             if ( isDml ) {

@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.neo4j.rules;
+package org.polypheny.db.schema.graph;
 
-import org.polypheny.db.algebra.AlgNode;
+import org.apache.calcite.linq4j.Queryable;
+import org.polypheny.db.adapter.DataContext;
 
-public interface NeoAlg extends AlgNode {
+public interface QueryableGraph {
+
+    /**
+     * Converts this table into a {@link Queryable}.
+     */
+    <T> Queryable<T> asQueryable( DataContext root, QueryableGraph graph );
 
 }

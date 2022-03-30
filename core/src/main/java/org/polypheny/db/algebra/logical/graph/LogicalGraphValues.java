@@ -38,7 +38,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyEdge.RelationshipDirection;
+import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -54,8 +54,6 @@ public class LogicalGraphValues extends GraphValues implements RelationalTransfo
     public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 );
     public static final BasicPolyType NODE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.NODE );
     public static final BasicPolyType EDGE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.EDGE );
-    private final ImmutableList<PolyNode> nodes;
-    private final ImmutableList<PolyEdge> edges;
     private final ImmutableList<ImmutableList<RexLiteral>> values;
 
 
@@ -66,12 +64,10 @@ public class LogicalGraphValues extends GraphValues implements RelationalTransfo
      * @param traitSet
      */
     public LogicalGraphValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
-        super( cluster, traitSet );
-        this.nodes = ImmutableList.copyOf( nodes );
-        this.edges = ImmutableList.copyOf( edges );
+        super( cluster, traitSet, nodes, edges, values, rowType );
         this.values = values;
 
-        assert edges.stream().noneMatch( e -> e.direction == RelationshipDirection.NONE ) : "Edges which are created need to have a direction.";
+        assert edges.stream().noneMatch( e -> e.direction == EdgeDirection.NONE ) : "Edges which are created need to have a direction.";
 
         this.rowType = rowType;
     }
@@ -115,12 +111,6 @@ public class LogicalGraphValues extends GraphValues implements RelationalTransfo
 
 
     @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + nodes.hashCode() + "$" + edges.hashCode();
-    }
-
-
-    @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
 
@@ -142,6 +132,12 @@ public class LogicalGraphValues extends GraphValues implements RelationalTransfo
                 nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues,
                 edgeValues,
                 edgePropertyValues.tuples.isEmpty() ? null : edgePropertyValues );
+    }
+
+
+    @Override
+    public boolean canTransform() {
+        return getEdgeTable() != null;
     }
 
 

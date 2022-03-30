@@ -57,6 +57,7 @@ import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraph;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
@@ -351,7 +352,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( LogicalStreamer alg ) {
-        LogicalStreamer newAlg = LogicalStreamer.create( alg.getLeft(), alg.getRight() );
+        LogicalStreamer newAlg = LogicalStreamer.create( getNewForOldRel( alg.getLeft() ), getNewForOldRel( alg.getRight() ) );
         setNewForOldRel( alg, newAlg );
     }
 
@@ -363,7 +364,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( LogicalConstraintEnforcer alg ) {
-        LogicalConstraintEnforcer newAlg = LogicalConstraintEnforcer.create( alg.getLeft(), alg.getRight(), alg.getExceptionClasses(), alg.getExceptionMessages() );
+        LogicalConstraintEnforcer newAlg = LogicalConstraintEnforcer.create(
+                alg.getLeft(),
+                alg.getRight(),
+                alg.getExceptionClasses(),
+                alg.getExceptionMessages() );
         setNewForOldRel( alg, newAlg );
     }
 
@@ -374,43 +379,46 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( LogicalGraphModify alg ) {
-        setNewForOldRel( alg, alg );
+        rewriteGeneric( alg );
     }
 
 
     public void rewriteAlg( LogicalGraphScan scan ) {
-        AlgNode alg = scan.getGraph().toAlg( toAlgContext, scan.getGraph() );
+        AlgNode alg = scan;
+        if ( !(scan.getGraph() instanceof LogicalGraph) ) {
+            alg = scan.getGraph().toAlg( toAlgContext, scan.getGraph() );
+        }
         setNewForOldRel( scan, alg );
     }
 
 
     public void rewriteAlg( LogicalGraphProject project ) {
-        setNewForOldRel( project, project );
+        rewriteGeneric( project );
     }
 
 
     public void rewriteAlg( LogicalGraphMatch match ) {
-        setNewForOldRel( match, match );
+        rewriteGeneric( match );
     }
 
 
     public void rewriteAlg( LogicalGraphFilter filter ) {
-        setNewForOldRel( filter, filter );
+        rewriteGeneric( filter );
     }
 
 
     public void rewriteAlg( LogicalGraphSort sort ) {
-        setNewForOldRel( sort, sort );
+        rewriteGeneric( sort );
     }
 
 
     public void rewriteAlg( LogicalGraphAggregate aggregate ) {
-        setNewForOldRel( aggregate, aggregate );
+        rewriteGeneric( aggregate );
     }
 
 
     public void rewriteAlg( LogicalGraphUnwind unwind ) {
-        setNewForOldRel( unwind, unwind );
+        rewriteGeneric( unwind );
     }
 
 

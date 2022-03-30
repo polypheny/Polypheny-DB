@@ -17,6 +17,8 @@
 package org.polypheny.db.adapter.neo4j;
 
 import org.polypheny.db.adapter.neo4j.rules.NeoAlg;
+import org.polypheny.db.adapter.neo4j.rules.NeoGraphRules;
+import org.polypheny.db.adapter.neo4j.rules.NeoRules;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
@@ -33,7 +35,11 @@ public class NeoConvention extends Convention.Impl {
 
     @Override
     public void register( AlgOptPlanner planner ) {
-        for ( AlgOptRule rule : NeoRules.getRULES() ) {
+        for ( AlgOptRule rule : NeoRules.RULES ) {
+            planner.addRule( rule );
+        }
+
+        for ( AlgOptRule rule : NeoGraphRules.RULES ) {
             planner.addRule( rule );
         }
     }

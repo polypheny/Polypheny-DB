@@ -23,7 +23,9 @@ import java.util.Map;
 import org.apache.calcite.linq4j.tree.Types;
 
 public enum NeoMethod {
-    EXECUTE( NeoEntity.NeoQueryable.class, "execute", String.class, List.class, List.class, Map.class );
+    EXECUTE( NeoEntity.NeoQueryable.class, "execute", String.class, List.class, List.class, Map.class ),
+    GRAPH_EXECUTE( NeoGraph.NeoQueryable.class, "execute", String.class, List.class, List.class, Map.class ),
+    GRAPH_ALL( NeoGraph.NeoQueryable.class, "executeAll", String.class, String.class );
 
     public final Method method;
 

@@ -16,14 +16,19 @@
 
 package org.polypheny.db.adapter.neo4j.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.enumerable.EnumUtils;
+import javax.annotation.Nullable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.schema.graph.PolyNode;
 
 public interface NeoStatements {
 
@@ -64,8 +69,6 @@ public interface NeoStatements {
         }
 
 
-        public abstract Expression asExpression();
-
     }
 
 
@@ -86,25 +89,28 @@ public interface NeoStatements {
         }
 
 
-        @Override
-        public Expression asExpression() {
-            return Expressions.new_( getClass(), statements.asExpression() );
-        }
-
     }
 
     static <T extends NeoStatement> ListStatement<T> list_( List<T> statements ) {
-        return new ListStatement<>( statements );
+        return list_( statements, "", "" );
+    }
+
+    static <T extends NeoStatement> ListStatement<T> list_( List<T> statements, String prefix, String postfix ) {
+        return new ListStatement<>( statements, prefix, postfix );
     }
 
     class ListStatement<T extends NeoStatement> extends NeoStatement {
 
         private final List<T> statements;
+        private final String prefix;
+        private final String postfix;
 
 
-        protected ListStatement( List<T> statements ) {
+        protected ListStatement( List<T> statements, String prefix, String postfix ) {
             super( null );
             this.statements = statements;
+            this.prefix = prefix;
+            this.postfix = postfix;
         }
 
 
@@ -120,22 +126,26 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return statements.stream().map( NeoStatement::build ).collect( Collectors.joining( ", " ) );
+            if ( statements.isEmpty() ) {
+                return "";
+            }
+            return prefix + this.statements.stream().map( NeoStatement::build ).collect( Collectors.joining( ", " ) ) + postfix;
         }
 
 
-        @Override
-        public Expression asExpression() {
-            return Expressions.new_(
-                    getClass(),
-                    EnumUtils.expressionList(
-                            statements.stream().map( NeoStatement::asExpression ).collect( Collectors.toList() ) ) );
+    }
+
+
+    abstract class ElementStatement extends NeoStatement {
+
+        protected ElementStatement() {
+            super( null );
         }
 
     }
 
 
-    class NodeStatement extends NeoStatement {
+    class NodeStatement extends ElementStatement {
 
         private final String identifier;
         private final LabelsStatement labels;
@@ -143,7 +153,6 @@ public interface NeoStatements {
 
 
         protected NodeStatement( String identifier, LabelsStatement labels, ListStatement<?> properties ) {
-            super( null );
             this.identifier = identifier;
             this.labels = labels;
             this.properties = properties;
@@ -152,28 +161,112 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return String.format( "( %s%s %s )", identifier, labels.build(), properties.isEmpty() ? "" : String.format( "{ %s }", properties.build() ) );
+            return String.format( "( %s%s %s )", identifier, labels.build(), properties.build() );
         }
 
-
-        @Override
-        public Expression asExpression() {
-            return Expressions.new_(
-                    getClass(),
-                    Expressions.constant( identifier, String.class ),
-                    labels.asExpression(),
-                    properties.asExpression() );
-        }
 
     }
 
     static NodeStatement node_( String identifier, LabelsStatement labels, PropertyStatement... properties ) {
-        return new NodeStatement( identifier, labels, list_( Arrays.asList( properties ) ) );
+        return new NodeStatement( identifier, labels, list_( Arrays.asList( properties ), "{", "}" ) );
     }
 
     static NodeStatement node_( String identifier, LabelsStatement labels, List<PropertyStatement> properties ) {
-        return new NodeStatement( identifier, labels, list_( properties ) );
+        return new NodeStatement( identifier, labels, list_( properties, "{", "}" ) );
     }
+
+    static NodeStatement node_( String identifier ) {
+        return node_( identifier, labels_(), List.of() );
+    }
+
+    static NodeStatement node_( String identifier, PolyNode node, String mappingLabel ) {
+        List<PropertyStatement> statements = new ArrayList<>( properties_( node.properties ) );
+        statements.add( property_( "_id", string_( (node.id) ) ) );
+        ArrayList<String> labels = new ArrayList<>( node.labels );
+        if ( mappingLabel != null ) {
+            labels.add( mappingLabel );
+        }
+        return node_( identifier, labels_( labels ), statements );
+    }
+
+
+    class EdgeStatement extends ElementStatement {
+
+        private final String identifier;
+        private final LabelsStatement label;
+        private final ListStatement<PropertyStatement> properties;
+        private final EdgeDirection direction;
+
+
+        protected EdgeStatement( @Nullable String identifier, LabelsStatement labelsStatement, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
+            this.identifier = identifier == null ? "" : identifier;
+            assert labelsStatement.labels.size() <= 1 : "Edges only allow one label.";
+            this.label = labelsStatement;
+            this.properties = properties;
+            this.direction = direction;
+        }
+
+
+        @Override
+        public String build() {
+            String statement = String.format( "-[%s%s %s]-", identifier, label.build(), properties.build() );
+            if ( direction == EdgeDirection.LEFT_TO_RIGHT ) {
+                statement = statement + ">";
+            } else if ( direction == EdgeDirection.RIGHT_TO_LEFT ) {
+                statement = statement + "<";
+            }
+            return statement;
+        }
+
+
+    }
+
+    static EdgeStatement edge_( @Nullable String identifier, List<String> labels, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
+        return new EdgeStatement( identifier, labels_( labels ), properties, direction );
+    }
+
+    static EdgeStatement edge_( @Nullable String identifier, String label, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
+        return new EdgeStatement( identifier, labels_( label ), properties, direction );
+    }
+
+    static EdgeStatement edge_( @Nullable String identifier ) {
+        return new EdgeStatement( identifier, labels_(), list_( List.of() ), EdgeDirection.NONE );
+    }
+
+    static EdgeStatement edge_( PolyEdge edge ) {
+        List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties ) );
+        props.add( property_( "_id", string_( edge.id ) ) );
+        props.add( property_( "__sourceId__", string_( edge.source ) ) );
+        props.add( property_( "__targetId__", string_( edge.target ) ) );
+        return edge_( null, edge.labels, list_( props, "{", "}" ), edge.direction );
+    }
+
+    class PathStatement extends NeoStatement {
+
+        private final List<ElementStatement> pathElements;
+
+
+        protected PathStatement( List<ElementStatement> pathElements ) {
+            super( null );
+            this.pathElements = pathElements;
+        }
+
+
+        @Override
+        public String build() {
+            return pathElements.stream().map( NeoStatement::build ).collect( Collectors.joining() );
+        }
+
+    }
+
+    static PathStatement path_( ElementStatement... elements ) {
+        return new PathStatement( Arrays.asList( elements ) );
+    }
+
+    static PathStatement path_( List<ElementStatement> elements ) {
+        return new PathStatement( elements );
+    }
+
 
     class PropertyStatement extends NeoStatement {
 
@@ -194,17 +287,27 @@ public interface NeoStatements {
         }
 
 
-        @Override
-        public Expression asExpression() {
-            return Expressions.new_( getClass(), Expressions.constant( key ), value.asExpression() );
-        }
-
     }
 
     static PropertyStatement property_( String key, NeoStatement value ) {
         return new PropertyStatement( key, value );
     }
 
+    static List<PropertyStatement> properties_( PolyDirectory properties ) {
+        List<PropertyStatement> props = new ArrayList<>();
+        for ( Entry<String, Object> entry : properties.entrySet() ) {
+            props.add( property_( entry.getKey(), _literalOrString( entry.getValue() ) ) );
+        }
+        return props;
+    }
+
+    static NeoStatement _literalOrString( Object value ) {
+        if ( value instanceof String ) {
+            return string_( value );
+        } else {
+            return literal_( value );
+        }
+    }
 
     class LabelsStatement extends NeoStatement {
 
@@ -223,15 +326,14 @@ public interface NeoStatements {
         }
 
 
-        @Override
-        public Expression asExpression() {
-            return Expressions.new_( getClass(), EnumUtils.constantArrayList( labels, String.class ) );
-        }
-
     }
 
-    static LabelsStatement labels_( String... label ) {
-        return new LabelsStatement( Arrays.asList( label ) );
+    static LabelsStatement labels_( String... labels ) {
+        return new LabelsStatement( Arrays.asList( labels ) );
+    }
+
+    static LabelsStatement labels_( List<String> labels ) {
+        return new LabelsStatement( labels );
     }
 
     class AssignStatement extends NeoStatement {
@@ -253,11 +355,6 @@ public interface NeoStatements {
             return source.build() + " = " + target.build();
         }
 
-
-        @Override
-        public Expression asExpression() {
-            return null;//Expressions.new_( getClass(), EnumUtils.constantArrayList( labels, String.class ) );
-        }
 
     }
 
@@ -283,19 +380,40 @@ public interface NeoStatements {
         }
 
 
+    }
+
+    static LiteralStatement literal_( Object value ) {
+        return new LiteralStatement( value == null ? null : value.toString() );
+    }
+
+    static LiteralStatement string_( Object value ) {
+        return new LiteralStatement( value == null ? null : "'" + value + "'" );
+    }
+
+    static LiteralStatement literal_( RexLiteral literal ) {
+        return literal_( Objects.requireNonNull( NeoUtil.rexAsString( literal ) ) );
+    }
+
+    class DistinctStatement extends NeoStatement {
+
+        private final NeoStatement statement;
+
+
+        protected DistinctStatement( NeoStatement statement ) {
+            super( null );
+            this.statement = statement;
+        }
+
+
         @Override
-        public Expression asExpression() {
-            return Expressions.constant( value, String.class );
+        public String build() {
+            return " DISTINCT " + statement.build();
         }
 
     }
 
-    static LiteralStatement literal_( Object value ) {
-        return new LiteralStatement( value.toString() );
-    }
-
-    static LiteralStatement literal_( RexLiteral literal ) {
-        return literal_( NeoUtil.rexAsString( literal ) );
+    static DistinctStatement distinct_( NeoStatement statement ) {
+        return new DistinctStatement( statement );
     }
 
     class AsStatement extends NeoStatement {
@@ -316,11 +434,6 @@ public interface NeoStatements {
             return key.build() + " AS " + NeoUtil.fixParameter( alias.build() );
         }
 
-
-        @Override
-        public Expression asExpression() {
-            return Expressions.new_( getClass(), key.asExpression(), alias.asExpression() );
-        }
 
     }
 
@@ -343,13 +456,6 @@ public interface NeoStatements {
         @Override
         public String build() {
             return NeoUtil.asParameter( index, true );
-        }
-
-
-        @Override
-        public Expression asExpression() {
-            return null;
-            //return Expressions.new_( getClass(), Expressions.constant( index ), Expressions.constant( valueType ), Expressions.constant( componentType ) );
         }
 
 

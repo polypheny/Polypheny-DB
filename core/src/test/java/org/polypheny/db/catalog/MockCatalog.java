@@ -1297,4 +1297,10 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+
+    @Override
+    public void updateGraphPlacementPhysicalNames( int adapterId, long placement, String physicalGraphName ) {
+        throw new NotImplementedException();
+    }
+
 }

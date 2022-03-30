@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.neo4j;
+package org.polypheny.db.adapter.neo4j.rules;
 
 import java.util.function.Predicate;
-import lombok.Getter;
-import org.polypheny.db.adapter.neo4j.rules.NeoFilter;
-import org.polypheny.db.adapter.neo4j.rules.NeoModify;
-import org.polypheny.db.adapter.neo4j.rules.NeoProject;
-import org.polypheny.db.adapter.neo4j.rules.NeoValues;
+import org.polypheny.db.adapter.neo4j.NeoConvention;
+import org.polypheny.db.adapter.neo4j.NeoToEnumerableConverterRule;
+import org.polypheny.db.adapter.neo4j.rules.relational.NeoFilter;
+import org.polypheny.db.adapter.neo4j.rules.relational.NeoModify;
+import org.polypheny.db.adapter.neo4j.rules.relational.NeoProject;
+import org.polypheny.db.adapter.neo4j.rules.relational.NeoValues;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
@@ -33,11 +34,10 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
-public class NeoRules {
+public interface NeoRules {
 
 
-    @Getter
-    public static final AlgOptRule[] RULES = {
+    AlgOptRule[] RULES = {
             NeoToEnumerableConverterRule.INSTANCE,
             NeoModifyRule.INSTANCE,
             NeoProjectRule.INSTANCE,
@@ -46,7 +46,7 @@ public class NeoRules {
     };
 
 
-    private abstract static class NeoConverterRule extends ConverterRule {
+    abstract class NeoConverterRule extends ConverterRule {
 
         protected final Convention out;
 
@@ -59,7 +59,7 @@ public class NeoRules {
     }
 
 
-    public static class NeoModifyRule extends NeoConverterRule {
+    class NeoModifyRule extends NeoConverterRule {
 
         public static NeoModifyRule INSTANCE = new NeoModifyRule( Modify.class, r -> true, "NeoModifyRule" );
 
@@ -87,7 +87,7 @@ public class NeoRules {
     }
 
 
-    public static class NeoProjectRule extends NeoConverterRule {
+    class NeoProjectRule extends NeoConverterRule {
 
         public static NeoProjectRule INSTANCE = new NeoProjectRule( Project.class, NeoUtil::supports, "NeoProjectRule" );
 
@@ -111,7 +111,7 @@ public class NeoRules {
     }
 
 
-    public static class NeoFilterRule extends NeoConverterRule {
+    class NeoFilterRule extends NeoConverterRule {
 
         public static NeoFilterRule INSTANCE = new NeoFilterRule( Filter.class, NeoUtil::supports, "NeoFilterRule" );
 
@@ -134,7 +134,7 @@ public class NeoRules {
     }
 
 
-    public static class NeoValuesRule extends NeoConverterRule {
+    class NeoValuesRule extends NeoConverterRule {
 
         public static NeoValuesRule INSTANCE = new NeoValuesRule( Values.class, r -> true, "NeoValuesRule" );
 

@@ -20,6 +20,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -45,5 +46,10 @@ public class LogicalGraphUnwind extends GraphUnwind {
         return new LogicalGraphUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
     }
 
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
+    }
 
 }

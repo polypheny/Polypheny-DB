@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.graph.RelationalTransformable;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -58,6 +59,10 @@ public class GraphToRelRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
+        if ( !(call.alg( 0 ) instanceof RelationalTransformable) || !((RelationalTransformable) call.alg( 0 )).canTransform() ) {
+            return;
+        }
+
         AlgNode res;
         if ( isModify ) {
             res = getRelModify( call );

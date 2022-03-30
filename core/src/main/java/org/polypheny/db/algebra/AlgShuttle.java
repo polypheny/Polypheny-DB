@@ -51,11 +51,14 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 
 
@@ -107,6 +110,12 @@ public interface AlgShuttle {
     AlgNode visit( LogicalGraphMatch match );
 
     AlgNode visit( LogicalGraphProject project );
+
+    AlgNode visit( LogicalGraphAggregate aggregate );
+
+    AlgNode visit( LogicalGraphSort sort );
+
+    AlgNode visit( LogicalGraphUnwind unwind );
 
     AlgNode visit( LogicalConstraintEnforcer constraintEnforcer );
 

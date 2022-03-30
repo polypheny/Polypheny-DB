@@ -365,7 +365,8 @@ public abstract class BaseRouter {
                 Graph graph = reader.getGraph( name );
 
                 if ( !(graph instanceof TranslatableGraph) ) {
-                    throw new RuntimeException( "Graph is not translatable." );
+                    // needs substitution later on
+                    return alg;
                 }
 
                 return new LogicalGraphScan( alg.getCluster(), reader, alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );

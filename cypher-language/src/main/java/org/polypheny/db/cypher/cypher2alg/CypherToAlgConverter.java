@@ -70,6 +70,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.graph.PolyEdge;
@@ -449,7 +450,9 @@ public class CypherToAlgConverter {
             addDefaultScanIfNecessary();
             List<Pair<String, RexNode>> matches = getMatches();
 
-            stack.add( new LogicalGraphMatch( cluster, cluster.traitSet(), stack.pop(), Pair.right( matches ), Pair.left( matches ) ) );
+            List<RexCall> calls = Pair.right( matches ).stream().map( r -> (RexCall) r ).collect( Collectors.toList() );
+
+            stack.add( new LogicalGraphMatch( cluster, cluster.traitSet(), stack.pop(), calls, Pair.left( matches ) ) );
         }
 
 

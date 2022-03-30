@@ -23,6 +23,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalScan;
@@ -102,6 +103,12 @@ public class LogicalGraphScan extends GraphScan implements RelationalTransformab
 
 
     @Override
+    public boolean canTransform() {
+        return edgeTable != null;
+    }
+
+
+    @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         LogicalGraphScan scan = new LogicalGraphScan( inputs.get( 0 ).getCluster(), catalogReader, traitSet, graph, rowType );
         scan.setEdgeTable( edgeTable );
@@ -109,6 +116,12 @@ public class LogicalGraphScan extends GraphScan implements RelationalTransformab
         scan.setNodeTable( nodeTable );
         scan.setNodePropertyTable( nodePropertyTable );
         return scan;
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

@@ -20,7 +20,9 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.function.Function1;
@@ -37,7 +39,9 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
@@ -146,11 +150,31 @@ public interface NeoUtil {
     }
 
     static PolyNode asPolyNode( Node node ) {
-        return null;
+        Map<String, Comparable<?>> map = new HashMap<>( node.asMap( NeoUtil::getStringOrNull ) );
+        String id = map.remove( "_id" ).toString();
+        List<String> labels = new ArrayList<>();
+        node.labels().forEach( e -> {
+            if ( !e.startsWith( "__namespace" ) && !e.endsWith( "__" ) ) {
+                labels.add( e );
+            }
+        } );
+        return new PolyNode( id, new PolyDirectory( map ), labels );
     }
 
+
     static PolyEdge asPolyEdge( Relationship relationship ) {
-        return null;
+        Map<String, Comparable<?>> map = new HashMap<>( relationship.asMap( NeoUtil::getStringOrNull ) );
+        String id = map.remove( "_id" ).toString();
+        String sourceId = map.remove( "__sourceId__" ).toString();
+        String targetId = map.remove( "__targetId__" ).toString();
+        return new PolyEdge( id, new PolyDirectory( map ), List.of( relationship.type() ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT );
+    }
+
+    static String getStringOrNull( Value e ) {
+        if ( e.isNull() ) {
+            return null;
+        }
+        return e.asString();
     }
 
     static Function1<Record, Object> getTypesFunction( List<PolyType> types, List<PolyType> componentTypes ) {

@@ -16,17 +16,19 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
-import org.polypheny.db.adapter.neo4j.NeoGraph;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.algebra.logical.graph.GraphScan;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.logical.graph.GraphValues;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.TranslatableGraph;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyNode;
 
-public class NeoGraphScan extends GraphScan implements NeoGraphAlg {
+public class NeoGraphValues extends GraphValues implements NeoGraphAlg {
 
 
     /**
@@ -34,23 +36,16 @@ public class NeoGraphScan extends GraphScan implements NeoGraphAlg {
      *
      * @param cluster
      * @param traitSet
-     * @param graph
+     * @param nodes
+     * @param edges
      */
-    public NeoGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
-        super( cluster, traitSet, graph );
+    public NeoGraphValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
+        super( cluster, traitSet, nodes, edges, values, rowType );
     }
 
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
-        implementor.setGraph( (NeoGraph) getGraph() );
-
-        if ( rowType.getFieldList().size() == 1 ) {
-            AlgDataTypeField field = rowType.getFieldList().get( 0 );
-            if ( field.getType().getPolyType() == PolyType.GRAPH ) {
-                implementor.setAll( true );
-            }
-        }
 
     }
 

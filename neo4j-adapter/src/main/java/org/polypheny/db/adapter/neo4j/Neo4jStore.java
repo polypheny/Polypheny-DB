@@ -356,7 +356,7 @@ public class Neo4jStore extends DataStore {
 
     @Override
     public void createGraphNamespace( SchemaPlus rootSchema, String name, long id ) {
-        this.currentGraph = new NeoGraph( name, this.transactionProvider, this.db, id );
+        this.currentGraph = new NeoGraph( name, this.transactionProvider, this.db, id, getMappingLabel( id ), this );
     }
 
 
@@ -415,6 +415,11 @@ public class Neo4jStore extends DataStore {
 
     private static String getPhysicalGraphName( long id ) {
         return String.format( "graph_%d", id );
+    }
+
+
+    private static String getMappingLabel( long id ) {
+        return String.format( "___namespace_%d___", id );
     }
 
 

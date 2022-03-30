@@ -18,9 +18,10 @@ package org.polypheny.db.algebra.logical.graph;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexCall;
 
 public class LogicalGraphMatch extends GraphMatch {
 
@@ -32,7 +33,7 @@ public class LogicalGraphMatch extends GraphMatch {
      * @param traits
      * @param input Input relational expression
      */
-    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
+    public LogicalGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
         super( cluster, traits, input, matches, names );
         assertLogicalGraphTrait( traits );
     }
@@ -41,6 +42,12 @@ public class LogicalGraphMatch extends GraphMatch {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalGraphMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

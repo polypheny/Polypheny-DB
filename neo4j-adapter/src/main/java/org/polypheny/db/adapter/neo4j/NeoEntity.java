@@ -33,7 +33,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.adapter.neo4j.rules.NeoScan;
+import org.polypheny.db.adapter.neo4j.rules.relational.NeoScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
@@ -169,7 +169,7 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
         }
 
 
-        private static <T> Function1<Record, T> getter( List<PolyType> types, List<PolyType> componentTypes ) {
+        static <T> Function1<Record, T> getter( List<PolyType> types, List<PolyType> componentTypes ) {
             //noinspection unchecked
             return (Function1<Record, T>) NeoUtil.getTypesFunction( types, componentTypes );
         }
@@ -177,61 +177,6 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
         private Transaction getTrx() {
             return namespace.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
-        }
-
-
-        public static class NeoEnumerator<T> implements Enumerator<T> {
-
-            private final List<Result> results;
-            private final Function1<Record, T> getter;
-            private Result result;
-            private T current;
-            private int pos = 0;
-
-
-            public NeoEnumerator( List<Result> results, Function1<Record, T> getter ) {
-                this.results = results;
-                this.result = results.get( pos );
-                pos++;
-                this.getter = getter;
-            }
-
-
-            @Override
-            public T current() {
-                return current;
-            }
-
-
-            @Override
-            public boolean moveNext() {
-                if ( result.hasNext() ) {
-                    this.current = getter.apply( result.next() );
-                    return true;
-                }
-                if ( results.size() > pos ) {
-                    this.result = results.get( pos );
-                    pos++;
-
-                    return moveNext();
-                }
-
-                return false;
-            }
-
-
-            @Override
-            public void reset() {
-                throw new UnsupportedOperationException();
-            }
-
-
-            @Override
-            public void close() {
-                this.result.consume();
-            }
-
-
         }
 
     }

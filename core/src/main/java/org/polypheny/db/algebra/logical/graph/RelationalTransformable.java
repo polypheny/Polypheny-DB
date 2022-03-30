@@ -62,4 +62,6 @@ public interface RelationalTransformable {
 
     List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities );
 
+    boolean canTransform();
+
 }

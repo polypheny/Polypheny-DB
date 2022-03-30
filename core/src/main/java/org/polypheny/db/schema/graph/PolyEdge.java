@@ -33,15 +33,15 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
 
     public final String source;
     public final String target;
-    public final RelationshipDirection direction;
+    public final EdgeDirection direction;
 
 
-    public PolyEdge( @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, RelationshipDirection direction ) {
+    public PolyEdge( @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, EdgeDirection direction ) {
         this( UUID.randomUUID().toString(), properties, labels, source, target, direction );
     }
 
 
-    public PolyEdge( String id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, RelationshipDirection direction ) {
+    public PolyEdge( String id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, EdgeDirection direction ) {
         super( id, GraphObjectType.EDGE, properties, labels );
         this.source = source;
         this.target = target;
@@ -67,7 +67,7 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     }
 
 
-    public enum RelationshipDirection {
+    public enum EdgeDirection {
         LEFT_TO_RIGHT,
         RIGHT_TO_LEFT,
         NONE
@@ -107,7 +107,7 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
             PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
             String leftId = (String) kryo.readClassAndObject( input );
             String rightId = (String) kryo.readClassAndObject( input );
-            RelationshipDirection direction = (RelationshipDirection) kryo.readClassAndObject( input );
+            EdgeDirection direction = (EdgeDirection) kryo.readClassAndObject( input );
             return new PolyEdge( id, properties, labels, leftId, rightId, direction );
         }
 

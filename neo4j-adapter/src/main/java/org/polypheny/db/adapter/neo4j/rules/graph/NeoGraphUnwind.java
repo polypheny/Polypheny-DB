@@ -16,41 +16,32 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
-import org.polypheny.db.adapter.neo4j.NeoGraph;
+import javax.annotation.Nullable;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.algebra.logical.graph.GraphScan;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.graph.GraphUnwind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.TranslatableGraph;
-import org.polypheny.db.type.PolyType;
 
-public class NeoGraphScan extends GraphScan implements NeoGraphAlg {
-
+public class NeoGraphUnwind extends GraphUnwind implements NeoGraphAlg {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates a <code>SingleRel</code>.
      *
-     * @param cluster
-     * @param traitSet
-     * @param graph
+     * @param cluster Cluster this relational expression belongs to
+     * @param traits
+     * @param input Input relational expression
+     * @param index
+     * @param alias
      */
-    public NeoGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
-        super( cluster, traitSet, graph );
+    public NeoGraphUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+        super( cluster, traits, input, index, alias );
     }
 
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
-        implementor.setGraph( (NeoGraph) getGraph() );
-
-        if ( rowType.getFieldList().size() == 1 ) {
-            AlgDataTypeField field = rowType.getFieldList().get( 0 );
-            if ( field.getType().getPolyType() == PolyType.GRAPH ) {
-                implementor.setAll( true );
-            }
-        }
 
     }
 

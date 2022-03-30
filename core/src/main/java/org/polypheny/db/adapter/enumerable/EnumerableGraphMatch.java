@@ -53,7 +53,7 @@ public class EnumerableGraphMatch extends GraphMatch implements EnumerableAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected EnumerableGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexNode> matches, List<String> names ) {
+    protected EnumerableGraphMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
         super( cluster, traits, input, matches, names );
     }
 

@@ -16,10 +16,29 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.AbstractQueryable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Transaction;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphScan;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.graph.GraphModify;
@@ -32,27 +51,38 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableGraph;
+import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.TranslatableGraph;
 import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.schema.graph.ModifiableGraph;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.QueryableGraph;
 import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
-public class NeoGraph extends AbstractSchema implements ModifiableGraph, TranslatableGraph {
+public class NeoGraph extends AbstractSchema implements ModifiableGraph, TranslatableGraph, QueryableGraph {
 
-    private final String name;
-    private final TransactionProvider transactionProvider;
-    private final Driver db;
+    public final String name;
+    public final TransactionProvider transactionProvider;
+    public final Driver db;
     @Getter
     private final long id;
+    public final String mappingLabel;
+    public final Neo4jStore store;
 
 
-    public NeoGraph( String name, TransactionProvider transactionProvider, Driver db, long id ) {
+    public NeoGraph( String name, TransactionProvider transactionProvider, Driver db, long id, String mappingLabel, Neo4jStore store ) {
         this.name = name;
         this.id = id;
         this.transactionProvider = transactionProvider;
         this.db = db;
+        this.mappingLabel = mappingLabel;
+        this.store = store;
     }
 
 
@@ -97,7 +127,111 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
 
     @Override
     public AlgNode toAlg( ToAlgContext context, Graph graph ) {
-        return null;
+        final AlgOptCluster cluster = context.getCluster();
+        return new NeoGraphScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ), this );
     }
+
+
+    @Override
+    public <T> Queryable<T> asQueryable( DataContext root, QueryableGraph graph ) {
+        return new NeoQueryable<>( root, this );
+    }
+
+
+    public static class NeoQueryable<T> extends AbstractQueryable<T> {
+
+
+        private final NeoGraph graph;
+        private final DataContext dataContext;
+
+
+        public NeoQueryable( DataContext dataContext, Graph graph ) {
+            this.dataContext = dataContext;
+            this.graph = (NeoGraph) graph;
+        }
+
+
+        @SuppressWarnings("UnusedDeclaration")
+        public Enumerable<T> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
+            Transaction trx = getTrx();
+
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
+
+            List<Result> results = new ArrayList<>();
+            results.add( trx.run( query ) );
+
+            Function1<Record, T> getter = NeoQueryable.getter( types, componentTypes );
+
+            return new AbstractEnumerable<>() {
+                @Override
+                public Enumerator<T> enumerator() {
+                    return new NeoEnumerator<>( results, getter );
+                }
+            };
+        }
+
+
+        @SuppressWarnings("UnusedDeclaration")
+        public Enumerable<T> executeAll( String nodes, String edges ) {
+            commit();
+            Transaction trx = getTrx();
+
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
+
+            Map<String, PolyNode> polyNodes = trx.run( nodes ).list().stream().map( n -> NeoUtil.asPolyNode( n.get( 0 ).asNode() ) ).collect( Collectors.toMap( n -> n.id, n -> n ) );
+            Map<String, PolyEdge> polyEdges = trx.run( edges ).list().stream().map( e -> NeoUtil.asPolyEdge( e.get( 0 ).asRelationship() ) ).collect( Collectors.toMap( e -> e.id, e -> e ) );
+
+            //noinspection unchecked
+            return (Enumerable<T>) Linq4j.singletonEnumerable( new PolyGraph( PolyMap.of( polyNodes ), PolyMap.of( polyEdges ) ) );
+        }
+
+
+        static <T> Function1<Record, T> getter( List<PolyType> types, List<PolyType> componentTypes ) {
+            //noinspection unchecked
+            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, componentTypes );
+        }
+
+
+        private Transaction getTrx() {
+            return graph.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
+        }
+
+
+        private void commit() {
+            graph.transactionProvider.commit( dataContext.getStatement().getTransaction().getXid() );
+        }
+
+
+        @Override
+        public Type getElementType() {
+            return Object[].class;
+        }
+
+
+        @Override
+        public Expression getExpression() {
+            return null;
+        }
+
+
+        @Override
+        public QueryProvider getProvider() {
+            return dataContext.getQueryProvider();
+        }
+
+
+        @Override
+        public Iterator<T> iterator() {
+            return Linq4j.enumeratorIterator( enumerator() );
+        }
+
+
+        @Override
+        public Enumerator<T> enumerator() {
+            return null;
+        }
+
+    }
+
 
 }

@@ -78,11 +78,11 @@ import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.schema.ModifiableGraph;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -786,6 +786,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
                 Graph graph = reader.getGraph( name );
+                if ( graph == null ) {
+                    return alg;
+                }
 
                 if ( !(graph instanceof ModifiableGraph) ) {
                     throw new RuntimeException( "Graph is not modifiable." );

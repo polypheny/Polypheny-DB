@@ -16,41 +16,32 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
-import org.polypheny.db.adapter.neo4j.NeoGraph;
+import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.algebra.logical.graph.GraphScan;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.logical.graph.GraphAggregate;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.TranslatableGraph;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.ImmutableBitSet;
 
-public class NeoGraphScan extends GraphScan implements NeoGraphAlg {
+public class NeoGraphAggregate extends GraphAggregate implements NeoGraphAlg {
+
+    public NeoGraphAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
+    }
 
 
-    /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param traitSet
-     * @param graph
-     */
-    public NeoGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
-        super( cluster, traitSet, graph );
+    @Override
+    public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        return new NeoGraphAggregate( input.getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
     }
 
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
-        implementor.setGraph( (NeoGraph) getGraph() );
-
-        if ( rowType.getFieldList().size() == 1 ) {
-            AlgDataTypeField field = rowType.getFieldList().get( 0 );
-            if ( field.getType().getPolyType() == PolyType.GRAPH ) {
-                implementor.setAll( true );
-            }
-        }
 
     }
 

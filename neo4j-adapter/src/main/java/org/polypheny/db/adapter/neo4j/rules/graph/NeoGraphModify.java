@@ -16,21 +16,35 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.create_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.path_;
+
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
-import org.polypheny.db.adapter.neo4j.rules.NeoAlg;
+import java.util.Map;
+import org.polypheny.db.adapter.neo4j.NeoGraph;
+import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
+import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.graph.GraphModify;
+import org.polypheny.db.algebra.logical.graph.GraphValues;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyNode;
 
-public class NeoGraphModify extends GraphModify implements NeoAlg {
-
-
-    private final Graph graph;
+public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
 
 
     /**
@@ -43,20 +57,82 @@ public class NeoGraphModify extends GraphModify implements NeoAlg {
      * @param ids
      * @param operations
      */
-    protected NeoGraphModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
-        super( cluster, traits, graph, input, operation, ids, operations );
-        this.graph = graph;
+    public NeoGraphModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+        super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 
 
     @Override
-    public String algCompareString() {
-        return null;
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoGraphModify( inputs.get( 0 ).getCluster(), traitSet, graph, inputs.get( 0 ), operation, ids, operations );
     }
 
 
     @Override
-    public void implement( NeoRelationalImplementor implementor ) {
+    public void implement( NeoGraphImplementor implementor ) {
+        implementor.setGraph( (NeoGraph) getGraph() );
+        implementor.setDml( true );
+        implementor.visitChild( 0, getInput() );
+
+        switch ( operation ) {
+
+            case INSERT:
+                handleInsert( implementor );
+                break;
+            case UPDATE:
+                handleUpdate( implementor );
+                break;
+            case DELETE:
+                handleDelete( implementor );
+                break;
+            case MERGE:
+                throw new UnsupportedOperationException( "Merge is not supported by the graph implementation of the Neo4j adapter." );
+        }
+    }
+
+
+    private void handleInsert( NeoGraphImplementor implementor ) {
+        if ( implementor.getLast() instanceof GraphValues ) {
+            GraphValues values = ((GraphValues) implementor.getLast());
+            if ( values.getValues().isEmpty() ) {
+                // node / edge insert
+                implementor.statements.add( create_( list_( getCreatePath( values.getNodes(), values.getEdges(), implementor ) ) ) );
+                return;
+            } else {
+                // normal values
+
+            }
+        }
+        throw new RuntimeException( "No values before modify." );
+    }
+
+
+    private List<NeoStatement> getCreatePath( ImmutableList<PolyNode> nodes, ImmutableList<PolyEdge> edges, NeoGraphImplementor implementor ) {
+        Map<String, String> uuidNameMapping = new HashMap<>();
+
+        List<NeoStatement> statements = new ArrayList<>();
+
+        int i = 0;
+        for ( PolyNode node : nodes ) {
+            String name = "n" + i;
+            uuidNameMapping.put( node.id, name );
+            statements.add( node_( name, node, implementor.getGraph().mappingLabel ) );
+            i++;
+        }
+        for ( PolyEdge edge : edges ) {
+            statements.add( path_( node_( uuidNameMapping.get( edge.source ) ), edge_( edge ), node_( uuidNameMapping.get( edge.target ) ) ) );
+        }
+
+        return statements;
+    }
+
+
+    private void handleUpdate( NeoGraphImplementor implementor ) {
+
+    }
+
+
+    private void handleDelete( NeoGraphImplementor implementor ) {
 
     }
 

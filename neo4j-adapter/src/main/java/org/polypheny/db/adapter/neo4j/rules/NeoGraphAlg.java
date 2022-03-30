@@ -16,8 +16,10 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
-import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 
-public interface NeoAlg extends AlgNode {
+public interface NeoGraphAlg extends NeoAlg {
+
+    void implement( NeoGraphImplementor implementor );
 
 }
