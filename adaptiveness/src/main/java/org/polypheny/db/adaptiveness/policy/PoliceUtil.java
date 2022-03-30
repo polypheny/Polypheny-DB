@@ -16,6 +16,8 @@
 
 package org.polypheny.db.adaptiveness.policy;
 
+import lombok.Getter;
+
 public interface PoliceUtil {
 
     /**
@@ -30,7 +32,29 @@ public interface PoliceUtil {
     }
 
     enum ClauseName {
-        FULLY_PERSISTENT, ONLY_EMBEDDED, ONLY_DOCKER, PERSISTENT, SPEED_OPTIMIZATION, REDUNDANCY_OPTIMIZATION, SPACE_OPTIMIZATION, LANGUAGE_OPTIMIZATION
+        FULLY_PERSISTENT(ClauseType.BOOLEAN),
+        ONLY_EMBEDDED(ClauseType.BOOLEAN),
+        ONLY_DOCKER(ClauseType.BOOLEAN),
+        PERSISTENT(ClauseType.BOOLEAN),
+        SPEED_OPTIMIZATION(ClauseType.BOOLEAN),
+        REDUNDANCY_OPTIMIZATION(ClauseType.BOOLEAN),
+        SPACE_OPTIMIZATION(ClauseType.BOOLEAN),
+        LANGUAGE_OPTIMIZATION(ClauseType.BOOLEAN);
+
+        @Getter
+        final ClauseType clauseType;
+
+        ClauseName(ClauseType clauseType){
+            this.clauseType = clauseType;
+        }
+        public static ClauseName getClauseName( String name ){
+            for(ClauseName clauseName: values()){
+                if(clauseName.name().equalsIgnoreCase( name )){
+                    return clauseName;
+                }
+            }
+            return null;
+        }
 
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policy;
+package org.polypheny.db.adaptiveness;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -100,6 +100,9 @@ public class PolicyTest {
                     statement.executeUpdate( "DROP TABLE IF EXISTS statisticschema.nation" );
                     statement.executeUpdate( "DROP SCHEMA statisticschema" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"mongodb\"" );
+                    policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "FULLY_PERSISTENT", "POLYPHENY", false, -1L );
+                    policiesManager.updateClauses( policyChangeRequest );
+                    policiesManager.deleteClause( policyChangeRequest );
                 }
             }
         }
@@ -150,6 +153,9 @@ public class PolicyTest {
                     statement.executeUpdate( "DROP SCHEMA statisticschema" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"mongodbTrue\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"mongodbFalse\"" );
+                    policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "FULLY_PERSISTENT", "POLYPHENY", false, -1L );
+                    policiesManager.updateClauses( policyChangeRequest );
+                    policiesManager.deleteClause( policyChangeRequest );
                 }
             }
         }
@@ -194,6 +200,9 @@ public class PolicyTest {
                     statement.executeUpdate( "DROP TABLE IF EXISTS statisticschema.nation" );
                     statement.executeUpdate( "DROP SCHEMA statisticschema" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"hsqldb\"" );
+                    policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "ONLY_DOCKER", "POLYPHENY", false, -1L );
+                    policiesManager.updateClauses( policyChangeRequest );
+                    policiesManager.deleteClause( policyChangeRequest );
                 }
             }
         }
@@ -242,6 +251,9 @@ public class PolicyTest {
                     statement.executeUpdate( "DROP SCHEMA statisticschema" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"postDocker\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"hsqldbEmbeded\"" );
+                    policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "ONLY_DOCKER", "POLYPHENY", false, -1L );
+                    policiesManager.updateClauses( policyChangeRequest );
+                    policiesManager.deleteClause( policyChangeRequest );
                 }
             }
         }

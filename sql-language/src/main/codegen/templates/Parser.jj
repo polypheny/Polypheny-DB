@@ -6447,6 +6447,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PLACING: "PLACING" >
 |   < PLAN: "PLAN" >
 |   < PLI: "PLI" >
+|   < POLICY: "POLICY" >
 |   < PORTION: "PORTION" >
 |   < POSITION: "POSITION" >
 |   < POSITION_REGEX: "POSITION_REGEX" >

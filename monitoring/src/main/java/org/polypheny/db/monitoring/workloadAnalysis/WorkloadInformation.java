@@ -16,7 +16,6 @@
 
 package org.polypheny.db.monitoring.workloadAnalysis;
 
-import java.sql.Timestamp;
 import lombok.Getter;
 import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.AggregateInformation;
 import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.JoinInformation;
@@ -27,12 +26,14 @@ import org.polypheny.db.util.Pair;
 public class WorkloadInformation {
 
     private long executionTime;
-    private AggregateInformation aggregateInformation;
-    private JoinInformation joinInformation;
-    private TableScanInformation tableScanInformation;
+    private final AggregateInformation aggregateInformation;
+    private final JoinInformation joinInformation;
+    private final TableScanInformation tableScanInformation;
     private int projectCount;
     private int sortCount;
     private int filterCount;
+    private int counter = 0;
+    private long overallTime = 0;
 
 
     public WorkloadInformation(
@@ -53,7 +54,7 @@ public class WorkloadInformation {
     }
 
 
-    public WorkloadInformation updateInfo(
+    public void updateInfo(
             WorkloadInformation workloadInfo ) {
         this.aggregateInformation.updateAggregateInformation( workloadInfo.getAggregateInformation() );
 
@@ -67,9 +68,10 @@ public class WorkloadInformation {
         this.projectCount += workloadInfo.getProjectCount();
         this.sortCount += workloadInfo.getSortCount();
         this.filterCount += workloadInfo.getFilterCount();
-        this.executionTime = (this.executionTime + workloadInfo.executionTime)/2;
+        this.counter +=1;
+        this.overallTime += workloadInfo.executionTime;
+        this.executionTime = overallTime/counter;
 
-        return this;
     }
 
 }

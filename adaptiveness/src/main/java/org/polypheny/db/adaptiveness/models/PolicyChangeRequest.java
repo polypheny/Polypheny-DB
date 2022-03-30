@@ -20,12 +20,10 @@ package org.polypheny.db.adaptiveness.models;
 public class PolicyChangeRequest {
 
     public String requestType;
-
     public String clauseName;
-
     public String targetName;
-
     public boolean booleanValue;
+    public int numberValue;
 
     // has to be Long because sometimes it is not needed and therefore null
     public Long targetId;
@@ -36,6 +34,14 @@ public class PolicyChangeRequest {
         this.clauseName = clauseName;
         this.targetName = targetName;
         this.booleanValue = booleanValue;
+        this.targetId = targetId;
+    }
+
+    public PolicyChangeRequest( String requestType, String clauseName, String targetName, int numberValue, Long targetId ) {
+        this.requestType = requestType;
+        this.clauseName = clauseName;
+        this.targetName = targetName;
+        this.numberValue = numberValue;
         this.targetId = targetId;
     }
 

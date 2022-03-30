@@ -717,6 +717,19 @@ SqlAlterConfig SqlAlterConfig(Span s) :
     }
 }
 
+SqlAlterPolicy SqlAlterPolicy(Span s) :
+{
+    final SqlNode key;
+    final SqlNode value;
+}
+{
+    <POLICY> key = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <SET> value = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterPolicy(s.end(this), key, value);
+    }
+}
+
 
 SqlAlterAdaptersAdd SqlAlterAdaptersAdd(Span s) :
 {

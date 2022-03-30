@@ -230,6 +230,8 @@ public class PoliciesManager {
                     if ( changeRequest.requestType.equals( "BooleanChangeRequest" ) ) {
                         clause = policies.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
                         ((BooleanClause) clause).setValue( changeRequest.booleanValue );
+                    }else if(changeRequest.requestType.equals( "NumberChangeRequest" )){
+                        log.warn( "Implement update Clause for NumberChangeRequest" );
                     }
 
                     assert clause != null;

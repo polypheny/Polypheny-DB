@@ -25,6 +25,7 @@ dependencies {
     implementation project(":core")
     implementation project(":monitoring")
     implementation project(":avatica-interface")
+    implementation project(":adaptiveness")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 

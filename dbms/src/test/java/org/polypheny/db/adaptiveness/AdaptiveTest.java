@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policy;
+package org.polypheny.db.adaptiveness;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -93,6 +93,9 @@ public class AdaptiveTest {
                     statement.executeUpdate( "DROP TABLE IF EXISTS \"statisticschema\".\"nation\"" );
                     statement.executeUpdate( "DROP SCHEMA \"statisticschema\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"mongodb1\"");
+                    policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "LANGUAGE_OPTIMIZATION", "POLYPHENY", false, -1L );
+                    policiesManager.updateClauses( policyChangeRequest );
+                    policiesManager.deleteClause( policyChangeRequest );
                 }
             }
         }
@@ -147,6 +150,9 @@ public class AdaptiveTest {
                     statement.executeUpdate( "DROP SCHEMA \"statisticschema\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"hsqldb2\"");
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"mongodb2\"");
+                    policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "LANGUAGE_OPTIMIZATION", "POLYPHENY", false, -1L );
+                    policiesManager.updateClauses( policyChangeRequest );
+                    policiesManager.deleteClause( policyChangeRequest );
                 }
             }
         }
