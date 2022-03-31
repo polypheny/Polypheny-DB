@@ -23,5 +23,10 @@ public class UnknownPartitionTypeRuntimeException extends CatalogRuntimeExceptio
         super( "There is no PartitionType with id: " + id );
     }
 
+
+    public UnknownPartitionTypeRuntimeException( final String name ) {
+        super( "There is no PartitionType with name: " + name );
+    }
+
 }
 

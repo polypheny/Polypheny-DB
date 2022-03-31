@@ -42,7 +42,7 @@ import org.polypheny.db.runtime.FlatLists;
 
 
 /**
- * Abstract base class for relational expressions with a two inputs.
+ * Abstract base class for relational expressions with two inputs.
  *
  * It is not required that two-input relational expressions use this class as a base class. However, default implementations of methods make life easier.
  */

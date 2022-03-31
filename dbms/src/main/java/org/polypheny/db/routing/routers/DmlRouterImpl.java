@@ -49,7 +49,7 @@ import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -126,11 +126,18 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 // Maybe not even necessary because refresh operation are scheduled asynchronously somewhere else
 
                 // Essentially gets a list of all stores where this table resides
-                List<CatalogDataPlacement> dataPlacements = catalog.getDataPlacementsByRole( catalogTable.id, DataPlacementRole.UPTODATE );
+                List<CatalogDataPlacement> primaryDataPlacements = catalog.getDataPlacementsByReplicationStrategy( catalogTable.id, ReplicationStrategy.EAGER );
+
+                boolean useChangeDataCapture = false;
+                // Only consider lazy replication if there even are DataPlacements labeled as LAZY
+                if ( catalogTable.dataPlacements.size() != primaryDataPlacements.size() ) {
+                    //TODO @HENNLO fill
+                    useChangeDataCapture = true;
+                }
 
                 if ( catalogTable.partitionProperty.isPartitioned && log.isDebugEnabled() ) {
                     log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
-                    for ( CatalogDataPlacement dataPlacement : dataPlacements ) {
+                    for ( CatalogDataPlacement dataPlacement : primaryDataPlacements ) {
                         log.debug(
                                 "\t\t -> '{}' {}\t{}",
                                 dataPlacement.getAdapterName(),
@@ -148,7 +155,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 List<Map<Long, Object>> tempParamValues = null;
 
                 Map<Long, Object> newParameterValues = new HashMap<>();
-                for ( CatalogDataPlacement dataPlacement : dataPlacements ) {
+                for ( CatalogDataPlacement dataPlacement : primaryDataPlacements ) {
 
                     CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
 
@@ -679,6 +686,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         ((LogicalTableModify) node).isFlattened()
                                 );
                             }
+
+                            /*useChangeDataCapture = true;
+                            if ( useChangeDataCapture ){
+                                modifies.add( LogicalStreamer.create( modify, new ReplicationQueue(cluster, cluster.traitSet() ) ));
+                            }
+                            */
                             modifies.add( modify );
                         }
                     }

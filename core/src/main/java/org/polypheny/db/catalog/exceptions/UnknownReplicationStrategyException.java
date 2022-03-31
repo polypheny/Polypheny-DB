@@ -17,15 +17,9 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownPlacementRoleRuntimeException extends CatalogRuntimeException {
+public class UnknownReplicationStrategyException extends CatalogException {
 
-    public UnknownPlacementRoleRuntimeException( final int id ) {
-        super( "There is no PlacementRole with id: " + id );
+    public UnknownReplicationStrategyException( final String name ) {
+        super( "There is no ReplicationStrategy with name: " + name );
     }
-
-
-    public UnknownPlacementRoleRuntimeException( final String name ) {
-        super( "There is no PlacementRole with name: '" + name + "'" );
-    }
-
 }

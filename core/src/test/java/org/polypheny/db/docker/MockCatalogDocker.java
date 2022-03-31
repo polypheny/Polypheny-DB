@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
+
 /**
  * This is a bare-bone catalog which allows to mock register adapters
  * which then can be retrieved while testing adapters which use Docker

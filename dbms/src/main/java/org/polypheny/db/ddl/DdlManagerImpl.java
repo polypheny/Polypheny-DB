@@ -57,6 +57,7 @@ import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
@@ -1390,16 +1391,12 @@ public class DdlManagerImpl extends DdlManager {
         if ( placementPropertyInfo == null ) {
             throw new InvalidPlacementPropertySpecification();
         }
-        // If Role has not been specified
-        else if ( placementPropertyInfo.dataPlacementRole == null ) {
-            throw new InvalidPlacementPropertySpecification();
-        }
 
         int adapterId = storeInstance.getAdapterId();
 
         // Check constraints if ROLE is set TO REFRESHABLE
         // Otherwise we could lose data on the primaries/UPTODATE copies.
-        if ( placementPropertyInfo.dataPlacementRole.equals( DataPlacementRole.REFRESHABLE ) ) {
+        if ( placementPropertyInfo.dataPlacementRole != null && placementPropertyInfo.dataPlacementRole.equals( DataPlacementRole.REFRESHABLE ) ) {
             List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByRole( placementPropertyInfo.table.id, DataPlacementRole.UPTODATE );
             catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
 
@@ -1415,6 +1412,25 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         catalog.updateDataPlacementRole( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.dataPlacementRole );
+
+        // Check constraints if REPLICATION STRATEGY is set TO LAZY
+        // Otherwise we could lose data on the primaries/EAGER replicated copies.
+        if ( placementPropertyInfo.replicationStrategy != null && placementPropertyInfo.replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+            List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByReplicationStrategy( placementPropertyInfo.table.id, ReplicationStrategy.EAGER );
+            catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
+
+            // Gather all partitionIds to a set
+            Set<Long> accumulatedPartitionIds = new HashSet<>();
+            catalogDataPlacements.forEach( dp -> accumulatedPartitionIds.addAll( dp.getAllPartitionIds() ) );
+
+            // If not each partition has an UPTODATE copy
+            if ( accumulatedPartitionIds.size() != placementPropertyInfo.table.partitionProperty.partitionIds.size() ) {
+                throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
+                        + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough EAGERLY-replicated-copies left. " );
+            }
+        }
+
+        catalog.updateDataPlacementReplicationStrategy( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.replicationStrategy );
 
         //TODO @HENNLO IF role switched from REFRESHABLE to UPTODATE
         // Trigger a REFRESH operation, to bring everything consequently to the MOST RECENT STATE = 'UPDTODATE'
@@ -2337,6 +2353,9 @@ public class DdlManagerImpl extends DdlManager {
 
         // For merge create only full placements on the used stores. Otherwise partition constraints might not hold
         for ( DataStore store : stores ) {
+            // Get old DataPlacement
+            CatalogDataPlacement oldDataPlacement = catalog.getDataPlacement( store.getAdapterId(), partitionedTable.id );
+
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
@@ -2359,8 +2378,9 @@ public class DdlManagerImpl extends DdlManager {
 
             // TODO @HENNLO Check if this can be omitted
             catalog.updateDataPlacement( store.getAdapterId(), mergedTable.id,
-                    catalog.getDataPlacement( store.getAdapterId(), mergedTable.id ).columnPlacementsOnAdapter,
-                    mergedTable.partitionProperty.partitionIds, null );
+                    oldDataPlacement.columnPlacementsOnAdapter,
+                    mergedTable.partitionProperty.partitionIds, oldDataPlacement.dataPlacementRole
+                    , oldDataPlacement.replicationStrategy );
             //
 
             dataMigrator.copySelectiveData(

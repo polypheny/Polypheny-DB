@@ -400,44 +400,47 @@ SqlAlterTable SqlAlterTable(Span s) :
                     columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
                 }
             )
-        |
+            |
             {
-                columnList = SqlNodeList.EMPTY;
+            columnList = SqlNodeList.EMPTY;
             }
-        )
-        <ON>
-        <STORE>
-        store = SimpleIdentifier()
-            [
-                <SET>
-                placementPropertyMap = PlacementPropertyOpt()
-            ]
+            )
+            <ON>
+                <STORE>
+                    store = SimpleIdentifier()
 
-            [
-                <WITH> <PARTITIONS>
-                <LPAREN>
-                (
-                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                        (
-                            <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                        )*
-                    |
-                        partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                        (
-                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                        )*
-                )
-                <RPAREN>
-            ]
-        {
-            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList, placementPropertyMap);
-        }
-    |
-        <DROP>
-        <PLACEMENT>
-        <ON>
-        <STORE>
-        store = SimpleIdentifier()
+                    [
+                    <WITH>
+                        [
+                        placementPropertyMap = PlacementPropertyOpt()
+                        ]
+
+                        [
+                        <PARTITIONS>
+                            <LPAREN>
+                                (
+                                partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                                (
+                                <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                                    )*
+                                    |
+                                    partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                    (
+                                    <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                        )*
+                                        )
+                                        <RPAREN>
+                                            ]
+                                            ]
+                                            {
+                                            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList, placementPropertyMap);
+                                            }
+                                            |
+                                            <DROP>
+                                                <PLACEMENT>
+                                                    <ON>
+                                                        <STORE>
+                                                            store = SimpleIdentifier()
         {
             return new SqlAlterTableDropPlacement(s.end(this), table, store);
         }
@@ -458,58 +461,62 @@ SqlAlterTable SqlAlterTable(Span s) :
             <DROP>
             <COLUMN>
             column = SimpleIdentifier()
-            <ON>
-            <STORE>
-            store = SimpleIdentifier()
-            {
-                return new SqlAlterTableModifyPlacementDropColumn(s.end(this), table, column, store);
-            }
-        |
-            <ON>
-            <STORE>
-            store = SimpleIdentifier()
-            <SET>
-            placementPropertyMap = PlacementPropertyOpt()
-            {
-                return new SqlAlterTableModifyPlacementProperties(s.end(this), table, store, placementPropertyMap );
-            }
-        |
-            columnList = ParenthesizedSimpleIdentifierList()
-            <ON>
-            <STORE>
-            store = SimpleIdentifier()
+                <ON>
+                    <STORE>
+                        store = SimpleIdentifier()
+                        {
+                        return new SqlAlterTableModifyPlacementDropColumn(s.end(this), table, column, store);
+                        }
+                        |
+                        <ON>
+                            <STORE>
+                                store = SimpleIdentifier()
+                                <WITH>
+                                    placementPropertyMap = PlacementPropertyOpt()
+                                    {
+                                    return new SqlAlterTableModifyPlacementProperties(s.end(this), table, store, placementPropertyMap );
+                                    }
+                                    |
+                                    columnList = ParenthesizedSimpleIdentifierList()
+                                    <ON>
+                                        <STORE>
+                                            store = SimpleIdentifier()
 
-            [
-                <SET>
-                placementPropertyMap = PlacementPropertyOpt()
-            ]
+                                            [
+                                            <WITH>
 
-            [
-                <WITH> <PARTITIONS>
-                <LPAREN>
-                (
-                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                        (
-                            <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                        )*
-                    |
+                                                [
+                                                placementPropertyMap = PlacementPropertyOpt()
+                                                ]
 
-                        partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                        (
-                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                        )*
-               )
-               <RPAREN>
-            ]
-            {
-                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList, placementPropertyMap);
-            }
-        )
 
-    |
-        <MODIFY>
-        <PARTITIONS>
-        <LPAREN>
+                                                [
+                                                <PARTITIONS>
+                                                    <LPAREN>
+                                                        (
+                                                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                                                        (
+                                                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                                                            )*
+                                                            |
+
+                                                            partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                            (
+                                                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                                                )*
+                                                                )
+                                                                <RPAREN>
+                                                                    ]
+                                                                    ]
+                                                                    {
+                                                                    return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList, placementPropertyMap);
+                                                                    }
+                                                                    )
+
+                                                                    |
+                                                                    <MODIFY>
+                                                                        <PARTITIONS>
+                                                                            <LPAREN>
             (
                     partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
                     (

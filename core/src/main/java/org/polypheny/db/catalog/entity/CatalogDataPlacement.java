@@ -32,6 +32,7 @@ import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 
 
 /**
@@ -50,6 +51,8 @@ public class CatalogDataPlacement implements CatalogEntity {
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.
     public final DataPlacementRole dataPlacementRole;
+
+    public final ReplicationStrategy replicationStrategy;
 
     public final ImmutableList<Long> columnPlacementsOnAdapter;
 
@@ -72,12 +75,14 @@ public class CatalogDataPlacement implements CatalogEntity {
             int adapterId,
             PlacementType placementType,
             DataPlacementRole dataPlacementRole,
+            ReplicationStrategy replicationStrategy,
             @NonNull final ImmutableList<Long> columnPlacementsOnAdapter,
             @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;
         this.dataPlacementRole = dataPlacementRole;
+        this.replicationStrategy = replicationStrategy;
         this.columnPlacementsOnAdapter = columnPlacementsOnAdapter;
         this.partitionPlacementsOnAdapterByRole = structurizeDataPlacements( partitionPlacementsOnAdapter );
 

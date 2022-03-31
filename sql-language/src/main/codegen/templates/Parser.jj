@@ -5697,6 +5697,21 @@ Map<SqlIdentifier,SqlIdentifier> PlacementPropertySpecification() :
         {
             propertyName = new SqlIdentifier( "ROLE", getPos() );
         }
+
+        |
+        <REPLICATION>
+        [ <STRATEGY> ]
+            (
+
+                <EAGER>
+                { propertyValue = new SqlIdentifier( "EAGER", getPos() ); }
+            |
+                <LAZY>
+                { propertyValue = new SqlIdentifier( "LAZY", getPos() ); }
+            )
+            {
+                propertyName = new SqlIdentifier( "REPLICATION_STRATEGY", getPos() );
+            }
     )
     {
         propertyMap.put(propertyName, propertyValue );
@@ -6261,6 +6276,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DYNAMIC_FUNCTION: "DYNAMIC_FUNCTION" >
 |   < DYNAMIC_FUNCTION_CODE: "DYNAMIC_FUNCTION_CODE" >
 |   < EACH: "EACH" >
+|   < EAGER: "EAGER" >
 |   < ELEMENT: "ELEMENT" >
 |   < ELSE: "ELSE" >
 |   < EMPTY: "EMPTY" >
@@ -6380,6 +6396,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < LAST: "LAST" >
 |   < LAST_VALUE: "LAST_VALUE" >
 |   < LATERAL: "LATERAL" >
+|   < LAZY: "LAZY" >
 |   < LEAD: "LEAD" >
 |   < LEADING: "LEADING" >
 |   < LEFT: "LEFT" >
@@ -6546,6 +6563,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < RENAME: "RENAME" >
 |   < REPEATABLE: "REPEATABLE" >
 |   < REPLACE: "REPLACE" >
+|   < REPLICATION: "REPLICATION" >
 |   < RESET: "RESET" >
 |   < RESTART: "RESTART" >
 |   < RESTRICT: "RESTRICT" >
@@ -6674,6 +6692,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < STDDEV_POP: "STDDEV_POP" >
 |   < STDDEV_SAMP: "STDDEV_SAMP" >
 |   < STORE: "STORE" >
+|   < STRATEGY: "STRATEGY" >
 |   < STREAM: "STREAM" >
 |   < STRUCTURE: "STRUCTURE" >
 |   < STYLE: "STYLE" >

@@ -19,6 +19,7 @@ package org.polypheny.db.replication.properties;
 
 import java.util.Map;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.nodes.Identifier;
 
@@ -27,6 +28,7 @@ public abstract class PlacementPropertyExtractor {
 
     protected Map<Identifier, Identifier> propertyMap;
     protected static DataPlacementRole dataPlacementRole;
+    protected static ReplicationStrategy replicationStrategy;
 
 
     protected PlacementPropertyExtractor( Map<Identifier, Identifier> propertyMap ) {
@@ -35,7 +37,7 @@ public abstract class PlacementPropertyExtractor {
 
 
     protected static PlacementPropertyInformation createPlacementPropertyInformation( CatalogTable table ) {
-        return new PlacementPropertyInformation( table, dataPlacementRole );
+        return new PlacementPropertyInformation( table, dataPlacementRole, replicationStrategy );
     }
 
 }

@@ -1168,7 +1168,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, DataPlacementRole dataPlacementRole ) {
+    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, DataPlacementRole dataPlacementRole, ReplicationStrategy replicationStrategy ) {
         throw new NotImplementedException();
     }
 
@@ -1229,6 +1229,30 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void updateDataPlacementRole( int adapterId, long tableId, DataPlacementRole dataPlacementRole ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getDataPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndReplicationStrategy( long tableId, long partitionId, ReplicationStrategy replicationStrategy ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateDataPlacementReplicationStrategy( int adapterId, long tableId, ReplicationStrategy replicationStrategy ) {
         throw new NotImplementedException();
     }
 }

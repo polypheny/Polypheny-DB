@@ -75,6 +75,8 @@ import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
+import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
@@ -1362,6 +1364,37 @@ public abstract class Catalog {
 
 
     /**
+     * Returns all DataPlacements of a given table that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy used to specifically filter
+     * @return List of all DataPlacements for the table that are associated with a specific strategy
+     */
+    public abstract List<CatalogDataPlacement> getDataPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy );
+
+
+    /**
+     * Returns all PartitionPlacements of a given table that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy used to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific strategy
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy );
+
+
+    /**
+     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy used to specifically filter
+     * @param partitionId filter by ID
+     * @return List of all PartitionPlacements for the table that are associated with a specific strategy for a specific partitionId
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndReplicationStrategy( long tableId, long partitionId, ReplicationStrategy replicationStrategy );
+
+
+    /**
      * Checks if the planned changes are allowed in term sof placements that need to be present
      *
      * @param tableId Table to be checked
@@ -1506,7 +1539,7 @@ public abstract class Catalog {
      * @param columnIds List of columnIds to be located on a specific store for the table
      * @param partitionIds List of partitionIds to be located on a specific store for the table
      */
-    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, DataPlacementRole dataPlacementRole );
+    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, DataPlacementRole dataPlacementRole, ReplicationStrategy replicationStrategy );
 
     /**
      * Updates and overrides the dataPlacementRole for a given data placement
@@ -1516,6 +1549,15 @@ public abstract class Catalog {
      * @param dataPlacementRole new DataPlacementRole
      */
     public abstract void updateDataPlacementRole( int adapterId, long tableId, DataPlacementRole dataPlacementRole );
+
+    /**
+     * Updates and overrides the dataPlacement replication Strategy for a given data placement
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param replicationStrategy new ReplicationStrategy
+     */
+    public abstract void updateDataPlacementReplicationStrategy( int adapterId, long tableId, ReplicationStrategy replicationStrategy );
 
     /**
      * Change physical names of a partition placement.
@@ -2028,7 +2070,8 @@ public abstract class Catalog {
 
     public enum DataPlacementRole {
         UPTODATE( 0 ),
-        REFRESHABLE( 1 );
+        REFRESHABLE( 1 ),
+        INFINITELY_OUTDATED( 2 );
 
         private final int id;
 
@@ -2060,6 +2103,45 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownPlacementRoleException( name );
+        }
+
+    }
+
+
+    public enum ReplicationStrategy {
+        EAGER( 0 ),
+        LAZY( 1 );
+
+        private final int id;
+
+
+        ReplicationStrategy( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static ReplicationStrategy getById( final int id ) {
+            for ( ReplicationStrategy t : values() ) {
+                if ( t.id == id ) {
+                    return t;
+                }
+            }
+            throw new UnknownReplicationStrategyRuntimeException( id );
+        }
+
+
+        public static ReplicationStrategy getByName( final String name ) throws UnknownReplicationStrategyException {
+            for ( ReplicationStrategy t : values() ) {
+                if ( t.name().equalsIgnoreCase( name ) ) {
+                    return t;
+                }
+            }
+            throw new UnknownReplicationStrategyException( name );
         }
 
     }
