@@ -97,6 +97,7 @@ public class ViewManager {
         private final SelfAdaptivAgent selfAdaptingAgent;
         int depth = 0;
         final boolean doesSubstituteOrderBy;
+        boolean isSelfadapting = false;
 
 
         public ViewVisitor( boolean doesSubstituteOrderBy, SelfAdaptivAgent selfAdaptivAgent ) {
@@ -255,8 +256,9 @@ public class ViewManager {
 
 
         public AlgNode checkNode( AlgNode other ) {
+
             AlgNode node = checkSelfAdapting( other );
-            if ( node != null ) {
+            if ( node != null && isSelfadapting ) {
                 return node;
             }
             if ( other instanceof LogicalViewScan ) {
@@ -279,9 +281,11 @@ public class ViewManager {
 
         private AlgNode checkSelfAdapting( AlgNode algNode ) {
             if ( selfAdaptingAgent != null && selfAdaptingAgent.getMaterializedViews().containsKey( algNode.algCompareString() ) ) {
+                isSelfadapting = true;
                 log.warn("replace this view");
                 return selfAdaptingAgent.getMaterializedViews().get( algNode.algCompareString() );
             }
+            isSelfadapting = false;
             log.warn( "return without exchanging" );
             return algNode;
         }
