@@ -70,6 +70,7 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
@@ -1774,7 +1775,7 @@ public class DdlManagerImpl extends DdlManager {
         assert !replace : "Graphs cannot be replaced yet.";
 
         if ( stores == null ) {
-            // Ask router on which store(s) the table should be placed
+            // Ask router on which store(s) the graph should be placed
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
         }
 
@@ -1792,10 +1793,10 @@ public class DdlManagerImpl extends DdlManager {
 
         //stores.forEach( s -> catalog.addGraphPlacement( s.getAdapterId(), graphId ) );
 
-        afterGraphLogistics( stores, graphId, statement );
-
         for ( DataStore store : stores ) {
             catalog.addGraphPlacement( store.getAdapterId(), graphId );
+
+            afterGraphLogistics( store, graphId );
 
             store.createGraph( statement.getPrepareContext(), graph );
         }
@@ -1805,49 +1806,49 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement ) {
+    private void afterGraphLogistics( DataStore store, long graphId ) {
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphId );
         CatalogEntity nodes = catalog.getTable( mapping.nodesId );
         CatalogEntity nodeProperty = catalog.getTable( mapping.nodesPropertyId );
         CatalogEntity edges = catalog.getTable( mapping.edgesId );
         CatalogEntity edgeProperty = catalog.getTable( mapping.edgesPropertyId );
-        for ( DataStore store : stores ) {
-            catalog.addPartitionPlacement(
-                    store.getAdapterId(),
-                    nodes.id,
-                    nodes.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null
-            );
 
-            catalog.addPartitionPlacement(
-                    store.getAdapterId(),
-                    nodeProperty.id,
-                    nodeProperty.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null
-            );
+        catalog.addPartitionPlacement(
+                store.getAdapterId(),
+                nodes.id,
+                nodes.partitionProperty.partitionIds.get( 0 ),
+                PlacementType.AUTOMATIC,
+                null,
+                null
+        );
 
-            catalog.addPartitionPlacement(
-                    store.getAdapterId(),
-                    edges.id,
-                    edges.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null
-            );
+        catalog.addPartitionPlacement(
+                store.getAdapterId(),
+                nodeProperty.id,
+                nodeProperty.partitionProperty.partitionIds.get( 0 ),
+                PlacementType.AUTOMATIC,
+                null,
+                null
+        );
 
-            catalog.addPartitionPlacement(
-                    store.getAdapterId(),
-                    edgeProperty.id,
-                    edgeProperty.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null
-            );
-        }
+        catalog.addPartitionPlacement(
+                store.getAdapterId(),
+                edges.id,
+                edges.partitionProperty.partitionIds.get( 0 ),
+                PlacementType.AUTOMATIC,
+                null,
+                null
+        );
+
+        catalog.addPartitionPlacement(
+                store.getAdapterId(),
+                edgeProperty.id,
+                edgeProperty.partitionProperty.partitionIds.get( 0 ),
+                PlacementType.AUTOMATIC,
+                null,
+                null
+        );
+
 
     }
 
@@ -1872,7 +1873,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void removeGraphDatabase( long graphId, boolean ifExists ) {
+    public void removeGraphDatabase( long graphId, boolean ifExists, Statement statement ) {
         CatalogGraphDatabase graph = catalog.getGraph( graphId );
 
         if ( graph == null ) {
@@ -1880,6 +1881,11 @@ public class DdlManagerImpl extends DdlManager {
                 throw new UnknownGraphException( graphId );
             }
             return;
+        }
+
+        for ( int adapterId : graph.placements ) {
+            CatalogGraphPlacement placement = Catalog.getInstance().getGraphPlacement( graphId, adapterId );
+            AdapterManager.getInstance().getStore( adapterId ).dropGraph( statement.getPrepareContext(), placement );
         }
 
         catalog.deleteGraph( graphId );

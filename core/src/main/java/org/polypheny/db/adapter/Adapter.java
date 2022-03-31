@@ -51,6 +51,7 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -317,6 +318,11 @@ public abstract class Adapter {
 
     public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
         throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
+    }
+
+
+    public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
+        throw new UnsupportedOperationException( "It is not supported to drop a graph with this adapter." );
     }
 
 

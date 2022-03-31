@@ -775,36 +775,30 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
-        List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
         CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
-        for ( long placement : catalogGraph.placements ) {
-            for ( CatalogAdapter adapter : adapters ) {
-                if ( !Catalog.getInstance().containsGraphOnAdapter( adapter.id, placement ) ) {
-                    continue;
-                }
-                CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( adapter.id, placement );
-                String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
+        for ( int adapterId : catalogGraph.placements ) {
+            CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
+            CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
+            String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
-                Graph graph = reader.getGraph( name );
-                if ( graph == null ) {
-                    return alg;
-                }
-
-                if ( !(graph instanceof ModifiableGraph) ) {
-                    throw new RuntimeException( "Graph is not modifiable." );
-                }
-
-                return ((ModifiableGraph) graph).toModificationAlg(
-                        alg.getCluster(),
-                        alg.getTraitSet(),
-                        graph,
-                        alg.catalogReader,
-                        alg.getInput(),
-                        alg.operation,
-                        alg.ids,
-                        alg.operations );
-
+            Graph graph = reader.getGraph( name );
+            if ( graph == null ) {
+                return alg;
             }
+
+            if ( !(graph instanceof ModifiableGraph) ) {
+                throw new RuntimeException( "Graph is not modifiable." );
+            }
+
+            return ((ModifiableGraph) graph).toModificationAlg(
+                    alg.getCluster(),
+                    alg.getTraitSet(),
+                    graph,
+                    alg.catalogReader,
+                    alg.getInput(),
+                    alg.operation,
+                    alg.ids,
+                    alg.operations );
 
         }
 

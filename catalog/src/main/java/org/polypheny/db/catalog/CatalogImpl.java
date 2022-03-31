@@ -674,7 +674,7 @@ public class CatalogImpl extends Catalog {
     private void initGraphInfo( DB db ) {
         graphs = db.treeMap( "graphs", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         graphNames = db.treeMap( "graphNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
-        graphPlacements = db.treeMap( "graphPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
+        graphPlacements = db.treeMap( "graphPlacements", new SerializerArrayTuple( Serializer.LONG, Serializer.INTEGER ), Serializer.JAVA ).createOrOpen();
 
         graphMappings = db.treeMap( "graphMappings", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         graphAliases = db.treeMap( "graphAliases", Serializer.STRING, Serializer.JAVA ).createOrOpen();
@@ -1551,16 +1551,18 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void removeGraphLogistics( long graphId ) {
+    private void removeGraphLogistics( long graphId, List<Integer> placements ) {
         if ( !graphMappings.containsKey( graphId ) ) {
             throw new UnknownGraphException( graphId );
         }
-        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
 
-        deleteTable( mapping.nodesId );
+        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
+        /*deleteTable( mapping.nodesId );
         deleteTable( mapping.nodesPropertyId );
         deleteTable( mapping.edgesId );
-        deleteTable( mapping.edgesPropertyId );
+        deleteTable( mapping.edgesPropertyId );*/
+
+        deleteSchema( graphId );
     }
 
 
@@ -1572,14 +1574,13 @@ public class CatalogImpl extends Catalog {
 
         CatalogGraphDatabase old = Objects.requireNonNull( graphs.get( id ) );
 
-        //removeGraphLogistics( id );
-
-        deleteSchema( id );
+        removeGraphLogistics( id, old.placements );
 
         synchronized ( this ) {
-            old.placements.forEach( a -> graphPlacements.remove( new Object[]{ a, id } ) );
+            old.placements.forEach( a -> graphPlacements.remove( new Object[]{ old.id, a } ) );
             graphs.remove( id );
             graphNames.remove( new Object[]{ old.databaseId, old.name } );
+            graphMappings.get( id );
         }
         listeners.firePropertyChange( "graph", null, null );
     }
@@ -4913,18 +4914,18 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addGraphPlacement( int adapterId, long graphId ) {
         long id = partitionIdBuilder.getAndIncrement();
-        CatalogGraphPlacement placement = new CatalogGraphPlacement( adapterId, graphId, null );
+        CatalogGraphPlacement placement = new CatalogGraphPlacement( adapterId, graphId, null, id );
         CatalogGraphDatabase old = graphs.get( graphId );
         if ( old == null ) {
-            throw new UnknownGraphPlacementsException( adapterId, graphId );
+            throw new UnknownGraphException( graphId );
         }
 
-        CatalogGraphDatabase graph = old.addPlacement( id );
+        CatalogGraphDatabase graph = old.addPlacement( adapterId );
 
         //addGraphPlacementLogistics( adapterId, graphId );
 
         synchronized ( this ) {
-            graphPlacements.put( new Object[]{ adapterId, id }, placement );
+            graphPlacements.put( new Object[]{ graph.id, adapterId }, placement );
             graphs.replace( graph.id, graph );
             graphNames.replace( new Object[]{ old.databaseId, graph.name }, graph );
         }
@@ -4933,17 +4934,18 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    public void updateGraphPlacementPhysicalNames( int adapterId, long placementId, String physicalGraphName ) {
-        if ( !graphPlacements.containsKey( new Object[]{ adapterId, placementId } ) ) {
-            throw new UnknownGraphPlacementsException( adapterId, placementId );
+    @Override
+    public void updateGraphPlacementPhysicalNames( long graphId, int adapterId, String physicalGraphName ) {
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
         }
 
-        CatalogGraphPlacement old = Objects.requireNonNull( graphPlacements.get( new Object[]{ adapterId, placementId } ) );
+        CatalogGraphPlacement old = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
 
         CatalogGraphPlacement placement = old.replacePhysicalName( physicalGraphName );
 
         synchronized ( this ) {
-            graphPlacements.replace( new Object[]{ adapterId, placementId }, placement );
+            graphPlacements.replace( new Object[]{ graphId, adapterId }, placement );
         }
 
         listeners.firePropertyChange( "graphPlacement", null, placement );
@@ -4952,45 +4954,44 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public void deleteGraphPlacements( int adapterId, long graphId ) {
-        if ( !graphPlacements.containsKey( new Object[]{ adapterId, graphId } ) ) {
-            throw new UnknownGraphPlacementsException( adapterId, graphId );
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
         }
+        CatalogGraphPlacement graph = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
 
-        deleteGraphPlacementLogistics( adapterId, graphId );
+        deleteGraphPlacementLogistics( graph.graphId, adapterId );
 
         synchronized ( this ) {
-            graphPlacements.remove( new Object[]{ adapterId, graphId } );
+            graphPlacements.remove( new Object[]{ graphId, adapterId } );
         }
         listeners.firePropertyChange( "graphPlacements", null, null );
     }
 
 
-    private void deleteGraphPlacementLogistics( int adapterId, long graphId ) {
+    private void deleteGraphPlacementLogistics( long graphId, int adapterId ) {
         if ( !graphMappings.containsKey( graphId ) ) {
             throw new UnknownGraphException( graphId );
         }
         CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
+        }
+        CatalogGraphPlacement placement = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
 
-        removeSingleDataPlacementFromTable( adapterId, mapping.nodesId );
-        removeSingleDataPlacementFromTable( adapterId, mapping.nodesPropertyId );
-        removeSingleDataPlacementFromTable( adapterId, mapping.edgesId );
-        removeSingleDataPlacementFromTable( adapterId, mapping.edgesPropertyId );
+        removeSingleDataPlacementFromTable( placement.adapterId, mapping.nodesId );
+        removeSingleDataPlacementFromTable( placement.adapterId, mapping.nodesPropertyId );
+        removeSingleDataPlacementFromTable( placement.adapterId, mapping.edgesId );
+        removeSingleDataPlacementFromTable( placement.adapterId, mapping.edgesPropertyId );
     }
 
 
     @Override
-    public CatalogGraphPlacement getGraphPlacement( int adapterId, long partitionId ) {
-        if ( !graphPlacements.containsKey( new Object[]{ adapterId, partitionId } ) ) {
-            throw new UnknownGraphPlacementsException( adapterId, partitionId );
+    public CatalogGraphPlacement getGraphPlacement( long graphId, int adapterId ) {
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
         }
 
-        return graphPlacements.get( new Object[]{ adapterId, partitionId } );
-    }
-
-
-    @Override
-    public boolean containsGraphOnAdapter( int adapterId, long partitionId ) {
-        return graphPlacements.containsKey( new Object[]{ adapterId, partitionId } );
+        return graphPlacements.get( new Object[]{ graphId, adapterId } );
     }
 
 

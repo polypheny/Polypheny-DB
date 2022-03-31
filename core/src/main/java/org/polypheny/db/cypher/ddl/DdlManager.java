@@ -423,7 +423,7 @@ public abstract class DdlManager {
      */
     public abstract void renameColumn( CatalogEntity catalogEntity, String columnName, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException, ColumnNotExistsException;
 
-    public abstract void removeGraphDatabase( long graphId, boolean ifExists );
+    public abstract void removeGraphDatabase( long graphId, boolean ifExists, Statement statement );
 
     /**
      * Create a new table

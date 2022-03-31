@@ -220,27 +220,22 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
         // Build adapter schema (physical schema)
         for ( CatalogGraphDatabase graph : catalog.getGraphs( catalogDatabase.id, null ) ) {
-            for ( CatalogAdapter catalogAdapter : adapters ) {
-                for ( long placementId : graph.placements ) {
-                    if ( !catalog.containsGraphOnAdapter( catalogAdapter.id, placementId ) ) {
-                        continue;
-                    }
+            for ( int adapterId : graph.placements ) {
 
-                    CatalogGraphPlacement placement = catalog.getGraphPlacement( catalogAdapter.id, placementId );
-                    Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
+                CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
+                Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
 
-                    if ( !adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) {
-                        continue;
-                    }
-
-                    final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, graph.name, placement.physicalName );
-
-                    adapter.createGraphNamespace( rootSchema, schemaName, graph.id );
-                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH ).plus();
-                    rootSchema.add( schemaName, s, NamespaceType.GRAPH );
-
-                    rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentGraphNamespace() );
+                if ( !adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) {
+                    continue;
                 }
+
+                final String schemaName = buildAdapterSchemaName( adapter.getUniqueName(), graph.name, placement.physicalName );
+
+                adapter.createGraphNamespace( rootSchema, schemaName, graph.id );
+                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH ).plus();
+                rootSchema.add( schemaName, s, NamespaceType.GRAPH );
+
+                rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentGraphNamespace() );
             }
         }
 

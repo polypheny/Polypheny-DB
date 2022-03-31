@@ -24,12 +24,14 @@ public class CatalogGraphPlacement implements CatalogObject {
     public final int adapterId;
     public final long graphId;
     public final String physicalName;
+    public final long partitionId;
 
 
-    public CatalogGraphPlacement( int adapterId, long graphId, @Nullable String physicalName ) {
+    public CatalogGraphPlacement( int adapterId, long graphId, @Nullable String physicalName, long partitionId ) {
         this.adapterId = adapterId;
         this.graphId = graphId;
         this.physicalName = physicalName;
+        this.partitionId = partitionId;
     }
 
 
@@ -40,7 +42,7 @@ public class CatalogGraphPlacement implements CatalogObject {
 
 
     public CatalogGraphPlacement replacePhysicalName( String physicalName ) {
-        return new CatalogGraphPlacement( adapterId, graphId, physicalName );
+        return new CatalogGraphPlacement( adapterId, graphId, physicalName, partitionId );
     }
 
 }

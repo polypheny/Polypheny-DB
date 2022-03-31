@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
@@ -88,6 +89,13 @@ public abstract class DataStore extends Adapter {
     }
 
 
+    @Override
+    public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
+        // overwrite this if the datastore supports graph
+        dropGraphSubstitution( context, graphPlacement );
+    }
+
+
     private void createGraphSubstitution( Context context, CatalogGraphDatabase graphDatabase ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
 
@@ -102,6 +110,24 @@ public abstract class DataStore extends Adapter {
 
         CatalogEntity edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
         createTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
+    }
+
+
+    private void dropGraphSubstitution( Context context, CatalogGraphPlacement graphPlacement ) {
+        Catalog catalog = Catalog.getInstance();
+        CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
+
+        CatalogEntity nodes = catalog.getTable( mapping.nodesId );
+        dropTable( context, nodes, nodes.partitionProperty.partitionIds );
+
+        CatalogEntity nodeProperty = catalog.getTable( mapping.nodesPropertyId );
+        dropTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
+
+        CatalogEntity edges = catalog.getTable( mapping.edgesId );
+        dropTable( context, edges, edges.partitionProperty.partitionIds );
+
+        CatalogEntity edgeProperty = catalog.getTable( mapping.edgesPropertyId );
+        dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
     }
 
 

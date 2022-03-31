@@ -18,8 +18,8 @@ package org.polypheny.db.catalog.exceptions;
 
 public class UnknownGraphPlacementsException extends CatalogRuntimeException {
 
-    public UnknownGraphPlacementsException( int adapterId, long partitionId ) {
-        super( "Partition with id: " + partitionId + " on adapter with id: " + adapterId + " does not exist." );
+    public UnknownGraphPlacementsException( long graphId, int adapterId ) {
+        super( String.format( "Placement of graph with id %s does not exist on adapter with id %s", graphId, adapterId ) );
     }
 
 }

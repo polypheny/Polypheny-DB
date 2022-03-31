@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -343,14 +344,14 @@ public class Neo4jStore extends DataStore {
 
     @Override
     public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
-        for ( long placement : graphDatabase.placements ) {
-            if ( Catalog.getInstance().containsGraphOnAdapter( getAdapterId(), placement ) ) {
-                continue;
-            }
-            catalog.updateGraphPlacementPhysicalNames( getAdapterId(), placement, getPhysicalGraphName( graphDatabase.id ) );
+        catalog.updateGraphPlacementPhysicalNames( graphDatabase.id, getAdapterId(), getPhysicalGraphName( graphDatabase.id ) );
+    }
 
-        }
 
+    @Override
+    public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
+        context.getStatement().getTransaction().registerInvolvedAdapter( this );
+        executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "MATCH (n:%s)\nDETACH DELETE n", getMappingLabel( graphPlacement.graphId ) ) );
     }
 
 
@@ -419,7 +420,7 @@ public class Neo4jStore extends DataStore {
 
 
     private static String getMappingLabel( long id ) {
-        return String.format( "___namespace_%d___", id );
+        return String.format( "___n_%d___", id );
     }
 
 

@@ -33,12 +33,12 @@ public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGr
     public final String name;
     public final long id;
     public final long databaseId;
-    public final ImmutableList<Long> placements;
+    public final ImmutableList<Integer> placements;
     public final int ownerId;
     private final boolean modifiable;
 
 
-    public CatalogGraphDatabase( long databaseId, long id, String name, int ownerId, boolean modifiable, @NonNull Collection<Long> placements ) {
+    public CatalogGraphDatabase( long databaseId, long id, String name, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements ) {
         this.id = id;
         this.name = name;
         this.ownerId = ownerId;
@@ -63,9 +63,9 @@ public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGr
     }
 
 
-    public CatalogGraphDatabase addPlacement( long placementId ) {
-        List<Long> placements = new ArrayList<>( this.placements );
-        placements.add( placementId );
+    public CatalogGraphDatabase addPlacement( int adapterId ) {
+        List<Integer> placements = new ArrayList<>( this.placements );
+        placements.add( adapterId );
         return new CatalogGraphDatabase( databaseId, id, name, ownerId, modifiable, placements );
     }
 

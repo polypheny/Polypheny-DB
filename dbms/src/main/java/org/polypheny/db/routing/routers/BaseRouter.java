@@ -352,26 +352,21 @@ public abstract class BaseRouter {
     protected AlgNode handleGraphScan( LogicalGraphScan alg, Statement statement ) {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
-        List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
         CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
-        for ( long placement : catalogGraph.placements ) {
-            for ( CatalogAdapter adapter : adapters ) {
-                if ( !Catalog.getInstance().containsGraphOnAdapter( adapter.id, placement ) ) {
-                    continue;
-                }
-                CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( adapter.id, placement );
-                String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
+        for ( int adapterId : catalogGraph.placements ) {
+            CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
+            CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
+            String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
 
-                Graph graph = reader.getGraph( name );
+            Graph graph = reader.getGraph( name );
 
-                if ( !(graph instanceof TranslatableGraph) ) {
-                    // needs substitution later on
-                    return alg;
-                }
-
-                return new LogicalGraphScan( alg.getCluster(), reader, alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
-
+            if ( !(graph instanceof TranslatableGraph) ) {
+                // needs substitution later on
+                return alg;
             }
+
+            return new LogicalGraphScan( alg.getCluster(), reader, alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
+
 
         }
         // substituted on optimization

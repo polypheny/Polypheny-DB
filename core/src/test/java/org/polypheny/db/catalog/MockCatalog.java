@@ -201,19 +201,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void deleteGraphPlacements( int adapterId, long partitionId ) {
+    public void deleteGraphPlacements( int adapterId, long graphId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogGraphPlacement getGraphPlacement( int adapterId, long partitionId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public boolean containsGraphOnAdapter( int adapterId, long partitionId ) {
+    public CatalogGraphPlacement getGraphPlacement( long graphId, int adapterId ) {
         throw new NotImplementedException();
     }
 
@@ -1299,7 +1293,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateGraphPlacementPhysicalNames( int adapterId, long placement, String physicalGraphName ) {
+    public void updateGraphPlacementPhysicalNames( long id, int adapterId, String physicalGraphName ) {
         throw new NotImplementedException();
     }
 
