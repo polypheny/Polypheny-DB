@@ -18,8 +18,6 @@ package org.polypheny.db.webui.crud;
 
 import com.google.gson.Gson;
 import io.javalin.http.Context;
-
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map.Entry;
@@ -122,47 +120,98 @@ public class StatisticCrud {
 
 
     /**
-     * Information for diagram shown on the UI dashboard.
+     * Information base on time interval for diagram shown on the UI dashboard.
      */
-    public void getDashboardDiagram( final Context ctx ) {
-        TreeMap<Timestamp, Pair<Integer, Integer>> info = new TreeMap<>();
-        TreeMap<Timestamp, Pair<Integer, Integer>> dashboardInfo = new TreeMap<>();
+    public void getDashboardDiagram( final Context ctx, String selectInterval ) {
+
         List<QueryDataPointImpl> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class );
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
-        boolean notInserted;
-        Timestamp startTime;
+        TreeMap<Timestamp, Pair<Integer, Integer>> eachInfo = new TreeMap<>();
+
         Timestamp endTime = new Timestamp( System.currentTimeMillis() );
-        Timestamp startTimeOneHour;
+        Timestamp startTimeAll;
+        Timestamp startTime60min;
+        Timestamp startTime30min;
+        Timestamp startTime15min;
+        Timestamp startTime5min;
+        long intervalAll;
+        long interval60min;
+        long interval30min;
+        long interval15min;
+        long interval5min;
 
         if ( queryData.size() > 0 && dmlData.size() > 0 ) {
-            startTime = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
+            startTimeAll = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
         } else if ( dmlData.size() > 0 ) {
-            startTime = dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
+            startTimeAll = dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
         } else if ( queryData.size() > 0 ) {
-            startTime = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
+            startTimeAll = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
         } else {
             throw new RuntimeException( "No Data available for Dashboard Diagram" );
         }
+        startTime60min = calculateStartTime( 60, endTime );
+        startTime30min = calculateStartTime( 30, endTime );
+        startTime15min = calculateStartTime( 15, endTime );
+        startTime5min = calculateStartTime( 5, endTime );
 
-//        long interval = calculateInterval( startTime, endTime );
-        long interval = convertIntervalMinuteToLong(60);
-//        Timestamp timeOneHour = startTimeOneHour;
-        startTimeOneHour = calculateStartTime(60,endTime);
+        intervalAll = calculateIntervalAll( startTimeAll, endTime );
+        interval60min = convertIntervalMinuteToLong( 60 );
+        interval30min = convertIntervalMinuteToLong( 30 );
+        interval15min = convertIntervalMinuteToLong( 15 );
+        interval5min = convertIntervalMinuteToLong( 5 );
 
-//        Timestamp time = startTime;
-        Timestamp time = startTimeOneHour;
+        if ( selectInterval.equals( "all" ) ) {
+            eachInfo = getDashboardInfo( startTimeAll, endTime, intervalAll, queryData, dmlData );
+
+        } else if ( selectInterval.equals( "60" ) ) {
+            eachInfo = getDashboardInfo( startTime60min, endTime, interval60min, queryData, dmlData );
+
+        } else if ( selectInterval.equals( "30" ) ) {
+            eachInfo = getDashboardInfo( startTime30min, endTime, interval30min, queryData, dmlData );
+
+        } else if ( selectInterval.equals( "15" ) ) {
+            eachInfo = getDashboardInfo( startTime15min, endTime, interval15min, queryData, dmlData );
+
+        } else if ( selectInterval.equals( "5" ) ) {
+            eachInfo = getDashboardInfo( startTime5min, endTime, interval5min, queryData, dmlData );
+
+        }
+        ctx.json( eachInfo );
+    }
+
+
+    private long calculateIntervalAll( Timestamp startTime, Timestamp endTime ) {
+        return (endTime.getTime() - startTime.getTime()) / 10;
+    }
+
+
+    private long convertIntervalMinuteToLong( int minutes ) {
+        return TimeUnit.MINUTES.toMillis( minutes );
+    }
+
+
+    private Timestamp calculateStartTime( int intervalInMinutes, Timestamp endTime ) {
+        long startTime = endTime.getTime();
+        for ( int numberOfInterval = 10; numberOfInterval > 0; numberOfInterval-- ) {
+            startTime = startTime - convertIntervalMinuteToLong( intervalInMinutes );
+        }
+        return new Timestamp( startTime );
+    }
+
+
+    /**
+     * Information for diagram shown on the UI dashboard.
+     */
+    private TreeMap<Timestamp, Pair<Integer, Integer>> getDashboardInfo( Timestamp startTime, Timestamp endTime, long interval, List<QueryDataPointImpl> queryData, List<DmlDataPoint> dmlData ) {
+        TreeMap<Timestamp, Pair<Integer, Integer>> info = new TreeMap<>();
+        TreeMap<Timestamp, Pair<Integer, Integer>> dashboardInfo = new TreeMap<>();
+        boolean notInserted;
+
+        Timestamp time = startTime;
         while ( endTime.getTime() - time.getTime() >= 0 ) {
             info.put( time, new Pair<>( 0, 0 ) );
-            time = new Timestamp( time.getTime() + convertIntervalMinuteToLong(60) );
-            System.out.println(time);
+            time = new Timestamp( time.getTime() + interval );
         }
-
-//        int numberOfInterval = 10;
-//        while ( endTime.getTime() - convertIntervalMinuteToLong(60) > 0 &&  numberOfInterval > 0 ) {
-//            timeOneHour = new Timestamp(timeOneHour.getTime() - convertIntervalMinuteToLong(60));
-//            info.put( timeOneHour, new Pair<>( 0, 0 ) );
-//            numberOfInterval --;
-//        }
 
         dashboardInfo.putAll( info );
 
@@ -191,28 +240,7 @@ public class StatisticCrud {
                 }
             }
         }
-
-        ctx.json( info );
-    }
-
-
-    private long calculateInterval( Timestamp startTime, Timestamp endTime ) {
-        return (endTime.getTime() - startTime.getTime()) / 10;
-    }
-
-    private long convertIntervalMinuteToLong( int minutes ){
-        return TimeUnit.MINUTES.toMillis(minutes);
-    }
-
-    private Timestamp calculateStartTime( int intervalInMinutes, Timestamp endTime ){
-        long startTime = endTime.getTime();
-//        Timestamp startTimeStamp;
-        long a = convertIntervalMinuteToLong(intervalInMinutes);
-        for ( int numberOfInterval = 10; numberOfInterval > 0; numberOfInterval -- ){
-            startTime = startTime - convertIntervalMinuteToLong(intervalInMinutes);
-//            startTimeStamp = new Timestamp(startTime);
-        }
-        return new Timestamp(startTime);
+        return info;
     }
 
 }

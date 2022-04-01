@@ -223,7 +223,15 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getDashboardInformation", crud.statisticCrud::getDashboardInformation );
 
-        webuiServer.post( "/getDashboardDiagram", crud.statisticCrud::getDashboardDiagram );
+        webuiServer.post( "/getDashboardDiagram/Interval=all", ( ctx ) -> crud.statisticCrud.getDashboardDiagram( ctx, "all" ) );
+
+        webuiServer.post( "/getDashboardDiagram/Interval=60", ( ctx ) -> crud.statisticCrud.getDashboardDiagram( ctx, "60" ) );
+
+        webuiServer.post( "/getDashboardDiagram/Interval=30", ( ctx ) -> crud.statisticCrud.getDashboardDiagram( ctx, "30" ) );
+
+        webuiServer.post( "/getDashboardDiagram/Interval=15", ( ctx ) -> crud.statisticCrud.getDashboardDiagram( ctx, "15" ) );
+
+        webuiServer.post( "/getDashboardDiagram/Interval=5", ( ctx ) -> crud.statisticCrud.getDashboardDiagram( ctx, "5" ) );
 
         webuiServer.post( "/getColumns", crud::getColumns );
 
