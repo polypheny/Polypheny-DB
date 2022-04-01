@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.runtime.PolyCollections;
@@ -34,6 +36,11 @@ import org.polypheny.db.tools.ExpressionTransformable;
 
 @Getter
 public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode>, ExpressionTransformable {
+
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    private boolean isVariable = false;
 
 
     public PolyNode( @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
@@ -92,6 +99,8 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
             kryo.writeClassAndObject( output, object.id );
             kryo.writeClassAndObject( output, object.properties );
             kryo.writeClassAndObject( output, object.labels );
+            kryo.writeClassAndObject( output, object.variableName() );
+            kryo.writeClassAndObject( output, object.isVariable );
         }
 
 
@@ -100,7 +109,11 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
             String id = (String) kryo.readClassAndObject( input );
             PolyDirectory properties = (PolyDirectory) kryo.readClassAndObject( input );
             PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
-            return new PolyNode( id, properties, labels );
+            String variableName = (String) kryo.readClassAndObject( input );
+            boolean isVariable = (boolean) kryo.readClassAndObject( input );
+            return (PolyNode) new PolyNode( id, properties, labels )
+                    .isVariable( isVariable )
+                    .variableName( variableName );
         }
 
     }

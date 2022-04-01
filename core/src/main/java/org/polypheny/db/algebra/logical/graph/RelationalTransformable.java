@@ -23,38 +23,6 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 
 public interface RelationalTransformable {
 
-    default AlgOptTable getNodeTable() {
-        throw new UnsupportedOperationException();
-    }
-
-    default void setNodeTable( AlgOptTable table ) {
-        throw new UnsupportedOperationException();
-    }
-
-    default AlgOptTable getNodePropertyTable() {
-        throw new UnsupportedOperationException();
-    }
-
-    default void setNodePropertyTable( AlgOptTable table ) {
-        throw new UnsupportedOperationException();
-    }
-
-    default AlgOptTable getEdgeTable() {
-        throw new UnsupportedOperationException();
-    }
-
-    default void setEdgeTable( AlgOptTable table ) {
-        throw new UnsupportedOperationException();
-    }
-
-    default AlgOptTable getEdgePropertyTable() {
-        throw new UnsupportedOperationException();
-    }
-
-    default void setEdgePropertyTable( AlgOptTable table ) {
-        throw new UnsupportedOperationException();
-    }
-
     default CatalogReader getCatalogReader() {
         throw new UnsupportedOperationException();
     }
@@ -62,6 +30,5 @@ public interface RelationalTransformable {
 
     List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities );
 
-    boolean canTransform();
 
 }

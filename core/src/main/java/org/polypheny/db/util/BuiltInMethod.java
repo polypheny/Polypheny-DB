@@ -466,12 +466,13 @@ public enum BuiltInMethod {
     CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),
     CYPHER_TO_LIST( CypherFunctions.class, "toList", Object.class ),
     PRINT( CypherFunctions.class, "print", Object.class ),
-    CYPHER_ADJUST_EDGE( CypherFunctions.class, "adjustEdge", PolyEdge.class, String.class, String.class ),
+    CYPHER_ADJUST_EDGE( CypherFunctions.class, "adjustEdge", PolyEdge.class, PolyNode.class, PolyNode.class ),
     CYPHER_SET_PROPERTY( CypherFunctions.class, "setProperty", GraphPropertyHolder.class, String.class, String.class ),
     CYPHER_SET_PROPERTIES( CypherFunctions.class, "setProperties", GraphPropertyHolder.class, List.class, List.class, boolean.class ),
     CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, boolean.class ),
     CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
-    CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class );
+    CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
+    SPLIT_GRAPH_MODIFY( CypherFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class );
 
     public final Method method;
     public final Constructor constructor;

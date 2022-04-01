@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.neo4j.rules.graph;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.create_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.path_;
 
@@ -31,14 +32,18 @@ import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
+import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.graph.GraphModify;
+import org.polypheny.db.algebra.logical.graph.GraphProject;
 import org.polypheny.db.algebra.logical.graph.GraphValues;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.schema.graph.PolyEdge;
@@ -102,8 +107,45 @@ public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
                 // normal values
 
             }
+        } else {
+            if ( !implementor.statements.isEmpty() ) {
+                if ( implementor.getLast() instanceof GraphProject ) {
+                    // match -> project -> create
+                    GraphProject project = (GraphProject) implementor.getLast();
+                    List<NeoStatement> statements = new ArrayList<>();
+                    for ( RexNode projectProject : project.getProjects() ) {
+                        Translator translator = new Translator( project.getRowType(), project.getInput().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel );
+                        statements.add( literal_( projectProject.accept( translator ) ) );
+                    }
+                    implementor.add( create_( statements ) );
+                    return;
+                }
+            }
         }
         throw new RuntimeException( "No values before modify." );
+    }
+
+
+    private List<RexNode> filterSpecialProjects( List<? extends RexNode> projects ) {
+        List<Integer> filtered = new ArrayList<>();
+        int i = 0;
+        for ( RexNode project : projects ) {
+            if ( (project instanceof RexCall) && ((RexCall) project).op.getOperatorName() == OperatorName.CYPHER_ADJUST_EDGE ) {
+                filtered.add( i - 1 ); // extra node
+                filtered.add( i ); // edge
+                filtered.add( i + 1 ); // what to replace
+            }
+            i++;
+        }
+        List<RexNode> nodes = new ArrayList<>();
+        int j = 0;
+        for ( RexNode project : projects ) {
+            if ( !filtered.contains( j ) ) {
+                nodes.add( project );
+            }
+            j++;
+        }
+        return nodes;
     }
 
 
@@ -116,11 +158,11 @@ public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
         for ( PolyNode node : nodes ) {
             String name = "n" + i;
             uuidNameMapping.put( node.id, name );
-            statements.add( node_( name, node, implementor.getGraph().mappingLabel ) );
+            statements.add( node_( name, node, implementor.getGraph().mappingLabel, true ) );
             i++;
         }
         for ( PolyEdge edge : edges ) {
-            statements.add( path_( node_( uuidNameMapping.get( edge.source ) ), edge_( edge ), node_( uuidNameMapping.get( edge.target ) ) ) );
+            statements.add( path_( node_( uuidNameMapping.get( edge.source ) ), edge_( null, edge, true ), node_( uuidNameMapping.get( edge.target ) ) ) );
         }
 
         return statements;

@@ -16,9 +16,11 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.path_;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +32,9 @@ import org.polypheny.db.algebra.logical.graph.GraphMatch;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.util.Pair;
 
 public class NeoGraphMatch extends GraphMatch implements NeoGraphAlg {
@@ -54,15 +59,16 @@ public class NeoGraphMatch extends GraphMatch implements NeoGraphAlg {
 
         List<NeoStatement> neoMatches = new ArrayList<>();
         for ( Pair<String, RexCall> match : Pair.zip( names, matches ) ) {
+            String mappingLabel = implementor.getGraph().mappingLabel;
             switch ( match.right.op.getOperatorName() ) {
                 case CYPHER_NODE_EXTRACT:
-                    neoMatches.add( node_( match.left ) );
+                    neoMatches.add( node_( match.left, labels_( mappingLabel ) ) );
                     break;
                 case CYPHER_NODE_MATCH:
-
+                    neoMatches.add( node_( match.left, ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyNode.class ), mappingLabel, false ) );
                     break;
                 case CYPHER_PATH_MATCH:
-
+                    neoMatches.add( path_( ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyPath.class ), mappingLabel, false ) );
                     break;
             }
         }

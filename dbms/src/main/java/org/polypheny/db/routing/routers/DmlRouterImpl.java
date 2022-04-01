@@ -46,10 +46,20 @@ import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalScan;
+import org.polypheny.db.algebra.logical.LogicalStreamer;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.graph.GraphProject;
+import org.polypheny.db.algebra.logical.graph.GraphScan;
+import org.polypheny.db.algebra.logical.graph.GraphValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
@@ -58,6 +68,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -68,7 +79,9 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.processing.WhereClauseVisitor;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -78,6 +91,7 @@ import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
@@ -86,6 +100,7 @@ import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
@@ -771,8 +786,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             throw new RuntimeException( "Error while routing graph" );
         }
 
-        attachMappingsIfNecessary( alg );
-
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
@@ -783,7 +796,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             Graph graph = reader.getGraph( name );
             if ( graph == null ) {
-                return alg;
+                return attachRelationalModify( alg, statement );
             }
 
             if ( !(graph instanceof ModifiableGraph) ) {
@@ -795,7 +808,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     alg.getTraitSet(),
                     graph,
                     alg.catalogReader,
-                    alg.getInput(),
+                    buildGraphDml( alg.getInput(), statement ),
                     alg.operation,
                     alg.ids,
                     alg.operations );
@@ -803,6 +816,158 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         return alg;
+    }
+
+
+    private AlgNode buildGraphDml( AlgNode node, Statement statement ) {
+        if ( node instanceof GraphScan ) {
+            return super.handleGraphScan( (LogicalGraphScan) node, statement );
+        }
+        int i = 0;
+        for ( AlgNode input : node.getInputs() ) {
+            node.replaceInput( i, buildGraphDml( input, statement ) );
+            i++;
+        }
+        return node;
+    }
+
+
+    private AlgNode attachRelationalModify( LogicalGraphModify alg, Statement statement ) {
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
+
+        PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId );
+        PreparingTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId );
+        PreparingTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId );
+        PreparingTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId );
+
+        List<AlgNode> inputs = new ArrayList<>();
+        switch ( alg.operation ) {
+            case INSERT:
+                if ( alg.getInput() instanceof GraphValues ) {
+                    // simple value insert
+                    inputs.addAll( ((LogicalGraphValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ) ) );
+                }
+                if ( alg.getInput() instanceof GraphProject ) {
+                    return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                    //inputs.addAll( ((LogicalGraphProject)alg.getInput()).ge );
+                }
+
+                break;
+            case UPDATE:
+                break;
+            case DELETE:
+                break;
+            case MERGE:
+                break;
+        }
+
+        List<AlgNode> modifies = new ArrayList<>();
+        if ( inputs.get( 0 ) != null ) {
+            modifies.add( getModify( nodesTable, inputs.get( 0 ), statement, alg.operation ) );
+        }
+
+        if ( inputs.get( 1 ) != null ) {
+            modifies.add( getModify( nodePropertiesTable, inputs.get( 1 ), statement, alg.operation ) );
+        }
+
+        if ( inputs.size() > 2 ) {
+            if ( inputs.get( 2 ) != null ) {
+                modifies.add( getModify( edgesTable, inputs.get( 2 ), statement, alg.operation ) );
+            }
+
+            if ( inputs.get( 3 ) != null ) {
+                modifies.add( getModify( edgePropertiesTable, inputs.get( 3 ), statement, alg.operation ) );
+            }
+        }
+
+        return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.GRAPH ), modifies, true );
+    }
+
+
+    private AlgNode attachRelationalRelatedInsert( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable ) {
+        AlgNode project = buildGraphDml( alg.getInput(), statement );
+
+        List<AlgNode> inputs = new ArrayList<>();
+        List<PolyType> sequence = new ArrayList<>();
+        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+            sequence.add( field.getType().getPolyType() );
+            if ( field.getType().getPolyType() == PolyType.EDGE ) {
+                inputs.addAll( attachPreparedGraphEdgeModify( alg.getCluster(), edgesTable, edgePropertiesTable, statement ) );
+            } else if ( field.getType().getPolyType() == PolyType.NODE ) {
+                inputs.addAll( attachPreparedGraphNodeModify( alg.getCluster(), nodesTable, nodePropertiesTable, statement ) );
+            } else {
+                throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
+            }
+        }
+        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        LogicalGraphTransformer transformer = new LogicalGraphTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence );
+        return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
+    }
+
+
+    private List<AlgNode> attachPreparedGraphNodeModify( AlgOptCluster cluster, PreparingTable nodesTable, PreparingTable nodePropertiesTable, Statement statement ) {
+        AlgBuilder algBuilder = AlgBuilder.create( statement );
+        RexBuilder rexBuilder = algBuilder.getRexBuilder();
+        AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
+
+        List<AlgNode> inputs = new ArrayList<>();
+        LogicalProject preparedNodes = LogicalProject.create(
+                LogicalValues.createOneRow( cluster ),
+                List.of(
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ) ), // label
+                nodesTable.getRowType() );
+
+        inputs.add( getModify( nodesTable, preparedNodes, statement, Operation.INSERT ) );
+
+        LogicalProject preparedNProperties = LogicalProject.create(
+                LogicalValues.createOneRow( cluster ),
+                List.of(
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // key
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
+                nodePropertiesTable.getRowType() );
+
+        inputs.add( getModify( nodePropertiesTable, preparedNProperties, statement, Operation.INSERT ) );
+
+        return inputs;
+    }
+
+
+    private List<AlgNode> attachPreparedGraphEdgeModify( AlgOptCluster cluster, PreparingTable edgesTable, PreparingTable edgePropertiesTable, Statement statement ) {
+        AlgBuilder algBuilder = AlgBuilder.create( statement );
+        RexBuilder rexBuilder = algBuilder.getRexBuilder();
+        AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
+
+        List<AlgNode> inputs = new ArrayList<>();
+        LogicalProject preparedEdges = LogicalProject.create(
+                LogicalValues.createOneRow( cluster ),
+                List.of(
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // label
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 2 ), // source
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 3 ) ), // target
+                edgesTable.getRowType() );
+
+        inputs.add( getModify( edgesTable, preparedEdges, statement, Operation.INSERT ) );
+
+        LogicalProject preparedEProperties = LogicalProject.create(
+                LogicalValues.createOneRow( cluster ),
+                List.of(
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 36 ), 0 ), // id
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 1 ), // key
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), 2 ) ), // value
+                edgePropertiesTable.getRowType() );
+
+        inputs.add( getModify( edgePropertiesTable, preparedEProperties, statement, Operation.INSERT ) );
+
+        return inputs;
+
+    }
+
+
+    private Modify getModify( AlgOptTable table, AlgNode input, Statement statement, Operation operation ) {
+        return table.unwrap( ModifiableTable.class ).toModificationAlg( input.getCluster(), table, statement.getTransaction().getCatalogReader(), input, operation, null, null, true );
     }
 
 

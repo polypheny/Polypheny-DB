@@ -19,6 +19,8 @@ package org.polypheny.db.schema.graph;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 @Getter
 public abstract class GraphObject {
@@ -27,6 +29,11 @@ public abstract class GraphObject {
 
     public final String id;
     public final GraphObjectType type;
+
+    @Setter
+    @Getter
+    @Accessors(fluent = true)
+    private String variableName = null;
 
 
     protected GraphObject( String id, GraphObjectType type ) {

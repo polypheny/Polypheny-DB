@@ -1102,7 +1102,11 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                     return clazz.cast( PolySerializer.serializeAndCompress( value ) );
                 }
                 break;
-
+            case PATH:
+                if ( clazz == PolyPath.class ) {
+                    return clazz.cast( value );
+                }
+                break;
         }
         throw new AssertionError( "cannot convert " + typeName + " literal to " + clazz );
     }

@@ -135,10 +135,6 @@ public class LogicalGraphValues extends GraphValues implements RelationalTransfo
     }
 
 
-    @Override
-    public boolean canTransform() {
-        return getEdgeTable() != null;
-    }
 
 
     private ImmutableList<ImmutableList<RexLiteral>> getNodeValues( ImmutableList<PolyNode> nodes ) {

@@ -81,6 +81,9 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
@@ -819,6 +822,12 @@ public class RexToLixTranslator {
                 value2 = ((List<RexLiteral>) literal.getValueAs( List.class )).stream().map( e -> translateLiteral( e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
                 javaClass = List.class;
                 break;
+            case EDGE:
+                return literal.getValueAs( PolyEdge.class ).getAsExpression();
+            case NODE:
+                return literal.getValueAs( PolyNode.class ).getAsExpression();
+            case PATH:
+                return literal.getValueAs( PolyPath.class ).getAsExpression();
             default:
                 final Primitive primitive = Primitive.ofBoxOr( javaClass );
                 final Comparable value = literal.getValueAs( Comparable.class );

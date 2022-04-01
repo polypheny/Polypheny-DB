@@ -161,20 +161,25 @@ public class CypherTestTemplate {
 
 
     protected boolean containsRows( Result actual, boolean exclusive, boolean ordered, Row... rows ) {
-        List<List<Object>> parsed = new ArrayList<>();
+        try {
+            List<List<Object>> parsed = new ArrayList<>();
 
-        int i = 0;
-        for ( Row row : rows ) {
-            parsed.add( row.asList( actual.getData()[i] ) );
-            i++;
-        }
+            int i = 0;
+            for ( Row row : rows ) {
+                parsed.add( row.asList( actual.getData()[i] ) );
+                i++;
+            }
 
-        assert !exclusive || actual.getData().length >= rows.length;
+            assert !exclusive || actual.getData().length >= rows.length;
 
-        if ( ordered ) {
-            return matchesExactRows( parsed, rows );
-        } else {
-            return matchesUnorderedRows( parsed, rows );
+            if ( ordered ) {
+                return matchesExactRows( parsed, rows );
+            } else {
+                return matchesUnorderedRows( parsed, rows );
+            }
+        } catch ( Throwable t ) {
+            fail( "Error while evaluating result: " + t.getMessage() );
+            throw new RuntimeException();
         }
     }
 

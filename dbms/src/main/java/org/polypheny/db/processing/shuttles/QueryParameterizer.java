@@ -52,6 +52,7 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -139,6 +140,9 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Override
     public AlgNode visit( AlgNode other ) {
         if ( other instanceof LogicalModifyCollect ) {
+            if ( other.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+                return other;
+            }
             List<AlgNode> inputs = new ArrayList<>( other.getInputs().size() );
             for ( AlgNode node : other.getInputs() ) {
                 inputs.add( node.accept( this ) );

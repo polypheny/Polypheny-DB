@@ -16,11 +16,16 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -29,6 +34,8 @@ public abstract class GraphProject extends SingleAlg implements GraphAlg {
 
     @Getter
     protected final List<? extends RexNode> projects;
+    @Getter
+    protected final List<String> names;
 
 
     /**
@@ -38,9 +45,10 @@ public abstract class GraphProject extends SingleAlg implements GraphAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected GraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects ) {
+    protected GraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
         super( cluster, traits, input );
         this.projects = projects;
+        this.names = names;
     }
 
 
@@ -55,6 +63,27 @@ public abstract class GraphProject extends SingleAlg implements GraphAlg {
     @Override
     public NodeType getNodeType() {
         return NodeType.PROJECT;
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        List<AlgDataTypeField> fields = new ArrayList<>();
+        if ( names != null && projects != null ) {
+            int i = 0;
+            int index = 0;
+            for ( String name : names ) {
+                if ( name != null ) {
+                    fields.add( new AlgDataTypeFieldImpl( name, index, projects.get( i ).getType() ) );
+                    index++;
+                }
+                i++;
+            }
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
+        return new AlgRecordType( fields );
     }
 
 }

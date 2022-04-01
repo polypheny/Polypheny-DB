@@ -32,11 +32,15 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.StatementType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.type.PathType;
 import org.polypheny.db.util.Pair;
 
 public class NeoGraphImplementor extends AlgShuttleImpl {
@@ -56,6 +60,10 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     @Setter
     @Getter
     private boolean isAll;
+
+    @Setter
+    @Getter
+    private boolean mapped = false;
 
 
     public final List<OperatorStatement> statements = new ArrayList<>();
@@ -99,9 +107,37 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
                 statements.add( return_( statement.statements ) );
             } else {
                 // have to add
-                statements.add( return_( statement.statements ) );
+                statements.add( return_( getFields( last.getRowType() ) ) );
             }
         }
+    }
+
+
+    private List<NeoStatement> getFields( AlgDataType rowType ) {
+        List<NeoStatement> statements = new ArrayList<>();
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+            statements.add( getField( field ) );
+        }
+
+        return statements;
+    }
+
+
+    private NeoStatement getField( AlgDataTypeField field ) {
+        switch ( field.getType().getPolyType() ) {
+            case NODE:
+                return node_( field.getName() );
+            case EDGE:
+                return edge_( field.getName() );
+            case PATH:
+                PathType type = (PathType) field.getType();
+                List<ElementStatement> path = new ArrayList<>();
+                for ( AlgDataTypeField pathPart : type.getFieldList() ) {
+                    path.add( (ElementStatement) getField( pathPart ) );
+                }
+                return path_( path );
+        }
+        return literal_( field.getName() );
     }
 
 

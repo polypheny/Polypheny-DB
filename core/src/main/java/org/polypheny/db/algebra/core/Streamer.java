@@ -18,7 +18,7 @@ package org.polypheny.db.algebra.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgVisitor;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -42,9 +42,6 @@ public abstract class Streamer extends BiAlg {
      */
     public Streamer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
         super( cluster, traitSet, provider, collector );
-        /*if ( provider.getRowType().getFieldCount() != collector.getRowType().getFieldCount() ) {
-            throw new RuntimeException( "The provided provider and collectors do not match." );
-        }*/
     }
 
 
@@ -54,10 +51,11 @@ public abstract class Streamer extends BiAlg {
     }*/
 
 
-    @Override
+    /*@Override
     public void childrenAccept( AlgVisitor visitor ) {
         visitor.visit( left, 0, this );
-    }
+        visitor.visit( left, 1, this );
+    }*/
 
 
     @Override
@@ -82,6 +80,14 @@ public abstract class Streamer extends BiAlg {
                 getProvider().algCompareString() +
                 ",$" + getCollector().algCompareString() +
                 "]";
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .input( "provider", getProvider() )
+                .input( "collector", getProvider() );
     }
 
 }

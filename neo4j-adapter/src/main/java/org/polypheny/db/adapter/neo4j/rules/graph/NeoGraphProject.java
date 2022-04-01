@@ -16,11 +16,17 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
+import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.graph.GraphProject;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -35,10 +41,11 @@ public class NeoGraphProject extends GraphProject implements NeoGraphAlg {
      * @param cluster Cluster this relational expression belongs to
      * @param traits
      * @param input Input relational expression
+     * @param names
      * @param projects
      */
-    public NeoGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects ) {
-        super( cluster, traits, input, projects );
+    public NeoGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<String> names, List<? extends RexNode> projects ) {
+        super( cluster, traits, input, projects, names );
     }
 
 
@@ -47,8 +54,20 @@ public class NeoGraphProject extends GraphProject implements NeoGraphAlg {
         implementor.visitChild( 0, getInput() );
 
         if ( !implementor.isDml() ) {
-            implementor.add( with_() );
+            List<NeoStatement> statements = new ArrayList<>();
+            for ( RexNode project : getProjects() ) {
+                Translator translator = new Translator( getRowType(), getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel );
+                statements.add( literal_( project.accept( translator ) ) );
+            }
+
+            implementor.add( with_( list_( statements ) ) );
         }
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoGraphProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), names, projects );
     }
 
 }

@@ -16,16 +16,11 @@
 
 package org.polypheny.db.algebra.logical.graph;
 
-import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -33,8 +28,6 @@ import org.polypheny.db.rex.RexNode;
 
 @Getter
 public class LogicalGraphProject extends GraphProject {
-
-    private final List<String> names;
 
 
     /**
@@ -45,31 +38,9 @@ public class LogicalGraphProject extends GraphProject {
      * @param input Input relational expression
      */
     public LogicalGraphProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
-        super( cluster, traits.replace( Convention.NONE ), input, projects );
+        super( cluster, traits.replace( Convention.NONE ), input, projects, names );
         assertLogicalGraphTrait( traits );
-        this.names = names;
         assert (this.names == null || this.projects == null) || this.names.size() == this.projects.size();
-    }
-
-
-    @Override
-    protected AlgDataType deriveRowType() {
-        List<AlgDataTypeField> fields = new ArrayList<>();
-        if ( names != null && projects != null ) {
-            int i = 0;
-            int index = 0;
-            for ( String name : names ) {
-                if ( name != null ) {
-                    fields.add( new AlgDataTypeFieldImpl( name, index, projects.get( i ).getType() ) );
-                    index++;
-                }
-                i++;
-            }
-        } else {
-            throw new UnsupportedOperationException();
-        }
-
-        return new AlgRecordType( fields );
     }
 
 

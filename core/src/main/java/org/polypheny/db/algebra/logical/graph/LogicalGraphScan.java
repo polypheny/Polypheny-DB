@@ -20,8 +20,6 @@ package org.polypheny.db.algebra.logical.graph;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.JoinAlgType;
@@ -33,7 +31,6 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
@@ -41,30 +38,11 @@ import org.polypheny.db.schema.TranslatableGraph;
 
 public class LogicalGraphScan extends GraphScan implements RelationalTransformable {
 
-    @Getter
-    private final PolyphenyDbCatalogReader catalogReader;
-
-    @Getter
-    @Setter
-    private AlgOptTable nodeTable;
-
-    @Getter
-    @Setter
-    private AlgOptTable nodePropertyTable;
-
-    @Getter
-    @Setter
-    private AlgOptTable edgeTable;
-
-    @Getter
-    @Setter
-    private AlgOptTable edgePropertyTable;
 
 
-    public LogicalGraphScan( AlgOptCluster cluster, PolyphenyDbCatalogReader catalogReader, AlgTraitSet traitSet, TranslatableGraph graph, AlgDataType rowType ) {
+    public LogicalGraphScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph, AlgDataType rowType ) {
         super( cluster, traitSet, graph );
         this.rowType = rowType;
-        this.catalogReader = catalogReader;
     }
 
 
@@ -102,20 +80,10 @@ public class LogicalGraphScan extends GraphScan implements RelationalTransformab
     }
 
 
-    @Override
-    public boolean canTransform() {
-        return edgeTable != null;
-    }
-
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        LogicalGraphScan scan = new LogicalGraphScan( inputs.get( 0 ).getCluster(), catalogReader, traitSet, graph, rowType );
-        scan.setEdgeTable( edgeTable );
-        scan.setEdgePropertyTable( edgePropertyTable );
-        scan.setNodeTable( nodeTable );
-        scan.setNodePropertyTable( nodePropertyTable );
-        return scan;
+        return new LogicalGraphScan( inputs.get( 0 ).getCluster(), traitSet, graph, rowType );
     }
 
 

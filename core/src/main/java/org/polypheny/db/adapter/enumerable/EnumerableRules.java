@@ -120,5 +120,7 @@ public class EnumerableRules {
 
     public static final EnumerableUnwindRule ENUMERABLE_UNWIND_RULE = new EnumerableUnwindRule();
 
+    public static final EnumerableGraphTransformerRule ENUMERABLE_GRAPH_TRANSFORMER_RULE = new EnumerableGraphTransformerRule();
+
 }
 

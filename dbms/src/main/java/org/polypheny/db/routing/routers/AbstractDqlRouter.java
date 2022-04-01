@@ -141,7 +141,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
             return alg;
         } else if ( alg.getNodeType() == NodeType.SCAN ) {
-            attachMappingsIfNecessary( alg );
+            //attachMappingsIfNecessary( alg );
             builder.push( handleGraphScan( (LogicalGraphScan) alg, statement ) );
             return alg;
         } else if ( alg.getNodeType() == NodeType.VALUES ) {

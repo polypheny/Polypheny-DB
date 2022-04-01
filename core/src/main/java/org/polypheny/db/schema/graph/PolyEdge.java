@@ -24,12 +24,16 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.serialize.PolySerializer;
+import org.polypheny.db.tools.ExpressionTransformable;
 
 @Getter
-public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge> {
+public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge>, ExpressionTransformable {
 
     public final String source;
     public final String target;
@@ -67,6 +71,18 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     }
 
 
+    @Override
+    public Expression getAsExpression() {
+        return Expressions.convert_(
+                Expressions.call(
+                        PolySerializer.class,
+                        "deserializeAndCompress",
+                        List.of( Expressions.constant( PolySerializer.serializeAndCompress( this ) ), Expressions.constant( PolyEdge.class ) ) ),
+                PolyEdge.class
+        );
+    }
+
+
     public enum EdgeDirection {
         LEFT_TO_RIGHT,
         RIGHT_TO_LEFT,
@@ -97,6 +113,7 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
             kryo.writeClassAndObject( output, object.source );
             kryo.writeClassAndObject( output, object.target );
             kryo.writeClassAndObject( output, object.direction );
+            kryo.writeClassAndObject( output, object.variableName() );
         }
 
 
@@ -108,7 +125,9 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
             String leftId = (String) kryo.readClassAndObject( input );
             String rightId = (String) kryo.readClassAndObject( input );
             EdgeDirection direction = (EdgeDirection) kryo.readClassAndObject( input );
-            return new PolyEdge( id, properties, labels, leftId, rightId, direction );
+            String variableName = (String) kryo.readClassAndObject( input );
+
+            return (PolyEdge) new PolyEdge( id, properties, labels, leftId, rightId, direction ).variableName( variableName );
         }
 
 

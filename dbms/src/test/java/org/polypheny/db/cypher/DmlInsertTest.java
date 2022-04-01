@@ -39,7 +39,7 @@ public class DmlInsertTest extends CypherTestTemplate {
                     + "  (pernilla)-[:FRIEND]->(david)";
 
     public static final String CREATE_COMPLEX_GRAPH_2 =
-            "CREATE (adam:User {name: 'Adam'}), (pernilla:User {name: 'Pernilla'}), (david:User {name: 'David'}), (adam)-[:FRIEND]->(pernilla), (pernilla)-[:FRIEND]->(david), (adam)-[:FRIEND]->(adam)";
+            "CREATE (adam:User {name: 'Adam'}), (pernilla:User {name: 'Pernilla'}), (david:User {name: 'David'}), (adam)-[:FRIEND]->(pernilla), (pernilla)-[:FRIEND]->(david), (david)-[:FRIEND]->(adam)";
 
 
     @Before
@@ -129,7 +129,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Test
     public void insertSingleHopPathEdgesTest() {
         execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
-        Result res = execute( "MATCH ()-[r]-() RETURN r" );
+        Result res = execute( "MATCH ()-[r]->() RETURN r" );
         assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
     }
 
@@ -146,10 +146,10 @@ public class DmlInsertTest extends CypherTestTemplate {
                 TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) );
 
         // only select all edges
-        res = execute( "MATCH ()-[r]-() RETURN r" );
-        assert containsEdges( res, true,
-                TestEdge.from( List.of( "OWNER_OF" ) ),
-                TestEdge.from( List.of( "FRIEND_OF" ) ) );
+        res = execute( "MATCH ()-[r]->() RETURN r" );
+        assert containsRows( res, true, true,
+                Row.of( TestEdge.from( List.of( "OWNER_OF" ) ) ),
+                Row.of( TestEdge.from( List.of( "FRIEND_OF" ) ) ) );
     }
 
 
@@ -162,6 +162,12 @@ public class DmlInsertTest extends CypherTestTemplate {
 
         res = execute( "MATCH ()-[r]-() RETURN r" );
         assertEdge( res, 0 );
+        // double matches of same path is correct, as no direction is specified
+        assert res.getData().length == 4;
+
+        res = execute( "MATCH ()-[r]->() RETURN r" );
+        assertEdge( res, 0 );
+        // double matches of same path is correct, as no direction is specified
         assert res.getData().length == 2;
     }
 
@@ -175,42 +181,54 @@ public class DmlInsertTest extends CypherTestTemplate {
 
         res = execute( "MATCH ()-[r]-() RETURN r" );
         assertEdge( res, 0 );
-        assert res.getData().length == 3;
+        assert res.getData().length == 6;
     }
 
 
     @Test
-    //@Ignore
     public void insertAdditionalEdgeTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        Result res = execute( "MATCH (max:Person {name: 'Max'}), (hans:Person {name: 'Hans'})\n"
+        execute( "MATCH (max:Person {name: 'Max'}), (hans:Person {name: 'Hans'})\n"
                 + "CREATE (max)-[:KNOWS]->(hans)" );
 
+        Result res = execute( "MATCH ()-[r]->() RETURN r" );
+
+        containsRows( res, true, true,
+                Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
     }
 
 
     @Test
-    @Ignore
     public void insertAdditionalEdgeOneSideTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        Result res = execute( "MATCH (max:Person {name: 'Max'})\n"
+        execute( "MATCH (max:Person {name: 'Max'})\n"
                 + "CREATE (max)-[:KNOWS]->(hans:Person {name: 'Hans'})" );
+
+        Result res = execute( "MATCH ()-[r]->() RETURN r" );
+
+        containsRows( res, true, true,
+                Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
 
     }
 
 
     @Test
-    @Ignore
     public void insertAdditionalEdgeOneSideBothSideTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        Result res = execute( "MATCH (max:Person {name: 'Max'})\n"
+        execute( "MATCH (max:Person {name: 'Max'})\n"
                 + "CREATE (max)-[:KNOWS]->(hans:Person {name: 'Hans'})-[:KNOWS]->(peter:Person {name: 'Peter'})" );
+
+        Result res = execute( "MATCH ()-[r]->() RETURN r" );
+
+        containsRows( res, true, true,
+                Row.of( TestEdge.from( List.of( "KNOWS" ) ) ),
+                Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
 
     }
 

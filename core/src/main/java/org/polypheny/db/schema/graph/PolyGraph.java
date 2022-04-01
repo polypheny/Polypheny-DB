@@ -90,9 +90,11 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
         List<List<String>> pathIds = buildIdPaths( temp );
 
-        List<List<String>> adjustedPathIds = removeInverseDuplicates( pathIds );
+        // patterns like ()-[]-() match each edge twice, once in each direction ( analog to Neo4j )
+        // if this is not desired this could be uncommented
+        //List<List<String>> adjustedPathIds = removeInverseDuplicates( pathIds );
 
-        return buildPaths( adjustedPathIds );
+        return buildPaths( pathIds );
     }
 
 

@@ -65,6 +65,7 @@ import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.stream.LogicalChi;
@@ -352,14 +353,17 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( LogicalStreamer alg ) {
-        LogicalStreamer newAlg = LogicalStreamer.create( getNewForOldRel( alg.getLeft() ), getNewForOldRel( alg.getRight() ) );
-        setNewForOldRel( alg, newAlg );
+        rewriteGeneric( alg );
     }
 
 
     public void rewriteAlg( LogicalBatchIterator alg ) {
-        LogicalBatchIterator newAlg = LogicalBatchIterator.create( alg.getInput() );
-        setNewForOldRel( alg, newAlg );
+        rewriteGeneric( alg );
+    }
+
+
+    public void rewriteAlg( LogicalGraphTransformer alg ) {
+        rewriteGeneric( alg );
     }
 
 

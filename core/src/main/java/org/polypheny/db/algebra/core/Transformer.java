@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -46,7 +47,7 @@ public class Transformer extends AbstractAlgNode {
      */
     public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
         super( cluster, traitSet.replace( outTraitSet ) );
-        this.inputs = inputs;
+        this.inputs = new ArrayList<>( inputs );
         this.inTrait = inTraitSet;
         this.outTrait = outTraitSet;
         this.rowType = rowType;

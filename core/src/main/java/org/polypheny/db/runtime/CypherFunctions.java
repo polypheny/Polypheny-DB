@@ -18,15 +18,22 @@ package org.polypheny.db.runtime;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.apache.calcite.linq4j.function.Function0;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.GraphObject;
@@ -36,6 +43,7 @@ import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.type.PolyType;
 
 @Deterministic
 @Slf4j
@@ -220,8 +228,9 @@ public class CypherFunctions {
 
 
     @SuppressWarnings("unused")
-    public static PolyEdge adjustEdge( PolyEdge edge, String left, String right ) {
-        return edge.from( left, right );
+    public static PolyEdge adjustEdge( PolyEdge edge, PolyNode left, PolyNode right ) {
+        // if isVariable is true, the node is only a placeholder and the id should not be replaced
+        return edge.from( left.isVariable() ? null : left.id, right.isVariable() ? null : right.id );
     }
 
 
@@ -268,6 +277,84 @@ public class CypherFunctions {
     public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, String key ) {
         target.properties.remove( key );
         return target;
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Enumerable<?> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
+        int i = 0;
+        Map<Long, Object> values = context.getParameterValues().get( 0 );
+        Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
+        JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
+        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
+        AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
+        AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
+
+        context.resetParameterValues();
+        Enumerator<?> enumerable;
+        for ( PolyType polyType : order ) {
+            if ( polyType == PolyType.NODE ) {
+                PolyNode node = (PolyNode) values.get( (long) i );
+
+                // node table
+                context.addParameterValues( 0, idType, Collections.nCopies( node.labels.size(), node.id ) );
+                context.addParameterValues( 1, labelType, new ArrayList<>( node.labels ) );
+                drainInserts( enumerables.get( 2 * i ), node.labels.size() );
+                context.resetParameterValues();
+
+                // node property table
+                if ( !node.properties.isEmpty() ) {
+                    context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
+                    for ( Entry<String, Object> entry : node.properties.entrySet() ) {
+                        context.addParameterValues( 1, labelType, List.of( entry.getKey() ) );
+                        context.addParameterValues( 2, valueType, List.of( entry.getValue() ) );
+                    }
+                    drainInserts( enumerables.get( 2 * i + 1 ), node.properties.size() );
+                    context.resetParameterValues();
+                }
+
+            } else if ( polyType == PolyType.EDGE ) {
+                PolyEdge edge = (PolyEdge) values.get( (long) i );
+
+                // edge table
+                context.addParameterValues( 0, idType, Collections.nCopies( edge.labels.size(), edge.id ) );
+                context.addParameterValues( 1, labelType, List.of( edge.labels ) );
+                context.addParameterValues( 2, idType, List.of( edge.source ) );
+                context.addParameterValues( 3, idType, List.of( edge.target ) );
+                drainInserts( enumerables.get( 2 * i ), edge.labels.size() );
+                context.resetParameterValues();
+
+                // edge property table
+                if ( !edge.properties.isEmpty() ) {
+                    context.addParameterValues( 0, idType, Collections.nCopies( edge.properties.size(), edge.id ) );
+                    for ( Entry<String, Object> entry : edge.properties.entrySet() ) {
+                        context.addParameterValues( 1, labelType, List.of( entry.getKey() ) );
+                        context.addParameterValues( 2, valueType, List.of( entry.getValue() ) );
+                    }
+
+                    drainInserts( enumerables.get( 2 * i + 1 ), edge.labels.size() );
+                    context.resetParameterValues();
+                }
+
+            }
+
+            i++;
+        }
+        // restore original context
+        context.resetParameterValues();
+        context.setParameterValues( List.of( values ) );
+        context.setParameterTypes( typeBackup );
+
+        return Linq4j.singletonEnumerable( 1 );
+    }
+
+
+    private static void drainInserts( Function0<Enumerable<?>> activator, int size ) {
+        Enumerator<?> enumerable;
+        enumerable = activator.apply().enumerator();
+        for ( int i1 = 0; i1 < size; i1++ ) {
+            enumerable.moveNext();
+        }
     }
 
 }

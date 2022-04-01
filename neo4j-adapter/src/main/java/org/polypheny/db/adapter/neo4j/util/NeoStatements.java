@@ -26,9 +26,11 @@ import javax.annotation.Nullable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 
 public interface NeoStatements {
 
@@ -153,7 +155,7 @@ public interface NeoStatements {
 
 
         protected NodeStatement( String identifier, LabelsStatement labels, ListStatement<?> properties ) {
-            this.identifier = identifier;
+            this.identifier = identifier == null ? "" : identifier;
             this.labels = labels;
             this.properties = properties;
         }
@@ -179,14 +181,18 @@ public interface NeoStatements {
         return node_( identifier, labels_(), List.of() );
     }
 
-    static NodeStatement node_( String identifier, PolyNode node, String mappingLabel ) {
+    static NodeStatement node_( String identifier, PolyNode node, String mappingLabel, boolean addId ) {
         List<PropertyStatement> statements = new ArrayList<>( properties_( node.properties ) );
-        statements.add( property_( "_id", string_( (node.id) ) ) );
+        if ( addId ) {
+            statements.add( property_( "_id", string_( (node.id) ) ) );
+        }
         ArrayList<String> labels = new ArrayList<>( node.labels );
         if ( mappingLabel != null ) {
             labels.add( mappingLabel );
         }
-        return node_( identifier, labels_( labels ), statements );
+        String defIdentifier = identifier != null ? identifier : node.variableName() == null ? null : node.variableName();
+
+        return node_( defIdentifier, labels_( labels ), statements );
     }
 
 
@@ -233,12 +239,16 @@ public interface NeoStatements {
         return new EdgeStatement( identifier, labels_(), list_( List.of() ), EdgeDirection.NONE );
     }
 
-    static EdgeStatement edge_( PolyEdge edge ) {
+    static EdgeStatement edge_( @Nullable String identifier, PolyEdge edge, boolean addId ) {
         List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties ) );
-        props.add( property_( "_id", string_( edge.id ) ) );
-        props.add( property_( "__sourceId__", string_( edge.source ) ) );
-        props.add( property_( "__targetId__", string_( edge.target ) ) );
-        return edge_( null, edge.labels, list_( props, "{", "}" ), edge.direction );
+        if ( addId ) {
+            props.add( property_( "_id", string_( edge.id ) ) );
+            props.add( property_( "__sourceId__", string_( edge.source ) ) );
+            props.add( property_( "__targetId__", string_( edge.target ) ) );
+        }
+        String defIdentifier = identifier != null ? identifier : edge.variableName() == null ? null : edge.variableName();
+
+        return edge_( defIdentifier, edge.labels, list_( props, "{", "}" ), edge.direction );
     }
 
     class PathStatement extends NeoStatement {
@@ -264,6 +274,20 @@ public interface NeoStatements {
     }
 
     static PathStatement path_( List<ElementStatement> elements ) {
+        return new PathStatement( elements );
+    }
+
+
+    static PathStatement path_( PolyPath path, @Nullable String mappingLabel, boolean addId ) {
+        int i = 0;
+        List<ElementStatement> elements = new ArrayList<>();
+        for ( GraphObject object : path.getPath() ) {
+            elements.add( i % 2 == 0
+                    ? node_( path.getNames().get( i ), (PolyNode) object, mappingLabel, addId )
+                    : edge_( path.getNames().get( i ), (PolyEdge) object, addId ) );
+            i++;
+        }
+
         return new PathStatement( elements );
     }
 
@@ -304,6 +328,8 @@ public interface NeoStatements {
     static NeoStatement _literalOrString( Object value ) {
         if ( value instanceof String ) {
             return string_( value );
+        } else if ( value instanceof List ) {
+            return literal_( String.format( "[%s]", ((List<Object>) value).stream().map( value1 -> _literalOrString( value1 ).build() ).collect( Collectors.joining( ", " ) ) ) );
         } else {
             return literal_( value );
         }
@@ -391,7 +417,7 @@ public interface NeoStatements {
     }
 
     static LiteralStatement literal_( RexLiteral literal ) {
-        return literal_( Objects.requireNonNull( NeoUtil.rexAsString( literal ) ) );
+        return literal_( Objects.requireNonNull( NeoUtil.rexAsString( literal, null, false ) ) );
     }
 
     class DistinctStatement extends NeoStatement {
@@ -496,6 +522,10 @@ public interface NeoStatements {
 
     static ReturnStatement return_( NeoStatement... statement ) {
         return new ReturnStatement( list_( Arrays.asList( statement ) ) );
+    }
+
+    static ReturnStatement return_( List<NeoStatement> statements ) {
+        return new ReturnStatement( list_( statements ) );
     }
 
 

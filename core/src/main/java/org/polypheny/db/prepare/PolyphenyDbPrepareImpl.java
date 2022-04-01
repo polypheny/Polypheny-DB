@@ -231,7 +231,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
-                    EnumerableRules.ENUMERABLE_UNWIND_RULE );
+                    EnumerableRules.ENUMERABLE_UNWIND_RULE,
+                    EnumerableRules.ENUMERABLE_TRANSFORMER_RULE
+            );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(

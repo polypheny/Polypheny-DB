@@ -16,6 +16,9 @@
 
 package org.polypheny.db.adapter.neo4j.util;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
+
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.ArrayList;
@@ -40,6 +43,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyNode;
@@ -150,7 +154,7 @@ public interface NeoUtil {
     }
 
     static PolyNode asPolyNode( Node node ) {
-        Map<String, Comparable<?>> map = new HashMap<>( node.asMap( NeoUtil::getStringOrNull ) );
+        Map<String, Comparable<?>> map = new HashMap<>( node.asMap( NeoUtil::getComparableOrString ) );
         String id = map.remove( "_id" ).toString();
         List<String> labels = new ArrayList<>();
         node.labels().forEach( e -> {
@@ -163,18 +167,27 @@ public interface NeoUtil {
 
 
     static PolyEdge asPolyEdge( Relationship relationship ) {
-        Map<String, Comparable<?>> map = new HashMap<>( relationship.asMap( NeoUtil::getStringOrNull ) );
+        Map<String, Comparable<?>> map = new HashMap<>( relationship.asMap( NeoUtil::getComparableOrString ) );
         String id = map.remove( "_id" ).toString();
         String sourceId = map.remove( "__sourceId__" ).toString();
         String targetId = map.remove( "__targetId__" ).toString();
         return new PolyEdge( id, new PolyDirectory( map ), List.of( relationship.type() ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT );
     }
 
-    static String getStringOrNull( Value e ) {
+    static Comparable<?> getComparableOrString( Value e ) {
         if ( e.isNull() ) {
             return null;
         }
-        return e.asString();
+        Object obj = e.asObject();
+        if ( obj instanceof List<?> ) {
+            return new PolyList<>( (List<Comparable<?>>) obj );
+        }
+
+        if ( obj instanceof Comparable<?> ) {
+            return (Comparable<?>) obj;
+        }
+
+        return e.toString();
     }
 
     static Function1<Record, Object> getTypesFunction( List<PolyType> types, List<PolyType> componentTypes ) {
@@ -216,7 +229,7 @@ public interface NeoUtil {
         return type.getPolyType();
     }
 
-    static String rexAsString( RexLiteral literal ) {
+    static String rexAsString( RexLiteral literal, String mappingLabel, boolean isLiteral ) {
         Object ob = literal.getValueForQueryParameterizer();
         if ( ob == null ) {
             return null;
@@ -271,9 +284,13 @@ public interface NeoUtil {
             case GRAPH:
                 break;
             case NODE:
-                break;
+                PolyNode node = literal.getValueAs( PolyNode.class );
+                if ( node.isVariable() ) {
+                    return node_( node.variableName(), node, null, false ).build();
+                }
+                return node_( null, node, mappingLabel, isLiteral ).build();
             case EDGE:
-                break;
+                return edge_( null, literal.getValueAs( PolyEdge.class ), isLiteral ).build();
             case PATH:
                 break;
             case DISTINCT:
@@ -403,6 +420,10 @@ public interface NeoUtil {
                 return o -> String.format( "%s[%s]", o.get( 0 ), o.get( 1 ) );
             case ARRAY_VALUE_CONSTRUCTOR:
                 return o -> "[" + String.join( ", ", o ) + "]";
+            case CYPHER_EXTRACT_FROM_PATH:
+                return o -> o.get( 0 );
+            case CYPHER_ADJUST_EDGE:
+                return o -> String.format( "%s%s%s", o.get( 1 ), o.get( 0 ), o.get( 2 ) );
             default:
                 return null;
         }

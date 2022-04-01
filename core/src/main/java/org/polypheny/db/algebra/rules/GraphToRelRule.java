@@ -16,23 +16,14 @@
 
 package org.polypheny.db.algebra.rules;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
-import org.polypheny.db.algebra.logical.graph.RelationalTransformable;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.ModelTrait;
 
 public class GraphToRelRule extends AlgOptRule {
 
@@ -59,28 +50,26 @@ public class GraphToRelRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        if ( !(call.alg( 0 ) instanceof RelationalTransformable) || !((RelationalTransformable) call.alg( 0 )).canTransform() ) {
-            return;
-        }
 
         AlgNode res;
         if ( isModify ) {
-            res = getRelModify( call );
+            //res = getRelModify( call );
         } else {
-            res = getRelScan( call );
+            //res = getRelScan( call );
         }
-        call.transformTo( res );
+        //call.transformTo( res );
     }
 
 
+    /*
     private AlgNode getRelModify( AlgOptRuleCall call ) {
         AlgNode node = getRelModifyUntransformed( call );
 
         return LogicalTransformer.create( List.of( node ), node.getTraitSet(), ModelTrait.RELATIONAL, ModelTrait.GRAPH, node.getRowType() );
-    }
+    }*/
 
 
-    private AlgNode getRelModifyUntransformed( AlgOptRuleCall call ) {
+    /*private AlgNode getRelModifyUntransformed( AlgOptRuleCall call ) {
         LogicalGraphModify modify = call.alg( 0 );
         LogicalGraphValues values = call.alg( 1 );
 
@@ -95,10 +84,10 @@ public class GraphToRelRule extends AlgOptRule {
         }
 
         return new LogicalModifyCollect( modify.getCluster(), set, transformedModifies, true );
-    }
+    }*/
 
 
-    private AlgNode getRelScan( AlgOptRuleCall call ) {
+    /*private AlgNode getRelScan( AlgOptRuleCall call ) {
         LogicalGraphScan scan = call.alg( 0 );
 
         List<AlgOptTable> tables = new ArrayList<>();
@@ -112,6 +101,6 @@ public class GraphToRelRule extends AlgOptRule {
         List<AlgNode> transformedScans = scan.getRelationalEquivalent( List.of(), tables );
 
         return LogicalTransformer.create( transformedScans, scan.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, scan.getRowType() );
-    }
+    }*/
 
 }

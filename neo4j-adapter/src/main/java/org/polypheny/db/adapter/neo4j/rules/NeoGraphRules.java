@@ -112,6 +112,7 @@ public interface NeoGraphRules {
                     alg.getCluster(),
                     alg.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( project.getInput(), NeoConvention.INSTANCE ),
+                    project.getNames(),
                     project.getProjects() );
         }
 

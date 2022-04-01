@@ -28,15 +28,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.LogicalScan;
+import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
-import org.polypheny.db.algebra.logical.graph.RelationalTransformable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -50,9 +52,12 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingTable;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.TranslatableGraph;
 import org.polypheny.db.schema.graph.Graph;
@@ -281,16 +286,53 @@ public abstract class BaseRouter {
     }
 
 
-    protected <T extends AlgNode & GraphAlg, G extends AlgNode & GraphAlg & RelationalTransformable> void attachMappingsIfNecessary( T input ) {
-        if ( !(input instanceof RelationalTransformable) ) {
-            return;
+    public AlgNode handleGraphScan( LogicalGraphScan alg, Statement statement ) {
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+
+        Catalog catalog = Catalog.getInstance();
+        CatalogGraphDatabase catalogGraph = catalog.getGraph( alg.getGraph().getId() );
+        for ( int adapterId : catalogGraph.placements ) {
+            CatalogAdapter adapter = catalog.getAdapter( adapterId );
+            CatalogGraphPlacement graphPlacement = catalog.getGraphPlacement( catalogGraph.id, adapterId );
+            String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
+
+            Graph graph = reader.getGraph( name );
+
+            if ( !(graph instanceof TranslatableGraph) ) {
+                // needs substitution later on
+                return getRelationalScan( alg, statement );
+            }
+
+            return new LogicalGraphScan( alg.getCluster(), alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
+
+
         }
-        G alg = (G) input;
+        // substituted on optimization
+        return alg;
+    }
+
+
+    public AlgNode getRelationalScan( LogicalGraphScan alg, Statement statement ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
 
-        // --- nodes
-        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodesId );
-        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( mapping.idNodeId );
+        PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId );
+        PreparingTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId );
+        PreparingTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId );
+        ;
+        PreparingTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId );
+
+        AlgNode node = buildSubstitutionJoin( alg, nodesTable, nodePropertiesTable );
+
+        AlgNode edge = buildSubstitutionJoin( alg, edgesTable, edgePropertiesTable );
+
+        return LogicalTransformer.create( List.of( node, edge ), alg.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, alg.getRowType() );
+
+    }
+
+
+    protected PreparingTable getSubstitutionTable( Statement statement, long tableId, long columnId ) {
+        CatalogEntity nodes = Catalog.getInstance().getTable( tableId );
+        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( columnId );
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
                         placement.get( 0 ).adapterUniqueName,
@@ -299,78 +341,23 @@ public abstract class BaseRouter {
                 ),
                 nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
 
-        PreparingTable node = alg.getCatalogReader().getTableForMember( qualifiedTableName );
-        alg.setNodeTable( node );
-
-        // --- node properties
-        CatalogEntity nodeProperties = Catalog.getInstance().getTable( mapping.nodesPropertyId );
-        placement = Catalog.getInstance().getColumnPlacement( mapping.idNodesPropertyId );
-        qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        placement.get( 0 ).adapterUniqueName,
-                        nodeProperties.getNamespaceName(),
-                        placement.get( 0 ).physicalSchemaName
-                ),
-                nodeProperties.name + "_" + nodeProperties.partitionProperty.partitionIds.get( 0 ) );
-
-        PreparingTable nodeProperty = alg.getCatalogReader().getTableForMember( qualifiedTableName );
-        alg.setNodePropertyTable( nodeProperty );
-        // --- edge
-
-        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgesId );
-        placement = Catalog.getInstance().getColumnPlacement( mapping.idEdgeId );
-
-        qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        placement.get( 0 ).adapterUniqueName,
-                        edges.getNamespaceName(),
-                        placement.get( 0 ).physicalSchemaName
-                ),
-                edges.name + "_" + edges.partitionProperty.partitionIds.get( 0 ) );
-
-        PreparingTable edge = alg.getCatalogReader().getTableForMember( qualifiedTableName );
-        alg.setEdgeTable( edge );
-
-        // -- edge property
-
-        CatalogEntity edgeProperties = Catalog.getInstance().getTable( mapping.edgesPropertyId );
-        placement = Catalog.getInstance().getColumnPlacement( mapping.idEdgesPropertyId );
-
-        qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        placement.get( 0 ).adapterUniqueName,
-                        edgeProperties.getNamespaceName(),
-                        placement.get( 0 ).physicalSchemaName
-                ),
-                edgeProperties.name + "_" + edgeProperties.partitionProperty.partitionIds.get( 0 ) );
-
-        PreparingTable edgeProperty = alg.getCatalogReader().getTableForMember( qualifiedTableName );
-        alg.setEdgePropertyTable( edgeProperty );
+        return statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
     }
 
 
-    protected AlgNode handleGraphScan( LogicalGraphScan alg, Statement statement ) {
-        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+    protected AlgNode buildSubstitutionJoin( AlgNode alg, PreparingTable nodesTable, PreparingTable nodePropertiesTable ) {
+        AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
+        LogicalScan nodes = new LogicalScan( alg.getCluster(), out, nodesTable );
+        LogicalScan nodesProperty = new LogicalScan( alg.getCluster(), out, nodePropertiesTable );
 
-        CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
-        for ( int adapterId : catalogGraph.placements ) {
-            CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
-            CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
-            String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
+        RexBuilder builder = alg.getCluster().getRexBuilder();
 
-            Graph graph = reader.getGraph( name );
+        RexNode nodeCondition = builder.makeCall(
+                OperatorRegistry.get( OperatorName.EQUALS ),
+                builder.makeInputRef( nodes.getRowType().getFieldList().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( nodesProperty.getRowType().getFieldList().get( 0 ).getType(), nodes.getRowType().getFieldList().size() ) );
 
-            if ( !(graph instanceof TranslatableGraph) ) {
-                // needs substitution later on
-                return alg;
-            }
-
-            return new LogicalGraphScan( alg.getCluster(), reader, alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
-
-
-        }
-        // substituted on optimization
-        return alg;
+        return new LogicalJoin( alg.getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
     }
 
 }
