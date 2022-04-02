@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.BatchIterator;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.ConstraintEnforcer;
@@ -43,7 +44,9 @@ import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalStreamer;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
@@ -81,13 +84,15 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
+
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
+    boolean useChangeDataCapture = false;
+
+
     /**
      * Default implementation: Execute DML on all placements
-     *
-     * @return
      */
     @Override
     public AlgNode routeDml( AlgNode node, Statement statement ) {
@@ -128,7 +133,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 // Essentially gets a list of all stores where this table resides
                 List<CatalogDataPlacement> primaryDataPlacements = catalog.getDataPlacementsByReplicationStrategy( catalogTable.id, ReplicationStrategy.EAGER );
 
-                boolean useChangeDataCapture = false;
+
                 // Only consider lazy replication if there even are DataPlacements labeled as LAZY
                 if ( catalogTable.dataPlacements.size() != primaryDataPlacements.size() ) {
                     //TODO @HENNLO fill
@@ -687,11 +692,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 );
                             }
 
-                            /*useChangeDataCapture = true;
-                            if ( useChangeDataCapture ){
-                                modifies.add( LogicalStreamer.create( modify, new ReplicationQueue(cluster, cluster.traitSet() ) ));
-                            }
-                            */
                             modifies.add( modify );
                         }
                     }
@@ -709,22 +709,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     }
                 }
 
-                if ( modifies.size() == 1 ) {
-                    return modifies.get( 0 );
-                } else {
-                    RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
-                    for ( int i = 0; i < modifies.size(); i++ ) {
-                        if ( i == 0 ) {
-                            builder.push( modifies.get( i ) );
-                        } else {
-                            builder.push( modifies.get( i ) );
-                            builder.replaceTop( LogicalModifyCollect.create(
-                                    ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ),
-                                    true ) );
-                        }
-                    }
-                    return builder.build();
-                }
+                RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
+
+                return buildRoutedAlg( node, modifies, builder );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
@@ -942,6 +929,83 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 dmlConditionCheck( node, catalogTable, placements, o );
             }
         }
+    }
+
+
+    private AlgNode buildRoutedAlg( AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder ) {
+
+        useChangeDataCapture = true;
+        if ( useChangeDataCapture ) {
+            return handleChangeDataCapture( node, modifies, builder );
+        }
+
+        if ( modifies.size() == 1 ) {
+            return modifies.get( 0 );
+        } else {
+
+            // TODO @HENNLO add inputs/ analogously to LTM
+            //builder.push( LogicalModifyDataCapture.create( builder.getCluster(), builder.getCluster().traitSet(), modifies, super.recursiveCopy( node.getInput( 0 ) ) ) );
+
+            // TODO @HENNLo Build ReplicatorBuilder
+            // Gets modifycollect or list of modifies as input and constructs a logicalModifyReplicator
+
+            for ( int i = 0; i < modifies.size(); i++ ) {
+                if ( i == 0 ) {
+                    builder.push( modifies.get( i ) );
+                } else {
+                    builder.push( modifies.get( i ) );
+                    builder.replaceTop( LogicalModifyCollect.create(
+                            ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ),
+                            true ) );
+                }
+            }
+            return builder.build();
+        }
+    }
+
+
+    /**
+     * Is used to prepare the algebra to capture all basic operations that need to be applied asynchronously
+     * in a lazy replication.
+     */
+    private AlgNode handleChangeDataCapture( AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder ) {
+
+        // TODO currently only handled for one modify
+        LogicalTableModify modify = (LogicalTableModify) modifies.get( 0 );
+        LogicalStreamer streamer = LogicalStreamer.create( modify, AlgFactories.LOGICAL_BUILDER.create( modify.getCluster(), modify.getCatalogReader() ) );
+
+        LogicalTableModify preparedModify = (LogicalTableModify) streamer.getRight();
+        AlgNode query = streamer.getLeft();
+
+        List<AlgNode> collected = new ArrayList<>();
+        collected.add( preparedModify );
+        collected.add( LogicalModifyDataCapture.create(
+                builder.getCluster(),
+                builder.getCluster().traitSet(),
+                modifies,
+                super.recursiveCopy( preparedModify.getInput() ) ) );
+
+        builder.push( LogicalStreamer.create( query, LogicalModifyCollect.create( collected, true ) ) );
+
+        /*
+        //builder.push( preparedModify );
+        //builder.push( streamer );
+        builder.push(
+                LogicalStreamer.create( query,
+                        LogicalModifyDataCapture.create(
+                                builder.getCluster(),
+                                builder.getCluster().traitSet(),
+                                modifies,
+                                super.recursiveCopy( query ) )
+                ) );
+
+        builder.replaceTop( LogicalModifyCollect.create(
+                ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ),
+                true ) );*/
+
+        // TODO @HENNLO add inputs/ analogously to LTM
+        //builder.push( LogicalModifyDataCapture.create( builder.getCluster(), builder.getCluster().traitSet(), modifies, super.recursiveCopy( node.getInput( 0 ) ) ) );
+        return builder.build();
     }
 
 

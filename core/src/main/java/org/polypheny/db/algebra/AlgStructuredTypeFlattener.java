@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalStreamer;
@@ -125,7 +126,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     private final RexBuilder rexBuilder;
     private final boolean restructure;
 
-    private final Map<AlgNode, AlgNode> oldTonewAlgMap = new HashMap<>();
+    private final Map<AlgNode, AlgNode> oldToNewAlgMap = new HashMap<>();
     private AlgNode currentAlg;
     private int iRestructureInput;
     private AlgDataType flattenedRootType;
@@ -147,9 +148,9 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     public void updateRelInMap( SortedSetMultimap<AlgNode, CorrelationId> mapRefRelToCorVar ) {
         for ( AlgNode alg : Lists.newArrayList( mapRefRelToCorVar.keySet() ) ) {
-            if ( oldTonewAlgMap.containsKey( alg ) ) {
+            if ( oldToNewAlgMap.containsKey( alg ) ) {
                 SortedSet<CorrelationId> corVarSet = mapRefRelToCorVar.removeAll( alg );
-                mapRefRelToCorVar.putAll( oldTonewAlgMap.get( alg ), corVarSet );
+                mapRefRelToCorVar.putAll( oldToNewAlgMap.get( alg ), corVarSet );
             }
         }
     }
@@ -158,8 +159,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void updateRelInMap( SortedMap<CorrelationId, LogicalCorrelate> mapCorVarToCorRel ) {
         for ( CorrelationId corVar : mapCorVarToCorRel.keySet() ) {
             LogicalCorrelate oldRel = mapCorVarToCorRel.get( corVar );
-            if ( oldTonewAlgMap.containsKey( oldRel ) ) {
-                AlgNode newAlg = oldTonewAlgMap.get( oldRel );
+            if ( oldToNewAlgMap.containsKey( oldRel ) ) {
+                AlgNode newAlg = oldToNewAlgMap.get( oldRel );
                 assert newAlg instanceof LogicalCorrelate;
                 mapCorVarToCorRel.put( corVar, (LogicalCorrelate) newAlg );
             }
@@ -238,12 +239,12 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     protected void setNewForOldRel( AlgNode oldRel, AlgNode newAlg ) {
-        oldTonewAlgMap.put( oldRel, newAlg );
+        oldToNewAlgMap.put( oldRel, newAlg );
     }
 
 
     protected AlgNode getNewForOldRel( AlgNode oldRel ) {
-        return oldTonewAlgMap.get( oldRel );
+        return oldToNewAlgMap.get( oldRel );
     }
 
 
@@ -343,6 +344,20 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     public void rewriteAlg( LogicalStreamer alg ) {
         LogicalStreamer newAlg = LogicalStreamer.create( alg.getLeft(), alg.getRight() );
+        setNewForOldRel( alg, newAlg );
+    }
+
+
+    public void rewriteAlg( LogicalModifyDataCapture alg ) {
+        LogicalModifyDataCapture newAlg = LogicalModifyDataCapture.create(
+                alg.getCluster(),
+                alg.traitSet,
+                alg.getOperation(),
+                alg.getTable(),
+                alg.getUpdateColumnList(),
+                alg.getSourceExpressionList(),
+                alg.getFieldList(),
+                getNewForOldRel( alg.getInput() ) );
         setNewForOldRel( alg, newAlg );
     }
 

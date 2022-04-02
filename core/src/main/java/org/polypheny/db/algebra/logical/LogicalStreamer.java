@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.enumerable.EnumerableTableModify;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.ModifyCollect;
 import org.polypheny.db.algebra.core.Streamer;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableScan;
@@ -62,12 +63,36 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static LogicalStreamer create( TableModify modify, AlgBuilder algBuilder ) {
+    /**
+     * Allows creation of Streamer on the basis of 'TableModify' or 'ModifyCollect'
+     *
+     * @return LogicalStreamer
+     */
+    public static LogicalStreamer create( AlgNode modification, AlgBuilder algBuilder ) {
+
+        if ( modification instanceof TableModify ) {
+            return transformModify( (TableModify) modification, algBuilder );
+        } else if ( modification instanceof ModifyCollect ) {
+            return transformModifyCollect( (ModifyCollect) modification, algBuilder );
+        } else {
+            throw new RuntimeException( "" );
+        }
+    }
+
+
+    private static LogicalStreamer transformModifyCollect( ModifyCollect modifyCollect, AlgBuilder algBuilder ) {
+
+        return null;
+    }
+
+
+    private static LogicalStreamer transformModify( TableModify modify, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
-        if ( !isModifyApplicable( modify ) ) {
+        // TODO @HENNLO Disable rule for LazyReplication
+        /*if ( !isModifyApplicable( modify ) ) {
             return null;
-        }
+        }*/
 
         /////// query
         // first we create the query, which could retrieve the values for the prepared modify
@@ -127,6 +152,7 @@ public class LogicalStreamer extends Streamer {
                         modify.getSourceExpressionList() == null ? null : createSourceList( modify, rexBuilder ),
                         false )
                 .isStreamed( true );
+
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }
 

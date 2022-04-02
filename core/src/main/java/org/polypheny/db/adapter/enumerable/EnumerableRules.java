@@ -70,6 +70,8 @@ public class EnumerableRules {
 
     public static final EnumerableStreamerRule ENUMERABLE_STREAMER_RULE = new EnumerableStreamerRule();
 
+    public static final EnumerableModifyDataCaptureRule ENUMERABLE_DATA_CAPTURE_RULE = new EnumerableModifyDataCaptureRule();
+
     public static final EnumerableTableModifyToStreamerRule ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE = new EnumerableTableModifyToStreamerRule();
 
     public static final EnumerableBatchIteratorRule ENUMERABLE_BATCH_ITERATOR_RULE = new EnumerableBatchIteratorRule();

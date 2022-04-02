@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
@@ -213,6 +214,67 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getUpdateColumnList(),
                 newSourceExpression,
                 modify.isFlattened() );
+
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalModifyDataCapture initial ) {
+        LogicalModifyDataCapture modifyDataCapture = (LogicalModifyDataCapture) super.visit( initial );
+        List<RexNode> newSourceExpression = null;
+        if ( modifyDataCapture.getSourceExpressionList() != null ) {
+            newSourceExpression = new ArrayList<>();
+            for ( RexNode node : modifyDataCapture.getSourceExpressionList() ) {
+                newSourceExpression.add( node.accept( this ) );
+            }
+        }
+        AlgNode input = modifyDataCapture.getInput();
+        if ( input instanceof LogicalValues ) {
+            List<RexNode> projects = new ArrayList<>();
+            boolean firstRow = true;
+            HashMap<Integer, Integer> idxMapping = new HashMap<>();
+            this.batchSize = ((LogicalValues) input).tuples.size();
+            for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
+                int i = 0;
+                for ( RexLiteral literal : node ) {
+                    int idx;
+                    if ( !idxMapping.containsKey( i ) ) {
+                        idx = index.getAndIncrement();
+                        idxMapping.put( i, idx );
+                    } else {
+                        idx = idxMapping.get( i );
+                    }
+                    AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                    if ( firstRow ) {
+                        projects.add( new RexDynamicParam( type, idx ) );
+                    }
+                    if ( !values.containsKey( idx ) ) {
+                        types.add( type );
+                        values.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
+                    }
+                    values.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                    i++;
+                }
+                firstRow = false;
+            }
+            LogicalValues logicalValues = LogicalValues.createOneRow( input.getCluster() );
+            input = new LogicalProject(
+                    input.getCluster(),
+                    input.getTraitSet(),
+                    logicalValues,
+                    projects,
+                    input.getRowType()
+            );
+        }
+        return new LogicalModifyDataCapture(
+                modifyDataCapture.getCluster(),
+                modifyDataCapture.getTraitSet(),
+                modifyDataCapture.getOperation(),
+                modifyDataCapture.getTable(),
+                modifyDataCapture.getUpdateColumnList(),
+                newSourceExpression,
+                modifyDataCapture.getFieldList(),
+                input );
 
     }
 

@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.logical.LogicalIntersect;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
@@ -189,6 +190,12 @@ public class AlgShuttleImpl implements AlgShuttle {
     @Override
     public AlgNode visit( LogicalTableModify modify ) {
         return visitChildren( modify );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalModifyDataCapture modifyDataCapture ) {
+        return visitChildren( modifyDataCapture );
     }
 
 

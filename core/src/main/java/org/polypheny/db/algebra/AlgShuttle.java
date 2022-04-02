@@ -46,6 +46,7 @@ import org.polypheny.db.algebra.logical.LogicalIntersect;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
@@ -87,6 +88,8 @@ public interface AlgShuttle {
     AlgNode visit( LogicalExchange exchange );
 
     AlgNode visit( LogicalTableModify modify );
+
+    AlgNode visit( LogicalModifyDataCapture modifyDataCapture );
 
     AlgNode visit( LogicalConditionalExecute lce );
 
