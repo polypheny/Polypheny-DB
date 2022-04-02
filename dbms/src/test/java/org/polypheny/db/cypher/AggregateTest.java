@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.Result;
 
+
 public class AggregateTest extends CypherTestTemplate {
 
     @Before

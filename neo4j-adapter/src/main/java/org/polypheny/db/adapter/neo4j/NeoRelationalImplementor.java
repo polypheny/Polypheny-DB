@@ -174,7 +174,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
         int i = 0;
         for ( RexNode project : neoProject.getProjects() ) {
-            Translator translator = new Translator( neoProject.getRowType(), last.getRowType(), new HashMap<>(), implementor, null );
+            Translator translator = new Translator( neoProject.getRowType(), last.getRowType(), new HashMap<>(), implementor, null, true );
             String res = project.accept( translator );
             assert res != null : "Unsupported operation encountered for projects in Neo4j.";
 
@@ -241,7 +241,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addFilter( NeoFilter filter ) {
-        Translator translator = new Translator( last.getRowType(), last.getRowType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>(), this, null );
+        Translator translator = new Translator( last.getRowType(), last.getRowType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>(), this, null, true );
         add( where_( literal_( filter.getCondition().accept( translator ) ) ) );
     }
 
@@ -255,7 +255,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         if ( project != null ) {
             for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
                 if ( !mapping.containsKey( field.getName() ) ) {
-                    Translator translator = new Translator( project.getRowType(), project.getRowType(), new HashMap<>(), this, null );
+                    Translator translator = new Translator( project.getRowType(), project.getRowType(), new HashMap<>(), this, null, true );
                     mapping.put( field.getName(), project.getProjects().get( field.getIndex() ).accept( translator ) );
                 }
             }
@@ -278,7 +278,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         List<NeoStatement> nodes = new ArrayList<>();
         int i = 0;
         for ( RexNode node : neoModify.getSourceExpressionList() ) {
-            Translator translator = new Translator( last.getRowType(), last.getRowType(), mapping, this, null );
+            Translator translator = new Translator( last.getRowType(), last.getRowType(), mapping, this, null, true );
             nodes.add( assign_( literal_( mapping.get( neoModify.getUpdateColumnList().get( i ) ) ), literal_( node.accept( translator ) ) ) );
             i++;
         }

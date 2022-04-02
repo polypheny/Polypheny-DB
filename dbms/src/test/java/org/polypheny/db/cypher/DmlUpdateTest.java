@@ -17,12 +17,21 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
 
 public class DmlUpdateTest extends CypherTestTemplate {
+
+    @Before
+    public void reset() {
+        tearDown();
+        createSchema();
+    }
+
 
     @Test
     public void updatePropertyTest() {
@@ -31,7 +40,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a.age = 25" );
 
         Result res = matchAndReturnAllNodes();
-        containsRows( res, true, true,
+        assert containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
     }
 
@@ -43,8 +52,8 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a:Swiss" );
 
         Result res = matchAndReturnAllNodes();
-        containsRows( res, true, true,
-                Row.of( TestNode.from( List.of( "Person", "Swiss" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
+        assert containsRows( res, true, true,
+                Row.of( TestNode.from( List.of( "Person", "Swiss" ), Pair.of( "name", "Max" ) ) ) );
     }
 
 
@@ -55,8 +64,8 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a:Swiss:German" );
 
         Result res = matchAndReturnAllNodes();
-        containsRows( res, true, true,
-                Row.of( TestNode.from( List.of( "Person", "Swiss", "German" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
+        assert containsRows( res, true, true,
+                Row.of( TestNode.from( List.of( "Swiss", "German" ), Pair.of( "name", "Max" ) ) ) );
     }
 
 
@@ -67,7 +76,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a = {} " );
 
         Result res = matchAndReturnAllNodes();
-        containsRows( res, true, true,
+        assert containsRows( res, true, true,
                 Row.of( TestNode.from( List.of( "Person" ) ) ) );
     }
 
@@ -79,33 +88,35 @@ public class DmlUpdateTest extends CypherTestTemplate {
                 + "SET a = { age: 13, job: 'Developer'} " );
 
         Result res = matchAndReturnAllNodes();
-        containsRows( res, true, true,
+        assert containsRows( res, true, true,
                 Row.of( TestNode.from(
                         List.of( "Person" ),
-                        Pair.of( "name", "Max" ),
                         Pair.of( "age", 13 ),
                         Pair.of( "job", "Developer" ) ) ) );
     }
 
 
     @Test
+    @Ignore
     public void updatePropertyReturnTest() {
-        Result res = execute( "MATCH (a:Animal {name: 'Kira'})\n"
+        execute( "MATCH (a:Animal {name: 'Kira'})\n"
                 + "SET a.age = 4\n"
                 + "RETURN a" );
     }
 
 
     @Test
+    @Ignore
     public void updateRelationshipExistingPropertyTest() {
-        Result res = execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
+        execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
                 + "SET rel.since = 2018" );
     }
 
 
     @Test
+    @Ignore
     public void updateRelationshipNewPropertyTest() {
-        Result res = execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
+        execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
                 + "SET rel.status = 'fresh'" );
     }
 

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -29,6 +30,7 @@ import org.polypheny.db.type.PolyType;
 public class GraphTransformer extends Transformer {
 
     public final List<PolyType> operationOrder;
+    public final Operation operation;
 
 
     /**
@@ -37,10 +39,12 @@ public class GraphTransformer extends Transformer {
      * @param cluster
      * @param inputs
      * @param rowType
+     * @param operation
      */
-    public GraphTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder ) {
+    public GraphTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, inputs, traitSet.replace( ModelTrait.GRAPH ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, rowType );
         this.operationOrder = operationOrder;
+        this.operation = operation;
     }
 
 

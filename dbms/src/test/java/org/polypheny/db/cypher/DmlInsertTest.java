@@ -147,7 +147,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
         // only select all edges
         res = execute( "MATCH ()-[r]->() RETURN r" );
-        assert containsRows( res, true, true,
+        assert containsRows( res, true, false,
                 Row.of( TestEdge.from( List.of( "OWNER_OF" ) ) ),
                 Row.of( TestEdge.from( List.of( "FRIEND_OF" ) ) ) );
     }
@@ -195,7 +195,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
         Result res = execute( "MATCH ()-[r]->() RETURN r" );
 
-        containsRows( res, true, true,
+        assert containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
     }
 
@@ -210,7 +210,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
         Result res = execute( "MATCH ()-[r]->() RETURN r" );
 
-        containsRows( res, true, true,
+        assert containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
 
     }
@@ -226,7 +226,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
         Result res = execute( "MATCH ()-[r]->() RETURN r" );
 
-        containsRows( res, true, true,
+        assert containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ),
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
 

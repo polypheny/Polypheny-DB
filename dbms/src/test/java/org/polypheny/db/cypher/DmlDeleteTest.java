@@ -16,16 +16,26 @@
 
 package org.polypheny.db.cypher;
 
+import java.util.List;
+import org.junit.Before;
 import org.junit.Test;
-import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
 
 public class DmlDeleteTest extends CypherTestTemplate {
 
+    @Before
+    public void reset() {
+        tearDown();
+        createSchema();
+    }
+
+
     @Test
     public void simpleNodeDeleteTest() {
         execute( SINGLE_NODE_PERSON_1 );
-        execute( "MATCH (p:Person {name: 'Alice'})\n"
+        execute( "MATCH (p:Person {name: 'Max'})\n"
                 + "DELETE p" );
         Result res = matchAndReturnAllNodes();
         assertEmpty( res );
@@ -33,22 +43,43 @@ public class DmlDeleteTest extends CypherTestTemplate {
 
 
     @Test
-    public void prohibitedDeleteTest() {
-        try {
-            Result res = CypherConnection.executeGetResponse(
-                    "MATCH (a:Animal {name: 'Kira'})\n"
-                            + "DELETE a" );
-        } catch ( Exception e ) {
+    public void simpleFilteredNodeDeleteTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( "MATCH (p:Person {name: 'Max'})\n"
+                + "DELETE p" );
+        Result res = matchAndReturnAllNodes();
+        assert containsRows( res, true, false,
+                Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) ) ) );
+    }
 
-        }
+
+    @Test
+    public void twoNodeDeleteTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( SINGLE_NODE_PERSON_2 );
+        execute( "MATCH (p:Person {name: 'Max'}), (h:Person {name: 'Hans'})\n"
+                + "DELETE p, h" );
+        Result res = matchAndReturnAllNodes();
+        assertEmpty( res );
     }
 
 
     @Test
     public void simpleRelationshipDeleteTest() {
-        Result res = CypherConnection.executeGetResponse(
-                "MATCH (:Person {name: 'Max Muster'})-[rel:OWNER_OF]->[:Animal {name: 'Kira'}] \n"
-                        + "DELETE rel" );
+        execute( SINGLE_EDGE_1 );
+        execute( "MATCH (:Person {name: 'Max'})-[rel:OWNER_OF]->(:Animal {name: 'Kira'}) \n"
+                + "DELETE rel" );
+
+        Result res = matchAndReturnAllNodes();
+        assert containsRows( res, true, false,
+                Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) ),
+                Row.of( TestNode.from(
+                        List.of( "Animal" ),
+                        Pair.of( "name", "Kira" ),
+                        Pair.of( "age", 3 ),
+                        Pair.of( "type", "dog" ) ) ) );
+
     }
 
 

@@ -16,12 +16,15 @@
 
 package org.polypheny.db.adapter.neo4j.util;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexCall;
@@ -32,6 +35,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 public class Translator extends RexVisitorImpl<String> {
 
@@ -41,15 +45,17 @@ public class Translator extends RexVisitorImpl<String> {
     private final NeoRelationalImplementor implementor;
     private final List<AlgDataTypeField> beforeFields;
     private final String mappingLabel;
+    private final boolean useBrackets;
 
 
-    public Translator( AlgDataType afterRowType, AlgDataType beforeRowType, Map<String, String> mapping, NeoRelationalImplementor implementor, @Nullable String mappingLabel ) {
+    public Translator( AlgDataType afterRowType, AlgDataType beforeRowType, Map<String, String> mapping, NeoRelationalImplementor implementor, @Nullable String mappingLabel, boolean useBrackets ) {
         super( true );
         this.afterFields = afterRowType.getFieldList();
         this.beforeFields = beforeRowType.getFieldList();
         this.mapping = mapping;
         this.implementor = implementor;
         this.mappingLabel = mappingLabel;
+        this.useBrackets = useBrackets;
     }
 
 
@@ -71,6 +77,9 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String adjustGraph( AlgDataType type, String name ) {
+        if ( !useBrackets ) {
+            return name;
+        }
         switch ( type.getPolyType() ) {
             case NODE:
                 return String.format( "(%s)", name );
@@ -118,11 +127,60 @@ public class Translator extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall( RexCall call ) {
+        if ( call.op.getOperatorName() == OperatorName.CYPHER_SET_LABELS ) {
+            return handleSetLabels( call );
+        }
+        if ( call.op.getOperatorName() == OperatorName.CYPHER_SET_PROPERTIES ) {
+            return handleSetProperties( call );
+        }
+
         List<String> ops = call.operands.stream().map( o -> o.accept( this ) ).collect( Collectors.toList() );
 
         Function1<List<String>, String> getter = NeoUtil.getOpAsNeo( call.op.getOperatorName() );
         assert getter != null : "Function is not supported by the Neo4j adapter.";
-        return "(" + getter.apply( ops ) + ")";
+        if ( useBrackets ) {
+            return "(" + getter.apply( ops ) + ")";
+        }
+        return " " + getter.apply( ops ) + " ";
+    }
+
+
+    private String handleSetProperties( RexCall call ) {
+        String identifier = call.operands.get( 0 ).accept( this );
+        List<RexLiteral> rexKeys = ((RexLiteral) call.operands.get( 1 )).getValueAs( List.class );
+        List<String> keys = rexKeys.stream().map( l -> l.accept( this ) ).collect( Collectors.toList() );
+        List<RexLiteral> rexValues = ((RexLiteral) call.operands.get( 2 )).getValueAs( List.class );
+        List<String> values = rexValues.stream().map( l -> {
+            String literal = NeoUtil.rexAsString( l, null, true );
+            if ( PolyType.STRING_TYPES.contains( l.getType().getPolyType() ) ) {
+                return String.format( "'%s'", literal );
+            }
+            return literal;
+        } ).collect( Collectors.toList() );
+
+        boolean replace = ((RexLiteral) call.operands.get( 3 )).getValueAs( Boolean.class );
+
+        List<String> mappings = new ArrayList<>();
+        mappings.add( String.format( "_id:%s._id", identifier ) );
+        if ( call.getType().getPolyType() == PolyType.EDGE ) {
+            mappings.add( String.format( "__sourceId__:%s.__sourceId__", identifier ) );
+            mappings.add( String.format( "__targetId__:%s.__targetId__", identifier ) );
+        }
+
+        return identifier + (replace ? " = " : " += ") + "{" + Stream.concat(
+                        Pair.zip( keys, values )
+                                .stream()
+                                .map( e -> String.format( "%s:%s", e.left, e.right ) ),
+                        mappings.stream() ) // preserve id
+                .collect( Collectors.joining( "," ) ) + "}";
+    }
+
+
+    private String handleSetLabels( RexCall call ) {
+        String identifier = call.operands.get( 0 ).accept( this );
+        List<RexLiteral> rexLabels = ((RexLiteral) call.operands.get( 1 )).getValueAs( List.class );
+        List<String> labels = rexLabels.stream().map( l -> ":" + l.accept( this ) ).collect( Collectors.toList() );
+        return identifier + String.join( "", labels );
     }
 
 }

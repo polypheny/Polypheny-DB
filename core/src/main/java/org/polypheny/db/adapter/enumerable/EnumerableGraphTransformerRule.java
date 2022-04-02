@@ -41,7 +41,8 @@ public class EnumerableGraphTransformerRule extends ConverterRule {
                 out,
                 alg.getInputs().stream().map( i -> convert( i, inputOut ) ).collect( Collectors.toList() ),
                 alg.getRowType(),
-                graphTransformer.operationOrder );
+                graphTransformer.operationOrder,
+                graphTransformer.operation );
     }
 
 }

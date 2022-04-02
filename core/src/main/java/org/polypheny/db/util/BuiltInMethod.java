@@ -79,6 +79,7 @@ import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
@@ -472,7 +473,7 @@ public enum BuiltInMethod {
     CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, boolean.class ),
     CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
     CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
-    SPLIT_GRAPH_MODIFY( CypherFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class );
+    SPLIT_GRAPH_MODIFY( CypherFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class );
 
     public final Method method;
     public final Constructor constructor;

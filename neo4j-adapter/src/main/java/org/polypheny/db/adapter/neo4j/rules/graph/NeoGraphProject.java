@@ -56,7 +56,7 @@ public class NeoGraphProject extends GraphProject implements NeoGraphAlg {
         if ( !implementor.isDml() ) {
             List<NeoStatement> statements = new ArrayList<>();
             for ( RexNode project : getProjects() ) {
-                Translator translator = new Translator( getRowType(), getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel );
+                Translator translator = new Translator( getRowType(), getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, true );
                 statements.add( literal_( project.accept( translator ) ) );
             }
 

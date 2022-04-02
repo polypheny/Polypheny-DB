@@ -213,23 +213,25 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
 
     private void attachEmptyStubs( PolySegment segment, List<TreePart> root ) {
-
+        Set<String> usedIds = new HashSet<>();
         for ( PolyEdge edge : edges.values() ) {
             PolyNode left = nodes.get( edge.source );
             PolyNode right = nodes.get( edge.target );
             // we attach stubs, which allows ()->() and ()-()
             if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( left, edge, right ) ) {
-                    root.add( new TreePart( null, null, edge.source ) );
+                    usedIds.add( edge.source );
                 }
             }
             // we attach stubs, which allows ()<-() and ()-() AKA inverted
             if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( right, edge, left ) ) {
-                    root.add( new TreePart( null, null, edge.target ) );
+                    usedIds.add( edge.target );
                 }
             }
         }
+        // so we filter out edges which point to the same node
+        usedIds.forEach( id -> root.add( new TreePart( null, null, id ) ) );
     }
 
 

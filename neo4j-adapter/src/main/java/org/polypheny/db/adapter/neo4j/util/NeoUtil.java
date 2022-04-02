@@ -424,6 +424,20 @@ public interface NeoUtil {
                 return o -> o.get( 0 );
             case CYPHER_ADJUST_EDGE:
                 return o -> String.format( "%s%s%s", o.get( 1 ), o.get( 0 ), o.get( 2 ) );
+            case CYPHER_REMOVE_LABELS:
+                return o -> o.toString();
+            case CYPHER_SET_LABELS:
+                return o -> {
+                    String name = o.get( 0 );
+                    for ( int i = 1; i < o.size(); i++ ) {
+                        name += ":" + o.get( i );
+                    }
+                    return name;
+                };
+            case CYPHER_SET_PROPERTIES:
+                throw new RuntimeException( "No values should land here" );
+            case CYPHER_SET_PROPERTY:
+                return o -> String.format( "%s.%s = %s", o.get( 0 ), o.get( 1 ), o.get( 2 ) );
             default:
                 return null;
         }

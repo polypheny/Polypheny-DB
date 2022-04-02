@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.logical.graph;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.GraphTransformer;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -33,15 +34,16 @@ public class LogicalGraphTransformer extends GraphTransformer {
      * @param inputs
      * @param rowType
      * @param operationOrder
+     * @param insert
      */
-    public LogicalGraphTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder ) {
-        super( cluster, traitSet, inputs, rowType, operationOrder );
+    public LogicalGraphTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
+        super( cluster, traitSet, inputs, rowType, operationOrder, operation );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, rowType, operationOrder );
+        return new LogicalGraphTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, rowType, operationOrder, operation );
     }
 
 }

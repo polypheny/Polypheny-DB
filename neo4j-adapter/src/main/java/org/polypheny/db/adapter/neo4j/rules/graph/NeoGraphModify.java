@@ -17,20 +17,24 @@
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.create_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.delete_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.path_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.set_;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.LiteralStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
@@ -114,7 +118,7 @@ public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
                     GraphProject project = (GraphProject) implementor.getLast();
                     List<NeoStatement> statements = new ArrayList<>();
                     for ( RexNode projectProject : project.getProjects() ) {
-                        Translator translator = new Translator( project.getRowType(), project.getInput().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel );
+                        Translator translator = new Translator( project.getRowType(), project.getInput().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, true );
                         statements.add( literal_( projectProject.accept( translator ) ) );
                     }
                     implementor.add( create_( statements ) );
@@ -170,12 +174,25 @@ public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
 
 
     private void handleUpdate( NeoGraphImplementor implementor ) {
+        List<NeoStatement> ops = new ArrayList<>();
+        for ( RexNode rexNode : operations ) {
+            Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
+            ops.add( literal_( rexNode.accept( translator ) ) );
+        }
 
+        implementor.add( set_( list_( ops ) ) );
     }
 
 
     private void handleDelete( NeoGraphImplementor implementor ) {
-
+        List<LiteralStatement> fieldNames = implementor
+                .getLast()
+                .getRowType()
+                .getFieldList()
+                .stream()
+                .map( f -> literal_( f.getName() ) )
+                .collect( Collectors.toList() );
+        implementor.add( delete_( list_( fieldNames ) ) );
     }
 
 }

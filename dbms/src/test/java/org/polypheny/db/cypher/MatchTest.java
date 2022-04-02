@@ -149,7 +149,7 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void simpleEdgeTest() {
         execute( SINGLE_EDGE_1 );
-        Result res = execute( "MATCH ()-[r]-() RETURN r" );
+        Result res = execute( "MATCH ()-[r]->() RETURN r" );
         assertEdge( res, 0 );
         containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
     }
