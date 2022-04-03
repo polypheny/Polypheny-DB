@@ -489,8 +489,9 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
 {
     <PROCEDURE> ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
-    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
-
+    <DOLLAR>
+    query = StringLiteral()
+    <DOLLAR>
     {
         return SqlDdlNodes.createProcedure(s.end(this), replace, ifNotExists, id, query);
     }

@@ -198,9 +198,9 @@ public class DdlParserTest extends SqlParserTest {
     @Test
     public void testCreateOrReplaceProcedure() {
         final String sql = "create procedure \"myudf\"\n"
-                + " as 'select * from customers'";
+                + " $ 'select * from customers' $";
         final String expected = "CREATE PROCEDURE `myudf`"
-                + " AS 'select * from customers'";
+                + " $ 'select * from customers' $";
         sql( sql ).ok( expected );
     }
 

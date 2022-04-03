@@ -85,10 +85,9 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
             }
             writer.endList( frame );
         }*/
-        writer.keyword( "AS" );
-        // parse query
-        query.unparse( writer, 0, 0 );
-        writer.keyword("GO");
+        writer.keyword("$");
+        query.unparse(writer, 0, 0);
+        writer.keyword("$");
     }
 
     @Override
