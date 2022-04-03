@@ -19,10 +19,12 @@ package org.polypheny.db.cypher;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.cypher.helper.TestPath;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
 
@@ -288,6 +290,24 @@ public class MatchTest extends CypherTestTemplate {
                 Row.of( HANS, MAX, HANS ),
                 Row.of( MAX, HANS, HANS ),
                 Row.of( HANS, HANS, HANS ) );
+    }
+
+    ///////////////////////////////////////////////
+    ///////// PATH
+    ///////////////////////////////////////////////
+
+
+    @Test
+    @Ignore
+    public void matchVariableReuseTest() {
+        execute( SINGLE_EDGE_1 );
+        Result res = execute( "MATCH (m {name:'Max'}), (k {name:'Kira'}), p = (m)-[]-(k)\n"
+                + "RETURN p" );
+        assert containsRows( res, true, true,
+                Row.of( TestPath.of(
+                        TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
+                        TestEdge.from( List.of( "OWNER_OF" ) ),
+                        TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ) ) );
     }
 
 

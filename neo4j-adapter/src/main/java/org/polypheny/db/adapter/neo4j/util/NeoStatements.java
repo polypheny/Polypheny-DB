@@ -41,7 +41,8 @@ public interface NeoStatements {
         RETURN( "RETURN" ),
         WITH( "WITH" ),
         SET( "SET" ),
-        DELETE( "DELETE" );
+        DELETE( "DELETE" ),
+        UNWIND( "UNWIND" );
 
         public final String identifier;
 
@@ -510,6 +511,18 @@ public interface NeoStatements {
 
     static CreateStatement create_( List<NeoStatement> statement ) {
         return new CreateStatement( list_( statement ) );
+    }
+
+    class UnwindStatement extends OperatorStatement {
+
+        protected UnwindStatement( NeoStatement statement ) {
+            super( StatementType.UNWIND, list_( List.of( statement ) ) );
+        }
+
+    }
+
+    static UnwindStatement unwind_( NeoStatement statement ) {
+        return new UnwindStatement( statement );
     }
 
     class ReturnStatement extends OperatorStatement {

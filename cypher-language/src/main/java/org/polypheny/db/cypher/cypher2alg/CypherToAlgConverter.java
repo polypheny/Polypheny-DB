@@ -454,6 +454,13 @@ public class CypherToAlgConverter {
             List<RexCall> calls = Pair.right( matches ).stream().map( r -> (RexCall) r ).collect( Collectors.toList() );
 
             stack.add( new LogicalGraphMatch( cluster, cluster.traitSet(), stack.pop(), calls, Pair.left( matches ) ) );
+            clearVariables();
+        }
+
+
+        private void clearVariables() {
+            nodes.clear();
+            edges.clear();
         }
 
 
@@ -476,6 +483,7 @@ public class CypherToAlgConverter {
             RexNode condition = getCondition();
 
             stack.add( new LogicalGraphFilter( cluster, cluster.traitSet(), stack.pop(), condition ) );
+            clearVariables();
         }
 
 
@@ -730,6 +738,7 @@ public class CypherToAlgConverter {
 
                 add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.INSERT, null, null ) );
             }
+            clearVariables();
         }
 
 
@@ -759,6 +768,7 @@ public class CypherToAlgConverter {
             List<Pair<String, RexNode>> updates = popNodes();
 
             add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
+            clearVariables();
         }
 
 
@@ -770,7 +780,7 @@ public class CypherToAlgConverter {
             List<Pair<String, RexNode>> deletes = popNodes();
 
             add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.DELETE, Pair.left( deletes ), Pair.right( deletes ) ) );
-
+            clearVariables();
         }
 
 
@@ -811,7 +821,7 @@ public class CypherToAlgConverter {
             List<Pair<String, RexNode>> updates = popNodes();
 
             add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
-
+            clearVariables();
         }
 
     }

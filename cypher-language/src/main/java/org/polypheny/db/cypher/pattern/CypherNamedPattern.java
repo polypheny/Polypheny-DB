@@ -17,8 +17,11 @@
 package org.polypheny.db.cypher.pattern;
 
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherNamedPattern extends CypherPattern {
@@ -37,6 +40,12 @@ public class CypherNamedPattern extends CypherPattern {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.NAMED_PATTERN;
+    }
+
+
+    @Override
+    public Pair<String, RexNode> getPatternMatch( CypherContext context ) {
+        return Pair.of( variable.getName(), anonymousPattern.getPatternMatch( context ).right );
     }
 
 }

@@ -16,6 +16,11 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.unwind_;
+
+import java.util.List;
 import javax.annotation.Nullable;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
@@ -42,7 +47,14 @@ public class NeoGraphUnwind extends GraphUnwind implements NeoGraphAlg {
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
+        implementor.visitChild( 0, getInput() ); // todo fix subfield
+        implementor.add( unwind_( as_( literal_( implementor.getLast().getRowType().getFieldNames().get( index ) ), literal_( alias ) ) ) );
+    }
 
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoGraphUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
     }
 
 }

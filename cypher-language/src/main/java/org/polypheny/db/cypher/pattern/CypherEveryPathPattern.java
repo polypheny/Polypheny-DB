@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.pattern;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -83,6 +84,7 @@ public class CypherEveryPathPattern extends CypherPattern {
                 namedNode = context.getNodeVariable( namedNode.left );
             }
             nodes.add( namedNode );
+            context.addNodes( List.of( Objects.requireNonNull( namedNode ) ) );
         }
 
         return nodes;
@@ -139,8 +141,25 @@ public class CypherEveryPathPattern extends CypherPattern {
 
         RexInputRef graphRef = context.rexBuilder.makeInputRef( context.nodeType, 0 );
         if ( nameNode.right.isBlank() ) {
+            Pair<String, PolyNode> old = context.getNodeVariable( nameNode.left );
+            if ( old != null ) {
+                // variable exists already and is a reference
+                nameNode = old;
+            } else {
+                // let's save it for later
+                context.addNodes( List.of( nameNode ) );
+            }
+
+            RexNode node = context.getRexNode( nameNode.left );
+            if ( node != null ) {
+                // variable exist already and is a pointer
+                return Pair.of( nameNode.left, node );
+            }
+            // simple extract
             return Pair.of( nameNode.left, context.rexBuilder.makeCall( context.nodeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_EXTRACT ), List.of( graphRef ) ) );
         } else {
+            // not simple extract, lets save the node
+            context.addNodes( List.of( nameNode ) );
             return Pair.of( nameNode.left, context.rexBuilder.makeCall( context.nodeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_MATCH ), List.of( graphRef, new RexLiteral( nameNode.right, context.nodeType, PolyType.NODE ) ) ) );
         }
     }

@@ -3809,6 +3809,9 @@ public class Crud implements InformationObserver {
                             temp[counter] = o.toString();
                         }
                     }
+                    if ( header.get( counter ).dataType.contains( "Path" ) ) {
+                        temp[counter] = ((GraphObject) o).toJson();
+                    }
                 }
                 counter++;
             }

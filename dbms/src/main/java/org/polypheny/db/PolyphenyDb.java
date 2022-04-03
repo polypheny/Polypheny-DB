@@ -110,7 +110,7 @@ public class PolyphenyDb {
     public boolean daemonMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default store")
-    public String defaultStoreName = "hsqldb";
+    public String defaultStoreName = "neo4j";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public String defaultSourceName = "csv";

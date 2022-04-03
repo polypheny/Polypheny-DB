@@ -34,9 +34,11 @@ import org.polypheny.db.cypher.helper.TestGraphObject;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
+import org.polypheny.db.cypher.helper.TestPath;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.Result;
 
@@ -271,6 +273,7 @@ public class CypherTestTemplate {
     public enum Type {
         NODE( "node", TestNode.class, PolyNode.class ),
         EDGE( "edge", TestNode.class, PolyNode.class ),
+        PATH( "path", TestPath.class, PolyPath.class ),
         STRING( "varchar", TestNode.class, PolyNode.class );
 
 
@@ -293,6 +296,8 @@ public class CypherTestTemplate {
                 return NODE;
             } else if ( object instanceof TestEdge ) {
                 return EDGE;
+            } else if ( object instanceof TestPath ) {
+                return PATH;
             }
             throw new UnsupportedOperationException();
         }
