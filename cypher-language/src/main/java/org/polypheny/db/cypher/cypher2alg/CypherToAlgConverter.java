@@ -667,7 +667,7 @@ public class CypherToAlgConverter {
 
         @Nullable
         public Pair<String, PolyNode> getNodeVariable( String name ) {
-            if ( this.nodes.containsKey( name ) ) {
+            if ( name != null && this.nodes.containsKey( name ) ) {
                 return Pair.of( name, this.nodes.get( name ) );
             }
             return null;

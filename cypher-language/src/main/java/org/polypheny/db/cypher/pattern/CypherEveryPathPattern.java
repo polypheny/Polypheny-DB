@@ -84,7 +84,9 @@ public class CypherEveryPathPattern extends CypherPattern {
                 namedNode = context.getNodeVariable( namedNode.left );
             }
             nodes.add( namedNode );
-            context.addNodes( List.of( Objects.requireNonNull( namedNode ) ) );
+            if ( namedNode != null && namedNode.left != null ) {
+                context.addNodes( List.of( Objects.requireNonNull( namedNode ) ) );
+            }
         }
 
         return nodes;
