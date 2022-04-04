@@ -16,6 +16,10 @@
 
 package org.polypheny.db.monitoring.workloadAnalysis.Shuttle;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
@@ -35,10 +39,12 @@ import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.AggregateInformation;
-import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.JoinInformation;
-import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.TableScanInformation;
-import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.adaptiveness.AggregateInformation;
+import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.AggregateInformationImpl;
+import org.polypheny.db.adaptiveness.JoinInformation;
+import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.JoinInformationImpl;
+import org.polypheny.db.adaptiveness.TableScanInformation;
+import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.TableScanInformationImpl;
 
 @Slf4j
 @Getter
@@ -46,9 +52,9 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
 
     protected final AlgNodeAnalyzeRexShuttle rexShuttle;
 
-    private final AggregateInformation aggregateInformation = new AggregateInformation();
-    private JoinInformation joinInformation = new JoinInformation();
-    private final TableScanInformation tableScanInformation = new TableScanInformation();
+    private final AggregateInformation aggregateInformation = new AggregateInformationImpl();
+    private JoinInformation joinInformation = new JoinInformationImpl();
+    private final TableScanInformation tableScanInformation = new TableScanInformationImpl();
     private int projectCount;
     private int sortCount;
     private int filterCount;
@@ -174,15 +180,12 @@ public class AlgNodeAnalyzeShuttle extends AlgShuttleImpl {
         //log.warn( "other#" + other.getClass().getSimpleName() );
         if ( other instanceof LogicalTableModify ) {
             modify = true;
-            // Add all columns to availableColumnsWithTable for statistics
-            if ( (other.getTable().getTable() instanceof LogicalTable) ) {
-                LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
-                Long tableId = logicalTable.getTableId();
-                //logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable.put( v, tableId ) );
-            }
         }
         return visitChildren( other );
     }
+
+
+
 
 
 }

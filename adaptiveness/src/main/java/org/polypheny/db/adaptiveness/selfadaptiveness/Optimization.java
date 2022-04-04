@@ -91,37 +91,4 @@ public enum Optimization {
 
     }
 
-
-
-
-    /*
-
-    select best store
-      different for different self adaptive options
-      * space 0
-      * speed 1  (does not really matter)
-      * redundancy 1 (does not really matter)
-      * language 2 (correct store depending on the query language)
-        - includes
-            select the best fit of store during make decision process depending on regular policies and self adapting options
-
-
-
-
-
-
-    other possible rules:
-
-        migrate data to another store
-         + speed, redundancy, language
-         - space
-         includes:
-            depolying of store that is in line with policy
-            copy data to that store
-
-
-
-
-
-     */
 }

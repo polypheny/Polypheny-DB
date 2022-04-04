@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.workloadAnalysis.InformationObjects;
+package org.polypheny.db.adaptiveness;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Getter;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
 
-@Getter
-public class JoinInformation {
+public interface SelfAdaptivAgent {
 
-    private final List<Pair<Long, Long>> jointTableIds = new ArrayList<>();
-    private final List<Pair<Long, Long>> jointColumnIds = new ArrayList<>();
-    private int joinCount;
+    @Getter
+    Map<String, AlgNode> materializedViews = new HashMap<>();
 
-    public JoinInformation(  ) {
-        this.joinCount = 0;
+    default Map<String, AlgNode> getMaterializedViews(){
+        return materializedViews;
     }
-
-    public void updateJoinInformation(Long tableIdLeft, Long tableIdRight){
-        this.joinCount += 1;
-        this.jointTableIds.add( new Pair<>( tableIdLeft, tableIdRight ) );
-    }
-
 
 }

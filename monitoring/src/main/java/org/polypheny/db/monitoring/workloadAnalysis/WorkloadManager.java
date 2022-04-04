@@ -16,7 +16,6 @@
 
 package org.polypheny.db.monitoring.workloadAnalysis;
 
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -24,10 +23,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
+import org.polypheny.db.adaptiveness.WorkloadInformation;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.Trigger;
 import org.polypheny.db.algebra.AlgNode;
@@ -83,7 +82,7 @@ public class WorkloadManager {
     }
 
 
-    public void findOftenUsedComplexQueries( AlgNode algNode ) {
+    public void findOftenUsedComplexQueries( AlgNode algNode, WorkloadInformation workloadInformation ) {
         if ( complexQueries.containsKey( algNode.algCompareString() ) ) {
 
             ComplexQuery complexQuery = complexQueries.remove( algNode.algCompareString() );
@@ -102,10 +101,10 @@ public class WorkloadManager {
 
                 if ( avgLast / avgComparison > 1.2 ) {
                     log.warn( "Query is often used: " + algNode );
-                    SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, true );
+                    SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, workloadInformation, true );
                 } else if ( avgComparison / avgLast > 1.2 ) {
                     log.warn( "Query is not used anymore: " + algNode );
-                    SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, false );
+                    SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, workloadInformation, false );
                 }
 
                 complexQuery = complexQueries.remove( algNode.algCompareString() );

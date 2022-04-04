@@ -27,10 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adaptiveness.WorkloadInformation;
 import org.polypheny.db.adaptiveness.exception.SelfAdaptiveRuntimeException;
 import org.polypheny.db.adaptiveness.policy.BooleanClause;
 import org.polypheny.db.adaptiveness.policy.Clause;
@@ -46,10 +48,10 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.view.SelfAdaptivAgent;
+import org.polypheny.db.adaptiveness.SelfAdaptivAgent;
 
 @Slf4j
-@Getter
+
 public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
 
@@ -67,12 +69,10 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
     private final Map<Pair<String, Action>, List<ManualDecision>> manualDecisions = new HashMap<>();
 
-    private final Map<String, List<AutomaticDecision>> automaticDecisions = new HashMap<>();
+    private final Map<String, List<Pair<Timestamp,AutomaticDecision>>> automaticDecisions = new HashMap<>();
     private final Map<Pair<String, Action>, ManualDecision> newlyAddedManualDecision = new HashMap<>();
 
     private final Queue<ManualDecision> adaptingQueue = new ConcurrentLinkedQueue<>();
-
-    private final Map<String, AlgNode> materializedViews = new HashMap<>();
 
 
     public void initialize( TransactionManager transactionManager, Authenticator authenticator ) {
@@ -89,6 +89,12 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
         materializedViews.put( algCompareString, tableScan );
     }
 
+    public  Map<String, AlgNode> getMaterializedViews(){
+        Map<String, AlgNode> test = this.materializedViews;
+        return this.materializedViews;
+    }
+
+
 
     public <T> void addManualDecision( ManualDecision<T> manualDecision ) {
         if ( this.manualDecisions.containsKey( manualDecision.getKey() ) ) {
@@ -100,22 +106,18 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
         } else {
             manualDecision.setDecisionStatus( CREATED );
             manualDecisions.put( manualDecision.getKey(), Collections.singletonList( manualDecision ) );
-            log.warn( "add first decision" );
         }
-
     }
 
 
     public <T> void addAutomaticDecision( AutomaticDecision<T> automaticDecision ) {
         if ( this.automaticDecisions.containsKey( automaticDecision.getKey() ) ) {
-            List<AutomaticDecision> decisionsList = new ArrayList<>( automaticDecisions.remove( automaticDecision.getKey() ) );
-            decisionsList.add( automaticDecision );
-            log.warn( "add second decision AUTO" );
+            List<Pair<Timestamp, AutomaticDecision>> decisionsList = new ArrayList<>( automaticDecisions.remove( automaticDecision.getKey() ) );
+            decisionsList.add( new Pair<>( automaticDecision.timestamp, automaticDecision) );
             automaticDecisions.put( automaticDecision.getKey(), decisionsList );
         } else {
             automaticDecision.setDecisionStatus( CREATED );
-            automaticDecisions.put( automaticDecision.getKey(), Collections.singletonList( automaticDecision ) );
-            log.warn( "add first decision AUTO" );
+            automaticDecisions.put( automaticDecision.getKey(), Collections.singletonList( new Pair<>( automaticDecision.timestamp, automaticDecision) ) );
         }
 
     }
@@ -245,7 +247,7 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
     }
 
 
-    public <T> void makeWorkloadDecision( Class<T> clazz, Trigger trigger, T selected, boolean increase ) {
+    public <T> void makeWorkloadDecision( Class<T> clazz, Trigger trigger, T selected, WorkloadInformation workloadInformation,  boolean increase ) {
 
         switch ( trigger ) {
             case REPEATING_QUERY:
@@ -263,7 +265,8 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
                             AdaptiveKind.AUTOMATIC,
                             clazz,
                             selected,
-                            decisionKey
+                            decisionKey,
+                            workloadInformation
                     );
 
                     WeightedList<T> weightedList = rankPossibleActions( context, Optimization.WORKLOAD_REPEATING_QUERY );
@@ -273,15 +276,19 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
                         automaticDecision.setBestAction( bestAction );
                         addAutomaticDecision( automaticDecision );
 
+                        boolean adaptSystem = false;
                         if ( automaticDecisions.containsKey( decisionKey ) ) {
-                            if ( automaticDecisions.get( decisionKey ).size() == 1 ) {
-                                bestAction.doChange( automaticDecision, adaptiveQueryInterface.getTransaction() );
-                                log.warn( "CREATE MATERIALIZED" );
+                            for ( Pair<Timestamp, AutomaticDecision> automaticDecisionTime : automaticDecisions.get( decisionKey ) ) {
+                                if(automaticDecisionTime.left.getTime() + TimeUnit.MINUTES.toMillis(30) < new Timestamp( System.currentTimeMillis() ).getTime() ){
+                                    adaptSystem = true;
+                                }
                             }
-                            log.warn( "do nothing, materialized is already created" );
+                            // Do the change if it is the first or it is  an old decision
+                            if ( automaticDecisions.get( decisionKey ).size() == 1 ||  adaptSystem ) {
+                                bestAction.doChange( automaticDecision, adaptiveQueryInterface.getTransaction() );
+                                adaptSystem = false;
+                            }
                         }
-
-
                     }
 
                     //there are less repeating queries

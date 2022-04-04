@@ -19,6 +19,7 @@ package org.polypheny.db.adaptiveness.selfadaptiveness;
 import java.sql.Timestamp;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.adaptiveness.WorkloadInformation;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.AdaptiveKind;
 
 /**
@@ -32,12 +33,14 @@ public class AutomaticDecision<T> extends Decision {
     private final String key;
     @Setter
     private Action bestAction;
+    private WorkloadInformation workloadInformation;
 
-    public AutomaticDecision( Timestamp timestamp, AdaptiveKind adaptiveKind, Class<T> clazz, T selected, String key ) {
+    public AutomaticDecision( Timestamp timestamp, AdaptiveKind adaptiveKind, Class<T> clazz, T selected, String key, WorkloadInformation workloadInformation ) {
         super( timestamp, adaptiveKind );
         this.clazz = clazz;
         this.selected = selected;
         this.key = key;
+        this.workloadInformation = workloadInformation;
 
     }
 

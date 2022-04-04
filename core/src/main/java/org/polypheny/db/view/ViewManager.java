@@ -16,10 +16,10 @@
 
 package org.polypheny.db.view;
 
-import static org.reflections.Reflections.log;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adaptiveness.SelfAdaptivAgent;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.core.TableScan;
@@ -58,6 +59,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 
 
+@Slf4j
 public class ViewManager {
 
     private static LogicalSort orderMaterialized( AlgNode other ) {
@@ -280,13 +282,22 @@ public class ViewManager {
 
 
         private AlgNode checkSelfAdapting( AlgNode algNode ) {
-            if ( selfAdaptingAgent != null && selfAdaptingAgent.getMaterializedViews().containsKey( algNode.algCompareString() ) ) {
-                isSelfadapting = true;
-                log.warn("replace this view");
-                return selfAdaptingAgent.getMaterializedViews().get( algNode.algCompareString() );
+
+            if ( selfAdaptingAgent != null ) {
+                selfAdaptingAgent.getMaterializedViews().forEach( ( k, v ) -> log.error( k ) );
+                selfAdaptingAgent.getMaterializedViews().forEach( ( k, v ) -> {
+                    if ( k.equals( algNode.algCompareString() ) ) {
+                        log.info( "TRUE" );
+                        log.warn( "TRUE" );
+                    }
+                } );
+                if ( selfAdaptingAgent.getMaterializedViews().containsKey( algNode.algCompareString() ) ) {
+                    isSelfadapting = true;
+                    log.warn( "replace this view" );
+                    return selfAdaptingAgent.getMaterializedViews().get( algNode.algCompareString() );
+                }
             }
             isSelfadapting = false;
-            log.warn( "return without exchanging" );
             return algNode;
         }
 
@@ -306,6 +317,10 @@ public class ViewManager {
                 AlgNode node = checkNode( logicalRoot.alg );
                 return AlgRoot.of( node, logicalRoot.kind );
             } else {
+                AlgNode selfAdaptingNode = checkSelfAdapting( logicalRoot.alg );
+                if ( selfAdaptingNode != null && isSelfadapting ) {
+                    return AlgRoot.of( selfAdaptingNode, Kind.SELECT);
+                }
                 logicalRoot.alg.accept( this );
                 return logicalRoot;
             }

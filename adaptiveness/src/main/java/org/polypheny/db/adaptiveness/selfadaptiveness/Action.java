@@ -20,10 +20,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adaptiveness.JoinInformation;
 import org.polypheny.db.adaptiveness.exception.SelfAdaptiveRuntimeException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -38,11 +38,20 @@ import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.AlterSourceException;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
+import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
+import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -50,8 +59,8 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.view.SelfAdaptivAgent;
 
 @Slf4j
 public enum Action {
@@ -180,17 +189,41 @@ public enum Action {
             if ( decision instanceof AutomaticDecision ){
                 AutomaticDecision automaticDecision = (AutomaticDecision) decision;
                 DdlManager ddlManager = DdlManager.getInstance();
+                Catalog catalog = Catalog.getInstance();
                 Statement statement = transaction.createStatement();
-                AlgNode algNode = (AlgNode)automaticDecision.getSelected();
 
-                List<String> test = algNode.getTable().getQualifiedName();
-     
-
-                log.warn( test.toString() );
-
-
+                JoinInformation joinInfo = automaticDecision.getWorkloadInformation().getJoinInformation();
+                if(joinInfo != null){
+                    for ( Pair<Long, Long> jointTableId : joinInfo.getJointTableIds() ) {
+                        CatalogTable catalogTableLeft = catalog.getTable( jointTableId.left);
+                        CatalogTable catalogTableRight = catalog.getTable( jointTableId.right );
 
 
+
+                        try {
+                            // All cols
+                            /*
+                            ddlManager.addIndex( catalogTableLeft, null, catalogTableLeft.getColumnNames(), "selfAdaptiveIndex_"+ + decision.id , false, null, statement );
+                            ddlManager.addIndex( catalogTableRight, null, catalogTableRight.getColumnNames(), "selfAdaptiveIndex_"+ + decision.id , false, null, statement );
+                             */
+
+
+                            // Primarykey cols
+                            List<String> colNamesPrimaryLeft = new ArrayList<>();
+                            catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryLeft.add( catalog.getColumn( id ).name ) );
+                            ddlManager.addIndex( catalogTableLeft, null, colNamesPrimaryLeft, "selfAdaptiveIndex_"+ + decision.id , false, null, statement );
+
+                            List<String> colNamesPrimaryRight= new ArrayList<>();
+                            catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryRight.add( catalog.getColumn( id ).name ) );
+                            ddlManager.addIndex( catalogTableRight, null, colNamesPrimaryRight, "selfAdaptiveIndex_"+ + decision.id , false, null, statement );
+
+
+
+                        } catch ( UnknownColumnException | UnknownIndexMethodException | GenericCatalogException | UnknownTableException | UnknownUserException | UnknownSchemaException | UnknownKeyException | UnknownDatabaseException | TransactionException | AlterSourceException | IndexExistsException | MissingColumnPlacementException e ) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
 
             }
 

@@ -14,32 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.workloadAnalysis.InformationObjects;
+package org.polypheny.db.adaptiveness;
 
-import java.util.ArrayList;
 import java.util.List;
-import lombok.Getter;
+import org.polypheny.db.util.Pair;
 
-@Getter
-public class TableScanInformation {
+public interface JoinInformation {
 
-    private final List<Long> entityIds = new ArrayList<>();
-    private int tableScanCount;
+    void updateJoinInformation( Long tableIdLeft, Long tableIdRight );
 
+    List<Pair<Long, Long>> getJointTableIds();
 
-    public TableScanInformation(){
-        tableScanCount = 0;
-    }
+    List<Pair<Long, Long>> getJointColumnIds();
 
-    public TableScanInformation( long entityId ) {
-        this.entityIds.add(entityId);
-        this.tableScanCount += 1;
-    }
-
-
-    public void updateTableScanInfo( long entityId ) {
-        this.entityIds.add( entityId );
-        this.tableScanCount += 1;
-    }
+    int getJoinCount();
 
 }

@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.view;
+package org.polypheny.db.adaptiveness;
 
-import java.util.Map;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgNode;
+import java.util.List;
 
-public interface SelfAdaptivAgent {
+public interface TableScanInformation {
 
-    Map<String, AlgNode> getMaterializedViews();
+    void updateTableScanInfo( long entityId );
+
+    List<Long> getEntityIds();
+
+    int getTableScanCount();
 
 }

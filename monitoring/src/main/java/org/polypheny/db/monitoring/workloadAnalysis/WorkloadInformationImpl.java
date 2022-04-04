@@ -17,26 +17,27 @@
 package org.polypheny.db.monitoring.workloadAnalysis;
 
 import lombok.Getter;
-import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.AggregateInformation;
-import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.JoinInformation;
-import org.polypheny.db.monitoring.workloadAnalysis.InformationObjects.TableScanInformation;
+import org.polypheny.db.adaptiveness.AggregateInformation;
+import org.polypheny.db.adaptiveness.JoinInformation;
+import org.polypheny.db.adaptiveness.TableScanInformation;
+import org.polypheny.db.adaptiveness.WorkloadInformation;
 import org.polypheny.db.util.Pair;
 
 @Getter
-public class WorkloadInformation {
+public class WorkloadInformationImpl implements WorkloadInformation {
 
-    private long executionTime;
-    private final AggregateInformation aggregateInformation;
-    private final JoinInformation joinInformation;
-    private final TableScanInformation tableScanInformation;
-    private int projectCount;
-    private int sortCount;
-    private int filterCount;
-    private int counter = 0;
-    private long overallTime = 0;
+    public final AggregateInformation aggregateInformation;
+    public final JoinInformation joinInformation;
+    public final TableScanInformation tableScanInformation;
+    public long executionTime;
+    public int projectCount;
+    public int sortCount;
+    public int filterCount;
+    public int counter = 0;
+    public long overallTime = 0;
 
 
-    public WorkloadInformation(
+    public WorkloadInformationImpl(
             long executionTime,
             AggregateInformation aggregateInformation,
             JoinInformation joinInformation,
@@ -54,8 +55,7 @@ public class WorkloadInformation {
     }
 
 
-    public void updateInfo(
-            WorkloadInformation workloadInfo ) {
+    public void updateInfo( WorkloadInformation workloadInfo ) {
         this.aggregateInformation.updateAggregateInformation( workloadInfo.getAggregateInformation() );
 
         for ( Pair<Long, Long>tableId : workloadInfo.getJoinInformation().getJointTableIds()) {
@@ -69,7 +69,7 @@ public class WorkloadInformation {
         this.sortCount += workloadInfo.getSortCount();
         this.filterCount += workloadInfo.getFilterCount();
         this.counter +=1;
-        this.overallTime += workloadInfo.executionTime;
+        this.overallTime += workloadInfo.getExecutionTime();
         this.executionTime = overallTime/counter;
 
     }

@@ -18,11 +18,12 @@ package org.polypheny.db.monitoring.workloadAnalysis.InformationObjects;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adaptiveness.AggregateInformation;
 import org.polypheny.db.algebra.constant.Kind;
 
 @Slf4j
 @Getter
-public class AggregateInformation {
+public class AggregateInformationImpl implements AggregateInformation {
 
     private Kind kind;
     private int minCount = 0;
@@ -32,11 +33,11 @@ public class AggregateInformation {
     private int countCount = 0;
     private int overAllCount;
 
-    public AggregateInformation( ) {
+    public AggregateInformationImpl( ) {
         this.overAllCount = maxCount + maxCount + sumCount + avgCount + countCount;
     }
 
-    public AggregateInformation(
+    public AggregateInformationImpl(
             int minCount,
             int maxCount,
             int sumCount,
@@ -51,6 +52,7 @@ public class AggregateInformation {
     }
 
 
+    @Override
     public void incrementAggregateInformation( Kind kind ) {
         this.overAllCount += 1;
         switch ( kind ){
@@ -75,7 +77,8 @@ public class AggregateInformation {
         }
     }
 
-    public void updateAggregateInformation(AggregateInformation aggregateInformation){
+    @Override
+    public void updateAggregateInformation( AggregateInformation aggregateInformation ){
         this.minCount = this.minCount + aggregateInformation.getMinCount();
         this.maxCount = this.maxCount + aggregateInformation.getMaxCount();
         this.sumCount = this.sumCount + aggregateInformation.getSumCount();

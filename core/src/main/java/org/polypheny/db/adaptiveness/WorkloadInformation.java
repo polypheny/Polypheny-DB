@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.workloadAnalysis;
+package org.polypheny.db.adaptiveness;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import org.polypheny.db.adaptiveness.WorkloadInformation;
+public interface WorkloadInformation {
 
-public class WorkloadTimeline {
+    void updateInfo( WorkloadInformation workloadInfo );
 
-    private final Timestamp timestamp;
+    AggregateInformation getAggregateInformation();
 
-    private final List<WorkloadInformation> workloadInformation = new ArrayList<>();
+    JoinInformation getJoinInformation();
 
+    TableScanInformation getTableScanInformation();
 
-    public WorkloadTimeline(Timestamp timestamp, List<WorkloadInformation> workloadInformation) {
-        this.timestamp = timestamp;
-        this.workloadInformation.addAll( workloadInformation );
-    }
+    long getExecutionTime();
+
+    int getProjectCount();
+
+    int getSortCount();
+
+    int getFilterCount();
+
+    int getCounter();
+
+    long getOverallTime();
 
 }

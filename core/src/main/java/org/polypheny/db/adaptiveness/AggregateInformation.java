@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.workloadAnalysis;
+package org.polypheny.db.adaptiveness;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import org.polypheny.db.adaptiveness.WorkloadInformation;
+import org.polypheny.db.algebra.constant.Kind;
 
-public class WorkloadTimeline {
+public interface AggregateInformation {
 
-    private final Timestamp timestamp;
+    void incrementAggregateInformation( Kind kind );
 
-    private final List<WorkloadInformation> workloadInformation = new ArrayList<>();
+    void updateAggregateInformation( AggregateInformation aggregateInformation );
 
+    Kind getKind();
 
-    public WorkloadTimeline(Timestamp timestamp, List<WorkloadInformation> workloadInformation) {
-        this.timestamp = timestamp;
-        this.workloadInformation.addAll( workloadInformation );
-    }
+    int getMinCount();
+
+    int getMaxCount();
+
+    int getSumCount();
+
+    int getAvgCount();
+
+    int getCountCount();
+
+    int getOverAllCount();
 
 }

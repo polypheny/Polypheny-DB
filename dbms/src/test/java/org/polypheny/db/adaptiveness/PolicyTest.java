@@ -259,5 +259,102 @@ public class PolicyTest {
         }
     }
 
+    @Test
+    public void testEmbeddedStoreFalse() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                AdapterManager adapterManager = AdapterManager.getInstance();
+                Map<String, DataStore> datastores = adapterManager.getStores();
+                for ( DataStore value : datastores.values() ) {
+                    statement.executeUpdate( "ALTER ADAPTERS DROP " + value.getAdapterName() );
+                }
+
+                PoliciesManager policiesManager = PoliciesManager.getInstance();
+                PolicyChangeRequest policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "ONLY_EMBEDDED", "POLYPHENY", true, -1L );
+                policiesManager.addClause( policyChangeRequest );
+                policiesManager.updateClauses( policyChangeRequest );
+
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"postDocker\" USING 'org.polypheny.db.adapter.jdbc.stores.PostgresqlStore'"
+                        + "WITH '{\"mode\":\"docker\",\"password\":\"polypheny\",\"instanceId\":\"0\",\"port\":\"5432\",\"maxConnections\":\"25\"}'" );
+
+                statement.executeUpdate( SCHEMA );
+                connection.commit();
+                try {
+                    //AssertFalse
+                    //Not possible to create table because there is no embedded store
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( NATION_TABLE );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+                    connection.commit();
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS statisticschema.nation" );
+                    statement.executeUpdate( "DROP SCHEMA statisticschema" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"postDocker\"" );
+                    policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "ONLY_EMBEDDED", "POLYPHENY", false, -1L );
+                    policiesManager.updateClauses( policyChangeRequest );
+                    policiesManager.deleteClause( policyChangeRequest );
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testEmbeddedStoreTrue() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                AdapterManager adapterManager = AdapterManager.getInstance();
+                Map<String, DataStore> datastores = adapterManager.getStores();
+                for ( DataStore value : datastores.values() ) {
+                    statement.executeUpdate( "ALTER ADAPTERS DROP " + value.getAdapterName() );
+                }
+
+                PoliciesManager policiesManager = PoliciesManager.getInstance();
+                PolicyChangeRequest policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "ONLY_EMBEDDED", "POLYPHENY", true, -1L );
+                policiesManager.addClause( policyChangeRequest );
+                policiesManager.updateClauses( policyChangeRequest );
+
+                // Deploy additional store
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"postDocker\" USING 'org.polypheny.db.adapter.jdbc.stores.PostgresqlStore'"
+                        + "WITH '{\"mode\":\"docker\",\"password\":\"polypheny\",\"instanceId\":\"0\",\"port\":\"5432\",\"maxConnections\":\"25\"}'" );
+
+
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"hsqldbEmbeded\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                statement.executeUpdate( SCHEMA );
+                connection.commit();
+                try {
+                    statement.executeUpdate( NATION_TABLE );
+
+                    Assert.assertEquals( 1, Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).dataPlacements.size() );
+
+                    Assert.assertEquals( DeployMode.EMBEDDED, AdapterManager.getInstance().getAdapter(
+                            Catalog.getInstance().getTable( "APP", "statisticschema", "nation" ).dataPlacements.get( 0 ) ).getDeployMode());
+
+                    connection.commit();
+
+                } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException e ) {
+                    e.printStackTrace();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS statisticschema.nation" );
+                    statement.executeUpdate( "DROP SCHEMA statisticschema" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"postDocker\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"hsqldbEmbeded\"" );
+                    policyChangeRequest = new PolicyChangeRequest( "BooleanChangeRequest", "ONLY_EMBEDDED", "POLYPHENY", false, -1L );
+                    policiesManager.updateClauses( policyChangeRequest );
+                    policiesManager.deleteClause( policyChangeRequest );
+                }
+            }
+        }
+    }
+
 
 }

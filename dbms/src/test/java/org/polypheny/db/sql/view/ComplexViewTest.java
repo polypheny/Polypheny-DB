@@ -225,7 +225,7 @@ public class ComplexViewTest {
             + "1,"
             + "'A',"
             + "65.15,"
-            + "date '2020-07-03',"
+            + "date '202-07-03',"
             + "'orderPriority',"
             + "'clerk',"
             + "1,"

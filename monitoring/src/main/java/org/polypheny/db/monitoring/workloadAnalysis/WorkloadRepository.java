@@ -19,6 +19,7 @@ package org.polypheny.db.monitoring.workloadAnalysis;
 import java.sql.Timestamp;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adaptiveness.WorkloadInformation;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.WorkloadDataPoint;
@@ -39,27 +40,28 @@ public class WorkloadRepository implements MonitoringRepository {
             // Shuttle to analyze processed nodes to figure
             AlgNodeAnalyzeShuttle analyzeRelShuttle = new AlgNodeAnalyzeShuttle();
             ((WorkloadDataPoint) dataPoint).getAlgNode().accept( analyzeRelShuttle );
+
+            WorkloadInformation workloadInformation = new WorkloadInformationImpl(
+                    ((WorkloadDataPoint) dataPoint).getExecutionTime(),
+                    analyzeRelShuttle.getAggregateInformation(),
+                    analyzeRelShuttle.getJoinInformation(),
+                    analyzeRelShuttle.getTableScanInformation(),
+                    analyzeRelShuttle.getProjectCount(),
+                    analyzeRelShuttle.getSortCount(),
+                    analyzeRelShuttle.getFilterCount() );
+
             // Check if self-adaptive is active, check if the queries is complex (long) enough, check that it is not a parameterized query
             if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() &&
                     ((WorkloadDataPoint) dataPoint).getAlgNode().algCompareString().length() > 150 &&
                     !analyzeRelShuttle.getRexShuttle().isUsesDynamicParam() &&
                     !analyzeRelShuttle.isModify() ) {
-                workloadManager.findOftenUsedComplexQueries( ((WorkloadDataPoint) dataPoint).getAlgNode() );
+                workloadManager.findOftenUsedComplexQueries( ((WorkloadDataPoint) dataPoint).getAlgNode(), workloadInformation);
             }
 
             Timestamp timestamp = ((WorkloadDataPoint) dataPoint).getRecordedTimestamp();
 
             workloadManager.updateWorkloadTimeline(
-                    timestamp,
-                    new WorkloadInformation(
-                            ((WorkloadDataPoint) dataPoint).getExecutionTime(),
-                            analyzeRelShuttle.getAggregateInformation(),
-                            analyzeRelShuttle.getJoinInformation(),
-                            analyzeRelShuttle.getTableScanInformation(),
-                            analyzeRelShuttle.getProjectCount(),
-                            analyzeRelShuttle.getSortCount(),
-                            analyzeRelShuttle.getFilterCount()
-                    ) );
+                    timestamp, workloadInformation );
 
         }
 
