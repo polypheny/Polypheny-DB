@@ -16,10 +16,12 @@
 
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -199,6 +201,11 @@ public enum Action {
                         CatalogTable catalogTableRight = catalog.getTable( jointTableId.right );
 
 
+                        // Select best store not random store
+                        List<DataStore> possibleStores;
+                        Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
+                        possibleStores = new ArrayList<>( availableStores.values() );
+
 
                         try {
                             // All cols
@@ -211,11 +218,11 @@ public enum Action {
                             // Primarykey cols
                             List<String> colNamesPrimaryLeft = new ArrayList<>();
                             catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryLeft.add( catalog.getColumn( id ).name ) );
-                            ddlManager.addIndex( catalogTableLeft, null, colNamesPrimaryLeft, "selfAdaptiveIndex_"+ + decision.id , false, null, statement );
+                            ddlManager.addIndex( catalogTableLeft, null, colNamesPrimaryLeft, "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
 
                             List<String> colNamesPrimaryRight= new ArrayList<>();
                             catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryRight.add( catalog.getColumn( id ).name ) );
-                            ddlManager.addIndex( catalogTableRight, null, colNamesPrimaryRight, "selfAdaptiveIndex_"+ + decision.id , false, null, statement );
+                            ddlManager.addIndex( catalogTableRight, null, colNamesPrimaryRight, "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
 
 
 
