@@ -209,12 +209,13 @@ public enum Action {
 
                         try {
                             // All cols
+
+                            ddlManager.addIndex( catalogTableLeft, null, catalogTableLeft.getColumnNames(), "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
+                            ddlManager.addIndex( catalogTableRight, null, catalogTableRight.getColumnNames(), "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
+
+
+
                             /*
-                            ddlManager.addIndex( catalogTableLeft, null, catalogTableLeft.getColumnNames(), "selfAdaptiveIndex_"+ + decision.id , false, null, statement );
-                            ddlManager.addIndex( catalogTableRight, null, catalogTableRight.getColumnNames(), "selfAdaptiveIndex_"+ + decision.id , false, null, statement );
-                             */
-
-
                             // Primarykey cols
                             List<String> colNamesPrimaryLeft = new ArrayList<>();
                             catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryLeft.add( catalog.getColumn( id ).name ) );
@@ -224,6 +225,8 @@ public enum Action {
                             catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryRight.add( catalog.getColumn( id ).name ) );
                             ddlManager.addIndex( catalogTableRight, null, colNamesPrimaryRight, "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
 
+
+                             */
 
 
                         } catch ( UnknownColumnException | UnknownIndexMethodException | GenericCatalogException | UnknownTableException | UnknownUserException | UnknownSchemaException | UnknownKeyException | UnknownDatabaseException | TransactionException | AlterSourceException | IndexExistsException | MissingColumnPlacementException e ) {
