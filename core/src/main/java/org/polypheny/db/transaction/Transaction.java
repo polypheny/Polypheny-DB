@@ -94,6 +94,10 @@ public interface Transaction {
 
     void updateAccessMode( AccessMode accessCandidate );
 
+    void setNeedsChangeDataCapture( boolean needsChangeDataCapture );
+
+    boolean needsChangeDataCapture();
+
     /**
      * Flavor, how multimedia results should be returned from a store.
      */

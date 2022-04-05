@@ -83,13 +83,11 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.StatementImpl;
 
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
-
-    boolean useChangeDataCapture = false;
-
 
     /**
      * Default implementation: Execute DML on all placements
@@ -137,7 +135,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 // Only consider lazy replication if there even are DataPlacements labeled as LAZY
                 if ( catalogTable.dataPlacements.size() != primaryDataPlacements.size() ) {
                     //TODO @HENNLO fill
-                    useChangeDataCapture = true;
+                    statement.getTransaction().setNeedsChangeDataCapture( true );
                 }
 
                 if ( catalogTable.partitionProperty.isPartitioned && log.isDebugEnabled() ) {
@@ -157,6 +155,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 // Needed for partitioned updates when source partition and target partition are not equal
                 // SET Value is the new partition, where clause is the source
                 boolean operationWasRewritten = false;
+                Set<Long> accessedPartitionList = new HashSet<>();
+
                 List<Map<Long, Object>> tempParamValues = null;
 
                 Map<Long, Object> newParameterValues = new HashMap<>();
@@ -198,7 +198,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                     long identPart = -1;
                     long identifiedPartitionForSetValue = -1;
-                    Set<Long> accessedPartitionList = new HashSet<>();
+                    accessedPartitionList.clear();
                     // Identify where clause of UPDATE
                     if ( catalogTable.partitionProperty.isPartitioned ) {
                         boolean worstCaseRouting = false;
@@ -711,7 +711,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
-                return buildRoutedAlg( node, modifies, builder );
+                return buildRoutedAlg( statement, node, modifies, builder, accessedPartitionList );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
@@ -932,11 +932,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode buildRoutedAlg( AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder ) {
+    private AlgNode buildRoutedAlg( Statement statement, AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder, Set<Long> accessedPartitions ) {
 
-        useChangeDataCapture = true;
-        if ( useChangeDataCapture ) {
-            return handleChangeDataCapture( node, modifies, builder );
+        statement.getTransaction().setNeedsChangeDataCapture( true );
+        if ( statement.getTransaction().needsChangeDataCapture() ) {
+            return handleChangeDataCapture( node, modifies, builder, accessedPartitions, statement.getTransaction().getId(), ((StatementImpl) statement).getId() );
         }
 
         if ( modifies.size() == 1 ) {
@@ -968,7 +968,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
      * Is used to prepare the algebra to capture all basic operations that need to be applied asynchronously
      * in a lazy replication.
      */
-    private AlgNode handleChangeDataCapture( AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder ) {
+    private AlgNode handleChangeDataCapture( AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder, Set<Long> accessedPartitions, long txId, long stmtId ) {
 
         // TODO currently only handled for one modify
         LogicalTableModify modify = (LogicalTableModify) modifies.get( 0 );
@@ -983,6 +983,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 builder.getCluster(),
                 builder.getCluster().traitSet(),
                 modifies,
+                accessedPartitions.stream().collect( Collectors.toList() ),
+                txId,
+                stmtId,
                 super.recursiveCopy( preparedModify.getInput() ) ) );
 
         builder.push( LogicalStreamer.create( query, LogicalModifyCollect.create( collected, true ) ) );

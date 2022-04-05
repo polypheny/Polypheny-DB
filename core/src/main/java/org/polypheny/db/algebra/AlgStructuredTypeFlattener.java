@@ -353,10 +353,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 alg.getCluster(),
                 alg.traitSet,
                 alg.getOperation(),
-                alg.getTable(),
+                alg.getTableId(),
                 alg.getUpdateColumnList(),
                 alg.getSourceExpressionList(),
                 alg.getFieldList(),
+                alg.getAccessedPartitions(),
+                alg.getTxId(),
+                alg.getStmtId(),
                 getNewForOldRel( alg.getInput() ) );
         setNewForOldRel( alg, newAlg );
     }

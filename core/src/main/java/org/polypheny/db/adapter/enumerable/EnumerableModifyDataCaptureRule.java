@@ -37,15 +37,18 @@ public class EnumerableModifyDataCaptureRule extends ConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalModifyDataCapture replicator = (LogicalModifyDataCapture) alg;
+        final LogicalModifyDataCapture dataCapture = (LogicalModifyDataCapture) alg;
         return EnumerableModifyDataCapture.create(
-                replicator.getCluster(),
+                dataCapture.getCluster(),
                 alg.getTraitSet().replace( EnumerableConvention.INSTANCE ),
-                replicator.getOperation(),
-                replicator.getTable(),
-                replicator.getUpdateColumnList(),
-                replicator.getSourceExpressionList(),
-                replicator.getFieldList()
+                dataCapture.getOperation(),
+                dataCapture.getTableId(),
+                dataCapture.getUpdateColumnList(),
+                dataCapture.getSourceExpressionList(),
+                dataCapture.getFieldList(),
+                dataCapture.getAccessedPartitions(),
+                dataCapture.getTxId(),
+                dataCapture.getStmtId()
         );
     }
 }

@@ -65,6 +65,8 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforcer.ConstraintTracker;
+import org.polypheny.db.replication.ReplicationEngineProvider;
+import org.polypheny.db.replication.ReplicationEngineProviderImpl;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -356,6 +358,9 @@ public class PolyphenyDb {
 
         // Initialize statistic settings
         StatisticsManager.getInstance().initializeStatisticSettings();
+
+        // Initialize Replication Engine
+        ReplicationEngineProvider.initializeReplicationEngines( new ReplicationEngineProviderImpl() );
 
         // Start Polypheny-UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );

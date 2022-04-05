@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.replication.ModifyDataCapture;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -47,12 +46,15 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
             Operation operation,
-            AlgOptTable table,
+            long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             List<AlgDataTypeField> fieldList,
+            List<Long> accessedPartitions,
+            long txId,
+            long stmtId,
             AlgNode input ) {
-        super( cluster, traitSet, operation, table, updateColumnList, sourceExpressionList, fieldList );
+        super( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, fieldList, accessedPartitions, txId, stmtId );
         this.input = input;
     }
 
@@ -63,18 +65,21 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
     public static LogicalModifyDataCapture create( AlgOptCluster cluster,
             AlgTraitSet traitSet,
             Operation operation,
-            AlgOptTable table,
+            long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             List<AlgDataTypeField> fieldList,
+            List<Long> accessedPartitions,
+            long txId,
+            long stmtId,
             AlgNode input ) {
-        return new LogicalModifyDataCapture( cluster, traitSet, operation, table, updateColumnList, sourceExpressionList, fieldList, input );
+        return new LogicalModifyDataCapture( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, fieldList, accessedPartitions, txId, stmtId, input );
     }
 
 
     public static LogicalModifyDataCapture create( AlgOptCluster cluster,
             AlgTraitSet traitSet,
-            List<AlgNode> modifies, AlgNode input ) {
+            List<AlgNode> modifies, List<Long> accessedPartitions, long txId, long stmtId, AlgNode input ) {
 
         // TODO @HENNLO remove hardcoded implementation
         LogicalTableModify modify = (LogicalTableModify) modifies.get( 0 );
@@ -82,10 +87,13 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
         return new LogicalModifyDataCapture( cluster,
                 traitSet,
                 modify.getOperation(),
-                modify.getTable(),
+                modify.getTable().getTable().getTableId(),
                 modify.getUpdateColumnList(),
                 modify.getSourceExpressionList(),
                 modify.getInput().getRowType().getFieldList(),
+                accessedPartitions,
+                txId,
+                stmtId,
                 input );
     }
 
@@ -99,7 +107,7 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
     @Override
     public LogicalModifyDataCapture copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalModifyDataCapture( getCluster(), traitSet, getOperation(), getTable(), getUpdateColumnList(), getSourceExpressionList(), getFieldList(), sole( inputs ) );
+        return new LogicalModifyDataCapture( getCluster(), traitSet, getOperation(), getTableId(), getUpdateColumnList(), getSourceExpressionList(), getFieldList(), getAccessedPartitions(), getTxId(), getStmtId(), sole( inputs ) );
     }
 
 

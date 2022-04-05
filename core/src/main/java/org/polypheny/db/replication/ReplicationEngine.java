@@ -17,16 +17,139 @@
 package org.polypheny.db.replication;
 
 
-import org.polypheny.db.adapter.DataContext;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.NonNull;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.Pair;
 
 
-public class ReplicationEngine {
+public abstract class ReplicationEngine {
 
-    public static long registerDataCapture( DataContext dataContext ) {
+    protected ReplicationEngine INSTANCE = null;
 
-        System.out.println( "==========\n\n\n ========== INSIDE ENGINE ==========\n\n\n==========" );
 
-        return 1;
+    public ReplicationEngine() {
+        setInstance();
+    }
+
+
+    public ReplicationEngine getInstance() {
+        if ( INSTANCE == null ) {
+            setInstance();
+        }
+        return INSTANCE;
+    }
+
+
+    protected abstract void setInstance();
+
+
+    // Only needed to track changes on uniquely identifiable replicationData
+    private static final AtomicLong replicationDataIdBuilder = new AtomicLong( 1 );
+
+
+    public abstract void replicateChanges();
+
+
+    /**
+     * Is used to manually trigger the replication of all pending updates of each placement for a specific table .
+     *
+     * @param tableId table to refresh
+     */
+    public abstract void replicateChanges( long tableId );
+
+
+    /**
+     * Is used to manually trigger the replication of all pending updates of a specific data placement.
+     *
+     * @param tableId table to refresh
+     * @param adapterId adapter to refresh
+     */
+    public abstract void replicateChanges( long tableId, int adapterId );
+
+
+    /**
+     * Is used to manually trigger the replication of all pending updates on an entire adapter.
+     * For example when the adapter was down.
+     *
+     * This should not be possible to be directly executed by users. Rather with automatic system maintenance.
+     *
+     * @param adapterId adapter to refresh
+     */
+    public abstract void replicateChanges( int adapterId );
+
+
+    /**
+     * Places all replication Objects that originated within one Transaction to the replication engine.
+     * The list order is equal to the modification order of each object. It is up to each specific Replication Engine the to distribute the changes
+     *
+     * @param replicationObjects Ordered list of modification changes that can be replicated to secondary placements
+     */
+    protected abstract void queueReplicationData( @NonNull List<ChangeDataReplicationObject> replicationObjects );
+
+
+    public void registerDataCaptureObjects( List<ChangeDataCaptureObject> cdcObjects, long commitTimestamp ) {
+        if ( RuntimeConfig.CAPTURE_DATA_MODIFICATIONS.getBoolean() ) {
+            List<ChangeDataReplicationObject> replicationObjects = new ArrayList<>();
+
+            for ( ChangeDataCaptureObject cdc : cdcObjects ) {
+                ChangeDataReplicationObject replicationObject = transformCaptureObject( cdc, commitTimestamp );
+                if ( replicationObject == null ) {
+                    continue;
+                }
+                replicationObjects.add( replicationObject );
+            }
+            if ( replicationObjects.isEmpty() ) {
+                return;
+            }
+            queueReplicationData( replicationObjects );
+        }
+    }
+
+
+    // Transforms the general purpose data capture object into a targeted Replication Object that can be directly queued for individual objects
+    private ChangeDataReplicationObject transformCaptureObject( ChangeDataCaptureObject cdcObject, long commitTimestamp ) {
+
+        long replicationDataId = replicationDataIdBuilder.get();
+        // TODO @HENNLO As soon as policies are available check which replication strategy a given table has or allows and then distribute
+        // the changes based on the replication strategy. Each replication strategy can have different replication engines
+        CatalogTable table = Catalog.getInstance().getTable( cdcObject.getTableId() );
+        List<CatalogDataPlacement> secondaryDataPlacements = Catalog.getInstance().getDataPlacementsByReplicationStrategy( table.id, ReplicationStrategy.LAZY );
+
+        // If there are no SecondaryPlacements that need to be refreshed we can skip immediately
+        if ( !secondaryDataPlacements.isEmpty() ) {
+            Set<Pair> targetPartitionPlacements = new HashSet<>();
+            for ( CatalogDataPlacement dataPlacement : secondaryDataPlacements ) {
+
+                List<Long> tempPartitionIds = dataPlacement.getAllPartitionIds();
+                tempPartitionIds.retainAll( cdcObject.getAccessedPartitions() );
+
+                if ( tempPartitionIds.isEmpty() ) {
+                    continue;
+                }
+                tempPartitionIds.forEach( partitionId -> targetPartitionPlacements.add( new Pair( dataPlacement.adapterId, partitionId ) ) );
+            }
+
+            return new ChangeDataReplicationObject(
+                    replicationDataId,
+                    cdcObject.getParentTxId(),
+                    cdcObject.getTableId(),
+                    cdcObject.getOperation(),
+                    cdcObject.getUpdateColumnList(),
+                    cdcObject.getSourceExpressionList(),
+                    commitTimestamp,
+                    targetPartitionPlacements );
+        } else {
+            return null;
+        }
     }
 
 }

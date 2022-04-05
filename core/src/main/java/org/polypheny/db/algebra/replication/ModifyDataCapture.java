@@ -25,7 +25,6 @@ import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -37,7 +36,7 @@ public abstract class ModifyDataCapture extends AbstractAlgNode {
     private final Operation operation;
 
     @Getter
-    protected final AlgOptTable table;
+    protected final long tableId;
 
     @Getter
     private final List<String> updateColumnList;
@@ -47,6 +46,15 @@ public abstract class ModifyDataCapture extends AbstractAlgNode {
     @Getter
     private final List<AlgDataTypeField> fieldList;
 
+    @Getter
+    private final List<Long> accessedPartitions;
+
+    @Getter
+    private final long txId;
+
+    @Getter
+    private final long stmtId;
+
 
     /**
      * Creates an <code>AbstractRelNode</code>.
@@ -55,16 +63,22 @@ public abstract class ModifyDataCapture extends AbstractAlgNode {
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
             Operation operation,
-            AlgOptTable table,
+            long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
-            List<AlgDataTypeField> fieldList ) {
+            List<AlgDataTypeField> fieldList,
+            List<Long> accessedPartitions,
+            long txId,
+            long stmtId ) {
         super( cluster, traitSet );
         this.operation = operation;
-        this.table = table;
+        this.tableId = tableId;
         this.updateColumnList = updateColumnList;
         this.sourceExpressionList = sourceExpressionList;
         this.fieldList = fieldList;
+        this.accessedPartitions = accessedPartitions;
+        this.txId = txId;
+        this.stmtId = stmtId;
     }
 
 

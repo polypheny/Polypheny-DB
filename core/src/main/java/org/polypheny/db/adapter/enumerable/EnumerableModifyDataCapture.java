@@ -21,7 +21,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
@@ -32,27 +31,26 @@ import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.replication.ModifyDataCapture;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.replication.ReplicationEngine;
+import org.polypheny.db.replication.ChangeDataCaptureObject;
+import org.polypheny.db.replication.ChangeDataCollector;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 
 
+/**
+ * Should only be placed on the right side of a streamer.
+ * Receives basic operations from one or several TableModifies or ModifyCollects to save into a queue to replicate it lazily
+ * to other placements.
+ */
 public class EnumerableModifyDataCapture extends ModifyDataCapture implements EnumerableAlg {
 
 
-    public static final Method REGISTER_MODIFY_DATA_CAPTURE = Types.lookupMethod(
-            ReplicationEngine.class,
-            "registerDataCapture",
-            DataContext.class );
-
-    /*
-    public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod(
-            JdbcSchema.class,
-            "registerDataCapture",
-            DataContext.class );
-     */
+    public static final Method CAPTURE_DATA_MODIFICATIONS = Types.lookupMethod(
+            ChangeDataCollector.class,
+            "captureChanges",
+            DataContext.class,
+            long.class );
 
 
     /**
@@ -62,11 +60,14 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
             Operation operation,
-            AlgOptTable table,
+            long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
-            List<AlgDataTypeField> fieldList ) {
-        super( cluster, traitSet, operation, table, updateColumnList, sourceExpressionList, fieldList );
+            List<AlgDataTypeField> fieldList,
+            List<Long> accessedPartitions,
+            long txId,
+            long stmtId ) {
+        super( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, fieldList, accessedPartitions, txId, stmtId );
     }
 
 
@@ -74,46 +75,21 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
             Operation operation,
-            AlgOptTable table,
+            long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
-            List<AlgDataTypeField> fieldList ) {
-        return new EnumerableModifyDataCapture( cluster, traitSet, operation, table, updateColumnList, sourceExpressionList, fieldList );
+            List<AlgDataTypeField> fieldList,
+            List<Long> accessedPartitions,
+            long txId,
+            long stmtId ) {
+        return new EnumerableModifyDataCapture( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, fieldList, accessedPartitions, txId, stmtId );
     }
 
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        /*final BlockBuilder builder = new BlockBuilder();
-
-        final ParameterExpression print_ = Expressions.parameter(String.class, "print");
-        final ConstantExpression outValue = Expressions.constant( "Hallo" );
-
-        //System.out.println("==========\n\n\n ========== INSIDE REPLICATOR ==========\n\n\n==========");
-
-
-
-
-        final PhysType physType = PhysTypeImpl.of(
-                        implementor.getTypeFactory(),
-                        getRowType(),
-                        pref == Prefer.ARRAY
-                                ? JavaRowFormat.ARRAY
-                                : JavaRowFormat.SCALAR );
-
-        builder.add( Expressions.declare( Modifier.FINAL,print_, outValue ));
-
-
-        builder.add( Expressions.call(
-                                Expressions.field(null, System.class, "out"),
-                                "println",
-                                print_));
-
-
-        */
-
         final BlockBuilder builder = new BlockBuilder();
-
+        /*
         final Expression countParameter =
                 builder.append(
                         "count",
@@ -125,56 +101,50 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
                         "updatedCount",
                         Expressions.constant( 407L ),
                         false );
+        */
 
+        //* Streamer just requires that an Enumerable is returned
 
-/*
-        builder.add(
-                Expressions.return_(
-                        null,
-                        Expressions.call(
-                                BuiltInMethod.SINGLETON_ENUMERABLE.method,
-                                Expressions.convert_(
-                                        Expressions.condition(
-                                                Expressions.greaterThanOrEqual( updatedCountParameter, countParameter ),
-                                                Expressions.subtract( updatedCountParameter, countParameter ),
-                                                Expressions.subtract( countParameter, updatedCountParameter ) ),
-                                        long.class ) ) ) );
-*/
-
-        //* Streamer just requires that an ENumerable is returned
-
-        final BlockBuilder builder2 = new BlockBuilder();
-        final ParameterExpression print_ = Expressions.parameter( String.class, "print" );
-        final ConstantExpression outValue = Expressions.constant( "Hallo" );
-
-        builder.add( Expressions.declare( Modifier.FINAL, print_, outValue ) );
-
-        MethodCallExpression out = Expressions.call(
-                Expressions.field( null, System.class, "out" ),
-                "println",
-                print_ );
-
-
-/*
-
-        FunctionExpression expr = Expressions.lambda( Function1.class,
-                Expressions.block(
-                        Expressions.statement( Expressions.call(
-                                Expressions.field(null, System.class, "out"),
-                                "println",
-                                print_)),
-                        Expressions.return_( null,  enumWrapper ) ) );
-
-*/
+        final Expression stmtId =
+                builder.append(
+                        "stmtId",
+                        Expressions.constant( getStmtId() ),
+                        false );
 
         final ParameterExpression dataCaptureParameter = Expressions.parameter( Long.class, builder.newName( "registerDataCapture" ) );
-        //final Expression enumerable = builder.append( "dataCapture", Expressions.call( REGISTER_MODIFY_DATA_CAPTURE, DataContext.ROOT ) );
+
+        ChangeDataCaptureObject cdcCaptureObject = ChangeDataCaptureObject.create(
+                getTxId(),
+                getTableId(),
+                getOperation(),
+                getUpdateColumnList(),
+                getSourceExpressionList(),
+                getAccessedPartitions() );
+
+        ChangeDataCollector.prepareCDC( cdcCaptureObject, getStmtId() );
+
+        //final ParameterExpression cdc_ = Expressions.parameter( ChangeDataCaptureObject.class,  "cdcObject" );
+
+        final Expression cdcObject =
+                builder.append(
+                        "cdcObject",
+                        Expressions.constant( cdcCaptureObject ),
+                        false );
+
+        /*
+        final Expression cdcParameter =
+                builder.append(
+                        "cdcObject",
+                        cdcObjectParameter,
+                        false );
+
+        */
 
         builder.add(
                 Expressions.declare(
                         Modifier.FINAL,
                         dataCaptureParameter,
-                        Expressions.call( REGISTER_MODIFY_DATA_CAPTURE, DataContext.ROOT ) ) );
+                        Expressions.call( CAPTURE_DATA_MODIFICATIONS, DataContext.ROOT, stmtId ) ) ); //DataContext.ROOT, cdcObject
 
         final Expression captureParameter =
                 builder.append(
@@ -186,12 +156,13 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
                 BuiltInMethod.SINGLETON_ENUMERABLE.method,
                 captureParameter );
 
-        builder.add( Expressions.return_( null, builder.append( "acht", enumWrapper ) ) );
+        builder.add( Expressions.return_( null, builder.append( "capture", enumWrapper ) ) );
 
         /*builder.add(
                 Expressions.return_( null,
                     Expressions.call( BuiltInMethod.EMPTY_ENUMERABLE.method )) );
-*/
+        */
+
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),

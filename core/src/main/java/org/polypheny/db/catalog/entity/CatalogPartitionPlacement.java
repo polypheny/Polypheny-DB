@@ -53,6 +53,11 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
     public final DataPlacementRole role;
 
+    // TODO @HENNLO add UPDATE and COMMIT TIMESTAMP
+
+    // COMMIT TIMESTAMP to compare freshness
+    // AND UPDATE timestamp when placement was last refreshed
+
 
     public CatalogPartitionPlacement(
             final long tableId,

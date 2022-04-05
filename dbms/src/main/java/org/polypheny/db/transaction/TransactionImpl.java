@@ -60,6 +60,7 @@ import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
+import org.polypheny.db.replication.ChangeDataCollector;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -115,6 +116,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private AccessMode accessMode = AccessMode.NO_ACCESS;
     private long commitTimestamp;
+
+    private boolean needsChangeDataCapture = false;
 
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
@@ -208,7 +211,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
             IndexManager.getInstance().commit( this.xid );
 
-            // TODO @HENNLO insert applied changes to ShadowTable since they are now save to commit
+            // If Lazy Replication is required start triggering the process
+            if ( needsChangeDataCapture ) {
+                ChangeDataCollector changeDataCollector = new ChangeDataCollector();
+                changeDataCollector.finalizeDataCapturing( id, commitTimestamp );
+            }
 
         } else {
             log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
@@ -251,6 +258,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 statement.close();
             } );
         } finally {
+            // If Lazy Replication was required remove pending changes
+            if ( needsChangeDataCapture ) {
+                ChangeDataCollector changeDataCollector = new ChangeDataCollector();
+                changeDataCollector.abortChangeDataReplication( id );
+            }
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );
             // Remove transaction
@@ -425,6 +437,17 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // If nothing else has matched so far. It's safe to simply use the input
         this.accessMode = accessModeCandidate;
 
+    }
+
+
+    public void setNeedsChangeDataCapture( boolean needsChangeDataCapture ) {
+        this.needsChangeDataCapture = needsChangeDataCapture;
+    }
+
+
+    @Override
+    public boolean needsChangeDataCapture() {
+        return needsChangeDataCapture;
     }
 
     //

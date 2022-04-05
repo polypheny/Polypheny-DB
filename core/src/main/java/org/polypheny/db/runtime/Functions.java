@@ -317,7 +317,7 @@ public class Functions {
             }
         }
         if ( values.isEmpty() ) {
-            // there are no updates to make, we don't execute the right executor
+            // If there are no updates to apply, we don't execute the right executor
             return Linq4j.asEnumerable( List.of( 0 ) );
         }
 
