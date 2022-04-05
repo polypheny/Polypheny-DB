@@ -33,7 +33,10 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.graph.GraphUnwind;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -48,6 +51,12 @@ public class EnumerableUnwind extends GraphUnwind implements EnumerableAlg {
      */
     protected EnumerableUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
         super( cluster, traits, input, index, alias );
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 2 );
     }
 
 

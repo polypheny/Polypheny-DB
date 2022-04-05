@@ -54,6 +54,7 @@ public class CypherUnwind extends CypherClause {
     }
 
 
+
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.UNWIND;
@@ -90,6 +91,11 @@ public class CypherUnwind extends CypherClause {
             node = new LogicalGraphProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) );
 
             context.add( node );
+        }
+
+        if ( namedNode.left != null ) {
+            // first project the expression out
+            context.add( new LogicalGraphProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) ) );
         }
 
         context.add( new LogicalGraphUnwind(

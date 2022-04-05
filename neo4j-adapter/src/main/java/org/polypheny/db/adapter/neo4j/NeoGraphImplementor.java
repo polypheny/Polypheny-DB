@@ -26,6 +26,7 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.path_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.return_;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,6 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.util.Pair;
 
@@ -67,6 +69,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
 
 
     public final List<OperatorStatement> statements = new ArrayList<>();
+    private ImmutableList<ImmutableList<RexLiteral>> values;
 
 
     public void visitChild( int ordinal, AlgNode input ) {
@@ -152,6 +155,21 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
                 return_( distinct_( literal_( "r" ) ) ).build() );
 
         return Pair.of( nodes, edges );
+    }
+
+
+    public void addValues( ImmutableList<ImmutableList<RexLiteral>> values ) {
+        assert this.values == null : "only single lines of values can be used";
+        this.values = values;
+    }
+
+
+    public OperatorStatement removeLast() {
+        assert !statements.isEmpty() : "Cannot remove neo statements from an empty stack.";
+        OperatorStatement statement = statements.get( statements.size() - 1 );
+        statements.remove( statements.size() - 1 );
+        return statement;
+
     }
 
 }

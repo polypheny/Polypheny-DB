@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.Result;
@@ -67,6 +68,18 @@ public class UnwindTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( 2 ) ),
                 Row.of( TestLiteral.from( 4 ) ),
                 Row.of( TestLiteral.from( 3 ) ) );
+    }
+
+
+    @Test
+    @Ignore
+    public void nodePropertyUnwind() {
+        execute( "CREATE (n {key: [3,1]})" );
+        Result res = execute( "MATCH (n) UNWIND n.key AS x RETURN x" );
+
+        containsRows( res, true, false,
+                Row.of( TestLiteral.from( 3 ) ),
+                Row.of( TestLiteral.from( 1 ) ) );
     }
 
 }

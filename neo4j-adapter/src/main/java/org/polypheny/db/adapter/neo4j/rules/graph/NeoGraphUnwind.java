@@ -26,7 +26,10 @@ import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.graph.GraphUnwind;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public class NeoGraphUnwind extends GraphUnwind implements NeoGraphAlg {
@@ -42,6 +45,12 @@ public class NeoGraphUnwind extends GraphUnwind implements NeoGraphAlg {
      */
     public NeoGraphUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, input, index, alias );
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
     }
 
 

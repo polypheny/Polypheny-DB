@@ -16,14 +16,20 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.logical.graph.GraphAggregate;
+import org.polypheny.db.algebra.logical.graph.GraphProject;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -41,7 +47,22 @@ public class NeoGraphAggregate extends GraphAggregate implements NeoGraphAlg {
 
 
     @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.2 );
+    }
+
+
+    @Override
     public void implement( NeoGraphImplementor implementor ) {
+        if ( implementor.getLast() instanceof GraphProject ) {
+            OperatorStatement last = implementor.removeLast();
+            List<String> names = new ArrayList<>();
+            int i = 0;
+            for ( int index : groupSet.asSet() ) {
+                names.add( implementor.getLast().getRowType().getFieldNames().get( i ) );
+            }
+
+        }
 
     }
 

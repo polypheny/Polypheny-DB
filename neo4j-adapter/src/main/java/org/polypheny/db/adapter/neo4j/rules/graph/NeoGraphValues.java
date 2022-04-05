@@ -46,6 +46,12 @@ public class NeoGraphValues extends GraphValues implements NeoGraphAlg {
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
+        if ( getValues() != null && !getValues().isEmpty() ) {
+            assert getValues().size() == 1 : "only single lines of values can be inserted";
+
+            implementor.addValues( getValues() );
+
+        }
 
     }
 

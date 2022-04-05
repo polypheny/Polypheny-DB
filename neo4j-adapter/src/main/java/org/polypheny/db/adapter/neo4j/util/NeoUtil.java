@@ -31,6 +31,7 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.function.Function1;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
@@ -44,6 +45,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyNode;
@@ -119,7 +121,13 @@ public interface NeoUtil {
                 break;
             case CHAR:
             case VARCHAR:
-                return Value::asString;
+                return ( o ) -> {
+                    if ( o instanceof StringValue ) {
+                        return o.asString();
+                    }
+
+                    return o.toString();
+                };
             case BINARY:
             case VARBINARY:
             case FILE:
@@ -438,6 +446,14 @@ public interface NeoUtil {
                 throw new RuntimeException( "No values should land here" );
             case CYPHER_SET_PROPERTY:
                 return o -> String.format( "%s.%s = %s", o.get( 0 ), o.get( 1 ), o.get( 2 ) );
+            case CYPHER_EXTRACT_PROPERTY:
+                return o -> {
+                    String name = o.get( 0 );
+                    if ( name.contains( "." ) ) {
+                        name = name.split( "\\." )[0];
+                    }
+                    return String.format( "%s.%s", name, o.get( 1 ) );
+                };
             default:
                 return null;
         }
@@ -457,12 +473,18 @@ public interface NeoUtil {
     }
 
     static boolean supports( Filter r ) {
+        if ( r.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+            return false;
+        }
         NeoSupportVisitor visitor = new NeoSupportVisitor();
         r.getCondition().accept( visitor );
         return visitor.supports;
     }
 
     static boolean supports( Project r ) {
+        if ( r.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+            return false;
+        }
         NeoSupportVisitor visitor = new NeoSupportVisitor();
         for ( RexNode project : r.getProjects() ) {
             project.accept( visitor );

@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -133,6 +134,9 @@ public class Translator extends RexVisitorImpl<String> {
         if ( call.op.getOperatorName() == OperatorName.CYPHER_SET_PROPERTIES ) {
             return handleSetProperties( call );
         }
+        if ( call.op.getOperatorName() == OperatorName.CYPHER_EXTRACT_FROM_PATH ) {
+            return handleExtractFromPath( call );
+        }
 
         List<String> ops = call.operands.stream().map( o -> o.accept( this ) ).collect( Collectors.toList() );
 
@@ -142,6 +146,20 @@ public class Translator extends RexVisitorImpl<String> {
             return "(" + getter.apply( ops ) + ")";
         }
         return " " + getter.apply( ops ) + " ";
+    }
+
+
+    private String handleExtractFromPath( RexCall call ) {
+        AlgDataTypeField field = beforeFields.get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
+        assert call.operands.get( 1 ).isA( Kind.LITERAL );
+        int elementIndex = ((RexLiteral) call.operands.get( 1 )).getValueAs( Integer.class );
+        List<String> names = field.getType().getFieldNames();
+
+        while ( names.size() - 1 < elementIndex ) {
+            elementIndex--;
+        }
+
+        return names.get( elementIndex );
     }
 
 
