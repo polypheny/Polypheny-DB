@@ -24,8 +24,15 @@ public class ReplicationEngineProviderImpl extends ReplicationEngineProvider {
 
     public ReplicationEngine getReplicationEngine( ReplicationStrategy replicationStrategy ) {
         switch ( replicationStrategy ) {
+
             case LAZY:
-                return new LazyReplicationEngine();
+                return LazyReplicationEngine.getInstance();
+
+            /*
+            case YourCustomStrategy:
+                return YourCustomReplicationEngine.getInstance();
+
+             */
 
             default:
                 throw new RuntimeException( "This Replication Strategy seems not to be supported!" );

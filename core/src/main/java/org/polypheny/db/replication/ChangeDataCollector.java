@@ -50,8 +50,6 @@ public class ChangeDataCollector {
      */
     public static long captureChanges( DataContext dataContext, long stmtId ) {
 
-        System.out.println( "==========\n\n\n ========== INSIDE ENGINE ==========\n\n\n==========" );
-
         long txId = dataContext.getStatement().getTransaction().getId();
 
         // Only present if prepareCDC has already been executed

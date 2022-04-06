@@ -27,33 +27,45 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.config.WebUiGroup;
+import org.polypheny.db.config.WebUiPage;
 import org.polypheny.db.util.Pair;
 
 
 public abstract class ReplicationEngine {
 
-    protected ReplicationEngine INSTANCE = null;
+
+    public static final ConfigBoolean CAPTURE_DATA_MODIFICATIONS = new ConfigBoolean(
+            "runtime/captureDataModification",
+            "If disabled no data modification is actively being captured. "
+                    + "To refresh outdated placements a manual refresh operation needs to be executed. "
+                    + "No additional memory requirements are necessary since changes are no longer cached.",
+            true );
 
 
-    public ReplicationEngine() {
-        setInstance();
-    }
-
-
-    public ReplicationEngine getInstance() {
-        if ( INSTANCE == null ) {
-            setInstance();
-        }
-        return INSTANCE;
-    }
-
-
-    protected abstract void setInstance();
-
+    protected final WebUiPage replicationSettingsPage;
+    protected final ConfigManager configManager = ConfigManager.getInstance();
 
     // Only needed to track changes on uniquely identifiable replicationData
     private static final AtomicLong replicationDataIdBuilder = new AtomicLong( 1 );
+
+
+    protected ReplicationEngine() {
+        this.replicationSettingsPage = new WebUiPage(
+                "replicationSettings",
+                "Data Replication",
+                "Settings for data replication." );
+
+        final WebUiGroup generalDataReplicationGroup = new WebUiGroup( "generalReplicationSettingsGroup", replicationSettingsPage.getId() );
+        generalDataReplicationGroup.withTitle( "General Data Replication Processing" );
+        configManager.registerWebUiGroup( generalDataReplicationGroup );
+        CAPTURE_DATA_MODIFICATIONS.withUi( generalDataReplicationGroup.getId(), 0 );
+
+        configManager.registerConfig( CAPTURE_DATA_MODIFICATIONS );
+        configManager.registerWebUiPage( replicationSettingsPage );
+    }
 
 
     public abstract void replicateChanges();
@@ -97,7 +109,7 @@ public abstract class ReplicationEngine {
 
 
     public void registerDataCaptureObjects( List<ChangeDataCaptureObject> cdcObjects, long commitTimestamp ) {
-        if ( RuntimeConfig.CAPTURE_DATA_MODIFICATIONS.getBoolean() ) {
+        if ( CAPTURE_DATA_MODIFICATIONS.getBoolean() ) {
             List<ChangeDataReplicationObject> replicationObjects = new ArrayList<>();
 
             for ( ChangeDataCaptureObject cdc : cdcObjects ) {
@@ -145,6 +157,7 @@ public abstract class ReplicationEngine {
                     cdcObject.getOperation(),
                     cdcObject.getUpdateColumnList(),
                     cdcObject.getSourceExpressionList(),
+                    cdcObject.getParameterValues(),
                     commitTimestamp,
                     targetPartitionPlacements );
         } else {

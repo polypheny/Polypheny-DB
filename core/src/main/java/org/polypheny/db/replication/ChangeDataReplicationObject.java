@@ -19,6 +19,7 @@ package org.polypheny.db.replication;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +57,9 @@ public class ChangeDataReplicationObject {
     private final ImmutableList<RexNode> sourceExpressionList;
 
     @Getter
+    private ImmutableList<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
+
+    @Getter
     private final long commitTimestamp;
 
 
@@ -72,6 +76,7 @@ public class ChangeDataReplicationObject {
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            List<Map<Long, Object>> parameterValues,
             long commitTimestamp,
             Set<Pair> targetPartitionPlacements ) {
 
@@ -81,8 +86,10 @@ public class ChangeDataReplicationObject {
         this.operation = operation;
         this.updateColumnList = ImmutableList.copyOf( updateColumnList );
         this.sourceExpressionList = ImmutableList.copyOf( sourceExpressionList );
-        this.commitTimestamp = commitTimestamp;
 
+        this.parameterValues = ImmutableList.copyOf( parameterValues );
+
+        this.commitTimestamp = commitTimestamp;
         this.targetPartitionPlacements = Set.copyOf( targetPartitionPlacements );
 
     }

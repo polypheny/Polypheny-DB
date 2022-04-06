@@ -22,16 +22,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.NotImplementedException;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigInteger;
+import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.background.PausableThreadPoolExecutor;
 
 
+@Slf4j
 public class LazyReplicationEngine extends ReplicationEngine {
+
+
+    public static final ConfigBoolean AUTOMATIC_DATA_REPLICATION = new ConfigBoolean(
+            "replication/automaticLazyDataReplication",
+            "Enables automatic lazy replication of data. "
+                    + "If this is disabled the modified data is still captured and queued but not actively replicated. "
+                    + "And need manual. Care that this can increase the memory footprint due to excessive bookkeeping.",
+            true );
+
+    public static final ConfigInteger REPLICATION_CORE_POOL_SIZE = new ConfigInteger(
+            "replication/lazyReplicationCorePoolSize",
+            "The number of threads to keep in the pool for processing data replication events, even if they are idle.",
+            1 );
+
+    public static final ConfigInteger REPLICATION_MAXIMUM_POOL_SIZE = new ConfigInteger(
+            "replication/lazyReplicationMaximumPoolSize",
+            "The maximum number of threads to allow in the pool used for processing data replication events.",
+            4 );
+
+    public static final ConfigInteger REPLICATION_POOL_KEEP_ALIVE_TIME = new ConfigInteger(
+            "replication/lazyReplicationKeepAliveTime",
+            "When the number of replication worker threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.",
+            10 );
+
+
+    private static LazyReplicationEngine INSTANCE;
 
     // Only needed to track changes on uniquely identifiable replicationData
 
@@ -59,31 +91,54 @@ public class LazyReplicationEngine extends ReplicationEngine {
     // Needs a cyclic list iterator
     private final BlockingQueue globalReplicationDataQueue;
 
-
-    private ThreadPoolExecutor threadPoolWorkers;
+    private PausableThreadPoolExecutor threadPoolWorkers;
     private final int CORE_POOL_SIZE;
     private final int MAXIMUM_POOL_SIZE;
     private final int KEEP_ALIVE_TIME;
 
 
     public LazyReplicationEngine() {
-        this.CORE_POOL_SIZE = RuntimeConfig.REPLICATION_CORE_POOL_SIZE.getInteger();
-        this.MAXIMUM_POOL_SIZE = RuntimeConfig.REPLICATION_MAXIMUM_POOL_SIZE.getInteger();
-        this.KEEP_ALIVE_TIME = RuntimeConfig.REPLICATION_POOL_KEEP_ALIVE_TIME.getInteger();
+
+        this.CORE_POOL_SIZE = REPLICATION_CORE_POOL_SIZE.getInt();
+        this.MAXIMUM_POOL_SIZE = REPLICATION_MAXIMUM_POOL_SIZE.getInt();
+        this.KEEP_ALIVE_TIME = REPLICATION_POOL_KEEP_ALIVE_TIME.getInt();
 
         this.globalReplicationDataQueue = new LinkedBlockingQueue();
 
-        RuntimeConfig.REPLICATION_CORE_POOL_SIZE.setRequiresRestart( true );
-        RuntimeConfig.REPLICATION_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
-        RuntimeConfig.REPLICATION_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
+        initializeConfiguration();
 
-        threadPoolWorkers = new ThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, globalReplicationDataQueue );
+        threadPoolWorkers = new PausableThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, globalReplicationDataQueue );
     }
 
 
-    @Override
-    protected void setInstance() {
-        INSTANCE = this;
+    private void initializeConfiguration() {
+
+        final WebUiGroup lazyReplicationSettingsGroup = new WebUiGroup( "lazyReplicationSettingsGroup", replicationSettingsPage.getId() );
+
+        configManager.registerConfig( AUTOMATIC_DATA_REPLICATION );
+        AUTOMATIC_DATA_REPLICATION.withUi( lazyReplicationSettingsGroup.getId(), 0 );
+        AUTOMATIC_DATA_REPLICATION.addObserver( new LazyReplicationConfigListener() );
+
+        configManager.registerConfig( REPLICATION_CORE_POOL_SIZE );
+        REPLICATION_CORE_POOL_SIZE.withUi( lazyReplicationSettingsGroup.getId(), 1 );
+
+        configManager.registerConfig( REPLICATION_MAXIMUM_POOL_SIZE );
+        REPLICATION_MAXIMUM_POOL_SIZE.withUi( lazyReplicationSettingsGroup.getId(), 2 );
+
+        configManager.registerConfig( REPLICATION_POOL_KEEP_ALIVE_TIME );
+        REPLICATION_POOL_KEEP_ALIVE_TIME.withUi( lazyReplicationSettingsGroup.getId(), 3 );
+
+        lazyReplicationSettingsGroup.withTitle( "Pending Data Replication Processing" );
+        configManager.registerWebUiGroup( lazyReplicationSettingsGroup );
+    }
+
+
+    public static synchronized ReplicationEngine getInstance() {
+        if ( INSTANCE == null ) {
+            INSTANCE = new LazyReplicationEngine();
+        }
+
+        return INSTANCE;
     }
 
 
@@ -149,7 +204,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
             // First enrich local queue and add last put element in queue
             // Create
             replicationData.put( replicationObject.getReplicationDataId(), replicationObject );
-            //TODO @HENNLO switch adapter and partiotin key since partiton is looked up more frequently and needs faster access times
+            //TODO @HENNLO switch adapter and partition key since partition is looked up more frequently and needs faster access times
             for ( Pair<Integer, Long> partitionPlacementIdentifier : replicationObject.getTargetPartitionPlacements() ) {
 
                 if ( !localPartitionPlacementQueue.containsKey( partitionPlacementIdentifier ) ) {
@@ -161,6 +216,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
             threadPoolWorkers.execute( new LazyReplicationWorker( replicationObject ) );
         }
+        log.info( "All changes have been queued" );
     }
 
 
@@ -168,6 +224,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
      * Is used to process queued replication events
      * To update the stores lazily.
      */
+
     class LazyReplicationWorker implements Runnable {
 
         @Getter
@@ -182,16 +239,47 @@ public class LazyReplicationEngine extends ReplicationEngine {
         @Override
         public void run() {
             // Changes should still be captured but not actively replicated to help in case of overload situations inside Polypheny-DB.
-            if ( RuntimeConfig.AUTOMATIC_DATA_REPLICATION.getBoolean() ) {
-                processReplicationQueue();
-            }
+            processReplicationQueue();
         }
 
 
         private void processReplicationQueue() {
-            System.out.println( "Processing item replicationObject" );
+            log.info( "Processing replicationObject" );
+            log.info( "Replicating object with id: {}:"
+                            + "\n\tOperation: {}"
+                            + "\n\tTable: {}"
+                            + "\n\tTarget: {}"
+                            + "\n\tValues: {}"
+                    , replicationObject.getReplicationDataId(), replicationObject.getTableId(), replicationObject.getOperation(), replicationObject.getTargetPartitionPlacements(), replicationObject.getParameterValues() );
         }
 
+    }
+
+
+    public class LazyReplicationConfigListener implements ConfigListener {
+
+        @Override
+        public void onConfigChange( Config c ) {
+
+            log.info( "\tChanged config: AUTOMATIC_DATA_REPLICATION to: {} ", AUTOMATIC_DATA_REPLICATION.getBoolean() );
+            if ( AUTOMATIC_DATA_REPLICATION.getBoolean() ) {
+                threadPoolWorkers.resume();
+            } else {
+                threadPoolWorkers.pause();
+            }
+
+        }
+
+
+        @Override
+        public void restart( Config c ) {
+            log.info( "\tChanged config: AUTOMATIC_DATA_REPLICATION to: {} ", AUTOMATIC_DATA_REPLICATION.getBoolean() );
+            if ( AUTOMATIC_DATA_REPLICATION.getBoolean() ) {
+                threadPoolWorkers.resume();
+            } else {
+                threadPoolWorkers.pause();
+            }
+        }
     }
 
 }

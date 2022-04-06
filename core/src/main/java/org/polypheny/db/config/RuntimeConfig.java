@@ -418,45 +418,6 @@ public enum RuntimeConfig {
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup" ),
 
-    AUTOMATIC_DATA_REPLICATION(
-            "runtime/automaticDataReplication",
-            "Enables automatic lazy replication of data. "
-                    + "If this is disabled the modified data is still captured and queued but not actively replicated. "
-                    + "And need manual. Care that this can increase the memory footprint due to excessive bookkeeping.",
-            true,
-            ConfigType.BOOLEAN,
-            "replicationSettingsQueueGroup" ),
-
-    CAPTURE_DATA_MODIFICATIONS(
-            "runtime/captureDataModification",
-            "If disabled no data modification is actively being captured. "
-                    + "To refresh outdated placements a manual refresh operation needs to be executed. "
-                    + "No additional memory requirements are necessary since changes are no longer cached.",
-            true,
-            ConfigType.BOOLEAN,
-            "replicationSettingsQueueGroup" ),
-
-    REPLICATION_CORE_POOL_SIZE(
-            "runtime/replicationCorePoolSize",
-            "The number of threads to keep in the pool for processing data replication events, even if they are idle.",
-            1,
-            ConfigType.INTEGER,
-            "replicationSettingsQueueGroup" ),
-
-    REPLICATION_MAXIMUM_POOL_SIZE(
-            "runtime/replicationMaximumPoolSize",
-            "The maximum number of threads to allow in the pool used for processing data replication events.",
-            4,
-            ConfigType.INTEGER,
-            "replicationSettingsQueueGroup" ),
-
-    REPLICATION_POOL_KEEP_ALIVE_TIME(
-            "runtime/replicationKeepAliveTime",
-            "When the number of replication worker threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.",
-            10,
-            ConfigType.INTEGER,
-            "replicationSettingsQueueGroup" ),
-
     CATALOG_DEBUG_MESSAGES(
             "runtime/catalogDebugMessages",
             "Enable output of catalog debug messages on the monitoring page.",
@@ -575,15 +536,6 @@ public enum RuntimeConfig {
         configManager.registerWebUiPage( partitionSettingsPage );
         configManager.registerWebUiGroup( temperaturePartitionProcessingSettingsGroup );
 
-        // Data Replication specific settings
-        final WebUiPage replicationSettingsPage = new WebUiPage(
-                "replicationSettings",
-                "Data Replication",
-                "Settings for data replication." );
-        final WebUiGroup replicationSettingsQueueGroup = new WebUiGroup( "replicationSettingsQueueGroup", replicationSettingsPage.getId() );
-        replicationSettingsQueueGroup.withTitle( "Pending Data Replication Processing" );
-        configManager.registerWebUiPage( replicationSettingsPage );
-        configManager.registerWebUiGroup( replicationSettingsQueueGroup );
     }
 
 

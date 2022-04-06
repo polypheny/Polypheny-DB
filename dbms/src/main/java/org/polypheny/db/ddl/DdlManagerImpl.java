@@ -120,6 +120,7 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.replication.ReplicationEngineProvider;
 import org.polypheny.db.replication.properties.PlacementPropertyInformation;
 import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.routing.RoutingManager;
@@ -1428,6 +1429,9 @@ public class DdlManagerImpl extends DdlManager {
                 throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
                         + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough EAGERLY-replicated-copies left. " );
             }
+
+            // Check if replication engine is accessible. Also this implicitly enables teh configuration management
+            ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
         }
 
         catalog.updateDataPlacementReplicationStrategy( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.replicationStrategy );
