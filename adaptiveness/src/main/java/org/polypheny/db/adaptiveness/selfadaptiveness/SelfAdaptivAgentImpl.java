@@ -32,6 +32,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adaptiveness.SelfAdaptivAgent;
 import org.polypheny.db.adaptiveness.WorkloadInformation;
 import org.polypheny.db.adaptiveness.exception.SelfAdaptiveRuntimeException;
 import org.polypheny.db.adaptiveness.policy.BooleanClause;
@@ -42,13 +43,13 @@ import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.AdaptiveK
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.DecisionStatus;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.Trigger;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.adaptiveness.SelfAdaptivAgent;
 
 @Slf4j
 
@@ -69,7 +70,7 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
     private final Map<Pair<String, Action>, List<ManualDecision>> manualDecisions = new HashMap<>();
 
-    private final Map<String, List<Pair<Timestamp,AutomaticDecision>>> automaticDecisions = new HashMap<>();
+    private final Map<String, List<Pair<Timestamp, AutomaticDecision>>> automaticDecisions = new HashMap<>();
     private final Map<Pair<String, Action>, ManualDecision> newlyAddedManualDecision = new HashMap<>();
 
     private final Queue<ManualDecision> adaptingQueue = new ConcurrentLinkedQueue<>();
@@ -85,15 +86,15 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
     }
 
 
-    public void addMaterializedViews( String algCompareString, LogicalTableScan tableScan ) {
+    public void addMaterializedViews( String algCompareString, AlgNode tableScan ) {
         materializedViews.put( algCompareString, tableScan );
     }
 
-    public  Map<String, AlgNode> getMaterializedViews(){
+
+    public Map<String, AlgNode> getMaterializedViews() {
         Map<String, AlgNode> test = this.materializedViews;
         return this.materializedViews;
     }
-
 
 
     public <T> void addManualDecision( ManualDecision<T> manualDecision ) {
@@ -113,11 +114,11 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
     public <T> void addAutomaticDecision( AutomaticDecision<T> automaticDecision ) {
         if ( this.automaticDecisions.containsKey( automaticDecision.getKey() ) ) {
             List<Pair<Timestamp, AutomaticDecision>> decisionsList = new ArrayList<>( automaticDecisions.remove( automaticDecision.getKey() ) );
-            decisionsList.add( new Pair<>( automaticDecision.timestamp, automaticDecision) );
+            decisionsList.add( new Pair<>( automaticDecision.timestamp, automaticDecision ) );
             automaticDecisions.put( automaticDecision.getKey(), decisionsList );
         } else {
             automaticDecision.setDecisionStatus( CREATED );
-            automaticDecisions.put( automaticDecision.getKey(), Collections.singletonList( new Pair<>( automaticDecision.timestamp, automaticDecision) ) );
+            automaticDecisions.put( automaticDecision.getKey(), Collections.singletonList( new Pair<>( automaticDecision.timestamp, automaticDecision ) ) );
         }
 
     }
@@ -210,7 +211,18 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
             log.warn( "It is the same weighted List." );
         }
         if ( isNewDecisionBetter( getOrdered( manualDecision.getWeightedList() ), getOrdered( weightedList ) ) ) {
-            manualDecision.getAction().doChange( newManualDecision, adaptiveQueryInterface.getTransaction() );
+            Transaction trx = adaptiveQueryInterface.getTransaction();
+            manualDecision.getAction().doChange( newManualDecision, trx );
+            try {
+                trx.commit();
+            } catch ( TransactionException e ) {
+                try {
+                    trx.rollback();
+                } catch ( TransactionException ex ) {
+                    throw new RuntimeException( "Error while rolling back self-adapting workload: " + e );
+                }
+                throw new RuntimeException( "Error while committing self-adapting workload: " + e );
+            }
         }
     }
 
@@ -247,7 +259,7 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
     }
 
 
-    public <T> void makeWorkloadDecision( Class<T> clazz, Trigger trigger, T selected, WorkloadInformation workloadInformation,  boolean increase ) {
+    public <T> void makeWorkloadDecision( Class<T> clazz, Trigger trigger, T selected, WorkloadInformation workloadInformation, boolean increase ) {
 
         switch ( trigger ) {
             case REPEATING_QUERY:
@@ -279,12 +291,12 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
                         boolean adaptSystem = false;
                         if ( automaticDecisions.containsKey( decisionKey ) ) {
                             for ( Pair<Timestamp, AutomaticDecision> automaticDecisionTime : automaticDecisions.get( decisionKey ) ) {
-                                if(automaticDecisionTime.left.getTime() + TimeUnit.MINUTES.toMillis(30) < new Timestamp( System.currentTimeMillis() ).getTime() ){
+                                if ( automaticDecisionTime.left.getTime() + TimeUnit.MINUTES.toMillis( 30 ) < new Timestamp( System.currentTimeMillis() ).getTime() ) {
                                     adaptSystem = true;
                                 }
                             }
                             // Do the change if it is the first or it is  an old decision
-                            if ( automaticDecisions.get( decisionKey ).size() == 1 ||  adaptSystem ) {
+                            if ( automaticDecisions.get( decisionKey ).size() == 1 || adaptSystem ) {
                                 bestAction.doChange( automaticDecision, adaptiveQueryInterface.getTransaction() );
                                 adaptSystem = false;
                             }

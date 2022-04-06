@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adaptiveness.selfadaptiveness;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,7 +29,7 @@ import org.polypheny.db.adaptiveness.exception.SelfAdaptiveRuntimeException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -54,10 +53,8 @@ import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -74,8 +71,8 @@ public enum Action {
     SELECT_STORE_ADDITION {
         @Override
         public <T> void doChange( Decision decision, Transaction transaction ) {
-            if(decision instanceof ManualDecision){
-                ManualDecision manualDecision = ((ManualDecision)decision);
+            if ( decision instanceof ManualDecision ) {
+                ManualDecision manualDecision = ((ManualDecision) decision);
 
                 if ( manualDecision.getPreSelection() != null ) {
                     // Do nothing, User selected something do not change that
@@ -138,17 +135,17 @@ public enum Action {
     MATERIALIZED_VIEW_ADDITION {
         @Override
         public <T> void doChange( Decision decision, Transaction transaction ) {
-            if ( decision instanceof AutomaticDecision ){
+            if ( decision instanceof AutomaticDecision ) {
                 AutomaticDecision automaticDecision = (AutomaticDecision) decision;
 
                 DdlManager ddlManager = DdlManager.getInstance();
                 Statement statement = transaction.createStatement();
-                AlgNode algNode = (AlgNode)automaticDecision.getSelected();
+                AlgNode algNode = (AlgNode) automaticDecision.getSelected();
 
                 try {
-                    ddlManager.createMaterializedView( "materialized_" + decision.id ,
+                    ddlManager.createMaterializedView( "materialized_" + decision.id,
                             1,
-                            AlgRoot.of(algNode, Kind.SELECT),
+                            AlgRoot.of( algNode, Kind.SELECT ),
                             false,
                             statement,
                             null,
@@ -159,7 +156,7 @@ public enum Action {
                             Catalog.QueryLanguage.SQL,
                             false,
                             false
-                            );
+                    );
                 } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException | ColumnNotExistsException | ColumnAlreadyExistsException e ) {
                     throw new SelfAdaptiveRuntimeException( "Not Possible to add Materialized View (Self-Adaption)" );
                 }
@@ -167,14 +164,21 @@ public enum Action {
                 // Create LogicalTableScan for Materialized View to replace it.
                 AlgBuilder relBuilder = AlgBuilder.create( statement );
                 final RexBuilder rexBuilder = relBuilder.getRexBuilder();
-                final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
-                PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
-                AlgOptTable relOptTable = reader.getTable( Arrays.asList( "public", "materialized_" + decision.id ) );
+                //final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+                //PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+                //AlgOptTable relOptTable = reader.getTable( Arrays.asList( "public", "materialized_" + decision.id ) );
 
-                LogicalTableScan tableScan = LogicalTableScan.create( cluster, relOptTable  );
+                List<AlgDataTypeField> fields = algNode.getRowType().getFieldList();
+                List<RexNode> nodes = new ArrayList<>();
+                for ( AlgDataTypeField field : fields ) {
+                    nodes.add( rexBuilder.makeInputRef( field.getType(), field.getIndex() ) );
+                }
 
+                AlgNode node = relBuilder.scan( Arrays.asList( "public", "materialized_" + decision.id ) )
+                        .project( nodes )
+                        .build();//LogicalTableScan.create( cluster, relOptTable  );
 
-                SelfAdaptivAgentImpl.getInstance().addMaterializedViews(algNode.algCompareString(), tableScan);
+                SelfAdaptivAgentImpl.getInstance().addMaterializedViews( algNode.algCompareString(), node );
 
             }
         }
@@ -188,32 +192,28 @@ public enum Action {
     INDEX_ADDITION {
         @Override
         public <T> void doChange( Decision decision, Transaction transaction ) {
-            if ( decision instanceof AutomaticDecision ){
+            if ( decision instanceof AutomaticDecision ) {
                 AutomaticDecision automaticDecision = (AutomaticDecision) decision;
                 DdlManager ddlManager = DdlManager.getInstance();
                 Catalog catalog = Catalog.getInstance();
                 Statement statement = transaction.createStatement();
 
                 JoinInformation joinInfo = automaticDecision.getWorkloadInformation().getJoinInformation();
-                if(joinInfo != null){
+                if ( joinInfo != null ) {
                     for ( Pair<Long, Long> jointTableId : joinInfo.getJointTableIds() ) {
-                        CatalogTable catalogTableLeft = catalog.getTable( jointTableId.left);
+                        CatalogTable catalogTableLeft = catalog.getTable( jointTableId.left );
                         CatalogTable catalogTableRight = catalog.getTable( jointTableId.right );
-
 
                         // Select best store not random store
                         List<DataStore> possibleStores;
                         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
                         possibleStores = new ArrayList<>( availableStores.values() );
 
-
                         try {
                             // All cols
 
-                            ddlManager.addIndex( catalogTableLeft, null, catalogTableLeft.getColumnNames(), "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
-                            ddlManager.addIndex( catalogTableRight, null, catalogTableRight.getColumnNames(), "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
-
-
+                            ddlManager.addIndex( catalogTableLeft, null, catalogTableLeft.getColumnNames(), "selfAdaptiveIndex_" + +decision.id, false, possibleStores.get( 1 ), statement );
+                            ddlManager.addIndex( catalogTableRight, null, catalogTableRight.getColumnNames(), "selfAdaptiveIndex_" + +decision.id, false, possibleStores.get( 1 ), statement );
 
                             /*
                             // Primarykey cols
@@ -225,9 +225,7 @@ public enum Action {
                             catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryRight.add( catalog.getColumn( id ).name ) );
                             ddlManager.addIndex( catalogTableRight, null, colNamesPrimaryRight, "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
 
-
                              */
-
 
                         } catch ( UnknownColumnException | UnknownIndexMethodException | GenericCatalogException | UnknownTableException | UnknownUserException | UnknownSchemaException | UnknownKeyException | UnknownDatabaseException | TransactionException | AlterSourceException | IndexExistsException | MissingColumnPlacementException e ) {
                             e.printStackTrace();

@@ -109,7 +109,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
         for ( Long id : materializedInfo.keySet() ) {
-            if ( Catalog.getInstance().getTable( id ) == null ) {
+            if ( !Catalog.getInstance().checkIfExistsTable( id ) ) {
                 toRemove.add( id );
             }
         }
