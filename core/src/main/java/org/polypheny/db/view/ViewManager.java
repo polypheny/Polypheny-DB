@@ -30,23 +30,11 @@ import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
@@ -97,7 +85,7 @@ public class ViewManager {
     public static class ViewVisitor extends AlgShuttleImpl {
 
         private final SelfAdaptivAgent selfAdaptingAgent;
-        int depth = 0;
+        //int depth = 0;
         final boolean doesSubstituteOrderBy;
         boolean isSelfadapting = false;
 
@@ -108,7 +96,7 @@ public class ViewManager {
         }
 
 
-        @Override
+       /* @Override
         public AlgNode visit( LogicalAggregate aggregate ) {
             handleNodeType( aggregate );
             depth++;
@@ -244,21 +232,45 @@ public class ViewManager {
             handleNodeType( modify );
             depth++;
             return modify;
+        }*/
+
+
+        @Override
+        public AlgNode visit( TableScan scan ) {
+            AlgNode node = checkSelfAdapting( scan );
+            if ( node != null ) {
+                return node;
+            }
+
+            if ( scan instanceof LogicalViewScan ) {
+                return expandViewNode( scan );
+            } else if ( doesSubstituteOrderBy ) {
+                if ( scan.getTable() instanceof AlgOptTableImpl ) {
+                    if ( scan.getTable().getTable() instanceof LogicalTable ) {
+                        long tableId = scan.getTable().getTable().getTableId();
+                        CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
+                        if ( catalogtable.tableType == TableType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
+                            return orderMaterialized( scan );
+                        }
+                    }
+                }
+            }
+
+            return super.visit( scan );
         }
 
 
-        private void handleNodeType( AlgNode other ) {
+        /*private void handleNodeType( AlgNode other ) {
             if ( other instanceof SingleAlg ) {
                 other.replaceInput( 0, checkNode( ((SingleAlg) other).getInput() ) );
             } else if ( other instanceof BiAlg ) {
                 other.replaceInput( 0, checkNode( other.getInput( 0 ) ) );
                 other.replaceInput( 1, checkNode( other.getInput( 1 ) ) );
             }
-        }
+        }*/
 
 
-        public AlgNode checkNode( AlgNode other ) {
-
+        /*public AlgNode checkNode( AlgNode other ) {
             AlgNode node = checkSelfAdapting( other );
             if ( node != null && isSelfadapting ) {
                 return node;
@@ -278,7 +290,7 @@ public class ViewManager {
             }
             handleNodeType( other );
             return other;
-        }
+        }*/
 
 
         private AlgNode checkSelfAdapting( AlgNode algNode ) {
@@ -298,7 +310,7 @@ public class ViewManager {
                 }
             }
             isSelfadapting = false;
-            return algNode;
+            return null;
         }
 
 
@@ -313,7 +325,8 @@ public class ViewManager {
          * @return the AlgRoot after replacing all <code>LogicalViewTableScan</code>s
          */
         public AlgRoot startSubstitution( AlgRoot logicalRoot ) {
-            if ( logicalRoot.alg instanceof LogicalViewScan ) {
+            return AlgRoot.of( logicalRoot.alg.accept( this ), logicalRoot.kind );
+            /*if ( logicalRoot.alg instanceof LogicalViewScan ) {
                 AlgNode node = checkNode( logicalRoot.alg );
                 return AlgRoot.of( node, logicalRoot.kind );
             } else {
@@ -323,7 +336,7 @@ public class ViewManager {
                 }
                 logicalRoot.alg.accept( this );
                 return logicalRoot;
-            }
+            }*/
         }
 
     }

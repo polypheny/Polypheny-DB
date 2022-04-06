@@ -191,7 +191,8 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
         WeightedList<?> weightedList = null;
         if ( manualDecision.getAdaptiveKind() == AdaptiveKind.MANUAL ) {
             log.warn( "in passive" );
-            weightedList = PoliciesManager.getInstance().makeDecisionWeighted( manualDecision.getClazz(),
+            weightedList = PoliciesManager.getInstance().makeDecisionWeighted(
+                    manualDecision.getClazz(),
                     manualDecision.getAction(),
                     manualDecision.getNameSpaceId(),
                     manualDecision.getEntityId(),
@@ -204,30 +205,22 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
             throw new SelfAdaptiveRuntimeException( "The AdaptiveKind " + manualDecision.getAdaptiveKind() + " is not implemented yet." );
         }
 
-        ManualDecision newManualDecision = newlyAddedManualDecision.remove( manualDecision.getKey() );
+        ManualDecision<?> newManualDecision = newlyAddedManualDecision.remove( manualDecision.getKey() );
 
-        // Check if the correct Decision is safed
+        // Check if the correct Decision is saved
         if ( newManualDecision != null && weightedList.equals( newManualDecision.getWeightedList() ) ) {
             log.warn( "It is the same weighted List." );
         }
         if ( isNewDecisionBetter( getOrdered( manualDecision.getWeightedList() ), getOrdered( weightedList ) ) ) {
             Transaction trx = adaptiveQueryInterface.getTransaction();
             manualDecision.getAction().doChange( newManualDecision, trx );
-            try {
-                trx.commit();
-            } catch ( TransactionException e ) {
-                try {
-                    trx.rollback();
-                } catch ( TransactionException ex ) {
-                    throw new RuntimeException( "Error while rolling back self-adapting workload: " + e );
-                }
-                throw new RuntimeException( "Error while committing self-adapting workload: " + e );
-            }
+            adaptiveQueryInterface.tryCommit( trx );
+
         }
     }
 
 
-    private WeightedList<?> getOrdered( WeightedList weightedList ) {
+    private WeightedList<?> getOrdered( WeightedList<?> weightedList ) {
         WeightedList<Object> orderedList = new WeightedList<>();
         ((WeightedList<Object>) weightedList).entrySet().stream().sorted( Map.Entry.comparingByValue( Comparator.reverseOrder() ) ).forEachOrdered( x -> orderedList.put( x.getKey(), x.getValue() ) );
 
@@ -297,8 +290,10 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
                             }
                             // Do the change if it is the first or it is  an old decision
                             if ( automaticDecisions.get( decisionKey ).size() == 1 || adaptSystem ) {
-                                bestAction.doChange( automaticDecision, adaptiveQueryInterface.getTransaction() );
+                                Transaction trx = adaptiveQueryInterface.getTransaction();
+                                bestAction.doChange( automaticDecision, trx );
                                 adaptSystem = false;
+                                adaptiveQueryInterface.tryCommit( trx );
                             }
                         }
                     }

@@ -22,6 +22,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 public class AdaptiveQueryProcessor {
@@ -48,6 +49,19 @@ public class AdaptiveQueryProcessor {
             return transactionManager.startTransaction( userName, databaseName, false, "SELF-ADAPTIVE-SYSTEM", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
+        }
+    }
+
+
+    public void tryCommit( Transaction trx ) {
+        try {
+            trx.commit();
+        } catch ( TransactionException e ) {
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                throw new RuntimeException("Error while self-adapting the system.");
+            }
         }
     }
 
