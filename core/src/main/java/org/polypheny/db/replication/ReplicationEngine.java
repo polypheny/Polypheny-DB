@@ -130,7 +130,8 @@ public abstract class ReplicationEngine {
     // Transforms the general purpose data capture object into a targeted Replication Object that can be directly queued for individual objects
     private ChangeDataReplicationObject transformCaptureObject( ChangeDataCaptureObject cdcObject, long commitTimestamp ) {
 
-        long replicationDataId = replicationDataIdBuilder.get();
+        long replicationDataId = replicationDataIdBuilder.getAndIncrement();
+        ;
         // TODO @HENNLO As soon as policies are available check which replication strategy a given table has or allows and then distribute
         // the changes based on the replication strategy. Each replication strategy can have different replication engines
         CatalogTable table = Catalog.getInstance().getTable( cdcObject.getTableId() );
