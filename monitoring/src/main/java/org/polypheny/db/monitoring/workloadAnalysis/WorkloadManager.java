@@ -100,10 +100,8 @@ public class WorkloadManager {
                 double avgComparison = complexQuery.getAvgComparison();
 
                 if ( avgLast / avgComparison > 1.2 ) {
-                    log.warn( "Query is often used: " + algNode );
                     SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, workloadInformation, true );
                 } else if ( avgComparison / avgLast > 1.2 ) {
-                    log.warn( "Query is not used anymore: " + algNode );
                     SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, workloadInformation, false );
                 }
 
