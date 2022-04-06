@@ -273,6 +273,22 @@ public class MatchTest extends CypherTestTemplate {
 
 
     @Test
+    public void simpleNeighborMatchTest() {
+        execute( SINGLE_NODE_ANIMAL );
+        execute( SINGLE_EDGE_2 );
+        execute( SINGLE_NODE_PERSON_COMPLEX_1 );
+        execute( SINGLE_EDGE_1 );
+        Result res = execute( "MATCH (p:Person {name:'Max'})-[]-(t) RETURN t" );
+        assertNode( res, 0 );
+
+        assert containsRows( res, true, false,
+                Row.of( KIRA ),
+                Row.of( HANS ) );
+
+    }
+
+
+    @Test
     public void triCrossProductMatchTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
