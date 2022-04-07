@@ -32,7 +32,6 @@ import org.polypheny.db.algebra.replication.ModifyDataCapture;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.replication.ChangeDataCaptureObject;
 import org.polypheny.db.replication.ChangeDataCollector;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -49,8 +48,7 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
     public static final Method CAPTURE_DATA_MODIFICATIONS = Types.lookupMethod(
             ChangeDataCollector.class,
             "captureChanges",
-            DataContext.class,
-            long.class );
+            DataContext.class );
 
 
     /**
@@ -89,19 +87,6 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        /*
-        final Expression countParameter =
-                builder.append(
-                        "count",
-                        Expressions.constant( 2L ),
-                        false );
-
-        final Expression updatedCountParameter =
-                builder.append(
-                        "updatedCount",
-                        Expressions.constant( 407L ),
-                        false );
-        */
 
         //* Streamer just requires that an Enumerable is returned
 
@@ -113,38 +98,11 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
 
         final ParameterExpression dataCaptureParameter = Expressions.parameter( Long.class, builder.newName( "registerDataCapture" ) );
 
-        ChangeDataCaptureObject cdcCaptureObject = ChangeDataCaptureObject.create(
-                getTxId(),
-                getTableId(),
-                getOperation(),
-                getUpdateColumnList(),
-                getSourceExpressionList(),
-                getAccessedPartitions() );
-
-        ChangeDataCollector.prepareCDC( cdcCaptureObject, getStmtId() );
-
-        //final ParameterExpression cdc_ = Expressions.parameter( ChangeDataCaptureObject.class,  "cdcObject" );
-
-        final Expression cdcObject =
-                builder.append(
-                        "cdcObject",
-                        Expressions.constant( cdcCaptureObject ),
-                        false );
-
-        /*
-        final Expression cdcParameter =
-                builder.append(
-                        "cdcObject",
-                        cdcObjectParameter,
-                        false );
-
-        */
-
         builder.add(
                 Expressions.declare(
                         Modifier.FINAL,
                         dataCaptureParameter,
-                        Expressions.call( CAPTURE_DATA_MODIFICATIONS, DataContext.ROOT, stmtId ) ) ); //DataContext.ROOT, cdcObject
+                        Expressions.call( CAPTURE_DATA_MODIFICATIONS, DataContext.ROOT ) ) );
 
         final Expression captureParameter =
                 builder.append(
@@ -158,10 +116,6 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
 
         builder.add( Expressions.return_( null, builder.append( "capture", enumWrapper ) ) );
 
-        /*builder.add(
-                Expressions.return_( null,
-                    Expressions.call( BuiltInMethod.EMPTY_ENUMERABLE.method )) );
-        */
 
         final PhysType physType =
                 PhysTypeImpl.of(

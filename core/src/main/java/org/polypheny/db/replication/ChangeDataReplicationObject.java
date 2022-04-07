@@ -20,7 +20,6 @@ package org.polypheny.db.replication;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.TableModify.Operation;
@@ -38,6 +37,7 @@ import org.polypheny.db.util.Pair;
 public class ChangeDataReplicationObject {
 
     // TODO @HENNLO maybe introduce an Object per Operation DELETE_REPLICATION, UPDATE_REPLICATION or INSERT_REPLICATION
+
 
     @Getter
     private final long replicationDataId;
@@ -63,10 +63,10 @@ public class ChangeDataReplicationObject {
     private final long commitTimestamp;
 
 
-    // Pair : (adapterId+partitionId)=unique partitionPlacements
+    // replicationId (Pair : (adapterId+partitionId)=unique partitionPlacements)
     // Used to identify all target partitionPlacements that shall receive this update
     @Getter
-    private Set<Pair> targetPartitionPlacements;
+    private Map<Long, Pair> dependentReplicationIds;
 
 
     public ChangeDataReplicationObject(
@@ -78,7 +78,7 @@ public class ChangeDataReplicationObject {
             List<RexNode> sourceExpressionList,
             List<Map<Long, Object>> parameterValues,
             long commitTimestamp,
-            Set<Pair> targetPartitionPlacements ) {
+            Map<Long, Pair> dependentReplicationIds ) {
 
         this.replicationDataId = replicationDataId;
         this.parentTxId = parentTxId;
@@ -90,7 +90,7 @@ public class ChangeDataReplicationObject {
         this.parameterValues = ImmutableList.copyOf( parameterValues );
 
         this.commitTimestamp = commitTimestamp;
-        this.targetPartitionPlacements = Set.copyOf( targetPartitionPlacements );
+        this.dependentReplicationIds = Map.copyOf( dependentReplicationIds );
 
     }
 
@@ -98,17 +98,15 @@ public class ChangeDataReplicationObject {
     /**
      *
      */
-    public void removeTargetPartitionPlacement( int adapterId, long partitionId ) {
+    public void removeSingleReplicationFromDependency( long replicationId ) {
 
-        Pair<Integer, Long> partitionPlacementIdentification = new Pair<>( adapterId, partitionId );
-
-        if ( targetPartitionPlacements.contains( partitionPlacementIdentification ) ) {
-            targetPartitionPlacements.remove( partitionPlacementIdentification );
+        if ( dependentReplicationIds.containsKey( replicationId ) ) {
+            dependentReplicationIds.remove( replicationId );
         } else {
-            log.warn( "PartitionPlacement on adapter: {} for placement: {} was not part of the replication object. Either it was not part from the beginning or has already been removed.", adapterId, partitionId );
+            log.warn( "Replication with id {} was not part of the replication object. Either it was not part from the beginning or has already been removed.", replicationId );
         }
         if ( log.isDebugEnabled() ) {
-            log.debug( "PartitionPlacement on adapter: {} for placement: {} was removed from replication object.", adapterId, partitionId );
+            log.debug( "Replication with id {} was removed from replication object.", replicationId );
         }
     }
 

@@ -38,6 +38,9 @@ public class ChangeDataCaptureObject {
     private final long parentTxId;
 
     @Getter
+    private final long stmtId;
+
+    @Getter
     private final long tableId;
 
     @Getter
@@ -58,6 +61,7 @@ public class ChangeDataCaptureObject {
 
     public ChangeDataCaptureObject(
             long parentTxId,
+            long stmtId,
             long tableId,
             Operation operation,
             List<String> updateColumnList,
@@ -65,6 +69,7 @@ public class ChangeDataCaptureObject {
             List<Long> accessedPartitions ) {
 
         this.parentTxId = parentTxId;
+        this.stmtId = stmtId;
         this.tableId = tableId;
         this.operation = operation;
 
@@ -87,12 +92,13 @@ public class ChangeDataCaptureObject {
 
     public static ChangeDataCaptureObject create(
             long parentTxId,
+            long stmtId,
             long tableId,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             List<Long> accessedPartitions ) {
-        return new ChangeDataCaptureObject( parentTxId, tableId, operation, updateColumnList, sourceExpressionList, accessedPartitions );
+        return new ChangeDataCaptureObject( parentTxId, stmtId, tableId, operation, updateColumnList, sourceExpressionList, accessedPartitions );
     }
 
 }

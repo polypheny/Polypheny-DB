@@ -45,13 +45,13 @@ public class ChangeDataCollector {
      * Will be called during Alg implementation
      * Enriches the captured
      *
-     * Requires ({@link #prepareCDC(ChangeDataCaptureObject, long)}) to be called first.
+     * Requires ({@link #prepareCDC(ChangeDataCaptureObject)}) to be called first.
      * To initially prepare the capture object.
      */
-    public static long captureChanges( DataContext dataContext, long stmtId ) {
+    public static long captureChanges( DataContext dataContext ) {
 
         long txId = dataContext.getStatement().getTransaction().getId();
-
+        long stmtId = dataContext.getStatement().getId();
         // Only present if prepareCDC has already been executed
         // enrich captureObject with Parameter Values
         if ( pendingCaptures.containsKey( txId ) && pendingCaptures.get( txId ).containsKey( stmtId ) ) {
@@ -73,10 +73,11 @@ public class ChangeDataCollector {
     // and remove object from capture list as well as all others with same target placement
 
 
-    public static void prepareCDC( ChangeDataCaptureObject cdcObject, long stmtId ) {
+    public static void prepareCDC( ChangeDataCaptureObject cdcObject ) {
 
         LinkedHashMap stmtMap = new LinkedHashMap();
         long parentTxId = cdcObject.getParentTxId();
+        long stmtId = cdcObject.getStmtId();
 
         // Check if TX has already been initially set to capture data
         if ( pendingCaptures.containsKey( parentTxId ) ) {

@@ -430,6 +430,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().stop( "Parameterize" );
         }
 
+        if ( statement.getTransaction().needsChangeDataCapture() ) {
+            // TODO Prepare CDC
+            // Because captureChanges in ChangeDataCollector is still getting executed however with an old stmtId
+            // ChangeDataCollector.prepareCDC( cdcCaptureObject, getStmtId() );
+        }
+
         //
         // Implementation Caching
         if ( isAnalyze ) {
@@ -453,6 +459,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     results.add( result );
                     generatedCodes.add( preparedResult.getCode() );
                     optimalNodeList.add( optimalNode );
+
+                    // TODO @HENNLO add prepareCDC already here since the implementation has already been executed
                 } else {
                     results.add( null );
                     generatedCodes.add( null );

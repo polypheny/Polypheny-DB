@@ -20,6 +20,7 @@ package org.polypheny.db.replication;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +28,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigBoolean;
@@ -65,6 +67,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
     private static LazyReplicationEngine INSTANCE;
 
+
     // Only needed to track changes on uniquely identifiable replicationData
 
     // TODO @HENNLO add monitoring page that lists number of pending updates per table and per partition
@@ -78,15 +81,19 @@ public class LazyReplicationEngine extends ReplicationEngine {
     // Then add serializable LazyReplicationEngine like this one
     // and add others with more lose constraints
 
+    // TODO @HENNLO if statement is cached also replicationData needs to be cached disregarding the target data placements since new statements can come into
+
 
     // Maps replicationDataId to the relevant captured Data that it only will be held in memory once
+    // Will be cleaned out of memory once no replication depends on this object anymore
     private HashMap<Long, ChangeDataReplicationObject> replicationData = new HashMap<>();     // replicationDataIds -> replicationData
+
 
     // Maps Adapter-Partition (PartitionPlacement) to a queue. It's necessary that each partitionPlacement has its own queue
     // To decouple changes between placements
     // Otherwise one failing placement in the queue, would block the entire replication
     // Contains pending updates per partition Placement
-    private HashMap<Pair, List<Long>> localPartitionPlacementQueue = new HashMap<>();    // (Adapter-Partition) -> List<replicationDataIds>
+    private HashMap<Pair, List<Long>> localPartitionPlacementQueue = new HashMap<>();    // (Partition-Adapter) -> List<replicationDataIds>
 
     // Needs a cyclic list iterator
     private final BlockingQueue globalReplicationDataQueue;
@@ -108,6 +115,12 @@ public class LazyReplicationEngine extends ReplicationEngine {
         initializeConfiguration();
 
         threadPoolWorkers = new PausableThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, globalReplicationDataQueue );
+    }
+
+
+    @Override
+    protected ReplicationStrategy getAssociatedReplicationStrategy() {
+        return ReplicationStrategy.LAZY;
     }
 
 
@@ -197,24 +210,31 @@ public class LazyReplicationEngine extends ReplicationEngine {
     @Override
     public void queueReplicationData( @NonNull List<ChangeDataReplicationObject> replicationObjects ) {
 
-        // This currently queues the changes per operation
-
+        // This currently schedules and queues the changes per operation & per target placement
         for ( ChangeDataReplicationObject replicationObject : replicationObjects ) {
+
+            log.info( "Begin queuing changes for data object: {} \n", replicationObject.getReplicationDataId() );
 
             // First enrich local queue and add last put element in queue
             // Create
             replicationData.put( replicationObject.getReplicationDataId(), replicationObject );
-            //TODO @HENNLO switch adapter and partition key since partition is looked up more frequently and needs faster access times
-            for ( Pair<Integer, Long> partitionPlacementIdentifier : replicationObject.getTargetPartitionPlacements() ) {
+            for ( Entry<Long, Pair> individualReplicationEntry : replicationObject.getDependentReplicationIds().entrySet() ) {
+
+                long replicationId = individualReplicationEntry.getKey();
+                Pair<Long, Integer> partitionPlacementIdentifier = individualReplicationEntry.getValue();
 
                 if ( !localPartitionPlacementQueue.containsKey( partitionPlacementIdentifier ) ) {
                     localPartitionPlacementQueue.put( partitionPlacementIdentifier, new ArrayList<>() );
                 }
                 // Queue pending replicationId in local list of partitionPlacement.
-                localPartitionPlacementQueue.get( partitionPlacementIdentifier ).add( replicationObject.getReplicationDataId() );
+                localPartitionPlacementQueue.get( partitionPlacementIdentifier ).add( replicationId );
+                threadPoolWorkers.execute( new LazyReplicationWorker( replicationId, replicationObject.getReplicationDataId() ) );
+                log.info( "\tQueued changes for placement: ( {} on {} ) using data {} ",
+                        partitionPlacementIdentifier.left,
+                        partitionPlacementIdentifier.right,
+                        replicationObject.getReplicationDataId() );
             }
-
-            threadPoolWorkers.execute( new LazyReplicationWorker( replicationObject ) );
+            log.info( "All changes have been queued for data object {} \n\n", replicationObject.getReplicationDataId() );
         }
         log.info( "All changes have been queued" );
     }
@@ -230,15 +250,20 @@ public class LazyReplicationEngine extends ReplicationEngine {
         @Getter
         private ChangeDataReplicationObject replicationObject;
 
+        private long replicationId;
+        private long replicationDataId;
 
-        public LazyReplicationWorker( ChangeDataReplicationObject replicationObject ) {
-            this.replicationObject = replicationObject;
+
+        public LazyReplicationWorker( long replicationId, long replicationDataId ) {
+
+            this.replicationObject = replicationData.get( replicationDataId );
+            this.replicationId = replicationId;
+            this.replicationDataId = replicationDataId;
         }
 
 
         @Override
         public void run() {
-            // Changes should still be captured but not actively replicated to help in case of overload situations inside Polypheny-DB.
             processReplicationQueue();
         }
 
@@ -250,7 +275,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
                             + "\n\tTable: {}"
                             + "\n\tTarget: {}"
                             + "\n\tValues: {}"
-                    , replicationObject.getReplicationDataId(), replicationObject.getTableId(), replicationObject.getOperation(), replicationObject.getTargetPartitionPlacements(), replicationObject.getParameterValues() );
+                    , replicationObject.getReplicationDataId(), replicationObject.getTableId(), replicationObject.getOperation(), replicationObject.getDependentReplicationIds(), replicationObject.getParameterValues() );
         }
 
     }

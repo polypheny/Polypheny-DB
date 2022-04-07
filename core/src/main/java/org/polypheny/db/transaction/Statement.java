@@ -16,14 +16,18 @@
 
 package org.polypheny.db.transaction;
 
+
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.information.InformationDuration;
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.util.FileInputHandle;
 
+
 public interface Statement {
+
+    long getId();
 
     Transaction getTransaction();
 

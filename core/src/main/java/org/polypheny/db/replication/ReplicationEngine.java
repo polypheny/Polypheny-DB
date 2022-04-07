@@ -18,8 +18,10 @@ package org.polypheny.db.replication;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.NonNull;
@@ -45,14 +47,20 @@ public abstract class ReplicationEngine {
             true );
 
 
+    private ReplicationStrategy associatedStrategy;
+
     protected final WebUiPage replicationSettingsPage;
     protected final ConfigManager configManager = ConfigManager.getInstance();
 
     // Only needed to track changes on uniquely identifiable replicationData
     private static final AtomicLong replicationDataIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong replicationIdBuilder = new AtomicLong( 1 );
 
 
     protected ReplicationEngine() {
+
+        this.associatedStrategy = getAssociatedReplicationStrategy();
+
         this.replicationSettingsPage = new WebUiPage(
                 "replicationSettings",
                 "Data Replication",
@@ -66,6 +74,9 @@ public abstract class ReplicationEngine {
         configManager.registerConfig( CAPTURE_DATA_MODIFICATIONS );
         configManager.registerWebUiPage( replicationSettingsPage );
     }
+
+
+    protected abstract ReplicationStrategy getAssociatedReplicationStrategy();
 
 
     public abstract void replicateChanges();
@@ -131,15 +142,16 @@ public abstract class ReplicationEngine {
     private ChangeDataReplicationObject transformCaptureObject( ChangeDataCaptureObject cdcObject, long commitTimestamp ) {
 
         long replicationDataId = replicationDataIdBuilder.getAndIncrement();
-        ;
+
         // TODO @HENNLO As soon as policies are available check which replication strategy a given table has or allows and then distribute
         // the changes based on the replication strategy. Each replication strategy can have different replication engines
         CatalogTable table = Catalog.getInstance().getTable( cdcObject.getTableId() );
-        List<CatalogDataPlacement> secondaryDataPlacements = Catalog.getInstance().getDataPlacementsByReplicationStrategy( table.id, ReplicationStrategy.LAZY );
+        List<CatalogDataPlacement> secondaryDataPlacements = Catalog.getInstance().getDataPlacementsByReplicationStrategy( table.id, associatedStrategy );
 
         // If there are no SecondaryPlacements that need to be refreshed we can skip immediately
         if ( !secondaryDataPlacements.isEmpty() ) {
             Set<Pair> targetPartitionPlacements = new HashSet<>();
+            Map<Long, Pair> dependentReplicationIds = new HashMap<>();
             for ( CatalogDataPlacement dataPlacement : secondaryDataPlacements ) {
 
                 List<Long> tempPartitionIds = dataPlacement.getAllPartitionIds();
@@ -148,7 +160,11 @@ public abstract class ReplicationEngine {
                 if ( tempPartitionIds.isEmpty() ) {
                     continue;
                 }
-                tempPartitionIds.forEach( partitionId -> targetPartitionPlacements.add( new Pair( dataPlacement.adapterId, partitionId ) ) );
+                // Gather all adapter-partition pairs to uniquely identify partition placement
+                tempPartitionIds.forEach( partitionId -> targetPartitionPlacements.add( new Pair( partitionId, dataPlacement.adapterId ) ) );
+                // Map them to unique replicable replicationId which is going to be executed by the workers
+                targetPartitionPlacements.forEach( placement -> dependentReplicationIds.put(
+                        replicationDataIdBuilder.getAndIncrement(), placement ) );
             }
 
             return new ChangeDataReplicationObject(
@@ -160,7 +176,7 @@ public abstract class ReplicationEngine {
                     cdcObject.getSourceExpressionList(),
                     cdcObject.getParameterValues(),
                     commitTimestamp,
-                    targetPartitionPlacements );
+                    dependentReplicationIds );
         } else {
             return null;
         }
