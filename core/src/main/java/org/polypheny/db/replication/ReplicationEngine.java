@@ -46,14 +46,20 @@ public abstract class ReplicationEngine {
                     + "No additional memory requirements are necessary since changes are no longer cached.",
             true );
 
+    protected Catalog catalog = Catalog.getInstance();
+
+    protected DataReplicator dataReplicator;
 
     private ReplicationStrategy associatedStrategy;
+
 
     protected final WebUiPage replicationSettingsPage;
     protected final ConfigManager configManager = ConfigManager.getInstance();
 
     // Only needed to track changes on uniquely identifiable replicationData
     private static final AtomicLong replicationDataIdBuilder = new AtomicLong( 1 );
+
+    // Used to track unique replication tasks
     private static final AtomicLong replicationIdBuilder = new AtomicLong( 1 );
 
 
@@ -149,7 +155,8 @@ public abstract class ReplicationEngine {
         List<CatalogDataPlacement> secondaryDataPlacements = Catalog.getInstance().getDataPlacementsByReplicationStrategy( table.id, associatedStrategy );
 
         // If there are no SecondaryPlacements that need to be refreshed we can skip immediately
-        if ( !secondaryDataPlacements.isEmpty() ) {
+        // Also if the parameterValues are empty this means there is nothing to be updated
+        if ( !secondaryDataPlacements.isEmpty() && cdcObject.getParameterValues() != null ) {
             Set<Pair> targetPartitionPlacements = new HashSet<>();
             Map<Long, Pair> dependentReplicationIds = new HashMap<>();
             for ( CatalogDataPlacement dataPlacement : secondaryDataPlacements ) {
@@ -164,7 +171,7 @@ public abstract class ReplicationEngine {
                 tempPartitionIds.forEach( partitionId -> targetPartitionPlacements.add( new Pair( partitionId, dataPlacement.adapterId ) ) );
                 // Map them to unique replicable replicationId which is going to be executed by the workers
                 targetPartitionPlacements.forEach( placement -> dependentReplicationIds.put(
-                        replicationDataIdBuilder.getAndIncrement(), placement ) );
+                        replicationIdBuilder.getAndIncrement(), placement ) );
             }
 
             return new ChangeDataReplicationObject(
@@ -174,6 +181,8 @@ public abstract class ReplicationEngine {
                     cdcObject.getOperation(),
                     cdcObject.getUpdateColumnList(),
                     cdcObject.getSourceExpressionList(),
+                    cdcObject.getFieldList(),
+                    cdcObject.getParameterTypes(),
                     cdcObject.getParameterValues(),
                     commitTimestamp,
                     dependentReplicationIds );

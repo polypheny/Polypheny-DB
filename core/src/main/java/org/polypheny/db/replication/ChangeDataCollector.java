@@ -55,7 +55,9 @@ public class ChangeDataCollector {
         // Only present if prepareCDC has already been executed
         // enrich captureObject with Parameter Values
         if ( pendingCaptures.containsKey( txId ) && pendingCaptures.get( txId ).containsKey( stmtId ) ) {
-            pendingCaptures.get( txId ).get( stmtId ).setParameterValues( dataContext.getParameterValues() );
+            ChangeDataCaptureObject cdc = pendingCaptures.get( txId ).get( stmtId );
+            cdc.setParameterValues( dataContext.getParameterValues() );
+            cdc.setParameterTypes( dataContext.getParameterTypes() );
         }
 
         return 1;

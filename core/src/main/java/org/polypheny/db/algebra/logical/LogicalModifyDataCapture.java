@@ -68,6 +68,7 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
                         operation,
                         updateColumnList,
                         sourceExpressionList,
+                        fieldList,
                         getAccessedPartitions()
                 ) );
     }

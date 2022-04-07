@@ -48,6 +48,7 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.replication.properties.ReplicationProperty;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -300,14 +301,15 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     PlacementType.AUTOMATIC,
                                     null,
                                     null,
-                                    DataPlacementRole.UPTODATE );
+                                    DataPlacementRole.UPTODATE,
+                                    ReplicationProperty.createDefaultProperty() );
                         }
 
                         store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
 
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
                         catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
-
+// TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
                         dataMigrator.copyData(
                                 statement.getTransaction(),
                                 catalog.getAdapter( store.getAdapterId() ),
@@ -349,13 +351,14 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     PlacementType.AUTOMATIC,
                                     null,
                                     null,
-                                    DataPlacementRole.UPTODATE );
+                                    DataPlacementRole.UPTODATE,
+                                    ReplicationProperty.createDefaultProperty() );
                         }
                         store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
 
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
                         catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
-
+                        // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
                         dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), catalogColumns, coldPartitionsToCreate );
 
                         if ( !partitionsToRemoveFromStore.containsKey( store ) ) {

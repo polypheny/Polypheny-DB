@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.NotImplementedException;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException.SerializationError;
@@ -113,6 +114,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.replication.properties.ReplicationProperty;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -865,7 +867,7 @@ public class CatalogImpl extends Catalog {
             updateColumnPlacementPhysicalPosition( csv.id, colId, position );
 
             long partitionId = table.partitionProperty.partitionIds.get( 0 );
-            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE );
+            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE, ReplicationProperty.createDefaultProperty() );
         }
     }
 
@@ -1940,7 +1942,8 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     old.partitionId,
-                    old.role );
+                    old.role,
+                    old.replicationProperty );
 
             synchronized ( this ) {
                 partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
@@ -4333,28 +4336,6 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all PartitionPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role
-     */
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
-        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        for ( CatalogDataPlacement dataPlacement : getDataPlacementsByRole( tableId, role ) ) {
-            if ( dataPlacement.partitionPlacementsOnAdapterByRole.containsKey( role ) ) {
-                dataPlacement.partitionPlacementsOnAdapterByRole.get( role )
-                        .forEach(
-                                partitionId -> partitionPlacements.add( getPartitionPlacement( dataPlacement.adapterId, partitionId ) )
-                        );
-            }
-        }
-        return partitionPlacements;
-    }
-
-
-    /**
      * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
      *
      * @param tableId table to retrieve the placements from
@@ -4540,9 +4521,10 @@ public class CatalogImpl extends Catalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      * @param role Placement role indicating how this placement is being processed
+     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, ReplicationProperty replicationProperty ) {
         if ( !checkIfExistsPartitionPlacement( adapterId, partitionId ) ) {
             CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
             CatalogPartitionPlacement partitionPlacement = new CatalogPartitionPlacement(
@@ -4553,7 +4535,8 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     partitionId,
-                    role );
+                    role,
+                    replicationProperty );
 
             synchronized ( this ) {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
@@ -4564,6 +4547,20 @@ public class CatalogImpl extends Catalog {
                 listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
             }
         }
+    }
+
+
+    /**
+     * Updates a placements replication properties.
+     * These contain metadata information which are used to retrieve suitable placements during freshness query processing
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param tableId The table for which a partition placement shall be created
+     * @param partitionId The id of a specific partition that shall create a new placement
+     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
+     */
+    public void updatePartitionPlacementProperties( int adapterId, long tableId, long partitionId, ReplicationProperty replicationProperty ) {
+        throw new NotImplementedException();
     }
 
 
@@ -4865,7 +4862,8 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.placementType,
                 oldDataPlacement.dataPlacementRole,
                 oldDataPlacement.replicationStrategy,
-                oldDataPlacement.columnPlacementsOnAdapter, ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) ) );
+                oldDataPlacement.columnPlacementsOnAdapter,
+                ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 

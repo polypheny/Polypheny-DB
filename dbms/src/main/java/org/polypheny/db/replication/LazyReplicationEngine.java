@@ -29,11 +29,20 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.WebUiGroup;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.PausableThreadPoolExecutor;
 
@@ -67,6 +76,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
     private static LazyReplicationEngine INSTANCE;
 
+    private TransactionManager transactionManager = TransactionManagerImpl.getInstance();
 
     // Only needed to track changes on uniquely identifiable replicationData
 
@@ -111,6 +121,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
         this.KEEP_ALIVE_TIME = REPLICATION_POOL_KEEP_ALIVE_TIME.getInt();
 
         this.globalReplicationDataQueue = new LinkedBlockingQueue();
+        this.dataReplicator = new DataReplicatorImpl();
 
         initializeConfiguration();
 
@@ -276,6 +287,18 @@ public class LazyReplicationEngine extends ReplicationEngine {
                             + "\n\tTarget: {}"
                             + "\n\tValues: {}"
                     , replicationObject.getReplicationDataId(), replicationObject.getTableId(), replicationObject.getOperation(), replicationObject.getDependentReplicationIds(), replicationObject.getParameterValues() );
+
+            Transaction transaction;
+            try {
+                CatalogTable catalogTable = catalog.getTable( replicationObject.getTableId() );
+                transaction = transactionManager.startTransaction( "pa", catalogTable.getDatabaseName(), false, "Data Replicator" );
+                dataReplicator.replicateData( transaction, replicationObject, replicationId );
+                transaction.commit();
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException | TransactionException e ) {
+                e.printStackTrace();
+            }
+
+
         }
 
     }

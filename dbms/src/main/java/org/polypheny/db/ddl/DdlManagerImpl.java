@@ -122,6 +122,7 @@ import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.replication.ReplicationEngineProvider;
 import org.polypheny.db.replication.properties.PlacementPropertyInformation;
+import org.polypheny.db.replication.properties.ReplicationProperty;
 import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -290,7 +291,8 @@ public class DdlManagerImpl extends DdlManager {
                             PlacementType.AUTOMATIC,
                             physicalSchemaName,
                             physicalTableName,
-                            DataPlacementRole.UPTODATE );
+                            DataPlacementRole.UPTODATE,
+                            ReplicationProperty.createDefaultProperty() );
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }
@@ -789,7 +791,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE );
+                    placementPropertyInfo != null ? placementPropertyInfo.dataPlacementRole : DataPlacementRole.UPTODATE,
+                    ReplicationProperty.createDefaultProperty() );
         }
 
         if ( placementPropertyInfo != null ){
@@ -1358,7 +1361,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE )
+                    placementPropertyInfo.dataPlacementRole,
+                    ReplicationProperty.createDefaultProperty() )
             );
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
@@ -1369,7 +1373,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( addedColumns.size() > 0 ) {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, intendedPartitionIds );
         }
-
+        // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
         if ( placementPropertyInfo != null ){
             modifyDataPlacementProperties( placementPropertyInfo, storeInstance, statement );
         }
@@ -1482,7 +1486,8 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE );
+                        DataPlacementRole.UPTODATE,
+                        ReplicationProperty.createDefaultProperty() );
             }
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
@@ -1491,7 +1496,7 @@ public class DdlManagerImpl extends DdlManager {
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeId ), necessaryColumns, newPartitions );
-
+            // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
             // Add indexes on this new Partition Placement if there is already an index
             for ( CatalogIndex currentIndex : catalog.getIndexes( catalogTable.id, false ) ) {
                 if ( currentIndex.location == storeId ) {
@@ -1816,7 +1821,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE );
+                    DataPlacementRole.UPTODATE,
+                    ReplicationProperty.createDefaultProperty() );
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
@@ -2003,7 +2009,8 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE );
+                        DataPlacementRole.UPTODATE,
+                        ReplicationProperty.createDefaultProperty() );
 
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
             }
@@ -2283,7 +2290,8 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE );
+                        DataPlacementRole.UPTODATE,
+                        ReplicationProperty.createDefaultProperty() );
             }
 
             // First create new tables
@@ -2294,7 +2302,7 @@ public class DdlManagerImpl extends DdlManager {
             // Every store of a newly partitioned table, initially will hold all partitions
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), partitionedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
-
+            // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
             // Copy data from the old partition to new partitions
             dataMigrator.copyPartitionData(
                     statement.getTransaction(),
@@ -2368,7 +2376,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE );
+                    DataPlacementRole.UPTODATE,
+                    ReplicationProperty.createDefaultProperty() );
 
             // TODO @HENNLO
             // IF UPTODATE Is elected TRIGGER DATA REFRESH OPERATION on possibly outdated nodes.
@@ -2395,6 +2404,7 @@ public class DdlManagerImpl extends DdlManager {
                     necessaryColumns,
                     placementDistribution,
                     mergedTable.partitionProperty.partitionIds );
+            // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
         }
 
         // Needs to be separated from loop above. Otherwise we loose data

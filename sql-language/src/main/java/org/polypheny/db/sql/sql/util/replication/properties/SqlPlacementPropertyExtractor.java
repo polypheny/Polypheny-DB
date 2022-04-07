@@ -59,6 +59,9 @@ public class SqlPlacementPropertyExtractor extends PlacementPropertyExtractor {
                     break;
 
                 case "REPLICATION_STRATEGY":
+                    // TODO @HENNLO IF = EAGER and perfore was LAZY make sure that it is first becomes uptodate,
+                    //  either by applying all pending changes or via DataMigrator full copy
+
                     replicationStrategy = ReplicationStrategy.getByName( entry.getValue().getSimple().toUpperCase() );
                     break;
 

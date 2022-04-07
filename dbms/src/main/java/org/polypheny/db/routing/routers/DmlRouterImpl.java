@@ -134,7 +134,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 // Only consider lazy replication if there even are DataPlacements labeled as LAZY
                 if ( catalogTable.dataPlacements.size() != primaryDataPlacements.size() ) {
-                    //TODO @HENNLO fill
                     statement.getTransaction().setNeedsChangeDataCapture( true );
                 }
 
@@ -934,7 +933,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     private AlgNode buildRoutedAlg( Statement statement, AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder, Set<Long> accessedPartitions ) {
 
-        statement.getTransaction().setNeedsChangeDataCapture( true );
         if ( statement.getTransaction().needsChangeDataCapture() ) {
             return handleChangeDataCapture( node, modifies, builder, accessedPartitions, statement.getTransaction().getId(), ((StatementImpl) statement).getId() );
         }

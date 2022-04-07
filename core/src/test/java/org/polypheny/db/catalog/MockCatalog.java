@@ -57,6 +57,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.replication.properties.ReplicationProperty;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -955,7 +956,21 @@ public abstract class MockCatalog extends Catalog {
      * @param physicalTableName The table name on the adapter
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, ReplicationProperty replicationProperty ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Updates a placements replication properties.
+     * These contain metadata information which are used to retrieve suitable placements during freshness query processing
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param tableId The table for which a partition placement shall be created
+     * @param partitionId The id of a specific partition that shall create a new placement
+     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
+     */
+    public void updatePartitionPlacementProperties( int adapterId, long tableId, long partitionId, ReplicationProperty replicationProperty ) {
         throw new NotImplementedException();
     }
 
@@ -1091,12 +1106,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
         throw new NotImplementedException();
     }
 

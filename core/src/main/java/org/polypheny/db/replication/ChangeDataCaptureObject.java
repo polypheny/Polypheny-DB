@@ -24,6 +24,8 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -52,7 +54,14 @@ public class ChangeDataCaptureObject {
     private final ImmutableList<RexNode> sourceExpressionList;
 
     @Getter
+    private final List<AlgDataTypeField> fieldList;
+
+    @Getter
     private final ImmutableList<Long> accessedPartitions;
+
+    @Getter
+    @Setter
+    private Map<Long, AlgDataType> parameterTypes; // List of ( ParameterIndex -> Value )
 
     @Getter
     @Setter
@@ -66,6 +75,7 @@ public class ChangeDataCaptureObject {
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions ) {
 
         this.parentTxId = parentTxId;
@@ -85,6 +95,8 @@ public class ChangeDataCaptureObject {
             this.sourceExpressionList = ImmutableList.copyOf( new ArrayList<>() );
         }
 
+        this.fieldList = ImmutableList.copyOf( fieldList );
+
         this.accessedPartitions = ImmutableList.copyOf( accessedPartitions );
 
     }
@@ -97,8 +109,9 @@ public class ChangeDataCaptureObject {
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions ) {
-        return new ChangeDataCaptureObject( parentTxId, stmtId, tableId, operation, updateColumnList, sourceExpressionList, accessedPartitions );
+        return new ChangeDataCaptureObject( parentTxId, stmtId, tableId, operation, updateColumnList, sourceExpressionList, fieldList, accessedPartitions );
     }
 
 }

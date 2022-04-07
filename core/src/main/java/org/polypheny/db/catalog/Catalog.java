@@ -86,6 +86,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.replication.properties.ReplicationProperty;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -1343,16 +1344,6 @@ public abstract class Catalog {
 
 
     /**
-     * Returns all PartitionPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role
-     */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role );
-
-
-    /**
      * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
      *
      * @param tableId table to retrieve the placements from
@@ -1433,8 +1424,21 @@ public abstract class Catalog {
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
+     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, ReplicationProperty replicationProperty );
+
+    /**
+     * Updates a placements replication properties.
+     * These contain metadata information which are used to retrieve suitable placements during freshness query processing
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param tableId The table for which a partition placement shall be created
+     * @param partitionId The id of a specific partition that shall create a new placement
+     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
+     */
+    public abstract void updatePartitionPlacementProperties( int adapterId, long tableId, long partitionId, ReplicationProperty replicationProperty );
+
 
     /**
      * Adds a new DataPlacement for a given table on a specific store

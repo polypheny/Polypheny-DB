@@ -18,11 +18,14 @@ package org.polypheny.db.replication;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
@@ -57,6 +60,12 @@ public class ChangeDataReplicationObject {
     private final ImmutableList<RexNode> sourceExpressionList;
 
     @Getter
+    private final List<AlgDataTypeField> fieldList;
+
+    @Getter
+    private ImmutableMap<Long, AlgDataType> parameterTypes; // List of ( ParameterIndex -> Value )
+
+    @Getter
     private ImmutableList<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
     @Getter
@@ -76,6 +85,8 @@ public class ChangeDataReplicationObject {
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            List<AlgDataTypeField> fieldList,
+            Map<Long, AlgDataType> parameterTypes,
             List<Map<Long, Object>> parameterValues,
             long commitTimestamp,
             Map<Long, Pair> dependentReplicationIds ) {
@@ -86,7 +97,9 @@ public class ChangeDataReplicationObject {
         this.operation = operation;
         this.updateColumnList = ImmutableList.copyOf( updateColumnList );
         this.sourceExpressionList = ImmutableList.copyOf( sourceExpressionList );
+        this.fieldList = ImmutableList.copyOf( fieldList );
 
+        this.parameterTypes = ImmutableMap.copyOf( parameterTypes );
         this.parameterValues = ImmutableList.copyOf( parameterValues );
 
         this.commitTimestamp = commitTimestamp;
