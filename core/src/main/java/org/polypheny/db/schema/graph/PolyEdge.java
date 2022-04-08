@@ -20,6 +20,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.gson.annotations.Expose;
 import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
@@ -35,7 +36,9 @@ import org.polypheny.db.tools.ExpressionTransformable;
 @Getter
 public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge>, ExpressionTransformable {
 
+    @Expose
     public final String source;
+    @Expose
     public final String target;
     public final EdgeDirection direction;
 

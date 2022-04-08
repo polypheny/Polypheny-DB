@@ -18,6 +18,7 @@ package org.polypheny.db.schema.graph;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -25,9 +26,11 @@ import lombok.experimental.Accessors;
 @Getter
 public abstract class GraphObject {
 
-    private static Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
+    private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().excludeFieldsWithoutExposeAnnotation().create();
 
+    @Expose
     public final String id;
+    @Expose
     public final GraphObjectType type;
 
     @Setter

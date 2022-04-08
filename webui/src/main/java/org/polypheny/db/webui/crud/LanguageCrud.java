@@ -420,7 +420,7 @@ public class LanguageCrud {
         Processor processor = transaction.getProcessor( QueryLanguage.CYPHER );
         Statement statement = transaction.createStatement();
 
-        CypherQueryParameters parameters = new CypherQueryParameters( true, databaseName );
+        CypherQueryParameters parameters = new CypherQueryParameters( databaseName );
         AlgRoot logicalRoot = processor.translate( statement, null, parameters );
         PolyResult polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
@@ -444,6 +444,8 @@ public class LanguageCrud {
             long databaseId,
             InformationObserver observer ) {
 
+        String query = request.query;
+
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId );
         AutomaticDdlProcessor cypherProcessor = (AutomaticDdlProcessor) transaction.getProcessor( QueryLanguage.CYPHER );
 
@@ -458,8 +460,6 @@ public class LanguageCrud {
 
             long executionTime = System.nanoTime();
             boolean noLimit = false;
-
-            String query = request.query;
 
             Statement statement = transaction.createStatement();
             CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, request.database );
@@ -501,7 +501,7 @@ public class LanguageCrud {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyResult, noLimit ).setNamespaceName( request.database ) );
+                    results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyResult, true ).setNamespaceName( request.database ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }

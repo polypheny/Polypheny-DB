@@ -41,7 +41,7 @@ public class CypherQueryParameters extends QueryParameters {
     }
 
 
-    public CypherQueryParameters( boolean fullGraph, String databaseName ) {
+    public CypherQueryParameters( String databaseName ) {
         super( "*", NamespaceType.GRAPH );
         this.databaseName = databaseName;
         this.fullGraph = true;

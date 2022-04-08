@@ -16,6 +16,7 @@
 
 package org.polypheny.db.schema.graph;
 
+import com.google.gson.annotations.Expose;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map.Entry;
@@ -33,8 +34,9 @@ import org.polypheny.db.util.NlsString;
 @Getter
 public abstract class GraphPropertyHolder extends GraphObject {
 
-
+    @Expose
     public final PolyDirectory properties;
+    @Expose
     public final PolyList<String> labels;
 
 

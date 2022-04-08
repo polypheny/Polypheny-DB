@@ -141,6 +141,7 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.cypher.cypher2alg.CypherQueryParameters;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
@@ -380,7 +381,7 @@ public class Crud implements InformationObserver {
         for ( CatalogNamespace schema : schemas ) {
             SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", getIconName( schema.namespaceType ) );
 
-            if ( request.depth > 1 ) {
+            if ( request.depth > 1 && schema.namespaceType != NamespaceType.GRAPH ) {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
                 ArrayList<SidebarElement> viewTree = new ArrayList<>();
                 ArrayList<SidebarElement> collectionTree = new ArrayList<>();
@@ -3002,8 +3003,16 @@ public class Crud implements InformationObserver {
         Schema schema = ctx.bodyAsClass( Schema.class );
         Transaction transaction = getTransaction();
 
+        NamespaceType type = schema.getType();
+
+        if ( type == NamespaceType.GRAPH ) {
+            handleGraphDdl( schema, transaction, ctx );
+            return;
+        }
+
         // create schema
         if ( schema.isCreate() && !schema.isDrop() ) {
+
             StringBuilder query = new StringBuilder( "CREATE " );
             if ( schema.getType() == NamespaceType.DOCUMENT ) {
                 query.append( "DOCUMENT " );
@@ -3030,6 +3039,17 @@ public class Crud implements InformationObserver {
         }
         // drop schema
         else if ( !schema.isCreate() && schema.isDrop() ) {
+            if ( type == null ) {
+                List<CatalogNamespace> namespaces = catalog.getSchemas( Catalog.defaultDatabaseId, new Catalog.Pattern( schema.getName() ) );
+                assert namespaces.size() == 1;
+                type = namespaces.get( 0 ).namespaceType;
+
+                if ( type == NamespaceType.GRAPH ) {
+                    handleGraphDdl( schema, transaction, ctx );
+                    return;
+                }
+            }
+
             StringBuilder query = new StringBuilder( "DROP SCHEMA " );
             query.append( "\"" ).append( schema.getName() ).append( "\"" );
             if ( schema.isCascade() ) {
@@ -3051,6 +3071,58 @@ public class Crud implements InformationObserver {
         } else {
             ctx.json( new Result( "Neither the field 'create' nor the field 'drop' was set." ) );
         }
+    }
+
+
+    private void handleGraphDdl( Schema schema, Transaction transaction, Context ctx ) {
+        if ( schema.isCreate() && !schema.isDrop() ) {
+            Statement statement = transaction.createStatement();
+            Processor processor = transaction.getProcessor( QueryLanguage.CYPHER );
+
+            String query = String.format( "CREATE DATABASE %s", schema.getName() );
+
+            List<? extends Node> nodes = processor.parse( query );
+            CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
+            try {
+                PolyResult result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
+                int rowsChanged = result.getRowsChanged( statement );
+                transaction.commit();
+                ctx.json( new Result( rowsChanged ) );
+            } catch ( TransactionException | Exception e ) {
+                log.error( "Caught exception while creating a graph namespace", e );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Could not rollback", ex );
+                }
+                ctx.json( new Result( e ) );
+            }
+        } else if ( schema.isDrop() && !schema.isCreate() ) {
+            Statement statement = transaction.createStatement();
+            Processor processor = transaction.getProcessor( QueryLanguage.CYPHER );
+
+            String query = String.format( "DROP DATABASE %s", schema.getName() );
+
+            List<? extends Node> nodes = processor.parse( query );
+            CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
+            try {
+                PolyResult result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
+                int rowsChanged = result.getRowsChanged( statement );
+                transaction.commit();
+                ctx.json( new Result( rowsChanged ) );
+            } catch ( TransactionException | Exception e ) {
+                log.error( "Caught exception while dropping a graph namespace", e );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Could not rollback", ex );
+                }
+                ctx.json( new Result( e ) );
+            }
+        } else {
+            ctx.json( new Result( "Neither the field 'create' nor the field 'drop' was set." ) );
+        }
+
     }
 
 

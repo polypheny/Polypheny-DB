@@ -20,6 +20,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.gson.annotations.Expose;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
     private final List<PolyNode> nodes;
     private final List<PolyEdge> edges;
     private final List<String> names;
+    @Expose
     private final List<GraphObject> path;
     @Getter
     private final List<PolySegment> segments;
