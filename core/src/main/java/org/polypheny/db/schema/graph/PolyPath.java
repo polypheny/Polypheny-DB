@@ -44,17 +44,17 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
     private final List<PolyEdge> edges;
     private final List<String> names;
     @Expose
-    private final List<GraphObject> path;
+    private final List<GraphPropertyHolder> path;
     @Getter
     private final List<PolySegment> segments;
 
 
-    public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphObject> path ) {
+    public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path ) {
         this( UUID.randomUUID().toString(), nodes, edges, names, path );
     }
 
 
-    public PolyPath( String id, List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphObject> path ) {
+    public PolyPath( String id, List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path ) {
         super( id, GraphObjectType.PATH );
         assert nodes.size() == edges.size() + 1;
         assert nodes.size() + edges.size() == names.size();
@@ -77,7 +77,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
     public static PolyPath create( List<Pair<String, PolyNode>> polyNodes, List<Pair<String, PolyEdge>> polyEdges ) {
         List<String> names = new ArrayList<>();
-        List<GraphObject> path = new ArrayList<>();
+        List<GraphPropertyHolder> path = new ArrayList<>();
 
         Iterator<Pair<String, PolyNode>> nodeIter = polyNodes.iterator();
         Iterator<Pair<String, PolyEdge>> edgeIter = polyEdges.iterator();
@@ -186,7 +186,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
             List<PolyNode> nodes = (List<PolyNode>) kryo.readClassAndObject( input );
             List<PolyEdge> edges = (List<PolyEdge>) kryo.readClassAndObject( input );
             List<String> names = (List<String>) kryo.readClassAndObject( input );
-            List<GraphObject> objects = (List<GraphObject>) kryo.readClassAndObject( input );
+            List<GraphPropertyHolder> objects = (List<GraphPropertyHolder>) kryo.readClassAndObject( input );
             return new PolyPath( nodes, edges, names, objects );
         }
 
@@ -207,7 +207,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
         protected PolySegment( String sourceId, String edgeId, String targetId, EdgeDirection direction ) {
-            super( null, GraphObjectType.SEGEMENT );
+            super( null, GraphObjectType.SEGMENT );
             this.sourceId = sourceId;
             this.edgeId = edgeId;
             this.targetId = targetId;
@@ -222,7 +222,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
         protected PolySegment( PolyNode source, PolyEdge edge, PolyNode target, EdgeDirection direction ) {
-            super( null, GraphObjectType.SEGEMENT );
+            super( null, GraphObjectType.SEGMENT );
             isRef = false;
             this.sourceId = source.id;
             this.edgeId = edge.id;

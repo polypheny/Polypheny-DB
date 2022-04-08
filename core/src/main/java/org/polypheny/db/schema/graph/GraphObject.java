@@ -55,7 +55,8 @@ public abstract class GraphObject implements ExpressionTransformable {
         GRAPH,
         NODE,
         EDGE,
-        SEGEMENT, PATH
+        SEGMENT,
+        PATH
     }
 
 }

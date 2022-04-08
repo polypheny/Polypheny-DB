@@ -40,6 +40,7 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     public final String source;
     @Expose
     public final String target;
+    @Expose
     public final EdgeDirection direction;
 
 

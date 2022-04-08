@@ -36,7 +36,7 @@ public class TestNode extends TestGraphObject {
 
     @SafeVarargs
     public static TestNode from( List<String> labels, Pair<String, Object>... properties ) {
-        return new TestNode( null, getProps( properties ), null );
+        return new TestNode( null, getProps( properties ), labels );
     }
 
 }

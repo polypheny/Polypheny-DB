@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.helper;
 import java.util.List;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.schema.graph.GraphObject;
+import org.polypheny.db.schema.graph.GraphPropertyHolder;
 import org.polypheny.db.schema.graph.PolyPath;
 
 public class TestPath implements TestObject {
@@ -40,7 +41,7 @@ public class TestPath implements TestObject {
     public boolean matches( Object other, boolean exclusive ) {
         assert other instanceof PolyPath;
         PolyPath path = (PolyPath) other;
-        List<GraphObject> elements = path.getPath();
+        List<GraphPropertyHolder> elements = path.getPath();
 
         if ( elements.size() != objects.size() ) {
             return false;

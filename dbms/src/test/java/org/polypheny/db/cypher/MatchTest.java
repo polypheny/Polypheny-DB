@@ -19,7 +19,6 @@ package org.polypheny.db.cypher;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
@@ -314,8 +313,7 @@ public class MatchTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore
-    public void matchVariableReuseTest() {
+    public void matchPathTest() {
         execute( SINGLE_EDGE_1 );
         Result res = execute( "MATCH (m {name:'Max'}), (k {name:'Kira'}), p = (m)-[]-(k)\n"
                 + "RETURN p" );
@@ -323,7 +321,7 @@ public class MatchTest extends CypherTestTemplate {
                 Row.of( TestPath.of(
                         TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ),
                         TestEdge.from( List.of( "OWNER_OF" ) ),
-                        TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ) ) );
+                        KIRA ) ) );
     }
 
 

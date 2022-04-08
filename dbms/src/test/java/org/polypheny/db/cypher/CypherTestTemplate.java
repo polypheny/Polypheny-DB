@@ -20,9 +20,16 @@ import static org.junit.Assert.fail;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.junit.AfterClass;
@@ -35,8 +42,11 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
+import org.polypheny.db.schema.graph.GraphObject.GraphObjectType;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
 import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.util.Pair;
@@ -45,7 +55,7 @@ import org.polypheny.db.webui.models.Result;
 public class CypherTestTemplate {
 
 
-    public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
+    public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().registerTypeAdapter( GraphPropertyHolder.class, new GraphObjectAdapter() ).create();
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
 
@@ -334,5 +344,70 @@ public class CypherTestTemplate {
         }
 
     }
+
+
+    public static class GraphObjectAdapter extends TypeAdapter<GraphPropertyHolder> {
+
+
+        @Override
+        public void write( JsonWriter out, GraphPropertyHolder value ) throws IOException {
+            throw new RemoteException( "Test adapter does not need to write." );
+        }
+
+
+        @Override
+        public GraphPropertyHolder read( JsonReader in ) throws IOException {
+            String id = null;
+            Map<String, Comparable<?>> properties = null;
+            GraphObjectType type = null;
+            String source = null;
+            String target = null;
+            List<String> labels = null;
+            EdgeDirection direction = null;
+
+            in.beginObject();
+
+            while ( in.peek() != JsonToken.END_OBJECT ) {
+                String name = in.nextName();
+                switch ( name ) {
+                    case "id":
+                        id = in.nextString();
+                        break;
+                    case "properties":
+                        properties = GSON.fromJson( in, Map.class );
+                        break;
+                    case "type":
+                        type = GraphObjectType.valueOf( in.nextString() );
+                        break;
+                    case "source":
+                        source = in.nextString();
+                        break;
+                    case "target":
+                        target = in.nextString();
+                        break;
+                    case "labels":
+                        labels = GSON.fromJson( in, List.class );
+                        break;
+                    case "direction":
+                        direction = EdgeDirection.valueOf( in.nextString() );
+                        break;
+                    default:
+                        throw new RuntimeException( String.format( "Was not able to parse : %s GraphObject.", name ) );
+
+                }
+            }
+            in.endObject();
+
+            if ( type == GraphObjectType.EDGE ) {
+                return new PolyEdge( id, new PolyDictionary( properties ), labels, source, target, direction );
+            } else if ( type == GraphObjectType.NODE ) {
+                return new PolyNode( id, new PolyDictionary( properties ), labels );
+            } else {
+                throw new RuntimeException( "Was not able to parse GraphObject." );
+            }
+        }
+
+    }
+
 
 }

@@ -134,11 +134,11 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         for ( List<String> pathId : pathIds ) {
             List<PolyNode> nodes = new LinkedList<>();
             List<PolyEdge> edges = new LinkedList<>();
-            List<GraphObject> path = new LinkedList<>();
+            List<GraphPropertyHolder> path = new LinkedList<>();
             List<String> names = new LinkedList<>();
 
             int i = 0;
-            GraphObject object;
+            GraphPropertyHolder object;
             for ( String id : pathId ) {
                 if ( i % 2 == 0 ) {
                     object = this.nodes.get( id );
