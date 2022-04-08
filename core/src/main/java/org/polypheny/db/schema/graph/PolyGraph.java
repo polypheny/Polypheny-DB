@@ -29,6 +29,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyPath.PolySegment;
@@ -249,6 +250,12 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
             }
         }
         return res;
+    }
+
+
+    @Override
+    public Expression getAsExpression() {
+        throw new RuntimeException( "Cannot express PolyGraph." );
     }
 
 

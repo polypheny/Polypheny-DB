@@ -22,9 +22,10 @@ import com.google.gson.annotations.Expose;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.tools.ExpressionTransformable;
 
 @Getter
-public abstract class GraphObject {
+public abstract class GraphObject implements ExpressionTransformable {
 
     private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().excludeFieldsWithoutExposeAnnotation().create();
 

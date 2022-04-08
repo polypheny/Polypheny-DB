@@ -26,7 +26,7 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.util.Pair;
@@ -70,7 +70,7 @@ public class CypherRelPattern extends CypherPattern {
 
 
     public Pair<String, PolyEdge> getPolyEdge( String leftId, String rightId ) {
-        PolyDirectory properties = this.properties != null ? (PolyDirectory) this.properties.getComparable() : new PolyDirectory();
+        PolyDictionary properties = this.properties != null ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
         EdgeDirection direction = left == right ? EdgeDirection.NONE : right ? EdgeDirection.LEFT_TO_RIGHT : EdgeDirection.RIGHT_TO_LEFT;
         List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
 

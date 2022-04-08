@@ -34,7 +34,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.schema.graph.GraphPropertyHolder;
@@ -109,7 +109,7 @@ public class CypherFunctions {
 
             if ( !id.equals( oldId ) ) {
                 if ( oldId != null ) {
-                    edges.add( new PolyEdge( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT ) );
+                    edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT ) );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
@@ -127,7 +127,7 @@ public class CypherFunctions {
         }
 
         if ( oldId != null ) {
-            edges.add( new PolyEdge( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT ) );
+            edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT ) );
         }
 
         return Linq4j.asEnumerable( edges );
@@ -151,7 +151,7 @@ public class CypherFunctions {
 
             if ( !id.equals( oldId ) ) {
                 if ( oldId != null ) {
-                    nodes.add( new PolyNode( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ) ) );
+                    nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ) ) );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
@@ -168,7 +168,7 @@ public class CypherFunctions {
         }
 
         if ( oldId != null ) {
-            nodes.add( new PolyNode( oldId, new PolyDirectory( oldProps ), List.copyOf( oldLabels ) ) );
+            nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ) ) );
         }
 
         return Linq4j.asEnumerable( nodes );

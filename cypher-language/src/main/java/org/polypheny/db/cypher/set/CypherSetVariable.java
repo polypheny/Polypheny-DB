@@ -30,7 +30,7 @@ import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
@@ -82,10 +82,10 @@ public class CypherSetVariable extends CypherSetItem {
                         ref,
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                                ((PolyDirectory) value).keySet().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false ) ).collect( Collectors.toList() ) ),
+                                ((PolyDictionary) value).keySet().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false ) ).collect( Collectors.toList() ) ),
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 ),
-                                ((PolyDirectory) value).values().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.ANY ), false ) ).collect( Collectors.toList() ) ),
+                                ((PolyDictionary) value).values().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.ANY ), false ) ).collect( Collectors.toList() ) ),
                         context.rexBuilder.makeLiteral( !increment ) ) );
 
         context.add( Pair.of( nodeName, op ) );

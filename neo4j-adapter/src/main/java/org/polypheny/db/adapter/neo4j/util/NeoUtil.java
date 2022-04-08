@@ -43,7 +43,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
@@ -170,7 +170,7 @@ public interface NeoUtil {
                 labels.add( e );
             }
         } );
-        return new PolyNode( id, new PolyDirectory( map ), labels );
+        return new PolyNode( id, new PolyDictionary( map ), labels );
     }
 
 
@@ -179,7 +179,7 @@ public interface NeoUtil {
         String id = map.remove( "_id" ).toString();
         String sourceId = map.remove( "__sourceId__" ).toString();
         String targetId = map.remove( "__targetId__" ).toString();
-        return new PolyEdge( id, new PolyDirectory( map ), List.of( relationship.type() ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT );
+        return new PolyEdge( id, new PolyDictionary( map ), List.of( relationship.type() ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT );
     }
 
     static Comparable<?> getComparableOrString( Value e ) {

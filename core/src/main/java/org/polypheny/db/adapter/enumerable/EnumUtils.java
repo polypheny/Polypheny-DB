@@ -59,6 +59,8 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 
@@ -316,6 +318,16 @@ public class EnumUtils {
      */
     public static <T> List<Expression> constantList( List<T> values ) {
         return values.stream().map( Expressions::constant ).collect( Collectors.toList() );
+    }
+
+
+    public static <T> Expression getExpression( T value, Class<T> clazz ) {
+        if ( value instanceof PolyDictionary ) {
+            return ((PolyDictionary) value).getAsExpression();
+        } else if ( value instanceof PolyList ) {
+            return ((PolyList<?>) value).getAsExpression();
+        }
+        return Expressions.constant( value, clazz );
     }
 
 }

@@ -28,10 +28,10 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.runtime.PolyCollections;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
-import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.tools.ExpressionTransformable;
 
 @Getter
@@ -43,12 +43,12 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
     private boolean isVariable = false;
 
 
-    public PolyNode( @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
+    public PolyNode( @NonNull PolyCollections.PolyDictionary properties, List<String> labels ) {
         this( UUID.randomUUID().toString(), properties, labels );
     }
 
 
-    public PolyNode( String id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels ) {
+    public PolyNode( String id, @NonNull PolyCollections.PolyDictionary properties, List<String> labels ) {
         super( id, GraphObjectType.NODE, properties, labels );
     }
 
@@ -77,12 +77,14 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
 
     @Override
     public Expression getAsExpression() {
-        return Expressions.convert_(
-                Expressions.call(
-                        PolySerializer.class,
-                        "deserializeAndCompress",
-                        List.of( Expressions.constant( PolySerializer.serializeAndCompress( this ) ), Expressions.constant( PolyNode.class ) ) ),
-                PolyNode.class );
+        return Expressions.call( Expressions.convert_(
+                Expressions.new_(
+                        PolyNode.class,
+                        Expressions.constant( id ),
+                        properties.getAsExpression(),
+                        EnumUtils.constantArrayList( labels, String.class ) ),
+                PolyNode.class
+        ), "isVariable", Expressions.constant( isVariable ) );
     }
 
 
@@ -107,7 +109,7 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
         @Override
         public PolyNode read( Kryo kryo, Input input, Class<? extends PolyNode> type ) {
             String id = (String) kryo.readClassAndObject( input );
-            PolyDirectory properties = (PolyDirectory) kryo.readClassAndObject( input );
+            PolyDictionary properties = (PolyDictionary) kryo.readClassAndObject( input );
             PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
             String variableName = (String) kryo.readClassAndObject( input );
             boolean isVariable = (boolean) kryo.readClassAndObject( input );

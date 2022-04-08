@@ -112,7 +112,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists.ComparableList;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -3797,8 +3797,8 @@ public class Functions {
     }
 
 
-    public static PolyDirectory deserializeDirectory( String parsed ) {
-        return gson.fromJson( parsed, PolyDirectory.class );
+    public static PolyDictionary deserializeDirectory( String parsed ) {
+        return gson.fromJson( parsed, PolyDictionary.class );
     }
 
 

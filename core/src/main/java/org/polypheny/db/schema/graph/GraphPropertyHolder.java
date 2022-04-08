@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -35,12 +35,12 @@ import org.polypheny.db.util.NlsString;
 public abstract class GraphPropertyHolder extends GraphObject {
 
     @Expose
-    public final PolyDirectory properties;
+    public final PolyDictionary properties;
     @Expose
     public final PolyList<String> labels;
 
 
-    public GraphPropertyHolder( String id, GraphObjectType type, PolyDirectory properties, List<String> labels ) {
+    public GraphPropertyHolder( String id, GraphObjectType type, PolyDictionary properties, List<String> labels ) {
         super( id, type );
         this.properties = properties;
         this.labels = new PolyList<>( labels );
@@ -55,7 +55,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
     }
 
 
-    public boolean matchesProperties( PolyDirectory properties ) {
+    public boolean matchesProperties( PolyDictionary properties ) {
         /*if ( this.properties.size() != properties.size() ) {
             return false;
         }*/

@@ -283,7 +283,7 @@ public class MatchTest extends CypherTestTemplate {
 
         assert containsRows( res, true, false,
                 Row.of( KIRA ),
-                Row.of( HANS ) );
+                Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "age", 31 ) ) ) );
 
     }
 

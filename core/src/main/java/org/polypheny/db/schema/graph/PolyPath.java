@@ -25,19 +25,20 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
-import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.Pair;
 
 @Getter
-public class PolyPath extends GraphObject implements Comparable<PolyPath>, ExpressionTransformable {
+public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
     private final List<PolyNode> nodes;
     private final List<PolyEdge> edges;
@@ -147,12 +148,13 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
     @Override
     public Expression getAsExpression() {
         return Expressions.convert_(
-                Expressions.call(
-                        PolySerializer.class,
-                        "deserializeAndCompress",
-                        List.of( Expressions.constant( PolySerializer.serializeAndCompress( this ) ), Expressions.constant( PolyPath.class ) ) ),
-                PolyPath.class
-        );
+                Expressions.new_(
+                        PolyPath.class,
+                        EnumUtils.expressionList( nodes.stream().map( PolyNode::getAsExpression ).collect( Collectors.toList() ) ),
+                        EnumUtils.expressionList( edges.stream().map( PolyEdge::getAsExpression ).collect( Collectors.toList() ) ),
+                        EnumUtils.constantArrayList( names, String.class ),
+                        EnumUtils.expressionList( path.stream().map( ExpressionTransformable::getAsExpression ).collect( Collectors.toList() ) ) ),
+                PolyPath.class );
     }
 
 
@@ -251,6 +253,12 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath>, Expre
             }
             return true;
 
+        }
+
+
+        @Override
+        public Expression getAsExpression() {
+            throw new RuntimeException( "Cannot transform PolyPath." );
         }
 
     }

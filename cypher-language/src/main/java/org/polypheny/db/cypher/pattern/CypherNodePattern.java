@@ -24,7 +24,7 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.util.Pair;
 
@@ -58,7 +58,7 @@ public class CypherNodePattern extends CypherPattern {
 
 
     public Pair<String, PolyNode> getPolyNode() {
-        PolyDirectory properties = this.properties != null ? (PolyDirectory) this.properties.getComparable() : new PolyDirectory();
+        PolyDictionary properties = this.properties != null ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
 
         String name = null;
         if ( variable != null ) {

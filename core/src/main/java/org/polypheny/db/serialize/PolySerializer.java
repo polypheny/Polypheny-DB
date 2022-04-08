@@ -37,8 +37,8 @@ import java.util.zip.InflaterInputStream;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory.PolyDirectorySerializer;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary.PolyDirectorySerializer;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.PolyEdgeSerializer;
@@ -73,7 +73,7 @@ public class PolySerializer {
         kryo.register( BigDecimal.class );
         kryo.register( PolyNode.class, new PolyNodeSerializer() );
         kryo.register( PolyEdge.class, new PolyEdgeSerializer() );
-        kryo.register( PolyDirectory.class, new PolyDirectorySerializer() );
+        kryo.register( PolyDictionary.class, new PolyDirectorySerializer() );
         kryo.register( PolyPath.class, new PolyPathSerializer() );
         kryo.register( Pair.class, new PairSerializer() );
     }

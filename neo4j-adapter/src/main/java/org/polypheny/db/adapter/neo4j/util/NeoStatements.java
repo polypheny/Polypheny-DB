@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
@@ -318,7 +318,7 @@ public interface NeoStatements {
         return new PropertyStatement( key, value );
     }
 
-    static List<PropertyStatement> properties_( PolyDirectory properties ) {
+    static List<PropertyStatement> properties_( PolyDictionary properties ) {
         List<PropertyStatement> props = new ArrayList<>();
         for ( Entry<String, Object> entry : properties.entrySet() ) {
             props.add( property_( entry.getKey(), _literalOrString( entry.getValue() ) ) );

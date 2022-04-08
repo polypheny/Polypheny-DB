@@ -28,13 +28,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.tools.ExpressionTransformable;
+import org.polypheny.db.util.BuiltInMethod;
 
 public class PolyCollections {
 
-    public static class PolyList<T extends Comparable<?>> extends ArrayList<T> implements Comparable<PolyList<T>>, Collection<T> {
+    public static class PolyList<T extends Comparable<?>> extends ArrayList<T> implements Comparable<PolyList<T>>, Collection<T>, ExpressionTransformable {
 
 
         public PolyList( Collection<T> list ) {
@@ -93,24 +98,43 @@ public class PolyCollections {
         }
 
 
+        @Override
+        public Expression getAsExpression() {
+            return EnumUtils.expressionList( stream().map( e -> EnumUtils.getExpression( e, Comparable.class ) ).collect( Collectors.toList() ) );
+        }
+
     }
 
 
-    public static class PolyDirectory extends HashMap<String, Object> implements Comparable<PolyDirectory> {
+    public static class PolyDictionary extends HashMap<String, Object> implements Comparable<PolyDictionary>, ExpressionTransformable {
 
 
-        public PolyDirectory( Map<String, Comparable<?>> map ) {
+        public PolyDictionary( Map<String, Comparable<?>> map ) {
             super( map );
         }
 
 
-        public PolyDirectory() {
+        public PolyDictionary() {
             super();
         }
 
 
         @Override
-        public int compareTo( @NotNull PolyDirectory directory ) {
+        public Expression getAsExpression() {
+            return Expressions.new_( PolyDictionary.class, Expressions.call(
+                    BuiltInMethod.MAP_OF_ENTRIES.method,
+                    EnumUtils.expressionList(
+                            entrySet()
+                                    .stream()
+                                    .map( p -> Expressions.call(
+                                            BuiltInMethod.PAIR_OF.method,
+                                            Expressions.constant( p.getKey(), String.class ),
+                                            EnumUtils.getExpression( p.getValue(), Object.class ) ) ).collect( Collectors.toList() ) ) ) );
+        }
+
+
+        @Override
+        public int compareTo( @NotNull PolyDictionary directory ) {
             if ( size() > directory.size() ) {
                 return 1;
             }
@@ -127,18 +151,18 @@ public class PolyCollections {
         }
 
 
-        public static class PolyDirectorySerializer extends Serializer<PolyDirectory> {
+        public static class PolyDirectorySerializer extends Serializer<PolyDictionary> {
 
             @Override
-            public void write( Kryo kryo, Output output, PolyDirectory object ) {
+            public void write( Kryo kryo, Output output, PolyDictionary object ) {
                 kryo.writeClassAndObject( output, new HashMap<>( object ) );
             }
 
 
             @Override
-            public PolyDirectory read( Kryo kryo, Input input, Class<? extends PolyDirectory> type ) {
+            public PolyDictionary read( Kryo kryo, Input input, Class<? extends PolyDictionary> type ) {
                 final Map<String, Comparable<?>> map = (Map<String, Comparable<?>>) kryo.readClassAndObject( input );
-                return new PolyDirectory( map );
+                return new PolyDictionary( map );
             }
 
         }

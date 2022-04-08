@@ -56,16 +56,6 @@ public class CypherTestTemplate {
     protected static final String SINGLE_EDGE_1 = "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})";
     protected static final String SINGLE_EDGE_2 = "CREATE (p:Person {name: 'Max'})-[rel:KNOWS {since: 1994}]->(a:Person {name:'Hans', age:31})";
     protected static final String MULTIPLE_HOP_EDGE = "CREATE (n:Person)-[f:FRIEND_OF {since: 1995}]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})";
-    protected final TestNode ANN = TestNode.from(
-            List.of( "Person" ),
-            Pair.of( "name", "Bob" ),
-            Pair.of( "age", 31 ),
-            Pair.of( "depno", 13 ) );
-    protected final TestNode BOB = TestNode.from(
-            List.of( "Person" ),
-            Pair.of( "name", "Ann" ),
-            Pair.of( "age", 45 ),
-            Pair.of( "depno", 13 ) );
 
     protected final TestNode MAX = TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) );
     protected final TestNode HANS = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) );

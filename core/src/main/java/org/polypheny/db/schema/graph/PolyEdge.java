@@ -27,10 +27,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.runtime.PolyCollections;
-import org.polypheny.db.runtime.PolyCollections.PolyDirectory;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
-import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.tools.ExpressionTransformable;
 
 @Getter
@@ -43,12 +43,12 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     public final EdgeDirection direction;
 
 
-    public PolyEdge( @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, EdgeDirection direction ) {
+    public PolyEdge( @NonNull PolyCollections.PolyDictionary properties, List<String> labels, String source, String target, EdgeDirection direction ) {
         this( UUID.randomUUID().toString(), properties, labels, source, target, direction );
     }
 
 
-    public PolyEdge( String id, @NonNull PolyCollections.PolyDirectory properties, List<String> labels, String source, String target, EdgeDirection direction ) {
+    public PolyEdge( String id, @NonNull PolyCollections.PolyDictionary properties, List<String> labels, String source, String target, EdgeDirection direction ) {
         super( id, GraphObjectType.EDGE, properties, labels );
         this.source = source;
         this.target = target;
@@ -77,12 +77,15 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     @Override
     public Expression getAsExpression() {
         return Expressions.convert_(
-                Expressions.call(
-                        PolySerializer.class,
-                        "deserializeAndCompress",
-                        List.of( Expressions.constant( PolySerializer.serializeAndCompress( this ) ), Expressions.constant( PolyEdge.class ) ) ),
-                PolyEdge.class
-        );
+                Expressions.new_(
+                        PolyEdge.class,
+                        Expressions.constant( id ),
+                        properties.getAsExpression(),
+                        EnumUtils.constantArrayList( labels, String.class ),
+                        Expressions.constant( source ),
+                        Expressions.constant( target ),
+                        Expressions.constant( direction ) ),
+                PolyEdge.class );
     }
 
 
@@ -123,7 +126,7 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
         @Override
         public PolyEdge read( Kryo kryo, Input input, Class<? extends PolyEdge> type ) {
             String id = (String) kryo.readClassAndObject( input );
-            PolyDirectory properties = (PolyDirectory) kryo.readClassAndObject( input );
+            PolyDictionary properties = (PolyDictionary) kryo.readClassAndObject( input );
             PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
             String leftId = (String) kryo.readClassAndObject( input );
             String rightId = (String) kryo.readClassAndObject( input );
