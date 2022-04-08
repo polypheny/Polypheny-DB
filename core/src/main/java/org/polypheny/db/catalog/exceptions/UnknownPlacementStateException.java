@@ -17,15 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownPlacementRoleRuntimeException extends CatalogRuntimeException {
+public class UnknownPlacementStateException extends CatalogException {
 
-    public UnknownPlacementRoleRuntimeException( final int id ) {
-        super( "There is no PlacementRole with id: " + id );
-    }
-
-
-    public UnknownPlacementRoleRuntimeException( final String name ) {
-        super( "There is no PlacementRole with name: '" + name + "'" );
+    public UnknownPlacementStateException( final String name ) {
+        super( "There is no PlacementState with name: '" + name + "'" );
     }
 
 }

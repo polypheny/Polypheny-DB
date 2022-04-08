@@ -51,10 +51,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
@@ -291,7 +291,7 @@ public class DdlManagerImpl extends DdlManager {
                             PlacementType.AUTOMATIC,
                             physicalSchemaName,
                             physicalTableName,
-                            DataPlacementRole.UPTODATE,
+                            PlacementState.UPTODATE,
                             UpdateInformation.createEmpty() );
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
@@ -791,7 +791,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    placementPropertyInfo != null ? placementPropertyInfo.dataPlacementRole : DataPlacementRole.UPTODATE,
+                    placementPropertyInfo != null ? placementPropertyInfo.placementState : PlacementState.UPTODATE,
                     UpdateInformation.createEmpty() );
         }
 
@@ -1361,7 +1361,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    placementPropertyInfo.dataPlacementRole,
+                    placementPropertyInfo.placementState,
                     UpdateInformation.createEmpty() )
             );
 
@@ -1401,8 +1401,8 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check constraints if ROLE is set TO REFRESHABLE
         // Otherwise we could lose data on the primaries/UPTODATE copies.
-        if ( placementPropertyInfo.dataPlacementRole != null && placementPropertyInfo.dataPlacementRole.equals( DataPlacementRole.REFRESHABLE ) ) {
-            List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByRole( placementPropertyInfo.table.id, DataPlacementRole.UPTODATE );
+        if ( placementPropertyInfo.placementState != null && placementPropertyInfo.placementState.equals( PlacementState.REFRESHABLE ) ) {
+            List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByState( placementPropertyInfo.table.id, PlacementState.UPTODATE );
             catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
 
             // Gather all partitionIds to a set
@@ -1416,7 +1416,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        catalog.updateDataPlacementRole( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.dataPlacementRole );
+        catalog.updateDataPlacementState( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.placementState );
 
         // Check constraints if REPLICATION STRATEGY is set TO LAZY
         // Otherwise we could lose data on the primaries/EAGER replicated copies.
@@ -1486,7 +1486,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE,
+                        PlacementState.UPTODATE,
                         UpdateInformation.createEmpty() );
             }
 
@@ -1821,7 +1821,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE,
+                    PlacementState.UPTODATE,
                     UpdateInformation.createEmpty() );
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
@@ -2009,7 +2009,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE,
+                        PlacementState.UPTODATE,
                         UpdateInformation.createEmpty() );
 
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
@@ -2290,7 +2290,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE,
+                        PlacementState.UPTODATE,
                         UpdateInformation.createEmpty() );
             }
 
@@ -2376,7 +2376,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE,
+                    PlacementState.UPTODATE,
                     UpdateInformation.createEmpty() );
 
             // TODO @HENNLO
@@ -2392,7 +2392,7 @@ public class DdlManagerImpl extends DdlManager {
             // TODO @HENNLO Check if this can be omitted
             catalog.updateDataPlacement( store.getAdapterId(), mergedTable.id,
                     oldDataPlacement.columnPlacementsOnAdapter,
-                    mergedTable.partitionProperty.partitionIds, oldDataPlacement.dataPlacementRole
+                    mergedTable.partitionProperty.partitionIds, oldDataPlacement.placementState
                     , oldDataPlacement.replicationStrategy );
             //
 

@@ -19,10 +19,10 @@ package org.polypheny.db.sql.sql.util.replication.properties;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
 import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Literal;
@@ -40,7 +40,7 @@ public class SqlPlacementPropertyExtractor extends PlacementPropertyExtractor {
     }
 
 
-    public static PlacementPropertyInformation fromNodeLists( CatalogTable table, Map<SqlIdentifier, SqlIdentifier> propertyMapping ) throws UnknownPlacementRoleException, UnknownPlacementPropertyException, UnknownReplicationStrategyException {
+    public static PlacementPropertyInformation fromNodeLists( CatalogTable table, Map<SqlIdentifier, SqlIdentifier> propertyMapping ) throws UnknownPlacementStateException, UnknownPlacementPropertyException, UnknownReplicationStrategyException {
 
         if ( propertyMapping == null || propertyMapping.isEmpty() ) {
             return null;
@@ -55,7 +55,7 @@ public class SqlPlacementPropertyExtractor extends PlacementPropertyExtractor {
 
             switch ( entry.getKey().getSimple().toUpperCase() ) {
                 case "ROLE":
-                    dataPlacementRole = DataPlacementRole.getByName( entry.getValue().getSimple().toUpperCase() );
+                    placementState = PlacementState.getByName( entry.getValue().getSimple().toUpperCase() );
                     break;
 
                 case "REPLICATION_STRATEGY":

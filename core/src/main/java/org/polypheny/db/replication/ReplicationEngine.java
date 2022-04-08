@@ -61,6 +61,8 @@ public abstract class ReplicationEngine {
 
     protected Catalog catalog = Catalog.getInstance();
 
+    protected HashMap<Long, Integer> replicationFailCount = new HashMap<>();
+
     protected DataReplicator dataReplicator;
 
     private ReplicationStrategy associatedStrategy;
@@ -234,6 +236,24 @@ public abstract class ReplicationEngine {
             }
         }
         return null;
+    }
+
+
+    protected boolean increaseReplicationFailCount( long replicationId ) {
+
+        int newFailCount;
+        if ( replicationFailCount.containsKey( replicationId ) ) {
+
+            newFailCount = replicationFailCount.get( replicationId ) + 1;
+            if ( newFailCount >= REPLICATION_FAIL_COUNT_THRESHOLD.getInt() ) {
+                return false;
+            }
+        } else {
+            // First fail count for the replication
+            newFailCount = 1;
+        }
+        replicationFailCount.put( replicationId, newFailCount );
+        return true;
     }
 
 }

@@ -70,8 +70,8 @@ import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementStateRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
@@ -1334,24 +1334,44 @@ public abstract class Catalog {
     public abstract List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId );
 
     /**
-     * Returns all DataPlacements of a given table that are associated with a given role.
+     * Returns all DataPlacements of a given table that are associated with a given state.
      *
      * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all DataPlacements for the table that are associated with a specific role
+     * @param state state to specifically filter
+     * @return List of all DataPlacements for the table that are associated with a specific state
      */
-    public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
+    public abstract List<CatalogDataPlacement> getDataPlacementsByState( long tableId, PlacementState state );
 
 
     /**
-     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
+     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given state.
      *
      * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
      * @param partitionId filter by ID
-     * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
+     * @param state state to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific state for a specific partitionId
      */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role );
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndState( long tableId, long partitionId, PlacementState state );
+
+
+    /**
+     * Returns all PartitionPlacements of a given table that are associated with a given state.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param state state to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific state for a specific partitionId
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByState( long tableId, PlacementState state );
+
+
+    /**
+     * Returns all distinct PartitionPlacements of a given table that are associated with a given replicationStrategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy replicationStrategy to specifically filter
+     * @return returns one partition placement for each partition with the associated strategy
+     */
+    public abstract List<CatalogPartitionPlacement> getDistinctPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy );
 
 
     /**
@@ -1426,7 +1446,7 @@ public abstract class Catalog {
      * @param physicalTableName The table name on the adapter
      * @param updateInformation Placement replicationProperty contains metadata about the current state of this placement
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, UpdateInformation updateInformation );
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, PlacementState state, UpdateInformation updateInformation );
 
     /**
      * Updates a placements replication properties.
@@ -1438,6 +1458,14 @@ public abstract class Catalog {
      */
     public abstract void updatePartitionPlacementProperties( int adapterId, long partitionId, long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications );
 
+    /**
+     * Only updates the DataPlacementState
+     *
+     * @param adapterId The id of a specific adapter that is associated with the placement
+     * @param partitionId The id of a specific partition that is associated with the placement
+     * @param state new intended state
+     */
+    public abstract void updatePartitionPartitionPlacementState( int adapterId, long partitionId, PlacementState state );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store
@@ -1542,16 +1570,16 @@ public abstract class Catalog {
      * @param columnIds List of columnIds to be located on a specific store for the table
      * @param partitionIds List of partitionIds to be located on a specific store for the table
      */
-    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, DataPlacementRole dataPlacementRole, ReplicationStrategy replicationStrategy );
+    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, PlacementState placementState, ReplicationStrategy replicationStrategy );
 
     /**
-     * Updates and overrides the dataPlacementRole for a given data placement
+     * Updates and overrides the dataPlacementState for a given data placement
      *
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from
-     * @param dataPlacementRole new DataPlacementRole
+     * @param placementState new DataPlacementState
      */
-    public abstract void updateDataPlacementRole( int adapterId, long tableId, DataPlacementRole dataPlacementRole );
+    public abstract void updateDataPlacementState( int adapterId, long tableId, PlacementState placementState );
 
     /**
      * Updates and overrides the dataPlacement replication Strategy for a given data placement
@@ -2071,7 +2099,7 @@ public abstract class Catalog {
     }
 
 
-    public enum DataPlacementRole {
+    public enum PlacementState {
         UPTODATE( 0 ),
         REFRESHABLE( 1 ),
         INFINITELY_OUTDATED( 2 );
@@ -2079,7 +2107,7 @@ public abstract class Catalog {
         private final int id;
 
 
-        DataPlacementRole( int id ) {
+        PlacementState( int id ) {
             this.id = id;
         }
 
@@ -2089,23 +2117,23 @@ public abstract class Catalog {
         }
 
 
-        public static DataPlacementRole getById( final int id ) {
-            for ( DataPlacementRole t : values() ) {
+        public static PlacementState getById( final int id ) {
+            for ( PlacementState t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
             }
-            throw new UnknownPlacementRoleRuntimeException( id );
+            throw new UnknownPlacementStateRuntimeException( id );
         }
 
 
-        public static DataPlacementRole getByName( final String name ) throws UnknownPlacementRoleException {
-            for ( DataPlacementRole t : values() ) {
+        public static PlacementState getByName( final String name ) throws UnknownPlacementStateException {
+            for ( PlacementState t : values() ) {
                 if ( t.name().equalsIgnoreCase( name ) ) {
                     return t;
                 }
             }
-            throw new UnknownPlacementRoleException( name );
+            throw new UnknownPlacementStateException( name );
         }
 
     }

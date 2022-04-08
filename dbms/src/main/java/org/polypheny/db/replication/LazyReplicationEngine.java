@@ -28,6 +28,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -259,11 +260,11 @@ public class LazyReplicationEngine extends ReplicationEngine {
     }
 
 
+
     /**
      * Is used to process queued replication events
      * To update the stores lazily.
      */
-
     class LazyReplicationWorker implements Runnable {
 
         @Getter
@@ -338,10 +339,10 @@ public class LazyReplicationEngine extends ReplicationEngine {
             long dependentReplicationId = getNextReplicationId();
             if ( dependentReplicationId < 0 ) {
                 // CLEANUP Resources since it has no further replications left.
-                cleanUpLocalReplication();
+                cleanUpLocalReplication( false );
                 return false;
             } else if ( dependentReplicationId != replicationId ) {
-                log.info( "The replication for replicationId '{}' cannot be executed. Depends on replication '{}' to be executed first.Re-queueing it.", replicationId, dependentReplicationId );
+                log.info( "The replication for replicationId '{}' cannot be executed. Depends on replication '{}' to be executed first. Re-queueing it.", replicationId, dependentReplicationId );
                 queueIndividualReplication( replicationId, replicationDataId, true );
                 return false;
             }
@@ -372,20 +373,20 @@ public class LazyReplicationEngine extends ReplicationEngine {
         }
 
 
-        private void cleanUpLocalReplication() {
+        private void cleanUpLocalReplication( boolean force ) {
             // TODO @HENNLO  apply a lock here
             // Make sure that the next replication inline is indeed the one this worker has processed.
-            if ( getNextReplicationId() == replicationId ) {
+            if ( getNextReplicationId() == replicationId || force ) {
                 // Remove the replication from local execution queue
                 localPartitionPlacementQueue.get( targetPartitionPlacementIdentifier ).remove( replicationId );
 
                 // Check if this was the last replication to be applied for this specific target
-                if ( localPartitionPlacementQueue.get( targetPartitionPlacementIdentifier ).size() <= 0 ) {
+                if ( localPartitionPlacementQueue.get( targetPartitionPlacementIdentifier ).size() <= 0 || force ) {
                     localPartitionPlacementQueue.remove( targetPartitionPlacementIdentifier );
                     log.info( "This was the last pending replication for the target  ( {} on {} ). Removing its local queue.",
                             targetPartitionPlacementIdentifier.left, targetPartitionPlacementIdentifier.right );
                 }
-                // TODO @HENNLO Check if this indeed alters the object placed in replcicationData
+
                 replicationObject.removeSingleReplicationFromDependency( replicationId );
 
                 // Check if this was the last target that depends on the replication object
@@ -412,6 +413,8 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
         /**
          * Updates all changed partitionPlacements with the new update information
+         *
+         * @param modifications number of modifications that have been applied to the secondary
          */
         private void updateCatalogInformation( long modifications ) {
             catalog.updatePartitionPlacementProperties(
@@ -427,14 +430,34 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
         private void handleSuccessfulReplication( long modifications ) {
             updateCatalogInformation( modifications );
-            cleanUpLocalReplication();
+            cleanUpLocalReplication( false );
 
         }
 
 
         private void handleFailedReplication() {
-            log.info( "The replication for replicationId {} has failed. Re-queueing it.", replicationId );
-            queueIndividualReplication( replicationId, replicationDataId, true );
+            log.info( "The replication for replicationId {} has failed.", replicationId );
+            if ( increaseReplicationFailCount( replicationId ) ) {
+                log.info( "Re-queueing replicationId {} with remaining fail count: '{}'.",
+                        replicationId,
+                        REPLICATION_FAIL_COUNT_THRESHOLD.getInt() - replicationFailCount.get( replicationId ) );
+
+                queueIndividualReplication( replicationId, replicationDataId, true );
+            } else {
+                log.info( "The replication for replicationId {} has reached its fail count: '{}'.", replicationId, REPLICATION_FAIL_COUNT_THRESHOLD.getInt() );
+                log.info( "Marking the designated target ( {} on {} ) as INFINITELY OUTDATED.",
+                        targetPartitionPlacementIdentifier.left,
+                        targetPartitionPlacementIdentifier.right );
+                log.info( "Forcefully removing all pending replications from the target ( {} on {} ).",
+                        targetPartitionPlacementIdentifier.left,
+                        targetPartitionPlacementIdentifier.right );
+                cleanUpLocalReplication( true );
+
+                catalog.updatePartitionPartitionPlacementState(
+                        targetPartitionPlacementIdentifier.right,
+                        targetPartitionPlacementIdentifier.left,
+                        PlacementState.INFINITELY_OUTDATED );
+            }
         }
 
     }

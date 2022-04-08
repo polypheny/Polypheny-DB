@@ -16,6 +16,7 @@
 
 package org.polypheny.db.partition;
 
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,8 +32,8 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -301,7 +302,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     PlacementType.AUTOMATIC,
                                     null,
                                     null,
-                                    DataPlacementRole.UPTODATE,
+                                    PlacementState.UPTODATE,
                                     UpdateInformation.createEmpty() );
                         }
 
@@ -351,7 +352,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     PlacementType.AUTOMATIC,
                                     null,
                                     null,
-                                    DataPlacementRole.UPTODATE,
+                                    PlacementState.UPTODATE,
                                     UpdateInformation.createEmpty() );
                         }
                         store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );

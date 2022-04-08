@@ -27,7 +27,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 
@@ -47,7 +47,7 @@ public class CatalogDataPlacement implements CatalogEntity {
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.
-    public final DataPlacementRole dataPlacementRole;
+    public final PlacementState placementState;
 
     public final ReplicationStrategy replicationStrategy;
 
@@ -71,14 +71,14 @@ public class CatalogDataPlacement implements CatalogEntity {
             long tableId,
             int adapterId,
             PlacementType placementType,
-            DataPlacementRole dataPlacementRole,
+            PlacementState placementState,
             ReplicationStrategy replicationStrategy,
             @NonNull final ImmutableList<Long> columnPlacementsOnAdapter,
             @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;
-        this.dataPlacementRole = dataPlacementRole;
+        this.placementState = placementState;
         this.replicationStrategy = replicationStrategy;
         this.columnPlacementsOnAdapter = ImmutableList.copyOf( columnPlacementsOnAdapter.stream().sorted().collect( Collectors.toList() ) );
         this.partitionPlacementsOnAdapter = ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().sorted().collect( Collectors.toList() ) );

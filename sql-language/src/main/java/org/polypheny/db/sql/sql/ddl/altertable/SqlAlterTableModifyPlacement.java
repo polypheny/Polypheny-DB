@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
 import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
@@ -162,7 +162,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                     statement,
                     SqlPlacementPropertyExtractor.fromNodeLists( catalogTable, placementPropertyMap )
             );
-        } catch ( PlacementNotExistsException | UnknownReplicationStrategyException | UnknownPlacementRoleException | UnknownPlacementPropertyException | InvalidPlacementPropertySpecification e ) {
+        } catch ( PlacementNotExistsException | UnknownReplicationStrategyException | UnknownPlacementStateException | UnknownPlacementPropertyException | InvalidPlacementPropertySpecification e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );

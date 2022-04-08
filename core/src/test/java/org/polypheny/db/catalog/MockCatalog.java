@@ -956,7 +956,7 @@ public abstract class MockCatalog extends Catalog {
      * @param physicalTableName The table name on the adapter
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, UpdateInformation updateInformation ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, PlacementState role, UpdateInformation updateInformation ) {
         throw new NotImplementedException();
     }
 
@@ -970,6 +970,18 @@ public abstract class MockCatalog extends Catalog {
      * @param commitTimestamp Placement replicationProperty contains metadata about the current state of this placement
      */
     public void updatePartitionPlacementProperties( int adapterId, long partitionId, long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Only updates the DataPlacementState
+     *
+     * @param adapterId The id of a specific adapter that is associated with the placement
+     * @param partitionId The id of a specific partition that is associated with the placement
+     * @param state new intended state
+     */
+    public void updatePartitionPartitionPlacementState( int adapterId, long partitionId, PlacementState state ) {
         throw new NotImplementedException();
     }
 
@@ -1104,7 +1116,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
+    public List<CatalogDataPlacement> getDataPlacementsByState( long tableId, PlacementState state ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByState( long tableId, PlacementState state ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getDistinctPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
         throw new NotImplementedException();
     }
 
@@ -1176,7 +1200,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, DataPlacementRole dataPlacementRole, ReplicationStrategy replicationStrategy ) {
+    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, PlacementState placementState, ReplicationStrategy replicationStrategy ) {
         throw new NotImplementedException();
     }
 
@@ -1230,13 +1254,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndState( long tableId, long partitionId, PlacementState state ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void updateDataPlacementRole( int adapterId, long tableId, DataPlacementRole dataPlacementRole ) {
+    public void updateDataPlacementState( int adapterId, long tableId, PlacementState placementState ) {
         throw new NotImplementedException();
     }
 

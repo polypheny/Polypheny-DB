@@ -220,6 +220,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "DROP", "92", "99", "2003", "2011", "2014", "c",
             "DYNAMIC", "99", "2003", "2011", "2014", "c",
             "EACH", "99", "2003", "2011", "2014", "c",
+            "EAGER", "c",           // MHE: added for Replication support
             "ELEMENT", "2003", "2011", "2014", "c",
             "ELSE", "92", "99", "2003", "2011", "2014", "c",
             "ELSEIF", "92", "99", "2003",
@@ -317,6 +318,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "LAST", "92", "99",
             "LAST_VALUE", "2011", "2014", "c",
             "LATERAL", "99", "2003", "2011", "2014", "c",
+            "LAZY", "c",           // MHE: added for Replication support
             "LEAD", "2011", "2014", "c",
             "LEADING", "92", "99", "2003", "2011", "2014", "c",
             "LEAVE", "92", "99", "2003",
@@ -440,6 +442,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "RELATIVE", "92", "99",
             "RELEASE", "99", "2003", "2011", "2014", "c",
             "REPEAT", "92", "99", "2003",
+            "REPLICATION", "c",           // MHE: added for Replication support
             "RESET", "c",
             "RESIGNAL", "92", "99", "2003",
             "RESTRICT", "92", "99",
@@ -496,6 +499,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "STDDEV_POP", "2011", "2014", "c",
             "STDDEV_SAMP", "2011", "2014", "c",
             "STORED", "92", "99", "2003", "2011", "2014", "c",       // MV: Added for DDL Parser
+            "STRATEGY", "c",           // MHE: added for Replication support
             "STREAM", "c",
             "SUBMULTISET", "2003", "2011", "2014", "c",
             "SUBSET", "2014", "c",

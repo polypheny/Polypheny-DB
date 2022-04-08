@@ -29,7 +29,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
 import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
@@ -159,7 +159,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                     statement,
                     SqlPlacementPropertyExtractor.fromNodeLists( catalogTable, placementPropertyMap )
             );
-        } catch ( PlacementAlreadyExistsException | UnknownPlacementRoleException | InvalidPlacementPropertySpecification | UnknownPlacementPropertyException | UnknownReplicationStrategyException e ) {
+        } catch ( PlacementAlreadyExistsException | UnknownPlacementStateException | InvalidPlacementPropertySpecification | UnknownPlacementPropertyException | UnknownReplicationStrategyException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
