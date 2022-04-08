@@ -39,6 +39,7 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.WebUiGroup;
+import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -85,11 +86,6 @@ public class LazyReplicationEngine extends ReplicationEngine {
     // TODO @HENNLO as soon as policies are active configure db, schema or db if changes should be replicated by single operation or only ACID compliant with entire transaction
     // DISTRIBUTION STRATEGY
 
-    // TODO @HENNLO make sure that RuntimeConfig.AUTOMATIC_DATA_REPLICATION.getBoolean() really only blocks distribution but queue is still enriched
-
-    // TODO add basic LAZY Replication Engine
-    // Then add serializable LazyReplicationEngine like this one
-    // and add others with more lose constraints
 
     // TODO @HENNLO if statement is cached also replicationData needs to be cached disregarding the target data placements since new statements can come into
 
@@ -165,6 +161,9 @@ public class LazyReplicationEngine extends ReplicationEngine {
         return INSTANCE;
     }
 
+    // TODO @HENNLO Check if partitionPlacement is marked as INFINITELY OUTDATED
+    //  If so then dont apply all pending changes. Instead remove them and apply DATA Migration
+
 
     @Override
     public void replicateChanges() {
@@ -239,7 +238,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
                 }
                 // Queue pending replicationId in local list of partitionPlacement.
                 localPartitionPlacementQueue.get( partitionPlacementIdentifier ).add( replicationId );
-                threadPoolWorkers.execute( new LazyReplicationWorker( replicationId, replicationObject.getReplicationDataId() ) );
+                queueIndividualReplication( replicationId, replicationObject.getReplicationDataId(), false );
                 log.info( "\tQueued changes for placement: ( {} on {} ) using data {} ",
                         partitionPlacementIdentifier.left,
                         partitionPlacementIdentifier.right,
@@ -248,6 +247,15 @@ public class LazyReplicationEngine extends ReplicationEngine {
             log.info( "All changes have been queued for data object {} \n\n", replicationObject.getReplicationDataId() );
         }
         log.info( "All changes have been queued" );
+    }
+
+
+    private void queueIndividualReplication( long replicationId, long replicationDataId, boolean requeue ) {
+        threadPoolWorkers.execute( new LazyReplicationWorker( replicationId, replicationDataId ) );
+        // TODO @HENNLO Check number of requeues. After a certain threshold
+        if ( requeue ) {
+            log.info( "Replication {} has been requeued again", replicationId );
+        }
     }
 
 
@@ -263,6 +271,8 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
         private long replicationId;
         private long replicationDataId;
+        private Pair<Long, Integer> targetPartitionPlacementIdentifier;
+        Transaction transaction = null;
 
 
         public LazyReplicationWorker( long replicationId, long replicationDataId ) {
@@ -270,12 +280,15 @@ public class LazyReplicationEngine extends ReplicationEngine {
             this.replicationObject = replicationData.get( replicationDataId );
             this.replicationId = replicationId;
             this.replicationDataId = replicationDataId;
+            this.targetPartitionPlacementIdentifier = getTargetPartitionPlacementIdentifier();
         }
 
 
         @Override
         public void run() {
-            processReplicationQueue();
+            if ( checkReplicationPrerequisites() ) {
+                processReplicationQueue();
+            }
         }
 
 
@@ -288,17 +301,140 @@ public class LazyReplicationEngine extends ReplicationEngine {
                             + "\n\tValues: {}"
                     , replicationObject.getReplicationDataId(), replicationObject.getTableId(), replicationObject.getOperation(), replicationObject.getDependentReplicationIds(), replicationObject.getParameterValues() );
 
-            Transaction transaction;
+            CatalogTable catalogTable = catalog.getTable( replicationObject.getTableId() );
+
+            boolean success = false;
+            long modifications = 0;
             try {
-                CatalogTable catalogTable = catalog.getTable( replicationObject.getTableId() );
+
                 transaction = transactionManager.startTransaction( "pa", catalogTable.getDatabaseName(), false, "Data Replicator" );
-                dataReplicator.replicateData( transaction, replicationObject, replicationId );
+                modifications = dataReplicator.replicateData( transaction, replicationObject, replicationId );
+
                 transaction.commit();
+                success = true;
             } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException | TransactionException e ) {
-                e.printStackTrace();
+                log.error( "Error while replicating object ", e );
+                if ( transaction != null ) {
+                    try {
+                        transaction.rollback();
+                    } catch ( TransactionException ex ) {
+                        log.error( "Error while rolling back the transaction", e );
+                    }
+                }
             }
+            finalizeProcessing( success, modifications );
+        }
 
 
+        /**
+         * Checks if the current replicaiton can be directly applied to the target or another target replication comes first.
+         * Since this one might depend on it.
+         * If it can execute it returns 'true' otherwise false and directly reschedules this replication. No further actions are necessary.
+         *
+         * @return If the replication can be executed or if it has to be postponed
+         */
+        private boolean checkReplicationPrerequisites() {
+            //TODO @HENNLO  apply a lock here
+            long dependentReplicationId = getNextReplicationId();
+            if ( dependentReplicationId < 0 ) {
+                // CLEANUP Resources since it has no further replications left.
+                cleanUpLocalReplication();
+                return false;
+            } else if ( dependentReplicationId != replicationId ) {
+                log.info( "The replication for replicationId '{}' cannot be executed. Depends on replication '{}' to be executed first.Re-queueing it.", replicationId, dependentReplicationId );
+                queueIndividualReplication( replicationId, replicationDataId, true );
+                return false;
+            }
+            return true;
+            //TODO @HENNLO  release the lock here
+        }
+
+
+        /**
+         * @return The next ReplicationId needed to be applied to a placement. If the list is empty '-1' is returned indicating that the queue is empty.
+         */
+        private long getNextReplicationId() {
+
+            if ( localPartitionPlacementQueue.containsKey( targetPartitionPlacementIdentifier ) ) {
+                return localPartitionPlacementQueue.get( targetPartitionPlacementIdentifier ).get( 0 );
+            }
+            return -1;
+        }
+
+
+        private Pair<Long, Integer> getTargetPartitionPlacementIdentifier() {
+            if ( replicationObject.getDependentReplicationIds().containsKey( replicationId ) ) {
+                return replicationObject.getDependentReplicationIds().get( replicationId );
+            } else {
+                log.warn( "The replication for replicationId '{}' cannot be executed. Since it is not associated with any replication object.", replicationId );
+                throw new RuntimeException();
+            }
+        }
+
+
+        private void cleanUpLocalReplication() {
+            // TODO @HENNLO  apply a lock here
+            // Make sure that the next replication inline is indeed the one this worker has processed.
+            if ( getNextReplicationId() == replicationId ) {
+                // Remove the replication from local execution queue
+                localPartitionPlacementQueue.get( targetPartitionPlacementIdentifier ).remove( replicationId );
+
+                // Check if this was the last replication to be applied for this specific target
+                if ( localPartitionPlacementQueue.get( targetPartitionPlacementIdentifier ).size() <= 0 ) {
+                    localPartitionPlacementQueue.remove( targetPartitionPlacementIdentifier );
+                    log.info( "This was the last pending replication for the target  ( {} on {} ). Removing its local queue.",
+                            targetPartitionPlacementIdentifier.left, targetPartitionPlacementIdentifier.right );
+                }
+                // TODO @HENNLO Check if this indeed alters the object placed in replcicationData
+                replicationObject.removeSingleReplicationFromDependency( replicationId );
+
+                // Check if this was the last target that depends on the replication object
+                if ( replicationObject.getDependentReplicationIds().isEmpty() ) {
+                    replicationData.remove( replicationDataId );
+                    log.info( "This was the last replication that depended on the replicationData '{}'. Removing it.", replicationDataId );
+                }
+            } else {
+                log.error( "Replication: '{}' is not the next replication something went wrong", replicationId );
+                throw new RuntimeException();
+            }
+            //TODO @HENNLO  RELEASE lock here
+        }
+
+
+        private void finalizeProcessing( boolean success, long modifications ) {
+            if ( success ) {
+                handleSuccessfulReplication( modifications );
+            } else {
+                handleFailedReplication();
+            }
+        }
+
+
+        /**
+         * Updates all changed partitionPlacements with the new update information
+         */
+        private void updateCatalogInformation( long modifications ) {
+            catalog.updatePartitionPlacementProperties(
+                    targetPartitionPlacementIdentifier.right,
+                    targetPartitionPlacementIdentifier.left,
+                    replicationObject.getCommitTimestamp(),
+                    replicationObject.getParentTxId(),
+                    transaction.getCommitTimestamp(),
+                    replicationId,
+                    modifications );
+        }
+
+
+        private void handleSuccessfulReplication( long modifications ) {
+            updateCatalogInformation( modifications );
+            cleanUpLocalReplication();
+
+        }
+
+
+        private void handleFailedReplication() {
+            log.info( "The replication for replicationId {} has failed. Re-queueing it.", replicationId );
+            queueIndividualReplication( replicationId, replicationDataId, true );
         }
 
     }

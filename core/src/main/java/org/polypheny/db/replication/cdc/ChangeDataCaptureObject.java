@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.replication;
+package org.polypheny.db.replication.cdc;
 
 
 import com.google.common.collect.ImmutableList;
@@ -54,6 +54,9 @@ public class ChangeDataCaptureObject {
     private final ImmutableList<RexNode> sourceExpressionList;
 
     @Getter
+    private final RexNode condition;
+
+    @Getter
     private final List<AlgDataTypeField> fieldList;
 
     @Getter
@@ -75,6 +78,7 @@ public class ChangeDataCaptureObject {
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            RexNode condition,
             List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions ) {
 
@@ -96,6 +100,7 @@ public class ChangeDataCaptureObject {
         }
 
         this.fieldList = ImmutableList.copyOf( fieldList );
+        this.condition = condition;
 
         this.accessedPartitions = ImmutableList.copyOf( accessedPartitions );
 
@@ -109,9 +114,10 @@ public class ChangeDataCaptureObject {
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            RexNode condition,
             List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions ) {
-        return new ChangeDataCaptureObject( parentTxId, stmtId, tableId, operation, updateColumnList, sourceExpressionList, fieldList, accessedPartitions );
+        return new ChangeDataCaptureObject( parentTxId, stmtId, tableId, operation, updateColumnList, sourceExpressionList, condition, fieldList, accessedPartitions );
     }
 
 }

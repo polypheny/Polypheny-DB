@@ -86,7 +86,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.replication.properties.ReplicationProperty;
+import org.polypheny.db.replication.properties.UpdateInformation;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -1424,20 +1424,19 @@ public abstract class Catalog {
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
-     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
+     * @param updateInformation Placement replicationProperty contains metadata about the current state of this placement
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, ReplicationProperty replicationProperty );
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, UpdateInformation updateInformation );
 
     /**
      * Updates a placements replication properties.
      * These contain metadata information which are used to retrieve suitable placements during freshness query processing
      *
      * @param adapterId The adapter on which the table should be placed on
-     * @param tableId The table for which a partition placement shall be created
      * @param partitionId The id of a specific partition that shall create a new placement
-     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
+     * @param commitTimestamp Placement replicationProperty contains metadata about the current state of this placement
      */
-    public abstract void updatePartitionPlacementProperties( int adapterId, long tableId, long partitionId, ReplicationProperty replicationProperty );
+    public abstract void updatePartitionPlacementProperties( int adapterId, long partitionId, long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications );
 
 
     /**

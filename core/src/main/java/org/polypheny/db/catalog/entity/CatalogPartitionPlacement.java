@@ -21,7 +21,7 @@ import java.io.Serializable;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.replication.properties.ReplicationProperty;
+import org.polypheny.db.replication.properties.UpdateInformation;
 
 
 /**
@@ -54,7 +54,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
     public final DataPlacementRole role;
 
-    public final ReplicationProperty replicationProperty;
+    public final UpdateInformation updateInformation;
     // TODO @HENNLO add UPDATE and COMMIT TIMESTAMP
 
     // COMMIT TIMESTAMP to compare freshness
@@ -70,7 +70,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
             final String physicalTableName,
             final long partitionId,
             DataPlacementRole role,
-            ReplicationProperty replicationProperty ) {
+            UpdateInformation updateInformation ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;
@@ -79,7 +79,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
         this.physicalTableName = physicalTableName;
         this.partitionId = partitionId;
         this.role = role;
-        this.replicationProperty = replicationProperty;
+        this.updateInformation = updateInformation;
     }
 
 

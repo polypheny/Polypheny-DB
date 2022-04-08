@@ -273,6 +273,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modifyDataCapture.getTableId(),
                 modifyDataCapture.getUpdateColumnList(),
                 newSourceExpression,
+                modifyDataCapture.getCondition(),
                 modifyDataCapture.getFieldList(),
                 modifyDataCapture.getAccessedPartitions(),
                 modifyDataCapture.getTxId(),

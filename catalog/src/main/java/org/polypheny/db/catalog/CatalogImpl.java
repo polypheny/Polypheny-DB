@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.NotImplementedException;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException.SerializationError;
@@ -114,7 +113,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.replication.properties.ReplicationProperty;
+import org.polypheny.db.replication.properties.UpdateInformation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -867,7 +866,7 @@ public class CatalogImpl extends Catalog {
             updateColumnPlacementPhysicalPosition( csv.id, colId, position );
 
             long partitionId = table.partitionProperty.partitionIds.get( 0 );
-            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE, ReplicationProperty.createDefaultProperty() );
+            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE, UpdateInformation.createEmpty() );
         }
     }
 
@@ -1943,7 +1942,7 @@ public class CatalogImpl extends Catalog {
                     physicalTableName,
                     old.partitionId,
                     old.role,
-                    old.replicationProperty );
+                    old.updateInformation );
 
             synchronized ( this ) {
                 partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
@@ -4521,10 +4520,10 @@ public class CatalogImpl extends Catalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      * @param role Placement role indicating how this placement is being processed
-     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
+     * @param updateInformation Placement replicationProperty contains metadata about the current state of this placement
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, ReplicationProperty replicationProperty ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, UpdateInformation updateInformation ) {
         if ( !checkIfExistsPartitionPlacement( adapterId, partitionId ) ) {
             CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
             CatalogPartitionPlacement partitionPlacement = new CatalogPartitionPlacement(
@@ -4536,7 +4535,7 @@ public class CatalogImpl extends Catalog {
                     physicalTableName,
                     partitionId,
                     role,
-                    replicationProperty );
+                    updateInformation );
 
             synchronized ( this ) {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
@@ -4555,13 +4554,49 @@ public class CatalogImpl extends Catalog {
      * These contain metadata information which are used to retrieve suitable placements during freshness query processing
      *
      * @param adapterId The adapter on which the table should be placed on
-     * @param tableId The table for which a partition placement shall be created
      * @param partitionId The id of a specific partition that shall create a new placement
-     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
+     * @param commitTimestamp commitTimestamp of the original TX that updated this partition
+     * @param txId id od original TX that updated this partition
+     * @param updateTimestamp timestamp when the changes have been applied to this placement
+     * @param replicationId if the change was carried out by a replication refer to this
+     * @param modifications number of modifications that have been executed during that change
      */
-    public void updatePartitionPlacementProperties( int adapterId, long tableId, long partitionId, ReplicationProperty replicationProperty ) {
-        throw new NotImplementedException();
+    public void updatePartitionPlacementProperties( int adapterId, long partitionId, long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
+        try {
+            CatalogPartitionPlacement old = Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
+
+            if ( !(replicationId > 0) ) {
+                replicationId = 0;
+            }
+
+            CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
+                    old.tableId,
+                    old.adapterId,
+                    old.adapterUniqueName,
+                    old.placementType,
+                    old.physicalSchemaName,
+                    old.physicalTableName,
+                    old.partitionId,
+                    old.role,
+                    UpdateInformation.create(
+                            commitTimestamp,
+                            txId,
+                            updateTimestamp,
+                            replicationId,
+                            old.updateInformation.modifications + modifications ) );
+
+            synchronized ( this ) {
+                partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
+                listeners.firePropertyChange( "partitionPlacement", old, placement );
+            }
+
+        } catch ( NullPointerException e ) {
+            getAdapter( adapterId );
+            getPartition( partitionId );
+            throw new UnknownPartitionPlacementException( adapterId, partitionId );
+        }
     }
+
 
 
     /**

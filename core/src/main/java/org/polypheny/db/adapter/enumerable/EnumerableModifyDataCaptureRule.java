@@ -45,6 +45,7 @@ public class EnumerableModifyDataCaptureRule extends ConverterRule {
                 dataCapture.getTableId(),
                 dataCapture.getUpdateColumnList(),
                 dataCapture.getSourceExpressionList(),
+                dataCapture.getCondition(),
                 dataCapture.getFieldList(),
                 dataCapture.getAccessedPartitions(),
                 dataCapture.getTxId(),

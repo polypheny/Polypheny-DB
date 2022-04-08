@@ -48,7 +48,7 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.replication.properties.ReplicationProperty;
+import org.polypheny.db.replication.properties.UpdateInformation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -302,7 +302,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     null,
                                     null,
                                     DataPlacementRole.UPTODATE,
-                                    ReplicationProperty.createDefaultProperty() );
+                                    UpdateInformation.createEmpty() );
                         }
 
                         store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
@@ -352,7 +352,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     null,
                                     null,
                                     DataPlacementRole.UPTODATE,
-                                    ReplicationProperty.createDefaultProperty() );
+                                    UpdateInformation.createEmpty() );
                         }
                         store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
 

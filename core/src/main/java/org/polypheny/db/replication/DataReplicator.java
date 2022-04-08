@@ -20,17 +20,23 @@ package org.polypheny.db.replication;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
+import org.polypheny.db.replication.cdc.DeleteReplicationObject;
+import org.polypheny.db.replication.cdc.InsertReplicationObject;
+import org.polypheny.db.replication.cdc.UpdateReplicationObject;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
 
 public interface DataReplicator {
 
-    void replicateData( Transaction transaction, ChangeDataReplicationObject dataReplicationObject, long replicationId );
+    long replicateData( Transaction transaction, ChangeDataReplicationObject dataReplicationObject, long replicationId );
 
-    AlgRoot buildInsertStatement( Statement statement, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement, ChangeDataReplicationObject dataReplicationObject );
+    AlgRoot buildInsertStatement( Statement statement, InsertReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement );
 
-    AlgRoot buildDeleteStatement( Statement statement, CatalogPartitionPlacement targetPartitionPlacement );
+    AlgRoot buildUpdateStatement( Statement statement, UpdateReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement );
 
-    AlgRoot buildUpdateStatement( Statement statement, CatalogPartitionPlacement targetPartitionPlacement );
+    AlgRoot buildDeleteStatement( Statement statement, DeleteReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement );
+
+
 }

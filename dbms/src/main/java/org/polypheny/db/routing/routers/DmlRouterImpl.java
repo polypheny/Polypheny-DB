@@ -690,7 +690,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         ((LogicalTableModify) node).isFlattened()
                                 );
                             }
-
+                            if ( statement.getMonitoringEvent() != null ) {
+                                statement.getMonitoringEvent().addChangedPartitionPlacements(
+                                        currentPartitionPlacement.adapterId,
+                                        currentPartitionPlacement.partitionId );
+                            }
                             modifies.add( modify );
                         }
                     }
@@ -975,12 +979,22 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         LogicalTableModify preparedModify = (LogicalTableModify) streamer.getRight();
         AlgNode query = streamer.getLeft();
 
+        RexNode condition = null;
+        if ( preparedModify.getInput() instanceof LogicalFilter ) {
+            condition = ((LogicalFilter) preparedModify.getInput()).getCondition();
+        }
+
         List<AlgNode> collected = new ArrayList<>();
         collected.add( preparedModify );
         collected.add( LogicalModifyDataCapture.create(
                 builder.getCluster(),
                 builder.getCluster().traitSet(),
-                modifies,
+                preparedModify.getOperation(),
+                preparedModify.getTable().getTable().getTableId(),
+                preparedModify.getUpdateColumnList(),
+                preparedModify.getSourceExpressionList(),
+                condition,
+                preparedModify.getInput().getRowType().getFieldList(),
                 accessedPartitions.stream().collect( Collectors.toList() ),
                 txId,
                 stmtId,

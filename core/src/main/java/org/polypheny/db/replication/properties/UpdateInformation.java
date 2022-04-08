@@ -23,11 +23,11 @@ import lombok.Getter;
 
 @Getter
 /**
- * Contains Meta Information on replication information
+ * Contains Meta Information on an object when it was last updated. Either by a primary transaction or a replication.
  */
-public class ReplicationProperty implements Serializable {
+public class UpdateInformation implements Serializable {
 
-    // Head of commitTimestamp of orginal TX
+    // Head of commitTimestamp of original TX
     public final long commitTimestamp;
     public final long txId;
 
@@ -39,11 +39,11 @@ public class ReplicationProperty implements Serializable {
     public final long modifications;
 
 
-    private ReplicationProperty( long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
+    private UpdateInformation( long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
         this.commitTimestamp = commitTimestamp;
         this.txId = txId;
         this.updateTimestamp = updateTimestamp;
-        this.replicationId = replicationId;
+        this.replicationId = replicationId;     // This is not set for eagerly updated placements
         this.modifications = modifications;
     }
 
@@ -54,17 +54,12 @@ public class ReplicationProperty implements Serializable {
      * Creates a default Property which can be used when no further information is necessary on
      * replication for this entity.
      */
-    public static ReplicationProperty createDefaultProperty() {
-        return new ReplicationProperty( 0, 0, 0, 0, 0 );
+    public static UpdateInformation createEmpty() {
+        return new UpdateInformation( 0, 0, 0, 0, 0 );
     }
 
 
-    public static ReplicationProperty createEagerProperty() {
-        return new ReplicationProperty( 0, 0, 0, 0, 0 );
-    }
-
-
-    public static ReplicationProperty createLazyProperty( long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
-        return new ReplicationProperty( commitTimestamp, txId, updateTimestamp, replicationId, modifications );
+    public static UpdateInformation create( long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
+        return new UpdateInformation( commitTimestamp, txId, updateTimestamp, replicationId, modifications );
     }
 }

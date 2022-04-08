@@ -32,7 +32,7 @@ import org.polypheny.db.algebra.replication.ModifyDataCapture;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.replication.ChangeDataCollector;
+import org.polypheny.db.replication.cdc.ChangeDataCollector;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -61,11 +61,12 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
             long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            RexNode condition,
             List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions,
             long txId,
             long stmtId ) {
-        super( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, fieldList, accessedPartitions, txId, stmtId );
+        super( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, condition, fieldList, accessedPartitions, txId, stmtId );
     }
 
 
@@ -76,11 +77,12 @@ public class EnumerableModifyDataCapture extends ModifyDataCapture implements En
             long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            RexNode condition,
             List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions,
             long txId,
             long stmtId ) {
-        return new EnumerableModifyDataCapture( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, fieldList, accessedPartitions, txId, stmtId );
+        return new EnumerableModifyDataCapture( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, condition, fieldList, accessedPartitions, txId, stmtId );
     }
 
 

@@ -356,6 +356,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 alg.getTableId(),
                 alg.getUpdateColumnList(),
                 alg.getSourceExpressionList(),
+                alg.getCondition(),
                 alg.getFieldList(),
                 alg.getAccessedPartitions(),
                 alg.getTxId(),

@@ -24,6 +24,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.logical.LogicalValues;
@@ -33,11 +34,17 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
+import org.polypheny.db.replication.cdc.DeleteReplicationObject;
+import org.polypheny.db.replication.cdc.InsertReplicationObject;
+import org.polypheny.db.replication.cdc.UpdateReplicationObject;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
@@ -62,7 +69,7 @@ public class DataReplicatorImpl implements DataReplicator {
 
 
     @Override
-    public void replicateData( Transaction transaction, ChangeDataReplicationObject dataReplicationObject, long replicationId ) {
+    public long replicateData( Transaction transaction, ChangeDataReplicationObject dataReplicationObject, long replicationId ) {
 
         Pair<Long, Integer> targetPartitionPlacementIdentifier = dataReplicationObject.getDependentReplicationIds().get( replicationId );
 
@@ -75,7 +82,7 @@ public class DataReplicatorImpl implements DataReplicator {
 
         // Verify that this placement is indeed Outdated && has not received this update yet && is indeed considered to receive lazy replications
         if ( !dataPlacement.replicationStrategy.equals( ReplicationStrategy.EAGER ) &&
-                partitionPlacement.replicationProperty.commitTimestamp <= dataReplicationObject.getCommitTimestamp() ) {
+                partitionPlacement.updateInformation.commitTimestamp <= dataReplicationObject.getCommitTimestamp() ) {
 
             Statement targetStatement = transaction.createStatement();
 
@@ -83,28 +90,28 @@ public class DataReplicatorImpl implements DataReplicator {
             switch ( dataReplicationObject.getOperation() ) {
 
                 case INSERT:
-                    targetAlg = buildInsertStatement( targetStatement, dataPlacement, partitionPlacement, dataReplicationObject );
+                    targetAlg = buildInsertStatement( targetStatement, (InsertReplicationObject) dataReplicationObject, dataPlacement, partitionPlacement );
                     break;
 
                 case UPDATE:
-                    targetAlg = buildInsertStatement( targetStatement, dataPlacement, partitionPlacement, dataReplicationObject );
+                    targetAlg = buildUpdateStatement( targetStatement, (UpdateReplicationObject) dataReplicationObject, dataPlacement, partitionPlacement );
                     break;
 
                 case DELETE:
-                    targetAlg = buildInsertStatement( targetStatement, dataPlacement, partitionPlacement, dataReplicationObject );
+                    targetAlg = buildDeleteStatement( targetStatement, (DeleteReplicationObject) dataReplicationObject, dataPlacement, partitionPlacement );
                     break;
 
                 default:
                     throw new RuntimeException( "Unsupported Operation" );
             }
-            executeQuery( targetStatement, targetAlg, dataReplicationObject );
+            return executeQuery( targetStatement, targetAlg, dataReplicationObject );
         }
-
+        return 0;
     }
 
 
     @Override
-    public AlgRoot buildInsertStatement( Statement statement, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement, ChangeDataReplicationObject dataReplicationObject ) {
+    public AlgRoot buildInsertStatement( Statement statement, InsertReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement ) {
 
         CatalogTable catalogTable = catalog.getTable( dataPlacement.tableId );
 
@@ -125,15 +132,14 @@ public class DataReplicatorImpl implements DataReplicator {
         List<String> columnNames = catalogTable.getColumnNames();
         List<RexNode> values = new LinkedList<>();
 
-        int counter = 0;
-        for ( long columnId : dataPlacement.columnPlacementsOnAdapter ) {
+        int columnIndex = 0;
+        for ( long columnId : catalogTable.columnIds ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( columnId );
-            values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), counter ) );//(int) catalogColumn.id ) );
-            counter++;
+            values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), columnIndex ) );//(int) catalogColumn.id ) );
+            columnIndex++;
         }
 
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        //builder.values( physical.getRowType(), dataReplicationObject.getParameterValues().get( 0 ).get( 0 ) );
         builder.push( LogicalValues.createOneRow( cluster ) );
         builder.project( values, columnNames );
 
@@ -153,18 +159,128 @@ public class DataReplicatorImpl implements DataReplicator {
 
 
     @Override
-    public AlgRoot buildDeleteStatement( Statement statement, CatalogPartitionPlacement targetPartitionPlacement ) {
-        return null;
+    public AlgRoot buildUpdateStatement( Statement statement, UpdateReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement ) {
+
+        CatalogTable catalogTable = catalog.getTable( dataPlacement.tableId );
+
+        List<String> qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        targetPartitionPlacement.adapterUniqueName,
+                        dataPlacement.getLogicalSchemaName(),
+                        targetPartitionPlacement.physicalSchemaName ),
+                dataPlacement.getLogicalTableName() + "_" + targetPartitionPlacement.partitionId );
+        AlgOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+        AlgOptCluster cluster = AlgOptCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+        AlgBuilder builder = AlgBuilder.create( statement, cluster );
+        builder.scan( qualifiedTableName );
+
+        RexNode capturedCondition = dataReplicationObject.getCondition();
+        // build condition
+        RexNode condition = null;
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        int columnIndex1 = 0;
+        for ( long cid : primaryKey.columnIds ) {
+            CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( dataPlacement.adapterId, cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            RexNode c = builder.equals(
+                    builder.field( ccp.getLogicalColumnName() ),
+                    new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), columnIndex1 )
+            );
+            if ( condition == null ) {
+                condition = c;
+            } else {
+                condition = builder.and( condition, c );
+            }
+            columnIndex1++;
+        }
+        builder = builder.filter( condition );
+
+        List<String> columnNames = catalogTable.getColumnNames();
+        List<RexNode> values = new LinkedList<>();
+
+        int columnIndex = 0;
+        for ( long columnId : catalogTable.columnIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( columnId );
+            values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), columnIndex ) );//(int) catalogColumn.id ) );
+            columnIndex++;
+        }
+
+        builder.projectPlus( values );
+
+        AlgNode node = modifiableTable.toModificationAlg(
+                cluster,
+                physical,
+                statement.getTransaction().getCatalogReader(),
+                builder.build(),
+                Operation.UPDATE,
+                columnNames,
+                values,
+                false
+        );
+        AlgRoot algRoot = AlgRoot.of( node, Kind.UPDATE );
+        AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
+                AlgBuilder.create( statement, algRoot.alg.getCluster() ),
+                algRoot.alg.getCluster().getRexBuilder(),
+                algRoot.alg::getCluster,
+                true );
+        return algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
     }
 
 
     @Override
-    public AlgRoot buildUpdateStatement( Statement statement, CatalogPartitionPlacement targetPartitionPlacement ) {
-        return null;
+    public AlgRoot buildDeleteStatement( Statement statement, DeleteReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement ) {
+        List<String> qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        targetPartitionPlacement.adapterUniqueName,
+                        dataPlacement.getLogicalSchemaName(),
+                        targetPartitionPlacement.physicalSchemaName ),
+                dataPlacement.getLogicalTableName() + "_" + targetPartitionPlacement.partitionId );
+        AlgOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+        CatalogTable catalogTable = catalog.getTable( dataPlacement.tableId );
+
+        AlgOptCluster cluster = AlgOptCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+        List<String> columnNames = catalogTable.getColumnNames();
+        List<RexNode> values = new LinkedList<>();
+
+        int columnIndex = 0;
+        for ( long columnId : catalogTable.columnIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( columnId );
+            values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), columnIndex ) );//(int) catalogColumn.id ) );
+            columnIndex++;
+        }
+
+        AlgBuilder builder = AlgBuilder.create( statement, cluster );
+        builder.push( LogicalValues.createOneRow( cluster ) );
+        builder.project( values, columnNames );
+
+        AlgNode node = modifiableTable.toModificationAlg(
+                cluster,
+                physical,
+                statement.getTransaction().getCatalogReader(),
+                builder.build(),
+                Operation.DELETE,
+                null,
+                null,
+                true
+        );
+
+        return AlgRoot.of( node, Kind.DELETE );
     }
 
 
-    private void executeQuery( Statement targetStatement, AlgRoot targetAlg, ChangeDataReplicationObject dataReplicationObject ) {
+    private long executeQuery( Statement targetStatement, AlgRoot targetAlg, ChangeDataReplicationObject dataReplicationObject ) {
 
         List<AlgDataTypeField> fields = targetAlg.alg.getTable().getRowType().getFieldList();
 
@@ -176,12 +292,14 @@ public class DataReplicatorImpl implements DataReplicator {
                 .prepareQuery( targetAlg, targetAlg.validatedRowType, true, false, false )
                 .enumerable( targetStatement.getDataContext() )
                 .iterator();
-
+        long modifications = 0;
         while ( iterator.hasNext() ) {
+            modifications++;
             iterator.next();
         }
-
+        targetStatement.getDataContext().resetParameterValues();
         log.info( "Finished Replication" );
+        return modifications;
     }
 
 }

@@ -60,7 +60,7 @@ import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
-import org.polypheny.db.replication.ChangeDataCollector;
+import org.polypheny.db.replication.cdc.ChangeDataCollector;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -205,6 +205,18 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 if ( statement.getMonitoringEvent() != null ) {
                     StatementEvent eventData = statement.getMonitoringEvent();
                     eventData.setCommitted( true );
+                    if ( eventData.getChangedPartitionPlacements() != null && !eventData.getChangedPartitionPlacements().isEmpty() ) {
+                        eventData.getChangedPartitionPlacements().forEach( pair ->
+                                Catalog.getInstance().updatePartitionPlacementProperties(
+                                        (int) pair.left,
+                                        (long) pair.right,
+                                        commitTimestamp,
+                                        id,
+                                        commitTimestamp,
+                                        0,
+                                        1
+                                ) );
+                    }
                     MonitoringServiceProvider.getInstance().monitorEvent( eventData );
                 }
             } );

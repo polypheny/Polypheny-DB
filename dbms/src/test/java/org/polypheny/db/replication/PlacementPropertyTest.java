@@ -30,6 +30,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -138,7 +139,6 @@ public class PlacementPropertyTest {
                             null, null, new Pattern( "parsesqlalterplacementpropertyrole" )
                     ).get( 0 );
 
-
                     // Get the single DataPlacement
                     List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
 
@@ -177,12 +177,10 @@ public class PlacementPropertyTest {
                     CatalogAdapter hsqldb = Catalog.getInstance().getAdapter( "hsqldb" );
                     CatalogAdapter store2 = Catalog.getInstance().getAdapter( "store2" );
 
-
                     // ALTER the first placement that they allow REFRESHABLE
                     statement.executeUpdate( "ALTER TABLE parsesqlalterplacementpropertyrole "
                             + "MODIFY PLACEMENT "
                             + "ON STORE \"hsqldb\" SET ROLE REFRESHABLE" );
-
 
                     // Assert DataPlacements again
                     // Get that specific hsqldb placement
@@ -190,8 +188,6 @@ public class PlacementPropertyTest {
 
                     // Check before role assignment that all DataPlacement are labeled as UPTODATE
                     Assert.assertEquals( dataPlacementHsqlDb.dataPlacementRole, DataPlacementRole.REFRESHABLE );
-
-
 
                     // Create another store
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
@@ -203,14 +199,13 @@ public class PlacementPropertyTest {
                     statement.executeUpdate( "ALTER TABLE parsesqlalterplacementpropertyrole "
                             + "ADD PLACEMENT "
                             + "ON STORE \"store3\" "
-                            + "SET ROLE REFRESHABLE" );
+                            + "WITH REPLICATION LAZY" );
 
                     // Get that specific store3 placement
                     CatalogDataPlacement dataPlacementStore3 = Catalog.getInstance().getDataPlacement( store3.id, table.id );
 
                     // Assert if these new placements are correctly created with the desired role
                     Assert.assertEquals( dataPlacementStore3.dataPlacementRole, DataPlacementRole.REFRESHABLE );
-
 
                     // Modify the first placement again back to UPTODATE
                     statement.executeUpdate( "ALTER TABLE parsesqlalterplacementpropertyrole "
@@ -224,7 +219,6 @@ public class PlacementPropertyTest {
                     // Assert if it is correct again
                     Assert.assertEquals( dataPlacementHsqlDb.dataPlacementRole, DataPlacementRole.REFRESHABLE );
 
-
                     // Use together with columns and partitions
                     // and for each distinctively
 
@@ -233,6 +227,119 @@ public class PlacementPropertyTest {
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE parsesqlalterplacementpropertyrole" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store2" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store3" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void verifySqlAlterPlacementReplicationStrategy() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE parsesqlalterplacementreplicationstrategy( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+                    // Get Table
+                    CatalogTable table = Catalog.getInstance().getTables(
+                            null, null, new Pattern( "parsesqlalterplacementreplicationstrategy" )
+                    ).get( 0 );
+
+                    // Get the single DataPlacement
+                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+
+                    // Check before replicationStrategy assignment that this initial DataPlacement is labeled as EAGER
+                    Assert.assertEquals( allDataPlacements.get( 0 ).replicationStrategy, ReplicationStrategy.EAGER );
+
+                    // Check assert False. Constraint violation because no other primaries would be in place
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "ALTER TABLE parsesqlalterplacementreplicationstrategy "
+                                + "MODIFY PLACEMENT "
+                                + "ON STORE hsqldb "
+                                + "WITH REPLICATION LAZY" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+                    // Deploy a new store
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    // ADD FULL Placement to mimic the Primary copy
+                    statement.executeUpdate( "ALTER TABLE \"parsesqlalterplacementreplicationstrategy\" ADD PLACEMENT ON STORE \"store2\" " );
+
+                    // Assert that they directly are created using replicationStrategy = EAGER by default
+                    // Get both DataPlacements
+                    allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+
+                    // Check before replicationStrategy assignment that all DataPlacement are labeled as EAGER
+                    for ( CatalogDataPlacement dataPlacement : allDataPlacements ) {
+                        Assert.assertEquals( dataPlacement.replicationStrategy, ReplicationStrategy.EAGER );
+                    }
+
+                    // Get the new StoreId
+                    CatalogAdapter hsqldb = Catalog.getInstance().getAdapter( "hsqldb" );
+                    CatalogAdapter store2 = Catalog.getInstance().getAdapter( "store2" );
+
+                    // ALTER the first placement that they allow LAZY REPLICATION
+                    statement.executeUpdate( "ALTER TABLE parsesqlalterplacementreplicationstrategy "
+                            + "MODIFY PLACEMENT "
+                            + "ON STORE \"hsqldb\" WITH REPLICATION LAZY" );
+
+                    // Assert DataPlacements again
+                    // Get that specific hsqldb placement
+                    CatalogDataPlacement dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, table.id );
+
+                    // Check before replicationStrategy assignment that all DataPlacement are labeled as EAGERly replicated
+                    Assert.assertEquals( dataPlacementHsqlDb.replicationStrategy, ReplicationStrategy.EAGER );
+
+                    // Create another store
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    CatalogAdapter store3 = Catalog.getInstance().getAdapter( "store3" );
+
+                    // Add a new Placement to new store and mark them for LAZY Replication
+                    statement.executeUpdate( "ALTER TABLE parsesqlalterplacementreplicationstrategy "
+                            + "ADD PLACEMENT "
+                            + "ON STORE \"store3\" "
+                            + "WITH REPLICATION LAZY" );
+
+                    // Get that specific store3 placement
+                    CatalogDataPlacement dataPlacementStore3 = Catalog.getInstance().getDataPlacement( store3.id, table.id );
+
+                    // Assert if these new placements are correctly created with the desired strategy
+                    Assert.assertEquals( dataPlacementStore3.replicationStrategy, ReplicationStrategy.LAZY );
+
+                    // Modify the first placement again back to EAGER REPLICATION
+                    statement.executeUpdate( "ALTER TABLE parsesqlalterplacementreplicationstrategy "
+                            + "MODIFY PLACEMENT "
+                            + "ON STORE \"store3\" "
+                            + "WITH REPLICATION EAGER" );
+
+                    // Get new version of dataPlacement
+                    dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, table.id );
+
+                    // Assert if it is correct again
+                    Assert.assertEquals( dataPlacementHsqlDb.replicationStrategy, ReplicationStrategy.LAZY );
+
+                    // Use together with columns and partitions
+                    // and for each distinctively
+
+                } catch ( UnknownAdapterException e ) {
+                    e.printStackTrace();
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE parsesqlalterplacementreplicationstrategy" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP store2" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP store3" );
                 }

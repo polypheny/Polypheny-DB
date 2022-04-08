@@ -44,6 +44,9 @@ public abstract class ModifyDataCapture extends AbstractAlgNode {
     private final List<RexNode> sourceExpressionList;
 
     @Getter
+    private final RexNode condition;
+
+    @Getter
     private final List<AlgDataTypeField> fieldList;
 
     @Getter
@@ -66,6 +69,7 @@ public abstract class ModifyDataCapture extends AbstractAlgNode {
             long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            RexNode condition,
             List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions,
             long txId,
@@ -75,6 +79,7 @@ public abstract class ModifyDataCapture extends AbstractAlgNode {
         this.tableId = tableId;
         this.updateColumnList = updateColumnList;
         this.sourceExpressionList = sourceExpressionList;
+        this.condition = condition;
         this.fieldList = fieldList;
         this.accessedPartitions = accessedPartitions;
         this.txId = txId;

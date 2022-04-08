@@ -29,8 +29,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.replication.ChangeDataCaptureObject;
-import org.polypheny.db.replication.ChangeDataCollector;
+import org.polypheny.db.replication.cdc.ChangeDataCaptureObject;
+import org.polypheny.db.replication.cdc.ChangeDataCollector;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -51,12 +51,13 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
             long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            RexNode condition,
             List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions,
             long txId,
             long stmtId,
             AlgNode input ) {
-        super( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, fieldList, accessedPartitions, txId, stmtId );
+        super( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, condition, fieldList, accessedPartitions, txId, stmtId );
         this.input = input;
 
         // Already prepares the DataCaptureCollection to be replicated to secondaries
@@ -68,6 +69,7 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
                         operation,
                         updateColumnList,
                         sourceExpressionList,
+                        condition,
                         fieldList,
                         getAccessedPartitions()
                 ) );
@@ -77,39 +79,20 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
     /**
      * Creates a LogicalModifyReplicator.
      */
-    public static LogicalModifyDataCapture create( AlgOptCluster cluster,
+    public static LogicalModifyDataCapture create(
+            AlgOptCluster cluster,
             AlgTraitSet traitSet,
             Operation operation,
             long tableId,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
+            RexNode condition,
             List<AlgDataTypeField> fieldList,
             List<Long> accessedPartitions,
             long txId,
             long stmtId,
             AlgNode input ) {
-        return new LogicalModifyDataCapture( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, fieldList, accessedPartitions, txId, stmtId, input );
-    }
-
-
-    public static LogicalModifyDataCapture create( AlgOptCluster cluster,
-            AlgTraitSet traitSet,
-            List<AlgNode> modifies, List<Long> accessedPartitions, long txId, long stmtId, AlgNode input ) {
-
-        // TODO @HENNLO remove hardcoded implementation
-        LogicalTableModify modify = (LogicalTableModify) modifies.get( 0 );
-
-        return new LogicalModifyDataCapture( cluster,
-                traitSet,
-                modify.getOperation(),
-                modify.getTable().getTable().getTableId(),
-                modify.getUpdateColumnList(),
-                modify.getSourceExpressionList(),
-                modify.getInput().getRowType().getFieldList(),
-                accessedPartitions,
-                txId,
-                stmtId,
-                input );
+        return new LogicalModifyDataCapture( cluster, traitSet, operation, tableId, updateColumnList, sourceExpressionList, condition, fieldList, accessedPartitions, txId, stmtId, input );
     }
 
 
@@ -122,7 +105,7 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
     @Override
     public LogicalModifyDataCapture copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalModifyDataCapture( getCluster(), traitSet, getOperation(), getTableId(), getUpdateColumnList(), getSourceExpressionList(), getFieldList(), getAccessedPartitions(), getTxId(), getStmtId(), sole( inputs ) );
+        return new LogicalModifyDataCapture( getCluster(), traitSet, getOperation(), getTableId(), getUpdateColumnList(), getSourceExpressionList(), getCondition(), getFieldList(), getAccessedPartitions(), getTxId(), getStmtId(), sole( inputs ) );
     }
 
 

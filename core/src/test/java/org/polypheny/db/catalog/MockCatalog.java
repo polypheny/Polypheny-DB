@@ -57,7 +57,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.replication.properties.ReplicationProperty;
+import org.polypheny.db.replication.properties.UpdateInformation;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -956,7 +956,7 @@ public abstract class MockCatalog extends Catalog {
      * @param physicalTableName The table name on the adapter
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, ReplicationProperty replicationProperty ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role, UpdateInformation updateInformation ) {
         throw new NotImplementedException();
     }
 
@@ -966,11 +966,10 @@ public abstract class MockCatalog extends Catalog {
      * These contain metadata information which are used to retrieve suitable placements during freshness query processing
      *
      * @param adapterId The adapter on which the table should be placed on
-     * @param tableId The table for which a partition placement shall be created
      * @param partitionId The id of a specific partition that shall create a new placement
-     * @param replicationProperty Placement replicationProperty contains metadata about the current state of this placement
+     * @param commitTimestamp Placement replicationProperty contains metadata about the current state of this placement
      */
-    public void updatePartitionPlacementProperties( int adapterId, long tableId, long partitionId, ReplicationProperty replicationProperty ) {
+    public void updatePartitionPlacementProperties( int adapterId, long partitionId, long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
         throw new NotImplementedException();
     }
 

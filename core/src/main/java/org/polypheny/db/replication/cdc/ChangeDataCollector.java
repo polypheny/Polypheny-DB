@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.replication;
+package org.polypheny.db.replication.cdc;
 
 
 import java.util.HashMap;
@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
+import org.polypheny.db.replication.ReplicationEngine;
+import org.polypheny.db.replication.ReplicationEngineProvider;
 
 
 /**

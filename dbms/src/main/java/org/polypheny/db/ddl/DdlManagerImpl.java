@@ -122,7 +122,7 @@ import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.replication.ReplicationEngineProvider;
 import org.polypheny.db.replication.properties.PlacementPropertyInformation;
-import org.polypheny.db.replication.properties.ReplicationProperty;
+import org.polypheny.db.replication.properties.UpdateInformation;
 import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -292,7 +292,7 @@ public class DdlManagerImpl extends DdlManager {
                             physicalSchemaName,
                             physicalTableName,
                             DataPlacementRole.UPTODATE,
-                            ReplicationProperty.createDefaultProperty() );
+                            UpdateInformation.createEmpty() );
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }
@@ -792,7 +792,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null,
                     placementPropertyInfo != null ? placementPropertyInfo.dataPlacementRole : DataPlacementRole.UPTODATE,
-                    ReplicationProperty.createDefaultProperty() );
+                    UpdateInformation.createEmpty() );
         }
 
         if ( placementPropertyInfo != null ){
@@ -1362,7 +1362,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null,
                     placementPropertyInfo.dataPlacementRole,
-                    ReplicationProperty.createDefaultProperty() )
+                    UpdateInformation.createEmpty() )
             );
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
@@ -1487,7 +1487,7 @@ public class DdlManagerImpl extends DdlManager {
                         null,
                         null,
                         DataPlacementRole.UPTODATE,
-                        ReplicationProperty.createDefaultProperty() );
+                        UpdateInformation.createEmpty() );
             }
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
@@ -1822,7 +1822,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null,
                     DataPlacementRole.UPTODATE,
-                    ReplicationProperty.createDefaultProperty() );
+                    UpdateInformation.createEmpty() );
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
@@ -2010,7 +2010,7 @@ public class DdlManagerImpl extends DdlManager {
                         null,
                         null,
                         DataPlacementRole.UPTODATE,
-                        ReplicationProperty.createDefaultProperty() );
+                        UpdateInformation.createEmpty() );
 
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
             }
@@ -2291,7 +2291,7 @@ public class DdlManagerImpl extends DdlManager {
                         null,
                         null,
                         DataPlacementRole.UPTODATE,
-                        ReplicationProperty.createDefaultProperty() );
+                        UpdateInformation.createEmpty() );
             }
 
             // First create new tables
@@ -2377,7 +2377,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null,
                     DataPlacementRole.UPTODATE,
-                    ReplicationProperty.createDefaultProperty() );
+                    UpdateInformation.createEmpty() );
 
             // TODO @HENNLO
             // IF UPTODATE Is elected TRIGGER DATA REFRESH OPERATION on possibly outdated nodes.

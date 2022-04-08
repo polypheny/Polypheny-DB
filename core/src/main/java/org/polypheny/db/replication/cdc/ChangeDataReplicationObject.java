@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.replication;
+package org.polypheny.db.replication.cdc;
 
 
 import com.google.common.collect.ImmutableList;
@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
 
@@ -37,7 +36,7 @@ import org.polypheny.db.util.Pair;
  * Objects can be directly used in DML Routing to lazily update outdated placements
  */
 @Slf4j
-public class ChangeDataReplicationObject {
+public abstract class ChangeDataReplicationObject {
 
     // TODO @HENNLO maybe introduce an Object per Operation DELETE_REPLICATION, UPDATE_REPLICATION or INSERT_REPLICATION
 
@@ -53,11 +52,6 @@ public class ChangeDataReplicationObject {
 
     @Getter
     private final Operation operation;
-
-    @Getter
-    private final ImmutableList<String> updateColumnList;
-    @Getter
-    private final ImmutableList<RexNode> sourceExpressionList;
 
     @Getter
     private final List<AlgDataTypeField> fieldList;
@@ -83,8 +77,6 @@ public class ChangeDataReplicationObject {
             long parentTxId,
             long tableId,
             Operation operation,
-            List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
             List<AlgDataTypeField> fieldList,
             Map<Long, AlgDataType> parameterTypes,
             List<Map<Long, Object>> parameterValues,
@@ -95,15 +87,14 @@ public class ChangeDataReplicationObject {
         this.parentTxId = parentTxId;
         this.tableId = tableId;
         this.operation = operation;
-        this.updateColumnList = ImmutableList.copyOf( updateColumnList );
-        this.sourceExpressionList = ImmutableList.copyOf( sourceExpressionList );
+
         this.fieldList = ImmutableList.copyOf( fieldList );
 
         this.parameterTypes = ImmutableMap.copyOf( parameterTypes );
         this.parameterValues = ImmutableList.copyOf( parameterValues );
 
         this.commitTimestamp = commitTimestamp;
-        this.dependentReplicationIds = Map.copyOf( dependentReplicationIds );
+        this.dependentReplicationIds = dependentReplicationIds;
 
     }
 

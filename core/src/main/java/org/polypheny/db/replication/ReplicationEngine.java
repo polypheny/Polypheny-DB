@@ -30,9 +30,15 @@ import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
+import org.polypheny.db.replication.cdc.ChangeDataCaptureObject;
+import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
+import org.polypheny.db.replication.cdc.DeleteReplicationObject;
+import org.polypheny.db.replication.cdc.InsertReplicationObject;
+import org.polypheny.db.replication.cdc.UpdateReplicationObject;
 import org.polypheny.db.util.Pair;
 
 
@@ -40,11 +46,18 @@ public abstract class ReplicationEngine {
 
 
     public static final ConfigBoolean CAPTURE_DATA_MODIFICATIONS = new ConfigBoolean(
-            "runtime/captureDataModification",
+            "replication/captureDataModification",
             "If disabled no data modification is actively being captured. "
                     + "To refresh outdated placements a manual refresh operation needs to be executed. "
                     + "No additional memory requirements are necessary since changes are no longer cached.",
             true );
+
+    public static final ConfigInteger REPLICATION_FAIL_COUNT_THRESHOLD = new ConfigInteger(
+            "replication/failCountThreshold",
+            "Threshold to determine how often a replication can be re-initiated before marking it as failed. "
+                    + "When this threshold is surpassed the target placement is marked as INFINITELY OUTDATED and cannot receive "
+                    + "any further replications. The refresh operation has to be triggered manually.",
+            3 );
 
     protected Catalog catalog = Catalog.getInstance();
 
@@ -75,9 +88,11 @@ public abstract class ReplicationEngine {
         final WebUiGroup generalDataReplicationGroup = new WebUiGroup( "generalReplicationSettingsGroup", replicationSettingsPage.getId() );
         generalDataReplicationGroup.withTitle( "General Data Replication Processing" );
         configManager.registerWebUiGroup( generalDataReplicationGroup );
-        CAPTURE_DATA_MODIFICATIONS.withUi( generalDataReplicationGroup.getId(), 0 );
 
+        CAPTURE_DATA_MODIFICATIONS.withUi( generalDataReplicationGroup.getId(), 0 );
         configManager.registerConfig( CAPTURE_DATA_MODIFICATIONS );
+        REPLICATION_FAIL_COUNT_THRESHOLD.withUi( generalDataReplicationGroup.getId(), 1 );
+        configManager.registerConfig( REPLICATION_FAIL_COUNT_THRESHOLD );
         configManager.registerWebUiPage( replicationSettingsPage );
     }
 
@@ -174,21 +189,51 @@ public abstract class ReplicationEngine {
                         replicationIdBuilder.getAndIncrement(), placement ) );
             }
 
-            return new ChangeDataReplicationObject(
-                    replicationDataId,
-                    cdcObject.getParentTxId(),
-                    cdcObject.getTableId(),
-                    cdcObject.getOperation(),
-                    cdcObject.getUpdateColumnList(),
-                    cdcObject.getSourceExpressionList(),
-                    cdcObject.getFieldList(),
-                    cdcObject.getParameterTypes(),
-                    cdcObject.getParameterValues(),
-                    commitTimestamp,
-                    dependentReplicationIds );
-        } else {
-            return null;
+            switch ( cdcObject.getOperation() ) {
+                case INSERT:
+                    return new InsertReplicationObject(
+                            replicationDataId,
+                            cdcObject.getParentTxId(),
+                            cdcObject.getTableId(),
+                            cdcObject.getOperation(),
+                            cdcObject.getFieldList(),
+                            cdcObject.getParameterTypes(),
+                            cdcObject.getParameterValues(),
+                            commitTimestamp,
+                            dependentReplicationIds );
+
+                case UPDATE:
+                    return new UpdateReplicationObject(
+                            replicationDataId,
+                            cdcObject.getParentTxId(),
+                            cdcObject.getTableId(),
+                            cdcObject.getOperation(),
+                            cdcObject.getUpdateColumnList(),
+                            cdcObject.getSourceExpressionList(),
+                            cdcObject.getCondition(),
+                            cdcObject.getFieldList(),
+                            cdcObject.getParameterTypes(),
+                            cdcObject.getParameterValues(),
+                            commitTimestamp,
+                            dependentReplicationIds );
+
+                case DELETE:
+                    return new DeleteReplicationObject(
+                            replicationDataId,
+                            cdcObject.getParentTxId(),
+                            cdcObject.getTableId(),
+                            cdcObject.getOperation(),
+                            cdcObject.getUpdateColumnList(),
+                            cdcObject.getSourceExpressionList(),
+                            cdcObject.getCondition(),
+                            cdcObject.getFieldList(),
+                            cdcObject.getParameterTypes(),
+                            cdcObject.getParameterValues(),
+                            commitTimestamp,
+                            dependentReplicationIds );
+            }
         }
+        return null;
     }
 
 }
