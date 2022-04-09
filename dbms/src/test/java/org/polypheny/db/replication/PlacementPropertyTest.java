@@ -28,7 +28,7 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -143,7 +143,7 @@ public class PlacementPropertyTest {
                     List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
 
                     // Check before role assignment that this initial DataPlacement is labeled as UPTODATE
-                    Assert.assertEquals( allDataPlacements.get( 0 ).dataPlacementRole, DataPlacementRole.UPTODATE );
+                    Assert.assertEquals( allDataPlacements.get( 0 ).placementState, PlacementState.UPTODATE );
 
                     // Check assert False. Constraint violation because no other primaries would be in place
                     boolean failed = false;
@@ -170,7 +170,7 @@ public class PlacementPropertyTest {
 
                     // Check before role assignment that all DataPlacement are labeled as UPTODATE
                     for ( CatalogDataPlacement dataPlacement : allDataPlacements ) {
-                        Assert.assertEquals( dataPlacement.dataPlacementRole, DataPlacementRole.UPTODATE );
+                        Assert.assertEquals( dataPlacement.placementState, PlacementState.UPTODATE );
                     }
 
                     // Get the new StoreId
@@ -187,7 +187,7 @@ public class PlacementPropertyTest {
                     CatalogDataPlacement dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, table.id );
 
                     // Check before role assignment that all DataPlacement are labeled as UPTODATE
-                    Assert.assertEquals( dataPlacementHsqlDb.dataPlacementRole, DataPlacementRole.REFRESHABLE );
+                    Assert.assertEquals( dataPlacementHsqlDb.placementState, PlacementState.REFRESHABLE );
 
                     // Create another store
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
@@ -205,7 +205,7 @@ public class PlacementPropertyTest {
                     CatalogDataPlacement dataPlacementStore3 = Catalog.getInstance().getDataPlacement( store3.id, table.id );
 
                     // Assert if these new placements are correctly created with the desired role
-                    Assert.assertEquals( dataPlacementStore3.dataPlacementRole, DataPlacementRole.REFRESHABLE );
+                    Assert.assertEquals( dataPlacementStore3.placementState, PlacementState.REFRESHABLE );
 
                     // Modify the first placement again back to UPTODATE
                     statement.executeUpdate( "ALTER TABLE parsesqlalterplacementpropertyrole "
@@ -217,7 +217,7 @@ public class PlacementPropertyTest {
                     dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, table.id );
 
                     // Assert if it is correct again
-                    Assert.assertEquals( dataPlacementHsqlDb.dataPlacementRole, DataPlacementRole.REFRESHABLE );
+                    Assert.assertEquals( dataPlacementHsqlDb.placementState, PlacementState.REFRESHABLE );
 
                     // Use together with columns and partitions
                     // and for each distinctively
