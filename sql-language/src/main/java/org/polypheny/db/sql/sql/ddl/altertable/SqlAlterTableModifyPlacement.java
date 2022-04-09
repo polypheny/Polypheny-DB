@@ -39,6 +39,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.replication.properties.exception.UnknownPlacementPropertyException;
+import org.polypheny.db.replication.properties.exception.UnsupportedStateTransitionException;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
@@ -174,6 +175,8 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.onlyOnePlacementLeft() );
+        } catch ( UnsupportedStateTransitionException e ) {
+            e.printStackTrace();
         }
 
     }

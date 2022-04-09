@@ -251,6 +251,34 @@ public class LazyReplicationEngine extends ReplicationEngine {
     }
 
 
+    public long getNumberOfPendingReplicationObjects() {
+        return replicationData.keySet().size();
+    }
+
+
+    public long getNumberOfPendingReplications() {
+        return globalReplicationDataQueue.size();
+    }
+
+
+    public List<Long> getPendingReplicationsPerPlacement( int adapterId, long partitionId ) {
+        List<Long> pendingReplications = new ArrayList<>();
+
+        if ( localPartitionPlacementQueue.containsKey( new Pair( partitionId, adapterId ) ) ) {
+            pendingReplications.addAll( localPartitionPlacementQueue.get( new Pair( partitionId, adapterId ) ) );
+        }
+
+        // If nothing is in queue or element does not even exist
+        return pendingReplications;
+    }
+
+
+    public long getPendingReplicationsPerPlacementSize( int adapterId, long partitionId ) {
+        // If nothing is in queue or element does not even exist
+        return getPendingReplicationsPerPlacement( adapterId, partitionId ).size();
+    }
+
+
     private void queueIndividualReplication( long replicationId, long replicationDataId, boolean requeue ) {
         threadPoolWorkers.execute( new LazyReplicationWorker( replicationId, replicationDataId ) );
         // TODO @HENNLO Check number of requeues. After a certain threshold

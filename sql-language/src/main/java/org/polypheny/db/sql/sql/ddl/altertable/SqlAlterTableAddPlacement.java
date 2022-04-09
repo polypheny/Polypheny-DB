@@ -39,6 +39,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.replication.properties.exception.UnknownPlacementPropertyException;
+import org.polypheny.db.replication.properties.exception.UnsupportedStateTransitionException;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
@@ -159,7 +160,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                     statement,
                     SqlPlacementPropertyExtractor.fromNodeLists( catalogTable, placementPropertyMap )
             );
-        } catch ( PlacementAlreadyExistsException | UnknownPlacementStateException | InvalidPlacementPropertySpecification | UnknownPlacementPropertyException | UnknownReplicationStrategyException e ) {
+        } catch ( PlacementAlreadyExistsException | UnknownPlacementStateException | InvalidPlacementPropertySpecification | UnknownPlacementPropertyException | UnknownReplicationStrategyException | UnsupportedStateTransitionException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );

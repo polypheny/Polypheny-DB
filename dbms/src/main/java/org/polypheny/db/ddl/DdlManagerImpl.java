@@ -120,10 +120,13 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.replication.LazyReplicationEngine;
 import org.polypheny.db.replication.ReplicationEngineProvider;
 import org.polypheny.db.replication.properties.PlacementPropertyInformation;
 import org.polypheny.db.replication.properties.UpdateInformation;
 import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
+import org.polypheny.db.replication.properties.exception.NotYetUpToDateException;
+import org.polypheny.db.replication.properties.exception.UnsupportedStateTransitionException;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -666,7 +669,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement, PlacementPropertyInformation placementPropertyInfo ) throws PlacementAlreadyExistsException, InvalidPlacementPropertySpecification {
+    public void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement, PlacementPropertyInformation placementPropertyInfo ) throws PlacementAlreadyExistsException, InvalidPlacementPropertySpecification, UnsupportedStateTransitionException {
         List<CatalogColumn> addedColumns = new LinkedList<>();
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
@@ -1199,7 +1202,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement, PlacementPropertyInformation placementPropertyInfo )
-            throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, InvalidPlacementPropertySpecification {
+            throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, InvalidPlacementPropertySpecification, UnsupportedStateTransitionException {
 
         // Check whether this placement already exists
         if ( !catalogTable.dataPlacements.contains( storeInstance.getAdapterId() ) ) {
@@ -1398,57 +1401,103 @@ public class DdlManagerImpl extends DdlManager {
      * @param statement the used statement
      */
     @Override
-    public void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws InvalidPlacementPropertySpecification {
+    public void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws InvalidPlacementPropertySpecification, UnsupportedStateTransitionException {
 
         if ( placementPropertyInfo == null ) {
             throw new InvalidPlacementPropertySpecification();
         }
 
         int adapterId = storeInstance.getAdapterId();
+        CatalogDataPlacement targetDataPlacement = catalog.getDataPlacement( adapterId, placementPropertyInfo.table.id );
 
-        // Check constraints if ROLE is set TO REFRESHABLE
-        // Otherwise we could lose data on the primaries/UPTODATE copies.
-        if ( placementPropertyInfo.placementState != null && placementPropertyInfo.placementState.equals( PlacementState.REFRESHABLE ) ) {
-            List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByState( placementPropertyInfo.table.id, PlacementState.UPTODATE );
-            catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
+        // Checks constraints unique to PlacementState
+        if ( placementPropertyInfo.placementState != null ) {
+            PlacementState targetState = placementPropertyInfo.placementState;
 
-            // Gather all partitionIds to a set
-            Set<Long> accumulatedPartitionIds = new HashSet<>();
-            catalogDataPlacements.forEach( dp -> accumulatedPartitionIds.addAll( dp.getAllPartitionIds() ) );
+            // Transition to UPTODATE is not allowed manually
+            if ( targetState.equals( PlacementState.UPTODATE ) ) {
+                throw new UnsupportedStateTransitionException( targetDataPlacement.placementState, targetState );
+            }
 
-            // If not each partition has an UPTODATE copy
-            if ( accumulatedPartitionIds.size() != placementPropertyInfo.table.partitionProperty.partitionIds.size() ) {
-                throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
-                        + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough UPTODATE-copies left. " );
+            // Transition to INFINITELY_OUTDATED is only allowed from REFRESHABLE(LAZY)
+            if ( targetDataPlacement.placementState.equals( PlacementState.UPTODATE ) && targetState.equals( PlacementState.INFINITELY_OUTDATED ) ) {
+                throw new UnsupportedStateTransitionException( PlacementState.UPTODATE, targetState );
             }
         }
 
-        catalog.updateDataPlacementState( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.placementState );
+        // Checks constraints unique to ReplicationStrategy
+        if ( placementPropertyInfo.replicationStrategy != null ) {
+            ReplicationStrategy targetStrategy = placementPropertyInfo.replicationStrategy;
+
+            if ( targetDataPlacement.replicationStrategy.equals( ReplicationStrategy.LAZY ) && targetStrategy.equals( ReplicationStrategy.EAGER ) ) {
+
+                LazyReplicationEngine lazyReplicationEngine = (LazyReplicationEngine) ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
+
+                // Check if all partition placements are already UPTODATE ergo received all updates
+                for ( long partitionId : targetDataPlacement.getAllPartitionIds() ) {
+                    if ( lazyReplicationEngine.getPendingReplicationsPerPlacementSize( adapterId, partitionId ) > 0 ) {
+                        throw new NotYetUpToDateException( storeInstance.getAdapterName(), placementPropertyInfo.table.name );
+                    }
+                }
+            }
+        }
+
+        // Check constraints if STATE is set TO REFRESHABLE or INFINITELY_OUTDATED
+        // Otherwise we could lose data on the primaries/UPTODATE copies.
+        if ( placementPropertyInfo.placementState != null ) {
+            if ( placementPropertyInfo.placementState.equals( PlacementState.REFRESHABLE ) || placementPropertyInfo.placementState.equals( PlacementState.INFINITELY_OUTDATED ) ) {
+
+                List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByState( placementPropertyInfo.table.id, PlacementState.UPTODATE );
+                catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
+
+                // Gather all partitionIds to a set
+                Set<Long> accumulatedPartitionIds = new HashSet<>();
+                catalogDataPlacements.forEach( dp -> accumulatedPartitionIds.addAll( dp.getAllPartitionIds() ) );
+
+                // If not each partition has an UPTODATE copy
+                if ( accumulatedPartitionIds.size() != placementPropertyInfo.table.partitionProperty.partitionIds.size() ) {
+                    throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
+                            + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough UPTODATE-copies left. " );
+                }
+            }
+            catalog.updateDataPlacementState( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.placementState );
+        }
 
         // Check constraints if REPLICATION STRATEGY is set TO LAZY
         // Otherwise we could lose data on the primaries/EAGER replicated copies.
-        if ( placementPropertyInfo.replicationStrategy != null && placementPropertyInfo.replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
-            List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByReplicationStrategy( placementPropertyInfo.table.id, ReplicationStrategy.EAGER );
-            catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
+        if ( placementPropertyInfo.replicationStrategy != null ) {
+            if ( placementPropertyInfo.replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+                List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByReplicationStrategy( placementPropertyInfo.table.id, ReplicationStrategy.EAGER );
+                catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
 
-            // Gather all partitionIds to a set
-            Set<Long> accumulatedPartitionIds = new HashSet<>();
-            catalogDataPlacements.forEach( dp -> accumulatedPartitionIds.addAll( dp.getAllPartitionIds() ) );
+                // Gather all partitionIds to a set
+                Set<Long> accumulatedPartitionIds = new HashSet<>();
+                catalogDataPlacements.forEach( dp -> accumulatedPartitionIds.addAll( dp.getAllPartitionIds() ) );
 
-            // If not each partition has an UPTODATE copy
-            if ( accumulatedPartitionIds.size() != placementPropertyInfo.table.partitionProperty.partitionIds.size() ) {
-                throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
-                        + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough EAGERLY-replicated-copies left. " );
+                // If not each partition has an UPTODATE copy
+                if ( accumulatedPartitionIds.size() != placementPropertyInfo.table.partitionProperty.partitionIds.size() ) {
+                    throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
+                            + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough EAGERLY-replicated-copies left. " );
+                }
+
+                // Check if replication engine is accessible. Also this implicitly enables teh configuration management
+                ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
+            }
+            // Except for PlacementState.INFINITELY_OUTDATED
+            // The PlacementState depends on the PlacementStrategy and influences it
+            // EAGER --> UPTODATE
+            // LAZY --> REFRESHABLE
+
+            if ( placementPropertyInfo.placementState == null || !placementPropertyInfo.placementState.equals( PlacementState.INFINITELY_OUTDATED ) ) {
+                PlacementState targetState = ReplicationStrategy.getDependentState( placementPropertyInfo.replicationStrategy );
+                catalog.updateDataPlacementState( storeInstance.getAdapterId(), placementPropertyInfo.table.id, targetState );
             }
 
-            // Check if replication engine is accessible. Also this implicitly enables teh configuration management
-            ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
+            //TODO @HENNLO ADD Feature IF replication is switched from LAZY to EAGER
+            // Trigger a REFRESH operation, to bring everything consequently to the MOST RECENT STATE = 'UPDTODATE'
+            catalog.updateDataPlacementReplicationStrategy( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.replicationStrategy );
         }
 
-        catalog.updateDataPlacementReplicationStrategy( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.replicationStrategy );
-
-        //TODO @HENNLO IF role switched from REFRESHABLE to UPTODATE
-        // Trigger a REFRESH operation, to bring everything consequently to the MOST RECENT STATE = 'UPDTODATE'
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();

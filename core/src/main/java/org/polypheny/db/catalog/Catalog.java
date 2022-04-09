@@ -87,6 +87,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.replication.properties.UpdateInformation;
+import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -2173,6 +2174,22 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownReplicationStrategyException( name );
+        }
+
+
+        public static PlacementState getDependentState( ReplicationStrategy strategy ) throws InvalidPlacementPropertySpecification {
+            PlacementState targetState;
+            switch ( strategy ) {
+                case EAGER:
+                    targetState = PlacementState.UPTODATE;
+
+                case LAZY:
+                    targetState = PlacementState.REFRESHABLE;
+                    break;
+                default:
+                    throw new InvalidPlacementPropertySpecification( strategy.toString() );
+            }
+            return targetState;
         }
 
     }

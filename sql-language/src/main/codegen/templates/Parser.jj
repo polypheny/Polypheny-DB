@@ -5678,24 +5678,19 @@ Map<SqlIdentifier,SqlIdentifier> PlacementPropertySpecification() :
 }
 {
     (
-        <ROLE>
+        <STATE>
         (
-            (
-                <PRIMARY>
-            |
-                <UPTODATE>
-            )
+            <UPTODATE>
             { propertyValue = new SqlIdentifier( "UPTODATE", getPos() ); }
         |
-            (
-                <SECONDARY>
-            |
-                <REFRESHABLE>
-            )
+            <REFRESHABLE>
             { propertyValue = new SqlIdentifier( "REFRESHABLE", getPos() ); }
+        |
+            <OUTDATED>
+            { propertyValue = new SqlIdentifier( "OUTDATED", getPos() ); }
         )
         {
-            propertyName = new SqlIdentifier( "ROLE", getPos() );
+            propertyName = new SqlIdentifier( "STATE", getPos() );
         }
 
         |
@@ -6488,6 +6483,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ORDINALITY: "ORDINALITY" >
 |   < OTHERS: "OTHERS" >
 |   < OUT: "OUT" >
+|   < OUTDATED: "OUTDATED" >
 |   < OUTER: "OUTER" >
 |   < OUTPUT: "OUTPUT" >
 |   < OVER: "OVER" >
@@ -6601,7 +6597,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SCROLL: "SCROLL" >
 |   < SEARCH: "SEARCH" >
 |   < SECOND: "SECOND" >
-|   < SECONDARY: "SECONDARY" >
 |   < SECTION: "SECTION" >
 |   < SECURITY: "SECURITY" >
 |   < SEEK: "SEEK" >

@@ -105,7 +105,7 @@ public class PlacementPropertyTest {
                     CatalogDataPlacement dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, table.id );
 
                     // Check before replicationStrategy assignment that all DataPlacement are labeled as EAGERly replicated
-                    Assert.assertEquals( dataPlacementHsqlDb.replicationStrategy, ReplicationStrategy.EAGER );
+                    Assert.assertEquals( dataPlacementHsqlDb.replicationStrategy, ReplicationStrategy.LAZY );
 
                     // Create another store
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
@@ -116,7 +116,7 @@ public class PlacementPropertyTest {
                     // Add a new Placement to new store and mark them for LAZY Replication
                     statement.executeUpdate( "ALTER TABLE parsesqlalterplacementreplicationstrategy "
                             + "ADD PLACEMENT "
-                            + "ON STORE \"store3\" "
+                            + "ON STORE store3 "
                             + "WITH REPLICATION LAZY" );
 
                     // Get that specific store3 placement

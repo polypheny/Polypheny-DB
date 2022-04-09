@@ -387,6 +387,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "ORDER", "92", "99", "2003", "2011", "2014", "c",
             "ORDINALITY", "99",
             "OUT", "92", "99", "2003", "2011", "2014", "c",
+            "OUTDATED", "c",         // HENNLO added for lazy replication
             "OUTER", "92", "99", "2003", "2011", "2014", "c",
             "OUTPUT", "92", "99", "2003",
             "OVER", "99", "2003", "2011", "2014", "c",
@@ -465,7 +466,6 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "SCROLL", "92", "99", "2003", "2011", "2014", "c",
             "SEARCH", "99", "2003", "2011", "2014", "c",
             "SECOND", "92", "99", "2003", "2011", "2014", "c",
-            "SECONDARY", "c",         // HENNLO added for lazy replication
             "SECONDS", "2011",
             "SECTION", "92", "99",
             "SEEK", "2014", "c",

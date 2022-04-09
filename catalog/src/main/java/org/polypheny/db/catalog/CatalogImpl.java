@@ -4413,7 +4413,7 @@ public class CatalogImpl extends Catalog {
     public List<CatalogDataPlacement> getDataPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
         List<CatalogDataPlacement> catalogDataPlacements = new ArrayList<>();
         for ( CatalogDataPlacement dataPlacement : getDataPlacements( tableId ) ) {
-            if ( dataPlacement.replicationStrategy.equals( replicationStrategy ) ) {
+            if ( dataPlacement.replicationStrategy.equals( replicationStrategy ) && !dataPlacement.placementState.equals( PlacementState.INFINITELY_OUTDATED ) ) {
                 catalogDataPlacements.add( dataPlacement );
             }
         }
@@ -4477,7 +4477,7 @@ public class CatalogImpl extends Catalog {
         }
 
         CatalogTable table = getTable( tableId );
-        List<CatalogDataPlacement> dataPlacements = getDataPlacements( tableId );
+        List<CatalogDataPlacement> dataPlacements = getDataPlacementsByReplicationStrategy( tableId, ReplicationStrategy.EAGER );
 
         // Checks for every column on every DataPlacement if each column is placed with all partitions
         for ( long columnId : table.columnIds ) {
@@ -5078,9 +5078,15 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.placementType,
                 placementState,
                 oldDataPlacement.replicationStrategy,
-                ImmutableList.copyOf( oldDataPlacement.columnPlacementsOnAdapter ), ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
+                ImmutableList.copyOf( oldDataPlacement.columnPlacementsOnAdapter ),
+                ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
+
+        // Make sure that all partition placements are also correctly labeled
+        for ( long partitionId : newDataPlacement.getAllPartitionIds() ) {
+            updatePartitionPartitionPlacementState( adapterId, partitionId, placementState );
+        }
 
         if ( log.isDebugEnabled() ) {
             log.debug( "Switched from placement state {} to {} for table {}, on adapter {}.", oldDataPlacement.placementState, placementState, tableId, adapterId );

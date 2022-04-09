@@ -37,6 +37,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.replication.properties.exception.UnknownPlacementPropertyException;
+import org.polypheny.db.replication.properties.exception.UnsupportedStateTransitionException;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlWriter;
@@ -127,6 +128,8 @@ public class SqlAlterTableModifyPlacementProperties extends SqlAlterTable {
 
         // TODO @HENNLO Check constraints ( sufficient primary etc. )
 
+        // TODO @HENNLO check that there are no more pending updates
+
         // Update
         try {
             DdlManager.getInstance().modifyDataPlacementProperties(
@@ -134,8 +137,8 @@ public class SqlAlterTableModifyPlacementProperties extends SqlAlterTable {
                     storeInstance,
                     statement
             );
-        } catch ( LastPlacementException | UnknownPlacementStateException | UnknownPlacementPropertyException | InvalidPlacementPropertySpecification | UnknownReplicationStrategyException e ) {
-            throw new RuntimeException( "Failed to execute requested partition modification. This change would remove one partition entirely from table '" + catalogTable.name + "'", e );
+        } catch ( LastPlacementException | UnknownPlacementStateException | UnknownPlacementPropertyException | InvalidPlacementPropertySpecification | UnknownReplicationStrategyException | UnsupportedStateTransitionException e ) {
+            throw new RuntimeException( e );
         }
     }
 

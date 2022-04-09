@@ -22,7 +22,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -30,15 +32,22 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 
 
 @Category({ AdapterTestSuite.class })
+@Ignore
 public class LazyPlacementReplicationTest {
+
+    private final CountDownLatch waiter = new CountDownLatch( 1 );
+
 
     @Test
     public void generalEagerReplicationTest() throws SQLException {
@@ -95,6 +104,7 @@ public class LazyPlacementReplicationTest {
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS generaleagerreplicationtest" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store1" );
                 }
             }
         }
@@ -114,11 +124,6 @@ public class LazyPlacementReplicationTest {
 
                 try {
 
-                    // Disable automatic refresh operations to validate the deviation
-                    ConfigManager cm = ConfigManager.getInstance();
-                    Config c1 = cm.getConfig( "replication/automaticLazyDataReplication" );
-                    c1.setBoolean( false );
-
                     CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "generallazyreplicationtest" ) ).get( 0 );
 
                     // Create two placements for one table
@@ -126,10 +131,17 @@ public class LazyPlacementReplicationTest {
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
+                    CatalogAdapter store1 = Catalog.getInstance().getAdapter( "store1" );
+
                     statement.executeUpdate( "ALTER TABLE generallazyreplicationtest "
                             + "ADD PLACEMENT "
                             + "ON STORE store1 "
                             + "WITH REPLICATION LAZY" );
+
+                    // Disable automatic refresh operations to validate the deviation
+                    ConfigManager cm = ConfigManager.getInstance();
+                    Config c1 = cm.getConfig( "replication/automaticLazyDataReplication" );
+                    c1.setBoolean( false );
 
                     // Insert several MODIFICATIONS
                     statement.executeUpdate( "INSERT INTO generallazyreplicationtest VALUES (1, 30, 'foo')" );
@@ -140,10 +152,15 @@ public class LazyPlacementReplicationTest {
                                     new Object[]{ 1, 30, "foo" },
                                     new Object[]{ 2, 70, "bar" } ) );
 
+                    LazyReplicationEngine lazyReplicationEngine = (LazyReplicationEngine) ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
+
+                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
+
+                    // Check that queue is correctly enriched with two INSERTS
+                    Assert.assertEquals( 2, lazyReplicationEngine.getPendingReplicationsPerPlacementSize( store1.id, allPartitionPlacements.get( 0 ).partitionId ) );
+
                     // Get the single DataPlacement
                     List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
-
-                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getPartitionPlacements( table.id );
 
                     // Check locking: NOT all placements and partitions need to be locked
 
@@ -182,10 +199,16 @@ public class LazyPlacementReplicationTest {
                         Assert.assertEquals( modifications, partitionPlacement.updateInformation.modifications );
                     }
 
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM generallazyreplicationtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" } ) );
+
                     // Check if first initial primary store ( which received updates eagerly ) is dropped. If
                     // Secondary still has all updates
                     statement.executeUpdate( "ALTER TABLE generallazyreplicationtest "
-                            + "ADD PLACEMENT "
+                            + "MODIFY PLACEMENT "
                             + "ON STORE store1 "
                             + "WITH REPLICATION EAGER" );
 
@@ -201,9 +224,12 @@ public class LazyPlacementReplicationTest {
 
                     // Check locking: ONLY Primary placements and partitions need to be locked
 
+                } catch ( UnknownAdapterException e ) {
+                    e.printStackTrace();
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS generallazyreplicationtest" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store1" );
                 }
             }
         }
@@ -258,7 +284,7 @@ public class LazyPlacementReplicationTest {
 
 
     @Test
-    public void replicationContraintTest() throws SQLException {
+    public void replicationConstraintTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -330,10 +356,22 @@ public class LazyPlacementReplicationTest {
                 try {
                     CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "insertreplicationtest" ) ).get( 0 );
 
+                    LazyReplicationEngine lazyReplicationEngine = (LazyReplicationEngine) ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
+
+                    // Create another store
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
                     statement.executeUpdate( "ALTER TABLE insertreplicationtest "
                             + "ADD PLACEMENT "
                             + "ON STORE store1 "
                             + "WITH REPLICATION LAZY" );
+
+                    CatalogAdapter store1 = Catalog.getInstance().getAdapter( "store1" );
+
+                    ConfigManager cm = ConfigManager.getInstance();
+                    Config c1 = cm.getConfig( "replication/automaticLazyDataReplication" );
+                    c1.setBoolean( true );
 
                     // Insert several MODIFICATIONS
                     statement.executeUpdate( "INSERT INTO insertreplicationtest VALUES (1, 30, 'foo')" );
@@ -344,10 +382,13 @@ public class LazyPlacementReplicationTest {
                                     new Object[]{ 1, 30, "foo" },
                                     new Object[]{ 2, 70, "bar" } ) );
 
+                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
+
+                    // Check that queue is correctly enriched with two INSERTS
+                    Assert.assertEquals( 2, lazyReplicationEngine.getPendingReplicationsPerPlacementSize( store1.id, allPartitionPlacements.get( 0 ).partitionId ) );
+
                     // Get the single DataPlacement
                     List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
-
-                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getPartitionPlacements( table.id );
 
                     // Check locking: NOT all placements and partitions need to be locked
 
@@ -364,10 +405,16 @@ public class LazyPlacementReplicationTest {
                         Assert.assertEquals( modifications, partitionPlacement.updateInformation.modifications );
                     }
 
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM insertreplicationtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" } ) );
+
                     // Check if first initial primary store ( which received updates eagerly ) is dropped. If
                     // Secondary still has all updates
                     statement.executeUpdate( "ALTER TABLE insertreplicationtest "
-                            + "ADD PLACEMENT "
+                            + "MODIFY PLACEMENT "
                             + "ON STORE store1 "
                             + "WITH REPLICATION EAGER" );
 
@@ -382,9 +429,12 @@ public class LazyPlacementReplicationTest {
                                     new Object[]{ 2, 70, "bar" } ) );
 
 
+                } catch ( UnknownAdapterException e ) {
+                    e.printStackTrace();
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS insertreplicationtest" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store1" );
                 }
             }
         }
@@ -560,6 +610,48 @@ public class LazyPlacementReplicationTest {
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS replicationwithhybridpartitioningtest" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void multiInsertReplicationTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE multiinsertreplicationtest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "multiinsertreplicationtest" ) ).get( 0 );
+
+                    statement.executeUpdate( "INSERT INTO multiinsert(tprimary,tvarchar,tinteger) VALUES (1,'Hans',5),(2,'Eva',7),(3,'Alice',89)" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM multiinsert ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Hans", 5 },
+                                    new Object[]{ 2, "Eva", 7 },
+                                    new Object[]{ 3, "Alice", 89 } ) );
+                    // Disable automatic refresh operations to validate the deviation
+
+                    // Create two placements for one table
+
+                    // Insert several updates
+
+                    // Check locking: ONLY Primary placements and partitions need to be locked
+
+                    // Assert that they both have the received different numbers of updates
+
+                    // Assert that they both data placements have different commit/update timestamps
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE IF EXISTS multiinsertreplicationtest" );
                 }
             }
         }

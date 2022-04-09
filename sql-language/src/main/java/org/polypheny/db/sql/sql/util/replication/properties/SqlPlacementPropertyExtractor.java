@@ -46,22 +46,17 @@ public class SqlPlacementPropertyExtractor extends PlacementPropertyExtractor {
             return null;
         }
 
-            /*CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( storeInstance.getAdapterId(), placementPropertyInfo.table.id ) ;
-            if ( dataPlacement.dataPlacementRole.equals( placementPropertyInfo. ) )
-
-            }*/
-
         for ( Entry<SqlIdentifier, SqlIdentifier> entry : propertyMapping.entrySet() ) {
 
             switch ( entry.getKey().getSimple().toUpperCase() ) {
-                case "ROLE":
-                    placementState = PlacementState.getByName( entry.getValue().getSimple().toUpperCase() );
+                case "STATE":
+                    placementState = PlacementState.getByName(
+                            entry.getValue().getSimple().toUpperCase().equals( "OUTDATED" )
+                                    ? "INFINITELY_OUTDATED" : entry.getValue().getSimple().toUpperCase()
+                    );
                     break;
 
                 case "REPLICATION_STRATEGY":
-                    // TODO @HENNLO IF = EAGER and perfore was LAZY make sure that it is first becomes uptodate,
-                    //  either by applying all pending changes or via DataMigrator full copy
-
                     replicationStrategy = ReplicationStrategy.getByName( entry.getValue().getSimple().toUpperCase() );
                     break;
 
