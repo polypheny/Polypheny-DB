@@ -1352,6 +1352,13 @@ public class DdlManagerImpl extends DdlManager {
             storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitionIdsFromDataPlacement );
         }
 
+        PlacementState placementState;
+        if ( placementPropertyInfo == null || placementPropertyInfo.placementState == null ) {
+            placementState = dataPlacement.placementState;
+        } else {
+            placementState = placementPropertyInfo.placementState;
+        }
+
         if ( newPartitionIdsOnDataPlacement.size() > 0 ) {
 
             newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
@@ -1361,7 +1368,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    placementPropertyInfo.placementState,
+                    placementState,
                     UpdateInformation.createEmpty() )
             );
 

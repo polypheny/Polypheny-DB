@@ -527,11 +527,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                                 tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
 
-                                                CatalogPartitionPlacement currentPartitionPlacement = catalog.getPartitionPlacement( dataPlacement.adapterId, tempPartitionId );
-
                                                 if ( !dataPlacement.getAllPartitionIds().contains( tempPartitionId ) ) {
                                                     continue;
                                                 }
+
+                                                CatalogPartitionPlacement currentPartitionPlacement = catalog.getPartitionPlacement( dataPlacement.adapterId, tempPartitionId );
 
                                                 List<Map<Long, Object>> parameterValues = new ArrayList<>();
                                                 parameterValues.add( new HashMap<>( newParameterValues ) );

@@ -708,15 +708,16 @@ public class DataMigratorImpl implements DataMigrator {
         // Updates the Update metadata information on the target with information from source adapter
         CatalogPartitionPlacement sourcePartitionPlacement = catalog.getPartitionPlacement( sourceAdapterId, targetPartitionId );
         CatalogDataPlacement sourceDataPlacement = catalog.getDataPlacement( sourceAdapterId, sourcePartitionPlacement.tableId );
-        CatalogPartitionPlacement targetPartitionPlacement = catalog.getPartitionPlacement( targetAdapterId, targetPartitionId );
 
-        // TODOD @HENNLO make sure that only eagerly updated placements are selected here for teh moement just print debug information
+        // TODO @HENNLO make sure that only eagerly updated placements are selected here for teh moement just print debug information
         //  when this is not the case
-        if ( sourcePartitionPlacement.state.equals( PlacementState.UPTODATE ) && sourceDataPlacement.replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
-            log.warn( "Source Placement is not an primary eagerly update placement nor UPTODATE" );
+        if ( !sourcePartitionPlacement.state.equals( PlacementState.UPTODATE ) || !sourceDataPlacement.replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+            log.warn( "Source Placement is not an primary eagerly update placement nor UPTODATE. It is {} - {}"
+                    , sourcePartitionPlacement.state
+                    , sourceDataPlacement.replicationStrategy );
         }
 
-        // Needs override if empty. Otherwise is it accumulated before method invocation
+        // Needs override if empty. Otherwise, it is accumulated before method invocation
         if ( modifications <= 0 ) {
             modifications = sourcePartitionPlacement.updateInformation.getModifications();
         }

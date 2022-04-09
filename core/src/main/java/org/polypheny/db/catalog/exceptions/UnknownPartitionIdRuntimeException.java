@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownPartitionGroupIdRuntimeException extends CatalogRuntimeException {
+public class UnknownPartitionIdRuntimeException extends CatalogRuntimeException {
 
-    public UnknownPartitionGroupIdRuntimeException( long partitionGroupId ) {
-        super( "There is no partition group with id '" + partitionGroupId + "'." );
+    public UnknownPartitionIdRuntimeException( long partitionId ) {
+        super( "There is no partition with id '" + partitionId + "'." );
     }
 
 }

@@ -97,6 +97,7 @@ import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionGroupIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceRuntimeException;
@@ -3865,7 +3866,7 @@ public class CatalogImpl extends Catalog {
         try {
             return Objects.requireNonNull( partitions.get( partitionId ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownPartitionGroupIdRuntimeException( partitionId );
+            throw new UnknownPartitionIdRuntimeException( partitionId );
         }
     }
 

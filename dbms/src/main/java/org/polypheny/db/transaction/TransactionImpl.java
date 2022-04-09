@@ -207,15 +207,21 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                     eventData.setCommitted( true );
                     if ( eventData.getChangedPartitionPlacements() != null && !eventData.getChangedPartitionPlacements().isEmpty() ) {
                         eventData.getChangedPartitionPlacements().forEach( pair ->
-                                Catalog.getInstance().updatePartitionPlacementProperties(
-                                        (int) pair.left,
-                                        (long) pair.right,
-                                        commitTimestamp,
-                                        id,
-                                        commitTimestamp,
-                                        0,
-                                        1
-                                ) );
+                                {
+                                    // Necessary if partition placement gets dropped during TX and is no longer available
+                                    if ( Catalog.getInstance().checkIfExistsPartitionPlacement( (int) pair.left, (long) pair.right ) ) {
+                                        Catalog.getInstance().updatePartitionPlacementProperties(
+                                                (int) pair.left,
+                                                (long) pair.right,
+                                                commitTimestamp,
+                                                id,
+                                                commitTimestamp,
+                                                0,
+                                                1
+                                        );
+                                    }
+                                }
+                        );
                     }
                     MonitoringServiceProvider.getInstance().monitorEvent( eventData );
                 }
@@ -296,14 +302,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     private void setCommitTimestamp( long commitTimestamp ) {
-        //TODO @HENNLO
-        // Check that commitTimestamp is not too much in the past
-        // That information will not be altered
-
         // If it has already been set
         if ( this.commitTimestamp > 0 ) {
             // TODO @HENNLO throw more sophisticate exception
-            throw new RuntimeException( "Commit Timestamp has already been set and cannot be altered!" );
+            //throw new RuntimeException( "Commit Timestamp has already been set and cannot be altered!" );
+            log.warn( "Commit Timestamp has already been set and cannot be altered!" );
         }
         this.commitTimestamp = commitTimestamp;
     }
