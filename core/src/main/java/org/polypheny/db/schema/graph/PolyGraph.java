@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyPath.PolySegment;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
@@ -49,7 +50,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
 
     public PolyGraph( String id, @NonNull PolyMap<String, PolyNode> nodes, @NonNull PolyMap<String, PolyEdge> edges ) {
-        super( id, GraphObjectType.GRAPH );
+        super( id, GraphObjectType.GRAPH, null );
         this.nodes = nodes;
         this.edges = edges;
     }
@@ -88,17 +89,17 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
     public List<PolyPath> extract( PolyPath pattern ) {
         // retrieve hop as de-referenced segments, which store the full information of nodes and edges
-        List<PolySegment> segments = pattern.getDerefSegments();
+        List<List<PolySegment>> segments = pattern.getDerefSegments();
 
-        List<TreePart> temp = buildMatchingTree( segments );
+        List<List<TreePart>> trees = segments.stream().map( this::buildMatchingTree ).collect( Collectors.toList() );
 
-        List<List<String>> pathIds = buildIdPaths( temp );
+        List<List<Pair<String, String>>> namedPathIds = buildIdPaths( trees );
 
         // patterns like ()-[]-() match each edge twice, once in each direction ( analog to Neo4j )
         // if this is not desired this could be uncommented
         //List<List<String>> adjustedPathIds = removeInverseDuplicates( pathIds );
 
-        return buildPaths( pathIds );
+        return buildPaths( namedPathIds );
     }
 
 
@@ -128,38 +129,38 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
     }
 
 
-    private List<PolyPath> buildPaths( List<List<String>> pathIds ) {
+    private List<PolyPath> buildPaths( List<List<Pair<String, String>>> namedPathIds ) {
         List<PolyPath> paths = new LinkedList<>();
 
-        for ( List<String> pathId : pathIds ) {
+        for ( List<Pair<String, String>> namedPathId : namedPathIds ) {
             List<PolyNode> nodes = new LinkedList<>();
             List<PolyEdge> edges = new LinkedList<>();
             List<GraphPropertyHolder> path = new LinkedList<>();
             List<String> names = new LinkedList<>();
 
             int i = 0;
-            GraphPropertyHolder object;
-            for ( String id : pathId ) {
+            GraphPropertyHolder element;
+            for ( Pair<String, String> namedId : namedPathId ) {
                 if ( i % 2 == 0 ) {
-                    object = this.nodes.get( id );
-                    nodes.add( this.nodes.get( id ) );
+                    element = this.nodes.get( namedId.right ).copyNamed( namedId.left );
+                    nodes.add( (PolyNode) element );
                 } else {
-                    object = this.edges.get( id );
-                    edges.add( this.edges.get( id ) );
+                    element = this.edges.get( namedId.right ).copyNamed( namedId.left );
+                    edges.add( (PolyEdge) element );
                 }
-                path.add( object );
+                path.add( element );
                 names.add( null );
-                ;
+
                 i++;
             }
-            paths.add( new PolyPath( nodes, edges, names, path ) );
+            paths.add( new PolyPath( nodes, edges, names, path, getVariableName() ) );
         }
         return paths;
     }
 
 
-    private List<List<String>> buildIdPaths( List<TreePart> temp ) {
-        return temp.stream().map( t -> t.getPath( new LinkedList<>() ) ).collect( Collectors.toList() );
+    private List<List<Pair<String, String>>> buildIdPaths( List<List<TreePart>> trees ) {
+        return trees.stream().flatMap( tree -> tree.stream().map( t -> t.getPath( new LinkedList<>() ) ) ).collect( Collectors.toList() );
     }
 
 
@@ -191,12 +192,12 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
                     // then check if it matches pattern of segment either ()->() or ()-() depending if direction is specified
                     if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
                         if ( segment.matches( left, edge, right ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.source ) ) {
-                            matches.add( new TreePart( part, edge.id, edge.target ) );
+                            matches.add( new TreePart( part, edge.id, edge.target, segment.edge.getVariableName(), segment.target.getVariableName() ) );
                         }
                     }
                     if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
                         if ( segment.matches( right, edge, left ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.target ) ) {
-                            matches.add( new TreePart( part, edge.id, edge.source ) );
+                            matches.add( new TreePart( part, edge.id, edge.source, segment.edge.getVariableName(), segment.target.getVariableName() ) );
                         }
                     }
 
@@ -217,25 +218,25 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
 
     private void attachEmptyStubs( PolySegment segment, List<TreePart> root ) {
-        Set<String> usedIds = new HashSet<>();
+        Set<Pair<String, String>> usedIds = new HashSet<>();
         for ( PolyEdge edge : edges.values() ) {
             PolyNode left = nodes.get( edge.source );
             PolyNode right = nodes.get( edge.target );
             // we attach stubs, which allows ()->() and ()-()
             if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( left, edge, right ) ) {
-                    usedIds.add( edge.source );
+                    usedIds.add( Pair.of( edge.source, segment.source.getVariableName() ) );
                 }
             }
             // we attach stubs, which allows ()<-() and ()-() AKA inverted
             if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( right, edge, left ) ) {
-                    usedIds.add( edge.target );
+                    usedIds.add( Pair.of( edge.target, segment.source.getVariableName() ) );
                 }
             }
         }
         // so we filter out edges which point to the same node
-        usedIds.forEach( id -> root.add( new TreePart( null, null, id ) ) );
+        usedIds.forEach( pair -> root.add( new TreePart( null, null, pair.left, null, pair.right ) ) );
     }
 
 
@@ -274,12 +275,16 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         public final Set<TreePart> connections = new HashSet<>();
         // LPG only matches relationship isomorphic
         public final List<String> usedEdgesIds = new LinkedList<>();
+        private final String edgeVariable;
+        private final String targetVariable;
 
 
-        public TreePart( TreePart parent, String edgeId, String targetId ) {
+        public TreePart( TreePart parent, String edgeId, String targetId, String edgeVariable, String targetVariable ) {
             this.parent = parent;
             this.edgeId = edgeId;
             this.targetId = targetId;
+            this.edgeVariable = edgeVariable;
+            this.targetVariable = targetVariable;
 
             if ( parent != null ) {
                 usedEdgesIds.addAll( parent.usedEdgesIds );
@@ -290,15 +295,15 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         }
 
 
-        public List<String> getPath( List<String> ids ) {
-            ids.add( 0, targetId );
+        public List<Pair<String, String>> getPath( List<Pair<String, String>> namedIds ) {
+            namedIds.add( 0, Pair.of( targetVariable, targetId ) );
 
             if ( parent != null ) {
                 // send to parent to insert its info
-                ids.add( 0, edgeId );
-                parent.getPath( ids );
+                namedIds.add( 0, Pair.of( edgeVariable, edgeId ) );
+                parent.getPath( namedIds );
             }
-            return ids;
+            return namedIds;
         }
 
     }

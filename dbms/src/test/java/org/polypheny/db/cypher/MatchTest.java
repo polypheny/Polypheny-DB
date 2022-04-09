@@ -68,7 +68,7 @@ public class MatchTest extends CypherTestTemplate {
 
         Result res = execute( "MATCH (n:Person) RETURN n" );
         assertNode( res, 0 );
-        containsNodes( res, true, MAX );
+        assert containsNodes( res, true, MAX );
 
     }
 
@@ -105,7 +105,7 @@ public class MatchTest extends CypherTestTemplate {
 
         res = execute( "MATCH (n {name: 'Kira', age: 3}) RETURN n" );
         assertNode( res, 0 );
-        containsNodes( res, true, TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ) ) );
+        assert containsNodes( res, true, TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) ) );
 
     }
 
@@ -152,7 +152,7 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         Result res = execute( "MATCH ()-[r]->() RETURN r" );
         assertEdge( res, 0 );
-        containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
+        assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
     }
 
 
@@ -174,7 +174,7 @@ public class MatchTest extends CypherTestTemplate {
         assertEmpty( res );
 
         res = execute( "MATCH ()-[r:KNOWS {since: 1994}]->() RETURN r" );
-        containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ), Pair.of( "since", 1994 ) ) );
+        assert containsEdges( res, true, TestEdge.from( List.of( "KNOWS" ), Pair.of( "since", 1994 ) ) );
     }
 
 
@@ -183,7 +183,7 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
         Result res = execute( "MATCH (n:Person)-[r:KNOWS {since: 1994}]->() RETURN n" );
-        containsNodes( res, true, TestEdge.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
+        assert containsNodes( res, true, TestEdge.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
     }
 
 
@@ -202,7 +202,38 @@ public class MatchTest extends CypherTestTemplate {
 
         res = execute( "MATCH ()-[r:FRIEND_OF {since:1995}]->()-[]-() RETURN r" );
         assertEdge( res, 0 );
-        containsEdges( res, true, TestEdge.from( List.of( "FRIEND_OF" ), Pair.of( "since", 1995 ) ) );
+        assert containsEdges( res, true, TestEdge.from( List.of( "FRIEND_OF" ), Pair.of( "since", 1995 ) ) );
+    }
+
+
+    @Test
+    public void repeatingHopTest() {
+        execute( SINGLE_EDGE_1 );
+        execute( SINGLE_EDGE_2 );
+        execute( MULTIPLE_HOP_EDGE );
+
+        Result res = execute( "MATCH ()-[*2]->(n) RETURN n" );
+        assertNode( res, 0 );
+        assert containsRows( res, true, true, Row.of( TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ) );
+    }
+
+
+    @Test
+    public void variableHopTest() {
+        execute( SINGLE_EDGE_1 );
+        execute( SINGLE_EDGE_2 );
+        execute( MULTIPLE_HOP_EDGE );
+
+        Result res = execute( "MATCH ()-[*1..2]->(n) RETURN n" );
+        assertNode( res, 0 );
+        assert containsRows( res, true, false,
+                Row.of( KIRA ),
+                Row.of( HANS_AGE ),
+                Row.of( MAX ),
+                // single hop match
+                Row.of( TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ),
+                // double hop match
+                Row.of( TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ) );
     }
 
     ///////////////////////////////////////////////

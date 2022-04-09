@@ -191,7 +191,7 @@ public interface NeoStatements {
         if ( mappingLabel != null ) {
             labels.add( mappingLabel );
         }
-        String defIdentifier = identifier != null ? identifier : node.variableName() == null ? null : node.variableName();
+        String defIdentifier = identifier != null ? identifier : node.getVariableName() == null ? null : node.getVariableName();
 
         return node_( defIdentifier, labels_( labels ), statements );
     }
@@ -247,7 +247,7 @@ public interface NeoStatements {
             props.add( property_( "__sourceId__", string_( edge.source ) ) );
             props.add( property_( "__targetId__", string_( edge.target ) ) );
         }
-        String defIdentifier = identifier != null ? identifier : edge.variableName() == null ? null : edge.variableName();
+        String defIdentifier = identifier != null ? identifier : edge.getVariableName() == null ? null : edge.getVariableName();
 
         return edge_( defIdentifier, edge.labels, list_( props, "{", "}" ), edge.direction );
     }

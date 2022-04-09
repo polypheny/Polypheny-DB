@@ -79,7 +79,12 @@ public class CypherRelPattern extends CypherPattern {
             name = variable.getName();
         }
 
-        return Pair.of( name, new PolyEdge( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction ) );
+        PolyEdge edge = new PolyEdge( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction, name );
+        if ( pathLength != null ) {
+            edge.fromTo( Pair.of( Integer.parseInt( pathLength.getFrom() ), Integer.parseInt( pathLength.getTo() ) ) );
+        }
+
+        return Pair.of( name, edge );
     }
 
 }

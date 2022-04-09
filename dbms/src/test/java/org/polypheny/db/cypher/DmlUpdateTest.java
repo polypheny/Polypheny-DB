@@ -65,7 +65,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
 
         Result res = matchAndReturnAllNodes();
         assert containsRows( res, true, true,
-                Row.of( TestNode.from( List.of( "Swiss", "German" ), Pair.of( "name", "Max" ) ) ) );
+                Row.of( TestNode.from( List.of( "Person", "Swiss", "German" ), Pair.of( "name", "Max" ) ) ) );
     }
 
 

@@ -33,6 +33,7 @@ import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.Pair;
@@ -49,13 +50,13 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
     private final List<PolySegment> segments;
 
 
-    public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path ) {
-        this( UUID.randomUUID().toString(), nodes, edges, names, path );
+    public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path, String variableName ) {
+        this( UUID.randomUUID().toString(), nodes, edges, names, path, variableName );
     }
 
 
-    public PolyPath( String id, List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path ) {
-        super( id, GraphObjectType.PATH );
+    public PolyPath( String id, List<PolyNode> nodes, List<PolyEdge> edges, List<String> names, List<GraphPropertyHolder> path, String variableName ) {
+        super( id, GraphObjectType.PATH, variableName );
         assert nodes.size() == edges.size() + 1;
         assert nodes.size() + edges.size() == names.size();
         this.nodes = nodes;
@@ -72,6 +73,11 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
         }
         this.segments = segments;
 
+    }
+
+
+    public int getVariants() {
+        return edges.stream().map( PolyEdge::getVariants ).reduce( 1, Math::multiplyExact );
     }
 
 
@@ -93,7 +99,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
             }
         }
 
-        return new PolyPath( new ArrayList<>( Pair.right( polyNodes ) ), new ArrayList<>( Pair.right( polyEdges ) ), names, path );
+        return new PolyPath( new ArrayList<>( Pair.right( polyNodes ) ), new ArrayList<>( Pair.right( polyEdges ) ), names, path, null );
 
     }
 
@@ -139,9 +145,17 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
     }
 
 
-    public GraphObject get( int index ) {
-        assert index < names.size();
-        return path.get( index );
+    public GraphObject get( String name ) {
+        if ( name == null ) {
+            throw new RuntimeException( "cannot retrieve name with value null from path." );
+        }
+        for ( GraphPropertyHolder holder : path ) {
+            if ( name.equals( holder.getVariableName() ) ) {
+                return holder;
+            }
+        }
+
+        return null;
     }
 
 
@@ -153,20 +167,91 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
                         EnumUtils.expressionList( nodes.stream().map( PolyNode::getAsExpression ).collect( Collectors.toList() ) ),
                         EnumUtils.expressionList( edges.stream().map( PolyEdge::getAsExpression ).collect( Collectors.toList() ) ),
                         EnumUtils.constantArrayList( names, String.class ),
-                        EnumUtils.expressionList( path.stream().map( ExpressionTransformable::getAsExpression ).collect( Collectors.toList() ) ) ),
+                        EnumUtils.expressionList( path.stream().map( ExpressionTransformable::getAsExpression ).collect( Collectors.toList() ) ),
+                        Expressions.constant( getVariableName(), String.class ) ),
                 PolyPath.class );
     }
 
 
-    public List<PolySegment> getDerefSegments() {
-        ArrayList<PolySegment> segments = new ArrayList<>();
+    public List<List<PolySegment>> getDerefSegments() {
+        List<List<List<PolySegment>>> segments = new ArrayList<>();
         int i = 0;
+
+        PolyNode empty = new PolyNode( new PolyDictionary(), List.of(), null );
+
         for ( PolyEdge edge : edges ) {
             PolyNode node = nodes.get( i );
-            segments.add( new PolySegment( node, edge, nodes.get( i + 1 ), edge.direction ) );
+            PolyNode next = empty;
+
+            List<List<PolySegment>> currentSegments = new ArrayList<>();
+
+            //int limit = edge.fromTo() != null ? edge.fromTo().right : 1;
+            for ( int v = 0; v < edge.getVariants(); v++ ) {
+                List<PolySegment> currentSegment = new ArrayList<>();
+                int max = edge.getMinLength() + v;
+                for ( int j = 0; j < max; j++ ) {
+                    // set left if moved from initial
+                    if ( j != 0 ) {
+                        node = empty;
+                    }
+
+                    // set right to fit end
+                    if ( j == max - 1 ) {
+                        next = nodes.get( i + 1 );
+                    } else {
+                        // this is a filler node, which has no properties ()-[*1..2]-() => ()-[]-([this])-[]-()
+                        next = empty;
+                    }
+
+                    currentSegment.add( new PolySegment( node, edge, next, edge.direction ) );
+                }
+                currentSegments.add( currentSegment );
+            }
+
+            segments.add( currentSegments );
             i++;
         }
-        return segments;
+
+        return distributeEvenly( segments, getVariants() );
+    }
+
+
+    /**
+     * Transforms from bucket style lists to even lists
+     *
+     * seg1      ,  seg2 ,      seg3,
+     * seg11,seg12               seg31, seg32
+     *
+     * becomes
+     *
+     * seg1, seg2, seg3
+     * seg11, seg12, seg2, seg3
+     * seg1, seg2, seg31, seg32
+     * seg11, seg12, seg2, seg31, seg31
+     *
+     * @param unevenlySegments
+     * @param variants
+     * @return
+     */
+    private List<List<PolySegment>> distributeEvenly( List<List<List<PolySegment>>> unevenlySegments, int variants ) {
+        List<List<PolySegment>> evenSegments = new ArrayList<>();
+        for ( int i = 0; i < variants; i++ ) {
+            evenSegments.add( new ArrayList<>() );
+        }
+        for ( List<List<PolySegment>> unevenlySegment : unevenlySegments ) {
+            // how often a segment needs to be distributed
+            int ratio = variants / unevenlySegment.size();
+
+            int pos = 0;
+            for ( List<PolySegment> polySegment : unevenlySegment ) {
+                for ( int j = 0; j < ratio; j++ ) {
+                    evenSegments.get( pos ).addAll( polySegment );
+                    pos++;
+                }
+            }
+        }
+
+        return evenSegments;
     }
 
 
@@ -187,7 +272,8 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
             List<PolyEdge> edges = (List<PolyEdge>) kryo.readClassAndObject( input );
             List<String> names = (List<String>) kryo.readClassAndObject( input );
             List<GraphPropertyHolder> objects = (List<GraphPropertyHolder>) kryo.readClassAndObject( input );
-            return new PolyPath( nodes, edges, names, objects );
+            String variableName = (String) kryo.readClassAndObject( input );
+            return new PolyPath( nodes, edges, names, objects, variableName );
         }
 
     }
@@ -207,7 +293,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
         protected PolySegment( String sourceId, String edgeId, String targetId, EdgeDirection direction ) {
-            super( null, GraphObjectType.SEGMENT );
+            super( null, GraphObjectType.SEGMENT, null );
             this.sourceId = sourceId;
             this.edgeId = edgeId;
             this.targetId = targetId;
@@ -222,7 +308,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
 
         protected PolySegment( PolyNode source, PolyEdge edge, PolyNode target, EdgeDirection direction ) {
-            super( null, GraphObjectType.SEGMENT );
+            super( null, GraphObjectType.SEGMENT, null );
             isRef = false;
             this.sourceId = source.id;
             this.edgeId = edge.id;

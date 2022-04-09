@@ -66,11 +66,13 @@ public class CypherFunctions {
     }
 
 
+    @SuppressWarnings("unused")
     public static Enumerable<PolyNode> nodeExtract( PolyGraph graph ) {
         return Linq4j.asEnumerable( graph.getNodes().values() );
     }
 
 
+    @SuppressWarnings("unused")
     public static Enumerable<?> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
 
         PolyMap<String, PolyNode> ns = new PolyMap<>();
@@ -88,6 +90,7 @@ public class CypherFunctions {
     }
 
 
+    @SuppressWarnings("unused")
     public static Enumerable<PolyEdge> toEdge( Enumerable<?> edge ) {
         List<PolyEdge> edges = new ArrayList<>();
 
@@ -109,7 +112,7 @@ public class CypherFunctions {
 
             if ( !id.equals( oldId ) ) {
                 if ( oldId != null ) {
-                    edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT ) );
+                    edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
@@ -127,13 +130,14 @@ public class CypherFunctions {
         }
 
         if ( oldId != null ) {
-            edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT ) );
+            edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
         }
 
         return Linq4j.asEnumerable( edges );
     }
 
 
+    @SuppressWarnings("unused")
     public static Enumerable<PolyNode> toNode( Enumerable<?> node ) {
         List<PolyNode> nodes = new ArrayList<>();
 
@@ -151,7 +155,7 @@ public class CypherFunctions {
 
             if ( !id.equals( oldId ) ) {
                 if ( oldId != null ) {
-                    nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ) ) );
+                    nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), null ) );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
@@ -168,11 +172,10 @@ public class CypherFunctions {
         }
 
         if ( oldId != null ) {
-            nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ) ) );
+            nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), null ) );
         }
 
         return Linq4j.asEnumerable( nodes );
-
     }
 
 
@@ -189,8 +192,8 @@ public class CypherFunctions {
 
 
     @SuppressWarnings("unused")
-    public static GraphObject extractFrom( PolyPath path, int index ) {
-        return path.get( index );
+    public static GraphObject extractFrom( PolyPath path, String variableName ) {
+        return path.get( variableName );
     }
 
 

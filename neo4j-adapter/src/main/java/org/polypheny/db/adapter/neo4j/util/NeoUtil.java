@@ -170,7 +170,7 @@ public interface NeoUtil {
                 labels.add( e );
             }
         } );
-        return new PolyNode( id, new PolyDictionary( map ), labels );
+        return new PolyNode( id, new PolyDictionary( map ), labels, null );
     }
 
 
@@ -179,7 +179,7 @@ public interface NeoUtil {
         String id = map.remove( "_id" ).toString();
         String sourceId = map.remove( "__sourceId__" ).toString();
         String targetId = map.remove( "__targetId__" ).toString();
-        return new PolyEdge( id, new PolyDictionary( map ), List.of( relationship.type() ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT );
+        return new PolyEdge( id, new PolyDictionary( map ), List.of( relationship.type() ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT, null );
     }
 
     static Comparable<?> getComparableOrString( Value e ) {
@@ -294,7 +294,7 @@ public interface NeoUtil {
             case NODE:
                 PolyNode node = literal.getValueAs( PolyNode.class );
                 if ( node.isVariable() ) {
-                    return node_( node.variableName(), node, null, false ).build();
+                    return node_( node.getVariableName(), node, null, false ).build();
                 }
                 return node_( null, node, mappingLabel, isLiteral ).build();
             case EDGE:

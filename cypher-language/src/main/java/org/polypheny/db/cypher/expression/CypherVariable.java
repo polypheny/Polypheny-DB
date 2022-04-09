@@ -73,7 +73,7 @@ public class CypherVariable extends CypherExpression {
                                 context.rexBuilder.makeCall(
                                         pathField.getType(),
                                         OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_FROM_PATH ),
-                                        List.of( pathRef, context.rexBuilder.makeLiteral( pathField.getIndex(), context.numberType, false ) ) ) );
+                                        List.of( pathRef, context.rexBuilder.makeLiteral( pathField.getName() ) ) ) );
                     }
                 }
             }

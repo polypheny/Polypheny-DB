@@ -20,8 +20,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import org.polypheny.db.tools.ExpressionTransformable;
 
 @Getter
@@ -34,15 +32,13 @@ public abstract class GraphObject implements ExpressionTransformable {
     @Expose
     public final GraphObjectType type;
 
-    @Setter
-    @Getter
-    @Accessors(fluent = true)
-    private String variableName = null;
+    private final String variableName;
 
 
-    protected GraphObject( String id, GraphObjectType type ) {
+    protected GraphObject( String id, GraphObjectType type, String variableName ) {
         this.id = id;
         this.type = type;
+        this.variableName = variableName;
     }
 
 

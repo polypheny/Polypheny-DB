@@ -696,7 +696,7 @@ public class CypherToAlgConverter {
                 // nodes can be added as literals
                 for ( Pair<String, PolyNode> namedNode : nodes ) {
                     if ( !names.contains( namedNode.left ) ) {
-                        newNodes.add( Pair.of( namedNode.left, rexBuilder.makeLiteral( namedNode.right.variableName( namedNode.left ), nodeType, false ) ) );
+                        newNodes.add( Pair.of( namedNode.left, rexBuilder.makeLiteral( namedNode.right, nodeType, false ) ) );
                     }
                 }
 
@@ -713,18 +713,18 @@ public class CypherToAlgConverter {
                         newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, right ) ) ) );
                     } else if ( leftIndex == -1 && rightIndex == -1 ) {
                         // both sides are part of this stage (literal)
-                        RexNode stubL = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of() ).isVariable( true ).variableName( namedEdge.right.left ), nodeType, false );
-                        RexNode stubR = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of() ).isVariable( true ).variableName( namedEdge.right.right ), nodeType, false );
+                        RexNode stubL = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of(), namedEdge.right.left ).isVariable( true ), nodeType, false );
+                        RexNode stubR = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of(), namedEdge.right.right ).isVariable( true ), nodeType, false );
                         newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, stubL, stubR ) ) ) );
                     } else if ( leftIndex != -1 ) {
                         // left is from previous stage, right is not (inputRef)-[]-()
                         RexNode left = rexBuilder.makeInputRef( fields.get( leftIndex ).getType(), leftIndex );
-                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of() ).isVariable( true ).variableName( namedEdge.right.right ), nodeType, false );
+                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of(), namedEdge.right.right ).isVariable( true ), nodeType, false );
                         newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, stub ) ) ) );
                     } else {
                         // right is from previous stage, left is not ()-[]-(inputRef)
                         RexNode right = rexBuilder.makeInputRef( fields.get( rightIndex ).getType(), rightIndex );
-                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of() ).isVariable( true ).variableName( namedEdge.right.left ), nodeType, false );
+                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), List.of(), namedEdge.right.left ).isVariable( true ), nodeType, false );
                         newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, stub, right ) ) ) );
                     }
                 }

@@ -43,13 +43,13 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
     private boolean isVariable = false;
 
 
-    public PolyNode( @NonNull PolyCollections.PolyDictionary properties, List<String> labels ) {
-        this( UUID.randomUUID().toString(), properties, labels );
+    public PolyNode( @NonNull PolyCollections.PolyDictionary properties, List<String> labels, String variableName ) {
+        this( UUID.randomUUID().toString(), properties, labels, variableName );
     }
 
 
-    public PolyNode( String id, @NonNull PolyCollections.PolyDictionary properties, List<String> labels ) {
-        super( id, GraphObjectType.NODE, properties, labels );
+    public PolyNode( String id, @NonNull PolyCollections.PolyDictionary properties, List<String> labels, String variableName ) {
+        super( id, GraphObjectType.NODE, properties, labels, variableName );
     }
 
 
@@ -82,15 +82,26 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
                         PolyNode.class,
                         Expressions.constant( id ),
                         properties.getAsExpression(),
-                        EnumUtils.constantArrayList( labels, String.class ) ),
+                        EnumUtils.constantArrayList( labels, String.class ),
+                        Expressions.constant( getVariableName(), String.class ) ),
                 PolyNode.class
-        ), "isVariable", Expressions.constant( isVariable ) );
+        ), "isVariable", Expressions.constant( true ) );
     }
 
 
     @Override
     public void setLabels( List<String> labels ) {
         this.labels.addAll( labels );
+    }
+
+
+    public PolyNode copyNamed( String variableName ) {
+        if ( variableName == null ) {
+            // no copy needed
+            return this;
+        }
+        return new PolyNode( id, properties, labels, variableName );
+
     }
 
 
@@ -101,7 +112,6 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
             kryo.writeClassAndObject( output, object.id );
             kryo.writeClassAndObject( output, object.properties );
             kryo.writeClassAndObject( output, object.labels );
-            kryo.writeClassAndObject( output, object.variableName() );
             kryo.writeClassAndObject( output, object.isVariable );
         }
 
@@ -113,9 +123,8 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
             PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
             String variableName = (String) kryo.readClassAndObject( input );
             boolean isVariable = (boolean) kryo.readClassAndObject( input );
-            return (PolyNode) new PolyNode( id, properties, labels )
-                    .isVariable( isVariable )
-                    .variableName( variableName );
+            return new PolyNode( id, properties, labels, variableName )
+                    .isVariable( isVariable );
         }
 
     }

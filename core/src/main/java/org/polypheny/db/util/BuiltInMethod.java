@@ -461,7 +461,7 @@ public enum BuiltInMethod {
     GRAPH_NODE_MATCH( CypherFunctions.class, "nodeMatch", PolyGraph.class, PolyNode.class ),
     GRAPH_NODE_EXTRACT( CypherFunctions.class, "nodeExtract", PolyGraph.class ),
     GRAPH_MATCH_CTOR( MatchEnumerable.class, List.class ),
-    GRAPH_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, int.class ),
+    GRAPH_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, String.class ),
     CYPHER_EXTRACT_PROPERTY( CypherFunctions.class, "extractProperty", GraphPropertyHolder.class, String.class ),
     CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),

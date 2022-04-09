@@ -69,6 +69,7 @@ public class CypherTestTemplate {
 
     protected final TestNode MAX = TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) );
     protected final TestNode HANS = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) );
+    protected final TestNode HANS_AGE = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "age", 31 ) );
     protected final TestNode KIRA = TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) );
 
 
@@ -399,9 +400,9 @@ public class CypherTestTemplate {
             in.endObject();
 
             if ( type == GraphObjectType.EDGE ) {
-                return new PolyEdge( id, new PolyDictionary( properties ), labels, source, target, direction );
+                return new PolyEdge( id, new PolyDictionary( properties ), labels, source, target, direction, null );
             } else if ( type == GraphObjectType.NODE ) {
-                return new PolyNode( id, new PolyDictionary( properties ), labels );
+                return new PolyNode( id, new PolyDictionary( properties ), labels, null );
             } else {
                 throw new RuntimeException( "Was not able to parse GraphObject." );
             }

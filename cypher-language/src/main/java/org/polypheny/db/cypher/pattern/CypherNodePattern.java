@@ -65,7 +65,7 @@ public class CypherNodePattern extends CypherPattern {
             name = variable.getName();
         }
 
-        return Pair.of( name, new PolyNode( properties, labels ) );
+        return Pair.of( name, new PolyNode( properties, labels, name ) );
     }
 
 }
