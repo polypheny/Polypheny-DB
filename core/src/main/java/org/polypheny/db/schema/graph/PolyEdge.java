@@ -139,6 +139,29 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
     }
 
 
+    public String getRangeDescriptor() {
+        if ( fromTo == null ) {
+            return "";
+        }
+        String range = "*";
+
+        if ( fromTo.left != null && fromTo.right != null ) {
+            if ( fromTo.left.equals( fromTo.right ) ) {
+                return range + fromTo.right;
+            }
+            return range + fromTo.left + ".." + fromTo.right;
+        }
+        if ( fromTo.right != null ) {
+            return fromTo.right.toString();
+        }
+
+        if ( fromTo.left != null ) {
+            return fromTo.left.toString();
+        }
+        return range;
+    }
+
+
     public enum EdgeDirection {
         LEFT_TO_RIGHT,
         RIGHT_TO_LEFT,

@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.LiteralStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.Translator;
@@ -160,13 +161,13 @@ public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
 
         int i = 0;
         for ( PolyNode node : nodes ) {
-            String name = "n" + i;
-            uuidNameMapping.put( node.id, name );
-            statements.add( node_( name, node, implementor.getGraph().mappingLabel, true ) );
+            //String name = "n" + i;
+            uuidNameMapping.put( node.id, node.getVariableName() );
+            statements.add( node_( node, implementor.getGraph().mappingLabel, true ) );
             i++;
         }
         for ( PolyEdge edge : edges ) {
-            statements.add( path_( node_( uuidNameMapping.get( edge.source ) ), edge_( null, edge, true ), node_( uuidNameMapping.get( edge.target ) ) ) );
+            statements.add( path_( node_( uuidNameMapping.get( edge.source ) ), edge_( edge, true ), node_( uuidNameMapping.get( edge.target ) ) ) );
         }
 
         return statements;
@@ -185,13 +186,7 @@ public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
 
 
     private void handleDelete( NeoGraphImplementor implementor ) {
-        List<LiteralStatement> fieldNames = implementor
-                .getLast()
-                .getRowType()
-                .getFieldList()
-                .stream()
-                .map( f -> literal_( f.getName() ) )
-                .collect( Collectors.toList() );
+        List<LiteralStatement> fieldNames = ids.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() );
         implementor.add( delete_( list_( fieldNames ) ) );
     }
 

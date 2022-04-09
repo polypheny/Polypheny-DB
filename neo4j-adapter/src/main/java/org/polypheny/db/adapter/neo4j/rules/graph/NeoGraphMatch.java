@@ -65,10 +65,10 @@ public class NeoGraphMatch extends GraphMatch implements NeoGraphAlg {
                     neoMatches.add( node_( match.left, labels_( mappingLabel ) ) );
                     break;
                 case CYPHER_NODE_MATCH:
-                    neoMatches.add( node_( match.left, ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyNode.class ), mappingLabel, false ) );
+                    neoMatches.add( node_( ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyNode.class ), mappingLabel, false ) );
                     break;
                 case CYPHER_PATH_MATCH:
-                    neoMatches.add( path_( ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyPath.class ), mappingLabel, false ) );
+                    neoMatches.add( path_( match.left, ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyPath.class ), mappingLabel, false ) );
                     break;
             }
         }

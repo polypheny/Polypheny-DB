@@ -16,8 +16,15 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.where_;
+
+import java.util.HashMap;
+import java.util.List;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.graph.GraphFilter;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -41,7 +48,15 @@ public class NeoGraphFilter extends GraphFilter implements NeoGraphAlg {
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
+        implementor.visitChild( 0, getInput() );
+        Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
+        implementor.add( where_( list_( List.of( literal_( getCondition().accept( translator ) ) ) ) ) );
+    }
 
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoGraphFilter( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getCondition() );
     }
 
 }

@@ -24,6 +24,7 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -158,7 +159,20 @@ public interface NeoUtil {
     }
 
     static PolyPath asPolyPath( Path path ) {
-        return null;
+        Iterator<Node> nodeIter = path.nodes().iterator();
+        Iterator<Relationship> edgeIter = path.relationships().iterator();
+        List<PolyNode> nodes = new ArrayList<>();
+        List<PolyEdge> edges = new ArrayList<>();
+        while ( nodeIter.hasNext() ) {
+            nodes.add( asPolyNode( nodeIter.next() ) );
+            if ( nodeIter.hasNext() ) {
+                edges.add( asPolyEdge( edgeIter.next() ) );
+            }
+        }
+
+        return PolyPath.create(
+                nodes.stream().map( n -> Pair.of( (String) null, n ) ).collect( Collectors.toList() ),
+                edges.stream().map( e -> Pair.of( (String) null, e ) ).collect( Collectors.toList() ) );
     }
 
     static PolyNode asPolyNode( Node node ) {
@@ -294,11 +308,11 @@ public interface NeoUtil {
             case NODE:
                 PolyNode node = literal.getValueAs( PolyNode.class );
                 if ( node.isVariable() ) {
-                    return node_( node.getVariableName(), node, null, false ).build();
+                    return node_( node, null, false ).build();
                 }
-                return node_( null, node, mappingLabel, isLiteral ).build();
+                return node_( node, mappingLabel, isLiteral ).build();
             case EDGE:
-                return edge_( null, literal.getValueAs( PolyEdge.class ), isLiteral ).build();
+                return edge_( literal.getValueAs( PolyEdge.class ), isLiteral ).build();
             case PATH:
                 break;
             case DISTINCT:
@@ -326,7 +340,7 @@ public interface NeoUtil {
     static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName ) {
         switch ( operatorName ) {
             case AND:
-                return o -> String.join( " AND ", o );
+                return o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " AND " ) );
             case DIVIDE:
                 return o -> String.format( "toFloat(%s) / %s", o.get( 0 ), o.get( 1 ) );
             case DIVIDE_INTEGER:
@@ -354,7 +368,7 @@ public interface NeoUtil {
             case IS_NOT_DISTINCT_FROM:
                 return o -> String.format( "%s <> %s", o.get( 0 ), o.get( 1 ) );
             case OR:
-                return o -> String.join( " OR ", o );
+                return o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " OR " ) );
             case PLUS:
             case DATETIME_PLUS:
                 return o -> String.format( "%s + %s", o.get( 0 ), o.get( 1 ) );
@@ -383,9 +397,9 @@ public interface NeoUtil {
             case COALESCE:
                 return o -> "coalesce(" + String.join( ", ", o ) + ")";
             case NOT_LIKE:
-                return o -> String.format( "NOT ( %s =~ %s )", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+                return o -> String.format( "NOT ( %s =~ '%s' )", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
             case LIKE:
-                return o -> String.format( "%s =~ %s", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+                return o -> String.format( "%s =~ '%s'", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
             case POWER:
                 return o -> String.format( "%s^%s", o.get( 0 ), o.get( 1 ) );
             case SQRT:
@@ -454,6 +468,10 @@ public interface NeoUtil {
                     }
                     return String.format( "%s.%s", name, o.get( 1 ) );
                 };
+            case CYPHER_HAS_PROPERTY:
+                return o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), o.get( 1 ) );
+            case COUNT:
+                return o -> String.format( "count(%s)", String.join( ",", o ) );
             default:
                 return null;
         }
@@ -462,11 +480,11 @@ public interface NeoUtil {
 
     static String getAsRegex( String like ) {
         String adjusted = like.replace( "\\.", "." );
-        adjusted = adjusted.replace( ".", "_dot_" );
+        //adjusted = adjusted.replace( ".", "_dot_" );
         adjusted = adjusted.replace( "\\*", "*" );
         adjusted = adjusted.replace( "*", "_star_" );
         adjusted = adjusted.replace( "%", ".*" );
-        adjusted = adjusted.replace( ".", "_" );
+        //adjusted = adjusted.replace( ".", "_" );
         adjusted = adjusted.replace( "_dot_", "." );
         adjusted = adjusted.replace( "_star_", "*" );
         return adjusted;

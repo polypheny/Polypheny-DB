@@ -150,16 +150,10 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String handleExtractFromPath( RexCall call ) {
-        AlgDataTypeField field = beforeFields.get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
+        //AlgDataTypeField field = beforeFields.get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
         assert call.operands.get( 1 ).isA( Kind.LITERAL );
-        int elementIndex = ((RexLiteral) call.operands.get( 1 )).getValueAs( Integer.class );
-        List<String> names = field.getType().getFieldNames();
 
-        while ( names.size() - 1 < elementIndex ) {
-            elementIndex--;
-        }
-
-        return names.get( elementIndex );
+        return ((RexLiteral) call.operands.get( 1 )).getValueAs( String.class );
     }
 
 

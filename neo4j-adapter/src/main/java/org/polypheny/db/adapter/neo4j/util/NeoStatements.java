@@ -42,7 +42,10 @@ public interface NeoStatements {
         WITH( "WITH" ),
         SET( "SET" ),
         DELETE( "DELETE" ),
-        UNWIND( "UNWIND" );
+        UNWIND( "UNWIND" ),
+        LIMIT( "LIMIT" ),
+        SKIP( "SKIP" ),
+        ORDER_BY( "ORDER BY" );
 
         public final String identifier;
 
@@ -88,7 +91,7 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return type + " " + statements.build();
+            return type.identifier + " " + statements.build();
         }
 
 
@@ -182,7 +185,7 @@ public interface NeoStatements {
         return node_( identifier, labels_(), List.of() );
     }
 
-    static NodeStatement node_( String identifier, PolyNode node, String mappingLabel, boolean addId ) {
+    static NodeStatement node_( PolyNode node, String mappingLabel, boolean addId ) {
         List<PropertyStatement> statements = new ArrayList<>( properties_( node.properties ) );
         if ( addId ) {
             statements.add( property_( "_id", string_( (node.id) ) ) );
@@ -191,7 +194,7 @@ public interface NeoStatements {
         if ( mappingLabel != null ) {
             labels.add( mappingLabel );
         }
-        String defIdentifier = identifier != null ? identifier : node.getVariableName() == null ? null : node.getVariableName();
+        String defIdentifier = node.getVariableName();
 
         return node_( defIdentifier, labels_( labels ), statements );
     }
@@ -203,20 +206,22 @@ public interface NeoStatements {
         private final LabelsStatement label;
         private final ListStatement<PropertyStatement> properties;
         private final EdgeDirection direction;
+        private final String range;
 
 
-        protected EdgeStatement( @Nullable String identifier, LabelsStatement labelsStatement, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
+        protected EdgeStatement( @Nullable String identifier, String range, LabelsStatement labelsStatement, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
             this.identifier = identifier == null ? "" : identifier;
             assert labelsStatement.labels.size() <= 1 : "Edges only allow one label.";
             this.label = labelsStatement;
             this.properties = properties;
             this.direction = direction;
+            this.range = range;
         }
 
 
         @Override
         public String build() {
-            String statement = String.format( "-[%s%s %s]-", identifier, label.build(), properties.build() );
+            String statement = String.format( "-[%s%s%s %s]-", identifier, label.build(), range, properties.build() );
             if ( direction == EdgeDirection.LEFT_TO_RIGHT ) {
                 statement = statement + ">";
             } else if ( direction == EdgeDirection.RIGHT_TO_LEFT ) {
@@ -228,68 +233,73 @@ public interface NeoStatements {
 
     }
 
-    static EdgeStatement edge_( @Nullable String identifier, List<String> labels, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
-        return new EdgeStatement( identifier, labels_( labels ), properties, direction );
+    static EdgeStatement edge_( @Nullable String identifier, String range, List<String> labels, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
+        return new EdgeStatement( identifier, range, labels_( labels ), properties, direction );
     }
 
     static EdgeStatement edge_( @Nullable String identifier, String label, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
-        return new EdgeStatement( identifier, labels_( label ), properties, direction );
+        return new EdgeStatement( identifier, "", labels_( label ), properties, direction );
     }
 
     static EdgeStatement edge_( @Nullable String identifier ) {
-        return new EdgeStatement( identifier, labels_(), list_( List.of() ), EdgeDirection.NONE );
+        return new EdgeStatement( identifier, "", labels_(), list_( List.of() ), EdgeDirection.NONE );
     }
 
-    static EdgeStatement edge_( @Nullable String identifier, PolyEdge edge, boolean addId ) {
+    static EdgeStatement edge_( PolyEdge edge, boolean addId ) {
         List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties ) );
         if ( addId ) {
             props.add( property_( "_id", string_( edge.id ) ) );
             props.add( property_( "__sourceId__", string_( edge.source ) ) );
             props.add( property_( "__targetId__", string_( edge.target ) ) );
         }
-        String defIdentifier = identifier != null ? identifier : edge.getVariableName() == null ? null : edge.getVariableName();
+        String defIdentifier = edge.getVariableName();
 
-        return edge_( defIdentifier, edge.labels, list_( props, "{", "}" ), edge.direction );
+        return edge_( defIdentifier, edge.getRangeDescriptor(), edge.labels, list_( props, "{", "}" ), edge.direction );
     }
 
     class PathStatement extends NeoStatement {
 
         private final List<ElementStatement> pathElements;
+        private final String identifier;
 
 
-        protected PathStatement( List<ElementStatement> pathElements ) {
+        protected PathStatement( String identifier, List<ElementStatement> pathElements ) {
             super( null );
             this.pathElements = pathElements;
+            this.identifier = identifier;
         }
 
 
         @Override
         public String build() {
-            return pathElements.stream().map( NeoStatement::build ).collect( Collectors.joining() );
+            String namedPath = identifier == null || identifier.contains( "$" ) ? "" : String.format( "%s = ", identifier );
+            return namedPath + pathElements.stream().map( NeoStatement::build ).collect( Collectors.joining() );
         }
 
     }
 
     static PathStatement path_( ElementStatement... elements ) {
-        return new PathStatement( Arrays.asList( elements ) );
+        return new PathStatement( null, Arrays.asList( elements ) );
     }
 
     static PathStatement path_( List<ElementStatement> elements ) {
-        return new PathStatement( elements );
+        return new PathStatement( null, elements );
     }
 
 
-    static PathStatement path_( PolyPath path, @Nullable String mappingLabel, boolean addId ) {
+    static PathStatement path_( @Nullable String identifier, PolyPath path, @Nullable String mappingLabel, boolean addId ) {
         int i = 0;
         List<ElementStatement> elements = new ArrayList<>();
         for ( GraphObject object : path.getPath() ) {
             elements.add( i % 2 == 0
-                    ? node_( path.getNames().get( i ), (PolyNode) object, mappingLabel, addId )
-                    : edge_( path.getNames().get( i ), (PolyEdge) object, addId ) );
+                    ? node_( (PolyNode) object, mappingLabel, addId )
+                    : edge_( (PolyEdge) object, addId ) );
             i++;
         }
 
-        return new PathStatement( elements );
+        String name = path.getVariableName() == null ? identifier : path.getVariableName();
+
+        return new PathStatement( name, elements );
     }
 
 
@@ -602,6 +612,42 @@ public interface NeoStatements {
 
     static DeleteStatement delete_( NeoStatement... statement ) {
         return new DeleteStatement( list_( Arrays.asList( statement ) ) );
+    }
+
+    class LimitStatement extends OperatorStatement {
+
+        protected LimitStatement( NeoStatement statement ) {
+            super( StatementType.LIMIT, list_( List.of( statement ) ) );
+        }
+
+    }
+
+    static LimitStatement limit_( int limit ) {
+        return new LimitStatement( literal_( limit ) );
+    }
+
+    class SkipStatement extends OperatorStatement {
+
+        protected SkipStatement( NeoStatement statement ) {
+            super( StatementType.SKIP, list_( List.of( statement ) ) );
+        }
+
+    }
+
+    static SkipStatement skip_( int offset ) {
+        return new SkipStatement( literal_( offset ) );
+    }
+
+    class OrderByStatement extends OperatorStatement {
+
+        protected OrderByStatement( ListStatement<?> statements ) {
+            super( StatementType.ORDER_BY, statements );
+        }
+
+    }
+
+    static OrderByStatement orderBy_( ListStatement<?> statements ) {
+        return new OrderByStatement( statements );
     }
 
 }

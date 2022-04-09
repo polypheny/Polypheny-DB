@@ -16,17 +16,25 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.logical.graph.GraphAggregate;
 import org.polypheny.db.algebra.logical.graph.GraphProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -54,13 +62,30 @@ public class NeoGraphAggregate extends GraphAggregate implements NeoGraphAlg {
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
+        implementor.visitChild( 0, getInput() );
         if ( implementor.getLast() instanceof GraphProject ) {
             OperatorStatement last = implementor.removeLast();
-            List<String> names = new ArrayList<>();
-            int i = 0;
-            for ( int index : groupSet.asSet() ) {
-                names.add( implementor.getLast().getRowType().getFieldNames().get( i ) );
+            List<String> finalRow = new ArrayList<>();
+            for ( AlgDataTypeField ignored : getRowType().getFieldList() ) {
+                finalRow.add( null );
             }
+
+            List<String> lastNames = implementor.getLast().getRowType().getFieldNames();
+            List<String> currentNames = getRowType().getFieldNames();
+
+            for ( int index : groupSet.asSet() ) {
+                String name = lastNames.get( index );
+                finalRow.set( currentNames.indexOf( name ), name );
+            }
+            for ( AggregateCall agg : aggCalls ) {
+                List<String> refs = agg.getArgList().stream().map( lastNames::get ).collect( Collectors.toList() );
+                if ( refs.isEmpty() ) {
+                    refs.add( "*" );
+                }
+                finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.getAggregation().getOperatorName() ) ).apply( refs ) );
+            }
+
+            implementor.add( with_( list_( finalRow.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() ) ) ) );
 
         }
 

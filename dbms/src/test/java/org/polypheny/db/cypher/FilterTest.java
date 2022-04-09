@@ -34,17 +34,6 @@ public class FilterTest extends CypherTestTemplate {
 
 
     @Test
-    public void simpleLabelFilter() {
-        execute( SINGLE_NODE_PERSON_1 );
-        execute( SINGLE_NODE_ANIMAL );
-        Result res = execute( "MATCH (p) WHERE p:Person RETURN p" );
-        assertNode( res, 0 );
-
-        assert containsRows( res, true, false, Row.of( MAX ) );
-    }
-
-
-    @Test
     public void simplePropertyFilter() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );

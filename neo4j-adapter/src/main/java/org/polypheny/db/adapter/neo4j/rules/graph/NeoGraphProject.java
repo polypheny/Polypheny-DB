@@ -16,8 +16,10 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.return_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
 import java.util.ArrayList;
@@ -54,16 +56,24 @@ public class NeoGraphProject extends GraphProject implements NeoGraphAlg {
         implementor.visitChild( 0, getInput() );
 
         if ( !implementor.isDml() ) {
-            List<NeoStatement> statements = new ArrayList<>();
+
             int i = 0;
+            List<NeoStatement> statements = new ArrayList<>();
             for ( RexNode project : getProjects() ) {
                 Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
-                //if ( project.isA( Kind.INPUT_REF ) && implementor.getLast().getRowType().getFieldNames().get( ((RexInputRef) project).getIndex() ).equals( getNames().get( i ) ) ) {
-                statements.add( literal_( project.accept( translator ) ) );
-                /*} else {
-                    statements.add( as_( literal_( project.accept( translator ) ), literal_( getNames().get( i ) ) ) );
-                }*/
+                String name = project.accept( translator );
+                if ( names.get( i ) != null && !name.equals( names.get( i ) ) && !names.get( i ).contains( "." ) ) {
+                    statements.add( as_( literal_( project.accept( translator ) ), literal_( names.get( i ) ) ) );
+                } else {
+                    statements.add( literal_( project.accept( translator ) ) );
+                }
+
                 i++;
+            }
+
+            if ( implementor.isSorted() ) {
+                implementor.replaceReturn( return_( list_( statements ) ) );
+                return;
             }
 
             implementor.add( with_( list_( statements ) ) );

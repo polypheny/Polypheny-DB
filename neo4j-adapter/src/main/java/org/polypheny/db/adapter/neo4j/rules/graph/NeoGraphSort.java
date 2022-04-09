@@ -16,14 +16,26 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.limit_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.orderBy_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.skip_;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements;
 import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.logical.graph.GraphSort;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 public class NeoGraphSort extends GraphSort implements NeoGraphAlg {
@@ -41,6 +53,28 @@ public class NeoGraphSort extends GraphSort implements NeoGraphAlg {
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
+        implementor.visitChild( 0, getInput() );
+        implementor.addReturnIfNecessary();
+        implementor.setSorted( true );
+
+        List<String> lastNames = implementor.getLast().getRowType().getFieldNames();
+
+        List<String> groups = new ArrayList<>();
+        for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
+            groups.add( lastNames.get( fieldCollation.getFieldIndex() ) + (fieldCollation.direction == Direction.ASCENDING ? "" : " DESC ") );
+        }
+
+        if ( !groups.isEmpty() ) {
+            implementor.add( orderBy_( list_( groups.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() ) ) ) );
+        }
+
+        if ( offset != null ) {
+            implementor.add( skip_( ((RexLiteral) offset).getValueAs( Integer.class ) ) );
+        }
+
+        if ( fetch != null ) {
+            implementor.add( limit_( ((RexLiteral) fetch).getValueAs( Integer.class ) ) );
+        }
 
     }
 

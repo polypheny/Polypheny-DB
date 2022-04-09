@@ -36,6 +36,7 @@ import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.ReturnStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.StatementType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -46,6 +47,10 @@ import org.polypheny.db.type.PathType;
 import org.polypheny.db.util.Pair;
 
 public class NeoGraphImplementor extends AlgShuttleImpl {
+
+    @Setter
+    @Getter
+    private boolean sorted;
 
     @Setter
     @Getter
@@ -85,7 +90,10 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
 
 
     public String build() {
-        addReturnIfNecessary();
+        if ( !sorted ) {
+            addReturnIfNecessary();
+        }
+
         return statements.stream().map( NeoStatement::build ).collect( Collectors.joining( "\n" ) );
     }
 
@@ -169,6 +177,23 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
         OperatorStatement statement = statements.get( statements.size() - 1 );
         statements.remove( statements.size() - 1 );
         return statement;
+
+    }
+
+
+    public void replaceReturn( ReturnStatement return_ ) {
+        Integer lastReturn = null;
+        int i = 0;
+        for ( OperatorStatement statement : statements ) {
+            if ( statement instanceof ReturnStatement ) {
+                lastReturn = i;
+            }
+            i++;
+        }
+        if ( lastReturn == null ) {
+            throw new RuntimeException( "Could not find a RETURN to replace" );
+        }
+        statements.set( lastReturn, return_ );
 
     }
 
