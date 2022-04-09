@@ -168,7 +168,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
     @Override
     public void replicateChanges() {
-        System.out.println( this + " is now replicating changes " );
+        System.out.println( this + " is now replicating changes " );  // TODO @HENNLO first mark placement as INFINITELY OUTDATED that it doesnt receive anymore updates
     }
 
 

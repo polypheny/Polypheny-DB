@@ -16,18 +16,19 @@
 
 package org.polypheny.db.routing.routers;
 
-import com.google.common.collect.ImmutableList;
+
 import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -104,17 +105,30 @@ public class SimpleRouter extends AbstractDqlRouter {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+
+        /*for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
+            }
+        }*/
+        // TODO @HENNLO verify
+
+        CatalogDataPlacement designatedPlacement = null;
+        // Only Get primary copies
+        for ( CatalogDataPlacement dataPlacement : catalog.getDataPlacementsByReplicationStrategy( table.id, ReplicationStrategy.EAGER ) ) {
+
+            if ( dataPlacement.columnPlacementsOnAdapter.size() > numOfPlacements ) {
+                adapterIdWithMostPlacements = dataPlacement.adapterId;
+                numOfPlacements = dataPlacement.columnPlacementsOnAdapter.size();
+                designatedPlacement = dataPlacement;
             }
         }
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         for ( long cid : table.columnIds ) {
-            if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
+            if ( designatedPlacement.columnPlacementsOnAdapter.contains( cid ) ) {
                 placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
             } else {
                 placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );

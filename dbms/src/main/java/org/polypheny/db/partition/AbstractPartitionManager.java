@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -70,7 +71,9 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
                 for ( long columnId : catalogTable.columnIds ) {
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
-                    ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
+                    ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId )
+                            || !catalog.getDataPlacement( ccp.adapterId, catalogTable.id ).replicationStrategy.equals( ReplicationStrategy.EAGER ) );
+
                     if ( !ccps.isEmpty() ) {
                         // Get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );
