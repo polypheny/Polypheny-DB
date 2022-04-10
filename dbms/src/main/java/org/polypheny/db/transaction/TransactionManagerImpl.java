@@ -89,7 +89,6 @@ public class TransactionManagerImpl implements TransactionManager {
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
-        log.warn( "new Transaction " + xid.hashCode() );
         transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database, analyze, origin, flavor ) );
         return transactions.get( xid );
     }

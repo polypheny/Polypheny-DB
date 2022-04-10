@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -338,7 +339,7 @@ public class CypherFunctions {
         if ( !edge.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( edge.properties.size(), edge.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( edge.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values() ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( Object::toString ).collect( Collectors.toList() ) ) );
             drainInserts( enumerables.get( i ), edge.labels.size() );
             context.resetParameterValues();
         }
@@ -359,7 +360,7 @@ public class CypherFunctions {
         if ( !node.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values() ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( Object::toString ).collect( Collectors.toList() ) ) );
             drainInserts( enumerables.get( i ), node.properties.size() );
             context.resetParameterValues();
         }
