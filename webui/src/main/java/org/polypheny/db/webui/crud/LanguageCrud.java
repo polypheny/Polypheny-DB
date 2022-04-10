@@ -472,6 +472,9 @@ public class LanguageCrud {
                 statement.getOverviewDuration().stop( "Parsing" );
             }
 
+            int i = 0;
+            List<String> splits = List.of( query.split( ";" ) );
+            assert statements.size() <= splits.size();
             for ( Node node : statements ) {
                 CypherStatement stmt = (CypherStatement) node;
 
@@ -484,7 +487,7 @@ public class LanguageCrud {
 
                 if ( stmt.isDDL() ) {
                     cypherProcessor.prepareDdl( statement, node, parameters );
-                    Result result = new Result( 1 ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                    Result result = new Result( 1 ).setGeneratedQuery( splits.get( i ) ).setXid( transaction.getXid().toString() );
                     results.add( result );
                 } else {
                     if ( transaction.isAnalyze() ) {
@@ -506,6 +509,7 @@ public class LanguageCrud {
                         statement.getOverviewDuration().stop( "Execution" );
                     }
                 }
+                i++;
             }
             commitAndFinish( transaction, queryAnalyzer, results, executionTime );
 
@@ -516,13 +520,12 @@ public class LanguageCrud {
             ArrayList<Result> results = new ArrayList<>();
             attachError( transaction, results, query, t );
             return results;
-            //return Collections.singletonList( new Result( t ).setGeneratedQuery( request.query ).setXid( transaction.getXid().toString() ) );
         }
     }
 
 
     private static void attachError( Transaction transaction, List<Result> results, String query, Throwable t ) {
-        String msg = t.getCause() == null ? null : t.getCause().getMessage();
+        String msg = t.getMessage() == null ? "" : t.getMessage();
         Result result = new Result( msg ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
         results.add( result );
     }
