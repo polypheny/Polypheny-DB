@@ -400,6 +400,16 @@ public abstract class DdlManager {
     public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) throws LastPlacementException;
 
     /**
+     * Refreshes one or many lazy replicated DataPlacements of a given table.
+     *
+     * @param catalogTable the table
+     * @param stores the stores that shall be refreshed
+     * @param statement the used statement
+     */
+    public abstract void refreshDataPlacements( CatalogTable catalogTable, List<DataStore> stores, Statement statement ) throws UnknownAdapterException;
+
+
+    /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
      * the column with type automatic, the placement type is changed to manual.
      *

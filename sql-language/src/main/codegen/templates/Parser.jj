@@ -6516,6 +6516,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PERIOD: "PERIOD" >
 |   < PERMUTE: "PERMUTE" >
 |   < PLACEMENT: "PLACEMENT" >
+|   < PLACEMENTS: "PLACEMENTS" >
 |   < PLACING: "PLACING" >
 |   < PLAN: "PLAN" >
 |   < PLI: "PLI" >
@@ -6542,6 +6543,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < REAL: "REAL" >
 |   < RECURSIVE: "RECURSIVE" >
 |   < REF: "REF" >
+|   < REFRESH: "REFRESH" >
 |   < REFRESHABLE: "REFRESHABLE" >
 |   < REFERENCES: "REFERENCES" >
 |   < REFERENCING: "REFERENCING" >

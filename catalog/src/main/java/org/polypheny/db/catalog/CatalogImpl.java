@@ -5296,6 +5296,19 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Probes if a Data Placement on an adapter for a specific table already exists.
+     *
+     * @param adapterId Adapter on which to check
+     * @param tableId Table which to check
+     * @return teh response of the probe
+     */
+    public boolean checkIfExistsDataPlacement( int adapterId, long tableId ) {
+        CatalogDataPlacement placement = dataPlacements.get( new Object[]{ adapterId, tableId } );
+        return placement != null;
+    }
+
+
     @Override
     public List<CatalogKey> getTableKeys( long tableId ) {
         return keys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );

@@ -1435,7 +1435,8 @@ public class DdlManagerImpl extends DdlManager {
 
                 // Check if all partition placements are already UPTODATE ergo received all updates
                 for ( long partitionId : targetDataPlacement.getAllPartitionIds() ) {
-                    if ( lazyReplicationEngine.getPendingReplicationsPerPlacementSize( adapterId, partitionId ) > 0 ) {
+                    if ( lazyReplicationEngine.getPendingReplicationsPerPlacementSize( adapterId, partitionId ) > 0
+                            || catalog.getPartitionPlacement( adapterId, partitionId ).state.equals( PlacementState.INFINITELY_OUTDATED ) ) {
                         throw new NotYetUpToDateException( storeInstance.getAdapterName(), placementPropertyInfo.table.name );
                     }
                 }
@@ -1575,6 +1576,47 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    /**
+     * Refreshes one or many lazy replicated DataPlacements of a given table.
+     *
+     * @param catalogTable the table
+     * @param stores the stores that shall be refreshed
+     * @param statement the used statement
+     */
+    @Override
+    public void refreshDataPlacements( CatalogTable catalogTable, List<DataStore> stores, Statement statement ) throws UnknownAdapterException {
+        if ( stores.isEmpty() ) {
+            throw new UnknownAdapterException( "No stores have been selected" );
+        }
+
+        // Get All DataPlacements
+        List<CatalogDataPlacement> dataPlacements = new ArrayList<>();
+        stores.forEach( store -> dataPlacements.add( catalog.getDataPlacement( store.getAdapterId(), catalogTable.id ) ) );
+
+        // Label all DataPlacements as INFINITELY OUTDATED
+        for ( CatalogDataPlacement dataPlacement : dataPlacements ) {
+            catalog.updateDataPlacementState( dataPlacement.adapterId, catalogTable.id, PlacementState.INFINITELY_OUTDATED );
+        }
+
+        // Lock those placements
+
+        // Start DataMigration for each store
+        for ( DataStore storeInstance : stores ) {
+
+            List<CatalogColumn> necessaryColumns = new LinkedList<>();
+            catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
+
+            // Take care this locks the table
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ),
+                    necessaryColumns, catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
+
+            // Reset The PlacementState back to refreshable since it should now receive data replication actively again.
+            catalog.updateDataPlacementState( storeInstance.getAdapterId(), catalogTable.id, PlacementState.REFRESHABLE );
+        }
     }
 
 

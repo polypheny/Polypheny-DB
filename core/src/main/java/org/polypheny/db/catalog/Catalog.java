@@ -1683,6 +1683,15 @@ public abstract class Catalog {
     public abstract boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId );
 
     /**
+     * Probes if a Data Placement on an adapter for a specific table already exists.
+     *
+     * @param adapterId Adapter on which to check
+     * @param tableId Table which to check
+     * @return teh response of the probe
+     */
+    public abstract boolean checkIfExistsDataPlacement( int adapterId, long tableId );
+
+    /**
      * Deletes all the dependencies of a view. This is used when deleting a view.
      *
      * @param catalogView view for which to delete its dependencies

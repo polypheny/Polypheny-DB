@@ -104,6 +104,7 @@ data: {
             "org.polypheny.db.sql.sql.ddl.altertable.SqlAlterTableModifyPlacementDropColumn"
             "org.polypheny.db.sql.sql.ddl.altertable.SqlAlterTableModifyPlacementProperties"
             "org.polypheny.db.sql.sql.ddl.altertable.SqlAlterTableOwner"
+            "org.polypheny.db.sql.sql.ddl.altertable.SqlAlterTableRefreshPlacement"
             "org.polypheny.db.sql.sql.ddl.altertable.SqlAlterTableRename"
             "org.polypheny.db.sql.sql.ddl.altertable.SqlAlterTableRenameColumn"
             "org.polypheny.db.sql.sql.ddl.alterview.SqlAlterViewRename"

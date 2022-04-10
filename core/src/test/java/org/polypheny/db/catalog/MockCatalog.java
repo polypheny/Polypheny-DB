@@ -1048,6 +1048,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public boolean checkIfExistsDataPlacement( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void removeTableFromPeriodicProcessing( long tableId ) {
         throw new NotImplementedException();
     }
