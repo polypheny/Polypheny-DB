@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.enumerable.EnumUtils;
@@ -193,6 +194,8 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
                     // set left if moved from initial
                     if ( j != 0 ) {
                         node = empty;
+                    } else {
+                        node = nodes.get( i );
                     }
 
                     // set right to fit end
@@ -279,6 +282,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
     }
 
 
+    @Slf4j
     public static class PolySegment extends GraphObject {
 
         public final String sourceId;
@@ -323,6 +327,10 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
         public boolean matches( PolyNode source, PolyEdge edge, PolyNode target ) {
             assert !isRef;
 
+            if ( source == null ) {
+                log.warn( "There appeared an empty source on an edge" );
+                return false;
+            }
             assert this.source != null;
             if ( !source.labelAndPropertyMatch( this.source ) ) {
                 return false;
@@ -333,6 +341,10 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
                 return false;
             }
 
+            if ( target == null ) {
+                log.warn( "There appeared an empty target on an edge" );
+                return false;
+            }
             assert this.target != null;
             if ( !target.labelAndPropertyMatch( this.target ) ) {
                 return false;

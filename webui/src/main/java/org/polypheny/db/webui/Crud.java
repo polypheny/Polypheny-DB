@@ -4048,8 +4048,13 @@ public class Crud implements InformationObserver {
 
 
     public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
+        return getTransaction( analyze, useCache, transactionManager, userId, databaseId, "Polypheny-UI" );
+    }
+
+
+    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId, String origin ) {
         try {
-            Transaction transaction = transactionManager.startTransaction( userId, databaseId, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
+            Transaction transaction = transactionManager.startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.FILE );
             transaction.setUseCache( useCache );
             return transaction;
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {

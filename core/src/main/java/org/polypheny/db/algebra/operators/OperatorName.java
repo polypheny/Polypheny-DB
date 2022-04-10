@@ -1413,6 +1413,7 @@ public enum OperatorName {
     CYPHER_REMOVE_PROPERTY( LangFunctionOperator.class );
 
 
+    @Getter
     private final Class<? extends Operator> clazz;
 
 

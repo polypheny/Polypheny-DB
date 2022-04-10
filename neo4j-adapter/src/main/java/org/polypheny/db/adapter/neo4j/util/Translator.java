@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,12 +29,14 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -47,6 +50,8 @@ public class Translator extends RexVisitorImpl<String> {
     private final List<AlgDataTypeField> beforeFields;
     private final String mappingLabel;
     private final boolean useBrackets;
+
+    private static List<OperatorName> binaries = Arrays.stream( OperatorName.values() ).filter( o -> o.getClazz() == BinaryOperator.class ).collect( Collectors.toList() );
 
 
     public Translator( AlgDataType afterRowType, AlgDataType beforeRowType, Map<String, String> mapping, NeoRelationalImplementor implementor, @Nullable String mappingLabel, boolean useBrackets ) {
@@ -137,15 +142,43 @@ public class Translator extends RexVisitorImpl<String> {
         if ( call.op.getOperatorName() == OperatorName.CYPHER_EXTRACT_FROM_PATH ) {
             return handleExtractFromPath( call );
         }
+        if ( call.op.getOperatorName() == OperatorName.CYPHER_SET_PROPERTY ) {
+            return handleSetProperty( call );
+        }
+        if ( binaries.contains( call.op.getOperatorName() ) ) {
+            return handleBinaries( call );
+        }
 
         List<String> ops = call.operands.stream().map( o -> o.accept( this ) ).collect( Collectors.toList() );
 
+        return getFinalFunction( call, ops );
+    }
+
+
+    private String getFinalFunction( RexCall call, List<String> ops ) {
         Function1<List<String>, String> getter = NeoUtil.getOpAsNeo( call.op.getOperatorName() );
         assert getter != null : "Function is not supported by the Neo4j adapter.";
         if ( useBrackets ) {
             return "(" + getter.apply( ops ) + ")";
         }
         return " " + getter.apply( ops ) + " ";
+    }
+
+
+    private String handleBinaries( RexCall call ) {
+        RexNode leftRex = call.operands.get( 0 );
+        RexNode rightRex = call.operands.get( 1 );
+        String left = leftRex.accept( this );
+        if ( leftRex.isA( Kind.LITERAL ) && PolyType.STRING_TYPES.contains( leftRex.getType().getPolyType() ) ) {
+            left = String.format( "'%s'", left );
+        }
+        String right = rightRex.accept( this );
+        if ( rightRex.isA( Kind.LITERAL ) && PolyType.STRING_TYPES.contains( rightRex.getType().getPolyType() ) ) {
+            right = String.format( "'%s'", right );
+        }
+
+        return getFinalFunction( call, List.of( left, right ) );
+
     }
 
 
@@ -185,6 +218,18 @@ public class Translator extends RexVisitorImpl<String> {
                                 .map( e -> String.format( "%s:%s", e.left, e.right ) ),
                         mappings.stream() ) // preserve id
                 .collect( Collectors.joining( "," ) ) + "}";
+    }
+
+
+    private String handleSetProperty( RexCall call ) {
+        String identifier = call.operands.get( 0 ).accept( this );
+        String key = call.operands.get( 1 ).accept( this );
+        RexLiteral rex = (RexLiteral) call.operands.get( 2 );
+        String literal = NeoUtil.rexAsString( rex, null, true );
+        if ( PolyType.STRING_TYPES.contains( rex.getType().getPolyType() ) ) {
+            literal = String.format( "'%s'", rex.getValueAs( String.class ) );
+        }
+        return String.format( "%s.%s = %s", identifier, key, literal );
     }
 
 
