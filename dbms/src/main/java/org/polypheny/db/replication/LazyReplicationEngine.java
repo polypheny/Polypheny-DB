@@ -18,6 +18,7 @@ package org.polypheny.db.replication;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -40,6 +41,9 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.WebUiGroup;
+import org.polypheny.db.information.InformationAction;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
 import org.polypheny.db.replication.properties.exception.OutdatedReplicationException;
 import org.polypheny.db.transaction.Transaction;
@@ -80,6 +84,8 @@ public class LazyReplicationEngine extends ReplicationEngine {
     private static LazyReplicationEngine INSTANCE;
 
     private TransactionManager transactionManager = TransactionManagerImpl.getInstance();
+    private InformationTable pendingReplications;
+    private InformationTable pendingObjects;
 
     // Only needed to track changes on uniquely identifiable replicationData
 
@@ -87,7 +93,6 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
     // TODO @HENNLO as soon as policies are active configure db, schema or db if changes should be replicated by single operation or only ACID compliant with entire transaction
     // DISTRIBUTION STRATEGY
-
 
     // TODO @HENNLO if statement is cached also replicationData needs to be cached disregarding the target data placements since new statements can come into
 
@@ -137,6 +142,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
         final WebUiGroup lazyReplicationSettingsGroup = new WebUiGroup( "lazyReplicationSettingsGroup", replicationSettingsPage.getId() );
 
+        // Config UI
         configManager.registerConfig( AUTOMATIC_DATA_REPLICATION );
         AUTOMATIC_DATA_REPLICATION.withUi( lazyReplicationSettingsGroup.getId(), 0 );
         AUTOMATIC_DATA_REPLICATION.addObserver( new LazyReplicationConfigListener() );
@@ -152,6 +158,28 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
         lazyReplicationSettingsGroup.withTitle( "Pending Data Replication Processing" );
         configManager.registerWebUiGroup( lazyReplicationSettingsGroup );
+
+        // Monitoring UI
+        InformationGroup lazyGroup = new InformationGroup( globalInformationPage, "Lazy Replication" );
+        lazyGroup.setRefreshFunction( this::updateUI );
+        registerMonitoringGroup( lazyGroup );
+
+        pendingReplications = new InformationTable( lazyGroup, Arrays.asList( "Placement", "#Pending", "#Failed" ) );
+        im.registerInformation( pendingReplications );
+
+        pendingObjects = new InformationTable( lazyGroup, Arrays.asList( "Key", "#" ) );
+        im.registerInformation( pendingObjects );
+
+        // TODO as soon as validation screen is available add this. to ask "Are you sure you want to discard all pending changes"
+        //  Or add to ADMIN page - CARE this is a last resort and can heavily mess with the integrity of the outdated placements
+        // Reset all changes
+        InformationAction invalidateAction = new InformationAction( lazyGroup, "Discard ALL pending Replications", parameters -> {
+            resetAllReplications();
+            return "Successfully discards all pending replications!";
+        } );
+        invalidateAction.setOrder( 2 );
+        im.registerInformation( invalidateAction );
+
     }
 
 
@@ -247,6 +275,33 @@ public class LazyReplicationEngine extends ReplicationEngine {
     }
 
 
+    private void resetAllReplications() {
+        localPartitionPlacementQueue.clear();
+        replicationData.clear();
+        localPartitionPlacementQueue.clear();
+        globalReplicationDataQueue.clear();
+
+        updateUI();
+    }
+
+
+    private void updateUI() {
+        pendingReplications.reset();
+        pendingObjects.reset();
+
+        localPartitionPlacementQueue.keySet().forEach( target -> {
+            pendingReplications.addRow(
+                    target,
+                    getPendingReplicationsPerPlacementSize( (int) target.right, (long) target.left ),
+                    getCurrentPlacementFailCount( target ) );
+        } );
+
+        pendingObjects.addRow( "Total Replication Objects", getNumberOfPendingReplicationObjects() );
+        pendingObjects.addRow( "Queued Replications", getNumberOfPendingReplications() );
+
+    }
+
+
     public long getNumberOfPendingReplicationObjects() {
         return replicationData.keySet().size();
     }
@@ -254,6 +309,11 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
     public long getNumberOfPendingReplications() {
         return globalReplicationDataQueue.size();
+    }
+
+
+    private long getCurrentPlacementFailCount( Pair<Long, Integer> targetPlacement ) {
+        return getCurrentReplicationFailCount( getNextReplicationId( targetPlacement ) );
     }
 
 

@@ -34,6 +34,9 @@ import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.replication.cdc.ChangeDataCaptureObject;
 import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
 import org.polypheny.db.replication.cdc.DeleteReplicationObject;
@@ -67,9 +70,14 @@ public abstract class ReplicationEngine {
 
     private ReplicationStrategy associatedStrategy;
 
-
+    // Config UI
     protected final WebUiPage replicationSettingsPage;
     protected final ConfigManager configManager = ConfigManager.getInstance();
+
+    // Monitoring UI
+    protected InformationManager im = InformationManager.getInstance();
+    protected final InformationPage globalInformationPage;
+
 
     // Only needed to track changes on uniquely identifiable replicationData
     private static final AtomicLong replicationDataIdBuilder = new AtomicLong( 1 );
@@ -82,6 +90,7 @@ public abstract class ReplicationEngine {
 
         this.associatedStrategy = getAssociatedReplicationStrategy();
 
+        // Config UI
         this.replicationSettingsPage = new WebUiPage(
                 "replicationSettings",
                 "Data Replication",
@@ -96,6 +105,19 @@ public abstract class ReplicationEngine {
         REPLICATION_FAIL_COUNT_THRESHOLD.withUi( generalDataReplicationGroup.getId(), 1 );
         configManager.registerConfig( REPLICATION_FAIL_COUNT_THRESHOLD );
         configManager.registerWebUiPage( replicationSettingsPage );
+
+        // Monitoring UI
+        globalInformationPage = new InformationPage( "Data Replication" );
+        im.addPage( globalInformationPage );
+
+        // General Replication Group
+        InformationGroup generalGroup = new InformationGroup( globalInformationPage, "General" ).setOrder( 0 );
+        im.addGroup( generalGroup );
+    }
+
+
+    protected void registerMonitoringGroup( InformationGroup imGroup ) {
+        im.addGroup( imGroup );
     }
 
 
@@ -234,6 +256,14 @@ public abstract class ReplicationEngine {
             }
         }
         return null;
+    }
+
+
+    public int getCurrentReplicationFailCount( long replicationId ) {
+        if ( replicationFailCount.containsKey( replicationId ) ) {
+            return replicationFailCount.get( replicationId );
+        }
+        return 0;
     }
 
 
