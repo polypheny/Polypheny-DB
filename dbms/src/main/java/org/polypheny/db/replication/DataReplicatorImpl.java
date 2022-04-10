@@ -18,6 +18,7 @@ package org.polypheny.db.replication;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Timestamp;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,6 +46,7 @@ import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
 import org.polypheny.db.replication.cdc.DeleteReplicationObject;
 import org.polypheny.db.replication.cdc.InsertReplicationObject;
 import org.polypheny.db.replication.cdc.UpdateReplicationObject;
+import org.polypheny.db.replication.properties.exception.OutdatedReplicationException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
@@ -69,7 +71,7 @@ public class DataReplicatorImpl implements DataReplicator {
 
 
     @Override
-    public long replicateData( Transaction transaction, ChangeDataReplicationObject dataReplicationObject, long replicationId ) {
+    public long replicateData( Transaction transaction, ChangeDataReplicationObject dataReplicationObject, long replicationId ) throws OutdatedReplicationException {
 
         Pair<Long, Integer> targetPartitionPlacementIdentifier = dataReplicationObject.getDependentReplicationIds().get( replicationId );
 
@@ -78,11 +80,11 @@ public class DataReplicatorImpl implements DataReplicator {
         int targetAdapterId = targetPartitionPlacementIdentifier.right;
 
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( targetAdapterId, tableId );
-        CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( targetAdapterId, targetPartitionId );
+        CatalogPartitionPlacement targetPartitionPlacement = catalog.getPartitionPlacement( targetAdapterId, targetPartitionId );
 
         // Verify that this placement is indeed Outdated && has not received this update yet && is indeed considered to receive lazy replications
         if ( !dataPlacement.replicationStrategy.equals( ReplicationStrategy.EAGER ) &&
-                partitionPlacement.updateInformation.commitTimestamp <= dataReplicationObject.getCommitTimestamp() ) {
+                targetPartitionPlacement.updateInformation.commitTimestamp <= dataReplicationObject.getCommitTimestamp() ) {
 
             Statement targetStatement = transaction.createStatement();
 
@@ -90,15 +92,15 @@ public class DataReplicatorImpl implements DataReplicator {
             switch ( dataReplicationObject.getOperation() ) {
 
                 case INSERT:
-                    targetAlg = buildInsertStatement( targetStatement, (InsertReplicationObject) dataReplicationObject, dataPlacement, partitionPlacement );
+                    targetAlg = buildInsertStatement( targetStatement, (InsertReplicationObject) dataReplicationObject, dataPlacement, targetPartitionPlacement );
                     break;
 
                 case UPDATE:
-                    targetAlg = buildUpdateStatement( targetStatement, (UpdateReplicationObject) dataReplicationObject, dataPlacement, partitionPlacement );
+                    targetAlg = buildUpdateStatement( targetStatement, (UpdateReplicationObject) dataReplicationObject, dataPlacement, targetPartitionPlacement );
                     break;
 
                 case DELETE:
-                    targetAlg = buildDeleteStatement( targetStatement, (DeleteReplicationObject) dataReplicationObject, dataPlacement, partitionPlacement );
+                    targetAlg = buildDeleteStatement( targetStatement, (DeleteReplicationObject) dataReplicationObject, dataPlacement, targetPartitionPlacement );
                     break;
 
                 default:
@@ -106,7 +108,12 @@ public class DataReplicatorImpl implements DataReplicator {
             }
             return executeQuery( targetStatement, targetAlg, dataReplicationObject );
         }
-        return 0;
+        log.warn( "Received an outdated replication for object that is already on a newer state. This might happen if there were still pending transactions after manual refresh." );
+        log.warn( "Current timestamp '{}' is greater than timestamp: '{}' of new replication."
+                , new Timestamp( targetPartitionPlacement.updateInformation.commitTimestamp )
+                , new Timestamp( dataReplicationObject.getCommitTimestamp() ) );
+
+        throw new OutdatedReplicationException();
     }
 
 

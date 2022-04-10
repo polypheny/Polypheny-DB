@@ -2182,6 +2182,7 @@ public abstract class Catalog {
             switch ( strategy ) {
                 case EAGER:
                     targetState = PlacementState.UPTODATE;
+                    break;
 
                 case LAZY:
                     targetState = PlacementState.REFRESHABLE;

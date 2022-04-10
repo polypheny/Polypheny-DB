@@ -24,13 +24,14 @@ import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
 import org.polypheny.db.replication.cdc.DeleteReplicationObject;
 import org.polypheny.db.replication.cdc.InsertReplicationObject;
 import org.polypheny.db.replication.cdc.UpdateReplicationObject;
+import org.polypheny.db.replication.properties.exception.OutdatedReplicationException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
 
 public interface DataReplicator {
 
-    long replicateData( Transaction transaction, ChangeDataReplicationObject dataReplicationObject, long replicationId );
+    long replicateData( Transaction transaction, ChangeDataReplicationObject dataReplicationObject, long replicationId ) throws OutdatedReplicationException;
 
     AlgRoot buildInsertStatement( Statement statement, InsertReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement );
 

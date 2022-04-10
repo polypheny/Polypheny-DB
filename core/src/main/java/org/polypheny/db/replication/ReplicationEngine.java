@@ -102,9 +102,6 @@ public abstract class ReplicationEngine {
     protected abstract ReplicationStrategy getAssociatedReplicationStrategy();
 
 
-    public abstract void replicateChanges();
-
-
     /**
      * Is used to manually trigger the replication of all pending updates of each placement for a specific table .
      *
@@ -186,10 +183,11 @@ public abstract class ReplicationEngine {
                 }
                 // Gather all adapter-partition pairs to uniquely identify partition placement
                 tempPartitionIds.forEach( partitionId -> targetPartitionPlacements.add( new Pair( partitionId, dataPlacement.adapterId ) ) );
-                // Map them to unique replicable replicationId which is going to be executed by the workers
-                targetPartitionPlacements.forEach( placement -> dependentReplicationIds.put(
-                        replicationIdBuilder.getAndIncrement(), placement ) );
             }
+
+            // Map them to unique replicable replicationId which is going to be executed by the workers
+            targetPartitionPlacements.forEach( placement -> dependentReplicationIds.put(
+                    replicationIdBuilder.getAndIncrement(), placement ) );
 
             switch ( cdcObject.getOperation() ) {
                 case INSERT:
@@ -254,6 +252,13 @@ public abstract class ReplicationEngine {
         }
         replicationFailCount.put( replicationId, newFailCount );
         return true;
+    }
+
+
+    protected void cleanseReplicationFailCount( long replicationId ) {
+        if ( replicationFailCount.containsKey( replicationId ) ) {
+            replicationFailCount.remove( replicationId );
+        }
     }
 
 }

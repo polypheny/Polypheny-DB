@@ -1495,6 +1495,7 @@ public class DdlManagerImpl extends DdlManager {
 
             //TODO @HENNLO ADD Feature IF replication is switched from LAZY to EAGER
             // Trigger a REFRESH operation, to bring everything consequently to the MOST RECENT STATE = 'UPDTODATE'
+            // Currently this is blocked and you must wait until there are no more changes
             catalog.updateDataPlacementReplicationStrategy( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.replicationStrategy );
         }
 

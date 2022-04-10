@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.enumerable.EnumerableTableModify;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.ModifyCollect;
 import org.polypheny.db.algebra.core.Streamer;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableScan;
@@ -68,25 +67,7 @@ public class LogicalStreamer extends Streamer {
      *
      * @return LogicalStreamer
      */
-    public static LogicalStreamer create( AlgNode modification, AlgBuilder algBuilder ) {
-
-        if ( modification instanceof TableModify ) {
-            return transformModify( (TableModify) modification, algBuilder );
-        } else if ( modification instanceof ModifyCollect ) {
-            return transformModifyCollect( (ModifyCollect) modification, algBuilder );
-        } else {
-            throw new RuntimeException( "" );
-        }
-    }
-
-
-    private static LogicalStreamer transformModifyCollect( ModifyCollect modifyCollect, AlgBuilder algBuilder ) {
-
-        return null;
-    }
-
-
-    private static LogicalStreamer transformModify( TableModify modify, AlgBuilder algBuilder ) {
+    public static LogicalStreamer create( TableModify modify, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
         // TODO @HENNLO Disable rule for LazyReplication
