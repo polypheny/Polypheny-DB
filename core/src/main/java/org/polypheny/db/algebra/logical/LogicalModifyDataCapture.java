@@ -29,8 +29,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.replication.cdc.ChangeDataCaptureObject;
-import org.polypheny.db.replication.cdc.ChangeDataCollector;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -61,7 +59,7 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
         this.input = input;
 
         // Already prepares the DataCaptureCollection to be replicated to secondaries
-        ChangeDataCollector.prepareCDC(
+        /*ChangeDataCollector.prepareCDC(
                 ChangeDataCaptureObject.create(
                         txId,
                         stmtId,
@@ -72,7 +70,7 @@ public class LogicalModifyDataCapture extends ModifyDataCapture {
                         condition,
                         fieldList,
                         getAccessedPartitions()
-                ) );
+                ) );*/
     }
 
 

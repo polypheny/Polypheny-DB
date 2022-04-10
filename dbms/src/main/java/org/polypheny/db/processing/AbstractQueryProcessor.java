@@ -106,6 +106,9 @@ import org.polypheny.db.processing.caching.RoutingPlanCache;
 import org.polypheny.db.processing.shuttles.LogicalQueryInformationImpl;
 import org.polypheny.db.processing.shuttles.ParameterValueValidator;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
+import org.polypheny.db.replication.cdc.ChangeDataCaptureObject;
+import org.polypheny.db.replication.cdc.ChangeDataCollector;
+import org.polypheny.db.replication.cdc.LogicalDataCaptureShuttle;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -383,6 +386,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 proposedRoutingPlans = route( indexLookupRoot, statement, logicalQueryInformation );
             }
 
+
             if ( isAnalyze ) {
                 statement.getRoutingDuration().start( "Flattener" );
             }
@@ -409,10 +413,29 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Parameterize" );
         }
 
+        ChangeDataCaptureObject cdcObject = null;
+
         // Add optional parameterizedRoots and results for all routed RelRoots.
         // Index of routedRoot, parameterizedRootList and results correspond!
         for ( ProposedRoutingPlan routingPlan : proposedRoutingPlans ) {
             AlgRoot routedRoot = routingPlan.getRoutedRoot();
+
+            // Make sure that even if plan was routed we prepare a new capture object
+            if ( statement.getTransaction().needsChangeDataCapture() ) {
+
+                // Only necessary to be executed once to build the cdc Object to prepare the capture engine
+                if ( cdcObject == null ) {
+                    // Because captureChanges in ChangeDataCollector is still getting executed however with an old stmtId
+                    // ChangeDataCollector.prepareCDC( cdcCaptureObject, getStmtId() );
+
+                    // Already prepares the DataCaptureCollection to be replicated to secondaries
+                    LogicalDataCaptureShuttle cdcRelShuttle = new LogicalDataCaptureShuttle( statement );
+                    routedRoot.alg.accept( cdcRelShuttle );
+
+                    cdcObject = cdcRelShuttle.getCdcObject();
+                }
+            }
+
             AlgRoot parameterizedRoot;
             if ( statement.getDataContext().getParameterValues().size() == 0
                     && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )) ) {
@@ -426,14 +449,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             parameterizedRootList.add( parameterizedRoot );
         }
 
-        if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Parameterize" );
+        if ( statement.getTransaction().needsChangeDataCapture() ) {
+            if ( cdcObject == null ) {
+                throw new RuntimeException( "THIS SHOULD NOT happen!" );
+            }
+            ChangeDataCollector.prepareCDC( cdcObject );
         }
 
-        if ( statement.getTransaction().needsChangeDataCapture() ) {
-            // TODO Prepare CDC
-            // Because captureChanges in ChangeDataCollector is still getting executed however with an old stmtId
-            // ChangeDataCollector.prepareCDC( cdcCaptureObject, getStmtId() );
+        if ( isAnalyze ) {
+            statement.getProcessingDuration().stop( "Parameterize" );
         }
 
         //

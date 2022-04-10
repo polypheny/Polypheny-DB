@@ -126,7 +126,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             // Execute Query
             executeQuery( selectColumnList, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
-            updateCatalogInformation( subDistribution.get( partitionId ).get( 0 ).adapterId, store.id, partitionId, 0 );
+            updateCatalogInformation( subDistribution.get( partitionId ).get( 0 ).adapterId, partitionId, store.id, partitionId, 0 );
         }
     }
 
@@ -531,7 +531,12 @@ public class DataMigratorImpl implements DataMigrator {
             for ( CatalogPartitionPlacement partitionPlacement : catalog.getDistinctPartitionPlacementsByReplicationStrategy( sourceTable.id, ReplicationStrategy.EAGER ) ) {
                 modifications += partitionPlacement.updateInformation.modifications;
             }
-            updateCatalogInformation( placementDistribution.get( sourceTable.partitionProperty.partitionIds.get( 0 ) ).get( 0 ).adapterId, store.id, targetPartitionIds.get( 0 ), modifications );
+            updateCatalogInformation(
+                    placementDistribution.get( sourceTable.partitionProperty.partitionIds.get( 0 ) ).get( 0 ).adapterId,
+                    sourceTable.partitionProperty.partitionIds.get( 0 ),
+                    store.id,
+                    targetPartitionIds.get( 0 ),
+                    modifications );
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
@@ -692,7 +697,11 @@ public class DataMigratorImpl implements DataMigrator {
             }
 
             for ( long partitionId : targetPartitionIds ) {
-                updateCatalogInformation( placementDistribution.get( sourceTable.partitionProperty.partitionIds.get( 0 ) ).get( 0 ).adapterId, store.id, partitionId, 0 );
+                updateCatalogInformation(
+                        placementDistribution.get( sourceTable.partitionProperty.partitionIds.get( 0 ) ).get( 0 ).adapterId,
+                        sourceTable.partitionProperty.partitionIds.get( 0 ),
+                        store.id,
+                        partitionId, 0 );
             }
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
@@ -703,13 +712,13 @@ public class DataMigratorImpl implements DataMigrator {
     /**
      * Updates all changed partitionPlacements with the new update information
      */
-    private void updateCatalogInformation( int sourceAdapterId, int targetAdapterId, long targetPartitionId, long modifications ) {
+    private void updateCatalogInformation( int sourceAdapterId, long sourcePartitionId, int targetAdapterId, long targetPartitionId, long modifications ) {
 
         // Updates the Update metadata information on the target with information from source adapter
-        CatalogPartitionPlacement sourcePartitionPlacement = catalog.getPartitionPlacement( sourceAdapterId, targetPartitionId );
+        CatalogPartitionPlacement sourcePartitionPlacement = catalog.getPartitionPlacement( sourceAdapterId, sourcePartitionId );
         CatalogDataPlacement sourceDataPlacement = catalog.getDataPlacement( sourceAdapterId, sourcePartitionPlacement.tableId );
 
-        // TODO @HENNLO make sure that only eagerly updated placements are selected here for teh moement just print debug information
+        // TODO @HENNLO make sure that only eagerly updated placements are selected here for teh moment just print debug information
         //  when this is not the case
         if ( !sourcePartitionPlacement.state.equals( PlacementState.UPTODATE ) || !sourceDataPlacement.replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
             log.warn( "Source Placement is not an primary eagerly update placement nor UPTODATE. It is {} - {}"
