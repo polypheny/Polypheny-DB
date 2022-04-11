@@ -106,8 +106,6 @@ public class LazyReplicationEngine extends ReplicationEngine {
     // TODO @HENNLO as soon as policies are active configure db, schema or db if changes should be replicated by single operation or only ACID compliant with entire transaction
     // DISTRIBUTION STRATEGY
 
-    // TODO @HENNLO if statement is cached also replicationData needs to be cached disregarding the target data placements since new statements can come into
-
 
     // Maps replicationDataId to the relevant captured Data that it only will be held in memory once
     // Will be cleaned out of memory once no replication depends on this object anymore
@@ -206,8 +204,6 @@ public class LazyReplicationEngine extends ReplicationEngine {
         return INSTANCE;
     }
 
-    // TODO @HENNLO Check if partitionPlacement is marked as INFINITELY OUTDATED
-    //  If so then dont apply all pending changes. Instead remove them and apply DATA Migration
 
     /**
      * Is used to manually trigger the replication of all pending updates of each placement for a specific table .
@@ -230,8 +226,6 @@ public class LazyReplicationEngine extends ReplicationEngine {
     public void replicateChanges( long tableId, int adapterId ) {
         throw new NotImplementedException( "This operation is not yet implemented" );
     }
-    // TODO @HENNLO first mark placement as INFINITELY OUTDATED that it doesnt receive anymore updates
-    //  This is possible if we would lock the localReplicationQueue and replicate the operations manually without an worker.
 
 
     /**

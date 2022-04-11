@@ -28,7 +28,7 @@ public class ReplicationEngineProviderImpl extends ReplicationEngineProvider {
 
 
     // This is only necessary if the replication engine needs processing on startup.
-    // Otherwise its fine to initiate the engine once it is first used.
+    // Otherwise, it's fine to initiate the engine once it is first used.
     public void enableReplicationEngines() {
         preRegisteredEngines.add( LazyReplicationEngine.getInstance() );
     }

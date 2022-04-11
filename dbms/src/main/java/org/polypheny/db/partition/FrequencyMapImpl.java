@@ -310,7 +310,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
                         catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
-// TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
+
                         dataMigrator.copyData(
                                 statement.getTransaction(),
                                 catalog.getAdapter( store.getAdapterId() ),
@@ -359,7 +359,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
                         catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
-                        // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
+
                         dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), catalogColumns, coldPartitionsToCreate );
 
                         if ( !partitionsToRemoveFromStore.containsKey( store ) ) {

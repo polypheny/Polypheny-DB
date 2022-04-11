@@ -305,8 +305,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // If it has already been set
         if ( this.commitTimestamp > 0 ) {
             // TODO @HENNLO throw more sophisticate exception
-            //throw new RuntimeException( "Commit Timestamp has already been set and cannot be altered!" );
             log.warn( "Commit Timestamp has already been set and cannot be altered!" );
+            throw new RuntimeException( "Commit Timestamp has already been set and cannot be altered!" );
+
         }
         this.commitTimestamp = commitTimestamp;
     }

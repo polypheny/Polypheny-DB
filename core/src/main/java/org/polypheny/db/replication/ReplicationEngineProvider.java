@@ -27,8 +27,6 @@ public abstract class ReplicationEngineProvider {
 
     public static ReplicationEngineProvider initializeReplicationEngines( ReplicationEngineProvider factory ) {
 
-        // TODO @HENNLO here we could also start reprocessing outdated nodes that lost there changes
-
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Initializing the ReplicationEngineProvider, when already set is not permitted." );
         }

@@ -718,7 +718,7 @@ public class DataMigratorImpl implements DataMigrator {
         CatalogPartitionPlacement sourcePartitionPlacement = catalog.getPartitionPlacement( sourceAdapterId, sourcePartitionId );
         CatalogDataPlacement sourceDataPlacement = catalog.getDataPlacement( sourceAdapterId, sourcePartitionPlacement.tableId );
 
-        // TODO @HENNLO make sure that only eagerly updated placements are selected here for teh moment just print debug information
+        // TODO @HENNLO make sure that only eagerly updated placements are selected here for the moment just print debug information
         //  when this is not the case
         if ( !sourcePartitionPlacement.state.equals( PlacementState.UPTODATE ) || !sourceDataPlacement.replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
             log.warn( "Source Placement is not an primary eagerly update placement nor UPTODATE. It is {} - {}"

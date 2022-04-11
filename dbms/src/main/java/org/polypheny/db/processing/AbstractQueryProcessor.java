@@ -311,8 +311,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         ParameterValueValidator valueValidator = new ParameterValueValidator( logicalRoot.validatedRowType, statement.getDataContext() );
         valueValidator.visit( logicalRoot.alg );
 
-        // ToDO @HENNLO Remove hardcoded option to specify query as FRESHNESS-RELATED
-        boolean acceptsOutdated = false;
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Parameter Validation" );

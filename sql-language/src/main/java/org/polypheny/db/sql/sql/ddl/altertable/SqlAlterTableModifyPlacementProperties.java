@@ -126,9 +126,6 @@ public class SqlAlterTableModifyPlacementProperties extends SqlAlterTable {
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
         }
 
-        // TODO @HENNLO Check constraints ( sufficient primary etc. )
-
-        // TODO @HENNLO check that there are no more pending updates
 
         // Update
         try {

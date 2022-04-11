@@ -38,8 +38,6 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public abstract class ChangeDataReplicationObject {
 
-    // TODO @HENNLO maybe introduce an Object per Operation DELETE_REPLICATION, UPDATE_REPLICATION or INSERT_REPLICATION
-
 
     @Getter
     private final long replicationDataId;

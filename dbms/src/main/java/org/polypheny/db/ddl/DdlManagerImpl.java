@@ -1383,7 +1383,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( addedColumns.size() > 0 ) {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, intendedPartitionIds );
         }
-        // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
+
         if ( placementPropertyInfo != null ){
             modifyDataPlacementProperties( placementPropertyInfo, storeInstance, statement );
         }
@@ -1554,7 +1554,7 @@ public class DdlManagerImpl extends DdlManager {
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeId ), necessaryColumns, newPartitions );
-            // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
+
             // Add indexes on this new Partition Placement if there is already an index
             for ( CatalogIndex currentIndex : catalog.getIndexes( catalogTable.id, false ) ) {
                 if ( currentIndex.location == storeId ) {
@@ -2401,7 +2401,7 @@ public class DdlManagerImpl extends DdlManager {
             // Every store of a newly partitioned table, initially will hold all partitions
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), partitionedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
-            // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
+
             // Copy data from the old partition to new partitions
             dataMigrator.copyPartitionData(
                     statement.getTransaction(),
@@ -2479,7 +2479,7 @@ public class DdlManagerImpl extends DdlManager {
                     UpdateInformation.createEmpty() );
 
             // TODO @HENNLO
-            // IF UPTODATE Is elected TRIGGER DATA REFRESH OPERATION on possibly outdated nodes.
+            //  IF UPTODATE Is selected TRIGGER DATA REFRESH OPERATION on possibly outdated nodes.
 
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
@@ -2503,7 +2503,6 @@ public class DdlManagerImpl extends DdlManager {
                     necessaryColumns,
                     placementDistribution,
                     mergedTable.partitionProperty.partitionIds );
-            // TODO @HENNLO update ReplicationMethadata information like update timestamp after datamigration
         }
 
         // Needs to be separated from loop above. Otherwise we loose data

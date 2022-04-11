@@ -972,10 +972,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             return modifies.get( 0 );
         } else {
 
-            // TODO @HENNLO add inputs/ analogously to LTM
-            //builder.push( LogicalModifyDataCapture.create( builder.getCluster(), builder.getCluster().traitSet(), modifies, super.recursiveCopy( node.getInput( 0 ) ) ) );
-
-
             for ( int i = 0; i < modifies.size(); i++ ) {
                 if ( i == 0 ) {
                     builder.push( modifies.get( i ) );
