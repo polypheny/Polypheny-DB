@@ -1060,6 +1060,18 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public List<CatalogDataPlacement> getAllLazyReplicatedDataPlacements() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, List<CatalogDataPlacement>> getAllLazyReplicatedDataPlacementsByTable() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void addTableToPeriodicProcessing( long tableId ) {
         throw new NotImplementedException();
     }

@@ -29,18 +29,23 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.WebUiGroup;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
@@ -79,6 +84,13 @@ public class LazyReplicationEngine extends ReplicationEngine {
             "replication/lazyReplicationKeepAliveTime",
             "When the number of replication worker threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.",
             10 );
+
+    public static final ConfigEnum LAZY_REPLICATION_PROCESSING_ON_STARTUP = new ConfigEnum(
+            "replication/lazyReplicationProcessingOnStartup",
+            "Enabled when config: '" + REPLICATION_OBJECT_STORAGE.getKey() + "' is set to '" + ReplicationObjectStorageLocation.MEMORY + "'."
+                    + "When the replications are kept in MEMORY these changes are lost. This defines how the now outdated placements are going to be refreshed or labeled to be correctly handled.",
+            LazyReplicationStartupProcessing.class,
+            LazyReplicationStartupProcessing.MARK_AS_INFINITELY_OUTDATED );
 
 
     private static LazyReplicationEngine INSTANCE;
@@ -127,7 +139,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
         this.dataReplicator = new DataReplicatorImpl();
 
         initializeConfiguration();
-
+        preparePlacements();
         threadPoolWorkers = new PausableThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, globalReplicationDataQueue );
     }
 
@@ -147,14 +159,17 @@ public class LazyReplicationEngine extends ReplicationEngine {
         AUTOMATIC_DATA_REPLICATION.withUi( lazyReplicationSettingsGroup.getId(), 0 );
         AUTOMATIC_DATA_REPLICATION.addObserver( new LazyReplicationConfigListener() );
 
+        configManager.registerConfig( LAZY_REPLICATION_PROCESSING_ON_STARTUP );
+        LAZY_REPLICATION_PROCESSING_ON_STARTUP.withUi( lazyReplicationSettingsGroup.getId(), 1 );
+
         configManager.registerConfig( REPLICATION_CORE_POOL_SIZE );
-        REPLICATION_CORE_POOL_SIZE.withUi( lazyReplicationSettingsGroup.getId(), 1 );
+        REPLICATION_CORE_POOL_SIZE.withUi( lazyReplicationSettingsGroup.getId(), 2 );
 
         configManager.registerConfig( REPLICATION_MAXIMUM_POOL_SIZE );
-        REPLICATION_MAXIMUM_POOL_SIZE.withUi( lazyReplicationSettingsGroup.getId(), 2 );
+        REPLICATION_MAXIMUM_POOL_SIZE.withUi( lazyReplicationSettingsGroup.getId(), 3 );
 
         configManager.registerConfig( REPLICATION_POOL_KEEP_ALIVE_TIME );
-        REPLICATION_POOL_KEEP_ALIVE_TIME.withUi( lazyReplicationSettingsGroup.getId(), 3 );
+        REPLICATION_POOL_KEEP_ALIVE_TIME.withUi( lazyReplicationSettingsGroup.getId(), 4 );
 
         lazyReplicationSettingsGroup.withTitle( "Pending Data Replication Processing" );
         configManager.registerWebUiGroup( lazyReplicationSettingsGroup );
@@ -233,6 +248,82 @@ public class LazyReplicationEngine extends ReplicationEngine {
     }
 
 
+    public void preparePlacements() {
+        log.info( "Identified configuration setting: '" + REPLICATION_OBJECT_STORAGE.getKey() + "' as '" + REPLICATION_OBJECT_STORAGE.getEnum() + "'" );
+        if ( REPLICATION_OBJECT_STORAGE.getEnum().equals( ReplicationObjectStorageLocation.MEMORY ) ) {
+            log.debug( "Gather all lazy replicated Data Placements." );
+            if ( catalog.getAllLazyReplicatedDataPlacements().size() > 0 ) {
+                handleOutdatedPlacementsOnStartUp();
+            } else {
+                log.debug( "No outdated placements have been registered." );
+            }
+        }
+    }
+
+
+    /**
+     * Depending on the configured setting decide what to do with outdated Data Placements on startup.
+     * Since all replication objects are stored in MEMORY we may lose information after restart of system.
+     */
+    private void handleOutdatedPlacementsOnStartUp() {
+        log.info( "Preparing outdated placements on startup." );
+        log.info( "Identified configuration setting: '" + LAZY_REPLICATION_PROCESSING_ON_STARTUP.getKey() + "' as '" + LAZY_REPLICATION_PROCESSING_ON_STARTUP.getEnum() + "'" );
+
+        if ( LAZY_REPLICATION_PROCESSING_ON_STARTUP.getEnum().equals( LazyReplicationStartupProcessing.MARK_AS_INFINITELY_OUTDATED ) ) {
+            log.info( "Labeling all DataPlacements as Infinitely Outdated. Need to be manually enabled to trigger." );
+            catalog.getAllLazyReplicatedDataPlacements().forEach( dp -> catalog.updateDataPlacementState( dp.adapterId, dp.tableId, PlacementState.INFINITELY_OUTDATED ) );
+            log.info( "Finished labeling all Data Placements." );
+
+        } else if ( LAZY_REPLICATION_PROCESSING_ON_STARTUP.getEnum().equals( LazyReplicationStartupProcessing.REFRESH_ON_START ) ) {
+            log.info( "Automatically updating all outdated DataPlacements. This may take a while" );
+            refreshAllPlacements();
+            log.info( "Finished all refresh operations." );
+        }
+        log.info( "Finished startup procedure for outdated nodes." );
+    }
+
+
+    private void refreshAllPlacements() {
+
+        DdlManager ddlManager = DdlManager.getInstance();
+        List<String> failedTables = new ArrayList<>();
+
+        for ( Entry<Long, List<CatalogDataPlacement>> entry : catalog.getAllLazyReplicatedDataPlacementsByTable().entrySet() ) {
+            long tableId = entry.getKey();
+            CatalogTable catalogTable = catalog.getTable( tableId );
+            List<DataStore> dataStores = new ArrayList<>();
+
+            entry.getValue().forEach( dp -> dataStores.add( getDataStoreInstance( dp.adapterId ) ) );
+
+            Transaction transaction = null;
+            try {
+                transaction = transactionManager.startTransaction( "pa", catalogTable.getDatabaseName(), false, "Data Replicator" );
+                ddlManager.refreshDataPlacements( catalogTable, dataStores, transaction.createStatement() );
+                transaction.commit();
+                log.info( "Successfully refreshed all Data Placements of table: '{}'.", catalogTable.name );
+            } catch ( UnknownUserException | GenericCatalogException | UnknownDatabaseException | UnknownSchemaException | UnknownAdapterException | TransactionException e ) {
+                log.error( "Error while refreshing Data Placements of table: '{}'.", catalogTable.name, e );
+                if ( transaction != null ) {
+                    try {
+                        transaction.rollback();
+                        failedTables.add( catalogTable.name );
+                    } catch ( TransactionException ex ) {
+                        log.error( "Error while rolling back the transaction", e );
+                    }
+                }
+            }
+        }
+
+        catalog.getAllLazyReplicatedDataPlacements().forEach( dp -> catalog.updateDataPlacementState( dp.adapterId, dp.tableId, PlacementState.REFRESHABLE ) );
+
+        if ( failedTables.isEmpty() ) {
+            log.info( "All Data Placements are now up to date." );
+        } else {
+            log.warn( "Failed to refresh the Data Placements for the following tables: '" + failedTables + "'" );
+        }
+    }
+
+
     /**
      * Places all replication Objects that originated within one Transaction to the replication engine.
      * The list order is equal to the modification order of each object. It is up to each specific Replication Engine the to distribute the changes
@@ -296,6 +387,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
                     getCurrentPlacementFailCount( target ) );
         } );
 
+        pendingObjects.addRow( "Lazy Replicated Data Placements", getAllLazyReplicatedDataPlacements() );
         pendingObjects.addRow( "Total Replication Objects", getNumberOfPendingReplicationObjects() );
         pendingObjects.addRow( "Queued Replications", getNumberOfPendingReplications() );
 
@@ -314,6 +406,11 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
     private long getCurrentPlacementFailCount( Pair<Long, Integer> targetPlacement ) {
         return getCurrentReplicationFailCount( getNextReplicationId( targetPlacement ) );
+    }
+
+
+    public long getAllLazyReplicatedDataPlacements() {
+        return catalog.getAllLazyReplicatedDataPlacements().size();
     }
 
 

@@ -417,9 +417,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         partitionColumnIndex = columnIndex;
                                         if ( log.isDebugEnabled() ) {
                                             log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionProperty.partitionColumnId, j );
-                                            worstCaseRouting = false;
-
                                         }
+                                        worstCaseRouting = false;
                                     }
                                 }
 

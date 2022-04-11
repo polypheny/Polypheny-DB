@@ -194,6 +194,8 @@ public class CatalogImpl extends Catalog {
 
     private static Set<Long> frequencyDependentTables = new HashSet<>(); // All tables to consider for periodic processing
 
+    private static Set<Pair> lazyReplicatedDataPlacements = new HashSet<>(); // All tables that are replicated lazily
+
     // Keeps a list of all tableIDs which are going to be deleted. This is required to avoid constraints when recursively
     // removing a table and all placements and partitions. Otherwise **validatePartitionDistribution()** inside the Catalog
     // would throw an error.
@@ -656,6 +658,11 @@ public class CatalogImpl extends Catalog {
 
         // Restores all Tables dependent on periodic checks like TEMPERATURE Partitioning
         frequencyDependentTables = tables.values().stream().filter( t -> t.partitionProperty.reliesOnPeriodicChecks ).map( t -> t.id ).collect( Collectors.toSet() );
+
+        // Restores all Data Placements that should be updated lazily.
+        lazyReplicatedDataPlacements = dataPlacements.values().stream().filter( dp ->
+                dp.replicationStrategy.equals( ReplicationStrategy.LAZY ) ).map( dp -> new Pair( dp.adapterId, dp.tableId ) ).collect( Collectors.toSet()
+        );
     }
 
 
@@ -4850,6 +4857,10 @@ public class CatalogImpl extends Catalog {
             }
         }
 
+        if ( dataPlacement.replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+            removeLazyReplicatedDataPlacements( adapterId, tableId );
+        }
+
         synchronized ( this ) {
             dataPlacements.remove( new Object[]{ adapterId, tableId } );
             removeSingleDataPlacementFromTable( adapterId, tableId );
@@ -5051,6 +5062,12 @@ public class CatalogImpl extends Catalog {
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
+        if ( replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+            addLazyReplicatedDataPlacements( adapterId, tableId );
+        } else if ( replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+            removeLazyReplicatedDataPlacements( adapterId, tableId );
+        }
+
         if ( log.isDebugEnabled() ) {
             log.debug( "Added columns {} & partitions: {} of table {}, to placement on adapter {}.", columnIds, partitionIds, tableId, adapterId );
         }
@@ -5080,6 +5097,7 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.replicationStrategy,
                 ImmutableList.copyOf( oldDataPlacement.columnPlacementsOnAdapter ),
                 ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
+
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
@@ -5118,6 +5136,12 @@ public class CatalogImpl extends Catalog {
                 ImmutableList.copyOf( oldDataPlacement.columnPlacementsOnAdapter ), ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
+
+        if ( replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+            addLazyReplicatedDataPlacements( adapterId, tableId );
+        } else if ( replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+            removeLazyReplicatedDataPlacements( adapterId, tableId );
+        }
 
         if ( log.isDebugEnabled() ) {
             log.debug( "Switched replication strategy from {} to {} for table {}, on adapter {}.", oldDataPlacement.replicationStrategy, replicationStrategy, tableId, adapterId );
@@ -5278,6 +5302,44 @@ public class CatalogImpl extends Catalog {
         if ( frequencyDependentTables.size() == 0 ) {
             // Terminate Job for periodic processing
             FrequencyMap.INSTANCE.terminate();
+        }
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getAllLazyReplicatedDataPlacements() {
+        List<CatalogDataPlacement> dataPlacements = new ArrayList<>();
+        lazyReplicatedDataPlacements.forEach( placement -> dataPlacements.add( getDataPlacement( (int) placement.left, (long) placement.right ) ) );
+        return dataPlacements;
+    }
+
+
+    @Override
+    public Map<Long, List<CatalogDataPlacement>> getAllLazyReplicatedDataPlacementsByTable() {
+        Map<Long, List<CatalogDataPlacement>> placementsByTable = new HashMap<>();
+
+        for ( CatalogDataPlacement dataPlacement : getAllLazyReplicatedDataPlacements() ) {
+
+            if ( !placementsByTable.containsKey( dataPlacement.tableId ) ) {
+                placementsByTable.put( dataPlacement.tableId, new ArrayList<>() );
+            }
+            placementsByTable.get( dataPlacement.tableId ).add( dataPlacement );
+        }
+
+        return placementsByTable;
+    }
+
+
+    private void addLazyReplicatedDataPlacements( int adapterId, long tableId ) {
+        if ( getDataPlacement( adapterId, tableId ) != null && !getDataPlacement( adapterId, tableId ).replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+            lazyReplicatedDataPlacements.add( new Pair( adapterId, tableId ) );
+        }
+    }
+
+
+    private void removeLazyReplicatedDataPlacements( int adapterId, long tableId ) {
+        if ( lazyReplicatedDataPlacements.contains( new Pair( adapterId, tableId ) ) ) {
+            lazyReplicatedDataPlacements.remove( new Pair( adapterId, tableId ) );
         }
     }
 

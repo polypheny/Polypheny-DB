@@ -25,11 +25,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.NonNull;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
@@ -61,6 +65,13 @@ public abstract class ReplicationEngine {
                     + "When this threshold is surpassed the target placement is marked as INFINITELY OUTDATED and cannot receive "
                     + "any further replications. The refresh operation has to be triggered manually.",
             3 );
+
+    // TODO @HENNLO Think about adding MapDB Storage of replications / Usage of WALs or any other store.
+    public static final ConfigEnum REPLICATION_OBJECT_STORAGE = new ConfigEnum(
+            "replication/replicationObjectStorage",
+            "Determines whether the captured replication objects should be solely held in memory or persisted to available engines.",
+            ReplicationObjectStorageLocation.class,
+            ReplicationObjectStorageLocation.MEMORY );
 
     protected Catalog catalog = Catalog.getInstance();
 
@@ -104,6 +115,10 @@ public abstract class ReplicationEngine {
         configManager.registerConfig( CAPTURE_DATA_MODIFICATIONS );
         REPLICATION_FAIL_COUNT_THRESHOLD.withUi( generalDataReplicationGroup.getId(), 1 );
         configManager.registerConfig( REPLICATION_FAIL_COUNT_THRESHOLD );
+
+        REPLICATION_OBJECT_STORAGE.withUi( generalDataReplicationGroup.getId(), 2 );
+        configManager.registerConfig( REPLICATION_OBJECT_STORAGE );
+
         configManager.registerWebUiPage( replicationSettingsPage );
 
         // Monitoring UI
@@ -113,6 +128,7 @@ public abstract class ReplicationEngine {
         // General Replication Group
         InformationGroup generalGroup = new InformationGroup( globalInformationPage, "General" ).setOrder( 0 );
         im.addGroup( generalGroup );
+
     }
 
 
@@ -123,6 +139,8 @@ public abstract class ReplicationEngine {
 
     protected abstract ReplicationStrategy getAssociatedReplicationStrategy();
 
+
+    protected abstract void preparePlacements();
 
     /**
      * Is used to manually trigger the replication of all pending updates of each placement for a specific table .
@@ -256,6 +274,20 @@ public abstract class ReplicationEngine {
             }
         }
         return null;
+    }
+
+
+    protected DataStore getDataStoreInstance( int storeId ) {
+        Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
+        if ( adapterInstance == null ) {
+            throw new RuntimeException( "Unknown store id: " + storeId );
+        }
+        // Make sure it is a data store instance
+        if ( adapterInstance instanceof DataStore ) {
+            return (DataStore) adapterInstance;
+        } else {
+            throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
+        }
     }
 
 

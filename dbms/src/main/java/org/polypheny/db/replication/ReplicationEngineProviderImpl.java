@@ -17,10 +17,22 @@
 package org.polypheny.db.replication;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 
 
 public class ReplicationEngineProviderImpl extends ReplicationEngineProvider {
+
+    List<ReplicationEngine> preRegisteredEngines = new ArrayList<>();
+
+
+    // This is only necessary if the replication engine needs processing on startup.
+    // Otherwise its fine to initiate the engine once it is first used.
+    public void enableReplicationEngines() {
+        preRegisteredEngines.add( LazyReplicationEngine.getInstance() );
+    }
+
 
     public ReplicationEngine getReplicationEngine( ReplicationStrategy replicationStrategy ) {
         switch ( replicationStrategy ) {

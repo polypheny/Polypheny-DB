@@ -359,9 +359,6 @@ public class PolyphenyDb {
         // Initialize statistic settings
         StatisticsManager.getInstance().initializeStatisticSettings();
 
-        // Initialize Replication Engine
-        ReplicationEngineProvider.initializeReplicationEngines( new ReplicationEngineProviderImpl() );
-
         // Start Polypheny-UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
         Thread polyphenyUiThread = new Thread( httpServer );
@@ -392,6 +389,9 @@ public class PolyphenyDb {
             new UiTestingConfigPage();
             new UiTestingMonitoringPage();
         }
+
+        // Initialize Replication Engine
+        ReplicationEngineProvider.initializeReplicationEngines( new ReplicationEngineProviderImpl() );
 
         // Start monitoring service
         MonitoringServiceProvider.resetRepository = resetCatalog;

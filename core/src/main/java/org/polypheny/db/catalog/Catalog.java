@@ -1673,6 +1673,19 @@ public abstract class Catalog {
      */
     public abstract void removeTableFromPeriodicProcessing( long tableId );
 
+
+    /**
+     * Return all lazy replicated Data Placements
+     */
+    public abstract List<CatalogDataPlacement> getAllLazyReplicatedDataPlacements();
+
+
+    /**
+     * Return all lazy replicated Data Placements by table
+     */
+    public abstract Map<Long, List<CatalogDataPlacement>> getAllLazyReplicatedDataPlacementsByTable();
+
+
     /**
      * Probes if a Partition Placement on a adapter for a specific partition already exists.
      *

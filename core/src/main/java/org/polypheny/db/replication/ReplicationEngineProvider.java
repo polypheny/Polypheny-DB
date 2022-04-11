@@ -32,6 +32,8 @@ public abstract class ReplicationEngineProvider {
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Initializing the ReplicationEngineProvider, when already set is not permitted." );
         }
+        factory.enableReplicationEngines();
+
         INSTANCE = factory;
         return INSTANCE;
     }
@@ -43,6 +45,9 @@ public abstract class ReplicationEngineProvider {
         }
         return INSTANCE;
     }
+
+
+    public abstract void enableReplicationEngines();
 
 
     public abstract ReplicationEngine getReplicationEngine( ReplicationStrategy replicationStrategy );
