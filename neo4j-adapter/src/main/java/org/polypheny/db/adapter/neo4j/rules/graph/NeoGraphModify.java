@@ -187,7 +187,7 @@ public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
 
     private void handleDelete( NeoGraphImplementor implementor ) {
         List<LiteralStatement> fieldNames = ids.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() );
-        implementor.add( delete_( list_( fieldNames ) ) );
+        implementor.add( delete_( true, list_( fieldNames ) ) );
     }
 
 }

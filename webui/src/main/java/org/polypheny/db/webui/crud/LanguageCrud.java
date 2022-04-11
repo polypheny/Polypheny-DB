@@ -527,6 +527,15 @@ public class LanguageCrud {
     private static void attachError( Transaction transaction, List<Result> results, String query, Throwable t ) {
         String msg = t.getMessage() == null ? "" : t.getMessage();
         Result result = new Result( msg ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+
+        if ( transaction.isActive() ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( "Error while rolling back the failed transaction." );
+            }
+        }
+
         results.add( result );
     }
 

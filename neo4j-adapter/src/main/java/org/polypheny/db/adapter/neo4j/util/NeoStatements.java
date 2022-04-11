@@ -42,6 +42,7 @@ public interface NeoStatements {
         WITH( "WITH" ),
         SET( "SET" ),
         DELETE( "DELETE" ),
+        DELETE_DETACH( "DETACH DELETE" ),
         UNWIND( "UNWIND" ),
         LIMIT( "LIMIT" ),
         SKIP( "SKIP" ),
@@ -604,14 +605,14 @@ public interface NeoStatements {
 
     class DeleteStatement extends OperatorStatement {
 
-        protected DeleteStatement( ListStatement<?> statements ) {
-            super( StatementType.DELETE, statements );
+        protected DeleteStatement( boolean detach, ListStatement<?> statements ) {
+            super( detach ? StatementType.DELETE_DETACH : StatementType.DELETE, statements );
         }
 
     }
 
-    static DeleteStatement delete_( NeoStatement... statement ) {
-        return new DeleteStatement( list_( Arrays.asList( statement ) ) );
+    static DeleteStatement delete_( boolean detach, NeoStatement... statement ) {
+        return new DeleteStatement( detach, list_( Arrays.asList( statement ) ) );
     }
 
     class LimitStatement extends OperatorStatement {

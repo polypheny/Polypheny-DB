@@ -58,8 +58,10 @@ public class TransactionProvider {
     synchronized void rollback( PolyXid xid ) {
         if ( register.containsKey( xid ) ) {
             Pair<Session, Transaction> pair = register.get( xid );
-            pair.right.rollback();
-            pair.right.close();
+            if ( pair.right.isOpen() ) {
+                pair.right.rollback();
+                pair.right.close();
+            }
             pair.left.close();
         }
     }

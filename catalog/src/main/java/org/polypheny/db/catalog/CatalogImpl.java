@@ -1580,7 +1580,7 @@ public class CatalogImpl extends Catalog {
             old.placements.forEach( a -> graphPlacements.remove( new Object[]{ old.id, a } ) );
             graphs.remove( id );
             graphNames.remove( new Object[]{ old.databaseId, old.name } );
-            graphMappings.get( id );
+            graphMappings.remove( id );
         }
         listeners.firePropertyChange( "graph", null, null );
     }

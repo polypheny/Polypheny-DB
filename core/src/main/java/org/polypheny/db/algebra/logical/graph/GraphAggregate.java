@@ -34,7 +34,7 @@ public abstract class GraphAggregate extends Aggregate implements GraphAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + super.algCompareString();
+        return "$" + getClass().getSimpleName() + "$" + super.algCompareString() + "$" + getInput().algCompareString();
     }
 
 

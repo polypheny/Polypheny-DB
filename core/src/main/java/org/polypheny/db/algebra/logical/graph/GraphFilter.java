@@ -46,7 +46,7 @@ public abstract class GraphFilter extends SingleAlg implements GraphAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + this.condition.hashCode();
+        return "$" + getClass().getSimpleName() + "$" + this.condition.hashCode() + "$" + getInput().algCompareString();
     }
 
 

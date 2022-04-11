@@ -266,7 +266,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addDelete() {
-        add( delete_( literal_( entity.phsicalEntityName ) ) );
+        add( delete_( false, literal_( entity.phsicalEntityName ) ) );
     }
 
 

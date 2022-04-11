@@ -33,6 +33,16 @@ public class DmlDeleteTest extends CypherTestTemplate {
 
 
     @Test
+    public void simpleEmptyNodeDeleteTest() {
+        execute( SINGLE_NODE_PERSON_1 );
+        execute( "MATCH (p:Person)\n"
+                + "DELETE p" );
+        Result res = matchAndReturnAllNodes();
+        assertEmpty( res );
+    }
+
+
+    @Test
     public void simpleNodeDeleteTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( "MATCH (p:Person {name: 'Max'})\n"

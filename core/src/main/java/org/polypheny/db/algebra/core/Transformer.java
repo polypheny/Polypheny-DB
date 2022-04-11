@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -73,7 +74,7 @@ public class Transformer extends AbstractAlgNode {
 
     @Override
     public String algCompareString() {
-        return "Transformer#";
+        return getClass().getSimpleName() + "$" + inTrait + "$" + outTrait + "$" + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$";
     }
 
 }
