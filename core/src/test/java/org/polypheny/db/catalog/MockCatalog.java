@@ -18,6 +18,7 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.NotImplementedException;
@@ -707,6 +708,12 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public boolean checkIfExistsAdapter( int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updatePartitionPlacementCommitTime( int adapterId, long partitionId, Timestamp updateTimestamp ) {
         throw new NotImplementedException();
     }
 
