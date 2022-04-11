@@ -16,9 +16,9 @@
 
 package org.polypheny.db.catalog;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.NotImplementedException;
@@ -58,6 +58,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.replication.properties.UpdateInformation;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -713,12 +714,6 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updatePartitionPlacementCommitTime( int adapterId, long partitionId, Timestamp updateTimestamp ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
     public int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
         throw new NotImplementedException();
     }
@@ -962,7 +957,32 @@ public abstract class MockCatalog extends Catalog {
      * @param physicalTableName The table name on the adapter
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, PlacementState role, UpdateInformation updateInformation ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Updates a placements replication properties.
+     * These contain metadata information which are used to retrieve suitable placements during freshness query processing
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param partitionId The id of a specific partition that shall create a new placement
+     * @param commitTimestamp Placement replicationProperty contains metadata about the current state of this placement
+     */
+    public void updatePartitionPlacementProperties( int adapterId, long partitionId, long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
+        throw new NotImplementedException();
+    }
+
+
+    /**
+     * Only updates the DataPlacementState
+     *
+     * @param adapterId The id of a specific adapter that is associated with the placement
+     * @param partitionId The id of a specific partition that is associated with the placement
+     * @param state new intended state
+     */
+    public void updatePartitionPartitionPlacementState( int adapterId, long partitionId, PlacementState state ) {
         throw new NotImplementedException();
     }
 
@@ -1029,7 +1049,25 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public boolean checkIfExistsDataPlacement( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void removeTableFromPeriodicProcessing( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getAllLazyReplicatedDataPlacements() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Map<Long, List<CatalogDataPlacement>> getAllLazyReplicatedDataPlacementsByTable() {
         throw new NotImplementedException();
     }
 
@@ -1097,12 +1135,22 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
+    public List<CatalogDataPlacement> getDataPlacementsByState( long tableId, PlacementState state ) {
         throw new NotImplementedException();
     }
 
+
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ){ throw new NotImplementedException(); }
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByState( long tableId, PlacementState state ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getDistinctPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
+        throw new NotImplementedException();
+    }
+
 
     @Override
     public void addDataPlacement( int adapterId, long tableId ) {
@@ -1171,7 +1219,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds ) {
+    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, PlacementState placementState, ReplicationStrategy replicationStrategy ) {
         throw new NotImplementedException();
     }
 
@@ -1225,13 +1273,43 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public Map<Long, List<CatalogPartitionPlacement>> getPartitionPlacementsByIdAndRole( long tableId, List<Long> partitionId, DataPlacementRole role ) {
+    public boolean doesTableSupportOutdatedPlacements( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean doesTableSupportOutdatedPlacements( long tableId ) {
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndState( long tableId, long partitionId, PlacementState state ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateDataPlacementState( int adapterId, long tableId, PlacementState placementState ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getDataPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndReplicationStrategy( long tableId, long partitionId, ReplicationStrategy replicationStrategy ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateDataPlacementReplicationStrategy( int adapterId, long tableId, ReplicationStrategy replicationStrategy ) {
         throw new NotImplementedException();
     }
 }

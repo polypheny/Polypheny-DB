@@ -16,17 +16,18 @@
 
 package org.polypheny.db.routing.routers;
 
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionManager;
@@ -143,11 +144,20 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 
         // Filter for placements by adapters
-        List<Integer> adapters = catalog.getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
+        /*List<Integer> adapters = catalog.getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
                 .stream()
                 .filter( elem -> elem.getValue().containsAll( usedColumns ) )
                 .map( Entry::getKey )
                 .collect( Collectors.toList() );
+        */
+        // TODO @HENNLO Verify
+        List<Integer> adapters = new ArrayList<>();
+        catalog.getAllColumnFullDataPlacements( catalogTable.id ).forEach( dp -> {
+                    if ( dp.replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+                        adapters.add( dp.adapterId );
+                    }
+                }
+        );
 
         final Set<List<CatalogColumnPlacement>> result = new HashSet<>();
         for ( int adapterId : adapters ) {

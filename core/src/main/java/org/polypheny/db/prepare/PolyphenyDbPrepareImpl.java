@@ -203,6 +203,11 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
+                    EnumerableRules.ENUMERABLE_STREAMER_RULE,
+                    EnumerableRules.ENUMERABLE_DATA_CAPTURE_RULE,
+                    EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE,
+                    EnumerableRules.ENUMERABLE_BATCH_ITERATOR_RULE,
+                    EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_RULE,
                     EnumerableRules.ENUMERABLE_AGGREGATE_RULE,
@@ -218,7 +223,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE );
+                    EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
+                    EnumerableRules.ENUMERABLE_CALC_RULE,
+                    EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
+                    EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(

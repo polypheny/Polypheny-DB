@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,16 @@
 
 package org.polypheny.db.processing;
 
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
@@ -49,9 +53,12 @@ public class DataContextImpl implements DataContext {
     @Getter
     private final Statement statement;
 
-    private final Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
     @Getter
-    private final List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
+    @Setter
+    private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
+    @Getter
+    @Setter
+    private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
 
     public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
@@ -135,6 +142,28 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
+    public void addSingleValue( long index, AlgDataType type, Object data ) {
+        if ( parameterTypes.containsKey( index ) ) {
+            throw new RuntimeException( "There are already values assigned to this index" );
+        }
+        if ( parameterValues.size() == 0 ) {
+            parameterValues.add( new HashMap<>() );
+        }
+        if ( parameterValues.size() != 1 ) {
+            throw new RuntimeException( "Expecting 1 rows but 1 values specified!" );
+        }
+        parameterTypes.put( index, type );
+        parameterValues.get( 0 ).put( index, data );
+    }
+
+
+    @Override
+    public long getMaxParameterIndex() {
+        return Collections.max( parameterTypes.keySet() );
+    }
+
+
+    @Override
     public AlgDataType getParameterType( long index ) {
         return parameterTypes.get( index );
     }
@@ -142,8 +171,8 @@ public class DataContextImpl implements DataContext {
 
     @Override
     public void resetParameterValues() {
-        parameterTypes.clear();
-        parameterValues.clear();
+        parameterTypes = new HashMap<>();
+        parameterValues = new ArrayList<>();
     }
 
 

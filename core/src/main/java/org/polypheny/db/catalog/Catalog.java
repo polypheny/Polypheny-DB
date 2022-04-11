@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.annotations.SerializedName;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -71,11 +70,13 @@ import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementStateRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
+import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
@@ -85,6 +86,8 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.replication.properties.UpdateInformation;
+import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -1129,7 +1132,6 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
-
     /**
      * Retrieves a list of partitions which are associated with a specific table
      *
@@ -1216,7 +1218,6 @@ public abstract class Catalog {
      */
     public abstract void updatePartition( long partitionId, Long partitionGroupId );
 
-
     /**
      * Get a List of all partitions belonging to a specific table
      *
@@ -1292,7 +1293,6 @@ public abstract class Catalog {
      */
     public abstract List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId );
 
-
     /**
      * Returns a specific DataPlacement of a given table.
      *
@@ -1335,34 +1335,75 @@ public abstract class Catalog {
     public abstract List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId );
 
     /**
-     * Returns all DataPlacements of a given table that are associated with a given role.
+     * Returns all DataPlacements of a given table that are associated with a given state.
      *
      * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all DataPlacements for the table that are associated with a specific role
+     * @param state state to specifically filter
+     * @return List of all DataPlacements for the table that are associated with a specific state
      */
-    public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
+    public abstract List<CatalogDataPlacement> getDataPlacementsByState( long tableId, PlacementState state );
 
 
     /**
-     * Returns all PartitionPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role
-     */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role );
-
-
-    /**
-     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
+     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given state.
      *
      * @param tableId table to retrieve the placements from
      * @param partitionId filter by ID
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
+     * @param state state to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific state for a specific partitionId
      */
-    public abstract Map<Long, List<CatalogPartitionPlacement>> getPartitionPlacementsByIdAndRole( long tableId, List<Long> partitionId, DataPlacementRole role );
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndState( long tableId, long partitionId, PlacementState state );
+
+
+    /**
+     * Returns all PartitionPlacements of a given table that are associated with a given state.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param state state to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific state for a specific partitionId
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByState( long tableId, PlacementState state );
+
+
+    /**
+     * Returns all distinct PartitionPlacements of a given table that are associated with a given replicationStrategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy replicationStrategy to specifically filter
+     * @return returns one partition placement for each partition with the associated strategy
+     */
+    public abstract List<CatalogPartitionPlacement> getDistinctPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy );
+
+
+    /**
+     * Returns all DataPlacements of a given table that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy used to specifically filter
+     * @return List of all DataPlacements for the table that are associated with a specific strategy
+     */
+    public abstract List<CatalogDataPlacement> getDataPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy );
+
+
+    /**
+     * Returns all PartitionPlacements of a given table that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy used to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific strategy
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy );
+
+
+    /**
+     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy used to specifically filter
+     * @param partitionId filter by ID
+     * @return List of all PartitionPlacements for the table that are associated with a specific strategy for a specific partitionId
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndReplicationStrategy( long tableId, long partitionId, ReplicationStrategy replicationStrategy );
 
 
     /**
@@ -1372,7 +1413,6 @@ public abstract class Catalog {
      * @return true if it supports outdated nodes, false otherwise
      */
     public abstract boolean doesTableSupportOutdatedPlacements( long tableId );
-
 
     /**
      * Checks if the planned changes are allowed in term sof placements that need to be present
@@ -1413,8 +1453,28 @@ public abstract class Catalog {
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
+     * @param updateInformation Placement replicationProperty contains metadata about the current state of this placement
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, PlacementState state, UpdateInformation updateInformation );
+
+    /**
+     * Updates a placements replication properties.
+     * These contain metadata information which are used to retrieve suitable placements during freshness query processing
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param partitionId The id of a specific partition that shall create a new placement
+     * @param commitTimestamp Placement replicationProperty contains metadata about the current state of this placement
+     */
+    public abstract void updatePartitionPlacementProperties( int adapterId, long partitionId, long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications );
+
+    /**
+     * Only updates the DataPlacementState
+     *
+     * @param adapterId The id of a specific adapter that is associated with the placement
+     * @param partitionId The id of a specific partition that is associated with the placement
+     * @param state new intended state
+     */
+    public abstract void updatePartitionPartitionPlacementState( int adapterId, long partitionId, PlacementState state );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store
@@ -1519,7 +1579,25 @@ public abstract class Catalog {
      * @param columnIds List of columnIds to be located on a specific store for the table
      * @param partitionIds List of partitionIds to be located on a specific store for the table
      */
-    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds );
+    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, PlacementState placementState, ReplicationStrategy replicationStrategy );
+
+    /**
+     * Updates and overrides the dataPlacementState for a given data placement
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param placementState new DataPlacementState
+     */
+    public abstract void updateDataPlacementState( int adapterId, long tableId, PlacementState placementState );
+
+    /**
+     * Updates and overrides the dataPlacement replication Strategy for a given data placement
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param replicationStrategy new ReplicationStrategy
+     */
+    public abstract void updateDataPlacementReplicationStrategy( int adapterId, long tableId, ReplicationStrategy replicationStrategy );
 
     /**
      * Change physical names of a partition placement.
@@ -1530,15 +1608,6 @@ public abstract class Catalog {
      * @param physicalTableName The physical table name
      */
     public abstract void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName );
-
-    /**
-     * Updates the commit timestamp when the placement was last updated
-     *
-     * @param adapterId The id of the adapter
-     * @param partitionId The id of the partition
-     * @param updateTimestamp The commit time of the TX that updated the primary nodes.
-     */
-    public abstract void updatePartitionPlacementCommitTime( int adapterId, long partitionId, Timestamp updateTimestamp );
 
     /**
      * Deletes a placement for a partition.
@@ -1564,7 +1633,6 @@ public abstract class Catalog {
      * @return A list of all Partition Placements, that are currently located  on that specific store
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId );
-
 
     /**
      * Returns a list of all Partition Placements which currently reside on a adapter, for a specific table.
@@ -1613,6 +1681,19 @@ public abstract class Catalog {
      */
     public abstract void removeTableFromPeriodicProcessing( long tableId );
 
+
+    /**
+     * Return all lazy replicated Data Placements
+     */
+    public abstract List<CatalogDataPlacement> getAllLazyReplicatedDataPlacements();
+
+
+    /**
+     * Return all lazy replicated Data Placements by table
+     */
+    public abstract Map<Long, List<CatalogDataPlacement>> getAllLazyReplicatedDataPlacementsByTable();
+
+
     /**
      * Probes if a Partition Placement on a adapter for a specific partition already exists.
      *
@@ -1621,6 +1702,15 @@ public abstract class Catalog {
      * @return teh response of the probe
      */
     public abstract boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId );
+
+    /**
+     * Probes if a Data Placement on an adapter for a specific table already exists.
+     *
+     * @param adapterId Adapter on which to check
+     * @param tableId Table which to check
+     * @return teh response of the probe
+     */
+    public abstract boolean checkIfExistsDataPlacement( int adapterId, long tableId );
 
     /**
      * Deletes all the dependencies of a view. This is used when deleting a view.
@@ -2040,14 +2130,15 @@ public abstract class Catalog {
     }
 
 
-    public enum DataPlacementRole {
+    public enum PlacementState {
         UPTODATE( 0 ),
-        REFRESHABLE( 1 );
+        REFRESHABLE( 1 ),
+        INFINITELY_OUTDATED( 2 );
 
         private final int id;
 
 
-        DataPlacementRole( int id ) {
+        PlacementState( int id ) {
             this.id = id;
         }
 
@@ -2057,23 +2148,79 @@ public abstract class Catalog {
         }
 
 
-        public static DataPlacementRole getById( final int id ) {
-            for ( DataPlacementRole t : values() ) {
+        public static PlacementState getById( final int id ) {
+            for ( PlacementState t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
             }
-            throw new UnknownPlacementRoleRuntimeException( id );
+            throw new UnknownPlacementStateRuntimeException( id );
         }
 
 
-        public static DataPlacementRole getByName( final String name ) throws UnknownPlacementRoleException {
-            for ( DataPlacementRole t : values() ) {
+        public static PlacementState getByName( final String name ) throws UnknownPlacementStateException {
+            for ( PlacementState t : values() ) {
                 if ( t.name().equalsIgnoreCase( name ) ) {
                     return t;
                 }
             }
-            throw new UnknownPlacementRoleException( name );
+            throw new UnknownPlacementStateException( name );
+        }
+
+    }
+
+
+    public enum ReplicationStrategy {
+        EAGER( 0 ),
+        LAZY( 1 );
+
+        private final int id;
+
+
+        ReplicationStrategy( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static ReplicationStrategy getById( final int id ) {
+            for ( ReplicationStrategy t : values() ) {
+                if ( t.id == id ) {
+                    return t;
+                }
+            }
+            throw new UnknownReplicationStrategyRuntimeException( id );
+        }
+
+
+        public static ReplicationStrategy getByName( final String name ) throws UnknownReplicationStrategyException {
+            for ( ReplicationStrategy t : values() ) {
+                if ( t.name().equalsIgnoreCase( name ) ) {
+                    return t;
+                }
+            }
+            throw new UnknownReplicationStrategyException( name );
+        }
+
+
+        public static PlacementState getDependentState( ReplicationStrategy strategy ) throws InvalidPlacementPropertySpecification {
+            PlacementState targetState;
+            switch ( strategy ) {
+                case EAGER:
+                    targetState = PlacementState.UPTODATE;
+                    break;
+
+                case LAZY:
+                    targetState = PlacementState.REFRESHABLE;
+                    break;
+                default:
+                    throw new InvalidPlacementPropertySpecification( strategy.toString() );
+            }
+            return targetState;
         }
 
     }

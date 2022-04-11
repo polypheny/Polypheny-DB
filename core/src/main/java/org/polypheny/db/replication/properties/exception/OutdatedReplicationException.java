@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.exceptions;
+package org.polypheny.db.replication.properties.exception;
 
 
-public class UnknownPlacementRoleRuntimeException extends CatalogRuntimeException {
+public class OutdatedReplicationException extends Exception {
 
-    public UnknownPlacementRoleRuntimeException( final int id ) {
-        super( "There is no PlacementRole with id: " + id );
+    public OutdatedReplicationException() {
+        super( "Received an outdated replication for object that is already on a newer state. This might happen if there were still pending transactions after manual refresh." );
     }
 
 }

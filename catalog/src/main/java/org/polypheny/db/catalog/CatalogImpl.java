@@ -70,6 +70,7 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
@@ -96,6 +97,7 @@ import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionGroupIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceRuntimeException;
@@ -112,6 +114,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.replication.properties.UpdateInformation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -190,6 +193,8 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong physicalPositionBuilder = new AtomicLong();
 
     private static Set<Long> frequencyDependentTables = new HashSet<>(); // All tables to consider for periodic processing
+
+    private static Set<Pair> lazyReplicatedDataPlacements = new HashSet<>(); // All tables that are replicated lazily
 
     // Keeps a list of all tableIDs which are going to be deleted. This is required to avoid constraints when recursively
     // removing a table and all placements and partitions. Otherwise **validatePartitionDistribution()** inside the Catalog
@@ -653,6 +658,11 @@ public class CatalogImpl extends Catalog {
 
         // Restores all Tables dependent on periodic checks like TEMPERATURE Partitioning
         frequencyDependentTables = tables.values().stream().filter( t -> t.partitionProperty.reliesOnPeriodicChecks ).map( t -> t.id ).collect( Collectors.toSet() );
+
+        // Restores all Data Placements that should be updated lazily.
+        lazyReplicatedDataPlacements = dataPlacements.values().stream().filter( dp ->
+                dp.replicationStrategy.equals( ReplicationStrategy.LAZY ) ).map( dp -> new Pair( dp.adapterId, dp.tableId ) ).collect( Collectors.toSet()
+        );
     }
 
 
@@ -864,7 +874,7 @@ public class CatalogImpl extends Catalog {
             updateColumnPlacementPhysicalPosition( csv.id, colId, position );
 
             long partitionId = table.partitionProperty.partitionIds.get( 0 );
-            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, DataPlacementRole.UPTODATE);
+            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name, PlacementState.UPTODATE, UpdateInformation.createEmpty() );
         }
     }
 
@@ -1939,53 +1949,8 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     old.partitionId,
-                    old.role,
-                    old.updateTimestamp );
-
-            synchronized ( this ) {
-                partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
-                listeners.firePropertyChange( "partitionPlacement", old, placement );
-            }
-
-        } catch ( NullPointerException e ) {
-            getAdapter( adapterId );
-            getPartition( partitionId );
-            throw new UnknownPartitionPlacementException( adapterId, partitionId );
-        }
-    }
-
-
-    /**
-     * Updates the commit timestamp when the placement was last updated
-     *
-     * @param adapterId The id of the adapter
-     * @param partitionId The id of the partition
-     * @param updateTimestamp The commit time of the TX that updated the primary nodes.
-     */
-    @Override
-    public void updatePartitionPlacementCommitTime( int adapterId, long partitionId, Timestamp updateTimestamp ) {
-        try {
-            CatalogPartitionPlacement old = Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
-
-            if ( updateTimestamp.before( old.updateTimestamp ) ) {
-                //TODO @HENNLO more sophisticated exception
-                // Add TEST to check this
-
-                // Abort if the new timestamp is older than the new one.
-                // This should not happen
-                throw new RuntimeException( "New Commit Timestamp is actually older than new one" );
-            }
-
-            CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
-                    old.tableId,
-                    old.adapterId,
-                    old.adapterUniqueName,
-                    old.placementType,
-                    old.physicalSchemaName,
-                    old.physicalTableName,
-                    old.partitionId,
-                    old.role,
-                    updateTimestamp );
+                    old.state,
+                    old.updateInformation );
 
             synchronized ( this ) {
                 partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
@@ -2929,7 +2894,7 @@ public class CatalogImpl extends Catalog {
                     deleteKeyIfNoLongerUsed( table.primaryKey );
                 }
             }
-            long keyId = getOrAddKey( tableId, columnIds );
+            long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
             setPrimaryKey( tableId, keyId );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -3069,7 +3034,7 @@ public class CatalogImpl extends Catalog {
                     }
                     // TODO same keys for key and foreign key
                     if ( getKeyUniqueCount( refKey.id ) > 0 ) {
-                        long keyId = getOrAddKey( tableId, columnIds );
+                        long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
                         //List<String> keyColumnNames = columnIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
                         //List<String> referencesNames = referencesIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
                         CatalogForeignKey key = new CatalogForeignKey(
@@ -3110,9 +3075,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
-        // TODO DL check with statements
         try {
-            long keyId = getOrAddKey( tableId, columnIds );
+            long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
             // Check if there is already a unique constraint
             List<CatalogConstraint> catalogConstraints = constraints.values().stream()
                     .filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE )
@@ -3229,7 +3193,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException {
-        long keyId = getOrAddKey( tableId, columnIds );
+        long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         if ( unique ) {
             // TODO: Check if the current values are unique
         }
@@ -3909,7 +3873,7 @@ public class CatalogImpl extends Catalog {
         try {
             return Objects.requireNonNull( partitions.get( partitionId ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownPartitionGroupIdRuntimeException( partitionId );
+            throw new UnknownPartitionIdRuntimeException( partitionId );
         }
     }
 
@@ -4223,7 +4187,7 @@ public class CatalogImpl extends Catalog {
         CatalogDataPlacement dataPlacement = getDataPlacement( adapterId, tableId );
 
         dataPlacement.getAllPartitionIds().forEach(
-                        partitionId -> partitionGroups.add( getPartitionGroupByPartition( partitionId )
+                partitionId -> partitionGroups.add( getPartitionGroupByPartition( partitionId )
                 )
         );
 
@@ -4360,19 +4324,17 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all DataPlacements of a given table that are associated with a given role.
+     * Returns all DataPlacements of a given table that are associated with a given state.
      *
      * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all DataPlacements for the table that are associated with a specific role
+     * @param state state to specifically filter
+     * @return List of all DataPlacements for the table that are associated with a specific state
      */
     @Override
-    public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
-
+    public List<CatalogDataPlacement> getDataPlacementsByState( long tableId, PlacementState state ) {
         List<CatalogDataPlacement> catalogDataPlacements = new ArrayList<>();
-
         for ( CatalogDataPlacement dataPlacement : getDataPlacements( tableId ) ) {
-            if ( dataPlacement.dataPlacementRole.equals( role ) ) {
+            if ( dataPlacement.placementState.equals( state ) ) {
                 catalogDataPlacements.add( dataPlacement );
             }
         }
@@ -4381,23 +4343,19 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all PartitionPlacements of a given table that are associated with a given role.
+     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given state.
      *
      * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role
+     * @param partitionId filter by ID
+     * @param state state to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific state for a specific partitionId
      */
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
-
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndState( long tableId, long partitionId, PlacementState state ) {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-
-        for ( CatalogDataPlacement dataPlacement : getDataPlacementsByRole( tableId, role ) ) {
-            if ( dataPlacement.partitionPlacementsOnAdapterByRole.containsKey( role ) ) {
-                dataPlacement.partitionPlacementsOnAdapterByRole.get( role )
-                        .forEach(
-                                partitionId -> partitionPlacements.add( getPartitionPlacement( dataPlacement.adapterId, partitionId ) )
-                        );
+        for ( CatalogPartitionPlacement partitionPlacement : getPartitionPlacements( partitionId ) ) {
+            if ( partitionPlacement.state.equals( state ) ) {
+                partitionPlacements.add( partitionPlacement );
             }
         }
         return partitionPlacements;
@@ -4405,28 +4363,49 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all PartitionPlacements of a given table with a list of IDs that are associated with a given role.
+     * Returns all PartitionPlacements of a given table that are associated with a given state.
      *
      * @param tableId table to retrieve the placements from
-     * @param partitionIds List of partitionIds to filter
-     * @param desiredRole role to specifically filter
-     * @return Map of partitionId to List of all PartitionPlacements for the table that are associated with a specific role
+     * @param state state to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific state for a specific partitionId
      */
     @Override
-    public Map<Long, List<CatalogPartitionPlacement>> getPartitionPlacementsByIdAndRole( long tableId, List<Long> partitionIds, DataPlacementRole desiredRole ) {
-        Map<Long, List<CatalogPartitionPlacement>> placementPerPartition = new HashMap<>();
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByState( long tableId, PlacementState state ) {
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        for ( CatalogPartitionPlacement partitionPlacement : getAllPartitionPlacementsByTable( tableId ) ) {
+            if ( partitionPlacement.state.equals( state ) ) {
+                partitionPlacements.add( partitionPlacement );
+            }
+        }
+        return partitionPlacements;
+    }
 
-        for ( long partitionId : partitionIds ) {
 
-            placementPerPartition.put(
-                    partitionId, getPartitionPlacements( partitionId )
-                            .stream()
-                            .filter( p -> p.role.equals( desiredRole ) )
-                            .collect( Collectors.toList() )
-            );
+    /**
+     * Returns all distinct PartitionPlacements of a given table that are associated with a given replicationStrategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy replicationStrategy to specifically filter
+     * @return returns one partition placement for each partition with the associated strategy
+     */
+    public List<CatalogPartitionPlacement> getDistinctPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
+        Set<CatalogPartitionPlacement> distinctPartitionPlacements = new HashSet<>();
+        List<Long> remainingPartitionIds = getTable( tableId ).partitionProperty.partitionIds.stream().collect( Collectors.toList() );
+
+        // Returns all Data Placements with the associated Strategy
+        List<CatalogDataPlacement> dataPlacements = getDataPlacementsByReplicationStrategy( tableId, replicationStrategy );
+
+        for ( CatalogDataPlacement dataPlacement : dataPlacements ) {
+            dataPlacement.getAllPartitionIds().forEach(
+                    p -> {
+                        if ( remainingPartitionIds.contains( p ) ) {
+                            distinctPartitionPlacements.add( getPartitionPlacement( dataPlacement.adapterId, p ) );
+                            remainingPartitionIds.remove( p );
+                        }
+                    } );
         }
 
-        return placementPerPartition;
+        return distinctPartitionPlacements.stream().collect( Collectors.toList() );
     }
 
 
@@ -4443,11 +4422,67 @@ public class CatalogImpl extends Catalog {
         // Instead of querying each DataPlacement
 
         for ( CatalogDataPlacement catalogDataPlacement : getDataPlacements( tableId ) ) {
-            if ( catalogDataPlacement.dataPlacementRole.equals( DataPlacementRole.REFRESHABLE ) ) {
+            if ( catalogDataPlacement.placementState.equals( PlacementState.REFRESHABLE ) ) {
                 return true;
             }
         }
         return false;
+    }
+
+
+    /**
+     * Returns all DataPlacements of a given table that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy used to specifically filter
+     * @return List of all DataPlacements for the table that are associated with a specific strategy
+     */
+    @Override
+    public List<CatalogDataPlacement> getDataPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
+        List<CatalogDataPlacement> catalogDataPlacements = new ArrayList<>();
+        for ( CatalogDataPlacement dataPlacement : getDataPlacements( tableId ) ) {
+            if ( dataPlacement.replicationStrategy.equals( replicationStrategy ) && !dataPlacement.placementState.equals( PlacementState.INFINITELY_OUTDATED ) ) {
+                catalogDataPlacements.add( dataPlacement );
+            }
+        }
+        return catalogDataPlacements;
+    }
+
+
+    /**
+     * Returns all PartitionPlacements of a given table that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param replicationStrategy used to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific strategy
+     */
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByReplicationStrategy( long tableId, ReplicationStrategy replicationStrategy ) {
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        for ( CatalogDataPlacement dataPlacement : getDataPlacementsByReplicationStrategy( tableId, replicationStrategy ) ) {
+            partitionPlacements.addAll( getPartitionPlacementsByTableOnAdapter( dataPlacement.adapterId, tableId ) );
+        }
+        return partitionPlacements;
+    }
+
+
+    /**
+     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given replication strategy.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param partitionId filter by ID
+     * @param replicationStrategy used to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific strategy for a specific partitionId
+     */
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndReplicationStrategy( long tableId, long partitionId, ReplicationStrategy replicationStrategy ) {
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        for ( CatalogPartitionPlacement partitionPlacement : getPartitionPlacementsByReplicationStrategy( tableId, replicationStrategy ) ) {
+            if ( partitionPlacement.partitionId == partitionId ) {
+                partitionPlacements.add( partitionPlacement );
+            }
+        }
+        return partitionPlacements;
     }
 
 
@@ -4470,11 +4505,10 @@ public class CatalogImpl extends Catalog {
         }
 
         CatalogTable table = getTable( tableId );
-        List<CatalogDataPlacement> dataPlacements = getDataPlacements( tableId );
+        List<CatalogDataPlacement> dataPlacements = getDataPlacementsByReplicationStrategy( tableId, ReplicationStrategy.EAGER );
 
         // Checks for every column on every DataPlacement if each column is placed with all partitions
         for ( long columnId : table.columnIds ) {
-
             List<Long> partitionsToBeCheckedForColumn = table.partitionProperty.partitionIds.stream().collect( Collectors.toList() );
 
             // Check for every column if it has every partition
@@ -4486,7 +4520,6 @@ public class CatalogImpl extends Catalog {
 
                 List<Long> effectiveColumnsOnStore = dataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toList() );
                 List<Long> effectivePartitionsOnStore = dataPlacement.getAllPartitionIds();
-
 
                 // Remove columns and partitions from store to not evaluate them
                 if ( dataPlacement.adapterId == adapterId ) {
@@ -4555,16 +4588,18 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Adds a placement for a partition.
-     *  @param adapterId The adapter on which the table should be placed on
+     *
+     * @param adapterId The adapter on which the table should be placed on
      * @param tableId The table for which a partition placement shall be created
      * @param partitionId The id of a specific partition that shall create a new placement
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
-     * @param role Placement role indicating how this placement is being processed
+     * @param state Placement state indicating how this placement is being processed
+     * @param updateInformation Placement replicationProperty contains metadata about the current state of this placement
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, PlacementState state, UpdateInformation updateInformation ) {
         if ( !checkIfExistsPartitionPlacement( adapterId, partitionId ) ) {
             CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
             CatalogPartitionPlacement partitionPlacement = new CatalogPartitionPlacement(
@@ -4575,11 +4610,8 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     partitionId,
-                    role,
-                    new Timestamp( 0 ) // Newly created partitionPlacements are initially ultimately outdated and must first be enriched with data.
-            );
-            //TODO @HENNLO Set the new updated Timestampo of each placement after DataMigration has finished for newly created partitions
-            // However what happens if this is the first placement and has not yet anything to migrate. --> Probably irrelevant since onyl necessary for REFRESHABLEs
+                    state,
+                    updateInformation );
 
             synchronized ( this ) {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
@@ -4590,29 +4622,6 @@ public class CatalogImpl extends Catalog {
                 listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
             }
         }
-    }
-
-
-    /**
-     * Adds a new DataPlacement for a given table on a specific store.
-     * If it already exists it simply returns the existing placement.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
-     */
-    @Override
-    public CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId ) {
-        CatalogDataPlacement dataPlacement;
-        if ( (dataPlacement = getDataPlacement( adapterId, tableId )) == null ) {
-            if ( log.isDebugEnabled() ) {
-                log.debug( "No DataPlacement exists on adapter '{}' for entity '{}'. Creating a new one.", getAdapter( adapterId ), getTable( tableId ) );
-            }
-            addDataPlacement( adapterId, tableId );
-            dataPlacement = getDataPlacement( adapterId, tableId );
-        }
-
-        return dataPlacement;
     }
 
 
@@ -4675,6 +4684,113 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Updates a placements replication properties.
+     * These contain metadata information which are used to retrieve suitable placements during freshness query processing
+     *
+     * @param adapterId The adapter on which the table should be placed on
+     * @param partitionId The id of a specific partition that shall create a new placement
+     * @param commitTimestamp commitTimestamp of the original TX that updated this partition
+     * @param txId id od original TX that updated this partition
+     * @param updateTimestamp timestamp when the changes have been applied to this placement
+     * @param replicationId if the change was carried out by a replication refer to this
+     * @param modifications number of modifications that have been executed during that change
+     */
+    public void updatePartitionPlacementProperties( int adapterId, long partitionId, long commitTimestamp, long txId, long updateTimestamp, long replicationId, long modifications ) {
+        try {
+            CatalogPartitionPlacement old = Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
+
+            if ( !(replicationId > 0) ) {
+                replicationId = 0;
+            }
+
+            CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
+                    old.tableId,
+                    old.adapterId,
+                    old.adapterUniqueName,
+                    old.placementType,
+                    old.physicalSchemaName,
+                    old.physicalTableName,
+                    old.partitionId,
+                    old.state,
+                    UpdateInformation.create(
+                            commitTimestamp,
+                            txId,
+                            updateTimestamp,
+                            replicationId,
+                            old.updateInformation.modifications + modifications ) );
+
+            synchronized ( this ) {
+                partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
+                listeners.firePropertyChange( "partitionPlacement", old, placement );
+            }
+
+        } catch ( NullPointerException e ) {
+            getAdapter( adapterId );
+            getPartition( partitionId );
+            log.warn( "Partition Placement ( {} on {} )does not exist anymore.", partitionId, adapterId );
+        }
+    }
+
+
+    /**
+     * Only updates the DataPlacementState
+     *
+     * @param adapterId The id of a specific adapter that is associated with the placement
+     * @param partitionId The id of a specific partition that is associated with the placement
+     * @param state new intended state
+     */
+    public void updatePartitionPartitionPlacementState( int adapterId, long partitionId, PlacementState state ) {
+        try {
+            CatalogPartitionPlacement old = Objects.requireNonNull( partitionPlacements.get( new Object[]{ adapterId, partitionId } ) );
+
+            CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
+                    old.tableId,
+                    old.adapterId,
+                    old.adapterUniqueName,
+                    old.placementType,
+                    old.physicalSchemaName,
+                    old.physicalTableName,
+                    old.partitionId,
+                    state,
+                    old.updateInformation );
+
+            synchronized ( this ) {
+                partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
+                listeners.firePropertyChange( "partitionPlacement", old, placement );
+            }
+
+        } catch ( NullPointerException e ) {
+            getAdapter( adapterId );
+            getPartition( partitionId );
+            throw new UnknownPartitionPlacementException( adapterId, partitionId );
+        }
+    }
+
+
+    /**
+     * Adds a new DataPlacement for a given table on a specific store.
+     * If it already exists it simply returns the existing placement.
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @return DataPlacement of a table placed on a specific store
+     */
+    @Override
+    public CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId ) {
+        CatalogDataPlacement dataPlacement;
+        if ( (dataPlacement = getDataPlacement( adapterId, tableId )) == null ) {
+            if ( log.isDebugEnabled() ) {
+                log.debug( "No DataPlacement exists on adapter '{}' for entity '{}'. Creating a new one.", getAdapter( adapterId ), getTable( tableId ) );
+            }
+            addDataPlacement( adapterId, tableId );
+            dataPlacement = getDataPlacement( adapterId, tableId );
+        }
+
+        return dataPlacement;
+    }
+
+
+    /**
      * Adds a new DataPlacement for a given table on a specific store
      *
      * @param adapterId adapter where placement should be located
@@ -4688,13 +4804,13 @@ public class CatalogImpl extends Catalog {
         }
 
         if ( !dataPlacements.containsKey( new Object[]{ adapterId, tableId } ) ) {
-
-            CatalogDataPlacement dataPlacement = new CatalogDataPlacement( tableId,
+            CatalogDataPlacement dataPlacement = new CatalogDataPlacement(
+                    tableId,
                     adapterId,
                     PlacementType.AUTOMATIC,
-                    DataPlacementRole.UPTODATE,
-                    ImmutableList.of(),
-                    ImmutableList.of() );
+                    PlacementState.UPTODATE,
+                    ReplicationStrategy.EAGER,
+                    ImmutableList.of(), ImmutableList.of() );
 
             synchronized ( this ) {
                 dataPlacements.put( new Object[]{ adapterId, tableId }, dataPlacement );
@@ -4762,12 +4878,15 @@ public class CatalogImpl extends Catalog {
             }
         }
 
+        if ( dataPlacement.replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+            removeLazyReplicatedDataPlacements( adapterId, tableId );
+        }
+
         synchronized ( this ) {
             dataPlacements.remove( new Object[]{ adapterId, tableId } );
             removeSingleDataPlacementFromTable( adapterId, tableId );
         }
         listeners.firePropertyChange( "dataPlacement", dataPlacement, null );
-
     }
 
 
@@ -4792,7 +4911,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Removes a single dataPlacement from a store for a specific table
      *
-     * @param adapterId adapter id corresponding to a new DataPlaceements
+     * @param adapterId adapter id corresponding to a new DataPlacement
      * @param tableId table to be updated
      */
     @Override
@@ -4809,7 +4928,6 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Adds columns to dataPlacement on a store for a specific table
-     *
      *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
@@ -4828,10 +4946,10 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
-                oldDataPlacement.dataPlacementRole,
+                oldDataPlacement.placementState,
+                oldDataPlacement.replicationStrategy,
                 ImmutableList.copyOf( columnPlacementsOnAdapter.stream().collect( Collectors.toList() ) ),
-                ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() )
-        );
+                ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
@@ -4859,10 +4977,10 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
-                oldDataPlacement.dataPlacementRole,
+                oldDataPlacement.placementState,
+                oldDataPlacement.replicationStrategy,
                 ImmutableList.copyOf( columnPlacementsOnAdapter.stream().collect( Collectors.toList() ) ),
-                ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() )
-        );
+                ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
@@ -4891,7 +5009,8 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
-                oldDataPlacement.dataPlacementRole,
+                oldDataPlacement.placementState,
+                oldDataPlacement.replicationStrategy,
                 oldDataPlacement.columnPlacementsOnAdapter,
                 ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) ) );
 
@@ -4905,6 +5024,7 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Remove partitions from dataPlacement on a store for a specific table
+     *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
      * @param partitionIds List of partitionIds to remove from a specific store for the table
@@ -4921,9 +5041,9 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
-                oldDataPlacement.dataPlacementRole,
-                oldDataPlacement.columnPlacementsOnAdapter,
-                ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) ) );
+                oldDataPlacement.placementState,
+                oldDataPlacement.replicationStrategy,
+                oldDataPlacement.columnPlacementsOnAdapter, ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
@@ -4935,27 +5055,116 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Updates and overrides list of associated columnPlacements & partitionPlacements for a given data placement
+     *
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from
      * @param columnIds List of columnIds to be located on a specific store for the table
      * @param partitionIds List of partitionIds to be located on a specific store for the table
      */
     @Override
-    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds ) {
+    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds, PlacementState placementState, ReplicationStrategy replicationStrategy ) {
         CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
+
+        if ( placementState == null || placementState.equals( oldDataPlacement.placementState ) ) {
+            placementState = oldDataPlacement.placementState;
+        }
+
+        if ( replicationStrategy == null || replicationStrategy.equals( oldDataPlacement.replicationStrategy ) ) {
+            replicationStrategy = oldDataPlacement.replicationStrategy;
+        }
 
         CatalogDataPlacement newDataPlacement = new CatalogDataPlacement(
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
-                oldDataPlacement.dataPlacementRole,
-                ImmutableList.copyOf( columnIds ),
-                ImmutableList.copyOf( partitionIds ) );
+                placementState,
+                replicationStrategy,
+                ImmutableList.copyOf( columnIds ), ImmutableList.copyOf( partitionIds ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
+        if ( replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+            addLazyReplicatedDataPlacements( adapterId, tableId );
+        } else if ( replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+            removeLazyReplicatedDataPlacements( adapterId, tableId );
+        }
+
         if ( log.isDebugEnabled() ) {
             log.debug( "Added columns {} & partitions: {} of table {}, to placement on adapter {}.", columnIds, partitionIds, tableId, adapterId );
+        }
+    }
+
+
+    /**
+     * Updates and overrides the dataPlacementstate for a given data placement
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param placementState new DataPlacementstate
+     */
+    @Override
+    public void updateDataPlacementState( int adapterId, long tableId, PlacementState placementState ) {
+        CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
+
+        if ( placementState == null || placementState.equals( oldDataPlacement.placementState ) ) {
+            placementState = oldDataPlacement.placementState;
+        }
+
+        CatalogDataPlacement newDataPlacement = new CatalogDataPlacement(
+                oldDataPlacement.tableId,
+                oldDataPlacement.adapterId,
+                oldDataPlacement.placementType,
+                placementState,
+                oldDataPlacement.replicationStrategy,
+                ImmutableList.copyOf( oldDataPlacement.columnPlacementsOnAdapter ),
+                ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
+
+        modifyDataPlacement( adapterId, tableId, newDataPlacement );
+
+        // Make sure that all partition placements are also correctly labeled
+        for ( long partitionId : newDataPlacement.getAllPartitionIds() ) {
+            updatePartitionPartitionPlacementState( adapterId, partitionId, placementState );
+        }
+
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Switched from placement state {} to {} for table {}, on adapter {}.", oldDataPlacement.placementState, placementState, tableId, adapterId );
+        }
+    }
+
+
+    /**
+     * Updates and overrides the dataPlacement replication Strategy for a given data placement
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param replicationStrategy new ReplicationStrategy
+     */
+    @Override
+    public void updateDataPlacementReplicationStrategy( int adapterId, long tableId, ReplicationStrategy replicationStrategy ) {
+        CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
+
+        if ( replicationStrategy == null || replicationStrategy.equals( oldDataPlacement.replicationStrategy ) ) {
+            replicationStrategy = oldDataPlacement.replicationStrategy;
+        }
+
+        CatalogDataPlacement newDataPlacement = new CatalogDataPlacement(
+                oldDataPlacement.tableId,
+                oldDataPlacement.adapterId,
+                oldDataPlacement.placementType,
+                oldDataPlacement.placementState,
+                replicationStrategy,
+                ImmutableList.copyOf( oldDataPlacement.columnPlacementsOnAdapter ), ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() ) );
+
+        modifyDataPlacement( adapterId, tableId, newDataPlacement );
+
+        if ( replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+            addLazyReplicatedDataPlacements( adapterId, tableId );
+        } else if ( replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+            removeLazyReplicatedDataPlacements( adapterId, tableId );
+        }
+
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Switched replication strategy from {} to {} for table {}, on adapter {}.", oldDataPlacement.replicationStrategy, replicationStrategy, tableId, adapterId );
         }
     }
 
@@ -5117,6 +5326,44 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public List<CatalogDataPlacement> getAllLazyReplicatedDataPlacements() {
+        List<CatalogDataPlacement> dataPlacements = new ArrayList<>();
+        lazyReplicatedDataPlacements.forEach( placement -> dataPlacements.add( getDataPlacement( (int) placement.left, (long) placement.right ) ) );
+        return dataPlacements;
+    }
+
+
+    @Override
+    public Map<Long, List<CatalogDataPlacement>> getAllLazyReplicatedDataPlacementsByTable() {
+        Map<Long, List<CatalogDataPlacement>> placementsByTable = new HashMap<>();
+
+        for ( CatalogDataPlacement dataPlacement : getAllLazyReplicatedDataPlacements() ) {
+
+            if ( !placementsByTable.containsKey( dataPlacement.tableId ) ) {
+                placementsByTable.put( dataPlacement.tableId, new ArrayList<>() );
+            }
+            placementsByTable.get( dataPlacement.tableId ).add( dataPlacement );
+        }
+
+        return placementsByTable;
+    }
+
+
+    private void addLazyReplicatedDataPlacements( int adapterId, long tableId ) {
+        if ( getDataPlacement( adapterId, tableId ) != null && !getDataPlacement( adapterId, tableId ).replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+            lazyReplicatedDataPlacements.add( new Pair( adapterId, tableId ) );
+        }
+    }
+
+
+    private void removeLazyReplicatedDataPlacements( int adapterId, long tableId ) {
+        if ( lazyReplicatedDataPlacements.contains( new Pair( adapterId, tableId ) ) ) {
+            lazyReplicatedDataPlacements.remove( new Pair( adapterId, tableId ) );
+        }
+    }
+
+
     /**
      * Probes if a Partition Placement on a adapter for a specific partition already exists.
      *
@@ -5127,6 +5374,19 @@ public class CatalogImpl extends Catalog {
     @Override
     public boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId ) {
         CatalogPartitionPlacement placement = partitionPlacements.get( new Object[]{ adapterId, partitionId } );
+        return placement != null;
+    }
+
+
+    /**
+     * Probes if a Data Placement on an adapter for a specific table already exists.
+     *
+     * @param adapterId Adapter on which to check
+     * @param tableId Table which to check
+     * @return teh response of the probe
+     */
+    public boolean checkIfExistsDataPlacement( int adapterId, long tableId ) {
+        CatalogDataPlacement placement = dataPlacements.get( new Object[]{ adapterId, tableId } );
         return placement != null;
     }
 
@@ -5225,23 +5485,24 @@ public class CatalogImpl extends Catalog {
      *
      * @param tableId on which the key is defined
      * @param columnIds all involved columns
+     * @param enforcementTime at which point during execution the key should be enforced
      * @return the id of the key
      * @throws GenericCatalogException if the key does not exist
      */
-    private long getOrAddKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+    private long getOrAddKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) throws GenericCatalogException {
         Long keyId = keyColumns.get( columnIds.stream().mapToLong( Long::longValue ).toArray() );
         if ( keyId != null ) {
             return keyId;
         }
-        return addKey( tableId, columnIds );
+        return addKey( tableId, columnIds, enforcementTime );
     }
 
 
-    private long addKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+    private long addKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) throws GenericCatalogException {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             long id = keyIdBuilder.getAndIncrement();
-            CatalogKey key = new CatalogKey( id, table.id, table.schemaId, table.databaseId, columnIds );
+            CatalogKey key = new CatalogKey( id, table.id, table.schemaId, table.databaseId, columnIds, enforcementTime );
             synchronized ( this ) {
                 keys.put( id, key );
                 keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );

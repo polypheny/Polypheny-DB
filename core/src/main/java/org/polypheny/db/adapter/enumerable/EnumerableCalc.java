@@ -185,7 +185,8 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             Expressions.fieldDecl(
                                     Modifier.PUBLIC | Modifier.FINAL,
                                     inputEnumerator,
-                                    Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
+                                    Expressions.call( inputEnumerable, BuiltInMethod.
+                                            ENUMERABLE_ENUMERATOR.method ) ),
                             EnumUtils.overridingMethodDecl(
                                     BuiltInMethod.ENUMERATOR_RESET.method,
                                     EnumUtils.NO_PARAMS,

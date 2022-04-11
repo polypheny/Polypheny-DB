@@ -32,22 +32,32 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.BatchIterator;
+import org.polypheny.db.algebra.core.ConditionalExecute;
+import org.polypheny.db.algebra.core.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalStreamer;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -58,6 +68,7 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.processing.WhereClauseVisitor;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -73,6 +84,8 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.StatementImpl;
+
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
@@ -103,19 +116,33 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                 }
 
+                // TODO @HENNLO remove if not necessary anymore
+                /*
                 long pkid = catalogTable.primaryKey;
                 List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
                 CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
 
                 // Essentially gets a list of all stores where this table resides
-                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
+                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
+                */
+
+                //TODO @HENNLO maybe check if its a primary Transaction or a refresh operation
+                // Maybe not even necessary because refresh operation are scheduled asynchronously somewhere else
+
+                // Essentially gets a list of all stores where this table resides
+                List<CatalogDataPlacement> primaryDataPlacements = catalog.getDataPlacementsByReplicationStrategy( catalogTable.id, ReplicationStrategy.EAGER );
+
+                // Only consider lazy replication if there even are DataPlacements labeled as LAZY
+                if ( catalogTable.dataPlacements.size() != primaryDataPlacements.size() ) {
+                    statement.getTransaction().setNeedsChangeDataCapture( true );
+                }
 
                 if ( catalogTable.partitionProperty.isPartitioned && log.isDebugEnabled() ) {
                     log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
-                    for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
+                    for ( CatalogDataPlacement dataPlacement : primaryDataPlacements ) {
                         log.debug(
                                 "\t\t -> '{}' {}\t{}",
-                                dataPlacement.adapterUniqueName,
+                                dataPlacement.getAdapterName(),
                                 catalog.getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
                                 catalog.getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
                     }
@@ -127,15 +154,17 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 // Needed for partitioned updates when source partition and target partition are not equal
                 // SET Value is the new partition, where clause is the source
                 boolean operationWasRewritten = false;
+                Set<Long> accessedPartitionList = new HashSet<>();
+
                 List<Map<Long, Object>> tempParamValues = null;
 
                 Map<Long, Object> newParameterValues = new HashMap<>();
-                for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
+                for ( CatalogDataPlacement dataPlacement : primaryDataPlacements ) {
 
                     CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
 
                     // Get placements on store
-                    List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
+                    List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( dataPlacement.adapterId, catalogTable.id );
 
                     // If this is a update, check whether we need to execute on this store at all
                     List<String> updateColumnList = ((LogicalTableModify) node).getUpdateColumnList();
@@ -152,7 +181,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 sourceExpressionListIterator.next();
                                 try {
                                     CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
-                                    if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.adapterId, catalogColumn.id ) ) {
+                                    if ( !catalog.checkIfExistsColumnPlacement( dataPlacement.adapterId, catalogColumn.id ) ) {
                                         updateColumnListIterator.remove();
                                         sourceExpressionListIterator.remove();
                                     }
@@ -168,7 +197,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                     long identPart = -1;
                     long identifiedPartitionForSetValue = -1;
-                    Set<Long> accessedPartitionList = new HashSet<>();
+                    accessedPartitionList.clear();
                     // Identify where clause of UPDATE
                     if ( catalogTable.partitionProperty.isPartitioned ) {
                         boolean worstCaseRouting = false;
@@ -387,9 +416,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         partitionColumnIndex = columnIndex;
                                         if ( log.isDebugEnabled() ) {
                                             log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionProperty.partitionColumnId, j );
-                                            worstCaseRouting = false;
-
                                         }
+                                        worstCaseRouting = false;
                                     }
                                 }
 
@@ -416,9 +444,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
                                     Long currentPartitionId = partitionMapping.getKey();
 
-                                    if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( currentPartitionId ) ) {
+                                    if ( !dataPlacement.getAllPartitionIds().contains( currentPartitionId ) ) {
                                         continue;
                                     }
+
+                                    CatalogPartitionPlacement currentPartitionPlacement = catalog.getPartitionPlacement( dataPlacement.adapterId, currentPartitionId );
 
                                     for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
                                         LogicalValues newLogicalValues = new LogicalValues(
@@ -432,7 +462,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 RoutedAlgBuilder.create( statement, cluster ),
                                                 catalogTable,
                                                 placementsOnAdapter,
-                                                catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
+                                                currentPartitionPlacement,
                                                 statement,
                                                 cluster,
                                                 true,
@@ -440,9 +470,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                         List<String> qualifiedTableName = ImmutableList.of(
                                                 PolySchemaBuilder.buildAdapterSchemaName(
-                                                        pkPlacement.adapterUniqueName,
+                                                        dataPlacement.getAdapterName(),
                                                         catalogTable.getSchemaName(),
-                                                        pkPlacement.physicalSchemaName
+                                                        currentPartitionPlacement.physicalSchemaName
                                                 ),
                                                 t.getLogicalTableName() + "_" + currentPartitionId );
                                         AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
@@ -496,9 +526,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                                 tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
 
-                                                if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
+                                                if ( !dataPlacement.getAllPartitionIds().contains( tempPartitionId ) ) {
                                                     continue;
                                                 }
+
+                                                CatalogPartitionPlacement currentPartitionPlacement = catalog.getPartitionPlacement( dataPlacement.adapterId, tempPartitionId );
 
                                                 List<Map<Long, Object>> parameterValues = new ArrayList<>();
                                                 parameterValues.add( new HashMap<>( newParameterValues ) );
@@ -509,7 +541,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         RoutedAlgBuilder.create( statement, cluster ),
                                                         catalogTable,
                                                         placementsOnAdapter,
-                                                        catalog.getPartitionPlacement( pkPlacement.adapterId, tempPartitionId ),
+                                                        currentPartitionPlacement,
                                                         statement,
                                                         cluster,
                                                         true,
@@ -519,9 +551,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                                 List<String> qualifiedTableName = ImmutableList.of(
                                                         PolySchemaBuilder.buildAdapterSchemaName(
-                                                                pkPlacement.adapterUniqueName,
+                                                                dataPlacement.getAdapterName(),
                                                                 catalogTable.getSchemaName(),
-                                                                pkPlacement.physicalSchemaName
+                                                                currentPartitionPlacement.physicalSchemaName
                                                         ),
                                                         t.getLogicalTableName() + "_" + tempPartitionId );
                                                 AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
@@ -607,15 +639,17 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                         for ( long partitionId : accessedPartitionList ) {
 
-                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( partitionId ) ) {
+                            if ( !dataPlacement.getAllPartitionIds().contains( partitionId ) ) {
                                 continue;
                             }
 
+                            CatalogPartitionPlacement currentPartitionPlacement = catalog.getPartitionPlacement( dataPlacement.adapterId, partitionId );
+
                             List<String> qualifiedTableName = ImmutableList.of(
                                     PolySchemaBuilder.buildAdapterSchemaName(
-                                            pkPlacement.adapterUniqueName,
+                                            dataPlacement.getAdapterName(),
                                             catalogTable.getSchemaName(),
-                                            pkPlacement.physicalSchemaName
+                                            currentPartitionPlacement.physicalSchemaName
                                     ),
                                     t.getLogicalTableName() + "_" + partitionId );
                             AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
@@ -628,7 +662,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     RoutedAlgBuilder.create( statement, cluster ),
                                     catalogTable,
                                     placementsOnAdapter,
-                                    catalog.getPartitionPlacement( pkPlacement.adapterId, partitionId ),
+                                    currentPartitionPlacement,
                                     statement,
                                     cluster,
                                     false,
@@ -655,6 +689,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         ((LogicalTableModify) node).isFlattened()
                                 );
                             }
+                            if ( statement.getMonitoringEvent() != null ) {
+                                statement.getMonitoringEvent().addChangedPartitionPlacements(
+                                        currentPartitionPlacement.adapterId,
+                                        currentPartitionPlacement.partitionId );
+                            }
                             modifies.add( modify );
                         }
                     }
@@ -672,22 +711,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     }
                 }
 
-                if ( modifies.size() == 1 ) {
-                    return modifies.get( 0 );
-                } else {
-                    RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
-                    for ( int i = 0; i < modifies.size(); i++ ) {
-                        if ( i == 0 ) {
-                            builder.push( modifies.get( i ) );
-                        } else {
-                            builder.push( modifies.get( i ) );
-                            builder.replaceTop( LogicalModifyCollect.create(
-                                    ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ),
-                                    true ) );
-                        }
-                    }
-                    return builder.build();
-                }
+                RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
+
+                return buildRoutedAlg( statement, node, modifies, builder, accessedPartitionList, catalogTable );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
@@ -711,6 +737,48 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         return LogicalConditionalExecute.create( builder.build(), action, lce );
+    }
+
+
+    @Override
+    public AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation ) {
+        LogicalConstraintEnforcer constraint = (LogicalConstraintEnforcer) alg;
+        RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, alg.getCluster() );
+        builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, statement, alg.getCluster(), queryInformation );
+
+        if ( constraint.getLeft() instanceof TableModify ) {
+            return LogicalConstraintEnforcer.create(
+                    routeDml( constraint.getLeft(), statement ),
+                    builder.build(),
+                    constraint.getExceptionClasses(),
+                    constraint.getExceptionMessages() );
+        } else if ( constraint.getLeft() instanceof BatchIterator ) {
+            return LogicalConstraintEnforcer.create(
+                    handleBatchIterator( constraint.getLeft(), statement, queryInformation ),
+                    builder.build(),
+                    constraint.getExceptionClasses(),
+                    constraint.getExceptionMessages() );
+        } else {
+            throw new RuntimeException( "The provided modify query for the ConstraintEnforcer was not recognized!" );
+        }
+    }
+
+
+    @Override
+    public AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation ) {
+        LogicalBatchIterator iterator = (LogicalBatchIterator) alg;
+        AlgNode input;
+        if ( iterator.getInput() instanceof TableModify ) {
+            input = routeDml( iterator.getInput(), statement );
+        } else if ( iterator.getInput() instanceof ConditionalExecute ) {
+            input = handleConditionalExecute( iterator.getInput(), statement, queryInformation );
+        } else if ( iterator.getInput() instanceof ConstraintEnforcer ) {
+            input = handleConstraintEnforcer( iterator.getInput(), statement, queryInformation );
+        } else {
+            throw new RuntimeException( "BachIterator had an unknown child!" );
+        }
+
+        return LogicalBatchIterator.create( input, statement );
     }
 
 
@@ -863,6 +931,123 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 dmlConditionCheck( node, catalogTable, placements, o );
             }
         }
+    }
+
+
+    private AlgNode buildRoutedAlg( Statement statement, AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder, Set<Long> accessedPartitions, CatalogTable catalogTable ) {
+
+        if ( statement.getTransaction().needsChangeDataCapture() ) {
+
+            // dummy column Placements are just just to reconstruct a full TableModify contianing all columns
+            List<CatalogColumnPlacement> dummyColumnPlacements = new ArrayList<>();
+            catalogTable.columnIds.forEach( columnId -> dummyColumnPlacements.add( catalog.getColumnPlacementsByColumn( columnId ).get( 0 ) ) );
+
+            // Only used to construct and simulate a full placement
+            TableModify completeModify;
+            AlgNode input = buildDml(
+                    super.recursiveCopy( node.getInput( 0 ) ),
+                    RoutedAlgBuilder.create( statement, node.getCluster() ),
+                    catalogTable,
+                    dummyColumnPlacements,
+                    catalog.getPartitionPlacementsByReplicationStrategy( catalogTable.id, ReplicationStrategy.EAGER ).get( 0 ),
+                    statement,
+                    node.getCluster(),
+                    false,
+                    statement.getDataContext().getParameterValues() ).build();
+
+            completeModify = LogicalTableModify.create(
+                    node.getTable(),
+                    ((LogicalTableModify) node).getCatalogReader(),
+                    input,
+                    ((LogicalTableModify) node).getOperation(),
+                    ((LogicalTableModify) node).getUpdateColumnList(),
+                    ((LogicalTableModify) node).getSourceExpressionList(),
+                    false );
+
+            return handleChangeDataCapture( node, modifies, builder, accessedPartitions, statement.getTransaction().getId(), ((StatementImpl) statement).getId(), completeModify );
+        }
+
+        if ( modifies.size() == 1 ) {
+            return modifies.get( 0 );
+        } else {
+
+            for ( int i = 0; i < modifies.size(); i++ ) {
+                if ( i == 0 ) {
+                    builder.push( modifies.get( i ) );
+                } else {
+                    builder.push( modifies.get( i ) );
+                    builder.replaceTop( LogicalModifyCollect.create(
+                            ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ),
+                            true ) );
+                }
+            }
+            return builder.build();
+        }
+    }
+
+
+    /**
+     * Is used to prepare the algebra to capture all basic operations that need to be applied asynchronously
+     * in a lazy replication.
+     */
+    private AlgNode handleChangeDataCapture( AlgNode node, List<AlgNode> modifies, RoutedAlgBuilder builder, Set<Long> accessedPartitions, long txId, long stmtId, TableModify completeModify ) {
+
+        List<AlgNode> collected = new ArrayList<>();
+        AlgNode query = null;
+        RexNode condition = null;
+
+        for ( int i = 0; i < modifies.size(); i++ ) {
+            LogicalTableModify baseModify = (LogicalTableModify) modifies.get( i );
+            LogicalStreamer streamer = LogicalStreamer.create( baseModify, AlgFactories.LOGICAL_BUILDER.create( baseModify.getCluster(), baseModify.getCatalogReader() ) );
+
+            LogicalTableModify preparedModify = (LogicalTableModify) streamer.getRight();
+
+            if ( i == 0 ) {
+                collected.add( preparedModify );
+            } else {
+                collected.add( preparedModify );
+                List<AlgNode> tempList = collected.stream().collect( Collectors.toList() );
+                collected.clear();
+                collected.add( LogicalModifyCollect.create( tempList, true ) );
+            }
+
+            // Last iteration
+            if ( i == (modifies.size() - 1) ) {
+                query = streamer.getLeft();
+
+                RexBuilder rexBuilder = builder.getRexBuilder();
+
+                if ( baseModify.getOperation().equals( Operation.INSERT ) ) {
+
+                }
+
+                if ( preparedModify.getInput() instanceof LogicalFilter ) {
+                    condition = ((LogicalFilter) preparedModify.getInput()).getCondition();
+                }
+
+                streamer = LogicalStreamer.create( completeModify, AlgFactories.LOGICAL_BUILDER.create( baseModify.getCluster(), baseModify.getCatalogReader() ) );
+                query = streamer.getLeft();
+                LogicalTableModify preparedCompleteModify = (LogicalTableModify) streamer.getRight();
+
+                collected.add( LogicalModifyDataCapture.create(
+                        builder.getCluster(),
+                        builder.getCluster().traitSet(),
+                        preparedCompleteModify.getOperation(),
+                        preparedCompleteModify.getTable().getTable().getTableId(),
+                        preparedCompleteModify.getUpdateColumnList(),
+                        completeModify.getSourceExpressionList(),
+                        condition,
+                        preparedCompleteModify.getInput().getRowType().getFieldList(),
+                        accessedPartitions.stream().collect( Collectors.toList() ),
+                        txId,
+                        stmtId,
+                        super.recursiveCopy( preparedCompleteModify.getInput() ) ) );
+            }
+        }
+
+        builder.push( LogicalStreamer.create( query, LogicalModifyCollect.create( collected, true ) ) );
+
+        return builder.build();
     }
 
 

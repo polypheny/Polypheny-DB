@@ -21,6 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -28,17 +29,23 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
+import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
+import org.polypheny.db.replication.properties.exception.UnknownPlacementPropertyException;
+import org.polypheny.db.replication.properties.exception.UnsupportedStateTransitionException;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.ddl.SqlAlterTable;
+import org.polypheny.db.sql.sql.util.replication.properties.SqlPlacementPropertyExtractor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -55,6 +62,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     private final SqlIdentifier storeName;
     private final List<Integer> partitionGroupsList;
     private final List<SqlIdentifier> partitionGroupNamesList;
+    private final Map<SqlIdentifier, SqlIdentifier> placementPropertyMap;
 
 
     public SqlAlterTableAddPlacement(
@@ -63,13 +71,15 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             SqlNodeList columnList,
             SqlIdentifier storeName,
             List<Integer> partitionGroupsList,
-            List<SqlIdentifier> partitionGroupNamesList ) {
+            List<SqlIdentifier> partitionGroupNamesList,
+            Map<SqlIdentifier, SqlIdentifier> placementPropertyMap ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
         this.storeName = Objects.requireNonNull( storeName );
         this.partitionGroupsList = partitionGroupsList;
         this.partitionGroupNamesList = partitionGroupNamesList;
+        this.placementPropertyMap = Objects.requireNonNull( placementPropertyMap );
 
     }
 
@@ -97,6 +107,11 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         writer.keyword( "ON" );
         writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
+
+        if ( placementPropertyMap != null ) {
+            writer.keyword( "SET" );
+            storeName.unparse( writer, leftPrec, rightPrec );
+        }
 
         if ( partitionGroupsList != null || partitionGroupNamesList != null ) {
             writer.keyword( " WITH " );
@@ -142,8 +157,10 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                     partitionGroupsList,
                     partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
                     storeInstance,
-                    statement );
-        } catch ( PlacementAlreadyExistsException e ) {
+                    statement,
+                    SqlPlacementPropertyExtractor.fromNodeLists( catalogTable, placementPropertyMap )
+            );
+        } catch ( PlacementAlreadyExistsException | UnknownPlacementStateException | InvalidPlacementPropertySpecification | UnknownPlacementPropertyException | UnknownReplicationStrategyException | UnsupportedStateTransitionException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );

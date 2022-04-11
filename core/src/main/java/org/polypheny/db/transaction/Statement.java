@@ -25,7 +25,10 @@ import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.util.FileInputHandle;
 
+
 public interface Statement {
+
+    long getId();
 
     Transaction getTransaction();
 

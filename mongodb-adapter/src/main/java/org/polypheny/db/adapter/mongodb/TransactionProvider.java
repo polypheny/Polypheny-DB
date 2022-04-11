@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,11 +54,8 @@ public class TransactionProvider {
      * @return the corresponding session, which holds the information of the transaction
      */
     public ClientSession startTransaction( PolyXid xid ) {
-        TransactionOptions options = TransactionOptions.builder()
-                /*.readPreference( ReadPreference.primary() )
-                .readConcern( ReadConcern.LOCAL )
-                .maxCommitTime( 3L, TimeUnit.MINUTES )
-                .writeConcern( WriteConcern.MAJORITY )*/.build();
+        TransactionOptions options = TransactionOptions.builder().build();
+
         ClientSession session;
         if ( !sessions.containsKey( xid ) ) {
             session = client.startSession();

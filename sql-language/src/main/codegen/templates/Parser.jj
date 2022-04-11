@@ -5755,6 +5755,75 @@ SqlNode StandardFloorCeilOptions(Span s, boolean floorFlag) :
     )
 }
 
+
+/*
+* Parse an optional placement property clause
+*/
+Map<SqlIdentifier,SqlIdentifier> PlacementPropertyOpt() :
+{
+    Map<SqlIdentifier,SqlIdentifier> propertyMap = new HashMap<SqlIdentifier,SqlIdentifier>();
+    Map<SqlIdentifier,SqlIdentifier> tempPropertyMap = new HashMap<SqlIdentifier,SqlIdentifier>();
+    SqlIdentifier propertyName;
+}
+{
+     tempPropertyMap = PlacementPropertySpecification() { propertyMap.putAll(tempPropertyMap); }
+    (
+        <COMMA> tempPropertyMap = PlacementPropertySpecification() { propertyMap.putAll(tempPropertyMap); }
+    )*
+    {
+            return propertyMap;
+    }
+}
+
+
+/*
+* Parse an optional placement property specification
+*/
+Map<SqlIdentifier,SqlIdentifier> PlacementPropertySpecification() :
+{
+    Map<SqlIdentifier,SqlIdentifier> propertyMap = new HashMap<SqlIdentifier,SqlIdentifier>();
+    SqlIdentifier propertyName;
+    SqlIdentifier propertyValue;
+}
+{
+    (
+        <STATE>
+        (
+            <UPTODATE>
+            { propertyValue = new SqlIdentifier( "UPTODATE", getPos() ); }
+        |
+            <REFRESHABLE>
+            { propertyValue = new SqlIdentifier( "REFRESHABLE", getPos() ); }
+        |
+            <OUTDATED>
+            { propertyValue = new SqlIdentifier( "OUTDATED", getPos() ); }
+        )
+        {
+            propertyName = new SqlIdentifier( "STATE", getPos() );
+        }
+
+        |
+        <REPLICATION>
+        [ <STRATEGY> ]
+            (
+
+                <EAGER>
+                { propertyValue = new SqlIdentifier( "EAGER", getPos() ); }
+            |
+                <LAZY>
+                { propertyValue = new SqlIdentifier( "LAZY", getPos() ); }
+            )
+            {
+                propertyName = new SqlIdentifier( "REPLICATION_STRATEGY", getPos() );
+            }
+    )
+    {
+        propertyMap.put(propertyName, propertyValue );
+        return propertyMap;
+    }
+}
+
+
 /**
  * Parses the name of a JDBC function that is a token but is not reserved.
  */
@@ -6311,6 +6380,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DYNAMIC_FUNCTION: "DYNAMIC_FUNCTION" >
 |   < DYNAMIC_FUNCTION_CODE: "DYNAMIC_FUNCTION_CODE" >
 |   < EACH: "EACH" >
+|   < EAGER: "EAGER" >
 |   < ELEMENT: "ELEMENT" >
 |   < ELSE: "ELSE" >
 |   < EMPTY: "EMPTY" >
@@ -6430,6 +6500,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < LAST: "LAST" >
 |   < LAST_VALUE: "LAST_VALUE" >
 |   < LATERAL: "LATERAL" >
+|   < LAZY: "LAZY" >
 |   < LEAD: "LEAD" >
 |   < LEADING: "LEADING" >
 |   < LEFT: "LEFT" >
@@ -6521,6 +6592,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ORDINALITY: "ORDINALITY" >
 |   < OTHERS: "OTHERS" >
 |   < OUT: "OUT" >
+|   < OUTDATED: "OUTDATED" >
 |   < OUTER: "OUTER" >
 |   < OUTPUT: "OUTPUT" >
 |   < OVER: "OVER" >
@@ -6553,6 +6625,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PERIOD: "PERIOD" >
 |   < PERMUTE: "PERMUTE" >
 |   < PLACEMENT: "PLACEMENT" >
+|   < PLACEMENTS: "PLACEMENTS" >
 |   < PLACING: "PLACING" >
 |   < PLAN: "PLAN" >
 |   < PLI: "PLI" >
@@ -6579,6 +6652,8 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < REAL: "REAL" >
 |   < RECURSIVE: "RECURSIVE" >
 |   < REF: "REF" >
+|   < REFRESH: "REFRESH" >
+|   < REFRESHABLE: "REFRESHABLE" >
 |   < REFERENCES: "REFERENCES" >
 |   < REFERENCING: "REFERENCING" >
 |   < REGR_AVGX: "REGR_AVGX" >
@@ -6595,6 +6670,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < RENAME: "RENAME" >
 |   < REPEATABLE: "REPEATABLE" >
 |   < REPLACE: "REPLACE" >
+|   < REPLICATION: "REPLICATION" >
 |   < RESET: "RESET" >
 |   < RESTART: "RESTART" >
 |   < RESTRICT: "RESTRICT" >
@@ -6722,6 +6798,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < STDDEV_POP: "STDDEV_POP" >
 |   < STDDEV_SAMP: "STDDEV_SAMP" >
 |   < STORE: "STORE" >
+|   < STRATEGY: "STRATEGY" >
 |   < STREAM: "STREAM" >
 |   < STRUCTURE: "STRUCTURE" >
 |   < STYLE: "STYLE" >
@@ -6784,6 +6861,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < UNNAMED: "UNNAMED" >
 |   < UNNEST: "UNNEST" >
 |   < UPDATE: "UPDATE" >
+|   < UPTODATE: "UPTODATE" >
 |   < UPPER: "UPPER" >
 |   < UPSERT: "UPSERT" >
 |   < USAGE: "USAGE" >

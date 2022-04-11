@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.replication.freshness.exceptions.UnknownFreshnessEvaluationTypeRuntimeException;
@@ -49,7 +49,13 @@ public class FreshnessManagerImpl extends FreshnessManager {
 
 
     private Map<Long, List<CatalogPartitionPlacement>> getAllRefreshablePlacements( CatalogTable table, List<Long> partitionIds ) {
-        return catalog.getPartitionPlacementsByIdAndRole( table.id, partitionIds, DataPlacementRole.REFRESHABLE );
+
+        Map<Long, List<CatalogPartitionPlacement>> refreshablePlacementsByPartitionId = new HashMap<>();
+        for ( long partitionId : partitionIds ) {
+            refreshablePlacementsByPartitionId.put( partitionId, catalog.getPartitionPlacementsByIdAndState( table.id, partitionId, PlacementState.REFRESHABLE ) );
+        }
+
+        return refreshablePlacementsByPartitionId;
     }
 
 
@@ -85,9 +91,10 @@ public class FreshnessManagerImpl extends FreshnessManager {
             long partitionId = entry.getKey();
             List<CatalogPartitionPlacement> partitionPlacements = entry.getValue();
 
+            // TODO @HENNLO CHeck if this is indeed BEFORE
             // Only keep placements that are newer than the specified threshold
             partitionPlacements.stream().filter(
-                    partitionPlacement -> toleratedTimestampFilter.before( partitionPlacement.updateTimestamp )
+                    partitionPlacement -> toleratedTimestampFilter.before( new Timestamp( partitionPlacement.updateInformation.commitTimestamp ) )
             );
 
             filteredPlacements.put( partitionId, ImmutableList.copyOf( partitionPlacements ) );

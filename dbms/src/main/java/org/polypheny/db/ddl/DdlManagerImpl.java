@@ -51,12 +51,13 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
@@ -119,6 +120,13 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.replication.LazyReplicationEngine;
+import org.polypheny.db.replication.ReplicationEngineProvider;
+import org.polypheny.db.replication.properties.PlacementPropertyInformation;
+import org.polypheny.db.replication.properties.UpdateInformation;
+import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
+import org.polypheny.db.replication.properties.exception.NotYetUpToDateException;
+import org.polypheny.db.replication.properties.exception.UnsupportedStateTransitionException;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -286,7 +294,8 @@ public class DdlManagerImpl extends DdlManager {
                             PlacementType.AUTOMATIC,
                             physicalSchemaName,
                             physicalTableName,
-                            DataPlacementRole.UPTODATE);
+                            PlacementState.UPTODATE,
+                            UpdateInformation.createEmpty() );
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }
@@ -660,7 +669,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
+    public void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement, PlacementPropertyInformation placementPropertyInfo ) throws PlacementAlreadyExistsException, InvalidPlacementPropertySpecification, UnsupportedStateTransitionException {
         List<CatalogColumn> addedColumns = new LinkedList<>();
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
@@ -785,7 +794,12 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE );
+                    placementPropertyInfo != null ? placementPropertyInfo.placementState : PlacementState.UPTODATE,
+                    UpdateInformation.createEmpty() );
+        }
+
+        if ( placementPropertyInfo != null ) {
+            modifyDataPlacementProperties( placementPropertyInfo, dataStore, statement );
         }
 
         // Make sure that the stores have created the schema
@@ -1187,8 +1201,8 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement )
-            throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException {
+    public void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement, PlacementPropertyInformation placementPropertyInfo )
+            throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, InvalidPlacementPropertySpecification, UnsupportedStateTransitionException {
 
         // Check whether this placement already exists
         if ( !catalogTable.dataPlacements.contains( storeInstance.getAdapterId() ) ) {
@@ -1341,6 +1355,13 @@ public class DdlManagerImpl extends DdlManager {
             storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitionIdsFromDataPlacement );
         }
 
+        PlacementState placementState;
+        if ( placementPropertyInfo == null || placementPropertyInfo.placementState == null ) {
+            placementState = dataPlacement.placementState;
+        } else {
+            placementState = placementPropertyInfo.placementState;
+        }
+
         if ( newPartitionIdsOnDataPlacement.size() > 0 ) {
 
             newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
@@ -1350,7 +1371,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE )
+                    placementState,
+                    UpdateInformation.createEmpty() )
             );
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
@@ -1360,6 +1382,122 @@ public class DdlManagerImpl extends DdlManager {
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( addedColumns.size() > 0 ) {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, intendedPartitionIds );
+        }
+
+        if ( placementPropertyInfo != null ) {
+            modifyDataPlacementProperties( placementPropertyInfo, storeInstance, statement );
+        }
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    /**
+     * Modifies the DataPlacement in respect to optional properties. Which may alter the behaviour of the placement in certain scenarios
+     *
+     * @param placementPropertyInfo condensed information which properties have been specified
+     * @param storeInstance the data store
+     * @param statement the used statement
+     */
+    @Override
+    public void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws InvalidPlacementPropertySpecification, UnsupportedStateTransitionException {
+
+        if ( placementPropertyInfo == null ) {
+            throw new InvalidPlacementPropertySpecification();
+        }
+
+        int adapterId = storeInstance.getAdapterId();
+        CatalogDataPlacement targetDataPlacement = catalog.getDataPlacement( adapterId, placementPropertyInfo.table.id );
+
+        // Checks constraints unique to PlacementState
+        if ( placementPropertyInfo.placementState != null ) {
+            PlacementState targetState = placementPropertyInfo.placementState;
+
+            // Transition to UPTODATE is not allowed manually
+            if ( targetState.equals( PlacementState.UPTODATE ) ) {
+                throw new UnsupportedStateTransitionException( targetDataPlacement.placementState, targetState );
+            }
+
+            // Transition to INFINITELY_OUTDATED is only allowed from REFRESHABLE(LAZY)
+            if ( targetDataPlacement.placementState.equals( PlacementState.UPTODATE ) && targetState.equals( PlacementState.INFINITELY_OUTDATED ) ) {
+                throw new UnsupportedStateTransitionException( PlacementState.UPTODATE, targetState );
+            }
+        }
+
+        // Checks constraints unique to ReplicationStrategy
+        if ( placementPropertyInfo.replicationStrategy != null ) {
+            ReplicationStrategy targetStrategy = placementPropertyInfo.replicationStrategy;
+
+            if ( targetDataPlacement.replicationStrategy.equals( ReplicationStrategy.LAZY ) && targetStrategy.equals( ReplicationStrategy.EAGER ) ) {
+
+                LazyReplicationEngine lazyReplicationEngine = (LazyReplicationEngine) ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
+
+                // Check if all partition placements are already UPTODATE ergo received all updates
+                for ( long partitionId : targetDataPlacement.getAllPartitionIds() ) {
+                    if ( lazyReplicationEngine.getPendingReplicationsPerPlacementSize( adapterId, partitionId ) > 0
+                            || catalog.getPartitionPlacement( adapterId, partitionId ).state.equals( PlacementState.INFINITELY_OUTDATED ) ) {
+                        throw new NotYetUpToDateException( storeInstance.getAdapterName(), placementPropertyInfo.table.name );
+                    }
+                }
+            }
+        }
+
+        // Check constraints if STATE is set TO REFRESHABLE or INFINITELY_OUTDATED
+        // Otherwise we could lose data on the primaries/UPTODATE copies.
+        if ( placementPropertyInfo.placementState != null ) {
+            if ( placementPropertyInfo.placementState.equals( PlacementState.REFRESHABLE ) || placementPropertyInfo.placementState.equals( PlacementState.INFINITELY_OUTDATED ) ) {
+
+                List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByState( placementPropertyInfo.table.id, PlacementState.UPTODATE );
+                catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
+
+                // Gather all partitionIds to a set
+                Set<Long> accumulatedPartitionIds = new HashSet<>();
+                catalogDataPlacements.forEach( dp -> accumulatedPartitionIds.addAll( dp.getAllPartitionIds() ) );
+
+                // If not each partition has an UPTODATE copy
+                if ( accumulatedPartitionIds.size() != placementPropertyInfo.table.partitionProperty.partitionIds.size() ) {
+                    throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
+                            + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough UPTODATE-copies left. " );
+                }
+            }
+            catalog.updateDataPlacementState( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.placementState );
+        }
+
+        // Check constraints if REPLICATION STRATEGY is set TO LAZY
+        // Otherwise we could lose data on the primaries/EAGER replicated copies.
+        if ( placementPropertyInfo.replicationStrategy != null ) {
+            if ( placementPropertyInfo.replicationStrategy.equals( ReplicationStrategy.LAZY ) ) {
+                List<CatalogDataPlacement> catalogDataPlacements = catalog.getDataPlacementsByReplicationStrategy( placementPropertyInfo.table.id, ReplicationStrategy.EAGER );
+                catalogDataPlacements.removeIf( dp -> dp.adapterId == adapterId );
+
+                // Gather all partitionIds to a set
+                Set<Long> accumulatedPartitionIds = new HashSet<>();
+                catalogDataPlacements.forEach( dp -> accumulatedPartitionIds.addAll( dp.getAllPartitionIds() ) );
+
+                // If not each partition has an UPTODATE copy
+                if ( accumulatedPartitionIds.size() != placementPropertyInfo.table.partitionProperty.partitionIds.size() ) {
+                    throw new InvalidPlacementPropertySpecification( "Constraint violation. Modification of table " + placementPropertyInfo.table.name
+                            + " on adapter: " + storeInstance.getAdapterName() + " is not possible. Not enough EAGERLY-replicated-copies left. " );
+                }
+
+                // Check if replication engine is accessible. Also this implicitly enables teh configuration management
+                ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
+            }
+            // Except for PlacementState.INFINITELY_OUTDATED
+            // The PlacementState depends on the PlacementStrategy and influences it
+            // EAGER --> UPTODATE
+            // LAZY --> REFRESHABLE
+
+            if ( placementPropertyInfo.placementState == null || !placementPropertyInfo.placementState.equals( PlacementState.INFINITELY_OUTDATED ) ) {
+                PlacementState targetState = ReplicationStrategy.getDependentState( placementPropertyInfo.replicationStrategy );
+                catalog.updateDataPlacementState( storeInstance.getAdapterId(), placementPropertyInfo.table.id, targetState );
+            }
+
+            //TODO @HENNLO ADD Feature IF replication is switched from LAZY to EAGER
+            // Trigger a REFRESH operation, to bring everything consequently to the MOST RECENT STATE = 'UPDTODATE'
+            // Currently this is blocked and you must wait until there are no more changes
+            catalog.updateDataPlacementReplicationStrategy( storeInstance.getAdapterId(), placementPropertyInfo.table.id, placementPropertyInfo.replicationStrategy );
         }
 
         // Reset query plan cache, implementation cache & routing cache
@@ -1405,7 +1543,8 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE );
+                        PlacementState.UPTODATE,
+                        UpdateInformation.createEmpty() );
             }
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
@@ -1436,6 +1575,47 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    /**
+     * Refreshes one or many lazy replicated DataPlacements of a given table.
+     *
+     * @param catalogTable the table
+     * @param stores the stores that shall be refreshed
+     * @param statement the used statement
+     */
+    @Override
+    public void refreshDataPlacements( CatalogTable catalogTable, List<DataStore> stores, Statement statement ) throws UnknownAdapterException {
+        if ( stores.isEmpty() ) {
+            throw new UnknownAdapterException( "No stores have been selected" );
+        }
+
+        // Get All DataPlacements
+        List<CatalogDataPlacement> dataPlacements = new ArrayList<>();
+        stores.forEach( store -> dataPlacements.add( catalog.getDataPlacement( store.getAdapterId(), catalogTable.id ) ) );
+
+        // Label all DataPlacements as INFINITELY OUTDATED
+        for ( CatalogDataPlacement dataPlacement : dataPlacements ) {
+            catalog.updateDataPlacementState( dataPlacement.adapterId, catalogTable.id, PlacementState.INFINITELY_OUTDATED );
+        }
+
+        // Lock those placements
+
+        // Start DataMigration for each store
+        for ( DataStore storeInstance : stores ) {
+
+            List<CatalogColumn> necessaryColumns = new LinkedList<>();
+            catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
+
+            // Take care this locks the table
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ),
+                    necessaryColumns, catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
+
+            // Reset The PlacementState back to refreshable since it should now receive data replication actively again.
+            catalog.updateDataPlacementState( storeInstance.getAdapterId(), catalogTable.id, PlacementState.REFRESHABLE );
+        }
     }
 
 
@@ -1739,7 +1919,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE );
+                    PlacementState.UPTODATE,
+                    UpdateInformation.createEmpty() );
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
@@ -1926,7 +2107,8 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE );
+                        PlacementState.UPTODATE,
+                        UpdateInformation.createEmpty() );
 
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
             }
@@ -2206,7 +2388,8 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE );
+                        PlacementState.UPTODATE,
+                        UpdateInformation.createEmpty() );
             }
 
             // First create new tables
@@ -2280,6 +2463,9 @@ public class DdlManagerImpl extends DdlManager {
 
         // For merge create only full placements on the used stores. Otherwise partition constraints might not hold
         for ( DataStore store : stores ) {
+            // Get old DataPlacement
+            CatalogDataPlacement oldDataPlacement = catalog.getDataPlacement( store.getAdapterId(), partitionedTable.id );
+
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
@@ -2288,7 +2474,11 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE );
+                    PlacementState.UPTODATE,
+                    UpdateInformation.createEmpty() );
+
+            // TODO @HENNLO
+            //  IF UPTODATE Is selected TRIGGER DATA REFRESH OPERATION on possibly outdated nodes.
 
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
@@ -2299,8 +2489,9 @@ public class DdlManagerImpl extends DdlManager {
 
             // TODO @HENNLO Check if this can be omitted
             catalog.updateDataPlacement( store.getAdapterId(), mergedTable.id,
-                    catalog.getDataPlacement( store.getAdapterId(), mergedTable.id ).columnPlacementsOnAdapter,
-                    mergedTable.partitionProperty.partitionIds );
+                    oldDataPlacement.columnPlacementsOnAdapter,
+                    mergedTable.partitionProperty.partitionIds, oldDataPlacement.placementState
+                    , oldDataPlacement.replicationStrategy );
             //
 
             dataMigrator.copySelectiveData(
@@ -2566,6 +2757,9 @@ public class DdlManagerImpl extends DdlManager {
 
         // Monitor dropTables for statistics
         prepareMonitoring( statement, Kind.DROP_TABLE, catalogTable );
+
+        // ON_COMMIT constraint needs no longer to be enforced if entity does no longer exist
+        statement.getTransaction().getCatalogTables().remove( catalogTable );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();

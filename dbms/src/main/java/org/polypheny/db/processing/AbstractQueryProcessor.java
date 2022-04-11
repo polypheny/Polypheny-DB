@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,6 +60,7 @@ import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.BatchIterator;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.Sort;
@@ -105,6 +107,9 @@ import org.polypheny.db.processing.shuttles.LogicalQueryInformationImpl;
 import org.polypheny.db.processing.shuttles.ParameterValueValidator;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
 import org.polypheny.db.replication.IsolationLevel;
+import org.polypheny.db.replication.cdc.ChangeDataCaptureObject;
+import org.polypheny.db.replication.cdc.ChangeDataCollector;
+import org.polypheny.db.replication.cdc.LogicalDataCaptureShuttle;
 import org.polypheny.db.replication.exceptions.UnsupportedIsolationOperationRuntimeException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -133,7 +138,6 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.EntityAccessMap;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
-import org.polypheny.db.transaction.EntityAccessMap.Mode;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -309,6 +313,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         ParameterValueValidator valueValidator = new ParameterValueValidator( logicalRoot.validatedRowType, statement.getDataContext() );
         valueValidator.visit( logicalRoot.alg );
 
+
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Parameter Validation" );
             statement.getProcessingDuration().start( "Evaluate Isolation Options" );
@@ -353,9 +358,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().start( "Constraint Enforcement" );
             }
             AlgRoot constraintsRoot = indexUpdateRoot;
-            if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                ConstraintEnforcer constraintEnforcer = new EnumerableConstraintEnforcer();
-                constraintsRoot = constraintEnforcer.enforce( constraintsRoot, statement );
+
+            if ( constraintsRoot.kind.belongsTo( Kind.DML ) && (RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) ) {
+                constraintsRoot = ConstraintEnforcer.handleConstraints( constraintsRoot, statement );
             }
 
             //
@@ -364,6 +369,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().stop( "Constraint Enforcement" );
                 statement.getProcessingDuration().start( "Index Lookup Rewrite" );
             }
+
             AlgRoot indexLookupRoot = constraintsRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
                 indexLookupRoot = indexLookup( indexLookupRoot, statement );
@@ -388,6 +394,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( proposedRoutingPlans == null ) {
                 proposedRoutingPlans = route( indexLookupRoot, statement, logicalQueryInformation );
             }
+
 
             if ( isAnalyze ) {
                 statement.getRoutingDuration().start( "Flattener" );
@@ -415,10 +422,29 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Parameterize" );
         }
 
+        ChangeDataCaptureObject cdcObject = null;
+
         // Add optional parameterizedRoots and results for all routed RelRoots.
         // Index of routedRoot, parameterizedRootList and results correspond!
         for ( ProposedRoutingPlan routingPlan : proposedRoutingPlans ) {
             AlgRoot routedRoot = routingPlan.getRoutedRoot();
+
+            // Make sure that even if plan was routed we prepare a new capture object
+            if ( statement.getTransaction().needsChangeDataCapture() ) {
+
+                // Only necessary to be executed once to build the cdc Object to prepare the capture engine
+                if ( cdcObject == null ) {
+                    // Because captureChanges in ChangeDataCollector is still getting executed however with an old stmtId
+                    // ChangeDataCollector.prepareCDC( cdcCaptureObject, getStmtId() );
+
+                    // Already prepares the DataCaptureCollection to be replicated to secondaries
+                    LogicalDataCaptureShuttle cdcRelShuttle = new LogicalDataCaptureShuttle( statement );
+                    routedRoot.alg.accept( cdcRelShuttle );
+
+                    cdcObject = cdcRelShuttle.getCdcObject();
+                }
+            }
+
             AlgRoot parameterizedRoot;
             if ( statement.getDataContext().getParameterValues().size() == 0
                     && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )) ) {
@@ -430,6 +456,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             parameterizedRootList.add( parameterizedRoot );
+        }
+
+        if ( statement.getTransaction().needsChangeDataCapture() ) {
+            if ( cdcObject == null ) {
+                throw new RuntimeException( "THIS SHOULD NOT happen!" );
+            }
+            ChangeDataCollector.prepareCDC( cdcObject );
         }
 
         if ( isAnalyze ) {
@@ -459,6 +492,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     results.add( result );
                     generatedCodes.add( preparedResult.getCode() );
                     optimalNodeList.add( optimalNode );
+
+                    // TODO @HENNLO add prepareCDC already here since the implementation has already been executed
                 } else {
                     results.add( null );
                     generatedCodes.add( null );
@@ -602,20 +637,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Locking
         try {
-            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-            // Get locks for individual Entities (tables-partitions)
+            Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+            // Get locks for individual entities
             EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
-            for ( EntityIdentifier entityIdentifier : accessMap.getAccessedEntities() ) {
-                Mode mode = accessMap.getEntityAccessMode( entityIdentifier );
+            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
+            idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
 
-                if ( mode == Mode.READ_ACCESS ) {
-                    LockManager.INSTANCE.lock( entityIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                    LockManager.INSTANCE.lock( entityIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                }
-            }
-
+            idAccessMap.addAll( accessMap.getAccessedEntityPair() );
+            LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new RuntimeException( e );
         }
@@ -1002,6 +1031,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, statement, queryInformation );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryClass() ) );
+        } else if ( logicalRoot.alg instanceof BatchIterator ) {
+            AlgNode routedIterator = dmlRouter.handleBatchIterator( logicalRoot.alg, statement, queryInformation );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedIterator, logicalRoot, queryInformation.getQueryClass() ) );
+        } else if ( logicalRoot.alg instanceof org.polypheny.db.algebra.core.ConstraintEnforcer ) {
+            AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalRoot.alg, statement, queryInformation );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryClass() ) );
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
             if ( statement.getTransaction().isAnalyze() ) {
@@ -1543,7 +1578,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
+        LockManager.INSTANCE.unlock( List.of( LockManager.GLOBAL_LOCK ), (TransactionImpl) statement.getTransaction() );
     }
 
 
@@ -1554,7 +1589,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void lock( Statement statement ) {
         try {
-            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+            LockManager.INSTANCE.lock( Collections.singletonList( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) ), (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new RuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }

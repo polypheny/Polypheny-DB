@@ -63,6 +63,9 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
+import org.polypheny.db.replication.properties.PlacementPropertyInformation;
+import org.polypheny.db.replication.properties.exception.InvalidPlacementPropertySpecification;
+import org.polypheny.db.replication.properties.exception.UnsupportedStateTransitionException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -226,8 +229,9 @@ public abstract class DdlManager {
      * @param partitionGroupNames the name for these partition
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
+     * @param placementPropertyInfo condensed information which properties have been specified
      */
-    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement, PlacementPropertyInformation placementPropertyInfo ) throws PlacementAlreadyExistsException, InvalidPlacementPropertySpecification, UnsupportedStateTransitionException;
 
 
     /**
@@ -372,8 +376,18 @@ public abstract class DdlManager {
      * @param partitionGroupNames the name of these partitions
      * @param storeInstance the data store
      * @param statement the used statement
+     * @param placementPropertyInfo condensed information which properties have been specified
      */
-    public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+    public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement, PlacementPropertyInformation placementPropertyInfo ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, InvalidPlacementPropertySpecification, UnsupportedStateTransitionException;
+
+    /**
+     * Modifies the DataPlacement in respect to optional properties. Which may alter the behaviour of the placement in certain scenarios
+     *
+     * @param placementPropertyInfo condensed information which properties have been specified
+     * @param storeInstance the data store
+     * @param statement the used statement
+     */
+    public abstract void modifyDataPlacementProperties( PlacementPropertyInformation placementPropertyInfo, DataStore storeInstance, Statement statement ) throws LastPlacementException, InvalidPlacementPropertySpecification, UnsupportedStateTransitionException;
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -385,6 +399,16 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) throws LastPlacementException;
+
+    /**
+     * Refreshes one or many lazy replicated DataPlacements of a given table.
+     *
+     * @param catalogTable the table
+     * @param stores the stores that shall be refreshed
+     * @param statement the used statement
+     */
+    public abstract void refreshDataPlacements( CatalogTable catalogTable, List<DataStore> stores, Statement statement ) throws UnknownAdapterException;
+
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
@@ -720,5 +744,4 @@ public abstract class DdlManager {
         }
 
     }
-
 }

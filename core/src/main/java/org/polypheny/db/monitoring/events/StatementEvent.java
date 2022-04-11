@@ -32,6 +32,7 @@ import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -55,6 +56,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected boolean isCommitted;
     protected String durations;
     protected Map<Long, Set<Long>> accessedPartitions;
+    protected Set<Pair> changedPartitionPlacements = new HashSet<>();
     protected LogicalQueryInformation logicalQueryInformation;
     protected String algCompareString;
     protected String physicalQueryClass;
@@ -111,6 +113,11 @@ public abstract class StatementEvent extends BaseEvent {
 
             accessedPartitions.replace( tableId, mergedPartitionIds );
         }
+    }
+
+
+    public void addChangedPartitionPlacements( int adapterId, long partitionId ) {
+        changedPartitionPlacements.add( new Pair( adapterId, partitionId ) );
     }
 
 }

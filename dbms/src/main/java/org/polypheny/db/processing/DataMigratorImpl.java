@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
@@ -41,9 +43,13 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementState;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
@@ -67,6 +73,7 @@ import org.polypheny.db.util.LimitIterator;
 @Slf4j
 public class DataMigratorImpl implements DataMigrator {
 
+    private Catalog catalog = Catalog.getInstance();
 
     @Override
     public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns, List<Long> partitionIds ) {
@@ -119,6 +126,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             // Execute Query
             executeQuery( selectColumnList, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
+            updateCatalogInformation( subDistribution.get( partitionId ).get( 0 ).adapterId, partitionId, store.id, partitionId, 0 );
         }
     }
 
@@ -277,9 +285,13 @@ public class DataMigratorImpl implements DataMigrator {
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
+        // while adapters should be able to handle unsorted columnIds for prepared indexes,
+        // this often leads to errors, and can be prevented by sorting
+        List<CatalogColumnPlacement> placements = to.stream().sorted( Comparator.comparingLong( p -> p.columnId ) ).collect( Collectors.toList() );
+
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
-        for ( CatalogColumnPlacement ccp : to ) {
+        for ( CatalogColumnPlacement ccp : placements ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
@@ -421,7 +433,7 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     /**
-     * Currently used to to transfer data if partitioned table is about to be merged.
+     * Currently used to transfer data if partitioned table is about to be merged.
      * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, List, List)}  } instead
      *
      * @param transaction Transactional scope
@@ -429,7 +441,7 @@ public class DataMigratorImpl implements DataMigrator {
      * @param sourceTable Source Table from where data is queried
      * @param targetTable Source Table from where data is queried
      * @param columns Necessary columns on target
-     * @param placementDistribution Pre computed mapping of partitions and the necessary column placements
+     * @param placementDistribution Pre-computed mapping of partitions and the necessary column placements
      * @param targetPartitionIds Target Partitions where data should be inserted
      */
     @Override
@@ -512,6 +524,19 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 targetStatement.getDataContext().resetParameterValues();
             }
+
+            long modifications = 0;
+            // Get all Modifications and aggregate over all partitions
+            // Just get one of the eagerly updated placements
+            for ( CatalogPartitionPlacement partitionPlacement : catalog.getDistinctPartitionPlacementsByReplicationStrategy( sourceTable.id, ReplicationStrategy.EAGER ) ) {
+                modifications += partitionPlacement.updateInformation.modifications;
+            }
+            updateCatalogInformation(
+                    placementDistribution.get( sourceTable.partitionProperty.partitionIds.get( 0 ) ).get( 0 ).adapterId,
+                    sourceTable.partitionProperty.partitionIds.get( 0 ),
+                    store.id,
+                    targetPartitionIds.get( 0 ),
+                    modifications );
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
@@ -670,9 +695,51 @@ public class DataMigratorImpl implements DataMigrator {
                     currentTargetStatement.getDataContext().resetParameterValues();
                 }
             }
+
+            for ( long partitionId : targetPartitionIds ) {
+                updateCatalogInformation(
+                        placementDistribution.get( sourceTable.partitionProperty.partitionIds.get( 0 ) ).get( 0 ).adapterId,
+                        sourceTable.partitionProperty.partitionIds.get( 0 ),
+                        store.id,
+                        partitionId, 0 );
+            }
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
+    }
+
+
+    /**
+     * Updates all changed partitionPlacements with the new update information
+     */
+    private void updateCatalogInformation( int sourceAdapterId, long sourcePartitionId, int targetAdapterId, long targetPartitionId, long modifications ) {
+
+        // Updates the Update metadata information on the target with information from source adapter
+        CatalogPartitionPlacement sourcePartitionPlacement = catalog.getPartitionPlacement( sourceAdapterId, sourcePartitionId );
+        CatalogDataPlacement sourceDataPlacement = catalog.getDataPlacement( sourceAdapterId, sourcePartitionPlacement.tableId );
+
+        // TODO @HENNLO make sure that only eagerly updated placements are selected here for the moment just print debug information
+        //  when this is not the case
+        if ( !sourcePartitionPlacement.state.equals( PlacementState.UPTODATE ) || !sourceDataPlacement.replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+            log.warn( "Source Placement is not an primary eagerly update placement nor UPTODATE. It is {} - {}"
+                    , sourcePartitionPlacement.state
+                    , sourceDataPlacement.replicationStrategy );
+        }
+
+        // Needs override if empty. Otherwise, it is accumulated before method invocation
+        if ( modifications <= 0 ) {
+            modifications = sourcePartitionPlacement.updateInformation.getModifications();
+        }
+
+        catalog.updatePartitionPlacementProperties(
+                targetAdapterId,
+                targetPartitionId,
+                sourcePartitionPlacement.updateInformation.getCommitTimestamp(),
+                sourcePartitionPlacement.updateInformation.getTxId(),
+                sourcePartitionPlacement.updateInformation.getUpdateTimestamp(),
+                sourcePartitionPlacement.updateInformation.getReplicationId(),
+                modifications );
+        log.info( "Updated Metadata information for placement ( {} on {} )", targetPartitionId, targetAdapterId );
     }
 
 }

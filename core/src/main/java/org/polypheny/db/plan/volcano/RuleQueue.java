@@ -49,6 +49,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -626,9 +627,11 @@ class RuleQueue {
          * Current list of VolcanoRuleMatches for this phase. New rule-matches are appended to the end of this list. When removing a rule-match, the list is sorted and the highest
          * importance rule-match removed. It is important for performance that this list remain mostly sorted.
          *
-         * Use a hunkList because {@link java.util.ArrayList} does not implement remove(0) efficiently.
+         * Use a {@link ChunkList} because {@link java.util.ArrayList} does not implement remove(0) efficiently.
+         * NOTE DL: This seems to generate a lot of overhead (especially on retrieval), not sure if the above claim is correct
+         * and even if it is necessary for the used task
          */
-        final List<VolcanoRuleMatch> list = new ChunkList<>();
+        final List<VolcanoRuleMatch> list = new LinkedList<>();
 
         /**
          * A set of rule-match names contained in {@link #list}. Allows fast detection of duplicate rule-matches.

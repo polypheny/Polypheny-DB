@@ -220,6 +220,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "DROP", "92", "99", "2003", "2011", "2014", "c",
             "DYNAMIC", "99", "2003", "2011", "2014", "c",
             "EACH", "99", "2003", "2011", "2014", "c",
+            "EAGER", "c",           // MHE: added for Replication support
             "ELEMENT", "2003", "2011", "2014", "c",
             "ELSE", "92", "99", "2003", "2011", "2014", "c",
             "ELSEIF", "92", "99", "2003",
@@ -317,6 +318,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "LAST", "92", "99",
             "LAST_VALUE", "2011", "2014", "c",
             "LATERAL", "99", "2003", "2011", "2014", "c",
+            "LAZY", "c",           // MHE: added for Replication support
             "LEAD", "2011", "2014", "c",
             "LEADING", "92", "99", "2003", "2011", "2014", "c",
             "LEAVE", "92", "99", "2003",
@@ -385,6 +387,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "ORDER", "92", "99", "2003", "2011", "2014", "c",
             "ORDINALITY", "99",
             "OUT", "92", "99", "2003", "2011", "2014", "c",
+            "OUTDATED", "c",         // HENNLO added for lazy replication
             "OUTER", "92", "99", "2003", "2011", "2014", "c",
             "OUTPUT", "92", "99", "2003",
             "OVER", "99", "2003", "2011", "2014", "c",
@@ -404,6 +407,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "PERCENT_RANK", "2011", "2014", "c",
             "PERIOD", "2014", "c",
             "PERMUTE", "c",
+            "PLACEMENTS", "c",           // HENNLO: added for Replication support
             "PORTION", "2014", "c",
             "POSITION", "92", "2011", "2014", "c",
             "POSITION_REGEX", "2011", "2014", "c",
@@ -427,6 +431,8 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "REF", "99", "2003", "2011", "2014", "c",
             "REFERENCES", "92", "99", "2003", "2011", "2014", "c",
             "REFERENCING", "99", "2003", "2011", "2014", "c",
+            "REFRESH", "c",           // HENNLO added for Replication support
+            "REFRESHABLE", "c",         // HENNLO added for lazy replication
             "REGR_AVGX", "2011", "2014", "c",
             "REGR_AVGY", "2011", "2014", "c",
             "REGR_COUNT", "2011", "2014", "c",
@@ -439,6 +445,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "RELATIVE", "92", "99",
             "RELEASE", "99", "2003", "2011", "2014", "c",
             "REPEAT", "92", "99", "2003",
+            "REPLICATION", "c",           // MHE: added for Replication support
             "RESET", "c",
             "RESIGNAL", "92", "99", "2003",
             "RESTRICT", "92", "99",
@@ -494,6 +501,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "STDDEV_POP", "2011", "2014", "c",
             "STDDEV_SAMP", "2011", "2014", "c",
             "STORED", "92", "99", "2003", "2011", "2014", "c",       // MV: Added for DDL Parser
+            "STRATEGY", "c",           // MHE: added for Replication support
             "STREAM", "c",
             "SUBMULTISET", "2003", "2011", "2014", "c",
             "SUBSET", "2014", "c",
@@ -538,6 +546,7 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "UPDATE", "92", "99", "2003", "2011", "2014", "c",
             "UPPER", "92", "2011", "2014", "c",
             "UPSERT", "c",
+            "UPTODATE", "c",         // HENNLO added for lazy replication
             "USAGE", "92", "99",
             "USER", "92", "99", "2003", "2011", "2014", "c",
             "USING", "92", "99", "2003", "2011", "2014", "c",

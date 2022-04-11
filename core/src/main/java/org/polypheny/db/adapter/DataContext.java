@@ -76,9 +76,23 @@ public interface DataContext {
 
     void addParameterValues( long index, AlgDataType type, List<Object> data );
 
+    default void addSingleValue( long index, AlgDataType type, Object data ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default long getMaxParameterIndex() {
+        throw new UnsupportedOperationException();
+    }
+
     AlgDataType getParameterType( long index );
 
     List<Map<Long, Object>> getParameterValues();
+
+    void setParameterValues( List<Map<Long, Object>> values );
+
+    Map<Long, AlgDataType> getParameterTypes();
+
+    void setParameterTypes( Map<Long, AlgDataType> types );
 
     default void resetParameterValues() {
         throw new UnsupportedOperationException();
@@ -232,6 +246,24 @@ public interface DataContext {
         @Override
         public List<Map<Long, Object>> getParameterValues() {
             return null;
+        }
+
+
+        @Override
+        public void setParameterValues( List<Map<Long, Object>> values ) {
+
+        }
+
+
+        @Override
+        public Map<Long, AlgDataType> getParameterTypes() {
+            return null;
+        }
+
+
+        @Override
+        public void setParameterTypes( Map<Long, AlgDataType> types ) {
+
         }
 
     }

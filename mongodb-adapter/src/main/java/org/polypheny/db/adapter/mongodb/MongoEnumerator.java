@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,7 +206,7 @@ class MongoEnumerator implements Enumerator<Object> {
     }
 
 
-    static Function1<Document, Object> singletonGetter( final String fieldName, final Class fieldClass, Class arrayFieldClass ) {
+    static Function1<Document, Object> singletonGetter( final String fieldName, final Class<?> fieldClass, Class<?> arrayFieldClass ) {
         return a0 -> {
             Object obj = convert( a0.get( fieldName ), fieldClass );
             if ( fieldClass == List.class ) {

@@ -18,10 +18,10 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
-import java.sql.Timestamp;
 import lombok.NonNull;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.replication.properties.UpdateInformation;
 
 
 /**
@@ -40,7 +40,6 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     public final String physicalSchemaName;
     public final String physicalTableName;
 
-
     // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
     // If false, physical partition placements are considered to be refreshable and can therefore become outdated and need to be lazily updated.
     // This attribute is derived from an effective data placement (table entity on a store)
@@ -53,14 +52,11 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
+    public final PlacementState state;
 
-    //TODO @HENNLO Revise
-    //  PartitionPlacement holds the information if it is currently outdated
-    // Whereas the DataPlacement contains the information if placements on this store could get outdated
-    public final DataPlacementRole role;
-
-    // This is the timestamp of the commit time of the initial TX that updated the primary nodes.
-    public final Timestamp updateTimestamp;
+    // COMMIT TIMESTAMP to compare freshness
+    // AND UPDATE timestamp when placement was last refreshed
+    public final UpdateInformation updateInformation;
 
 
     public CatalogPartitionPlacement(
@@ -71,8 +67,8 @@ public class CatalogPartitionPlacement implements CatalogEntity {
             final String physicalSchemaName,
             final String physicalTableName,
             final long partitionId,
-            final DataPlacementRole role,
-            final Timestamp updateTimestamp ) {
+            PlacementState state,
+            UpdateInformation updateInformation ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;
@@ -80,8 +76,8 @@ public class CatalogPartitionPlacement implements CatalogEntity {
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
         this.partitionId = partitionId;
-        this.role = role;
-        this.updateTimestamp = updateTimestamp;
+        this.state = state;
+        this.updateInformation = updateInformation;
     }
 
 

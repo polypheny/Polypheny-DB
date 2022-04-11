@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
@@ -80,7 +81,7 @@ public enum RuntimeConfig {
     WEBUI_SERVER_PORT(
             "runtime/webuiServerPort",
             "The port on which the web ui server should listen.",
-            8080,
+            8079,
             ConfigType.INTEGER
     ),
 
@@ -352,6 +353,14 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
+    CONSTRAINT_ENFORCEMENT_STRATEGY(
+            "runtime/constraintEnforcementStrategy",
+            "Adjusted used constraint enforcement strategy.",
+            ConstraintStrategy.AFTER_QUERY_EXECUTION,
+            ConfigType.ENUM,
+            "constraintEnforcementGroup"
+    ),
+
     POLYSTORE_INDEXES_ENABLED(
             "runtime/polystoreIndexesEnabled",
             "Enable and maintain indexes on the polystore level.",
@@ -526,6 +535,7 @@ public enum RuntimeConfig {
         temperaturePartitionProcessingSettingsGroup.withTitle( "TEMPERATURE Partition Processing" );
         configManager.registerWebUiPage( partitionSettingsPage );
         configManager.registerWebUiGroup( temperaturePartitionProcessingSettingsGroup );
+
     }
 
 

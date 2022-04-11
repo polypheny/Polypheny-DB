@@ -544,7 +544,7 @@ public final class Schemas {
 
         @Override
         public void addAll( Map<String, Object> map ) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 
 
@@ -556,19 +556,37 @@ public final class Schemas {
 
         @Override
         public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 
 
         @Override
         public AlgDataType getParameterType( long index ) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 
 
         @Override
         public List<Map<Long, Object>> getParameterValues() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
+        }
+
+
+        @Override
+        public void setParameterValues( List<Map<Long, Object>> values ) {
+            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
+        }
+
+
+        @Override
+        public Map<Long, AlgDataType> getParameterTypes() {
+            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
+        }
+
+
+        @Override
+        public void setParameterTypes( Map<Long, AlgDataType> types ) {
+            throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
         }
 
     }

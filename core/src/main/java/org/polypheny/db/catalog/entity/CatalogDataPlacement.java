@@ -18,20 +18,16 @@ package org.polypheny.db.catalog.entity;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 
 
 /**
@@ -49,47 +45,45 @@ public class CatalogDataPlacement implements CatalogEntity {
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.
+    public final PlacementState placementState;
 
-    //TODO @HENNLO Revise
-    // Contains the information if this placement could get outdated
-    // Whereas teh partitionPlacement holds the information if it is currently outdated
-    public final DataPlacementRole dataPlacementRole;
+    public final ReplicationStrategy replicationStrategy;
 
     public final ImmutableList<Long> columnPlacementsOnAdapter;
 
-    // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important and frequent than writes
-    public final ImmutableMap<DataPlacementRole, ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
-
-
-    // The newest commit timestamp when any partitions inside this placement has been updated or refreshed
-    // Equals the newest timestamp ony any of the CatalogPartitionPlacements.
-    // Technically other  linked attachments could still have older update timestamps.
-    // This should help to quickly identify placements that can fulfil certain conditions.
-    // Without having to traverse all partition placements one-by-one
-    @Setter
-    public Timestamp updateTimestamp;
+    // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important
+    // and frequent than writes
+    public final ImmutableList<Long> partitionPlacementsOnAdapter;
 
 
     public CatalogDataPlacement(
             long tableId,
             int adapterId,
             PlacementType placementType,
-            DataPlacementRole dataPlacementRole,
+            PlacementState placementState,
+            ReplicationStrategy replicationStrategy,
             @NonNull final ImmutableList<Long> columnPlacementsOnAdapter,
             @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;
-        this.dataPlacementRole = dataPlacementRole;
-        this.columnPlacementsOnAdapter = columnPlacementsOnAdapter;
-        this.partitionPlacementsOnAdapterByRole = structurizeDataPlacements( partitionPlacementsOnAdapter );
+        this.placementState = placementState;
+        this.replicationStrategy = replicationStrategy;
+        this.columnPlacementsOnAdapter = ImmutableList.copyOf( columnPlacementsOnAdapter.stream().sorted().collect( Collectors.toList() ) );
+        this.partitionPlacementsOnAdapter = ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().sorted().collect( Collectors.toList() ) );
 
     }
 
 
     @SneakyThrows
-    public String getTableName() {
+    public String getLogicalTableName() {
         return Catalog.getInstance().getTable( tableId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getLogicalSchemaName() {
+        return Catalog.getInstance().getTable( tableId ).getSchemaName();
     }
 
 
@@ -99,11 +93,16 @@ public class CatalogDataPlacement implements CatalogEntity {
     }
 
 
+    @SneakyThrows
+    public List<String> getLogicalColumnNames() {
+        List<String> columnNames = new ArrayList<>();
+        columnPlacementsOnAdapter.forEach( columnId -> columnNames.add( Catalog.getInstance().getColumn( columnId ).name ) );
+        return columnNames;
+    }
+
+
     public boolean hasFullPlacement() {
-        if ( hasColumnFullPlacement() && hasPartitionFullPlacement() ) {
-            return true;
-        }
-        return false;
+        return hasColumnFullPlacement() && hasPartitionFullPlacement();
     }
 
 
@@ -116,56 +115,15 @@ public class CatalogDataPlacement implements CatalogEntity {
         return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
     }
 
-    public List<Long> getAllPartitionIds(){
-        return partitionPlacementsOnAdapterByRole.values()
-                .stream()
-                .flatMap(List::stream)
-                .collect( Collectors.toList() );
+
+    public List<Long> getAllPartitionIds() {
+        return partitionPlacementsOnAdapter.stream().collect( Collectors.toList() );
     }
+
 
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];
     }
 
-
-    private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final ImmutableList<Long> unsortedPartitionIds ) {
-
-        // Since this shall only be called after initialization of dataPlacement object,
-        // we need to clear the contents of partitionPlacementsOnAdapterByRole
-        Map<DataPlacementRole,ImmutableList<Long>> partitionsPerRole = new HashMap<>();
-
-        try {
-            Catalog catalog = Catalog.getInstance();
-
-            if ( !unsortedPartitionIds.isEmpty() ) {
-
-                CatalogPartitionPlacement partitionPlacement;
-
-                for ( long partitionId : unsortedPartitionIds ) {
-                    partitionPlacement = catalog.getPartitionPlacement( this.adapterId, partitionId );
-                    DataPlacementRole role = partitionPlacement.role;
-
-                    List<Long> partitions = new ArrayList<>();
-                    if ( partitionsPerRole.containsKey( role ) ) {
-                        // Get contents of List and add partition to it
-                        partitions = new ArrayList<>( partitionsPerRole.get( role ) );
-                    } else {
-                        partitionsPerRole.put( role, ImmutableList.copyOf( new ArrayList<>() ) );
-                    }
-                    partitions.add( partitionId );
-                    partitionsPerRole.replace( role, ImmutableList.copyOf( partitions ) );
-                }
-            }
-        }catch (RuntimeException e){
-            // Catalog is not ready
-            // Happens only for defaultColumns during setAndGetInstance of Catalog
-            // Just assume UPTODATE for all.
-            partitionsPerRole.put( DataPlacementRole.UPTODATE, ImmutableList.copyOf( unsortedPartitionIds ) );
-        }
-
-
-        // Finally, overwrite entire partitionPlacementsOnAdapterByRole at Once
-        return ImmutableMap.copyOf( partitionsPerRole );
-    }
 }

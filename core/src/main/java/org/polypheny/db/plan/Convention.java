@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ public interface Convention extends AlgTrait, Serializable {
     class Impl implements Convention {
 
         private final String name;
-        private final transient Class<? extends AlgNode> algClass;
+        private final Class<? extends AlgNode> algClass;
 
 
         public Impl( String name, Class<? extends AlgNode> algClass ) {

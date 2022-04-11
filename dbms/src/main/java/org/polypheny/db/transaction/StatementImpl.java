@@ -42,7 +42,6 @@ public class StatementImpl implements Statement {
 
     private static final AtomicLong STATEMENT_COUNTER = new AtomicLong();
 
-    @Getter
     private final long id;
     @Getter
     private final TransactionImpl transaction;
@@ -64,6 +63,12 @@ public class StatementImpl implements Statement {
     StatementImpl( TransactionImpl transaction ) {
         this.id = STATEMENT_COUNTER.getAndIncrement();
         this.transaction = transaction;
+    }
+
+
+    @Override
+    public long getId() {
+        return id;
     }
 
 
