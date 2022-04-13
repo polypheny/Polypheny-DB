@@ -22,6 +22,8 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,6 +40,7 @@ import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -188,26 +191,28 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
             // Consider Freshness only when specified in query or table supports it
-            if ( statement.getTransaction().acceptsOutdatedCopies() && catalog.doesTableSupportOutdatedPlacements( catalogTable.id ) ) {
+            if ( statement.getTransaction().acceptsOutdatedCopies() ) {
+                statement.getTransaction().setUseCache( false );
+                if ( catalog.doesTableSupportOutdatedPlacements( catalogTable.id ) ) {
 
-                try {
-                    handleFreshness( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
+                    try {
 
-                    // When Freshness has been successfully used, disable caching for this query.
-                    statement.getTransaction().setUseCache( false );
-                }
-                // If freshness cannot be provided
-                catch ( InsufficientFreshnessOptionsException e ) {
+                        return handleFreshness( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
+                    }
+                    // If freshness cannot be provided
+                    catch ( InsufficientFreshnessOptionsException e ) {
 
-                    // No need to select specific placements, just carry out the regular routing process.
+                        // No need to select specific placements, just carry out the regular routing process.
 
-                    // Apply locking if necessary
-                    // Freshness retrieval has failed so continue with regular locking
-                    acquireLock( node, statement, queryInformation );
+                        // Apply locking if necessary
+                        // Freshness retrieval has failed so continue with regular locking
+                        acquireLock( node, statement, queryInformation );
 
-                    //TODO @HENNLO Depending on the strategy check if the transaction has to be aborted
-                    // If e.g. a statement has already been executed with freshness or still to continue.
-                    // and only disallow DMLs as before.
+                        //TODO @HENNLO Depending on the strategy check if the transaction has to be aborted
+                    }
+                } else {
+                    log.debug( "Freshness-Query has been specified. However this table does not contain any REFRESHABLE Placements. Everything is updated eagerly" );
+                    log.debug( "There are no outdated placements that can be used. Redirecting request to primary." );
                 }
             }
 
@@ -316,6 +321,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
+                newBuilder.addOrderedPartitionPlacements( orderFreshnessPartitionPlacements( placementCombination ) );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, placementCombination ) );
                 newBuilders.add( newBuilder );
             }
@@ -328,7 +334,25 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     }
 
 
-    // TODO @HENNLO this could be mabye decentralized per router to have different handling options per strategy
+    private List<CatalogPartitionPlacement> orderFreshnessPartitionPlacements( Map<Long, List<CatalogColumnPlacement>> placementCombination ) {
+        // Get all used partitionPlacements
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        List<Pair<Integer, Long>> orderedPartitionPlacements = new ArrayList<>();
+
+        for ( Entry<Long, List<CatalogColumnPlacement>> entry : placementCombination.entrySet() ) {
+            long partitionId = entry.getKey();
+            List<CatalogColumnPlacement> columnPlacements = entry.getValue();
+            columnPlacements.forEach( cp -> partitionPlacements.add( catalog.getPartitionPlacement( cp.adapterId, partitionId ) ) );
+        }
+
+        // Order based on oldest partition placement.
+        Collections.sort( partitionPlacements, Comparator.comparingLong( CatalogPartitionPlacement::getCommitTimestamp ) );
+
+        return !partitionPlacements.isEmpty() ? partitionPlacements : Collections.emptyList();
+    }
+
+
+    // TODO @HENNLO this could be maybe decentralized per router to have different handling options per strategy
     private List<Map<Long, List<CatalogColumnPlacement>>> selectFreshnessPlacements(
             Map<Long, List<CatalogPartitionPlacement>> placementOptionsPerPartition,
             CatalogTable catalogTable,
@@ -336,7 +360,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     ) throws InsufficientFreshnessOptionsException {
 
         // Contains all possible placementDistributions to later generate plans for
-        // Each element contains on possible distribution
+        // Each element contains on possible distribution (query plan)
         List<Map<Long, List<CatalogColumnPlacement>>> placementDistributionCandidates = new ArrayList<>();
 
         List<Long> requiredColumnIds = queryInformation.getUsedColumnsPerTable( catalogTable.id );
@@ -347,13 +371,54 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
         //TODO @HENNLO Remove the naive case which is currently only for testing
         // For now we do simple routing
-        for ( Entry<Long, List<CatalogPartitionPlacement>> entry : placementOptionsPerPartition.entrySet() ) {
+        List<CatalogPartitionPlacement> flatPartitionPlacementSet = placementOptionsPerPartition.values().stream().flatMap( List::stream ).collect( Collectors.toList() );
+        for ( int i = 0; i < flatPartitionPlacementSet.size(); i++ ) {
 
-            long partitionId = entry.getKey();
-            List<CatalogPartitionPlacement> placementOptions = entry.getValue();
+            CatalogPartitionPlacement currentPartitionPlacement = flatPartitionPlacementSet.get( i );
+            List<Long> remainingColumnIds = requiredColumnIds.stream().collect( Collectors.toList() );
 
-            //
+            List<Integer> checkedAdapters = new ArrayList<>();
+            checkedAdapters.add( currentPartitionPlacement.adapterId );
 
+            long partitionId = currentPartitionPlacement.partitionId;
+            Map<Long, List<CatalogColumnPlacement>> currentPartitionDistribution = new HashMap<>();
+
+            List<CatalogColumnPlacement> columnPlacements = catalog.getColumnPlacementsOnAdapterPerTable( currentPartitionPlacement.adapterId, currentPartitionPlacement.tableId );
+            columnPlacements.forEach( cp -> remainingColumnIds.remove( cp.columnId ) );
+
+            if ( remainingColumnIds.size() == 0 ) {
+                currentPartitionDistribution.put( partitionId, columnPlacements );
+            } else {
+                for ( CatalogPartitionPlacement comparePlacement : flatPartitionPlacementSet ) {
+                    // Skip already visited adapters
+                    if ( checkedAdapters.contains( comparePlacement.adapterId ) ) {
+                        continue;
+                    }
+
+                    CatalogDataPlacement dataPlacement = catalog.getDataPlacement( comparePlacement.adapterId, catalogTable.id );
+                    // Gathers all columnIds on this Data Placements
+                    List<Long> relevantColumnIds = dataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toList() );
+
+                    // Only retain those columnIds the still need a suitable ColumnPlacement
+                    relevantColumnIds.retainAll( remainingColumnIds );
+                    relevantColumnIds.forEach( columnId -> columnPlacements.add( catalog.getColumnPlacement( comparePlacement.adapterId, columnId ) ) );
+                    remainingColumnIds.removeAll( relevantColumnIds );
+
+                    // Add this adapter to the list of placements we have already checked to save computation
+                    checkedAdapters.add( comparePlacement.adapterId );
+
+                    // If all columns are present on this Data Placement, no further action is required.
+                    if ( remainingColumnIds.size() == 0 ) {
+                        currentPartitionDistribution.put( partitionId, columnPlacements );
+                        break;
+                    }
+                }
+            }
+
+            // Only add if we have acquired enough column placements per partition
+            if ( currentPartitionDistribution.get( partitionId ).size() == requiredColumnIds.size() ) {
+                placementDistributionCandidates.add( currentPartitionDistribution );
+            }
         }
 
         // TODO @HENNLO if no distribution could be found at all

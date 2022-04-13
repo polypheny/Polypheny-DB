@@ -81,6 +81,21 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     }
 
 
+    public long getCommitTimestamp() {
+        return updateInformation.getCommitTimestamp();
+    }
+
+
+    public long getUpdateTimestamp() {
+        return updateInformation.getUpdateTimestamp();
+    }
+
+
+    public long getModifications() {
+        return updateInformation.getModifications();
+    }
+
+
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];

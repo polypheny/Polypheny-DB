@@ -32,6 +32,9 @@ public abstract class FreshnessManager {
 
     public abstract double transformToFreshnessIndex( CatalogTable table, String s, EvaluationType evaluationType );
 
+
+    public abstract boolean checkFreshnessConstraints( FreshnessSpecification requiredFreshnessSpecification, List<CatalogPartitionPlacement> orderedPartitionPlacements );
+
     /**
      * Gets a list of ALL CatalogPartitionPlacements based on their freshness for a given table.
      * Returns multiple/redundant partitions and only filters if it matches the tolerated freshness
@@ -48,6 +51,7 @@ public abstract class FreshnessManager {
         DELAY,
         PERCENTAGE,
         INDEX,
+        TIME_DEVIATION
     }
 
 }

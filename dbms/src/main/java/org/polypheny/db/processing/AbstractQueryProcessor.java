@@ -111,6 +111,9 @@ import org.polypheny.db.replication.cdc.ChangeDataCaptureObject;
 import org.polypheny.db.replication.cdc.ChangeDataCollector;
 import org.polypheny.db.replication.cdc.LogicalDataCaptureShuttle;
 import org.polypheny.db.replication.exceptions.UnsupportedIsolationOperationRuntimeException;
+import org.polypheny.db.replication.freshness.FreshnessManager;
+import org.polypheny.db.replication.freshness.FreshnessManagerImpl;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -385,7 +388,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream()
                         .flatMap( List::stream )
                         .collect( Collectors.toSet() );
-                List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryClass(), partitionIds );
+                List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryClass(), partitionIds, statement.getFreshnessSpecification() );
+                if ( statement.getFreshnessSpecification() != null && !routingPlansCached.isEmpty() ) {
+                    routingPlansCached = preFilterPlansOnFreshnessConstraints( routingPlansCached );
+                }
                 if ( !routingPlansCached.isEmpty() ) {
                     proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
                 }
@@ -394,7 +400,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( proposedRoutingPlans == null ) {
                 proposedRoutingPlans = route( indexLookupRoot, statement, logicalQueryInformation );
             }
-
 
             if ( isAnalyze ) {
                 statement.getRoutingDuration().start( "Flattener" );
@@ -1046,7 +1051,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             for ( Router router : RoutingManager.getInstance().getRouters() ) {
                 List<RoutedAlgBuilder> builders = router.route( logicalRoot, statement, queryInformation );
                 List<ProposedRoutingPlan> plans = builders.stream()
-                        .map( builder -> new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), router.getClass() ) )
+                        .map( builder -> new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), router.getClass(), statement.getFreshnessSpecification() ) )
                         .collect( Collectors.toList() );
                 proposedPlans.addAll( plans );
             }
@@ -1295,8 +1300,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         Map<Integer, Set<String>> partitionValueFilterPerScan = analyzeRelShuttle.getPartitionValueFilterPerScan();
         Map<Integer, List<Long>> accessedPartitionMap = this.getAccessedPartitionsPerTableScan( logicalRoot.alg, partitionValueFilterPerScan );
 
+        String outdatedSuffix = statement.getTransaction().acceptsOutdatedCopies() ? "outdated_" + statement.getFreshnessSpecification().getEvaluationType() : "";
+
         // Build queryClass from query-name and partitions.
-        String queryClass = analyzeRelShuttle.getQueryName();// + accessedPartitionMap;
+        String queryClass = analyzeRelShuttle.getQueryName() + outdatedSuffix;// + accessedPartitionMap;
 
         // Build LogicalQueryInformation instance and prepare monitoring
         LogicalQueryInformation queryInformation = new LogicalQueryInformationImpl(
@@ -1477,16 +1484,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<AlgOptCost> approximatedCosts, String queryId, Set<Long> partitionIds ) {
+    private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<AlgOptCost> approximatedCosts, String queryId, Set<Long> partitionIds, FreshnessSpecification freshnessSpecification ) {
         List<CachedProposedRoutingPlan> cachedPlans = new ArrayList<>();
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            if ( proposedRoutingPlans.get( i ).isCacheable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId, partitionIds ) ) {
+            if ( proposedRoutingPlans.get( i ).isCacheable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId, partitionIds, freshnessSpecification ) ) {
                 cachedPlans.add( new CachedProposedRoutingPlan( proposedRoutingPlans.get( i ), approximatedCosts.get( i ) ) );
             }
         }
 
         if ( !cachedPlans.isEmpty() ) {
-            RoutingPlanCache.INSTANCE.put( queryId, partitionIds, cachedPlans );
+            RoutingPlanCache.INSTANCE.put( queryId, partitionIds, freshnessSpecification, cachedPlans );
         }
     }
 
@@ -1509,7 +1516,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     proposedRoutingPlans,
                     approximatedCosts,
                     queryInformation.getQueryClass(),
-                    queryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() ) );
+                    queryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() ),
+                    statement.getFreshnessSpecification() );
         }
 
         if ( results.size() == 1 ) {
@@ -1608,6 +1616,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             throw new UnsupportedIsolationOperationRuntimeException();
         }
+    }
+
+
+    private List<CachedProposedRoutingPlan> preFilterPlansOnFreshnessConstraints( List<CachedProposedRoutingPlan> routingPlansCached ) {
+
+        // Check FreshnessConstraints per plan
+        // Remove if it does not tolerated by query
+
+        FreshnessManager freshnessManager = new FreshnessManagerImpl();
+        routingPlansCached.removeIf( plan -> freshnessManager.checkFreshnessConstraints( statement.getFreshnessSpecification(), plan.getOrderedPartitionPlacements() ) );
+
+        return routingPlansCached;
     }
 
 }

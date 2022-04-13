@@ -249,7 +249,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
             if ( catalog.getAllLazyReplicatedDataPlacements().size() > 0 ) {
                 handleOutdatedPlacementsOnStartUp();
             } else {
-                log.debug( "No outdated placements have been registered." );
+                log.debug( "No outdated placements have been registered. Nothing to do." );
             }
         }
     }
@@ -276,6 +276,7 @@ public class LazyReplicationEngine extends ReplicationEngine {
         log.info( "Finished startup procedure for outdated nodes." );
     }
 
+    // TODO @HENNLO Think about generating possible plans as soon as lazy replication has been configured
 
     private void refreshAllPlacements() {
 

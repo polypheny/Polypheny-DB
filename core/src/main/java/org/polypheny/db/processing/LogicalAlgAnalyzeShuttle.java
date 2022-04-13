@@ -58,7 +58,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     protected final LogicalAlgAnalyzeRexShuttle rexShuttle;
     @Getter
-    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (TableScanId) -> List partitionsValue
+
     protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (TableScanId) -> (logical tableId -> List partitionsValue)
     @Getter
     protected final HashSet<String> hashBasis = new HashSet<>();

@@ -18,6 +18,8 @@ package org.polypheny.db.routing;
 
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.util.Pair;
 
 
@@ -34,5 +36,9 @@ public interface RoutingPlan {
 
     // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
     Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions();
+
+    FreshnessSpecification getFreshnessConstraints();
+
+    List<CatalogPartitionPlacement> getOrderedPartitionPlacements();
 
 }

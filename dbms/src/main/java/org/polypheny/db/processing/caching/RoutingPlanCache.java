@@ -38,6 +38,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.util.Pair;
 
@@ -64,13 +65,14 @@ public class RoutingPlanCache {
     }
 
 
-    public boolean isKeyPresent( String queryId, Set<Long> partitionIds ) {
+    public boolean isKeyPresent( String queryId, Set<Long> partitionIds, FreshnessSpecification freshnessSpecification ) {
         return planCache.getIfPresent( new Pair( queryId, partitionIds ) ) != null;
     }
 
 
-    public List<CachedProposedRoutingPlan> getIfPresent( String queryId, Set<Long> partitionIds ) {
+    public List<CachedProposedRoutingPlan> getIfPresent( String queryId, Set<Long> partitionIds, FreshnessSpecification freshnessSpecification ) {
         List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( new Pair( queryId, partitionIds ) );
+
         if ( routingPlans == null ) {
             missesCounter.incrementAndGet();
         } else {
@@ -81,7 +83,7 @@ public class RoutingPlanCache {
     }
 
 
-    public void put( String queryId, Set<Long> partitionIds, List<CachedProposedRoutingPlan> routingPlans ) {
+    public void put( String queryId, Set<Long> partitionIds, FreshnessSpecification freshnessSpecification, List<CachedProposedRoutingPlan> routingPlans ) {
         // this seems to be a bug, which occurs when Unions are used. As the cached execution later on needs
         // all physicalPlacementsOfPartitions or else it will fail later on.
         // We check here and don't cache if the plan is not complete

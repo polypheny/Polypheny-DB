@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RoutingPlan;
@@ -36,10 +38,12 @@ import org.polypheny.db.util.Pair;
 public class CachedProposedRoutingPlan implements RoutingPlan {
 
     public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected List<CatalogPartitionPlacement> orderedPartitionPlacements;
     protected String queryClass;
     protected String physicalQueryClass;
     protected AlgOptCost preCosts;
     protected Class<? extends Router> router;
+    protected FreshnessSpecification freshnessConstraint;
 
 
     public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, AlgOptCost approximatedCosts ) {
@@ -48,12 +52,21 @@ public class CachedProposedRoutingPlan implements RoutingPlan {
         this.router = routingPlan.getRouter();
         this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions() );
         this.physicalQueryClass = routingPlan.getPhysicalQueryClass();
+        this.freshnessConstraint = routingPlan.getFreshnessConstraints();
+        this.physicalPlacementsOfPartitions = routingPlan.getPhysicalPlacementsOfPartitions();
+        this.orderedPartitionPlacements = routingPlan.getOrderedPartitionPlacements();
     }
 
 
     @Override
     public Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions() {
         return this.physicalPlacementsOfPartitions;
+    }
+
+
+    @Override
+    public FreshnessSpecification getFreshnessConstraints() {
+        return freshnessConstraint;
     }
 
 }

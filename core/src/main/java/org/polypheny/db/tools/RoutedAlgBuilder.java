@@ -18,6 +18,7 @@ package org.polypheny.db.tools;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.Context;
@@ -45,6 +47,9 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
     @Getter
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+
+    @Getter
+    protected List<CatalogPartitionPlacement> orderedPartitionPlacements = new ArrayList<>(); //all used PartitionPlacements ordered by oldest freshness
 
 
     public RoutedAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
@@ -102,6 +107,11 @@ public class RoutedAlgBuilder extends AlgBuilder {
         final Map<Long, List<Pair<Integer, Long>>> map = physicalPlacements.entrySet().stream()
                 .collect( Collectors.toMap( Map.Entry::getKey, entry -> map( entry.getValue() ) ) );
         physicalPlacementsOfPartitions.putAll( map );
+    }
+
+
+    public void addOrderedPartitionPlacements( List<CatalogPartitionPlacement> orderedPartitionPlacements ) {
+        this.orderedPartitionPlacements = orderedPartitionPlacements.stream().collect( Collectors.toList() );
     }
 
 

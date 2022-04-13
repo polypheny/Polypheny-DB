@@ -16,6 +16,7 @@
 
 package org.polypheny.db.routing.dto;
 
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,9 @@ import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.replication.freshness.properties.FreshnessSpecification;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -43,14 +46,18 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     protected String physicalQueryClass;
     protected Class<? extends Router> router;
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected List<CatalogPartitionPlacement> orderedPartitionPlacements; // all used PartitionPlacements ordered by oldest freshness
     protected AlgOptCost preCosts;
+    protected FreshnessSpecification freshnessConstraint;
 
 
-    public ProposedRoutingPlanImpl( RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, Class<? extends Router> routerClass ) {
+    public ProposedRoutingPlanImpl( RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, Class<? extends Router> routerClass, FreshnessSpecification freshnessConstraint ) {
         this.physicalPlacementsOfPartitions = routedAlgBuilder.getPhysicalPlacementsOfPartitions();
+        this.orderedPartitionPlacements = routedAlgBuilder.getOrderedPartitionPlacements();
         this.queryClass = queryClass;
         this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
         this.router = routerClass;
+        this.freshnessConstraint = freshnessConstraint;
         AlgNode alg = routedAlgBuilder.build();
         this.routedRoot = new AlgRoot( alg, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
@@ -81,6 +88,12 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     @Override
     public String getPhysicalQueryClass() {
         return physicalQueryClass != null ? physicalQueryClass : "";
+    }
+
+
+    @Override
+    public FreshnessSpecification getFreshnessConstraints() {
+        return freshnessConstraint;
     }
 
 
@@ -146,5 +159,4 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
         }
         return super.hashCode();
     }
-
 }

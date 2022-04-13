@@ -4418,11 +4418,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public boolean doesTableSupportOutdatedPlacements( long tableId ) {
 
-        //TODO @HENNLO change this to a new attribute in the table itself
-        // Instead of querying each DataPlacement
-
         for ( CatalogDataPlacement catalogDataPlacement : getDataPlacements( tableId ) ) {
-            if ( catalogDataPlacement.placementState.equals( PlacementState.REFRESHABLE ) ) {
+            if ( !catalogDataPlacement.replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
                 return true;
             }
         }
