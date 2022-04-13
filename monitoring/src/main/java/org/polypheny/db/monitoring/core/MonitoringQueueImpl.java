@@ -152,7 +152,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public long getNumberOfProcessedEvents() {
+    public synchronized long getNumberOfProcessedEvents() {
         return threadPoolWorkers.getCompletedTaskCount();
     }
 
@@ -194,50 +194,5 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 }
             }
         }
-
     }
-
-    /*
-    class ThreadMonitor implements Runnable{
-        private int corePoolThreadsCount;
-        private int threadCount;
-        private ThreadPoolExecutor monitoredThread;
-
-        public ThreadMonitor(ThreadPoolExecutor t) {
-            super();
-            this.monitoredThread = t;
-            this.corePoolThreadsCount = t.getCorePoolSize();
-            this.threadCount = t.getPoolSize();
-        }
-
-        public void run() {
-            while (true) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    log.error("Thread Monitor wasn't able to sleep");
-                }
-
-                log.info("The guard is monitoring the threats.");
-
-                int newCorePoolCount = monitoredThread.getCorePoolSize();
-                int newThreadCount = monitoredThread.getPoolSize();
-
-                if (newCorePoolCount != this.corePoolThreadsCount) {
-                    this.corePoolThreadsCount = newCorePoolCount;
-                    log.info("new core pool thread count is = {}", this.corePoolThreadsCount);
-                }
-
-                if (newThreadCount != this.threadCount) {
-                    this.threadCount = newThreadCount;
-                    log.info("new thread count is = {}", this.threadCount);
-                }
-            }
-        }
-
-
-
-    }
-     */
-
 }
