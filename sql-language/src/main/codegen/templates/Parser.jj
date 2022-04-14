@@ -2339,9 +2339,17 @@ SqlNode FreshnessSpecification() :
                             unit = new SqlIdentifier( "HOUR", getPos() );
                         }
                 )
-                {
-                   rawEvaluationType = new SqlIdentifier( "DELAY", getPos() );
-                }
+                (
+                        <DELAY>
+                        {
+                           rawEvaluationType = new SqlIdentifier( "RELATIVE_DELAY", getPos() );
+                        }
+                    |
+                        <ABSOLUTE>
+                        {
+                           rawEvaluationType = new SqlIdentifier( "ABSOLUTE_DELAY", getPos() );
+                        }
+                )
 
                |
                 <PERCENT_REMAINDER>
@@ -6355,6 +6363,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DEFINED: "DEFINED" >
 |   < DEFINER: "DEFINER" >
 |   < DEGREE: "DEGREE" >
+|   < DELAY: "DELAY" >
 |   < DELETE: "DELETE" >
 |   < DENSE_RANK: "DENSE_RANK" >
 |   < DEPTH: "DEPTH" >

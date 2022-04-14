@@ -28,16 +28,18 @@ public class FreshnessSpecification {
     // Considered as the lower bound
     private final double freshnessIndex; // Value has to be between 0 and 1
     private final Timestamp toleratedTimestamp;
+    private final long timeDelay;
 
     //NOTE timestamp and freshnessIndex can coexist
 
     private final EvaluationType evaluationType;
 
 
-    public FreshnessSpecification( Timestamp toleratedTimestamp, EvaluationType evaluationType, double freshnessIndex ) {
+    public FreshnessSpecification( Timestamp toleratedTimestamp, EvaluationType evaluationType, double freshnessIndex, long timeDelay ) {
         this.toleratedTimestamp = toleratedTimestamp;
         this.evaluationType = evaluationType;
         this.freshnessIndex = freshnessIndex;
+        this.timeDelay = timeDelay;
     }
 
 }

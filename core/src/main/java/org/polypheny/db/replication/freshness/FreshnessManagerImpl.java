@@ -17,8 +17,8 @@
 package org.polypheny.db.replication.freshness;
 
 
-import com.google.common.collect.ImmutableList;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,15 +60,15 @@ public class FreshnessManagerImpl extends FreshnessManager {
 
             // Remove if given is older(occured before) than required
             case TIMESTAMP:
-            case DELAY:
+            case ABSOLUTE_DELAY:
                 return verifyTimestampFreshnessConstraint( requiredFreshnessSpecification, orderedPartitionPlacements );
 
-            case TIME_DEVIATION:
-                return false;
+            case RELATIVE_DELAY:
+                return verifyTimeDeviationFreshnessConstraint( requiredFreshnessSpecification, orderedPartitionPlacements );
 
             case PERCENTAGE:
             case INDEX:
-                return false;
+                return verifyModificationDeviationFreshnessConstraint( requiredFreshnessSpecification, orderedPartitionPlacements );
 
             default:
                 throw new UnknownFreshnessEvaluationTypeRuntimeException( requiredFreshnessSpecification.getEvaluationType().toString() );
@@ -96,6 +96,68 @@ public class FreshnessManagerImpl extends FreshnessManager {
             // If all placements have been successfully checked we can use this plan.
             return false;
         }
+    }
+
+
+    private boolean verifyTimeDeviationFreshnessConstraint( FreshnessSpecification requiredFreshnessSpecification, List<CatalogPartitionPlacement> orderedPartitionPlacements ) {
+
+        for ( CatalogPartitionPlacement partitionPlacement : orderedPartitionPlacements ) {
+
+            long partitionId = partitionPlacement.partitionId;
+            // Retrieves one of the EAGERly updated placements to get the corresponding update Timestamp
+            long commitTimestampOfEagerPartition =
+                    catalog.getPartitionPlacementsByIdAndReplicationStrategy( partitionPlacement.tableId, partitionId, ReplicationStrategy.EAGER ).get( 0 ).updateInformation.commitTimestamp;
+
+            Timestamp commitTimestampOfEagerPartition2 = new Timestamp( commitTimestampOfEagerPartition - requiredFreshnessSpecification.getTimeDelay() );
+
+            // If the EAGERly replicated node is newer than the current Partitions CommitTimestamp even WITH the freshness tolerance time delay
+            if ( commitTimestampOfEagerPartition2.after( new Timestamp( partitionPlacement.getCommitTimestamp() ) ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Calculates a freshnessIndexFilter based on the number of modifications
+     */
+    private boolean verifyModificationDeviationFreshnessConstraint( FreshnessSpecification requiredFreshnessSpecification, List<CatalogPartitionPlacement> orderedPartitionPlacements ) {
+
+        long jointEagerPartitionModifications = 0;
+        long jointLazyPartitionModifications = 0;
+        boolean compareLocally = false;
+
+        for ( CatalogPartitionPlacement partitionPlacement : orderedPartitionPlacements ) {
+
+            long partitionId = partitionPlacement.partitionId;
+            // Retrieves one of the EAGERly updated placements to get the corresponding update Timestamp
+            jointEagerPartitionModifications +=
+                    catalog.getPartitionPlacementsByIdAndReplicationStrategy( partitionPlacement.tableId, partitionId, ReplicationStrategy.EAGER ).get( 0 ).getModifications();
+
+            jointLazyPartitionModifications += partitionPlacement.getModifications();
+
+            // If enabled checks if each participating Placement matched the freshnessConstraints
+            if ( compareLocally ) {
+                // Build local Index
+                double actualLocalFreshnessIndex = jointLazyPartitionModifications / jointEagerPartitionModifications;
+                // If it is not accepted
+                if ( actualLocalFreshnessIndex < requiredFreshnessSpecification.getFreshnessIndex() ) {
+                    return true;
+                }
+            }
+        }
+
+        // Build global Index
+        double actualFreshnessIndex = (double) jointLazyPartitionModifications / (double) jointEagerPartitionModifications;
+
+        // If it is not accepted
+        if ( actualFreshnessIndex < requiredFreshnessSpecification.getFreshnessIndex() ) {
+            return true;
+        }
+
+        return false;
     }
 
 
@@ -127,15 +189,15 @@ public class FreshnessManagerImpl extends FreshnessManager {
             //  or between delay from the commitTimestamp of the eager placement vs.the candidate Lazy placement
 
             case TIMESTAMP:
-            case DELAY:
+            case ABSOLUTE_DELAY:
                 return filterOnTimestampFreshness( unfilteredPlacements, specs.getToleratedTimestamp() );
 
-            case TIME_DEVIATION:
-                return filterOnTimeDeviationFreshness( table, unfilteredPlacements );
+            case RELATIVE_DELAY:
+                return filterOnTimeDeviationFreshness( table, unfilteredPlacements, specs );
 
             case PERCENTAGE:
             case INDEX:
-                return filterOnFreshnessIndex( unfilteredPlacements, specs.getFreshnessIndex() );
+                return filterOnFreshnessIndex( unfilteredPlacements, specs );
 
             default:
                 throw new UnknownFreshnessEvaluationTypeRuntimeException( specs.getEvaluationType().toString() );
@@ -148,29 +210,15 @@ public class FreshnessManagerImpl extends FreshnessManager {
      * Filters placements based on their deviation from the master
      * Acts as a wrapper/ pre-filter before calling {{@link #filterOnTimestampFreshness(Map, Timestamp)}}
      */
-    private Map<Long, List<CatalogPartitionPlacement>> filterOnTimeDeviationFreshness( CatalogTable table, Map<Long, List<CatalogPartitionPlacement>> unfilteredPlacements ) {
-
-        Map<Long, List<CatalogPartitionPlacement>> filteredPlacementsPerPartition = new HashMap<>();
+    private Map<Long, List<CatalogPartitionPlacement>> filterOnTimeDeviationFreshness( CatalogTable table, Map<Long, List<CatalogPartitionPlacement>> unfilteredPlacements, FreshnessSpecification specs ) {
 
         for ( Entry<Long, List<CatalogPartitionPlacement>> entry : unfilteredPlacements.entrySet() ) {
 
-            long partitionId = entry.getKey();
             List<CatalogPartitionPlacement> placements = entry.getValue();
-
-            Map<Long, List<CatalogPartitionPlacement>> unfilteredPlacementsPerPartition = new HashMap<>();
-            unfilteredPlacementsPerPartition.put( partitionId, placements );
-
-            // Retrieves one of the EAGERly updated placements to get the corresponding update Timestamp
-            Timestamp commitTimestampOfEagerPartition = new Timestamp(
-                    catalog.getPartitionPlacementsByIdAndReplicationStrategy( table.id, partitionId, ReplicationStrategy.EAGER ).get( 0 ).updateInformation.commitTimestamp
-            );
-
-            // Filters only fraction of entire unfiltered map and then filters this sub list based on their identifiers
-            // Than adds this to global map.
-            filteredPlacementsPerPartition.putAll( filterOnTimestampFreshness( unfilteredPlacementsPerPartition, commitTimestampOfEagerPartition ) );
+            placements.removeIf( partitionPlacement -> verifyTimeDeviationFreshnessConstraint( specs, Arrays.asList( partitionPlacement ) ) );
         }
 
-        return filteredPlacementsPerPartition;
+        return unfilteredPlacements;
     }
 
 
@@ -178,35 +226,29 @@ public class FreshnessManagerImpl extends FreshnessManager {
             Map<Long, List<CatalogPartitionPlacement>> unfilteredPlacements,
             Timestamp toleratedTimestampFilter ) {
 
-        Map<Long, List<CatalogPartitionPlacement>> filteredPlacements = new HashMap<>();
 
         for ( Entry<Long, List<CatalogPartitionPlacement>> entry : unfilteredPlacements.entrySet() ) {
-
-            long partitionId = entry.getKey();
             List<CatalogPartitionPlacement> partitionPlacements = entry.getValue();
 
-            // TODO @HENNLO CHeck if this is indeed BEFORE
-            // Only keep placements that are newer than the specified threshold
-           /*partitionPlacements.stream().filter(
-                    partitionPlacement -> toleratedTimestampFilter.before( new Timestamp( partitionPlacement.updateInformation.commitTimestamp ) )
-            );*/
             // Removes all Data Placements that are older than the toleratedTimestamp Value
             partitionPlacements.removeIf( partitionPlacement -> toleratedTimestampFilter.after( new Timestamp( partitionPlacement.updateInformation.commitTimestamp ) ) );
-            filteredPlacements.put( partitionId, ImmutableList.copyOf( partitionPlacements ) );
         }
 
-        return filteredPlacements;
+        return unfilteredPlacements;
 
     }
 
 
     private Map<Long, List<CatalogPartitionPlacement>> filterOnFreshnessIndex(
             Map<Long, List<CatalogPartitionPlacement>> unfilteredPlacements,
-            double freshnessIndexFilter ) {
+            FreshnessSpecification specs ) {
 
-        Map<Long, List<CatalogPartitionPlacement>> filteredPlacements = new HashMap<>();
+        for ( Entry<Long, List<CatalogPartitionPlacement>> entry : unfilteredPlacements.entrySet() ) {
+            List<CatalogPartitionPlacement> partitionPlacements = entry.getValue();
+            partitionPlacements.removeIf( partitionPlacement -> verifyModificationDeviationFreshnessConstraint( specs, Arrays.asList( partitionPlacement ) ) );
+        }
 
-        return filteredPlacements;
+        return unfilteredPlacements;
     }
 
 }

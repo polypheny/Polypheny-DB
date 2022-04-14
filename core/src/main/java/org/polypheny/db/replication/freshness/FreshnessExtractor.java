@@ -70,7 +70,7 @@ public abstract class FreshnessExtractor {
     }
 
 
-    protected void setFreshnessSpecification( Timestamp toleratedTimestamp, EvaluationType evaluationType, double freshnessIndex ) {
-        this.freshnessSpecification = new FreshnessSpecification( toleratedTimestamp, evaluationType, freshnessIndex );
+    protected void setFreshnessSpecification( Timestamp toleratedTimestamp, EvaluationType evaluationType, double freshnessIndex, long timeDelay ) {
+        this.freshnessSpecification = new FreshnessSpecification( toleratedTimestamp, evaluationType, freshnessIndex, timeDelay );
     }
 }

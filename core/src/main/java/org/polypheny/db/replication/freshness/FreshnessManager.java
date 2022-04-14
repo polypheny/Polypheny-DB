@@ -47,11 +47,11 @@ public abstract class FreshnessManager {
 
 
     public enum EvaluationType {
-        TIMESTAMP,
-        DELAY,
+        TIMESTAMP,      // Absolute Timestamp given as the lower bound
+        ABSOLUTE_DELAY,          // Relative to the Current Time. Generates lower bound timestamp based on current Timestamp
         PERCENTAGE,
         INDEX,
-        TIME_DEVIATION
+        RELATIVE_DELAY  // Relative Time deviation from corresponding eagerly replicated master Node.
     }
 
 }

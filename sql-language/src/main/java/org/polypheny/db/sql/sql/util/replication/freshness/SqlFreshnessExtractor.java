@@ -67,47 +67,21 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
 
         EvaluationType tmpEvaluationType;
         double tmpFreshnessIndex = -1.0;
+        long timeDelay = 0;
 
         // Serves as the lower bound of accepted freshness
         Timestamp requestedTimestamp = null;
 
         switch ( rawEvaluationType.toString().toUpperCase() ) {
 
-            case "DELAY":
+            case "ABSOLUTE_DELAY":
 
-                tmpEvaluationType = EvaluationType.DELAY;
+                tmpEvaluationType = EvaluationType.ABSOLUTE_DELAY;
                 long invocationTimestamp = System.currentTimeMillis();
+
                 long timeDifference = 0;
-                long specifiedTimeDelta = Long.valueOf( toleratedFreshness.toString() );
+                timeDifference = generateTimeDifference( tmpEvaluationType );
 
-                // Check validity
-                if ( specifiedTimeDelta < 0 ) {
-                    throw new UnsupportedFreshnessSpecificationRuntimeException( EvaluationType.DELAY, toleratedFreshness.toString() );
-                }
-
-                // Initially set to 1000ms = 1s
-                int timeMultiplier = 1000;
-
-                switch ( unit.toString().toUpperCase() ) {
-                    case "SECOND":
-                        break;
-
-                    case "MINUTE":
-                        // Convert to milliseconds
-                        timeMultiplier *= 60;
-                        break;
-
-                    case "HOUR":
-                        // Convert to milliseconds
-                        timeMultiplier *= 60 * 60;
-                        break;
-
-                    default:
-                        throw new UnknownFreshnessTimeUnitRuntimeException( unit.toString().toUpperCase() );
-                }
-
-                // Transform currentTimestamp to the tolerated level of freshness
-                timeDifference = specifiedTimeDelta * timeMultiplier;
                 invocationTimestamp = invocationTimestamp - timeDifference;
                 requestedTimestamp = new Timestamp( invocationTimestamp );
 
@@ -118,6 +92,12 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
                 tmpEvaluationType = EvaluationType.TIMESTAMP;
                 requestedTimestamp = Timestamp.valueOf( ((SqlTimestampLiteral) toleratedFreshness).getValue().toString() );
 
+                break;
+
+            case "RELATIVE_DELAY":
+
+                tmpEvaluationType = EvaluationType.RELATIVE_DELAY;
+                timeDelay = generateTimeDifference( tmpEvaluationType );
                 break;
 
             case "PERCENTAGE":
@@ -143,7 +123,48 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
                 throw new UnknownFreshnessEvaluationTypeRuntimeException( rawEvaluationType.toString().toUpperCase() );
         }
 
-        setFreshnessSpecification( requestedTimestamp, tmpEvaluationType, tmpFreshnessIndex );
+        setFreshnessSpecification( requestedTimestamp, tmpEvaluationType, tmpFreshnessIndex, timeDelay );
+    }
+
+
+    /**
+     * Generates a time difference that has been specified via the Time Delay
+     *
+     * @param evalType executed evaluation Type only needed for logging
+     * @return the calculated allowed time difference between objects
+     */
+    private long generateTimeDifference( EvaluationType evalType ) {
+
+        long specifiedTimeDelta = Long.valueOf( toleratedFreshness.toString() );
+
+        // Check validity
+        if ( specifiedTimeDelta < 0 ) {
+            throw new UnsupportedFreshnessSpecificationRuntimeException( evalType, toleratedFreshness.toString() );
+        }
+
+        // Initially set to 1000ms = 1s
+        int timeMultiplier = 1000;
+
+        switch ( unit.toString().toUpperCase() ) {
+            case "SECOND":
+                break;
+
+            case "MINUTE":
+                // Convert to milliseconds
+                timeMultiplier *= 60;
+                break;
+
+            case "HOUR":
+                // Convert to milliseconds
+                timeMultiplier *= 60 * 60;
+                break;
+
+            default:
+                throw new UnknownFreshnessTimeUnitRuntimeException( unit.toString().toUpperCase() );
+        }
+
+        // Transform specifiedTimeDelta to the tolerated level of freshness
+        return specifiedTimeDelta * timeMultiplier;
     }
 
 
