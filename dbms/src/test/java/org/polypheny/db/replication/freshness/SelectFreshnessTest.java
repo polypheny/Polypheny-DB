@@ -90,7 +90,7 @@ public class SelectFreshnessTest {
                 try {
 
                     // DML queries cannot go through if a Freshness Query has already been executed within TX
-                    statement.executeUpdate( "SELECT * FROM testfreshnessoperations WITH FRESHNESS 3 HOUR" );
+                    statement.executeUpdate( "SELECT * FROM testfreshnessoperations WITH FRESHNESS 3 HOUR ABSOLUTE" );
 
                     // Check if for a freshness query the TX statement aborts since a DML operation has already been executed.
                     boolean failed = false;
@@ -203,13 +203,13 @@ public class SelectFreshnessTest {
                     // Check if queries can even be executed and are correctly parsed
 
                     // Includes DELAY in SECONDS
-                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 10 SECOND" );
+                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 10 SECOND  ABSOLUTE" );
 
                     // Includes DELAY in MINUTES
-                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 10 MINUTE" );
+                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 10 MINUTE  ABSOLUTE" );
 
                     // Includes DELAY in HOURS
-                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 3 HOUR" );
+                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 3 HOUR  ABSOLUTE" );
 
                     // Test with WHERE clause
 
@@ -220,7 +220,7 @@ public class SelectFreshnessTest {
                     // Test ILLEGAL values (negative time delay)
                     boolean failed = false;
                     try {
-                        statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS -10 MINUTE" );
+                        statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS -10 MINUTE  ABSOLUTE" );
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
