@@ -41,7 +41,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     private final PersistentMonitoringRepository persistentRepository;
     private final MonitoringRepository statisticRepository;
-    private ThreadPoolExecutor threadPoolWorkers;
+    private MonitoringThreadPoolExecutor threadPoolWorkers;
 
     private final BlockingQueue eventQueue;
 
@@ -50,8 +50,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private final int KEEP_ALIVE_TIME;
 
     private boolean backgroundProcessingActive;
-    private int threadCount;
-
 
     /**
      * Ctor which automatically will start the background task based on the given boolean
@@ -76,25 +74,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
             RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
 
-            threadPoolWorkers = new ThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, eventQueue );
+            threadPoolWorkers = new MonitoringThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, eventQueue );
         }
-
-        // instantiated thread count
-        this.threadCount = threadPoolWorkers.getPoolSize();
-
-        // create a scheduled, separate thread which gets new thread count every 500 milliseconds
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public synchronized void run() {
-                int newThreadCount = threadPoolWorkers.getPoolSize();
-
-                if (newThreadCount != threadCount) {
-                    threadCount = newThreadCount;
-                    log.info("Thread count is now: {}", threadCount);
-                }
-            }
-        }, 500, 500);
     }
 
 
@@ -109,7 +90,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public synchronized void queueEvent( @NonNull MonitoringEvent event ) {
+    public void queueEvent( @NonNull MonitoringEvent event ) {
         if ( backgroundProcessingActive ) {
             threadPoolWorkers.execute( new MonitoringWorker( event ) );
         }
@@ -122,13 +103,13 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * @return Current number of elements in Queue
      */
     @Override
-    public synchronized long getNumberOfElementsInQueue() {
+    public long getNumberOfElementsInQueue() {
         return threadPoolWorkers.getQueue().size();
     }
 
 
     @Override
-    public synchronized List<HashMap<String, String>> getInformationOnElementsInQueue() {
+    public List<HashMap<String, String>> getInformationOnElementsInQueue() {
         List<HashMap<String, String>> infoList = new ArrayList<>();
         List<MonitoringEvent> queueElements = new ArrayList<>();
 
@@ -152,10 +133,44 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public synchronized long getNumberOfProcessedEvents() {
+    public long getNumberOfProcessedEvents() {
         return threadPoolWorkers.getCompletedTaskCount();
     }
 
+    /**
+     * Overrides beforeExecute and afterExecute of ThreadPoolExecutor to check the number of threads
+     * and logs new thread count if there is a change.
+     */
+    class MonitoringThreadPoolExecutor extends ThreadPoolExecutor {
+        private int threadCount;
+        public MonitoringThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                            BlockingQueue<Runnable> workQueue) {
+            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
+            this.threadCount = this.getPoolSize();
+        }
+
+        @Override
+        protected void beforeExecute(Thread t, Runnable r){
+            if (this.threadCount != this.getPoolSize()) {
+                this.threadCount = this.getPoolSize();
+                if (log.isDebugEnabled()) {
+                    log.debug("Thread count for monitoring service: {}", this.threadCount);
+                }
+            }
+            super.beforeExecute(t, r);
+        }
+
+        @Override
+        protected void afterExecute(Runnable r, Throwable t) {
+            super.afterExecute(r, t);
+            if (this.threadCount != this.getPoolSize()){
+                this.threadCount = this.getPoolSize();
+                if (log.isDebugEnabled()) {
+                    log.debug("Thread count for monitoring service: {}", this.threadCount);
+                }
+            }
+        }
+    }
 
     class MonitoringWorker implements Runnable {
 
