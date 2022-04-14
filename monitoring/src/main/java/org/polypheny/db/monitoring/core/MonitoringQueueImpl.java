@@ -154,7 +154,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             if (this.threadCount != this.getPoolSize()) {
                 this.threadCount = this.getPoolSize();
                 if (log.isDebugEnabled()) {
-                    log.debug("Thread count for monitoring service: {}", this.threadCount);
+                    log.debug("Thread count for monitoring queue: {}", this.threadCount);
                 }
             }
             super.beforeExecute(t, r);
@@ -166,7 +166,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             if (this.threadCount != this.getPoolSize()){
                 this.threadCount = this.getPoolSize();
                 if (log.isDebugEnabled()) {
-                    log.debug("Thread count for monitoring service: {}", this.threadCount);
+                    log.debug("Thread count for monitoring queue: {}", this.threadCount);
                 }
             }
         }
