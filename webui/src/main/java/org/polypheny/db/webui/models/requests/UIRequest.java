@@ -76,6 +76,11 @@ public class UIRequest {
      */
     public boolean noLimit;
 
+    /**
+     * The time interval of the diagram should be fetched from.
+     */
+    public String selectInterval;
+
 
     public UIRequest() {
         // empty on purpose
@@ -105,6 +110,9 @@ public class UIRequest {
                     break;
                 case "noLimit":
                     noLimit = in.nextBoolean();
+                    break;
+                case "selectInterval":
+                    selectInterval = in.nextString();
                     break;
                 default:
                     throw new RuntimeException( "Error while deserializing UIRequest." );
@@ -184,6 +192,8 @@ public class UIRequest {
                 sortStateMapAdapter.write( out, value.sortState );
                 out.name( "noLimit" );
                 out.value( value.noLimit );
+                out.name( "selectInterval" );
+                out.value( value.selectInterval );
                 out.endObject();
             }
 

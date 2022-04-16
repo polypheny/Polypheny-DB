@@ -122,8 +122,9 @@ public class StatisticCrud {
     /**
      * Information base on time interval for diagram shown on the UI dashboard.
      */
-    public void getDashboardDiagram( final Context ctx, String selectInterval ) {
-
+    public void getDashboardDiagram( Context ctx ) {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
+        String selectInterval = request.selectInterval;
         List<QueryDataPointImpl> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class );
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
         TreeMap<Timestamp, Pair<Integer, Integer>> eachInfo = new TreeMap<>();
