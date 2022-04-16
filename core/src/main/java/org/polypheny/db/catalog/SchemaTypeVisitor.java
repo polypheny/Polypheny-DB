@@ -53,6 +53,7 @@ public class SchemaTypeVisitor extends AlgShuttleImpl {
             if ( names.size() == 3 ) {
                 schema = Catalog.getInstance().getSchema( names.get( 0 ), names.get( 1 ) );
             } else if ( names.size() == 2 ) {
+                // Can not use _ in schema names?
                 if ( names.get( 0 ).contains( "_" ) ) {
                     schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, names.get( 0 ).split( "_" )[names.size() - 1] );
                 } else {
@@ -68,7 +69,7 @@ public class SchemaTypeVisitor extends AlgShuttleImpl {
             }
             schemaTypes.add( schema.getSchemaType() );
         } catch ( UnknownSchemaException | UnknownDatabaseException e ) {
-            throw new RuntimeException( "The was an error on retrieval of the data model." );
+            throw new RuntimeException( "There was an error on retrieval of the data model." );
         }
         return super.visit( scan );
     }

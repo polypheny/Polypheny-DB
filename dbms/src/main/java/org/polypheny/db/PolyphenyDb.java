@@ -31,6 +31,8 @@ import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.adaptimizer.AdaptiveOptimizer;
+import org.polypheny.db.adaptimizer.ReAdaptiveOptimizer;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -402,6 +404,10 @@ public class PolyphenyDb {
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );
         RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.addObserver( tracker );
         RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.addObserver( tracker );
+
+        // Add adaptive optimizer for operator costs
+        ReAdaptiveOptimizer.setTransactionManager( transactionManager );
+        ReAdaptiveOptimizer.getInstance();
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

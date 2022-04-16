@@ -142,7 +142,9 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                     partitionGroupsList,
                     partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
                     storeInstance,
-                    statement );
+                    statement,
+                    true
+                    );
         } catch ( PlacementAlreadyExistsException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),

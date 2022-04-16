@@ -18,6 +18,8 @@
         <logger name="org.polypheny" level="INFO">
             <AppenderRef ref="ConsoleAppender"/>
         </logger>
+        <logger name="org.polypheny.db.adaptimizer" level="DEBUG">
+        </logger>
         <!-- <logger name="org.polypheny.db.jdbc" level="TRACE">
         </logger> -->
         <!--<logger name="org.polypheny.db.plan.RelOptPlanner" level="DEBUG">
