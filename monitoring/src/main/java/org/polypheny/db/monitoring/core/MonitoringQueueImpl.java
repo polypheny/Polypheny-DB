@@ -140,19 +140,23 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return threadPoolWorkers.getCompletedTaskCount();
     }
 
+
     /**
      * Overrides beforeExecute and afterExecute of ThreadPoolExecutor to check the number of threads
      * and logs new thread count if there is a change.
      */
     class MonitoringThreadPoolExecutor extends ThreadPoolExecutor {
 
+
         private int threadCount;
+
 
         public MonitoringThreadPoolExecutor( int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
                 BlockingQueue<Runnable> workQueue ) {
             super( corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue );
             this.threadCount = this.getPoolSize();
         }
+
 
         @Override
         protected void beforeExecute( Thread t, Runnable r ){
@@ -166,6 +170,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             super.beforeExecute( t, r );
         }
 
+
         @Override
         protected void afterExecute( Runnable r, Throwable t ) {
             super.afterExecute( r, t );
@@ -178,6 +183,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             }
         }
     }
+
 
     class MonitoringWorker implements Runnable {
 
