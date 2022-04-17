@@ -16,7 +16,9 @@
 
 package org.polypheny.db.monitoring.core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -74,7 +76,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
             RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
 
-            threadPoolWorkers = new MonitoringThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, eventQueue );
+            threadPoolWorkers = new MonitoringThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME,
+                    TimeUnit.SECONDS, eventQueue);
         }
     }
 
@@ -142,31 +145,35 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * and logs new thread count if there is a change.
      */
     class MonitoringThreadPoolExecutor extends ThreadPoolExecutor {
+
         private int threadCount;
-        public MonitoringThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                            BlockingQueue<Runnable> workQueue) {
-            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
+
+        public MonitoringThreadPoolExecutor( int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                BlockingQueue<Runnable> workQueue ) {
+            super( corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue );
             this.threadCount = this.getPoolSize();
         }
 
         @Override
-        protected void beforeExecute(Thread t, Runnable r){
-            if (this.threadCount != this.getPoolSize()) {
+        protected void beforeExecute( Thread t, Runnable r ){
+            if ( this.threadCount != this.getPoolSize() ) {
                 this.threadCount = this.getPoolSize();
-                if (log.isDebugEnabled()) {
-                    log.debug("Thread count for monitoring queue: {}", this.threadCount);
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Thread count for monitoring queue: {}", this.threadCount );
                 }
             }
-            super.beforeExecute(t, r);
+
+            super.beforeExecute( t, r );
         }
 
         @Override
-        protected void afterExecute(Runnable r, Throwable t) {
-            super.afterExecute(r, t);
-            if (this.threadCount != this.getPoolSize()){
+        protected void afterExecute( Runnable r, Throwable t ) {
+            super.afterExecute( r, t );
+
+            if ( this.threadCount != this.getPoolSize() ){
                 this.threadCount = this.getPoolSize();
-                if (log.isDebugEnabled()) {
-                    log.debug("Thread count for monitoring queue: {}", this.threadCount);
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Thread count for monitoring queue: {}", this.threadCount );
                 }
             }
         }
