@@ -155,11 +155,16 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
         switch ( manualDecision.getClauseCategory() ) {
             case STORE:
-                List<DataStore> dataStores = (List<DataStore>) WeightedList.weightedToList( manualDecision.getWeightedList() );
-                for ( DataStore dataStore : dataStores ) {
-                    if ( !catalog.checkIfExistsAdapter( dataStore.getAdapterId() ) ) {
-                        updateDecisionStatus( manualDecision, DecisionStatus.NOT_APPLICABLE );
-                        return false;
+                if(manualDecision.getWeightedList() == null){
+                    updateDecisionStatus( manualDecision, DecisionStatus.NOT_APPLICABLE );
+                    return true;
+                }else{
+                    List<DataStore> dataStores = (List<DataStore>) WeightedList.weightedToList( manualDecision.getWeightedList() );
+                    for ( DataStore dataStore : dataStores ) {
+                        if ( !catalog.checkIfExistsAdapter( dataStore.getAdapterId() ) ) {
+                            updateDecisionStatus( manualDecision, DecisionStatus.NOT_APPLICABLE );
+                            return false;
+                        }
                     }
                 }
                 break;
@@ -187,7 +192,7 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
 
     private <T> void rerateDecision( ManualDecision<T> manualDecision ) {
-
+        updateDecisionStatus( manualDecision, DecisionStatus.NOT_APPLICABLE );
         WeightedList<?> weightedList = null;
         if ( manualDecision.getAdaptiveKind() == AdaptiveKind.MANUAL ) {
             log.warn( "in passive" );
@@ -207,15 +212,17 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
         ManualDecision<?> newManualDecision = newlyAddedManualDecision.remove( manualDecision.getKey() );
 
-        // Check if the correct Decision is saved
-        if ( newManualDecision != null && weightedList.equals( newManualDecision.getWeightedList() ) ) {
+        if ( newManualDecision != null && manualDecision.getWeightedList() != null && weightedList != null && weightedList.equals( manualDecision.getWeightedList() ) && weightedList.equals( manualDecision.getWeightedList() )) {
             log.warn( "It is the same weighted List." );
         }
-        if ( isNewDecisionBetter( getOrdered( manualDecision.getWeightedList() ), getOrdered( weightedList ) ) ) {
+        if(manualDecision.getWeightedList() == null){
             Transaction trx = adaptiveQueryInterface.getTransaction();
             manualDecision.getAction().doChange( newManualDecision, trx );
             adaptiveQueryInterface.tryCommit( trx );
-
+        }else if ( isNewDecisionBetter( getOrdered( manualDecision.getWeightedList() ), getOrdered( weightedList ) ) ) {
+            Transaction trx = adaptiveQueryInterface.getTransaction();
+            manualDecision.getAction().doChange( newManualDecision, trx );
+            adaptiveQueryInterface.tryCommit( trx );
         }
     }
 

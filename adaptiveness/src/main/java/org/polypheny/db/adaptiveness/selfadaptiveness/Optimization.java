@@ -53,9 +53,9 @@ public enum Optimization {
                     WeightedList<Object> list = new WeightedList<>();
                     list.putAll( c.getPossibilities().stream().collect( Collectors.toMap( e -> e, e -> {
                         if ( e == Action.INDEX_ADDITION ) {
-                            return 1.00;
+                            return 0.75;
                         } else if(e == Action.MATERIALIZED_VIEW_ADDITION ){
-                            return 0.50;
+                            return 1.00;
                         } else {
                             return -1.0;
                         }

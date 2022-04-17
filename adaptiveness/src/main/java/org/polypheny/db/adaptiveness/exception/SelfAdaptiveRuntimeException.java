@@ -25,4 +25,8 @@ public class SelfAdaptiveRuntimeException extends RuntimeException {
         super(msg);
     }
 
+    public SelfAdaptiveRuntimeException(String msg, Throwable clause){
+        super(msg, clause);
+    }
+
 }

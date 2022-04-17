@@ -126,7 +126,7 @@ public class ClausesRegister {
                 new HashMap<>(),
                 new HashMap<>())
         );
-        register( new BooleanClause(
+        /*register( new BooleanClause(
                 ClauseName.REDUNDANCY_OPTIMIZATION,
                 false,
                 false,
@@ -136,6 +136,7 @@ public class ClausesRegister {
                 new HashMap<>(),
                 new HashMap<>())
         );
+         */
         register( new BooleanClause(
                 ClauseName.LANGUAGE_OPTIMIZATION,
                 false,

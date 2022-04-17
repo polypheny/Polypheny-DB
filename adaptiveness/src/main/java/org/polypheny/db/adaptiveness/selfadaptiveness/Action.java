@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -47,6 +48,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.AlterSourceException;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
@@ -205,43 +207,88 @@ public enum Action {
                         CatalogTable catalogTableRight = catalog.getTable( jointTableId.right );
 
                         // Select best store not random store
-                        List<DataStore> possibleStores;
+                        List<DataStore> possibleStores = new ArrayList<>();
                         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
-                        possibleStores = new ArrayList<>( availableStores.values() );
+                        availableStores.values().forEach( dataStore ->  {
+                            if(dataStore.getAdapterDefault().getPreferredSchemaType() == SchemaType.RELATIONAL){
+                                possibleStores.add( dataStore );
+                            }
+                        });
 
-                        try {
+                        if(!possibleStores.isEmpty()){
+                            try {
+
+                            /*
                             // All cols
-/*
                             ddlManager.addIndex( catalogTableLeft, null, catalogTableLeft.getColumnNames(), "selfAdaptiveIndex_" + +decision.id, false, possibleStores.get( 1 ), statement );
                             ddlManager.addIndex( catalogTableRight, null, catalogTableRight.getColumnNames(), "selfAdaptiveIndex_" + +decision.id, false, possibleStores.get( 1 ), statement );
+                            */
+
+                                // Primarykey cols
+                                List<String> colNamesPrimaryLeft = new ArrayList<>();
+                                catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryLeft.add( catalog.getColumn( id ).name ) );
+                                List<String> colNamesPrimaryRight = new ArrayList<>();
+                                catalog.getPrimaryKey( catalogTableRight.primaryKey ).columnIds.forEach( id -> colNamesPrimaryRight.add( catalog.getColumn( id ).name ) );
+
+                                // Check if index exists
+                                if ( !catalog.checkIfExistsIndex( catalogTableLeft.id, colNamesPrimaryLeft.toString() ) ) {
+                                    ddlManager.addIndex( catalogTableLeft, null, colNamesPrimaryLeft, colNamesPrimaryLeft.toString(), false, possibleStores.get( 0 ), statement );
+                                }
+                                if ( !catalog.checkIfExistsIndex( catalogTableRight.id, colNamesPrimaryRight.toString() ) ) {
+                                    ddlManager.addIndex( catalogTableRight, null, colNamesPrimaryRight, colNamesPrimaryRight.toString(), false, possibleStores.get( 0 ), statement );
+                                }
 
 
-                           */
-                            // Primarykey cols
-                            List<String> colNamesPrimaryLeft = new ArrayList<>();
-                            catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryLeft.add( catalog.getColumn( id ).name ) );
-                            ddlManager.addIndex( catalogTableLeft, null, colNamesPrimaryLeft, "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
-
-                            List<String> colNamesPrimaryRight= new ArrayList<>();
-                            catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryRight.add( catalog.getColumn( id ).name ) );
-                            ddlManager.addIndex( catalogTableRight, null, colNamesPrimaryRight, "selfAdaptiveIndex_"+ + decision.id , false, possibleStores.get( 1 ), statement );
-
-
-
-                        } catch ( UnknownColumnException | UnknownIndexMethodException | GenericCatalogException | UnknownTableException | UnknownUserException | UnknownSchemaException | UnknownKeyException | UnknownDatabaseException | TransactionException | AlterSourceException | IndexExistsException | MissingColumnPlacementException e ) {
-                            e.printStackTrace();
+                            } catch ( UnknownColumnException | UnknownIndexMethodException | GenericCatalogException | UnknownTableException | UnknownUserException | UnknownSchemaException | UnknownKeyException | UnknownDatabaseException | TransactionException | AlterSourceException | IndexExistsException | MissingColumnPlacementException e ) {
+                                throw new SelfAdaptiveRuntimeException( "Not possible to create Indexes during self-adapting process", e );
+                            }
+                        } else{
+                            throw new SelfAdaptiveRuntimeException( "Not possible to add Index, no suitable Store available." );
                         }
                     }
                 }
-
             }
-
         }
     },
     INDEX_DELETION {
         @Override
         public <T> void doChange( Decision decision, Transaction transaction ) {
 
+            if ( decision instanceof AutomaticDecision ) {
+                AutomaticDecision automaticDecision = (AutomaticDecision) decision;
+                DdlManager ddlManager = DdlManager.getInstance();
+                Catalog catalog = Catalog.getInstance();
+                Statement statement = transaction.createStatement();
+
+                JoinInformation joinInfo = automaticDecision.getWorkloadInformation().getJoinInformation();
+
+                for ( Pair<Long, Long> jointTableId : joinInfo.getJointTableIds() ) {
+                    CatalogTable catalogTableLeft = catalog.getTable( jointTableId.left );
+                    CatalogTable catalogTableRight = catalog.getTable( jointTableId.right );
+
+                    // Primarykey cols
+                    List<String> colNamesPrimaryLeft = new ArrayList<>();
+                    catalog.getPrimaryKey( catalogTableLeft.primaryKey ).columnIds.forEach( id -> colNamesPrimaryLeft.add( catalog.getColumn( id ).name ) );
+                    List<String> colNamesPrimaryRight = new ArrayList<>();
+                    catalog.getPrimaryKey( catalogTableRight.primaryKey ).columnIds.forEach( id -> colNamesPrimaryRight.add( catalog.getColumn( id ).name ) );
+
+                    try {
+                    if ( !catalog.checkIfExistsIndex( catalogTableLeft.id, colNamesPrimaryLeft.toString() ) ) {
+
+                            ddlManager.dropIndex(catalogTableLeft, catalogTableLeft.toString(), statement);
+
+                    }
+                    if ( !catalog.checkIfExistsIndex( catalogTableRight.id, colNamesPrimaryRight.toString() ) ) {
+
+                            ddlManager.dropIndex(catalogTableRight, catalogTableRight.toString(), statement);
+
+                    }
+                    } catch ( DdlOnSourceException e ) {
+                        throw new SelfAdaptiveRuntimeException( "Not possible to drop Indexes during self-adapting process", e );
+                    }
+
+                }
+            }
         }
     };
 

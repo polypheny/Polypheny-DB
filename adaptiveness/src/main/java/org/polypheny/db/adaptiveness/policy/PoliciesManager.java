@@ -239,6 +239,9 @@ public class PoliciesManager {
                         policies.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
                         this.policies.put( policies.getId(), policies );
                     } else {
+                        ((BooleanClause) clause).setValue( !changeRequest.booleanValue );
+                        policies.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
+                        this.policies.put( policies.getId(), policies );
                         log.warn( "Persistency not possible to change." );
                         throw new PolicyRuntimeException( "Not possible to change this clause because the policies can not be guaranteed anymore." );
                     }
@@ -404,7 +407,7 @@ public class PoliciesManager {
         }
 
         if ( possibleStores.isEmpty() ) {
-            throw new PolicyRuntimeException( "It is not possible to use this policy because there is no store that holds the criteria: " + clause.getClauseName() );
+            return false;
         }
 
         List<Integer> adapterIds = new ArrayList<>();
@@ -493,7 +496,7 @@ public class PoliciesManager {
                 context.setPossibilities( possibleStores, DataStore.class );
                 context.setNameSpaceModel( Catalog.getInstance().getSchema( namespaceId ).schemaType );
 
-                if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() && !possibleStores.isEmpty()) {
+                if ( !possibleStores.isEmpty()) {
                     ManualDecision manualDecision = new ManualDecision(
                             new Timestamp( System.currentTimeMillis() ),
                             ClauseCategory.STORE,
@@ -576,6 +579,7 @@ public class PoliciesManager {
         List<Clause> interestingClauses = getSelfAdaptiveClauses();
 
         if ( interestingClauses.isEmpty() ) {
+            SelfAdaptivAgentImpl.getInstance().addManualDecision( manualDecision );
             return WeightedList.listToWeighted( informationContext.getPossibilities() );
         }
 
@@ -585,6 +589,7 @@ public class PoliciesManager {
             }
         }
         if(rankings.isEmpty()){
+            SelfAdaptivAgentImpl.getInstance().addManualDecision( manualDecision );
             return WeightedList.listToWeighted( informationContext.getPossibilities() );
         }
         WeightedList<T> avgRankings = WeightedList.avg( rankings );

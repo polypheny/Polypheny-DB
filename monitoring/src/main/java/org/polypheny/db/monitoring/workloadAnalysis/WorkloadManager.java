@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
+import org.polypheny.db.adaptiveness.JoinInformation;
 import org.polypheny.db.adaptiveness.WorkloadInformation;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.Trigger;
@@ -69,7 +70,6 @@ public class WorkloadManager {
         }
 
         List<Timestamp> timesToDelete = minuteTimeline.keySet().stream().filter( time -> time.getTime() > timestamp.getTime() + 7200000 ).collect( Collectors.toList() );
-
         for ( Timestamp deleteTime : timesToDelete ) {
             minuteTimeline.remove( deleteTime );
         }
@@ -88,7 +88,6 @@ public class WorkloadManager {
             ComplexQuery complexQuery = complexQueries.remove( algNode.algCompareString() );
             complexQuery.setAmount( complexQuery.getAmount() + 1 );
             List<Timestamp> timestampList = complexQuery.getTimestamps();
-            //complexQuery.getTimestamps().add( new Timestamp( System.currentTimeMillis() ) );
             timestampList.add( new Timestamp( System.currentTimeMillis() ) );
             complexQuery.setTimestamps( timestampList );
             complexQueries.put( algNode.algCompareString(), complexQuery );
@@ -99,9 +98,11 @@ public class WorkloadManager {
                 double avgLast = complexQuery.getAvgLast();
                 double avgComparison = complexQuery.getAvgComparison();
 
-                if ( avgLast / avgComparison > 1.2 ) {
+                if ( (avgLast/(avgComparison/100)) - 100 < -80 ) {
+                    log.warn( "increase of same query" );
                     SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, workloadInformation, true );
-                } else if ( avgComparison / avgLast > 1.2 ) {
+                } else if ( (avgComparison/(avgLast/100)) - 100 < -95 ) {
+                    log.warn( "decrease of same query" );
                     SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, workloadInformation, false );
                 }
 
@@ -115,6 +116,15 @@ public class WorkloadManager {
             complexQueries.put( algNode.algCompareString(), complexQuery );
         }
 
+
+    }
+
+
+    public void findJoins( AlgNode algNode, WorkloadInformation workloadInformation ) {
+
+        JoinInformation joinInformation = workloadInformation.getJoinInformation();
+
+        SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.JOIN_FREQUENCY, algNode, workloadInformation, true );
 
     }
 

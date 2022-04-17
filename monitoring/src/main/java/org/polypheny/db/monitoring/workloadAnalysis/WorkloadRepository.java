@@ -52,10 +52,13 @@ public class WorkloadRepository implements MonitoringRepository {
 
             // Check if self-adaptive is active, check if the queries is complex (long) enough, check that it is not a parameterized query
             if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() &&
-                    ((WorkloadDataPoint) dataPoint).getAlgNode().algCompareString().length() > 150 &&
+                    ((WorkloadDataPoint) dataPoint).getAlgNode().algCompareString().length() > 250 &&
                     !analyzeRelShuttle.getRexShuttle().isUsesDynamicParam() &&
                     !analyzeRelShuttle.isModify() ) {
-                workloadManager.findOftenUsedComplexQueries( ((WorkloadDataPoint) dataPoint).getAlgNode(), workloadInformation);
+                workloadManager.findOftenUsedComplexQueries( ((WorkloadDataPoint) dataPoint).getAlgNode(), workloadInformation );
+            } else if ( RuntimeConfig.SELF_ADAPTIVE.getBoolean() && !analyzeRelShuttle.isModify() && !workloadInformation.getJoinInformation().getJointTableIds().isEmpty()) {
+                log.warn( "used joins" );
+                workloadManager.findJoins( ((WorkloadDataPoint) dataPoint).getAlgNode(), workloadInformation );
             }
 
             Timestamp timestamp = ((WorkloadDataPoint) dataPoint).getRecordedTimestamp();

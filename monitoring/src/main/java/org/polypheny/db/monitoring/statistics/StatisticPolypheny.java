@@ -38,11 +38,8 @@ public class StatisticPolypheny {
             int storeId = store.getAdapterId();
 
             StoreInformation storeInfo;
-            if ( storeInformation.containsKey( storeId ) ) {
-                storeInfo = storeInformation.remove( storeId );
-            } else {
-                storeInfo = new StoreInformation( storeId, store.getAdapterName(), store.getDeployMode(), store.isPersistent() );
-            }
+            storeInformation.remove( storeId );
+            storeInfo = new StoreInformation( storeId, store.getAdapterName(), store.getDeployMode(), store.isPersistent() );
 
             updatedStoreInformation.put( storeId, storeInfo );
         }

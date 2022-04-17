@@ -296,11 +296,9 @@ public class ViewManager {
         private AlgNode checkSelfAdapting( AlgNode algNode ) {
 
             if ( selfAdaptingAgent != null ) {
-                selfAdaptingAgent.getMaterializedViews().forEach( ( k, v ) -> log.error( k ) );
                 selfAdaptingAgent.getMaterializedViews().forEach( ( k, v ) -> {
                     if ( k.equals( algNode.algCompareString() ) ) {
                         log.info( "TRUE" );
-                        log.warn( "TRUE" );
                     }
                 } );
                 if ( selfAdaptingAgent.getMaterializedViews().containsKey( algNode.algCompareString() ) ) {
