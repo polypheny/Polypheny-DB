@@ -268,42 +268,7 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
                     List<Object> possibleActions = List.of( Action.MATERIALIZED_VIEW_ADDITION, Action.INDEX_ADDITION );
 
-                    InformationContext context = new InformationContext();
-                    context.setPossibilities( possibleActions, Action.class );
-                    String decisionKey = trigger.name() + ((AlgNode) selected).algCompareString();
-
-                    AutomaticDecision automaticDecision = new AutomaticDecision(
-                            new Timestamp( System.currentTimeMillis() ),
-                            AdaptiveKind.AUTOMATIC,
-                            clazz,
-                            selected,
-                            decisionKey,
-                            workloadInformation
-                    );
-
-                    WeightedList<T> weightedList = rankPossibleActions( context, Optimization.WORKLOAD_REPEATING_QUERY );
-                    if ( weightedList != null ) {
-                        Action bestAction = WeightedList.getBest( weightedList );
-                        automaticDecision.setWeightedList( weightedList );
-                        automaticDecision.setBestAction( bestAction );
-                        addAutomaticDecision( automaticDecision );
-
-                        boolean adaptSystem = false;
-                        if ( automaticDecisions.containsKey( decisionKey ) ) {
-                            for ( Pair<Timestamp, AutomaticDecision> automaticDecisionTime : automaticDecisions.get( decisionKey ) ) {
-                                if ( automaticDecisionTime.left.getTime() + TimeUnit.MINUTES.toMillis( 30 ) < new Timestamp( System.currentTimeMillis() ).getTime() ) {
-                                    adaptSystem = true;
-                                }
-                            }
-                            // Do the change if it is the first or it is  an old decision
-                            if ( automaticDecisions.get( decisionKey ).size() == 1 || adaptSystem ) {
-                                Transaction trx = adaptiveQueryInterface.getTransaction();
-                                bestAction.doChange( automaticDecision, trx );
-                                adaptSystem = false;
-                                adaptiveQueryInterface.tryCommit( trx );
-                            }
-                        }
-                    }
+                    addaptSystem( clazz, trigger, selected, workloadInformation, possibleActions );
 
                     //there are less repeating queries
                 } else {
@@ -312,7 +277,13 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
 
                 break;
             case JOIN_FREQUENCY:
+                if(increase){
+                    List<Object> possibleActions = List.of( Action.INDEX_ADDITION );
+                    addaptSystem( clazz, trigger, selected, workloadInformation, possibleActions );
 
+                }else{
+
+                }
                 break;
             case AVG_TIME_CHANGE:
                 break;
@@ -320,6 +291,46 @@ public class SelfAdaptivAgentImpl implements SelfAdaptivAgent {
                 log.warn( "This Trigger " + trigger.name() + " is not defined in makeWorkloadDecision." );
                 throw new SelfAdaptiveRuntimeException( "This Trigger" + trigger.name() + " is not defined in makeWorkloadDecision." );
 
+        }
+    }
+
+
+    private <T> void addaptSystem( Class<T> clazz, Trigger trigger, T selected, WorkloadInformation workloadInformation, List<Object> possibleActions ) {
+        InformationContext context = new InformationContext();
+        context.setPossibilities( possibleActions, Action.class );
+        String decisionKey = trigger.name() + ((AlgNode) selected).algCompareString();
+
+        AutomaticDecision automaticDecision = new AutomaticDecision(
+                new Timestamp( System.currentTimeMillis() ),
+                AdaptiveKind.AUTOMATIC,
+                clazz,
+                selected,
+                decisionKey,
+                workloadInformation
+        );
+
+        WeightedList<T> weightedList = rankPossibleActions( context, Optimization.WORKLOAD_REPEATING_QUERY );
+        if ( weightedList != null ) {
+            Action bestAction = WeightedList.getBest( weightedList );
+            automaticDecision.setWeightedList( weightedList );
+            automaticDecision.setBestAction( bestAction );
+            addAutomaticDecision( automaticDecision );
+
+            boolean adaptSystem = false;
+            if ( automaticDecisions.containsKey( decisionKey ) ) {
+                for ( Pair<Timestamp, AutomaticDecision> automaticDecisionTime : automaticDecisions.get( decisionKey ) ) {
+                    if ( automaticDecisionTime.left.getTime() + TimeUnit.MINUTES.toMillis( 30 ) < new Timestamp( System.currentTimeMillis() ).getTime() ) {
+                        adaptSystem = true;
+                    }
+                }
+                // Do the change if it is the first or it is  an old decision
+                if ( automaticDecisions.get( decisionKey ).size() == 1 || adaptSystem ) {
+                    Transaction trx = adaptiveQueryInterface.getTransaction();
+                    bestAction.doChange( automaticDecision, trx );
+                    adaptSystem = false;
+                    adaptiveQueryInterface.tryCommit( trx );
+                }
+            }
         }
     }
 

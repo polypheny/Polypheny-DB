@@ -25,12 +25,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-
 import org.polypheny.db.adaptiveness.JoinInformation;
 import org.polypheny.db.adaptiveness.WorkloadInformation;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptivAgentImpl;
 import org.polypheny.db.adaptiveness.selfadaptiveness.SelfAdaptiveUtil.Trigger;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.util.Pair;
 
 
 @Slf4j
@@ -50,6 +50,8 @@ public class WorkloadManager {
     private final TreeMap<Timestamp, WorkloadInformation> allTimes = new TreeMap<>();
 
     private final Map<String, ComplexQuery> complexQueries = new HashMap<>();
+
+    private final Map<Pair<Long, Long>, JoinCounter> joinCounter = new HashMap<>();
 
     private final TreeMap<Timestamp, WorkloadInformation> minuteTimeline = new TreeMap<>();
 
@@ -92,22 +94,21 @@ public class WorkloadManager {
             complexQuery.setTimestamps( timestampList );
             complexQueries.put( algNode.algCompareString(), complexQuery );
 
-
             // After a decision it does not make to sense to change it again straight away, so at the moment it waits for 30 seconds && (complexQuery.getLastTime() == null ) || complexQuery.getLastTime().getTime() + TimeUnit.MINUTES.toMillis( 30 ) < System.currentTimeMillis())
             if ( complexQuery.getAmount() > 10 ) {
                 double avgLast = complexQuery.getAvgLast();
                 double avgComparison = complexQuery.getAvgComparison();
 
-                if ( (avgLast/(avgComparison/100)) - 100 < -80 ) {
+                if ( (avgLast / (avgComparison / 100)) - 100 < -80 ) {
                     log.warn( "increase of same query" );
                     SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, workloadInformation, true );
-                } else if ( (avgComparison/(avgLast/100)) - 100 < -95 ) {
+                } else if ( (avgComparison / (avgLast / 100)) - 100 < -95 ) {
                     log.warn( "decrease of same query" );
                     SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.REPEATING_QUERY, algNode, workloadInformation, false );
                 }
 
                 complexQuery = complexQueries.remove( algNode.algCompareString() );
-                complexQuery.setLastTime( new Timestamp(System.currentTimeMillis() ));
+                complexQuery.setLastTime( new Timestamp( System.currentTimeMillis() ) );
                 complexQueries.put( algNode.algCompareString(), complexQuery );
             }
 
@@ -124,7 +125,39 @@ public class WorkloadManager {
 
         JoinInformation joinInformation = workloadInformation.getJoinInformation();
 
-        SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.JOIN_FREQUENCY, algNode, workloadInformation, true );
+        for ( Pair<Long, Long> jointTableId : joinInformation.getJointTableIds() ) {
+            if ( joinCounter.containsKey( jointTableId ) ) {
+                JoinCounter joinInfo = joinCounter.remove( jointTableId );
+                joinInfo.setAmount( joinInfo.getAmount() + 1 );
+                List<Timestamp> timestampList = joinInfo.getTimestamps();
+                timestampList.add( new Timestamp( System.currentTimeMillis() ) );
+                joinInfo.setTimestamps( timestampList );
+                joinCounter.put( jointTableId, joinInfo );
+
+                if(joinInfo.getAmount() > 10){
+                    double avgLast = joinInfo.getAvgLast();
+                    double avgComparison = joinInfo.getAvgComparison();
+
+                    if ( (avgLast / (avgComparison / 100)) - 100 < -80 ) {
+                        log.warn( "increased usage of join" );
+                        SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.JOIN_FREQUENCY, algNode, workloadInformation, true );
+                    } else if ( (avgComparison / (avgLast / 100)) - 100 < -95 ) {
+                        log.warn( "decrease usage of join" );
+                        SelfAdaptivAgentImpl.getInstance().makeWorkloadDecision( AlgNode.class, Trigger.JOIN_FREQUENCY, algNode, workloadInformation, true );
+                    }
+
+                    joinInfo = joinCounter.remove( jointTableId );
+                    joinInfo.setLastTime( new Timestamp( System.currentTimeMillis() ) );
+                    joinCounter.put( jointTableId, joinInfo );
+
+                }
+
+
+            } else {
+                JoinCounter joinInfo = new JoinCounter( jointTableId, new Timestamp( System.currentTimeMillis() ), 1 );
+                joinCounter.put( jointTableId, joinInfo );
+            }
+        }
 
     }
 

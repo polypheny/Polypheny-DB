@@ -228,23 +228,34 @@ public class PoliciesManager {
             if ( !policies.getClauses().isEmpty() ) {
                 if ( policies.getTarget() == target ) {
                     if ( changeRequest.requestType.equals( "BooleanChangeRequest" ) ) {
-                        clause = policies.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
-                        ((BooleanClause) clause).setValue( changeRequest.booleanValue );
-                    }else if(changeRequest.requestType.equals( "NumberChangeRequest" )){
+                        if ( target.equals( Target.POLYPHENY ) ) {
+                            clause = policies.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
+                            ((BooleanClause) clause).setValue( changeRequest.booleanValue );
+                        } else if ( target.equals( Target.NAMESPACE ) && policies.getTargetId() == changeRequest.targetId ) {
+                            clause = policies.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
+                            ((BooleanClause) clause).setValue( changeRequest.booleanValue );
+                        } else if ( target.equals( Target.ENTITY ) && policies.getTargetId() == changeRequest.targetId ) {
+                            clause = policies.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
+                            ((BooleanClause) clause).setValue( changeRequest.booleanValue );
+                        }
+
+                    } else if ( changeRequest.requestType.equals( "NumberChangeRequest" ) ) {
                         log.warn( "Implement update Clause for NumberChangeRequest" );
                     }
 
-                    assert clause != null;
-                    if ( checkClauseChange( clause, policies.getTarget(), policies.getTargetId() ) ) {
-                        policies.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
-                        this.policies.put( policies.getId(), policies );
-                    } else {
-                        ((BooleanClause) clause).setValue( !changeRequest.booleanValue );
-                        policies.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
-                        this.policies.put( policies.getId(), policies );
-                        log.warn( "Persistency not possible to change." );
-                        throw new PolicyRuntimeException( "Not possible to change this clause because the policies can not be guaranteed anymore." );
+                    if ( clause != null ) {
+                        if ( checkClauseChange( clause, policies.getTarget(), policies.getTargetId() ) ) {
+                            policies.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
+                            this.policies.put( policies.getId(), policies );
+                        } else {
+                            ((BooleanClause) clause).setValue( !changeRequest.booleanValue );
+                            policies.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
+                            this.policies.put( policies.getId(), policies );
+                            log.warn( "Persistency not possible to change." );
+                            throw new PolicyRuntimeException( "Not possible to change this clause because the policies can not be guaranteed anymore." );
+                        }
                     }
+
                 }
             }
         }
@@ -370,9 +381,11 @@ public class PoliciesManager {
             case POLYPHENY:
                 return checkClauses( clause, polyphenyPolicyId );
             case NAMESPACE:
-                return checkClauses( clause, polyphenyPolicyId ) && checkClauses( clause, namespacePolicies.get( targetId ) );
+                //return checkClauses( clause, polyphenyPolicyId ) && checkClauses( clause, namespacePolicies.get( targetId ) );
+                return checkClauses( clause, namespacePolicies.get( targetId ) );
             case ENTITY:
-                return checkClauses( clause, polyphenyPolicyId ) && checkClauses( clause, namespacePolicies.get( targetId ) ) && checkClauses( clause, entityPolicies.get( targetId ) );
+                //return checkClauses( clause, polyphenyPolicyId ) && checkClauses( clause, namespacePolicies.get( targetId ) ) && checkClauses( clause, entityPolicies.get( targetId ) );
+                return checkClauses( clause, entityPolicies.get( targetId ) );
         }
         return false;
     }
@@ -496,7 +509,7 @@ public class PoliciesManager {
                 context.setPossibilities( possibleStores, DataStore.class );
                 context.setNameSpaceModel( Catalog.getInstance().getSchema( namespaceId ).schemaType );
 
-                if ( !possibleStores.isEmpty()) {
+                if ( !possibleStores.isEmpty() ) {
                     ManualDecision manualDecision = new ManualDecision(
                             new Timestamp( System.currentTimeMillis() ),
                             ClauseCategory.STORE,
@@ -588,7 +601,7 @@ public class PoliciesManager {
                 rankings.add( optimization.getRank().get( interestingClause.getClauseName() ).apply( informationContext ) );
             }
         }
-        if(rankings.isEmpty()){
+        if ( rankings.isEmpty() ) {
             SelfAdaptivAgentImpl.getInstance().addManualDecision( manualDecision );
             return WeightedList.listToWeighted( informationContext.getPossibilities() );
         }
@@ -599,6 +612,7 @@ public class PoliciesManager {
 
         return avgRankings;
     }
+
 
     //todo ig: now self adaptive policies are only defined for the whole system as soon as this changes, the different policies need to be checked.
     public List<Clause> getSelfAdaptiveClauses() {
@@ -675,21 +689,33 @@ public class PoliciesManager {
 
     private List<Clause> findPotentiallyInteresting( List<ClauseName> clauseNames, Long namespaceId, Long entityId ) {
         List<Clause> interesting = new ArrayList<>();
-        // todo ige: find good solution to find if polypheny or namespace clause needs to be used
+        Map<ClauseName, Clause> potentiallyInteresting = new HashMap<>();
         for ( ClauseName clauseName : clauseNames ) {
             Clause clausePolypheny = checkClauses( null, clauseName, Target.POLYPHENY );
             if ( clausePolypheny != null ) {
-                interesting.add( clausePolypheny );
+                // Clauses for the whole system are only interesting if there is no other clause that overwrites this
+                if ( !potentiallyInteresting.containsKey( clausePolypheny.getClauseName() ) ) {
+                    potentiallyInteresting.put( clausePolypheny.getClauseName(), clausePolypheny );
+                }
             }
             Clause clauseNamespace = checkClauses( namespaceId, clauseName, Target.NAMESPACE );
             if ( clauseNamespace != null ) {
-                interesting.add( clauseNamespace );
+                if ( potentiallyInteresting.containsKey( clauseNamespace.getClauseName() ) ) {
+                    if ( potentiallyInteresting.get( clauseNamespace.getClauseName() ).getTarget() == Target.POLYPHENY && potentiallyInteresting.get( clauseNamespace.getClauseName() ).getTarget() != Target.ENTITY ) {
+                        // Overwrite information from Polypheny Clause because this one is higher ranked and it is not a entity clause because this one can not be overwritten
+                        potentiallyInteresting.put( clauseNamespace.getClauseName(), clauseNamespace );
+                    }
+                } else {
+                    potentiallyInteresting.put( clauseNamespace.getClauseName(), clauseNamespace );
+                }
             }
             Clause clauseEntity = checkClauses( entityId, clauseName, Target.ENTITY );
             if ( clauseEntity != null ) {
-                interesting.add( clauseEntity );
+                // No check needed because entity clauses are always the strongest, therefore all information needs to be overwritten
+                potentiallyInteresting.put( clauseEntity.getClauseName(), clauseEntity );
             }
         }
+        interesting.addAll( potentiallyInteresting.values() );
         return interesting;
     }
 
