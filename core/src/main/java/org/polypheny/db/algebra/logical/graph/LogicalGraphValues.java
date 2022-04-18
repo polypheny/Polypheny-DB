@@ -141,10 +141,10 @@ public class LogicalGraphValues extends GraphValues implements RelationalTransfo
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyNode node : nodes ) {
             RexLiteral id = getNls( node.id, ID_TYPE );
-            // empty node without label, as non label nodes are permitted
+            // empty node without label, as non label nodes are permitted (use $, as null is not possible for pk)
             ImmutableList.Builder<RexLiteral> idRow = ImmutableList.builder();
             idRow.add( id );
-            idRow.add( getCluster().getRexBuilder().makeNullLiteral( ID_TYPE ) );
+            idRow.add( getCluster().getRexBuilder().makeLiteral("$") );
             rows.add( idRow.build() );
 
             for ( String label : node.labels ) {

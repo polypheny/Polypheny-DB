@@ -80,10 +80,6 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
-        //Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
-
-        //final BlockBuilder builder2 = new BlockBuilder();
-
         Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), nodes.block );
         Expression edgeExp = builder.append( builder.newName( "edges_" + System.nanoTime() ), edges.block );
 
@@ -92,8 +88,6 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         MethodCallExpression call = Expressions.call( BuiltInMethod.TO_GRAPH.method, nodeCall, edgeCall );
 
-        //builder2.add( Expressions.return_( null, physType.record( List.of( call ) ) ) );
-        //BlockStatement currentBody = builder2.toBlock();
 
         Expression body = Expressions.new_(
                 enumeratorType,
@@ -119,14 +113,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
                                 BuiltInMethod.ENUMERATOR_CURRENT.method,
                                 EnumUtils.NO_PARAMS,
                                 Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ) ) )
-                        /*Expressions.methodDecl(
-                                Modifier.PUBLIC,
-                                EnumUtils.BRIDGE_METHODS
-                                        ? Object.class
-                                        : outputJavaType,
-                                "current",
-                                EnumUtils.NO_PARAMS,
-                                currentBody )*/ ) );
+                ) );
 
         builder.add(
                 Expressions.return_(

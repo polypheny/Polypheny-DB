@@ -162,7 +162,7 @@ public class CypherFunctions {
                 oldLabels = new HashSet<>();
                 oldProps = new HashMap<>();
             }
-            if ( label != null ) {
+            if ( label != null && !label.equals("$") ) {
                 // eventually no labels
                 oldLabels.add( label );
             }
