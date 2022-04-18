@@ -2352,12 +2352,20 @@ SqlNode FreshnessSpecification() :
                 )
 
                |
-                <PERCENT_REMAINDER>
-                {
-                    rawEvaluationType = new SqlIdentifier( "PERCENTAGE", getPos() );
-                    unit = new SqlIdentifier( "PERCENTAGE", getPos() );
-                }
+                    <PERCENT_REMAINDER>
+                    {
+                        rawEvaluationType = new SqlIdentifier( "PERCENTAGE", getPos() );
+                        unit = new SqlIdentifier( "PERCENTAGE", getPos() );
+                    }
             )
+
+        |
+             toleratedFreshness = NumericLiteral()
+            {
+                rawEvaluationType = new SqlIdentifier( "INDEX", getPos() );
+                unit = new SqlIdentifier( "INDEX", getPos() );
+            }
+
     )
     { return new SqlFreshness(getPos(), toleratedFreshness, rawEvaluationType, unit); }
 |

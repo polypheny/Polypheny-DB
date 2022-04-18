@@ -59,7 +59,7 @@ public class SelectFreshnessTest {
                     // Check if for a freshness query the TX statement aborts since a DML operation has already been executed.
                     boolean failed = false;
                     try {
-                        statement.executeUpdate( "SELECT * FROM testfreshnessoperations WITH FRESHNESS 3 HOUR" );
+                        statement.executeUpdate( "SELECT * FROM testfreshnessoperations WITH FRESHNESS 3 HOUR ABSOLUTE" );
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
@@ -120,7 +120,7 @@ public class SelectFreshnessTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                statement.executeUpdate( "CREATE TABLE testfreshnessLocking( "
+                statement.executeUpdate( "CREATE TABLE testfreshnesslocking( "
                         + "tprimary INTEGER NOT NULL, "
                         + "tinteger INTEGER NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
@@ -129,7 +129,7 @@ public class SelectFreshnessTest {
                 try {
 
                 } finally {
-                    statement.executeUpdate( "DROP TABLE testfreshnessLocking" );
+                    statement.executeUpdate( "DROP TABLE testfreshnesslocking" );
                 }
             }
         }
@@ -137,62 +137,12 @@ public class SelectFreshnessTest {
 
 
     @Test
-    public void testFreshnessFallback() throws SQLException {
+    public void testFreshnessAbsoluteDelay() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                statement.executeUpdate( "CREATE TABLE testfreshnessfallback( "
-                        + "tprimary INTEGER NOT NULL, "
-                        + "tinteger INTEGER NULL, "
-                        + "tvarchar VARCHAR(20) NULL, "
-                        + "PRIMARY KEY (tprimary) )" );
-
-                try {
-
-                    // Check if it falls back to primary placements
-
-                    // Gets the correct results
-
-                    // And Re-Acquires the locks on primary placements
-
-                } finally {
-                    statement.executeUpdate( "DROP TABLE testfreshnessfallback" );
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testGeneralFreshnessSelection() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-
-                statement.executeUpdate( "CREATE TABLE testfreshnesspercentage( "
-                        + "tprimary INTEGER NOT NULL, "
-                        + "tinteger INTEGER NULL, "
-                        + "tvarchar VARCHAR(20) NULL, "
-                        + "PRIMARY KEY (tprimary) )" );
-
-                try {
-
-                } finally {
-                    statement.executeUpdate( "DROP TABLE testfreshnesspercentage" );
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testFreshnessDelay() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-
-                statement.executeUpdate( "CREATE TABLE testfreshnessdelay( "
+                statement.executeUpdate( "CREATE TABLE testfreshnessabsolutedelay( "
                         + "tprimary INTEGER NOT NULL, "
                         + "tinteger INTEGER NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
@@ -203,13 +153,13 @@ public class SelectFreshnessTest {
                     // Check if queries can even be executed and are correctly parsed
 
                     // Includes DELAY in SECONDS
-                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 10 SECOND  ABSOLUTE" );
+                    statement.executeUpdate( "SELECT * FROM testfreshnessabsolutedelay WITH FRESHNESS 10 SECOND ABSOLUTE" );
 
                     // Includes DELAY in MINUTES
-                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 10 MINUTE  ABSOLUTE" );
+                    statement.executeUpdate( "SELECT * FROM testfreshnessabsolutedelay WITH FRESHNESS 10 MINUTE ABSOLUTE" );
 
                     // Includes DELAY in HOURS
-                    statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS 3 HOUR  ABSOLUTE" );
+                    statement.executeUpdate( "SELECT * FROM testfreshnessabsolutedelay WITH FRESHNESS 3 HOUR ABSOLUTE" );
 
                     // Test with WHERE clause
 
@@ -220,15 +170,69 @@ public class SelectFreshnessTest {
                     // Test ILLEGAL values (negative time delay)
                     boolean failed = false;
                     try {
-                        statement.executeUpdate( "SELECT * FROM testfreshnessdelay WITH FRESHNESS -10 MINUTE  ABSOLUTE" );
+                        statement.executeUpdate( "SELECT * FROM testfreshnessabsolutedelay WITH FRESHNESS -10 MINUTE ABSOLUTE" );
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
                     Assert.assertTrue( failed );
 
+                    // Create another store
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    statement.executeUpdate( "ALTER TABLE testfreshnessabsolutedelay "
+                            + "ADD PLACEMENT "
+                            + "ON STORE store1 "
+                            + "WITH REPLICATION LAZY" );
+
+/*
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnessabsolutedelay VALUES (1, 30, 'foo')" );
+                    statement.executeUpdate( "INSERT INTO testfreshnessabsolutedelay VALUES (2, 70, 'bar')" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessabsolutedelay ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" } ) );
+
+
+                    // Disable automatic refresh operations to validate the deviation
+                    ConfigManager cm = ConfigManager.getInstance();
+                    Config c1 = cm.getConfig( "replication/automaticLazyDataReplication" );
+                    c1.setBoolean( false );
+
+
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnessabsolutedelay VALUES (3, 100, 'foobar')" );
+
+                    // Check main result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessabsolutedelay ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+                    // Check outdated result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessabsolutedelay ORDER BY tprimary WITH FRESHNESS 1 HOUR ABSOLUTE" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" }) );
+
+
+                    // Check fallback to primary if it cannot be fulfilled
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessabsolutedelay ORDER BY tprimary WITH FRESHNESS 1 SECOND ABSOLUTE" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+*/
 
                 } finally {
-                    statement.executeUpdate( "DROP TABLE testfreshnessdelay" );
+                    statement.executeUpdate( "DROP TABLE testfreshnessabsolutedelay" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store1" );
                 }
             }
         }
@@ -259,9 +263,292 @@ public class SelectFreshnessTest {
                     // Test with HAVING clause
 
                     // Test ILLEGAL PERCENTAGE (out of bound)
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "SELECT * FROM testfreshnesspercentage WITH FRESHNESS 101%" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
 
+                    failed = false;
+                    try {
+                        statement.executeUpdate( "SELECT * FROM testfreshnesspercentage WITH FRESHNESS -10%" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+                    // Check if it falls back to primary placements
+                    // Create another store
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    statement.executeUpdate( "ALTER TABLE testfreshnesspercentage "
+                            + "ADD PLACEMENT "
+                            + "ON STORE store1 "
+                            + "WITH REPLICATION LAZY" );
+
+/*
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnesspercentage VALUES (1, 30, 'foo')" );
+                    statement.executeUpdate( "INSERT INTO testfreshnesspercentage VALUES (2, 70, 'bar')" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnesspercentage ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" } ) );
+
+
+                    // Disable automatic refresh operations to validate the deviation
+                    ConfigManager cm = ConfigManager.getInstance();
+                    Config c1 = cm.getConfig( "replication/automaticLazyDataReplication" );
+                    c1.setBoolean( false );
+
+
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnesspercentage VALUES (3, 100, 'foobar')" );
+
+                    // Check main result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnesspercentage ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+                    // Check outdated result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnesspercentage ORDER BY tprimary WITH FRESHNESS 50%" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" }) );
+
+
+                    // Check fallback to primary if it cannot be fulfilled
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnesspercentage ORDER BY tprimary WITH FRESHNESS 90%" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+
+ */
                 } finally {
                     statement.executeUpdate( "DROP TABLE testfreshnesspercentage" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store1" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testFreshnessRelativeDelay() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE testfreshnessrelativedelay( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+
+                    // Check if queries can even be executed and are correctly parsed
+
+                    // Includes DELAY in SECONDS
+                    statement.executeUpdate( "SELECT * FROM testfreshnessrelativedelay WITH FRESHNESS 10 SECOND DELAY" );
+
+                    // Includes DELAY in MINUTES
+                    statement.executeUpdate( "SELECT * FROM testfreshnessrelativedelay WITH FRESHNESS 10 MINUTE DELAY" );
+
+                    // Includes DELAY in HOURS
+                    statement.executeUpdate( "SELECT * FROM testfreshnessrelativedelay WITH FRESHNESS 3 HOUR DELAY" );
+
+                    // Test with WHERE clause
+
+                    // Test with ORDER BY clause
+
+                    // Test with HAVING clause
+
+                    // Test ILLEGAL values (negative time delay)
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "SELECT * FROM testfreshnessrelativedelay WITH FRESHNESS -10 MINUTE DELAY" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+                    // Check if it falls back to primary placements
+// Create another store
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    statement.executeUpdate( "ALTER TABLE testfreshnessrelativedelay "
+                            + "ADD PLACEMENT "
+                            + "ON STORE store1 "
+                            + "WITH REPLICATION LAZY" );
+
+/*
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnessrelativedelay VALUES (1, 30, 'foo')" );
+                    statement.executeUpdate( "INSERT INTO testfreshnessrelativedelay VALUES (2, 70, 'bar')" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessrelativedelay ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" } ) );
+
+
+                    // Disable automatic refresh operations to validate the deviation
+                    ConfigManager cm = ConfigManager.getInstance();
+                    Config c1 = cm.getConfig( "replication/automaticLazyDataReplication" );
+                    c1.setBoolean( false );
+
+
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnessrelativedelay VALUES (3, 100, 'foobar')" );
+
+                    // Check main result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessrelativedelay ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+                    // Check outdated result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessrelativedelay ORDER BY tprimary WITH FRESHNESS 1 MINUTE DELAY" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" }) );
+
+
+                    // Check fallback to primary if it cannot be fulfilled
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessrelativedelay ORDER BY tprimary WITH FRESHNESS 1 SECOND DELAY" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+
+ */
+                } finally {
+                    statement.executeUpdate( "DROP TABLE testfreshnessrelativedelay" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store1" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testFreshnessIndex() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE testfreshnessindex( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+
+                    // Check if queries can even be executed and are correctly parsed
+                    statement.executeUpdate( "SELECT * FROM testfreshnessindex WITH FRESHNESS 0.5" );
+
+                    // Test with WHERE clause
+
+                    // Test with ORDER BY clause
+
+                    // Test with HAVING clause
+
+                    // Test ILLEGAL PERCENTAGE (out of bound)
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "SELECT * FROM testfreshnessindex WITH FRESHNESS 1.1" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+                    failed = false;
+                    try {
+                        statement.executeUpdate( "SELECT * FROM testfreshnessindex WITH FRESHNESS -0.5" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+                    // Check if it falls back to primary placements
+// Create another store
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    statement.executeUpdate( "ALTER TABLE testfreshnessindex "
+                            + "ADD PLACEMENT "
+                            + "ON STORE store1 "
+                            + "WITH REPLICATION LAZY" );
+
+/*
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnessindex VALUES (1, 30, 'foo')" );
+                    statement.executeUpdate( "INSERT INTO testfreshnessindex VALUES (2, 70, 'bar')" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessindex ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" } ) );
+
+
+                    // Disable automatic refresh operations to validate the deviation
+                    ConfigManager cm = ConfigManager.getInstance();
+                    Config c1 = cm.getConfig( "replication/automaticLazyDataReplication" );
+                    c1.setBoolean( false );
+
+
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnessindex VALUES (3, 100, 'foobar')" );
+
+                    // Check main result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessindex ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+                    // Check outdated result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessindex ORDER BY tprimary WITH FRESHNESS 0.5" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" }) );
+
+
+                    // Check fallback to primary if it cannot be fulfilled
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnessindex ORDER BY tprimary WITH FRESHNESS 0.9" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+
+
+ */
+                } finally {
+                    statement.executeUpdate( "DROP TABLE testfreshnessindex" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store1" );
                 }
             }
         }
@@ -305,8 +592,64 @@ public class SelectFreshnessTest {
 
                     // Test ILLEGAL TIME (incomplete time)
 
+                    // Create another store
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    statement.executeUpdate( "ALTER TABLE testfreshnesstime "
+                            + "ADD PLACEMENT "
+                            + "ON STORE store1 "
+                            + "WITH REPLICATION LAZY" );
+/*
+
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnesstime VALUES (1, 30, 'foo')" );
+                    statement.executeUpdate( "INSERT INTO testfreshnesstime VALUES (2, 70, 'bar')" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnesstime ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" } ) );
+
+
+                    // Disable automatic refresh operations to validate the deviation
+                    ConfigManager cm = ConfigManager.getInstance();
+                    Config c1 = cm.getConfig( "replication/automaticLazyDataReplication" );
+                    c1.setBoolean( false );
+
+
+                    // Insert several MODIFICATIONS
+                    statement.executeUpdate( "INSERT INTO testfreshnesstime VALUES (3, 100, 'foobar')" );
+
+                    // Check main result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnesstime ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+                    // Check outdated result again
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnesstime ORDER BY tprimary WITH FRESHNESS 50%" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" }) );
+
+
+                    // Check fallback to primary if it cannot be fulfilled
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM testfreshnesstime ORDER BY tprimary WITH FRESHNESS 90%" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 30, "foo" },
+                                    new Object[]{ 2, 70, "bar" },
+                                    new Object[]{ 3, 100, "foobar" }) );
+
+
+ */
                 } finally {
                     statement.executeUpdate( "DROP TABLE testfreshnesstime" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP store1" );
                 }
             }
         }

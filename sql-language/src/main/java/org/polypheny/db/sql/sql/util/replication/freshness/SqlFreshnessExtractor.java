@@ -113,7 +113,7 @@ public class SqlFreshnessExtractor extends FreshnessExtractor {
 
             case "INDEX":
                 tmpFreshnessIndex = Double.valueOf( toleratedFreshness.toString() );
-                if ( tmpFreshnessIndex < 0.0 && tmpFreshnessIndex > 100.0 ) {
+                if ( tmpFreshnessIndex < 0.0 || tmpFreshnessIndex > 1.0 ) {
                     throw new UnsupportedFreshnessSpecificationRuntimeException( EvaluationType.PERCENTAGE, toleratedFreshness.toString() );
                 }
                 tmpEvaluationType = EvaluationType.INDEX;
