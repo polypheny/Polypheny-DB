@@ -200,8 +200,8 @@ public class SqlParserTest extends SqlLanguagelDependant {
             "DEFERRABLE", "92", "99",
             "DEFERRED", "92", "99",
             "DEFINE", "2014", "c",
-            "DELETE", "92", "99", "2003", "2011", "2014", "c",
             "DELAY", "c",      // MHE: added for Freshenss constraints
+            "DELETE", "92", "99", "2003", "2011", "2014", "c",
             "DENSE_RANK", "2011", "2014", "c",
             "DEPTH", "99",
             "DEREF", "99", "2003", "2011", "2014", "c",
