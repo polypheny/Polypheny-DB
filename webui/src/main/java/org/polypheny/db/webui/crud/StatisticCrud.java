@@ -131,15 +131,7 @@ public class StatisticCrud {
 
         Timestamp endTime = new Timestamp( System.currentTimeMillis() );
         Timestamp startTimeAll;
-        Timestamp startTime60min;
-        Timestamp startTime30min;
-        Timestamp startTime15min;
-        Timestamp startTime5min;
-        long intervalAll;
-        long interval60min;
-        long interval30min;
-        long interval15min;
-        long interval5min;
+        long interval60min = convertIntervalMinuteToLong( 60 );
 
         if ( queryData.size() > 0 && dmlData.size() > 0 ) {
             startTimeAll = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
@@ -150,31 +142,21 @@ public class StatisticCrud {
         } else {
             throw new RuntimeException( "No Data available for Dashboard Diagram" );
         }
-        startTime60min = calculateStartTime( 60, endTime );
-        startTime30min = calculateStartTime( 30, endTime );
-        startTime15min = calculateStartTime( 15, endTime );
-        startTime5min = calculateStartTime( 5, endTime );
-
-        intervalAll = calculateIntervalAll( startTimeAll, endTime );
-        interval60min = convertIntervalMinuteToLong( 60 );
-        interval30min = convertIntervalMinuteToLong( 30 );
-        interval15min = convertIntervalMinuteToLong( 15 );
-        interval5min = convertIntervalMinuteToLong( 5 );
 
         if ( selectInterval.equals( "all" ) ) {
-            eachInfo = getDashboardInfo( startTimeAll, endTime, intervalAll, queryData, dmlData );
+            eachInfo = getDashboardInfo( startTimeAll, endTime, calculateIntervalAll( startTimeAll, endTime ), queryData, dmlData );
 
         } else if ( selectInterval.equals( "60" ) ) {
-            eachInfo = getDashboardInfo( startTime60min, endTime, interval60min, queryData, dmlData );
+            eachInfo = getDashboardInfo( calculateStartTime( 60, endTime ), endTime, interval60min, queryData, dmlData );
 
         } else if ( selectInterval.equals( "30" ) ) {
-            eachInfo = getDashboardInfo( startTime30min, endTime, interval30min, queryData, dmlData );
+            eachInfo = getDashboardInfo( calculateStartTime( 30, endTime ), endTime, interval60min / 2, queryData, dmlData );
 
         } else if ( selectInterval.equals( "15" ) ) {
-            eachInfo = getDashboardInfo( startTime15min, endTime, interval15min, queryData, dmlData );
+            eachInfo = getDashboardInfo( calculateStartTime( 15, endTime ), endTime, interval60min / 4, queryData, dmlData );
 
         } else if ( selectInterval.equals( "5" ) ) {
-            eachInfo = getDashboardInfo( startTime5min, endTime, interval5min, queryData, dmlData );
+            eachInfo = getDashboardInfo( calculateStartTime( 5, endTime ), endTime, interval60min / 12, queryData, dmlData );
 
         }
         ctx.json( eachInfo );
