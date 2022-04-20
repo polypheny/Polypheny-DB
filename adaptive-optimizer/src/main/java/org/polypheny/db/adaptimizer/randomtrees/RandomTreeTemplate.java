@@ -14,33 +14,37 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.alg;
+package org.polypheny.db.adaptimizer.randomtrees;
 
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 /**
  * Interface for options in random tree generation.
  */
-public interface RandomTreeOptions {
+public interface RandomTreeTemplate {
 
     /**
      * Provides a random operator type.
      */
-    String nextOperatorType();
+    String nextOperator();
 
     /**
      * Provides a random table.
      */
-    String nextTable();
+    Pair<String, TableRecord> nextTable();
 
     /**
      * Provides a random column for a table.
      */
-    String nextColumn( String tableName );
+    Pair<String, PolyType> nextColumn( TableRecord adaptiveTableRecord );
 
-    /**
-     * Provides two random columns for two tables. Todo: Same Type?
-     */
-    Pair<String, String> nextColumnPair( String leftTable, String rightTable );
+    Pair<String, String> nextPolyTypePartners( TableRecord adaptiveTableRecord );
+
+    Pair<String, String> nextPolyTypePartners( TableRecord adaptiveTableRecordA, TableRecord adaptiveTableRecordB );
+
+    Pair<String, String> nextJoinColumnsWithForeignKeys( TableRecord adaptiveTableRecordA, TableRecord adaptiveTableRecordB );
+
+    Pair<String, String> nextJoinColumns( TableRecord adaptiveTableRecordA, TableRecord adaptiveTableRecordB );
 
 }

@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.alg;
-
+package org.polypheny.db.adaptimizer.randomtrees;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.http.model.SortState;
 
-
-/**
- * Copied from webui module...
- * Model for a {@link AlgNode} coming from the RelAlg-Builder in the AdaptiveOptimizer context.
- */
-public class AdaptiveNode {
+@Getter
+@Setter
+public class RandomOperatorNode {
 
     /**
      * Type of the AlgNode, e.g. TableScan
@@ -83,9 +78,5 @@ public class AdaptiveNode {
     //union, minus
     public boolean all;
 
-
-    @Getter
-    @Setter
-    private AdaptiveTableRecord adaptiveTableRecord;
 
 }

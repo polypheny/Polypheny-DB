@@ -36,6 +36,7 @@ public class ReAdaptiveOptimizerImpl extends ReAdaptiveOptimizer {
         AdaptimizerInformation.addInformationPage();
         AdaptimizerInformation.addInformationGroupForTestDataGeneration();
         AdaptimizerInformation.addInformationGroupForGeneratingTestEnvironment();
+        AdaptimizerInformation.addInformationGroupForRandomTreeGeneration();
 
     }
 

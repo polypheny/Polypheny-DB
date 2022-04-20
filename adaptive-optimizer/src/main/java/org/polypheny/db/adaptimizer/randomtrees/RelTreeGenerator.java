@@ -14,26 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.alg;
+package org.polypheny.db.adaptimizer.randomtrees;
 
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.transaction.Statement;
 
-public class AdaptiveTableRecord {
+public interface RelTreeGenerator {
 
-    @Getter
-    ArrayList<String> tables;
-
-    public AdaptiveTableRecord(String tableName) {
-        this.tables = new ArrayList<>();
-        this.tables.add( tableName );
-    }
-
-    public AdaptiveTableRecord join( AdaptiveTableRecord other ) {
-        this.tables.addAll( other.getTables() );
-        this.tables = (ArrayList<String>) this.tables.stream().distinct().collect( Collectors.toList() );
-        return this;
-    }
+    AlgNode generate( Statement statement );
 
 }

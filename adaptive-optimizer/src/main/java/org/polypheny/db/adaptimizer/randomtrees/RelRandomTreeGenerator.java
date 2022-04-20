@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.alg;
+package org.polypheny.db.adaptimizer.randomtrees;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.StringJoiner;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.math.NumberUtils;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
@@ -28,19 +32,19 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 /**
  * Based on a predefined Schema.
  */
-public class PresetTreeGenerator implements RelTreeGenerator {
-    private static final String[] tables = new String[]{ "a", "b", "c", "d", "ab", "cd", "abcd" };
+@Slf4j
+public class RelRandomTreeGenerator implements RelTreeGenerator {
 
-    private final int maxHeight;
-    private final TreeGenRandom treeGenRandom;
+    private final RelRandomTreeTemplate treeGenRandom;
 
-    public PresetTreeGenerator( int maxHeight, TreeGenRandom treeGenRandom ) {
-        this.maxHeight = maxHeight;
+    public RelRandomTreeGenerator( RelRandomTreeTemplate treeGenRandom ) {
         this.treeGenRandom = treeGenRandom;
     }
 
@@ -52,7 +56,7 @@ public class PresetTreeGenerator implements RelTreeGenerator {
 
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         final AdaptiveNode topNode = new AdaptiveNode();
-        topNode.type = this.treeGenRandom.nextOperatorType();
+        topNode.type = this.treeGenRandom.nextOperator();
 
         this.adaptivelyGenerateTree( algBuilder,  topNode, 0 );
 
@@ -60,10 +64,10 @@ public class PresetTreeGenerator implements RelTreeGenerator {
     }
 
 
-    private void binaryCase( AlgBuilder algBuilder, final AdaptiveNode node, int depth ) {
+    private void unaryCase( AlgBuilder algBuilder, final AdaptiveNode node, int depth ) {
         AdaptiveNode middle = new AdaptiveNode();
 
-        middle.type = this.treeGenRandom.nextOperatorType(); // Generate a random type for its child.
+        middle.type = this.treeGenRandom.nextOperator(); // Generate a random type for its child.
 
         node.children = new AdaptiveNode[]{ middle, null };
         node.inputCount = 1;
@@ -72,18 +76,120 @@ public class PresetTreeGenerator implements RelTreeGenerator {
     }
 
 
-    private void unaryCase( AlgBuilder algBuilder, final AdaptiveNode node, int depth ) {
+    private void binaryCase( AlgBuilder algBuilder, final AdaptiveNode node, int depth ) {
         AdaptiveNode left = new AdaptiveNode();
         AdaptiveNode right = new AdaptiveNode();
 
-        left.type = this.treeGenRandom.nextOperatorType();
-        right.type = this.treeGenRandom.nextOperatorType();
+        left.type = this.treeGenRandom.nextOperator();
+        right.type = this.treeGenRandom.nextOperator();
 
         node.children = new AdaptiveNode[]{ left, right };
         node.inputCount = 2;
 
         this.adaptivelyGenerateTree( algBuilder, left, depth + 1 );
         this.adaptivelyGenerateTree( algBuilder, right, depth + 1 );
+    }
+
+    private void setModeForBinaryOperatorNode(final AdaptiveNode node) {
+        AdaptiveTableRecord left = node.children[ 0 ].getAdaptiveTableRecord();
+        AdaptiveTableRecord right = node.children[ 1 ].getAdaptiveTableRecord();
+
+        boolean retroactiveOperatorSwitch = false;
+        switch ( node.type ) {
+            case "Join":
+                Pair<String, String> pair = this.treeGenRandom.nextJoinColumns( left, right );
+
+                if ( pair == null ) {
+                    // No possible joins found between the tables... Only option, switch to other binary operator...
+                    node.type = new String[]{"Union", "Intersect", "Minus"}[ treeGenRandom.nextInt( 3 ) ];
+                    retroactiveOperatorSwitch = true;
+                    break;
+                }
+
+                node.setAdaptiveTableRecord( AdaptiveTableRecord.join( left, right, pair.left, pair.right ) );
+
+                node.join = JoinAlgType.LEFT; // For now
+                node.col1 = pair.left;
+                node.col2 = pair.right;
+                node.operator = "="; // For now
+                break;
+            case "Union":
+            case "Intersect":
+            case "Minus":
+                node.all = false; // For now
+                node.setAdaptiveTableRecord( AdaptiveTableRecord.from( left ) );
+                break;
+            default:
+                throw new IllegalArgumentException( "Binary AdaptiveNode of type '" + node.type + "' is not supported yet." );
+        }
+
+        if ( retroactiveOperatorSwitch ) {
+            setModeForBinaryOperatorNode( node );
+        }
+    }
+
+    private void setModeForUnaryOperatorNode(final AdaptiveNode node) {
+        AdaptiveTableRecord adaptiveTableRecord = AdaptiveTableRecord.from( node.children[ 0 ].getAdaptiveTableRecord() );
+        Pair<String, PolyType> pair;
+        switch ( node.type ) {
+            case "Filter":
+                pair = this.treeGenRandom.nextColumn( adaptiveTableRecord );
+                node.setAdaptiveTableRecord( adaptiveTableRecord );
+                node.field = pair.left;
+                node.operator = "<>";
+                switch ( pair.right ) {
+                    case BOOLEAN:
+                        node.filter = "true";
+                        break;
+                    case TINYINT:
+                    case SMALLINT:
+                    case INTEGER:
+                    case BIGINT:
+                    case DECIMAL:
+                    case FLOAT:
+                    case REAL:
+                    case DOUBLE:
+                        node.filter = "0";
+                        break;
+                    case DATE:
+                        node.filter = "date '2000-01-01'";
+                        break;
+                    case TIME:
+                        node.filter = "time '00:00:00'";
+                        break;
+                    case TIME_WITH_LOCAL_TIME_ZONE:
+                        node.filter = "time '00:00:00 GMT'";
+                        break;
+                    case TIMESTAMP:
+                        node.filter = "timestamp '2000-01-01 00:00:00'";
+                        break;
+                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                        node.filter = "timestamp '2000-01-01 00:00:00 GMT'";
+                        break;
+                    case CHAR:
+                        node.filter = "$";
+                        break;
+                    case VARCHAR:
+                        node.filter = "$varchar";
+                        break;
+                }
+                break;
+            case "Project":
+                node.fields = adaptiveTableRecord.getColumns().toArray( String[]::new );
+                node.setAdaptiveTableRecord( adaptiveTableRecord );
+                break;
+            case "Sort":
+                pair = this.treeGenRandom.nextColumn( adaptiveTableRecord );
+                SortState sortState = new SortState();
+                sortState.sorting = true;
+                sortState.column = pair.left;
+                node.sortColumns = new SortState[] { sortState };
+                node.setAdaptiveTableRecord( adaptiveTableRecord );
+                break;
+            default:
+                throw new IllegalArgumentException( "Binary AdaptiveNode of type '" + node.type + "' is not supported yet." );
+        }
+
     }
 
 
@@ -95,63 +201,78 @@ public class PresetTreeGenerator implements RelTreeGenerator {
      * {@see org.polypheny.db.QueryPlanBuilder #buildStep()}.
      */
     private AlgBuilder adaptivelyGenerateTree( AlgBuilder algBuilder, final AdaptiveNode node, int depth ) {
-        if ( depth < maxHeight - 1 ) {
+
+        if ( depth < this.treeGenRandom.getHeight() - 1 ) {
             // growing down we generate random types of operators and choose their expressions..
 
             switch ( node.type ) {
                 case "Join":
-                    node.join = JoinAlgType.LEFT;
-                    binaryCase( algBuilder, node, depth );
-                    break;
                 case "Union":
-                    binaryCase( algBuilder, node, depth );
-                    break;
+                case "Intersect":
                 case "Minus":
                     binaryCase( algBuilder, node, depth );
                     break;
-                case "Intersect":
-                    binaryCase( algBuilder, node, depth );
-                    break;
                 case "Filter":
-                    unaryCase( algBuilder, node, depth );
-                    break;
                 case "Project":
-                    unaryCase( algBuilder, node, depth );
-                    break;
                 case "Sort":
-                    SortState sortState = new SortState( SortDirection.DESC );
-                    node.sortColumns = new SortState[]{ sortState };
                     unaryCase( algBuilder, node, depth );
                     break;
-                case "Aggregate":
-                    unaryCase( algBuilder, node, depth );
-                    break;
+ //                case "Aggregate":
+//                    unaryCase( algBuilder, node, depth );
+//                    break;
                 default:
                     throw new IllegalArgumentException( "AdaptiveNode of type '" + node.type + "' is not supported yet." );
             }
 
         } else {
+            Pair<String, TableRecord> pair = this.treeGenRandom.nextTable();
             node.type = "TableScan";
-
-            node.tableName = this.treeGenRandom.nextTable();
-
-            node.setAdaptiveTableRecord( new AdaptiveTableRecord( node.tableName ) );
+            node.setAdaptiveTableRecord( ( AdaptiveTableRecord ) pair.right );
+            node.tableName = pair.left + "." + pair.right.getTableName();
         }
 
-        if ( depth == 0 ) {
-            /*
-            At this point we have a complete Tree of AdaptiveNodes, alternatively we could serialize this tree here (?)
-            Instead of continuing the function, we could completely rely on the methods from QueryPlanBuilder and parse
-            the jsonString. This would allow us to store the generated queries as Strings. Maybe in order to execute
-            buffered sets of queries multiple times on stores multiple times, while using DML to extend row counts and
-            account for different table sizes...
-             */
-            // Todo: question this
 
-            /*
-            String jsonString = gson.toJson( node );
-            QueryPlanBuilder.buildStep( algbuilder, node )
-             */
+        if ( node.inputCount == 2) {
+            setModeForBinaryOperatorNode( node );
+        } else if ( ! Objects.equals( node.type, "TableScan" ) ) {
+            setModeForUnaryOperatorNode( node );
+        }
+
+        if ( log.isDebugEnabled() ) {
+            StringJoiner infoJoiner = new StringJoiner( ", ", "(", ")" );
+            switch ( node.type ) {
+                case "Join":
+                    infoJoiner
+                            .add( node.join.name() )
+                            .add( node.col1 )
+                            .add( node.col2 );
+                    break;
+                case "Union":
+                    break;
+                case "Intersect":
+                    break;
+                case "Minus":
+                    break;
+                case "Filter":
+                    infoJoiner
+                            .add( node.field )
+                            .add( node.operator )
+                            .add( node.filter );
+                    break;
+                case "Project":
+                    infoJoiner
+                            .add( Arrays.toString( node.fields ) );
+                    break;
+                case "Sort":
+                    infoJoiner
+                            .add( node.sortColumns[0].column )
+                            .add( node.sortColumns[0].direction.name() );
+                    break;
+                case "TableScan":
+                    infoJoiner.add( node.tableName );
+                    break;
+            }
+            log.debug( "{} | {} - {}", "\t".repeat( depth ), node.type, infoJoiner );
         }
 
         /*
@@ -174,7 +295,7 @@ public class PresetTreeGenerator implements RelTreeGenerator {
                 String[] field = node.field.split( "\\." );
                 if ( NumberUtils.isNumber( node.filter ) ) {
                     Number filter;
-                    Double dbl = Double.parseDouble( node.filter );
+                    double dbl = Double.parseDouble( node.filter );
                     filter = dbl;
                     if ( dbl % 1 == 0 ) {
                         filter = Integer.parseInt( node.filter );

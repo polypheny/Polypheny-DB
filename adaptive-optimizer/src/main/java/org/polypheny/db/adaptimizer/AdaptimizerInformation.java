@@ -20,19 +20,24 @@ import java.util.List;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adaptimizer.environment.DataGenerator;
+import org.polypheny.db.adaptimizer.environment.DataTableOptionTemplate;
 import org.polypheny.db.adaptimizer.environment.DefaultTestEnvironment;
+import org.polypheny.db.adaptimizer.environment.TableOptionsBuilder;
+import org.polypheny.db.adaptimizer.except.TestDataGenerationException;
+import org.polypheny.db.adaptimizer.randomtrees.RelRandomTreeGenerator;
+import org.polypheny.db.adaptimizer.randomtrees.RandomTreeTemplateBuilder;
+import org.polypheny.db.adaptimizer.randomtrees.RelRandomTreeTemplate;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.information.GroupColor;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationText;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
@@ -42,6 +47,9 @@ public class AdaptimizerInformation {
 
     private static InformationManager informationManager;
     private static InformationPage page;
+    private static InformationGroup testDataGenGroup;
+    private static InformationGroup testEnvGenGroup;
+    private static InformationGroup randomTreeGenGroup;
 
     public static void addInformationPage() {
         informationManager = InformationManager.getInstance();
@@ -54,67 +62,115 @@ public class AdaptimizerInformation {
         informationManager.addPage( page );
     }
 
+    public static void addInformationGroupForRandomTreeGeneration() {
+        InformationGroup informationGroup = new InformationGroup(page, "Random Tree Generation");
+        informationManager.addGroup( informationGroup );
+        InformationAction action = new InformationAction( informationGroup, "Generate Random Tree on Test Data", parameters -> generateRandomTree() );
+        informationGroup.addInformation(  action );
+        informationManager.registerInformation( action );
+        page.addGroup( informationGroup );
+        randomTreeGenGroup = informationGroup;
+    }
+
     public static void addInformationGroupForTestDataGeneration() {
         InformationGroup informationGroup = new InformationGroup(page, "Random Record Generation");
-        informationGroup.setColor( GroupColor.YELLOW );
         informationManager.addGroup( informationGroup );
-        InformationText informationText = new InformationText( informationGroup, "Generate data for the default csv tables in public: ");
-        InformationAction action = new InformationAction( informationGroup, "Run on default CSVs", parameters -> testDataGenerationCSV() );
-        InformationAction action2 = new InformationAction( informationGroup, "Run on test table", parameters -> testDataGeneration() );
-        informationGroup.addInformation(  informationText, action, action2 );
-        informationManager.registerInformation( informationText, action, action2 );
+        InformationAction action = new InformationAction( informationGroup, "Fill Default Test Schema with Dummy Data", parameters -> generateTestData() );
+        informationGroup.addInformation(  action );
+        informationManager.registerInformation( action );
         page.addGroup( informationGroup );
+        testDataGenGroup = informationGroup;
     }
 
     public static void addInformationGroupForGeneratingTestEnvironment() {
         InformationGroup informationGroup = new InformationGroup(page, "Generate Test Environment");
-        informationGroup.setColor( GroupColor.GREEN );
         informationManager.addGroup( informationGroup );
-        InformationText informationText = new InformationText( informationGroup, "Generate the default Test Environment: ");
-        InformationAction action = new InformationAction( informationGroup, "Generate", parameters -> DefaultTestEnvironment.generate() );
-        informationGroup.addInformation(  informationText, action );
-        informationManager.registerInformation( informationText, action );
+        InformationAction action = new InformationAction( informationGroup, "Generate Schema & Tables", parameters -> DefaultTestEnvironment.generate() );
+        informationGroup.addInformation( action );
+        informationManager.registerInformation( action );
         page.addGroup( informationGroup );
+        testEnvGenGroup = informationGroup;
     }
 
-    private static String testDataGenerationCSV() {
-        try {
-            Catalog catalog = Catalog.getInstance();
-            CatalogSchema schema = catalog.getSchema( catalog.getDatabase( Catalog.defaultDatabaseId ).name, "public" );
-            CatalogTable depts = catalog.getTable( schema.id, "depts" );
-            CatalogTable emps = catalog.getTable( schema.id, "emps" );
-            CatalogTable emp = catalog.getTable( schema.id, "emp" );
-            CatalogTable work = catalog.getTable( schema.id, "work" );
 
-            DataGenerator testDataGenerator = new DataGenerator( transactionManager, List.of( depts, emps, emp, work ), List.of( 10, 10, 10, 10 ), 10 );
-            testDataGenerator.generateData();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException e ) {
-            log.error( "Data Generation Failed", e );
-            return "Failed. " + e.getMessage();
-        }
-        return "Success.";
-    }
-
-    private static String testDataGeneration() {
+    private static String generateTestData() {
         Catalog catalog = Catalog.getInstance();
 
         if ( DefaultTestEnvironment.CUSTOMERS_TABLE_ID == null ) {
             return "Test schema not generated...";
         }
-
-        CatalogTable customersTable = catalog.getTable( DefaultTestEnvironment.CUSTOMERS_TABLE_ID );
-        CatalogTable ordersTable = catalog.getTable( DefaultTestEnvironment.ORDERS_TABLE_ID );
-        CatalogTable productsTable = catalog.getTable( DefaultTestEnvironment.PRODUCTS_TABLE_ID );
-        CatalogTable shipmentsTable = catalog.getTable( DefaultTestEnvironment.SHIPMENTS_TABLE_ID );
-        CatalogTable purchasesTable = catalog.getTable( DefaultTestEnvironment.PURCHASES_TABLE_ID );
+        DataTableOptionTemplate customersTable = new TableOptionsBuilder( catalog, catalog.getTable( DefaultTestEnvironment.CUSTOMERS_TABLE_ID ) )
+                .setSize( 1000 )
+                .addLengthOption( "customer_name", 8 )
+                .addLengthOption( "customer_phone", 10 )
+                .addLengthOption( "customer_address", 20 )
+                .build();
+        DataTableOptionTemplate ordersTable = new TableOptionsBuilder( catalog, catalog.getTable( DefaultTestEnvironment.ORDERS_TABLE_ID ) )
+                .setSize( 2000 )
+                .addTimestampRangeOption( "order_date", "2022-05-15 06:00:00", "2023-05-15 06:00:00")
+                .build();
+        DataTableOptionTemplate productsTable = new TableOptionsBuilder( catalog, catalog.getTable( DefaultTestEnvironment.PRODUCTS_TABLE_ID ) )
+                .setSize( 100 )
+                .addUniformValues( "product_name", List.of( "Chevrolet", "Hummer", "Fiat", "Peugot", "Farrari", "Nissan", "Porsche") )
+                .addIntRangeOption( "product_stock", 0, 100 )
+                .addDoubleRangeOption( "product_price", 5000, 1000000 )
+                .build();
+        DataTableOptionTemplate shipmentsTable = new TableOptionsBuilder( catalog, catalog.getTable( DefaultTestEnvironment.SHIPMENTS_TABLE_ID ) )
+                .setSize( 500 )
+                .addDateRangeOption( "shipment_date", "2022-05-15", "2023-05-15" )
+                .build();
+        DataTableOptionTemplate purchasesTable = new TableOptionsBuilder( catalog, catalog.getTable( DefaultTestEnvironment.PURCHASES_TABLE_ID ) )
+                .setSize( 20000 )
+                .addIntRangeOption( "quantity", 1, 10 )
+                .build();
 
         DataGenerator testDataGenerator = new DataGenerator(
                 transactionManager,
                 List.of( customersTable, ordersTable, productsTable, shipmentsTable, purchasesTable ),
-                List.of( 1000, 2000, 100, 500, 20000 ), 100
+                100
         );
         testDataGenerator.generateData();
         return "Success.";
+    }
+
+
+    private static String generateRandomTree() {
+        Catalog catalog = Catalog.getInstance();
+        Transaction transaction = getTransaction( catalog );
+        RelRandomTreeTemplate relRandomTreeTemplate = new RandomTreeTemplateBuilder( catalog )
+                .addTable( catalog.getTable( DefaultTestEnvironment.CUSTOMERS_TABLE_ID ) )
+                .addTable(  catalog.getTable( DefaultTestEnvironment.ORDERS_TABLE_ID ) )
+                .addTable( catalog.getTable( DefaultTestEnvironment.PRODUCTS_TABLE_ID )  )
+                .addTable( catalog.getTable( DefaultTestEnvironment.PURCHASES_TABLE_ID ) )
+                .addTable( catalog.getTable( DefaultTestEnvironment.SHIPMENTS_TABLE_ID ) )
+                .addOperator( "Join", 10 )
+                .addOperator( "Sort", 20 )
+                .addOperator( "Project", 20 )
+                .addOperator( "Filter", 10 )
+                .setSchemaName( DefaultTestEnvironment.SCHEMA_NAME )
+                .setMaxHeight( 10 )
+                .build();
+        RelRandomTreeGenerator presetTreeGenerator = new RelRandomTreeGenerator( relRandomTreeTemplate );
+        AlgNode node = presetTreeGenerator.generate( transaction.createStatement() );
+        return "Success";
+    }
+
+
+
+    private static Transaction getTransaction( Catalog catalog ) {
+        Transaction transaction;
+        try {
+            transaction = transactionManager.startTransaction(
+                    catalog.getUser( Catalog.defaultUserId ).name,
+                    catalog.getDatabase( Catalog.defaultDatabaseId ).name,
+                    false,
+                    null
+            );
+        } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
+            e.printStackTrace();
+            throw new TestDataGenerationException( "Could not start transaction", e );
+        }
+        return transaction;
     }
 
 

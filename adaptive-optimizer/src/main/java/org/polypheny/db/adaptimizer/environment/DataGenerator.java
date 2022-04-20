@@ -17,12 +17,11 @@
 package org.polypheny.db.adaptimizer.environment;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Set;
+import java.util.Queue;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,12 +36,12 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
@@ -55,96 +54,61 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class DataGenerator {
 
-    private final TransactionManager transactionManager;
-
-    /**
-     * Priority Queue where table-ids are ordered by their foreign key references to one another. If there
-     * exists a foreign key in a table A referencing another table B then A < B. // Todo foreign key cycles?
-     */
-    private final PriorityQueue<Long> tableQueue;
-
-    /**
-     * Hash map mapping table-ids to their specified sizes after data generation.
-     */
-    private final HashMap<Long, Integer> tableSizes;
-
-    /**
-     * Map of column-ids to other column-ids. Contains a pair if column-id a references column-id b as a foreign key.
-     */
-    private final HashMap<Long, Long> columnReferences;
-
     private final Catalog catalog;
+    private final TransactionManager transactionManager;
+    private final List<DataTableOptionTemplate> tables;
+    private final Queue<DataTableOptionTemplate> tableQueue;
     private final int buffer;
-
 
     /**
      * Creates a Test Data Generator for a list of tables.
-     * @param tables    tables to generate data for
-     * @param sizes     sizes of tables after data generation.
+     * @param tables    tables to generate data for in the form of a list of {@link DataTableOptionTemplate}
      * @param buffer    how many records are inserted each iteration.
      */
-    public DataGenerator( TransactionManager transactionManager, List<CatalogTable> tables, List<Integer> sizes, int buffer ) {
-        catalog = Catalog.getInstance();
-
+    public DataGenerator( TransactionManager transactionManager, List<DataTableOptionTemplate> tables, int buffer ) {
+        this.catalog = Catalog.getInstance();
         this.transactionManager = transactionManager;
+        this.tables = tables;
 
-        // Order tables according to their foreign key references
-        this.tableQueue = new PriorityQueue<>( ( tableIdA, tableIdB ) -> {
-            Set<Long> referencesA = new HashSet<>();
-            catalog.getForeignKeys( tableIdA ).forEach( foreignKey ->
-                    referencesA.addAll( foreignKey.referencedKeyColumnIds )
-            );
-
-            Set<Long> referencesB = new HashSet<>();
-            catalog.getForeignKeys( tableIdB ).forEach( foreignKey ->
-                    referencesB.addAll( foreignKey.referencedKeyColumnIds )
-            );
-
-            long i = catalog.getColumns( tableIdA ).stream().map( column -> column.id ).filter( referencesB::contains ).count();
-            long j = catalog.getColumns( tableIdB ).stream().map( column -> column.id ).filter( referencesA::contains ).count();
-
-            // Todo there is no handling for cyclic foreign key references. Do they even exist?
-            return Long.compare( i, j );
-
-        } );
-
-        List<Long> tableIds = tables.stream().map( table -> table.id ).collect( Collectors.toList());
-
-        this.columnReferences = getColumnReferences( tableIds );
-
-        this.tableSizes = ( HashMap<Long, Integer> ) IntStream.range( 0, tables.size() ).boxed()
-                .collect( Collectors.toMap( tableIds::get, sizes::get ) );
-
-        this.tableQueue.addAll( tableIds );
+        this.tableQueue = new ArrayDeque<>();
+        this.tableQueue.addAll( tables );
 
         this.buffer = buffer;
+    }
 
+
+    private static DataTableOptionTemplate getTemplateForTableId( List<DataTableOptionTemplate> tables, long tableId ) {
+        for ( DataTableOptionTemplate dataTableOptionTemplate : tables ) {
+            if ( dataTableOptionTemplate.hasTableId( tableId ) ) {
+                return dataTableOptionTemplate;
+            }
+        }
+        return null;
     }
 
 
     /**
      * Maps columns to other columns according to their foreign key references.
-     * @param tableIds      List of table-ids.
-     * @return              Hashmap where keys are column ids that are referencing the value column ids.
+     * @param tables     List of {@link DataTableOptionTemplate}
      */
-    public HashMap<Long, Long> getColumnReferences( List<Long> tableIds ) {
-        HashMap<Long, Long> referenceMap = new HashMap<>();
-        for ( Long tableId : tableIds ) {
-            List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( tableId );
+    private void searchColumnReferences( List<DataTableOptionTemplate> tables ) {
+
+        for ( DataTableOptionTemplate template : tables ) {
+            List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( template.getCatalogTable().id );
+
             for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
-                Long referenceTableId = catalogForeignKey.referencedKeyTableId;
-                if ( ! tableIds.contains( referenceTableId ) ) {
+                DataTableOptionTemplate referencedTemplate = getTemplateForTableId( tables, catalogForeignKey.referencedKeyTableId );
+
+                if ( referencedTemplate == null ) {
+                    // Only consider references for tables passed to the Generator.
                     break;
                 }
-                ImmutableList<Long> columnIds = catalogForeignKey.columnIds;
-                ImmutableList<Long> referenceIds = catalogForeignKey.referencedKeyColumnIds;
 
-                for ( int i = 0; i < columnIds.size(); i++ ) {
-                    referenceMap.put( columnIds.get( i ), referenceIds.get( i ) );
-                }
+                template.addReferencingColumns( catalogForeignKey.columnIds, catalogForeignKey.referencedKeyColumnIds );
+                referencedTemplate.addReferencedColumnIndexes( catalogForeignKey.referencedKeyColumnIds );
             }
         }
-        return referenceMap;
+
     }
 
 
@@ -152,6 +116,10 @@ public class DataGenerator {
      * Generates Data and inserts it into the store.
      */
     public void generateData() {
+
+        // Search all references
+        this.searchColumnReferences( this.tables );
+
         /*
         Generating random data for tables while keeping foreign key constraints, there
         needs to be a record for data stored in the referenced columns in order to
@@ -160,142 +128,98 @@ public class DataGenerator {
         them if needed.
          */
         HashMap<Long, List<Object>> referenceDataMap = new HashMap<>();
-        for ( Long id : this.columnReferences.keySet() ) {
-            referenceDataMap.put( id, new ArrayList<>() );
-        }
+
+        // Counter for dequeue operations
+        int iteration = 0;
 
         // dequeue tables and fill
         while ( ! this.tableQueue.isEmpty() ) {
 
-            Long tableId = this.tableQueue.remove();
+            DataTableOptionTemplate template = this.tableQueue.remove();
+            iteration++;
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Generating Data for table: {}", catalog.getTable( tableId ).name );
+                log.debug( "Considering Table {}", catalog.getTable( template.getTableId() ).name );
             }
 
-            DataRecordSupplierBuilder testTableDataBuilder = new DataRecordSupplierBuilder( tableId );
+            //  First we build a DataRecordSupplier that will give random rows / records for the table in consideration.
+            DataRecordSupplierBuilder testRecordSupplierBuilder = new DataRecordSupplierBuilder( catalog, template );
 
-            catalog.getTableKeys( tableId ).forEach( key -> {
-                // For each key we add an option to the generated column: primary key implies unique values, foreign key implies predefined values.
+
+            // Add all primary key options, these columns will have unique values.
+            for ( CatalogKey key : catalog.getTableKeys( template.getTableId() )) {
                 if ( catalog.isPrimaryKey( key.id ) ) {
-                    key.columnIds.forEach( testTableDataBuilder::addPrimaryKeyOption );
-                } else if ( catalog.isForeignKey( key.id ) ) {
-                    List<Long> columnIds = ( ( CatalogForeignKey ) key ).referencedKeyColumnIds;
-                    columnIds.forEach( columnId -> testTableDataBuilder.addForeignKeyOption( columnId, referenceDataMap.get( columnId ), false ) );
+                    key.columnIds.forEach( testRecordSupplierBuilder::addPrimaryKeyOption );
                 }
-            } );
-
-            DataRecordSupplier testDataRecordSupplier = testTableDataBuilder.build();
-
-            // Todo rewrite clumsy way of getting foreign key indexes and so on... ---
-            List<Long> columnIds = testDataRecordSupplier.getColumnIds();
-            List<CatalogColumn> catalogColumns = columnIds.stream().map( catalog::getColumn ).collect( Collectors.toList());
-            List<Long> filteredIds = columnIds.stream().filter( this.columnReferences::containsKey ).collect( Collectors.toList());
-            List<Integer> indexes = filteredIds.stream().map( columnIds::indexOf ).collect( Collectors.toList());
-            CatalogTable catalogTable = catalog.getTable( tableId );
-            // ---
-
-            Transaction transaction;
-            try {
-                transaction = transactionManager.startTransaction(
-                        catalog.getUser( Catalog.defaultUserId ).name,
-                        catalog.getDatabase( Catalog.defaultDatabaseId ).name,
-                        false,
-                        null
-                );
-            } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
-                e.printStackTrace();
-                throw new TestDataGenerationException( "Could not start transaction", e );
             }
 
-            Statement statement = transaction.createStatement();
-            StringJoiner columns = new StringJoiner( ",", "\n\t(", ")\n" );
-            catalogColumns.forEach( catalogColumn -> columns.add( "\"" + catalogColumn.name + "\"" ) );
-
-            StringJoiner values;
-            StringJoiner bulk;
-            int rowCount = 0;
-            int tableSize = this.tableSizes.get( tableId );
-            while ( rowCount < tableSize ) {
-                // Generate random records for buffer size
-                List<List<Object>> data = Stream.generate( testDataRecordSupplier ).limit( buffer ).collect( Collectors.toList());
-
-
-//                bulk = new StringJoiner( ",\n\t", "\n\t", "" );
-                for ( List<Object> objects : data ) {
-                    // Add foreign key values to referenceDataMap
-                    for ( Integer index : indexes ) {
-                        referenceDataMap.get( columnIds.get( index ) ).add( objects.get( index ) );
-                    }
-
-                    // Join values to Sql Query
-//                    values = new StringJoiner( ",", "(", ")" );
-//                    for ( int i = 0; i < objects.size(); i++ ) {
-//                        Object value = objects.get( i );
-//                        switch ( catalogColumns.get( i ).type ) {
-//                            case TIMESTAMP:
-//                                values.add( "\"" + value + "\"" );
-//                                break;
-//                            default:
-//                                values.add( String.valueOf( value ) );
-//                                break;
-//                        }
-//                    }
-//                    bulk.add( values.toString() );
+            // In the case a table references another we have to postpone that table until the referenced table is generated.
+            boolean postpone = false;
+            for ( Pair<Long, Long> reference : template.getReferences() ) {
+                if ( ! referenceDataMap.containsKey( reference.right ) ) {
+                    postpone = true;
+                    break;
+                } else {
+                    testRecordSupplierBuilder.addForeignKeyOption( reference.left, referenceDataMap.get( reference.right ), false );
                 }
-
-                executeSqlInsert( transaction, catalogTable, catalogColumns, data );
-
-//                String query = String.format( "INSERT INTO %s %s VALUES %s", DefaultTestEnvironment.SCHEMA_NAME + "." + catalogTable.name, columns, bulk );
-//
-//                if ( log.isDebugEnabled() ) {
-//                    log.debug( "------------ Generated Query -----------\n" + query );
-//                }
-//
-//                PolyResult polyResult;
-//                try {
-//                    Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-//                    Node parsed = sqlProcessor.parse( query );
-//                    QueryParameters parameters = new QueryParameters( query, SchemaType.RELATIONAL );
-//                    Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-//                    AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, parameters );
-//                    polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-//
-//                    polyResult.getRowsChanged( statement );
-//
-//                    transaction.commit();
-//
-//                } catch ( Exception | TransactionException e ) {
-//                    log.info( "Generated query: {}", query );
-//                    log.error( "Could not insert row", e );
-//
-//                    try {
-//                        transaction.rollback();
-//                    } catch ( TransactionException e2 ) {
-//                        log.error( "Caught error while rolling back transaction", e2 );
-//                    }
-//
-//                    throw new TestDataGenerationException( "Could not insert data into table", e );
-//
-//                }
-
-                rowCount += buffer;
-
             }
+
+            // If we have too many iterations there are cyclic foreign key references.
+            if ( iteration > this.tables.size() * this.tables.size() ) {
+                throw new TestDataGenerationException( "Too many iterations for data generation, are there cyclic foreign key references in the tables?",
+                        new IllegalArgumentException( "Invalid input tables." ) );
+            }
+
+            if ( postpone ) {
+                this.tableQueue.add( template );
+                continue;
+            }
+
+            generateDataForTable( template, testRecordSupplierBuilder.build(), referenceDataMap );
 
         }
 
     }
 
-    private void executeSqlInsert(Transaction transaction, CatalogTable catalogTable, List<CatalogColumn> catalogColumns, List<List<Object>> data) {
+
+    private void generateDataForTable( DataTableOptionTemplate template, DataRecordSupplier dataRecordSupplier, HashMap<Long, List<Object>> referenceDataMap ) {
+
+        Transaction transaction = this.getTransaction();
+        template.getReferencedColumnIds().forEach( ( pair ) -> referenceDataMap.put( pair.left, new ArrayList<>() ) );
+
+        int rowCount = 0;
+        while ( rowCount <= template.getSize() ) {
+            // Generate random records for buffer size
+            List<List<Object>> data = Stream.generate( dataRecordSupplier ).limit(
+                    ( rowCount + buffer > template.getSize() ) ? rowCount + buffer - template.getSize() : buffer
+            ).collect( Collectors.toList());
+
+            for ( List<Object> objects : data ) {
+                // Add foreign key values to referenceDataMap
+                for ( Pair<Long, Integer> referencedColumn : template.getReferencedColumnIds() ) {
+                    referenceDataMap.get( referencedColumn.left ).add( objects.get( referencedColumn.right ) );
+                }
+            }
+
+            String query = getInsertQuery( template.getCatalogTable(), template.getCatalogColumns(), data );
+            this.executeSqlInsert( transaction.createStatement(), query );
+
+            rowCount += buffer;
+        }
+
+        this.commitTransaction( transaction );
+
+    }
 
 
+    private String getInsertQuery( CatalogTable catalogTable, List<CatalogColumn> catalogColumns, List<List<Object>> data ) {
         StringJoiner columns = new StringJoiner( ",", "(", ")" );
 
         for ( CatalogColumn column : catalogColumns ) {
             columns.add( column.name );
         }
 
+        StringJoiner bulk = new StringJoiner( ",", "", "" );
         StringJoiner values;
         for ( List<Object> objects : data ) {
             values = new StringJoiner( ",", "(", ")" );
@@ -303,34 +227,48 @@ public class DataGenerator {
                 Object value = objects.get( i );
                 switch ( catalogColumns.get( i ).type ) {
                     case TIMESTAMP:
-                        values.add( "\"" + value + "\"" );
+                        values.add( "timestamp '" + value + "'" );
+                        break;
+                    case DATE:
+                        values.add( "date '" + value + "'" );
+                        break;
+                    case TIME:
+                        values.add( "time '" + value + "'" );
+                        break;
+                    case CHAR:
+                    case VARCHAR:
+                        values.add( "'" + value + "'" );
                         break;
                     default:
                         values.add( String.valueOf( value ) );
                         break;
                 }
             }
-
-            String query = String.format( "INSERT INTO %s %s VALUES %s", DefaultTestEnvironment.SCHEMA_NAME + "." + catalogTable.name, columns, values );
-
-            Statement statement = transaction.createStatement();
-            Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-            Node parsed = sqlProcessor.parse( query );
-            QueryParameters parameters = new QueryParameters( query, SchemaType.RELATIONAL );
-            Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, parameters );
-            PolyResult polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-
-            try {
-                polyResult.getRowsChanged( statement );
-            } catch ( Exception e ) {
-                e.printStackTrace();
-                log.error( "Could not execute statement.", e );
-            }
-
-
+            bulk.add( values.toString() );
         }
 
+        return String.format( "insert into %s %s values %s", DefaultTestEnvironment.SCHEMA_NAME + "." + catalogTable.name, columns, bulk );
+    }
+
+
+    private Transaction getTransaction() {
+        Transaction transaction;
+        try {
+            transaction = transactionManager.startTransaction(
+                    catalog.getUser( Catalog.defaultUserId ).name,
+                    catalog.getDatabase( Catalog.defaultDatabaseId ).name,
+                    false,
+                    null
+            );
+        } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
+            e.printStackTrace();
+            throw new TestDataGenerationException( "Could not start transaction", e );
+        }
+        return transaction;
+    }
+
+
+    private void commitTransaction(Transaction transaction) {
         try {
             transaction.commit();
         } catch ( TransactionException e ) {
@@ -341,12 +279,23 @@ public class DataGenerator {
             } catch ( TransactionException e2 ) {
                 log.error( "Caught error while rolling back transaction", e2 );
             }
-
             throw new TestDataGenerationException( "Could not insert data into table", e );
+        }
+    }
 
+
+    private void executeSqlInsert(Statement statement, String insertQuery ) {
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+        Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), sqlProcessor.parse( insertQuery ), false );
+        AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, new QueryParameters( insertQuery, SchemaType.RELATIONAL ) );
+        PolyResult polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, false );
+
+        try {
+            polyResult.getRowsChanged( statement );
+        } catch ( Exception e ) {
+            throw new TestDataGenerationException( "Could not execute insert query", e );
         }
 
     }
-
 
 }

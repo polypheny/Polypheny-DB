@@ -18,61 +18,59 @@ package org.polypheny.db.adaptimizer.environment;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.builder.Builder;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogTable;
 
 /**
  * Builds Suppliers for records of data.
  */
 public class DataRecordSupplierBuilder implements Builder<DataRecordSupplier> {
-    private static final int DEFAULT_VAR_LENGTH = 10;
+    private final Catalog catalog;
+    private final CatalogTable catalogTable;
+    private final Map<Long, DataColumnOption> options;
 
-    private final Long tableId;
-    private final HashMap<Long, DataColumnOption> options;
+    public DataRecordSupplierBuilder( Catalog catalog, DataTableOptionTemplate dataTableOptionTemplate ) {
+        this.catalog = catalog;
+        this.catalogTable = dataTableOptionTemplate.getCatalogTable();
+        this.options = dataTableOptionTemplate.getOptions();
 
-    private Integer varLength;
+        // Remove all keys without column-options
+        for ( Long key : this.options.keySet() ) {
+            if ( this.options.get( key ) == null ) {
+                this.options.remove( key );
+            }
+        }
+    }
 
-    public DataRecordSupplierBuilder( Long tableId ) {
-        this.tableId = tableId;
-        this.options = new HashMap<>();
+    private DataColumnOption getColumnOptionInstance( Long columnId ) {
+        if ( this.options.containsKey( columnId ) ) {
+            return options.get( columnId );
+        }
+        DataColumnOption columnOption = new DataColumnOption();
+        this.options.put( columnId, columnOption );
+        return columnOption;
     }
 
     public void addForeignKeyOption( Long columnId, List<Object> objects, boolean oneToOne) {
-        DataColumnOption testDataColumnOption;
+        DataColumnOption testDataColumnOption = getColumnOptionInstance( columnId );
 
-        if ( this.options.containsKey( columnId ) ) {
-            testDataColumnOption = options.get( columnId );
-        } else {
-            testDataColumnOption = new DataColumnOption();
+        if ( testDataColumnOption.getOneToOneRelation() == null ) {
+            testDataColumnOption.setOneToOneRelation( false );
         }
-
-        testDataColumnOption.setHasOneToOneRelation( oneToOne );
         testDataColumnOption.setProvidedData( objects );
-        testDataColumnOption.setForeignKeyColumn( true );
 
-        this.options.put( columnId, testDataColumnOption );
     }
 
     public void addPrimaryKeyOption( Long columnId ) {
-        DataColumnOption testDataColumnOption;
-
-        if ( this.options.containsKey( columnId ) ) {
-            testDataColumnOption = options.get( columnId );
-        } else {
-            testDataColumnOption = new DataColumnOption();
-        }
-
-        testDataColumnOption.setPrimaryKeyColumn( true );
-
-        this.options.put( columnId, testDataColumnOption );
-    }
-
-    public void setVarLength( int varLength ) {
-        this.varLength = varLength;
+        DataColumnOption testDataColumnOption = getColumnOptionInstance( columnId );
+        testDataColumnOption.setUnique( true );
     }
 
     @Override
     public DataRecordSupplier build() {
-        return new DataRecordSupplier( tableId, options, ( varLength == null ) ? DEFAULT_VAR_LENGTH : varLength );
+        return new DataRecordSupplier( this.catalog, this.catalogTable, this.options );
     }
 
 }

@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.alg;
+package org.polypheny.db.adaptimizer.randomtrees;
 
-/**
- *  The {@link AbstractRandomTreeOptionsBuilder} is a framework for providing settings to the
- *  generation of Random Trees. In a learning environment the options could potentially
- *  be the input of a machine learning module. E.g. the input could be the possible
- *  Operators and their frequency of occurrence in random trees, and the output their
- *  {@link org.polypheny.adaptimizer.stats.ExecutionMeasurement}
- */
-public abstract class AbstractRandomTreeOptionsBuilder {
+import java.util.List;
+
+public interface TableRecord {
+
+    String getTableName();
+    List<String> getColumns();
 
 }
