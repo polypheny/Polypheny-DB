@@ -16,19 +16,11 @@
 
 package org.polypheny.db.adapter.enumerable;
 
-import java.lang.reflect.Modifier;
-import java.util.List;
-import java.util.stream.Collectors;
+
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function;
 import org.apache.calcite.linq4j.function.Function0;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.FunctionExpression;
-import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.linq4j.tree.*;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Streamer;
@@ -38,6 +30,11 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
+
+import java.lang.reflect.Modifier;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
@@ -49,8 +46,6 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
      *  Provider        Collector
      * </pre>
      *
-     * @param cluster
-     * @param traitSet
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */

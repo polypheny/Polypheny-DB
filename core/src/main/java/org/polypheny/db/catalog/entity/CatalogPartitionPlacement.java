@@ -17,10 +17,11 @@
 package org.polypheny.db.catalog.entity;
 
 
-import java.io.Serializable;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+
+import java.io.Serializable;
 
 
 /**
@@ -39,12 +40,19 @@ public class CatalogPartitionPlacement implements CatalogObject {
     public final String physicalSchemaName;
     public final String physicalTableName;
 
-
     // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
     // If false, physical partition placements are considered to be refreshable and can therefore become outdated and need to be lazily updated.
     // This attribute is derived from an effective data placement (table entity on a store)
-    // TODO @HENNLO remove default role
-    public final DataPlacementRole role = DataPlacementRole.UPTODATE;
+
+    // Related to multi-tier replication. If Placement is considered a primary node it needs to receive every update eagerly.
+    // If false, nodes are considered refreshable and can be lazily replicated
+    // This attribute is derived from an effective data placement (table entity on a store)
+    // This means that the store is not entirely considered a primary and can therefore be different on another table
+    // Is present at the DataPlacement && the PartitionPlacement
+    // Although, partitionPlacements are those that get effectively updated
+    // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
+    // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
+    public final DataPlacementRole role;
 
 
     public CatalogPartitionPlacement(
@@ -54,7 +62,8 @@ public class CatalogPartitionPlacement implements CatalogObject {
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
-            final long partitionId ) {
+            final long partitionId,
+            DataPlacementRole role) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;
@@ -62,6 +71,7 @@ public class CatalogPartitionPlacement implements CatalogObject {
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
         this.partitionId = partitionId;
+        this.role = role;
     }
 
 

@@ -18,17 +18,6 @@ package org.polypheny.db.cypher.ddl;
 
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.StatisticsManager;
@@ -39,81 +28,20 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.IndexManager;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.BiAlg;
-import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.*;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.IndexType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.PartitionType;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.Catalog.*;
 import org.polypheny.db.catalog.NameGenerator;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogGraphMapping;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownGraphException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.cypher.ddl.exception.AlterSourceException;
-import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
-import org.polypheny.db.cypher.ddl.exception.IndexExistsException;
-import org.polypheny.db.cypher.ddl.exception.IndexPreventsRemovalException;
-import org.polypheny.db.cypher.ddl.exception.LastPlacementException;
-import org.polypheny.db.cypher.ddl.exception.MissingColumnPlacementException;
-import org.polypheny.db.cypher.ddl.exception.NotMaterializedViewException;
-import org.polypheny.db.cypher.ddl.exception.NotNullAndDefaultValueException;
-import org.polypheny.db.cypher.ddl.exception.NotViewException;
-import org.polypheny.db.cypher.ddl.exception.PartitionGroupNamesNotUniqueException;
-import org.polypheny.db.cypher.ddl.exception.PlacementAlreadyExistsException;
-import org.polypheny.db.cypher.ddl.exception.PlacementIsPrimaryException;
-import org.polypheny.db.cypher.ddl.exception.PlacementNotExistsException;
-import org.polypheny.db.cypher.ddl.exception.SchemaNotExistException;
-import org.polypheny.db.cypher.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.catalog.exceptions.*;
+import org.polypheny.db.cypher.ddl.exception.*;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
@@ -134,6 +62,10 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.view.MaterializedViewManager;
+
+import javax.annotation.Nullable;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -290,10 +222,11 @@ public class DdlManagerImpl extends DdlManager {
                     catalog.addPartitionPlacement(
                             adapter.getAdapterId(),
                             catalogEntity.id,
-                            catalogEntity.partitionProperty.partitionIds.get( 0 ),
+                            catalogEntity.partitionProperty.partitionIds.get(0),
                             PlacementType.AUTOMATIC,
                             physicalSchemaName,
-                            physicalTableName );
+                            physicalTableName,
+                            DataPlacementRole.UPTODATE);
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }
@@ -789,7 +722,8 @@ public class DdlManagerImpl extends DdlManager {
                     partitionId,
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    DataPlacementRole.UPTODATE);
         }
 
         // Make sure that the stores have created the schema
@@ -1000,8 +934,8 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogEntity.id );
-        if ( !catalog.validateDataPlacementsConstraints( catalogEntity.id, storeInstance.getAdapterId(),
-                dataPlacement.columnPlacementsOnAdapter, dataPlacement.partitionPlacementsOnAdapter ) ) {
+        if (!catalog.validateDataPlacementsConstraints(catalogEntity.id, storeInstance.getAdapterId(),
+                dataPlacement.columnPlacementsOnAdapter, dataPlacement.getAllPartitionIds())) {
 
             throw new LastPlacementException();
         }
@@ -1327,17 +1261,17 @@ public class DdlManagerImpl extends DdlManager {
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogEntity.id );
         List<Long> removedPartitionIdsFromDataPlacement = new ArrayList<>();
         // Removed Partition Ids
-        for ( long partitionId : dataPlacement.partitionPlacementsOnAdapter ) {
-            if ( !intendedPartitionIds.contains( partitionId ) ) {
-                removedPartitionIdsFromDataPlacement.add( partitionId );
+        for (long partitionId : dataPlacement.getAllPartitionIds()) {
+            if (!intendedPartitionIds.contains(partitionId)) {
+                removedPartitionIdsFromDataPlacement.add(partitionId);
             }
         }
 
         List<Long> newPartitionIdsOnDataPlacement = new ArrayList<>();
         // Added Partition Ids
         for ( long partitionId : intendedPartitionIds ) {
-            if ( !dataPlacement.partitionPlacementsOnAdapter.contains( partitionId ) ) {
-                newPartitionIdsOnDataPlacement.add( partitionId );
+            if (!dataPlacement.getAllPartitionIds().contains(partitionId)) {
+                newPartitionIdsOnDataPlacement.add(partitionId);
             }
         }
 
@@ -1353,7 +1287,8 @@ public class DdlManagerImpl extends DdlManager {
                     partitionId,
                     PlacementType.MANUAL,
                     null,
-                    null )
+                    null,
+                    DataPlacementRole.UPTODATE)
             );
 
             storeInstance.createTable( statement.getPrepareContext(), catalogEntity, newPartitionIdsOnDataPlacement );
@@ -1407,7 +1342,8 @@ public class DdlManagerImpl extends DdlManager {
                         partitionId,
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE);
             }
 
             storeInstance.createTable( statement.getPrepareContext(), catalogEntity, newPartitions );
@@ -1737,10 +1673,11 @@ public class DdlManagerImpl extends DdlManager {
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
                     tableId,
-                    catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
+                    catalogMaterializedView.partitionProperty.partitionIds.get(0),
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    DataPlacementRole.UPTODATE);
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
@@ -1816,37 +1753,41 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
                 nodes.id,
-                nodes.partitionProperty.partitionIds.get( 0 ),
+                nodes.partitionProperty.partitionIds.get(0),
                 PlacementType.AUTOMATIC,
                 null,
-                null
+                null,
+                DataPlacementRole.UPTODATE
         );
 
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
                 nodeProperty.id,
-                nodeProperty.partitionProperty.partitionIds.get( 0 ),
+                nodeProperty.partitionProperty.partitionIds.get(0),
                 PlacementType.AUTOMATIC,
                 null,
-                null
+                null,
+                DataPlacementRole.UPTODATE
         );
 
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
                 edges.id,
-                edges.partitionProperty.partitionIds.get( 0 ),
+                edges.partitionProperty.partitionIds.get(0),
                 PlacementType.AUTOMATIC,
                 null,
-                null
+                null,
+                DataPlacementRole.UPTODATE
         );
 
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
                 edgeProperty.id,
-                edgeProperty.partitionProperty.partitionIds.get( 0 ),
+                edgeProperty.partitionProperty.partitionIds.get(0),
                 PlacementType.AUTOMATIC,
                 null,
-                null
+                null,
+                DataPlacementRole.UPTODATE
         );
 
 
@@ -2048,10 +1989,11 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.addPartitionPlacement(
                         store.getAdapterId(),
                         catalogEntity.id,
-                        catalogEntity.partitionProperty.partitionIds.get( 0 ),
+                        catalogEntity.partitionProperty.partitionIds.get(0),
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE);
 
                 store.createTable( statement.getPrepareContext(), catalogEntity, catalogEntity.partitionProperty.partitionIds );
             }
@@ -2329,7 +2271,8 @@ public class DdlManagerImpl extends DdlManager {
                         partitionId,
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE);
             }
 
             // First create new tables
@@ -2407,10 +2350,11 @@ public class DdlManagerImpl extends DdlManager {
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
                     mergedTable.id,
-                    mergedTable.partitionProperty.partitionIds.get( 0 ),
+                    mergedTable.partitionProperty.partitionIds.get(0),
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    DataPlacementRole.UPTODATE);
 
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );

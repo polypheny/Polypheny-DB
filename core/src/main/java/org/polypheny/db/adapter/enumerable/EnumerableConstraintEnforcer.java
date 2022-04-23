@@ -16,7 +16,7 @@
 
 package org.polypheny.db.adapter.enumerable;
 
-import java.util.List;
+
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
@@ -26,21 +26,17 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
+import java.util.List;
+
+
 public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements EnumerableAlg {
 
     /**
      * Left is the initial dml query, which modifies the entity
      * right is the control query, which tests if still all conditions are correct
-     *
-     * @param cluster
-     * @param traitSet
-     * @param modify
-     * @param control
-     * @param exceptionClass
-     * @param exceptionMessage
      */
-    public EnumerableConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
-        super( cluster, traitSet, modify, control, exceptionClass, exceptionMessage );
+    public EnumerableConstraintEnforcer(AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage) {
+        super(cluster, traitSet, modify, control, exceptionClass, exceptionMessage);
     }
 
 

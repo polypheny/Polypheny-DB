@@ -16,21 +16,12 @@
 
 package org.polypheny.db.partition;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -47,20 +38,22 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.transaction.*;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
+
+import java.sql.Timestamp;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
  * Periodically retrieves information from the MonitoringService to get current statistics about
  * the frequency map to determine which chunk of data should reside in HOT {@literal &}  which in COLD partition
- *
+ * <p>
  * Only one instance of the MAP exists.
  * Which gets created once the first TEMPERATURE partitioned table gets created. (Including creation of BackgroundTask)
  * and consequently will be shutdown when no TEMPERATURE partitioned tables exist anymore
@@ -298,7 +291,8 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     partitionId,
                                     PlacementType.AUTOMATIC,
                                     null,
-                                    null );
+                                    null,
+                                    DataPlacementRole.UPTODATE );
                         }
 
                         store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
@@ -346,7 +340,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                                     partitionId,
                                     PlacementType.AUTOMATIC,
                                     null,
-                                    null );
+                                    null, DataPlacementRole.UPTODATE );
                         }
                         store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
 

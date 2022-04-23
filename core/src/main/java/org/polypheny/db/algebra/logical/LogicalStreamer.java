@@ -16,9 +16,7 @@
 
 package org.polypheny.db.algebra.logical;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+
 import org.polypheny.db.adapter.enumerable.EnumerableTableModify;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
@@ -35,6 +33,11 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+
 public class LogicalStreamer extends Streamer {
 
     /**
@@ -45,8 +48,6 @@ public class LogicalStreamer extends Streamer {
      * Provider    Collector
      * }
      *
-     * @param cluster
-     * @param traitSet
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */

@@ -16,13 +16,7 @@
 
 package org.polypheny.db.algebra.logical;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
@@ -35,12 +29,8 @@ import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -56,6 +46,11 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+
 @Slf4j
 public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
@@ -68,8 +63,6 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
      *
      * @param modify is the initial dml query, which modifies the entity
      * @param control is the control query, which tests if still all conditions are correct
-     * @param exceptionClasses
-     * @param exceptionMessages
      */
     public LogicalConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClasses, List<String> exceptionMessages ) {
         super(

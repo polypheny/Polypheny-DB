@@ -16,24 +16,9 @@
 
 package org.polypheny.db.processing;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import java.lang.reflect.Type;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -49,14 +34,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
-import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.*;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
@@ -65,11 +43,7 @@ import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalModify;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.*;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -81,11 +55,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationCode;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationQueryPlan;
+import org.polypheny.db.information.*;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.monitoring.events.DmlEvent;
@@ -106,21 +76,9 @@ import org.polypheny.db.processing.caching.RoutingPlanCache;
 import org.polypheny.db.processing.shuttles.LogicalQueryInformationImpl;
 import org.polypheny.db.processing.shuttles.ParameterValueValidator;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.routing.DmlRouter;
-import org.polypheny.db.routing.ExecutionTimeMonitor;
+import org.polypheny.db.rex.*;
+import org.polypheny.db.routing.*;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
-import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.routing.ProposedRoutingPlan;
-import org.polypheny.db.routing.Router;
-import org.polypheny.db.routing.RoutingManager;
-import org.polypheny.db.routing.RoutingPlan;
-import org.polypheny.db.routing.UiRoutingPageUtil;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
 import org.polypheny.db.runtime.Bindable;
@@ -132,11 +90,11 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
+import org.polypheny.db.transaction.EntityAccessMap;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Conformance;
@@ -146,6 +104,13 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManager.TableUpdateVisitor;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
+
+import java.lang.reflect.Type;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -316,7 +281,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().start( "Locking" );
             }
             if ( lock ) {
-                this.acquireLock( isAnalyze, logicalRoot );
+                this.acquireLock(isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions());
             }
 
             //
@@ -585,17 +550,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot ) {
+    private void acquireLock(boolean isAnalyze, AlgRoot logicalRoot, Map<Integer, List<Long>> accessedPartitions) {
+        // TODO @HENNLO Check if this is this is necessary to pass the partitions explicitly.
+        // This currently only works for queries. Since DMLs are evaluated during routing.
+        // This SHOULD be adjusted
+
         // Locking
         try {
-            Collection<Entry<TableIdentifier, LockMode>> idAccessMap = new ArrayList<>();
-            // Get locks for individual tables
-            TableAccessMap accessMap = new TableAccessMap( logicalRoot.alg );
+            Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+            // Get locks for individual entities
+            EntityAccessMap accessMap = new EntityAccessMap(logicalRoot.alg, accessedPartitions);
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
+            idAccessMap.add(Pair.of(LockManager.GLOBAL_LOCK, LockMode.SHARED));
 
-            idAccessMap.addAll( accessMap.getTablesAccessedPair() );
-            LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
+            idAccessMap.addAll(accessMap.getAccessedEntityPair());
+            LockManager.INSTANCE.lock(idAccessMap, (TransactionImpl) statement.getTransaction());
         } catch ( DeadlockException e ) {
             throw new RuntimeException( e );
         }

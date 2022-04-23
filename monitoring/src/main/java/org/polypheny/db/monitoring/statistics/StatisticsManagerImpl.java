@@ -18,23 +18,6 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.common.collect.Lists;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeSupport;
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -64,12 +47,8 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationAction;
+import org.polypheny.db.information.*;
 import org.polypheny.db.information.InformationAction.Action;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
@@ -88,6 +67,18 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
+
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeSupport;
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -573,8 +564,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     /**
      * Queries the database with an aggregate query, to get the min value or max value.
-     *
-     * @return
      */
     private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, Scan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {

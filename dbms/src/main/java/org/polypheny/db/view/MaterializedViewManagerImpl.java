@@ -18,41 +18,17 @@ package org.polypheny.db.view;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.BiAlg;
-import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.*;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -60,21 +36,19 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.*;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.transaction.LockManager;
-import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.transaction.TransactionImpl;
-import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
+
+import java.sql.Timestamp;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @Slf4j
@@ -89,14 +63,14 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     @Getter
     private final List<Long> intervalToUpdate;
 
-    final Map<PolyXid, Long> potentialInteresting;
+    final Map<PolyXid, Long> updateCandidates;
 
 
     public MaterializedViewManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         this.materializedInfo = new ConcurrentHashMap<>();
-        this.potentialInteresting = new HashMap<>();
-        this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
+        this.updateCandidates = new HashMap<>();
+        this.intervalToUpdate = Collections.synchronizedList(new ArrayList<>());
         registerFreshnessLoop();
     }
 
@@ -168,11 +142,11 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * If a change is committed to the transactionId and the tableId are saved as potential interesting for
-     * materialized view with freshness update
+     * If a change is committed to the transactionId and the tableId are saved as potential interesting
+     * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
-     * @param tableNames table that was changed
+     * @param tableNames  table that was changed
      */
     @Override
     public void addTables( Transaction transaction, List<String> tableNames ) {
@@ -181,7 +155,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 CatalogEntity catalogEntity = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
                 long id = catalogEntity.id;
                 if ( !catalogEntity.getConnectedViews().isEmpty() ) {
-                    potentialInteresting.put( transaction.getXid(), id );
+                    updateCandidates.put(transaction.getXid(), id);
                 }
             } catch ( UnknownTableException e ) {
                 throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
@@ -198,8 +172,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public void updateCommittedXid( PolyXid xid ) {
-        if ( potentialInteresting.containsKey( xid ) ) {
-            materializedUpdate( potentialInteresting.remove( xid ) );
+        if (updateCandidates.containsKey(xid)) {
+            materializedUpdate(updateCandidates.remove(xid));
         }
     }
 
@@ -283,13 +257,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
             try {
                 Statement statement = transaction.createStatement();
-                Collection<Entry<TableIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+                Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
                 // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-                idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
+                idAccessMap.add(Pair.of(LockManager.GLOBAL_LOCK, LockMode.SHARED));
                 // Get locks for individual tables
-                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterializedView) catalogEntity).getDefinition() );
-                idAccessMap.addAll( accessMap.getTablesAccessedPair() );
-                LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
+                EntityAccessMap accessMap = new EntityAccessMap(((CatalogMaterializedView) catalogEntity).getDefinition(), new HashMap<>());
+                idAccessMap.addAll(accessMap.getAccessedEntityPair());
+                LockManager.INSTANCE.lock(idAccessMap, (TransactionImpl) statement.getTransaction());
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }

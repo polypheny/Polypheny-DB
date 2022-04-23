@@ -18,16 +18,6 @@ package org.polypheny.db.routing.routers;
 
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -37,40 +27,13 @@ import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.LogicalBatchIterator;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
-import org.polypheny.db.algebra.logical.LogicalDocuments;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalModify;
-import org.polypheny.db.algebra.logical.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalScan;
-import org.polypheny.db.algebra.logical.LogicalStreamer;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.graph.GraphProject;
-import org.polypheny.db.algebra.logical.graph.GraphScan;
-import org.polypheny.db.algebra.logical.graph.GraphValues;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.logical.*;
+import org.polypheny.db.algebra.logical.graph.*;
+import org.polypheny.db.algebra.type.*;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogGraphMapping;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -81,20 +44,11 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.processing.WhereClauseVisitor;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.*;
 import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
-import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.*;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.schema.graph.ModifiableGraph;
 import org.polypheny.db.tools.AlgBuilder;
@@ -102,13 +56,14 @@ import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     /**
      * Default implementation: Execute DML on all placements
-     *
-     * @return
      */
     @Override
     public AlgNode routeDml( LogicalModify modify, Statement statement ) {

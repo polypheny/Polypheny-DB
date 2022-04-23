@@ -17,9 +17,6 @@
 package org.polypheny.db.transaction;
 
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -30,6 +27,10 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
+
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public interface Transaction {
@@ -78,17 +79,52 @@ public interface Transaction {
 
     DataMigrator getDataMigrator();
 
-    void setUseCache( boolean useCache );
+    void setUseCache(boolean useCache);
 
     boolean getUseCache();
 
     Set<CatalogEntity> getCatalogTables();
+
+    void setAcceptsOutdated(boolean acceptsOutdated);
+
+    boolean acceptsOutdated();
+
+    AccessMode getAccessMode();
+
+    void updateAccessMode(AccessMode accessCandidate);
 
     /**
      * Flavor, how multimedia results should be returned from a store.
      */
     enum MultimediaFlavor {
         DEFAULT, FILE
+    }
+
+
+    /**
+     * Transaction Access mode.
+     */
+    enum AccessMode {
+
+        /**
+         * Transaction does not access anything.
+         */
+        NO_ACCESS,
+
+        /**
+         * Transaction is read only.
+         */
+        READ_ACCESS,
+
+        /**
+         * Transaction is used for write only.
+         */
+        WRITE_ACCESS,
+
+        /**
+         * Transaction is used for both read and write.
+         */
+        READWRITE_ACCESS
     }
 
 }

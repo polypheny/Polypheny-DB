@@ -20,12 +20,6 @@ package org.polypheny.db.catalog;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.annotations.SerializedName;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -33,64 +27,21 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogGraphMapping;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.MaterializedCriteria;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 
 public abstract class Catalog {
@@ -100,7 +51,7 @@ public abstract class Catalog {
     public static int defaultUserId = 0;
     public static long defaultDatabaseId = 0;
     public static boolean resetDocker;
-    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+    protected final PropertyChangeSupport listeners = new PropertyChangeSupport(this);
     public boolean isPersistent = false;
     public static Catalog INSTANCE = null;
     public static boolean resetCatalog;
@@ -1152,7 +1103,6 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
-
     /**
      * Retrieves a list of partitions which are associated with a specific table
      *
@@ -1359,17 +1309,36 @@ public abstract class Catalog {
      * Returns all DataPlacements of a given table that are associated with a given role.
      *
      * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
+     * @param role    role to specifically filter
      * @return List of all DataPlacements for the table that are associated with a specific role
      */
-    public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
+    public abstract List<CatalogDataPlacement> getDataPlacementsByRole(long tableId, DataPlacementRole role);
+
+    /**
+     * Returns all PartitionPlacements of a given table that are associated with a given role.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param role    role to specifically filter
+     * @return List of all PartitionPlacements for the table that are associated with a specific role
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByRole(long tableId, DataPlacementRole role);
+
+    /**
+     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
+     *
+     * @param tableId     table to retrieve the placements from
+     * @param role        role to specifically filter
+     * @param partitionId filter by ID
+     * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
+     */
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole(long tableId, long partitionId, DataPlacementRole role);
 
     /**
      * Checks if the planned changes are allowed in term sof placements that need to be present
      *
-     * @param tableId Table to be checked
-     * @param adapterId Adapter to be checked
-     * @param columnIdsToBeRemoved columns that shall be removed
+     * @param tableId                  Table to be checked
+     * @param adapterId                Adapter to be checked
+     * @param columnIdsToBeRemoved     columns that shall be removed
      * @param partitionsIdsToBeRemoved partitions that shall be removed
      * @return true if these changes can be made to the data placement, false if not
      */
@@ -1392,19 +1361,19 @@ public abstract class Catalog {
      * @param tableId table to be checked
      * @return If table is flagged for deletion or not
      */
-    public abstract boolean isTableFlaggedForDeletion( long tableId );
+    public abstract boolean isTableFlaggedForDeletion(long tableId);
 
     /**
      * Adds a placement for a partition.
      *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param tableId The table for which a partition placement shall be created
-     * @param partitionId The id of a specific partition that shall create a new placement
-     * @param placementType The type of placement
+     * @param adapterId          The adapter on which the table should be placed on
+     * @param tableId            The table for which a partition placement shall be created
+     * @param partitionId        The id of a specific partition that shall create a new placement
+     * @param placementType      The type of placement
      * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName The table name on the adapter
+     * @param physicalTableName  The table name on the adapter
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName );
+    public abstract void addPartitionPlacement(int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store
