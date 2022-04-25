@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -36,8 +19,8 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -46,13 +29,13 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 /**
  * MultiJoinProjectTransposeRule implements the rule for pulling
- * {@link org.polypheny.db.algebra.logical.LogicalProject}s that are on top of a
+ * {@link LogicalProject}s that are on top of a
  * {@link MultiJoin} and beneath a
- * {@link org.polypheny.db.algebra.logical.LogicalJoin} so the
- * {@link org.polypheny.db.algebra.logical.LogicalProject} appears above the
- * {@link org.polypheny.db.algebra.logical.LogicalJoin}.
+ * {@link LogicalJoin} so the
+ * {@link LogicalProject} appears above the
+ * {@link LogicalJoin}.
  *
- * In the process of doing so, also save away information about the respective fields that are referenced in the expressions in the {@link org.polypheny.db.algebra.logical.LogicalProject} we're pulling up, as
+ * In the process of doing so, also save away information about the respective fields that are referenced in the expressions in the {@link LogicalProject} we're pulling up, as
  * well as the join condition, in the resultant {@link MultiJoin}s
  *
  * For example, if we have the following sub-query:
@@ -64,7 +47,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  *
  * Note that by only pulling up projects that are on top of {@link MultiJoin}s, we preserve projections on top of row scans.
  *
- * See the superclass for details on restrictions regarding which {@link org.polypheny.db.algebra.logical.LogicalProject}s cannot be pulled.
+ * See the superclass for details on restrictions regarding which {@link LogicalProject}s cannot be pulled.
  */
 public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
 

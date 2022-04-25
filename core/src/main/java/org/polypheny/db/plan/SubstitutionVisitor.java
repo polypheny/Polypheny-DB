@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -59,12 +42,12 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.mutable.Holder;
 import org.polypheny.db.algebra.mutable.MutableAggregate;
 import org.polypheny.db.algebra.mutable.MutableAlg;
@@ -1017,7 +1000,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches {@link org.polypheny.db.algebra.logical.LogicalProject}.
+     * Implementation of {@link UnifyRule} that matches {@link LogicalProject}.
      */
     private static class ProjectToProjectUnifyRule extends AbstractUnifyRule {
 
@@ -1212,7 +1195,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches a {@link org.polypheny.db.algebra.logical.LogicalAggregate} to a {@link org.polypheny.db.algebra.logical.LogicalAggregate},
+     * Implementation of {@link UnifyRule} that matches a {@link LogicalAggregate} to a {@link LogicalAggregate},
      * provided that they have the same child.
      */
     private static class AggregateToAggregateUnifyRule extends AbstractUnifyRule {
@@ -1620,7 +1603,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Rule that converts a {@link org.polypheny.db.algebra.logical.LogicalFilter} on top of a {@link org.polypheny.db.algebra.logical.LogicalProject}
+     * Rule that converts a {@link LogicalFilter} on top of a {@link LogicalProject}
      * into a trivial filter (on a boolean column).
      */
     public static class FilterOnProjectRule extends AlgOptRule {

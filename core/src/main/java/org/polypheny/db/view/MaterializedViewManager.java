@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;

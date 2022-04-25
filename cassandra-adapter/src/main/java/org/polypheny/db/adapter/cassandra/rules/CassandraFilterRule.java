@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.cassandra.util.CassandraUtils;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -44,7 +45,7 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link CassandraFilter}.
+ * Rule to convert a {@link LogicalFilter} to a {@link CassandraFilter}.
  */
 @Slf4j
 public class CassandraFilterRule extends CassandraConverterRule {

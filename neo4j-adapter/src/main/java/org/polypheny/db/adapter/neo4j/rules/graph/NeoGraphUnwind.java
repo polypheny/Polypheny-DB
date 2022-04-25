@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.graph.GraphUnwind;
+import org.polypheny.db.algebra.core.graph.GraphUnwind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;

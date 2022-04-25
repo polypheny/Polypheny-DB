@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
+import org.polypheny.db.algebra.core.graph.GraphUnwind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -37,7 +38,6 @@ public class LogicalGraphUnwind extends GraphUnwind {
      */
     public LogicalGraphUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, input, index, alias );
-
     }
 
 

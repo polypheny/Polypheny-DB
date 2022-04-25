@@ -18,8 +18,8 @@ package org.polypheny.db.adapter.enumerable;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.logical.LogicalModify;
-import org.polypheny.db.algebra.logical.LogicalStreamer;
+import org.polypheny.db.algebra.logical.common.LogicalStreamer;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.Convention;

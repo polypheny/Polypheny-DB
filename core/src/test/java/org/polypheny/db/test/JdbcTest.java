@@ -20,7 +20,7 @@ package org.polypheny.db.test;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.logical.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare;

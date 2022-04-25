@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
@@ -128,7 +128,7 @@ public class CassandraRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link CassandraFilter}.
+     * Rule to convert a {@link LogicalFilter} to a {@link CassandraFilter}.
      */
     private static class CassandraFilterRuleOld extends AlgOptRule {
 
@@ -253,7 +253,7 @@ public class CassandraRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link CassandraProject}.
+     * Rule to convert a {@link LogicalProject} to a {@link CassandraProject}.
      */
     private static class CassandraProjectRuleOld extends CassandraConverterRule {
 

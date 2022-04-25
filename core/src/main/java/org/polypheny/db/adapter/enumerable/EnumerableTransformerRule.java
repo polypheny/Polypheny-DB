@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.LogicalTransformer;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 

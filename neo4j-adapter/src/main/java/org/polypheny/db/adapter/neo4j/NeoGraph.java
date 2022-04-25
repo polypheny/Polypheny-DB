@@ -41,7 +41,7 @@ import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.graph.GraphModify;
+import org.polypheny.db.algebra.core.graph.GraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;

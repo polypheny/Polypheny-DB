@@ -20,7 +20,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.graph.GraphModify;
+import org.polypheny.db.algebra.core.graph.GraphModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgOptCluster;

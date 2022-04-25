@@ -17,8 +17,8 @@
 package org.polypheny.db.routing;
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.transaction.Statement;
 
 

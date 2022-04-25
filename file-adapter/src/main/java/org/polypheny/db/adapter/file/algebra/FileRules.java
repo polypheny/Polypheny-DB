@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
