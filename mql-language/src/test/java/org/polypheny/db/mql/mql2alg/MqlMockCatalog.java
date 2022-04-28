@@ -17,8 +17,13 @@
 package org.polypheny.db.languages.mql2alg;
 
 import org.polypheny.db.catalog.MockCatalog;
+import org.polypheny.db.catalog.entity.CatalogProcedure;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
+
+import java.util.Collections;
+import java.util.List;
 
 
 public class MqlMockCatalog extends MockCatalog {
@@ -33,5 +38,21 @@ public class MqlMockCatalog extends MockCatalog {
     public CatalogUser getUser( int userId ) {
         return new CatalogUser( 0, "name", "name", 1 );
     }
+
+    @Override
+    public void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) {
+
+    }
+
+    @Override
+    public List<CatalogProcedure> getProcedures(Long schemaId) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public CatalogProcedure getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException {
+        return new CatalogProcedure(1L, "myProcedure", 2L, 3L, "");
+    }
+
 
 }

@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogProcedure;
+import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
 
 /**
  * This is a bare-bone catalog which allows to mock register adapters
@@ -49,6 +50,11 @@ public class MockCatalogDocker extends MockCatalog {
 
     @Override
     public List<CatalogProcedure> getProcedures(Long schemaId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CatalogProcedure getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException {
         throw new UnsupportedOperationException();
     }
 

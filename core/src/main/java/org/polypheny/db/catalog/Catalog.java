@@ -34,36 +34,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Transaction;
@@ -1587,6 +1558,9 @@ public abstract class Catalog {
     public abstract void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments);
 
     public abstract List<CatalogProcedure> getProcedures(Long schemaId);
+
+
+    public abstract CatalogProcedure getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException;
 
 
     public enum TableType {

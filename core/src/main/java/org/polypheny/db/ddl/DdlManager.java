@@ -481,6 +481,12 @@ public abstract class DdlManager {
 
 
     /**
+     * Execute a procedure
+     * @param procedureName the name of the procedure to execute
+     */
+    public abstract void executeProcedure(long databaseId, long schemaId, String procedureName);
+
+    /**
      * Add new partitions for the column
      *
      * @param partitionInfo the information concerning the partition

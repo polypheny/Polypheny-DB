@@ -61,30 +61,7 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionGroupIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionPlacementException;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
@@ -148,6 +125,8 @@ public class CatalogImpl extends Catalog {
     // Container Object that contains all other placements
     private static BTreeMap<Object[], CatalogDataPlacement> dataPlacements; // (AdapterId, TableId) -> CatalogDataPlacement
     private static BTreeMap<Long, CatalogProcedure> procedures;
+
+    private static BTreeMap<Object[], CatalogProcedure> procedureNames;
 
     private static Long openTable;
 
@@ -892,6 +871,26 @@ public class CatalogImpl extends Catalog {
         CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, query, arguments);
         synchronized (this) {
             procedures.put(id, procedure);
+            procedureNames.put(new Object[]{databaseId, schemaId, procedureName}, procedure);
+        }
+    }
+
+    /**
+     * Returns the procedure with the given name in the specified schema.
+     *
+     * @param databaseId    The id of the database
+     * @param schemaId      The id of the schema
+     * @param procedureName The name of the procedure
+     * @return The table
+     * @throws UnknownTableException If there is no procedure with this name in the specified database and schema.
+     */
+    @Override
+    public CatalogProcedure getProcedure(long databaseId, long schemaId, String procedureName ) throws UnknownProcedureException {
+        try {
+            CatalogSchema schema = getSchema( schemaId );
+            return Objects.requireNonNull( procedureNames.get( new Object[]{ schema.databaseId, schemaId, procedureName } ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownProcedureException(databaseId, schemaId, procedureName);
         }
     }
 

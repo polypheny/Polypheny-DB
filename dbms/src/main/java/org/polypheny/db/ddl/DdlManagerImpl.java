@@ -62,22 +62,7 @@ import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.ddl.exception.AlterSourceException;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
@@ -1730,6 +1715,14 @@ public class DdlManagerImpl extends DdlManager {
 
     public void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments) throws GenericCatalogException, UnknownColumnException {
         catalog.addProcedure(schemaId, procedureName, databaseId, query, arguments);
+    }
+
+    public void executeProcedure(long databaseId, long schemaId, String procedureName) {
+        try {
+            catalog.getProcedure(databaseId, schemaId, procedureName);
+        } catch (UnknownProcedureException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

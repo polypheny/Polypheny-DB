@@ -3795,7 +3795,7 @@ public class Crud implements InformationObserver {
         AlgRoot logicalRoot = null;
         QueryParameters parameters = new QueryParameters( sql, SchemaType.RELATIONAL );
         if ( parsed.isA( Kind.DDL ) ) {
-            result = sqlProcessor.prepareDdl( statement, parsed, parameters );
+            result = sqlProcessor.prepareDdl(statement, parsed, parameters);
         } else {
             if ( isAnalyze ) {
                 statement.getOverviewDuration().start( "Validation" );
