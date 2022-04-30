@@ -101,7 +101,8 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
-                    EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE );
+                    EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_TRANSFORMER_RULE );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(

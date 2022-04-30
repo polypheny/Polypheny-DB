@@ -195,7 +195,7 @@ public class CatalogTest {
         catalog.setTableOwner( tableId, newUserId );
 
         assertEquals( catalog.getTable( tableId ).ownerId, newUserId );
-        assertEquals( catalog.getTable( tableId ).ownerName, newUserName );
+        assertEquals( catalog.getUser( catalog.getTable( tableId ).ownerId ).name, newUserName );
 
         // test change primary
         List<String> columnNames = new ArrayList<>( Arrays.asList( "column1", "column2" ) );

@@ -253,15 +253,15 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
     @RequiredArgsConstructor
     public static class PrimitiveCatalogTable {
 
-        public final String entityCat;
-        public final String entityNamesp;
-        public final String entityName;
-        public final String entityType;
+        public final String tableCat;
+        public final String tableSchem;
+        public final String tableName;
+        public final String tableType;
         public final String remarks;
         public final String typeCat;
-        public final String typeNamesp;
+        public final String typeSchem;
         public final String typeName;
-        public final String selfReferencingFieldName;
+        public final String selfReferencingColName;
         public final String refGeneration;
         public final String owner;
 

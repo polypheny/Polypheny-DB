@@ -70,6 +70,9 @@ public class AlgJson {
     public static final List<String> PACKAGES =
             ImmutableList.of(
                     "org.polypheny.db.algebra.",
+                    "org.polypheny.db.algebra.relational.",
+                    "org.polypheny.db.algebra.document.",
+                    "org.polypheny.db.algebra.graph.",
                     "org.polypheny.db.algebra.core.",
                     "org.polypheny.db.algebra.logical.",
                     "org.polypheny.db.algebra.logical.graph.",

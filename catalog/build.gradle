@@ -5,6 +5,7 @@ dependencies {
     implementation project(":core")
     implementation project(":sql-language")
     implementation project(":mql-language")
+    implementation project(":jdbc-adapter")
 
     implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
 

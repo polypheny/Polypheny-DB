@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
-import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -214,13 +213,5 @@ public final class CatalogColumn implements CatalogObject, Comparable<CatalogCol
 
     }
 
-
-    public CatalogColumn substituteUnsupportedTypes( List<PolyType> unsupportedTypes ) {
-        if ( unsupportedTypes.contains( type ) ) {
-            return new CatalogColumn( id, name, tableId, schemaId, databaseId, position, PolyType.BINARY, collectionsType, 2024, null, null, cardinality, nullable, collation, defaultValue );
-        } else {
-            return this;
-        }
-    }
 
 }

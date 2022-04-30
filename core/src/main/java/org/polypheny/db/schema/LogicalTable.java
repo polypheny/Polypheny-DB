@@ -46,7 +46,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private AlgProtoDataType protoRowType;
 
     @Getter
-    private final NamespaceType namespaceType;
+    private final NamespaceType schemaType;
 
     @Getter
     private final String logicalSchemaName;
@@ -69,7 +69,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
             List<Long> columnIds,
             List<String> logicalColumnNames,
             AlgProtoDataType protoRowType,
-            NamespaceType namespaceType ) {
+            NamespaceType schemaType ) {
         super( Object[].class );
         this.tableId = tableId;
         this.logicalSchemaName = logicalSchemaName;
@@ -77,7 +77,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
         this.columnIds = columnIds;
         this.logicalColumnNames = logicalColumnNames;
         this.protoRowType = protoRowType;
-        this.namespaceType = namespaceType;
+        this.schemaType = schemaType;
     }
 
 

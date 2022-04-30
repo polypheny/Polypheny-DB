@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,10 +90,10 @@ public final class CatalogNamespace implements CatalogObject, Comparable<Catalog
     @RequiredArgsConstructor
     public class PrimitiveCatalogSchema {
 
-        public final String entityNamesp;
-        public final String entityCatalog;
+        public final String tableSchem;
+        public final String tableCatalog;
         public final String owner;
-        public final String namespaceType;
+        public final String schemaType;
 
     }
 

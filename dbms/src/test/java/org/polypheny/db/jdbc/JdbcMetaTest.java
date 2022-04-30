@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "TABLE_TYPE", rsmd.getColumnName( 1 ) );
 
             // Check data
-            final List<Object[]> tableTypeTable = ImmutableList.of( new Object[]{ "TABLE" }, new Object[]{ "SOURCE" }, new Object[]{ "VIEW" }, new Object[]{ "MATERIALIZED_VIEW" } );
+            final List<Object[]> tableTypeTable = ImmutableList.of( new Object[]{ "ENTITY" }, new Object[]{ "SOURCE" }, new Object[]{ "VIEW" }, new Object[]{ "MATERIALIZED_VIEW" } );
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getTableTypes(),
