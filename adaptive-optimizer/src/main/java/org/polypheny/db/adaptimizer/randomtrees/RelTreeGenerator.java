@@ -23,4 +23,10 @@ public interface RelTreeGenerator {
 
     AlgNode generate( Statement statement );
 
+    int getNodeCounter();
+
+    long getTreeGenTime();
+
+    String getStringRep();
+
 }

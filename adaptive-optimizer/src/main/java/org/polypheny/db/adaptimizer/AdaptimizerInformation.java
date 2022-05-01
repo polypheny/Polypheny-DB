@@ -16,9 +16,18 @@
 
 package org.polypheny.db.adaptimizer;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.MetaImpl;
+import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adaptimizer.environment.DataGenerator;
 import org.polypheny.db.adaptimizer.environment.DataTableOptionTemplate;
 import org.polypheny.db.adaptimizer.environment.DefaultTestEnvironment;
@@ -27,8 +36,15 @@ import org.polypheny.db.adaptimizer.except.TestDataGenerationException;
 import org.polypheny.db.adaptimizer.randomtrees.RelRandomTreeGenerator;
 import org.polypheny.db.adaptimizer.randomtrees.RandomTreeTemplateBuilder;
 import org.polypheny.db.adaptimizer.randomtrees.RelRandomTreeTemplate;
+import org.polypheny.db.adaptimizer.randomtrees.RelRandomTreeTemplates;
+import org.polypheny.db.adaptimizer.randomtrees.TreeGenerator;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -37,8 +53,14 @@ import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.Processor;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class AdaptimizerInformation {
@@ -65,9 +87,19 @@ public class AdaptimizerInformation {
     public static void addInformationGroupForRandomTreeGeneration() {
         InformationGroup informationGroup = new InformationGroup(page, "Random Tree Generation");
         informationManager.addGroup( informationGroup );
+
         InformationAction action = new InformationAction( informationGroup, "Generate Random Tree on Test Data", parameters -> generateRandomTree() );
         informationGroup.addInformation(  action );
         informationManager.registerInformation( action );
+
+        InformationAction action2 = new InformationAction( informationGroup, "Run Tree Generator", parameters -> testTreeGenerator() );
+        informationGroup.addInformation(  action2 );
+        informationManager.registerInformation( action2 );
+
+        InformationAction action3 = new InformationAction( informationGroup, "Try random Queries", parameters -> tryRandomQueries() );
+        informationGroup.addInformation(  action3 );
+        informationManager.registerInformation( action3 );
+
         page.addGroup( informationGroup );
         randomTreeGenGroup = informationGroup;
     }
@@ -75,9 +107,11 @@ public class AdaptimizerInformation {
     public static void addInformationGroupForTestDataGeneration() {
         InformationGroup informationGroup = new InformationGroup(page, "Random Record Generation");
         informationManager.addGroup( informationGroup );
+
         InformationAction action = new InformationAction( informationGroup, "Fill Default Test Schema with Dummy Data", parameters -> generateTestData() );
         informationGroup.addInformation(  action );
         informationManager.registerInformation( action );
+
         page.addGroup( informationGroup );
         testDataGenGroup = informationGroup;
     }
@@ -135,26 +169,97 @@ public class AdaptimizerInformation {
 
 
     private static String generateRandomTree() {
+        log.debug( "Generating Random Tree..." );
         Catalog catalog = Catalog.getInstance();
         Transaction transaction = getTransaction( catalog );
-        RelRandomTreeTemplate relRandomTreeTemplate = new RandomTreeTemplateBuilder( catalog )
-                .addTable( catalog.getTable( DefaultTestEnvironment.CUSTOMERS_TABLE_ID ) )
-                .addTable(  catalog.getTable( DefaultTestEnvironment.ORDERS_TABLE_ID ) )
-                .addTable( catalog.getTable( DefaultTestEnvironment.PRODUCTS_TABLE_ID )  )
-                .addTable( catalog.getTable( DefaultTestEnvironment.PURCHASES_TABLE_ID ) )
-                .addTable( catalog.getTable( DefaultTestEnvironment.SHIPMENTS_TABLE_ID ) )
-                .addOperator( "Join", 10 )
-                .addOperator( "Sort", 20 )
-                .addOperator( "Project", 20 )
-                .addOperator( "Filter", 10 )
-                .setSchemaName( DefaultTestEnvironment.SCHEMA_NAME )
-                .setMaxHeight( 10 )
-                .build();
+        RelRandomTreeTemplate relRandomTreeTemplate = RelRandomTreeTemplates.getRelRandomTreeTemplate( catalog );
         RelRandomTreeGenerator presetTreeGenerator = new RelRandomTreeGenerator( relRandomTreeTemplate );
-        AlgNode node = presetTreeGenerator.generate( transaction.createStatement() );
+
+        for ( int i = 0; i < 1000; i++ ) {
+            AlgNode node = presetTreeGenerator.generate( transaction.createStatement() );
+        }
+
         return "Success";
     }
 
+    private static String testTreeGenerator() {
+        log.debug( "Testing Tree Generator..." );
+        Catalog catalog = Catalog.getInstance();
+        RelRandomTreeTemplate relRandomTreeTemplate = RelRandomTreeTemplates.getRelRandomTreeTemplate( catalog );
+
+        TreeGenerator treeGenerator = new TreeGenerator( catalog, transactionManager, relRandomTreeTemplate );
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.stop();
+        Stream.generate( treeGenerator ).limit( 10000 ).forEach( algNode -> {} );
+        stopWatch.stop();
+
+        log.debug( "STATS" );
+        log.debug( "Time passed: {}ms", stopWatch.getTime() );
+        log.debug( "{} total nodes generated", treeGenerator.getTreeNodeCounter() );
+        log.debug( "{}ms average time per tree", treeGenerator.getAvgTime() );
+        log.debug( "{}ms generation time", treeGenerator.getTime() );
+        log.debug( "{}ms average time per success", treeGenerator.getTime() / treeGenerator.getSuccessCounter() );
+        log.debug( "{} successes", treeGenerator.getSuccessCounter() );
+        log.debug( "{} failures", treeGenerator.getFailureCounter() );
+        log.debug( "{}% failures", treeGenerator.getFailureRate() );
+        log.debug( "{}% successes", 100 - treeGenerator.getFailureRate() );
+
+        return "Done.";
+    }
+
+
+    private static String tryRandomQueries() {
+        log.debug( "Run random queries..." );
+        Catalog catalog = Catalog.getInstance();
+        RelRandomTreeTemplate relRandomTreeTemplate = RelRandomTreeTemplates.getRelRandomTreeTemplate( catalog );
+
+        TreeGenerator treeGenerator = new TreeGenerator( catalog, transactionManager, relRandomTreeTemplate );
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        int nrOfExecutions = 100;
+        int errors = 0;
+        for ( int i = 0; i < nrOfExecutions; i++ ) {
+
+            Pair<Statement, AlgNode> pair = treeGenerator.get();
+
+            try {
+                log.debug( "Executing AlgNode:\n {}", treeGenerator.getStringRep() );
+                executeTree( pair.left, pair.right );
+                log.debug( "Succeeded!" );
+            } catch ( Exception e ) {
+                log.debug( "Failed!", e );
+                ++errors;
+            }
+
+            try {
+                treeGenerator.getCurrentTransaction().commit();
+            } catch ( TransactionException ignore ) {
+                //ignore
+            }
+
+        }
+
+        log.debug( "Executions: {}", nrOfExecutions );
+        log.debug( "Errors: {}", errors );
+
+        return "Done.";
+    }
+
+
+    private static void executeTree(Statement statement, AlgNode algNode ) {
+        AlgRoot logicalRoot = AlgRoot.of( algNode, Kind.SELECT );
+        PolyResult polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+
+        Iterator<Object> iterator = PolyResult.enumerable( polyResult.getBindable() , statement.getDataContext() ).iterator();
+        try {
+            List<List<Object>> res = MetaImpl.collect( polyResult.getCursorFactory(), iterator, new ArrayList<>() );
+        } catch ( Exception e ) {
+            throw new TestDataGenerationException( "Could not execute insert query", e );
+        }
+
+    }
 
 
     private static Transaction getTransaction( Catalog catalog ) {
@@ -164,7 +269,7 @@ public class AdaptimizerInformation {
                     catalog.getUser( Catalog.defaultUserId ).name,
                     catalog.getDatabase( Catalog.defaultDatabaseId ).name,
                     false,
-                    null
+                    "Adaptimizer Information"
             );
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             e.printStackTrace();

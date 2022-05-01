@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 
@@ -64,6 +65,8 @@ public class DefaultTestEnvironment {
     public static final String SHIPMENTS_TABLE_NAME = "shipments";
     public static final String PURCHASES_TABLE_NAME = "purchases";
 
+
+    // Todo public static -> camel case
     // Schema ID
     public static Long SCHEMA_ID;
 
@@ -329,7 +332,7 @@ public class DefaultTestEnvironment {
                     catalog.getUser( Catalog.defaultUserId ).name,
                     catalog.getDatabase( Catalog.defaultDatabaseId ).name,
                     false,
-                    null
+                    "Adaptimizer - DefaultTestEnvironment"
             );
 
             Adapter hsqldbAdapter = addHsqldbAdapter();
@@ -347,9 +350,13 @@ public class DefaultTestEnvironment {
                     transaction
             );
 
+            transaction.commit();
+
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             log.error( "Data placement Creation Failed", e );
             return "Failed.";
+        } catch ( TransactionException e ) {
+            e.printStackTrace();
         }
 
         return "Done.";

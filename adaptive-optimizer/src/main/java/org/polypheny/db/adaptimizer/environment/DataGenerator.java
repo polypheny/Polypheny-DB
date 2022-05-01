@@ -172,7 +172,7 @@ public class DataGenerator {
 
             if ( postpone ) {
                 this.tableQueue.add( template );
-                continue;
+                continue; // end iteration here
             }
 
             generateDataForTable( template, testRecordSupplierBuilder.build(), referenceDataMap );
@@ -258,7 +258,7 @@ public class DataGenerator {
                     catalog.getUser( Catalog.defaultUserId ).name,
                     catalog.getDatabase( Catalog.defaultDatabaseId ).name,
                     false,
-                    null
+                    "Adaptimizer - DataGenerator"
             );
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             e.printStackTrace();

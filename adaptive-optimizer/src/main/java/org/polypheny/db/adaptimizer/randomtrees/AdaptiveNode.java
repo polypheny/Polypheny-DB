@@ -17,11 +17,13 @@
 package org.polypheny.db.adaptimizer.randomtrees;
 
 
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.http.model.SortState;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -29,6 +31,12 @@ import org.polypheny.db.http.model.SortState;
  * Model for a {@link AlgNode} coming from the RelAlg-Builder in the AdaptiveOptimizer context.
  */
 public class AdaptiveNode {
+
+    public AdaptiveNode() {}
+
+    public AdaptiveNode( int depth ) {
+        this.depth = depth;
+    }
 
     /**
      * Type of the AlgNode, e.g. TableScan
@@ -86,9 +94,52 @@ public class AdaptiveNode {
     @Getter
     private AdaptiveTableRecord adaptiveTableRecord;
 
+    @Getter
+    @Setter
+    private int depth;
+
 
     public void setAdaptiveTableRecord( AdaptiveTableRecord adaptiveTableRecord ) {
         this.adaptiveTableRecord = adaptiveTableRecord;
+    }
+
+    public void resetAdaptiveTableRecord() {
+        this.adaptiveTableRecord = AdaptiveTableRecord.from( children[ 0 ].getAdaptiveTableRecord() );
+    }
+
+    public static void insertProjection( AdaptiveNode node ) {
+        insertProjection( node, 0 );
+    }
+
+    public static void insertProjections( AdaptiveNode node ) {
+        insertProjection( node, 0 );
+        insertProjection( node, 1 );
+    }
+
+    private static void insertProjection( AdaptiveNode node, int i ) {
+        AdaptiveNode tmp = node.children[ i ];
+
+        AdaptiveNode projectionNode = new AdaptiveNode();
+        projectionNode.children = new AdaptiveNode[] { tmp, null };
+        projectionNode.inputCount = 1;
+        projectionNode.type = "Project";
+        projectionNode.setAdaptiveTableRecord( AdaptiveTableRecord.from( tmp.getAdaptiveTableRecord() ) );
+
+        projectionNode.setDepth( node.getDepth() );
+        incrementDepth( projectionNode );
+
+        node.children[ i ] = projectionNode;
+    }
+
+    private static void incrementDepth( AdaptiveNode node ) {
+        node.setDepth( node.getDepth() + 1 );
+        if ( node.children == null ) {
+            return;
+        }
+        incrementDepth( node.children[ 0 ] );
+        if ( node.children[ 1 ] != null ) {
+            incrementDepth( node.children[ 1 ] );
+        }
     }
 
 }

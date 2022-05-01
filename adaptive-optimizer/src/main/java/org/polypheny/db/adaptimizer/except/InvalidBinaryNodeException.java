@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.randomtrees;
+package org.polypheny.db.adaptimizer.except;
 
-import java.io.Serializable;
-import java.util.List;
+public class InvalidBinaryNodeException extends AdaptiveOptTreeGenException {
 
-public interface TableRecord extends Serializable {
-
-    String getTableName();
-    List<String> getColumns();
-    void setColumns( List<String> columns );
+    public InvalidBinaryNodeException( String message, Throwable cause ) {
+        super( message, cause );
+    }
 
 }

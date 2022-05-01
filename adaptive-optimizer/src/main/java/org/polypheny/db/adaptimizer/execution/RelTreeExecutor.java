@@ -52,7 +52,6 @@ public class RelTreeExecutor {
         this.transactionManager = transactionManager;
     }
 
-
     private ExecutionMeasurement executeTree( Statement statement, AlgNode result ) throws CatalogException {
         Transaction transaction = transactionManager.startTransaction( this.user, this.database, false, null );
 
