@@ -16,7 +16,7 @@
 
 package org.polypheny.db.adaptimizer.randomtrees;
 
-import org.polypheny.db.adaptimizer.environment.DefaultTestEnvironment;
+import org.polypheny.db.adaptimizer.randomschema.DefaultTestEnvironment;
 import org.polypheny.db.catalog.Catalog;
 
 public class RelRandomTreeTemplates {
@@ -24,11 +24,11 @@ public class RelRandomTreeTemplates {
     public static RelRandomTreeTemplate getRelRandomTreeTemplate( Catalog catalog ) {
         return new RandomTreeTemplateBuilder( catalog )
                 .setSchemaName( DefaultTestEnvironment.SCHEMA_NAME )
-                .addTable( catalog.getTable( DefaultTestEnvironment.CUSTOMERS_TABLE_ID ) )
-                .addTable( catalog.getTable( DefaultTestEnvironment.ORDERS_TABLE_ID ) )
-                .addTable( catalog.getTable( DefaultTestEnvironment.PRODUCTS_TABLE_ID )  )
-                .addTable( catalog.getTable( DefaultTestEnvironment.PURCHASES_TABLE_ID ) )
-                .addTable( catalog.getTable( DefaultTestEnvironment.SHIPMENTS_TABLE_ID ) )
+                .addTable( DefaultTestEnvironment.customers )
+                .addTable( DefaultTestEnvironment.orders )
+                .addTable( DefaultTestEnvironment.products  )
+                .addTable( DefaultTestEnvironment.shipments )
+                .addTable( DefaultTestEnvironment.purchases )
                 .addBinaryOperator( "Join", 5 )
                 .addBinaryOperator( "Union", 15 )
                 .addBinaryOperator( "Intersect", 7 )
@@ -37,7 +37,7 @@ public class RelRandomTreeTemplates {
                 .addUnaryOperator( "Project", 10 )
                 .addUnaryOperator( "Filter", 20 )
                 .setUnaryProbability( 0.5f )
-                .setSeed( 1338 )
+                .setSeed( 543774 )
                 .setMaxHeight( 5 )
                 .build();
     }

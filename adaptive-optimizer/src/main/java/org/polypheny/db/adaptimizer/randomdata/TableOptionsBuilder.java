@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.environment;
+package org.polypheny.db.adaptimizer.randomdata;
 
 import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.commons.lang3.builder.Builder;
-import org.polypheny.db.adaptimizer.except.TestDataGenerationException;
+import org.polypheny.db.adaptimizer.randomdata.except.TestDataGenerationException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;

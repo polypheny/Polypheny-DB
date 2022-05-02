@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.except;
+package org.polypheny.db.adaptimizer.randomtrees.except;
 
 import org.polypheny.db.runtime.PolyphenyDbException;
 

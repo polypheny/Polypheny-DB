@@ -16,11 +16,12 @@
 
 package org.polypheny.db.adaptimizer.randomtrees;
 
-import java.util.ArrayList;
 import java.util.Stack;
 import java.util.function.Supplier;
+import java.util.stream.LongStream;
 import lombok.Getter;
-import org.polypheny.db.adaptimizer.except.TestDataGenerationException;
+import org.apache.commons.lang3.tuple.Triple;
+import org.polypheny.db.adaptimizer.randomdata.except.TestDataGenerationException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -29,14 +30,18 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 
-public class TreeGenerator implements Supplier<Pair<Statement, AlgNode>> {
+/**
+ * Wrapper for the RelRandomTreeGenerator.
+ */
+public class TreeGenerator implements Supplier<Triple<Statement, AlgNode, Long>> {
 
     private final Catalog catalog;
     private final TransactionManager transactionManager;
-    private final RelTreeGenerator relTreeGenerator;
+    private final RelRandomTreeGenerator relTreeGenerator;
 
     @Getter
     private Transaction currentTransaction;
@@ -59,7 +64,7 @@ public class TreeGenerator implements Supplier<Pair<Statement, AlgNode>> {
         this.catalog = catalog;
         this.transactionManager = transactionManager;
         this.relTreeGenerator = new RelRandomTreeGenerator( relRandomTreeTemplate );
-        this.currentTransaction = getTransaction( catalog );
+        this.currentTransaction = this.getTransaction( catalog );
 
         this.treeGenTimes = new Stack<>();
         this.successCounter = 0;
@@ -67,32 +72,15 @@ public class TreeGenerator implements Supplier<Pair<Statement, AlgNode>> {
         this.treeNodeCounter = 0;
     }
 
-    public double getTime() {
-        return this.treeGenTimes.stream().mapToLong( l -> l ).sum();
-    }
-
-    public double getAvgTime() {
-        return ( float ) this.treeGenTimes.stream().mapToLong( l -> l ).sum() / this.treeGenTimes.size();
-    }
-
-    public double getFailureRate() {
-        return ( ( float ) failureCounter / ( successCounter + failureCounter ) ) * 100;
-    }
-
-    public Transaction nextTransaction() {
-        this.currentTransaction = getTransaction( this.catalog );
-        return this.currentTransaction;
-    }
-
     @Override
-    public Pair<Statement, AlgNode> get() {
+    public Triple<Statement, AlgNode, Long> get() {
         Statement statement = this.currentTransaction.createStatement();
 
         --this.failureCounter;
-        AlgNode algNode = null;
-        while ( algNode == null ) {
+        Pair<AlgNode, Long> tree = new Pair<>( null, null );
+        while ( tree.left == null ) {
             ++this.failureCounter;
-            algNode = this.relTreeGenerator.generate( statement );
+            tree = this.relTreeGenerator.generate( statement );
             this.treeNodeCounter += this.relTreeGenerator.getNodeCounter();
             this.treeGenTimes.push( this.relTreeGenerator.getTreeGenTime() );
         }
@@ -100,7 +88,54 @@ public class TreeGenerator implements Supplier<Pair<Statement, AlgNode>> {
         ++this.successCounter;
         this.stringRep = this.relTreeGenerator.getStringRep();
 
-        return new Pair<>( statement, algNode );
+        return Triple.of( statement, tree.left, tree.right );
+    }
+
+
+    /**
+     * Sets the seed for the next tree generated.
+     */
+    public void setSeed( long seed ) {
+        this.relTreeGenerator.setSeed( seed );
+    }
+
+
+    private void nextTransaction() {
+        this.currentTransaction = getTransaction( this.catalog );
+    }
+
+
+    /**
+     * Commits the current transaction.
+     * @param next  If true, create a new transaction.
+     */
+    public void commitTransaction( boolean next ) {
+        try {
+            this.currentTransaction.commit();
+        } catch ( TransactionException e ) {
+            e.printStackTrace();
+            this.rollbackTransaction( next );
+        } finally {
+            if ( next ) {
+                this.nextTransaction();
+            }
+        }
+    }
+
+    /**
+     * Rolls back the current transaction.
+     * @param next  If true, create a new transaction.
+     */
+    public void rollbackTransaction( boolean next ) {
+        try {
+            this.currentTransaction.rollback();
+        } catch ( TransactionException e ) {
+            e.printStackTrace();
+        } finally {
+            if ( next ) {
+                this.nextTransaction();
+            }
+        }
     }
 
 
@@ -110,8 +145,8 @@ public class TreeGenerator implements Supplier<Pair<Statement, AlgNode>> {
             transaction = this.transactionManager.startTransaction(
                     catalog.getUser( Catalog.defaultUserId ).name,
                     catalog.getDatabase( Catalog.defaultDatabaseId ).name,
-                    false,
-                    null
+                    true,
+                    "TreeGenerator - getTransaction"
             );
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             e.printStackTrace();
@@ -120,6 +155,18 @@ public class TreeGenerator implements Supplier<Pair<Statement, AlgNode>> {
         return transaction;
     }
 
+
+    public double getTime() {
+        return this.treeGenTimes.stream().mapToLong( Long::longValue ).sum();
+    }
+
+    public double getAvgTime() {
+        return ( float ) this.treeGenTimes.stream().mapToLong( Long::longValue ).sum() / this.treeGenTimes.size();
+    }
+
+    public double getFailureRate() {
+        return ( ( float ) failureCounter / ( successCounter + failureCounter ) ) * 100;
+    }
 
 
 }

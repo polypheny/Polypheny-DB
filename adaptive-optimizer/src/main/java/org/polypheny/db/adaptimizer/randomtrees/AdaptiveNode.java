@@ -27,7 +27,6 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Copied from webui module...
  * Model for a {@link AlgNode} coming from the RelAlg-Builder in the AdaptiveOptimizer context.
  */
 public class AdaptiveNode {

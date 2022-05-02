@@ -17,7 +17,7 @@
 package org.polypheny.db.adaptimizer;
 
 
-import org.polypheny.db.adaptimizer.environment.DefaultTestEnvironment;
+import org.polypheny.db.adaptimizer.randomschema.DefaultTestEnvironment;
 
 /**
  * The {@link ReAdaptiveOptimizerImpl} is the base class of the Adaptive Optimizer

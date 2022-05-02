@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.environment;
+package org.polypheny.db.adaptimizer.randomdata;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.builder.Builder;
 import org.polypheny.db.PolyResult;
-import org.polypheny.db.adaptimizer.except.TestDataGenerationException;
+import org.polypheny.db.adaptimizer.randomdata.except.TestDataGenerationException;
+import org.polypheny.db.adaptimizer.randomschema.DefaultTestEnvironment;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
@@ -94,7 +95,7 @@ public class DataGenerator {
     private void searchColumnReferences( List<DataTableOptionTemplate> tables ) {
 
         for ( DataTableOptionTemplate template : tables ) {
-            List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( template.getCatalogTable().id );
+            List<CatalogForeignKey> foreignKeys = this.catalog.getForeignKeys( template.getCatalogTable().id );
 
             for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
                 DataTableOptionTemplate referencedTemplate = getTemplateForTableId( tables, catalogForeignKey.referencedKeyTableId );
@@ -139,15 +140,15 @@ public class DataGenerator {
             iteration++;
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Considering Table {}", catalog.getTable( template.getTableId() ).name );
+                log.debug( "Considering Table {}", this.catalog.getTable( template.getTableId() ).name );
             }
 
             //  First we build a DataRecordSupplier that will give random rows / records for the table in consideration.
-            DataRecordSupplierBuilder testRecordSupplierBuilder = new DataRecordSupplierBuilder( catalog, template );
+            DataRecordSupplierBuilder testRecordSupplierBuilder = new DataRecordSupplierBuilder( this.catalog, template );
 
 
             // Add all primary key options, these columns will have unique values.
-            for ( CatalogKey key : catalog.getTableKeys( template.getTableId() )) {
+            for ( CatalogKey key : this.catalog.getTableKeys( template.getTableId() )) {
                 if ( catalog.isPrimaryKey( key.id ) ) {
                     key.columnIds.forEach( testRecordSupplierBuilder::addPrimaryKeyOption );
                 }
@@ -191,7 +192,7 @@ public class DataGenerator {
         while ( rowCount <= template.getSize() ) {
             // Generate random records for buffer size
             List<List<Object>> data = Stream.generate( dataRecordSupplier ).limit(
-                    ( rowCount + buffer > template.getSize() ) ? rowCount + buffer - template.getSize() : buffer
+                    ( rowCount + this.buffer > template.getSize() ) ? rowCount + this.buffer - template.getSize() : this.buffer
             ).collect( Collectors.toList());
 
             for ( List<Object> objects : data ) {
@@ -204,7 +205,7 @@ public class DataGenerator {
             String query = getInsertQuery( template.getCatalogTable(), template.getCatalogColumns(), data );
             this.executeSqlInsert( transaction.createStatement(), query );
 
-            rowCount += buffer;
+            rowCount += this.buffer;
         }
 
         this.commitTransaction( transaction );
@@ -254,11 +255,11 @@ public class DataGenerator {
     private Transaction getTransaction() {
         Transaction transaction;
         try {
-            transaction = transactionManager.startTransaction(
-                    catalog.getUser( Catalog.defaultUserId ).name,
-                    catalog.getDatabase( Catalog.defaultDatabaseId ).name,
+            transaction = this.transactionManager.startTransaction(
+                    this.catalog.getUser( Catalog.defaultUserId ).name,
+                    this.catalog.getDatabase( Catalog.defaultDatabaseId ).name,
                     false,
-                    "Adaptimizer - DataGenerator"
+                    "DataGenerator"
             );
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             e.printStackTrace();
@@ -294,6 +295,58 @@ public class DataGenerator {
             polyResult.getRowsChanged( statement );
         } catch ( Exception e ) {
             throw new TestDataGenerationException( "Could not execute insert query", e );
+        }
+
+    }
+
+    /**
+     * Builds Suppliers for records of data.
+     */
+    private static class DataRecordSupplierBuilder implements Builder<DataRecordSupplier> {
+        private final Catalog catalog;
+        private final CatalogTable catalogTable;
+        private final Map<Long, DataColumnOption> options;
+
+        public DataRecordSupplierBuilder( Catalog catalog, DataTableOptionTemplate dataTableOptionTemplate ) {
+            this.catalog = catalog;
+            this.catalogTable = dataTableOptionTemplate.getCatalogTable();
+            this.options = dataTableOptionTemplate.getOptions();
+
+            // Remove all keys without column-options
+            for ( Long key : this.options.keySet() ) {
+                if ( this.options.get( key ) == null ) {
+                    this.options.remove( key );
+                }
+            }
+        }
+
+        private DataColumnOption getColumnOptionInstance( Long columnId ) {
+            if ( this.options.containsKey( columnId ) ) {
+                return options.get( columnId );
+            }
+            DataColumnOption columnOption = new DataColumnOption();
+            this.options.put( columnId, columnOption );
+            return columnOption;
+        }
+
+        public void addForeignKeyOption( Long columnId, List<Object> objects, boolean oneToOne) {
+            DataColumnOption testDataColumnOption = getColumnOptionInstance( columnId );
+
+            if ( testDataColumnOption.getOneToOneRelation() == null ) {
+                testDataColumnOption.setOneToOneRelation( false );
+            }
+            testDataColumnOption.setProvidedData( objects );
+
+        }
+
+        public void addPrimaryKeyOption( Long columnId ) {
+            DataColumnOption testDataColumnOption = getColumnOptionInstance( columnId );
+            testDataColumnOption.setUnique( true );
+        }
+
+        @Override
+        public DataRecordSupplier build() {
+            return new DataRecordSupplier( this.catalog, this.catalogTable, this.options );
         }
 
     }

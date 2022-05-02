@@ -18,6 +18,9 @@ package org.polypheny.db.adaptimizer.randomtrees;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.annotations.SerializedName;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,11 +31,14 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adaptimizer.except.InvalidBinaryNodeException;
+import org.polypheny.db.adaptimizer.randomtrees.except.InvalidBinaryNodeException;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Template for generating random trees. Acts as a wrapper for the random object.
+ */
 @Slf4j
 @Getter
 @Setter
@@ -40,7 +46,7 @@ public class RelRandomTreeTemplate implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @SerializedName( "tables" )
-    private TableRecord[] tableRecords;
+    private AdaptiveTableRecord[] tableRecords;
 
     @SerializedName( "schema" )
     private String schemaName;
@@ -104,7 +110,7 @@ public class RelRandomTreeTemplate implements Serializable {
             List<JoinAlgType> joinTypes,
             List<String> filterOps,
             List<String> joinOps,
-            List<TableRecord> tables,
+            List<AdaptiveTableRecord> tables,
             Set<Pair<String, String>> polyTypePartners,
             Set<Pair<String, String>> references,
             HashMap<String, PolyType> columnTypes
@@ -126,7 +132,7 @@ public class RelRandomTreeTemplate implements Serializable {
         this.binaryOperators = binaryOperators.toArray( String[]::new );
         this.unaryOperators = unaryOperators.toArray( String[]::new );
         this.joinTypes = joinTypes.toArray( JoinAlgType[]::new );
-        this.tableRecords = tables.toArray( TableRecord[]::new );
+        this.tableRecords = tables.toArray( AdaptiveTableRecord[]::new );
         this.joinOps = joinOps.toArray( String[]:: new );
         this.filterOps = filterOps.toArray( String[]:: new );
 
@@ -147,10 +153,13 @@ public class RelRandomTreeTemplate implements Serializable {
         return this.random.nextFloat() < this.unaryProbability;
     }
 
-    public Pair<String, TableRecord> nextTable() {
+    public Pair<String, AdaptiveTableRecord> nextTable() {
         return new Pair<>( this.schemaName, this.tableRecords[ random.nextInt( this.tableRecords.length ) ] );
     }
 
+    /**
+     * Returns the original name of a column.
+     */
     private String orgAlias( String columnName ) {
         int i = columnName.indexOf( "___" );
         if ( i == -1 ) {
@@ -159,11 +168,11 @@ public class RelRandomTreeTemplate implements Serializable {
         return columnName.substring( i + 3 );
     }
 
-    private List<String> orgAlias( TableRecord record ) {
+    private List<String> orgAlias( AdaptiveTableRecord record ) {
         return record.getColumns().stream().map( this::orgAlias ).collect( Collectors.toList());
     }
 
-    private Pair<List<String>, List<String>> orgAlias( TableRecord left, TableRecord right) {
+    private Pair<List<String>, List<String>> orgAlias( AdaptiveTableRecord left, AdaptiveTableRecord right) {
         return new Pair<>( this.orgAlias( left ), this.orgAlias( right ) );
     }
 
@@ -171,48 +180,33 @@ public class RelRandomTreeTemplate implements Serializable {
         return new Pair<>( columnName, this.columnTypes.get( this.orgAlias( columnName ) ) );
     }
 
-    public Pair<String, PolyType> nextColumn( TableRecord record ) {
+    public Pair<String, PolyType> nextColumn( AdaptiveTableRecord record ) {
         String columnName = record.getColumns().get( this.random.nextInt( record.getColumns().size()) );
         return new Pair<>( columnName, this.columnTypes.get( this.orgAlias( columnName ) ) );
     }
 
-    private List<Pair<String, String>> searchPolyTypePartners( TableRecord record ) {
+    private List<Pair<String, String>> searchPolyTypePartners( AdaptiveTableRecord record ) {
         List<String> org = this.orgAlias( record );
         return this.polyTypePartners.stream().filter(
                 pair -> org.contains( pair.left ) && org.contains( pair.right )
         ).collect( Collectors.toList());
     }
 
-    private List<Pair<String, String>> searchPolyTypePartners( TableRecord left, TableRecord right ) {
+    private List<Pair<String, String>> searchPolyTypePartners( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
         Pair<List<String>, List<String>> org = this.orgAlias( left, right );
         return this.polyTypePartners.stream().filter(
                 pair -> ( org.left.contains( pair.left ) && org.right.contains( pair.right ))
         ).collect( Collectors.toList());
     }
 
-    private List<Pair<String, String>> searchJoiningForeignKeyReferences( TableRecord left, TableRecord right ) {
+    private List<Pair<String, String>> searchJoiningForeignKeyReferences( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
         Pair<List<String>, List<String>> org = this.orgAlias( left, right );
         return this.references.stream().filter(
                 pair -> ( org.left.contains( pair.left ) && org.right.contains( pair.right ) )
         ).collect( Collectors.toList());
     }
 
-    public Pair<String, String> nextPolyTypePartners( TableRecord record ) {
-        List<Pair<String, String>> polyTypeColumnPairs = this.searchPolyTypePartners( record );
-        return polyTypeColumnPairs.get( random.nextInt( polyTypeColumnPairs.size() ) );
-    }
-
-    public Pair<String, String> nextPolyTypePartners( TableRecord left, TableRecord right  ) {
-        List<Pair<String, String>> polyTypeColumnPairs = this.searchPolyTypePartners( left, right );
-        return polyTypeColumnPairs.get( random.nextInt( polyTypeColumnPairs.size() ) );
-    }
-
-    public Pair<String, String> nextJoinColumnsWithForeignKeys( TableRecord left, TableRecord right ) {
-        List<Pair<String, String>> joinColumnPairs = this.searchJoiningForeignKeyReferences( left, right );
-        return joinColumnPairs.get( random.nextInt( joinColumnPairs.size() ) );
-    }
-
-    public Pair<String, String> nextJoinColumns( TableRecord left, TableRecord right ) {
+    public Pair<String, String> nextJoinColumns( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
         List<Pair<String, String>> joinColumnPairs = this.searchJoiningForeignKeyReferences( left, right );
         if ( joinColumnPairs.isEmpty() ) {
             joinColumnPairs = this.searchPolyTypePartners( left, right );
@@ -223,7 +217,11 @@ public class RelRandomTreeTemplate implements Serializable {
         return joinColumnPairs.get( random.nextInt( joinColumnPairs.size() ) );
     }
 
-    public void matchOnColumnTypeSubsets( TableRecord left, TableRecord right ) {
+
+    /**
+     * Tries to match tables for set operations. // Todo make more sophisticated
+     */
+    public void matchOnColumnTypeSubsets( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
         List<Pair<String, String>> polyTypePartners = this.searchPolyTypePartners( left, right );
         List<String> leftPartners = new ArrayList<>();
         List<String> rightPartners = new ArrayList<>();
@@ -236,11 +234,13 @@ public class RelRandomTreeTemplate implements Serializable {
         right.setColumns( rightPartners );
     }
 
-    public void extendForSetOperation( TableRecord left, TableRecord right ) {
+    // Todo Implement
+    public void extendForSetOperation( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
         throw new InvalidBinaryNodeException( "Extension not implemented yet", null );
     }
 
-    public void extendForJoinOperation( TableRecord left, TableRecord right ) {
+    // Todo Implement
+    public void extendForJoinOperation( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
         throw new InvalidBinaryNodeException( "Extension not implemented yet", null );
     }
 
@@ -248,15 +248,15 @@ public class RelRandomTreeTemplate implements Serializable {
         return this.random.nextInt( bound );
     }
 
-    public boolean nextBoolean() {
-        return this.random.nextBoolean();
-    }
-
     public PolyType typeOf( String columnName ) {
         return this.columnTypes.get( this.orgAlias( columnName ) );
     }
 
-    public boolean haveSamePolyTypes( TableRecord left, TableRecord right ) {
+
+    /**
+     * Checks whether PolyTypes match between two records.
+     */
+    public boolean haveSamePolyTypes( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
         if ( left.getColumns().size() != right.getColumns().size() ) {
             return false;
         }
@@ -270,17 +270,28 @@ public class RelRandomTreeTemplate implements Serializable {
         return true;
     }
 
+
+    /**
+     * Returns the "All" option for set operations.
+     */
     public boolean nextAll() {
         return true;
     }
 
+
+    /**
+     * Returns true if the generator should switch to join if set operations are not possible. (Will not try to make set ops work)
+     */
     public boolean switchToJoinIfSetOpNotViable() {
         return this.switchToJoin;
     }
-
+    /**
+     * Returns true if the generator should switch to set ops if join operations are not possible. (Will not try to make join work)
+     */
     public boolean switchToSetOpIfJoinNotPossible() {
         return this.switchToSetOp;
     }
+
 
     public JoinAlgType nextJoinType() {
         return this.joinTypes[ this.random.nextInt( this.joinTypes.length ) ];
@@ -307,8 +318,55 @@ public class RelRandomTreeTemplate implements Serializable {
         return "I".repeat( this.counter );
     }
 
+    /**
+     * Returns the original seed for this tree generation template.
+     */
     public long getSeed() {
         return this.seed;
+    }
+
+    /**
+     * Copied from https://stackoverflow.com/a/6001407 Returns current seed of random object.
+     */
+    public long getCurrentSeed() {
+        byte[] ba0, ba1, bar;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(128);
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(new Random(0));
+            ba0 = baos.toByteArray();
+            baos = new ByteArrayOutputStream(128);
+            oos = new ObjectOutputStream(baos);
+            oos.writeObject(new Random(-1));
+            ba1 = baos.toByteArray();
+            baos = new ByteArrayOutputStream(128);
+            oos = new ObjectOutputStream(baos);
+            oos.writeObject( this.random );
+            bar = baos.toByteArray();
+        } catch ( IOException e ) {
+            throw new RuntimeException("IOException: " + e);
+        }
+        if (ba0.length != ba1.length || ba0.length != bar.length)
+            throw new RuntimeException("bad serialized length");
+        int i = 0;
+        while (i < ba0.length && ba0[i] == ba1[i]) {
+            i++;
+        }
+        int j = ba0.length;
+        while (j > 0 && ba0[j - 1] == ba1[j - 1]) {
+            j--;
+        }
+        if (j - i != 6)
+            throw new RuntimeException("6 differing bytes not found");
+        // The constant 0x5DEECE66DL is from
+        // http://download.oracle.com/javase/6/docs/api/java/util/Random.html .
+        return ((bar[i] & 255L) << 40 | (bar[i + 1] & 255L) << 32 |
+                (bar[i + 2] & 255L) << 24 | (bar[i + 3] & 255L) << 16 |
+                (bar[i + 4] & 255L) << 8 | (bar[i + 5] & 255L)) ^ 0x5DEECE66DL;
+    }
+
+    public void setSeed( long seed ) {
+        this.random.setSeed( seed );
     }
 
 }

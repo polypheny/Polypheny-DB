@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.environment;
+package org.polypheny.db.adaptimizer.randomdata;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.polypheny.db.adaptimizer.except.TestDataGenerationException;
+import org.polypheny.db.adaptimizer.randomdata.except.TestDataGenerationException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.util.Pair;

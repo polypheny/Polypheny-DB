@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.execution;
+package org.polypheny.db.adaptimizer.randomdata.except;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import org.polypheny.db.adaptimizer.randomtrees.except.AdaptiveOptException;
 
-@AllArgsConstructor
-@Getter
-public class ExecutionMeasurement {
+public class TestDataGenerationException extends AdaptiveOptException {
 
-    private long executionTime;
+    public TestDataGenerationException( String message, Throwable cause ) {
+        super( message, cause );
+    }
 
 }

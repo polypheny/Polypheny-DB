@@ -23,13 +23,13 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.adaptimizer.except.AdaptiveOptTreeGenException;
+import org.polypheny.db.adaptimizer.randomtrees.except.AdaptiveOptTreeGenException;
 import org.polypheny.db.algebra.core.JoinAlgType;
 
 @AllArgsConstructor
 @Getter
 @Setter
-public class AdaptiveTableRecord implements TableRecord {
+public class AdaptiveTableRecord {
 
     @SerializedName( "name" )
     private String tableName;
@@ -63,35 +63,29 @@ public class AdaptiveTableRecord implements TableRecord {
         );
     }
 
-
-    @Override
     public String getTableName() {
         return this.tableName;
     }
 
-
-    @Override
     public List<String> getColumns() {
         return this.columns;
     }
 
-
-    @Override
     public void setColumns( List<String> columns ) {
         this.columns = columns;
     }
 
-    public static AdaptiveTableRecord union( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
-        return AdaptiveTableRecord.from( left );
-    }
-
-    public static AdaptiveTableRecord intersect( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
-        return AdaptiveTableRecord.from( left );
-    }
-
-    public static AdaptiveTableRecord minus( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
-        return AdaptiveTableRecord.from( left );
-    }
+//    public static AdaptiveTableRecord union( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
+//        return AdaptiveTableRecord.from( left );
+//    }
+//
+//    public static AdaptiveTableRecord intersect( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
+//        return AdaptiveTableRecord.from( left );
+//    }
+//
+//    public static AdaptiveTableRecord minus( AdaptiveTableRecord left, AdaptiveTableRecord right ) {
+//        return AdaptiveTableRecord.from( left );
+//    }
 
     public static AdaptiveTableRecord join( AdaptiveTableRecord left, AdaptiveTableRecord right, String joinL, String joinR, JoinAlgType joinAlgType ) {
 
@@ -135,10 +129,6 @@ public class AdaptiveTableRecord implements TableRecord {
 
     public static AdaptiveTableRecord project( String tableName, List<String> columns ) {
         return new AdaptiveTableRecord( tableName, columns );
-    }
-
-    public boolean hasColumnsOfSameType( AdaptiveTableRecord other ) {
-        return this.columns.equals( other.getColumns() );
     }
 
 

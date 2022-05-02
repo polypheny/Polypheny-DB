@@ -227,7 +227,7 @@ public abstract class DdlManager {
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement, boolean migrateData ) throws PlacementAlreadyExistsException;
+    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
 
 
     /**

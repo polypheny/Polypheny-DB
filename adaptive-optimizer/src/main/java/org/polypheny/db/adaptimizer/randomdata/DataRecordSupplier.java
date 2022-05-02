@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.environment;
+package org.polypheny.db.adaptimizer.randomdata;
 
 import java.util.Date;
 import java.util.List;
@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.polypheny.db.adaptimizer.except.TestDataGenerationException;
+import org.polypheny.db.adaptimizer.randomdata.except.TestDataGenerationException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;

@@ -18,18 +18,15 @@ package org.polypheny.db.adaptimizer.randomtrees;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.List;
 import java.util.Stack;
 import java.util.StringJoiner;
-import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.adaptimizer.environment.DefaultTestEnvironment;
-import org.polypheny.db.adaptimizer.except.AdaptiveOptTreeGenException;
-import org.polypheny.db.adaptimizer.except.InvalidBinaryNodeException;
+import org.polypheny.db.adaptimizer.randomtrees.except.AdaptiveOptTreeGenException;
+import org.polypheny.db.adaptimizer.randomtrees.except.InvalidBinaryNodeException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.http.model.SortDirection;
@@ -37,7 +34,6 @@ import org.polypheny.db.http.model.SortState;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.sql.SqlWriter.Frame;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -49,26 +45,48 @@ import org.polypheny.db.util.Util;
  * at random.
  */
 @Slf4j
-public class RelRandomTreeGenerator implements RelTreeGenerator {
+public class RelRandomTreeGenerator {
 
     private final RelRandomTreeTemplate template;
 
+    /**
+     * Stack to keep track of generated nodes and dump debug strings.
+     */
     private final Stack<AdaptiveNode> traceStack;
 
+    /**
+     * Debug appendix.
+     */
     private String traceAppendix;
 
+    /**
+     * Counts how many trees are generated.
+     */
     private int treeCounter;
 
+    /**
+     * Counts how many tree-nodes are generated.
+     */
     @Getter
     private int nodeCounter;
 
+    /**
+     * Time spent on generating the last tree.
+     */
     @Getter
     private long treeGenTime;
+
+    /**
+     * Seed used for generating the next tree.
+     */
+    @Getter
+    private long treeSeed;
 
     public RelRandomTreeGenerator( RelRandomTreeTemplate template ) {
         this.template = template;
         this.traceStack = new Stack<>();
         this.treeCounter = 0;
+        this.treeSeed = template.getSeed();
     }
 
     /**
@@ -77,11 +95,12 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
      * @param statement         {@link Statement} created by a transaction.
      * @return                  {@link AlgNode } tree root of the logical operator tree.
      */
-    public AlgNode generate( Statement statement ) {
+    public Pair<AlgNode, Long> generate( Statement statement ) {
         this.traceAppendix = null;
         this.traceStack.clear();
         this.treeCounter++;
         this.nodeCounter = 0;
+        this.treeSeed = template.getCurrentSeed();
 
         StopWatch stopWatch = new StopWatch();
         AlgNode algNode = null;
@@ -93,7 +112,15 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
         }
         stopWatch.stop();
         this.treeGenTime = stopWatch.getTime();
-        return algNode;
+        return new Pair<>( algNode, this.treeSeed );
+    }
+
+
+    /**
+     * Set the seed for generating the next / following trees.
+     */
+    public void setSeed( long seed ) {
+        this.template.setSeed( seed );
     }
 
     /**
@@ -204,9 +231,9 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
                     // Check that they are not empty
                     if ( left.getColumns().isEmpty() ) {
                         // There were no matching PolyTypes
-                        if ( log.isDebugEnabled() ) {
-                            //log.debug( "No matching PolyTypes found, trying extensions..." );
-                        }
+//                        if ( log.isDebugEnabled() ) {
+//                            log.debug( "No matching PolyTypes found, trying extensions..." );
+//                        }
 
                         // Reset Records
                         node.children[ 0 ].resetAdaptiveTableRecord();
@@ -362,11 +389,10 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
 
         Pair<String, PolyType> pair;
 
-        boolean recurse = false;
-
         switch ( node.type ) {
             case "Filter":
 
+                // Shouldn't happen but has.
                 if ( adaptiveTableRecord.getColumns().size() == 0) {
                     throw new AdaptiveOptTreeGenException( "No columns to filter", new IndexOutOfBoundsException() );
                 }
@@ -420,6 +446,7 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
             case "Project":
                 List<String> columns = adaptiveTableRecord.getColumns();
 
+                // If the size of the columns is > 2 we randomly choose an interval to project.
                 if ( columns.size() > 2 ) {
                     int i = this.template.nextInt( columns.size() );
                     if ( i == 0 ) {
@@ -433,6 +460,8 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
                 node.setAdaptiveTableRecord( AdaptiveTableRecord.project( adaptiveTableRecord.getTableName(), columns ) );
                 break;
             case "Sort":
+
+                // Shouldn't happen but has.
                 if ( adaptiveTableRecord.getColumns().size() == 0) {
                     throw new AdaptiveOptTreeGenException( "No columns to sort", new IndexOutOfBoundsException() );
                 }
@@ -456,11 +485,6 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
                 );
         }
 
-        // If an operator was switched due to incompatibility with the generated Tree
-        if ( recurse ) {
-            setModeForUnaryOperatorNode( node );
-        }
-
     }
 
 
@@ -468,15 +492,16 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
      * Configures TableScan node.
      */
     private void setModeForTableScan(final AdaptiveNode node) {
-        Pair<String, TableRecord> pair = this.template.nextTable();
+        Pair<String, AdaptiveTableRecord> pair = this.template.nextTable();
         node.type = "TableScan";
-        node.setAdaptiveTableRecord( AdaptiveTableRecord.from( ( AdaptiveTableRecord ) pair.right ) );
+        node.setAdaptiveTableRecord( AdaptiveTableRecord.from( pair.right ) );
         node.tableName = pair.left + "." + pair.right.getTableName();
     }
 
 
     /**
      * Converts an AdaptiveNode to an AlgNode.
+     * @throws AdaptiveOptTreeGenException      If node could not be converted.
      */
     private AlgBuilder convertNode( AlgBuilder algBuilder, final AdaptiveNode node ) throws AdaptiveOptTreeGenException {
 
@@ -507,6 +532,9 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
 
     }
 
+    /**
+     * Adds a join node to the {@link AlgBuilder}.
+     */
     private AlgBuilder join( AlgBuilder algBuilder, AdaptiveNode node ) {
         String[] field1 = null;
         String[] field2 = null;
@@ -519,10 +547,17 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
         return algBuilder.join( node.join, algBuilder.call( getOperator( node.operator ), algBuilder.field( node.inputCount, field1[0], field1[1] ), algBuilder.field( node.inputCount, field2[0], field2[1] ) ) );
     }
 
+    /**
+     * Adds a table scan to the {@link AlgBuilder}.
+     */
     private AlgBuilder tableScan( AlgBuilder algBuilder, AdaptiveNode node ) {
         return algBuilder.scan( Util.tokenize( node.tableName, "." ) ).as( node.tableName );
     }
 
+
+    /**
+     * Adds a set operation node to the {@link AlgBuilder}.
+     */
     private AlgBuilder setOp( AlgBuilder algBuilder, AdaptiveNode node ) {
         String newAlias = this.template.nextUniqueString( this.treeCounter );
         node.setAdaptiveTableRecord( AdaptiveTableRecord.from( node.getAdaptiveTableRecord(), newAlias ) );
@@ -543,6 +578,10 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
 
     }
 
+
+    /**
+     * Adds a sort node to the {@link AlgBuilder}.
+     */
     private AlgBuilder sort( AlgBuilder algBuilder, AdaptiveNode node ) {
         ArrayList<RexNode> columns = new ArrayList<>();
         for ( SortState s : node.sortColumns ) {
@@ -558,6 +597,12 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
         return algBuilder.sort( columns );
     }
 
+
+
+    // Unused Currently
+    /**
+     * Todo add aggregates to tree generation...
+     */
     private AlgBuilder aggregate( AlgBuilder algBuilder, AdaptiveNode node ) {
         AlgBuilder.AggCall aggregation;
         String[] aggFields = node.field.split( "\\." );
@@ -589,6 +634,10 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
         }
     }
 
+
+    /**
+     * Adds a filter node to the {@link AlgBuilder}.
+     */
     private AlgBuilder filter( AlgBuilder algBuilder, AdaptiveNode node ) {
         String[] field = node.field.split( "\\." );
         String[] aliases = field[0].split( "___" );
@@ -606,23 +655,26 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
         }
     }
 
+    /**
+     * Inserts a projection. into the {@link AlgBuilder}
+     * @throws IllegalArgumentException If the projection could not be inserted in this node.
+     */
     private AlgBuilder project( AlgBuilder algBuilder, AdaptiveNode node ) throws IllegalArgumentException {
         ArrayList<RexNode> fields = getFields( node.fields, node.inputCount, algBuilder );
         return algBuilder.project( fields );
     }
 
+    /**
+     * Retroactively inserts projections for the last two frames on the {@link AlgBuilder} stack.
+     * @throws IllegalArgumentException     If the projections could not be inserted in this node.
+     */
     private void retroactiveProjections( AlgBuilder algBuilder, AdaptiveNode node ) throws IllegalArgumentException {
         AdaptiveNode left = node.children[ 0 ];
         AdaptiveNode right = node.children[ 1 ];
-
         this.project( algBuilder, right );
-
         AlgNode algNode = algBuilder.build();
-
         this.project( algBuilder, left );
-
         algBuilder.push( algNode );
-
     }
 
     /**
@@ -653,7 +705,7 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
 
 
     /**
-     *  Copied From QueryPlanBuilder.java
+     *  Copied From QueryPlanBuilder.java. Retrieves row expressions for fields.
      */
     private static ArrayList<RexNode> getFields( String[] fields, int inputCount, AlgBuilder builder ) throws IllegalArgumentException {
         ArrayList<RexNode> nodes = new ArrayList<>();
@@ -662,7 +714,6 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
                 continue;
             }
             String[] field = f.split( "\\." );
-            // Todo ask about this issue here....
             nodes.add( builder.field( inputCount, field[0], field[1] ) );
         }
         return nodes;
@@ -736,9 +787,13 @@ public class RelRandomTreeGenerator implements RelTreeGenerator {
 
     }
 
-    @Override
+
+    /**
+     * Get the debug dump for the last tree generated.
+     */
     public String getStringRep() {
         return this.dumpTreeGenerationTrace();
     }
+
 
 }

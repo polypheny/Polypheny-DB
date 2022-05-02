@@ -53,7 +53,7 @@ public class RandomTreeTemplateBuilder implements Builder<RelRandomTreeTemplate>
     private static final List<Boolean> DEFAULT_SET_OP_ALL = List.of( true );
 
     HashMap<String, PolyType> columnTypes = new HashMap<>();
-    List<TableRecord> tableRecords = new LinkedList<>();
+    List<AdaptiveTableRecord> tableRecords = new LinkedList<>();
     Set<Pair<String, String>> references = new HashSet<>();
     Set<Pair<String, String>> polyTypePartners = new HashSet<>();
 
@@ -148,7 +148,7 @@ public class RandomTreeTemplateBuilder implements Builder<RelRandomTreeTemplate>
 
         // Parse tables and map column-names to column-types
         HashMap<String, PolyType> columnTypes = new HashMap<>();
-        List<TableRecord> tableRecords = new LinkedList<>();
+        List<AdaptiveTableRecord> tableRecords = new LinkedList<>();
 
         for ( CatalogTable catalogTable : this.catalogTables ) {
             List<CatalogColumn> catalogColumns = catalogTable.columnIds.stream().map( catalog::getColumn ).collect( Collectors.toList());

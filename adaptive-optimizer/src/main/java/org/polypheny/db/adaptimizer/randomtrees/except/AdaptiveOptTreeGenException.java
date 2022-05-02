@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.except;
+package org.polypheny.db.adaptimizer.randomtrees.except;
 
-public class InvalidBinaryNodeException extends AdaptiveOptTreeGenException {
+public class AdaptiveOptTreeGenException extends AdaptiveOptException {
 
-    public InvalidBinaryNodeException( String message, Throwable cause ) {
+    public AdaptiveOptTreeGenException( String message, Throwable cause ) {
         super( message, cause );
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer.environment;
+package org.polypheny.db.adaptimizer.randomdata;
 
 import java.text.ParseException;
 import java.util.List;
