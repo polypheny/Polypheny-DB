@@ -94,6 +94,10 @@ public class AdaptimizerInformation {
         informationGroup.addInformation(  action4 );
         informationManager.registerInformation( action4 );
 
+        InformationAction action5 = new InformationAction( informationGroup, "Run Specific Tree", parameters -> runSpecificTrees() );
+        informationGroup.addInformation(  action5 );
+        informationManager.registerInformation( action5 );
+
         page.addGroup( informationGroup );
         randomTreeGenGroup = informationGroup;
     }
