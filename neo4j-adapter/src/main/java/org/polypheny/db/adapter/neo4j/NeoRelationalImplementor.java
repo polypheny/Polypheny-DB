@@ -64,6 +64,10 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Shuttle class, which saves the state of the relational Neo4j algebra nodes it passes through when needed.
+ * This state is then later used to build the relational code ({@link org.apache.calcite.linq4j.tree.Expression}), which represents the passed algebra tree.
+ */
 public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     private final List<OperatorStatement> statements = new ArrayList<>();
@@ -114,6 +118,9 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
+    /**
+     * Adds a cypher <code>CREATE</code> statement, which is used to map most SQL <code>DML</code> statements.
+     */
     public void addCreate() {
         Pair<Integer, OperatorStatement> res = createCreate( values, entity );
         add( res.right );
@@ -121,11 +128,19 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
+    /**
+     * Attaches a <code>RETURN</code> of the modified rows to the cypher statement stack.
+     *
+     * @param size the modified rows
+     */
     private void addRowCount( int size ) {
         add( return_( as_( literal_( size ), literal_( "ROWCOUNT" ) ) ) );
     }
 
 
+    /**
+     * Attaches a cypher parameter value (<code>$param</code>), which is used to handle prepared values ({@link RexDynamicParam })
+     */
     public void addPreparedValues() {
         if ( last instanceof NeoProject ) {
             add( createProjectValues( (NeoProject) last, entity, this ) );
@@ -143,11 +158,17 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
+    /**
+     * Attaches a <code>WITH</code> cypher statement which is used to map a SQL project in some cases.
+     */
     public void addWith( NeoProject project ) {
         add( create( NeoStatements::with_, project, last, this ) );
     }
 
 
+    /**
+     * Attaches a <code>CREATE</code> cypher statement which is used to map a SQL DML.
+     */
     public static Pair<Integer, NeoStatements.OperatorStatement> createCreate( ImmutableList<ImmutableList<RexLiteral>> values, NeoEntity entity ) {
         int nodeI = 0;
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
@@ -160,7 +181,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
                 props.add( property_( rowType.getFieldList().get( i ).getPhysicalName(), literal_( NeoUtil.rexAsString( value, null, false ) ) ) );
                 i++;
             }
-            nodes.add( NeoStatements.node_( String.valueOf( nodeI ), NeoStatements.labels_( entity.phsicalEntityName ), props ) );
+            nodes.add( NeoStatements.node_( String.valueOf( nodeI ), NeoStatements.labels_( entity.physicalEntityName ), props ) );
             nodeI++;
         }
 
@@ -203,7 +224,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             }
             i++;
         }
-        String name = entity.phsicalEntityName;
+        String name = entity.physicalEntityName;
 
         return create_( node_( name, labels_( name ), properties ) );
     }
@@ -249,7 +270,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     private Map<String, String> getToPhysicalMapping( @Nullable NeoProject project ) {
         Map<String, String> mapping = new HashMap<>();
         for ( AlgDataTypeField field : table.getRowType().getFieldList() ) {
-            mapping.put( field.getName(), entity.phsicalEntityName + "." + field.getPhysicalName() );
+            mapping.put( field.getName(), entity.physicalEntityName + "." + field.getPhysicalName() );
         }
 
         if ( project != null ) {
@@ -266,7 +287,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addDelete() {
-        add( delete_( false, literal_( entity.phsicalEntityName ) ) );
+        add( delete_( false, literal_( entity.physicalEntityName ) ) );
     }
 
 

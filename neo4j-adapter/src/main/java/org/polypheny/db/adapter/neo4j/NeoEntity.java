@@ -56,16 +56,19 @@ import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
+ */
 public class NeoEntity extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
-    public final String phsicalEntityName;
+    public final String physicalEntityName;
     public final long id;
     public final AlgProtoDataType rowType;
 
 
     protected NeoEntity( String physicalEntityName, AlgProtoDataType proto, long id ) {
         super( Object[].class );
-        this.phsicalEntityName = physicalEntityName;
+        this.physicalEntityName = physicalEntityName;
         this.rowType = proto;
         this.id = id;
     }
@@ -96,6 +99,15 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    /**
+     * Creates an {@link org.polypheny.db.algebra.core.Modify} algebra object, which is modifies this relational entity.
+     *
+     * @param child child algebra nodes of the created algebra operation
+     * @param operation the operation type
+     * @param updateColumnList the target elements of the modification
+     * @param sourceExpressionList the modify operation to create the new values
+     * @param flattened if the {@link Modify} is flattened
+     */
     @Override
     public Modify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
@@ -128,10 +140,16 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
         @Override
         public Enumerator<T> enumerator() {
-            return execute( String.format( "MATCH (n:%s) RETURN n", entity.phsicalEntityName ), List.of(), List.of(), Map.of() ).enumerator();
+            return execute( String.format( "MATCH (n:%s) RETURN n", entity.physicalEntityName ), List.of(), List.of(), Map.of() ).enumerator();
         }
 
 
+        /**
+         * Executes the given query and returns a {@link Enumerable}, which returns the results when iterated.
+         *
+         * @param query the query to execute
+         * @param prepared mapping of parameters and their components if they are collections
+         */
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<T> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
             Transaction trx = getTrx();
@@ -160,6 +178,13 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
         }
 
 
+        /**
+         * Creates a mapping of parameters to the provided values, as Neo4j needs it.
+         *
+         * @param values the values to execute the query with
+         * @param parameterTypes the types of the attached values
+         * @return
+         */
         private Map<String, Object> toParameters( Map<Long, Object> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
             Map<String, Object> parameters = new HashMap<>();
             for ( Entry<Long, Object> entry : values.entrySet() ) {

@@ -48,6 +48,9 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
+/**
+ * {@link ConverterImpl}, which serves as a bridge between the enumerable algebra and the Neo4j specific algebra opertors.
+ */
 public class NeoToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
     /**
@@ -80,6 +83,14 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
     }
 
 
+    /**
+     * This methods generates the code snippet, which is used for the graph model logic for the Neo4j adapter.
+     *
+     * @param implementor is used build the code snippets by recursively moving through them
+     * @param pref preferred result format, e.g. when SCALAR -> single result gets returned as single element, if ARRAY it is wrapped in an array
+     * @param blockBuilder helper builder to generate expressions
+     * @return the code in a result representation
+     */
     private Result getGraphImplement( EnumerableAlgImplementor implementor, Prefer pref, BlockBuilder blockBuilder ) {
         final NeoGraphImplementor graphImplementor = new NeoGraphImplementor();
 
@@ -132,6 +143,14 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
     }
 
 
+    /**
+     * Generates the relational specific code representation of the attached child nodes.
+     *
+     * @param implementor is used build the code snippets by recursively moving through them
+     * @param pref preferred result format, e.g. when SCALAR -> single result gets returned as single element, if ARRAY it is wrapped in an array
+     * @param blockBuilder helper builder to generate expressions
+     * @return the code in a result representation
+     */
     private Result getRelationalImplement( EnumerableAlgImplementor implementor, Prefer pref, BlockBuilder blockBuilder ) {
         final NeoRelationalImplementor neoImplementor = new NeoRelationalImplementor();
 
@@ -164,6 +183,12 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
     }
 
 
+    /**
+     * Generates the {@link Expression} equivalent of a map with {@link PolyType} pairs as values
+     *
+     * @param map the target map to transform
+     * @return the map in an expression representation
+     */
     private Expression getPolyMap( BlockBuilder builder, Map<Long, Pair<PolyType, PolyType>> map ) {
         return builder.append(
                 builder.newName( "map" ),
@@ -178,11 +203,27 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
     }
 
 
+    /**
+     * Returns the provided pair as {@link Expression}.
+     *
+     * @param pair the target pair
+     * @param classLeft class of the left element
+     * @param classRight class of the right element
+     * @return the pair as Expression e.g. <code>Pair.of( (int) 0, (long) 3 )</code>
+     */
     public <T, E> Expression getPair( Pair<T, E> pair, Class<T> classLeft, Class<E> classRight ) {
         return Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( pair.left, classLeft ), Expressions.constant( pair.left, classRight ) );
     }
 
 
+    /**
+     * Returns the {@link Expression} for the given {@link AlgDataType} where each field is represented as {@link PolyType}.
+     *
+     * @param builder helper builder to generate expressions
+     * @param rowType the RowType to transform
+     * @param typeGetter function, which transforms a {@link AlgDataType} into a matching {@link PolyType}
+     * @return
+     */
     public Expression getFields( BlockBuilder builder, AlgDataType rowType, Function1<AlgDataType, PolyType> typeGetter ) {
         return builder.append(
                 builder.newName( "fields" ),

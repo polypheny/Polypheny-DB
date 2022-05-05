@@ -65,6 +65,9 @@ import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Graph entity in the Neo4j representation.
+ */
 public class NeoGraph extends AbstractSchema implements ModifiableGraph, TranslatableGraph, QueryableGraph {
 
     public final String name;
@@ -86,6 +89,15 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
     }
 
 
+    /**
+     * Creates an {@link org.polypheny.db.algebra.core.Modify} algebra object, which is modifies this graph.
+     *
+     * @param graph the {@link org.polypheny.db.schema.PolyphenyDbSchema} graph object
+     * @param input the child nodes of the created algebra node
+     * @param operation the modify operation
+     * @param ids the ids, which are modified by the created algebra opertions
+     * @param operations the operations to perform
+     */
     @Override
     public GraphModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
@@ -171,6 +183,13 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
         }
 
 
+        /**
+         * Creates a cypher statement which returns all edges and nodes separately
+         *
+         * @param nodes cypher statement to retrieve all nodes
+         * @param edges cypher statement to retrieve all edges
+         * @return the result as enumerable
+         */
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<T> executeAll( String nodes, String edges ) {
             commit();
@@ -186,17 +205,32 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
         }
 
 
+        /**
+         * This method returns the functions, which transforms a given record into the corresponding object representation.
+         *
+         * @param types the types for which function is created
+         * @param componentTypes component types for collection types.
+         * @return the function, which transforms the {@link Record}
+         */
         static <T> Function1<Record, T> getter( List<PolyType> types, List<PolyType> componentTypes ) {
             //noinspection unchecked
             return (Function1<Record, T>) NeoUtil.getTypesFunction( types, componentTypes );
         }
 
 
+        /**
+         * Gets an already open transaction of creates a new one if it not exists.
+         *
+         * @return
+         */
         private Transaction getTrx() {
             return graph.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
         }
 
 
+        /**
+         * Commit the transaction.
+         */
         private void commit() {
             graph.transactionProvider.commit( dataContext.getStatement().getTransaction().getXid() );
         }

@@ -119,6 +119,9 @@ public class Neo4jStore extends DataStore {
     }
 
 
+    /**
+     * Test if a connection to the provided Neo4j database is possible.
+     */
     private boolean testConnection() {
         try {
             this.db = GraphDatabase.driver( new URI( "bolt://localhost:" + port ), auth );

@@ -49,7 +49,7 @@ public class NeoGraphValues extends GraphValues implements NeoGraphAlg {
         if ( getValues() != null && !getValues().isEmpty() ) {
             assert getValues().size() == 1 : "only single lines of values can be inserted";
 
-            implementor.addValues( getValues() );
+            implementor.setValues( getValues() );
 
         }
 

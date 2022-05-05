@@ -46,6 +46,10 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Shuttle class, which saves the state of the graph Neo4j algebra nodes it passes through when needed.
+ * This state is then later used to build the graph code ({@link org.apache.calcite.linq4j.tree.Expression}), which represents the passed algebra tree.
+ */
 public class NeoGraphImplementor extends AlgShuttleImpl {
 
     @Setter
@@ -98,11 +102,19 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     }
 
 
+    /**
+     * Adds a specific Neo4j statement
+     *
+     * @param statement the statement to add
+     */
     public void add( OperatorStatement statement ) {
         this.statements.add( statement );
     }
 
 
+    /**
+     * If the finial statement is not a valid end command for cypher, this adds an appropriate <code>RETURN</code> statement.
+     */
     public void addReturnIfNecessary() {
         if ( statements.get( statements.size() - 1 ).type == StatementType.CREATE ) {
             addRowCount( 1 );
@@ -124,6 +136,12 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     }
 
 
+    /**
+     * Returns the specified fields as cypher equivalent {@link NeoStatement}.
+     *
+     * @param rowType the fields to transform
+     * @return the fields as a collection of {@link NeoStatement}
+     */
     private List<NeoStatement> getFields( AlgDataType rowType ) {
         List<NeoStatement> statements = new ArrayList<>();
         for ( AlgDataTypeField field : rowType.getFieldList() ) {
@@ -134,6 +152,12 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     }
 
 
+    /**
+     * Transforms a single field into a corresponding {@link NeoStatement}.
+     *
+     * @param field the field to transform
+     * @return the field as Neo4j statement
+     */
     private NeoStatement getField( AlgDataTypeField field ) {
         switch ( field.getType().getPolyType() ) {
             case NODE:
@@ -152,6 +176,11 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     }
 
 
+    /**
+     * Returns queries which retrieve all nodes and all edges for the graph.
+     *
+     * @return a pair of node retrieval and edge retrieval queries
+     */
     public Pair<String, String> getAllQueries() {
         String nodes = String.join( "\n", List.of(
                 match_( node_( "n", labels_( graph.mappingLabel ) ) ).build(),
@@ -166,12 +195,22 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     }
 
 
-    public void addValues( ImmutableList<ImmutableList<RexLiteral>> values ) {
+    /**
+     * Sets values, if not already set.
+     *
+     * @param values the values to add
+     */
+    public void setValues( ImmutableList<ImmutableList<RexLiteral>> values ) {
         assert this.values == null : "only single lines of values can be used";
         this.values = values;
     }
 
 
+    /**
+     * Removes the top-most element for the {@link NeoStatement} stack if possible.
+     *
+     * @return the removed statement
+     */
     public OperatorStatement removeLast() {
         assert !statements.isEmpty() : "Cannot remove neo statements from an empty stack.";
         OperatorStatement statement = statements.get( statements.size() - 1 );
@@ -181,6 +220,11 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     }
 
 
+    /**
+     * Replaces the last <code>RETURN</code> on the {@link NeoStatement} stack.
+     *
+     * @param return_ the new {@link NeoStatement} statement, which is added to the stack
+     */
     public void replaceReturn( ReturnStatement return_ ) {
         Integer lastReturn = null;
         int i = 0;

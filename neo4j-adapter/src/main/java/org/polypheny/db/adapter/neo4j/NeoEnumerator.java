@@ -22,6 +22,11 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 
+/**
+ * Neo4j representation of a {@link Enumerator}.
+ *
+ * @param <T>
+ */
 public class NeoEnumerator<T> implements Enumerator<T> {
 
     private final List<Result> results;

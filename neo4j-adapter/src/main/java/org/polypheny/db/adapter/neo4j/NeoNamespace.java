@@ -44,6 +44,12 @@ public class NeoNamespace extends AbstractSchema {
     public final TransactionProvider transactionProvider;
 
 
+    /**
+     * Namespace object for the Neo4j database.
+     *
+     * @param db driver reference for the Neo4j database
+     * @param namespaceId id of the namespace
+     */
     public NeoNamespace( Driver db, Expression expression, TransactionProvider transactionProvider, Neo4jStore neo4jStore, long namespaceId ) {
         this.graph = db;
         this.store = neo4jStore;
@@ -55,6 +61,14 @@ public class NeoNamespace extends AbstractSchema {
     }
 
 
+    /**
+     * Creates a new table according to the given {@link CatalogEntity}
+     *
+     * @param combinedTable the table according to which the table is created
+     * @param columnPlacementsOnStore the placements ofr the table on the store
+     * @param partitionPlacement reference to the partition
+     * @return the created table
+     */
     public Table createTable( CatalogEntity combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();

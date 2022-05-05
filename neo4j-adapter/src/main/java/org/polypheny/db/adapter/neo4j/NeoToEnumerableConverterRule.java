@@ -23,6 +23,9 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
+/**
+ * {@link ConverterRule}, which registers the Neo4j converter operator to push the algebra into the Neo4j adapter.
+ */
 public class NeoToEnumerableConverterRule extends ConverterRule {
 
     public static final ConverterRule INSTANCE = new NeoToEnumerableConverterRule( AlgFactories.LOGICAL_BUILDER );

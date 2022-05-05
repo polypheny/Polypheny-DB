@@ -32,6 +32,9 @@ import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
 
+/**
+ * Helper classes, which are used to create cypher queries with a object representation.
+ */
 public interface NeoStatements {
 
     enum StatementType {

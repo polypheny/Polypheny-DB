@@ -32,11 +32,20 @@ public class TransactionProvider {
     private final ConcurrentHashMap<PolyXid, Pair<Session, Transaction>> register = new ConcurrentHashMap<>();
 
 
+    /**
+     * Handler class, which abstract the transaction logic of the neo4j driver.
+     */
     public TransactionProvider( Driver db ) {
         this.db = db;
     }
 
 
+    /**
+     * Returns the associated transaction for the given {@link PolyXid}.
+     *
+     * @param xid the target transaction from Polypheny
+     * @return the driver transaction from the Neo4j driver
+     */
     synchronized public Transaction get( PolyXid xid ) {
         if ( register.containsKey( xid ) ) {
             return register.get( xid ).right;
@@ -45,6 +54,11 @@ public class TransactionProvider {
     }
 
 
+    /**
+     * If the requested transaction exists it gets commited.
+     *
+     * @param xid the identifier for the transaction
+     */
     synchronized void commit( PolyXid xid ) {
         if ( register.containsKey( xid ) ) {
             Pair<Session, Transaction> pair = register.get( xid );
@@ -55,6 +69,11 @@ public class TransactionProvider {
     }
 
 
+    /**
+     * If the requested transaction exists it gets rolled back.
+     *
+     * @param xid the identifier for the transaction
+     */
     synchronized void rollback( PolyXid xid ) {
         if ( register.containsKey( xid ) ) {
             Pair<Session, Transaction> pair = register.get( xid );
@@ -67,10 +86,15 @@ public class TransactionProvider {
     }
 
 
+    /**
+     * Starts a new Neo4j driver session and returns a transaction for a given {@link PolyXid}.
+     *
+     * @param xid the identifier form Polypheny.
+     * @return a Neo4j driver specific transaction
+     */
     synchronized public Transaction startSession( PolyXid xid ) {
         Session session = db.session();
         Transaction trx = session.beginTransaction();
-        ;
         register.put( xid, Pair.of( session, trx ) );
         return trx;
     }
