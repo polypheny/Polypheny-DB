@@ -150,7 +150,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
         String s = AlgOptUtil.dumpPlan( "", x, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
         assertThat(
                 Util.toLinux( s ),
-                equalTo( "EnumerableFilter(condition=[>($1, 1)])\n  EnumerableScan(table=[[myTable]])\n" ) );
+                equalTo( "EnumerableFilter(model=[RELATIONAL], condition=[>($1, 1)])\n  EnumerableScan(model=[RELATIONAL], table=[[myTable]])\n" ) );
     }
 
 

@@ -76,6 +76,7 @@ public class AlgJson {
                     "org.polypheny.db.algebra.core.",
                     "org.polypheny.db.algebra.logical.",
                     "org.polypheny.db.algebra.logical.graph.",
+                    "org.polypheny.db.algebra.logical.relational.",
                     "org.polypheny.db.adapter.cassandra.",
                     "org.polypheny.db.adapter.cottontail.",
                     "org.polypheny.db.adapter.cottontail.algebra.",
