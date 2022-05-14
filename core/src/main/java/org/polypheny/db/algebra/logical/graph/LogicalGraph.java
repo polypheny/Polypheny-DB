@@ -23,7 +23,7 @@ import java.util.Set;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.graph.RelationalTransformable;
+import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptTable;

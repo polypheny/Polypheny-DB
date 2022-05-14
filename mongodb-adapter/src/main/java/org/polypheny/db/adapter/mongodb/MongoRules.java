@@ -50,7 +50,7 @@ import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.core.document.Documents;
+import org.polypheny.db.algebra.core.document.DocumentsValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
@@ -669,11 +669,11 @@ public class MongoRules {
         public AlgNode convert( AlgNode alg ) {
             Values values = (Values) alg;
             if ( values.getModel() == NamespaceType.DOCUMENT ) {
-                Documents documents = (Documents) alg;
+                DocumentsValues documentsValues = (DocumentsValues) alg;
                 return new MongoDocuments(
                         alg.getCluster(),
                         alg.getRowType(),
-                        documents.getDocumentTuples(),
+                        documentsValues.getDocumentTuples(),
                         alg.getTraitSet().replace( out ),
                         values.getTuples()
                 );

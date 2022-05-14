@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
-import org.polypheny.db.algebra.logical.document.LogicalDocuments;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
@@ -123,8 +123,8 @@ public abstract class BaseRouter {
     }
 
 
-    protected RoutedAlgBuilder handleDocuments( LogicalDocuments node, RoutedAlgBuilder builder ) {
-        return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
+    protected RoutedAlgBuilder handleDocuments( LogicalDocumentsValues node, RoutedAlgBuilder builder ) {
+        return builder.documents( node.getDocumentTuples(), node.getRowType() );
     }
 
 

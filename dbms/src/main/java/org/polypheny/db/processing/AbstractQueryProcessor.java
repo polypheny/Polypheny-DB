@@ -317,7 +317,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().start( "Locking" );
             }
             if ( lock ) {
-                this.acquireLock(isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions());
+                this.acquireLock( isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions() );
             }
 
             //
@@ -586,7 +586,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void acquireLock(boolean isAnalyze, AlgRoot logicalRoot, Map<Integer, List<Long>> accessedPartitions) {
+    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Integer, List<Long>> accessedPartitions ) {
         // TODO @HENNLO Check if this is this is necessary to pass the partitions explicitly.
         // This currently only works for queries. Since DMLs are evaluated during routing.
         // This SHOULD be adjusted
@@ -595,12 +595,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         try {
             Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
             // Get locks for individual entities
-            EntityAccessMap accessMap = new EntityAccessMap(logicalRoot.alg, accessedPartitions);
+            EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            idAccessMap.add(Pair.of(LockManager.GLOBAL_LOCK, LockMode.SHARED));
+            idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
 
-            idAccessMap.addAll(accessMap.getAccessedEntityPair());
-            LockManager.INSTANCE.lock(idAccessMap, (TransactionImpl) statement.getTransaction());
+            idAccessMap.addAll( accessMap.getAccessedEntityPair() );
+            LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new RuntimeException( e );
         }
@@ -981,13 +981,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private List<ProposedRoutingPlan> route( AlgRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
         final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
-        if ( logicalRoot.alg.getTraitSet().contains( ModelTrait.GRAPH ) && logicalRoot.alg instanceof LogicalGraphModify ) {
-            AlgNode routedDml = dmlRouter.routeGraphDml( (LogicalGraphModify) logicalRoot.alg, statement );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
-        } else if ( logicalRoot.alg.getTraitSet().contains( ModelTrait.GRAPH ) ) {
-            RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
-            AlgNode node = RoutingManager.getInstance().getRouters().get( 0 ).routeGraph( builder, (AlgNode & GraphAlg) logicalRoot.alg, statement );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryClass() ) );
+        if ( logicalRoot.getModel() == ModelTrait.GRAPH ) {
+            return routeGraph( logicalRoot, queryInformation, dmlRouter );
         } else if ( logicalRoot.alg instanceof LogicalModify ) {
             AlgNode routedDml = dmlRouter.routeDml( (LogicalModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
@@ -1031,6 +1026,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             return distinctPlans;
         }
+    }
+
+
+    private List<ProposedRoutingPlan> routeGraph( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
+        if ( logicalRoot.alg instanceof LogicalGraphModify ) {
+            AlgNode routedDml = dmlRouter.routeGraphDml( (LogicalGraphModify) logicalRoot.alg, statement );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
+        }
+        RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
+        AlgNode node = RoutingManager.getInstance().getRouters().get( 0 ).routeGraph( builder, (AlgNode & GraphAlg) logicalRoot.alg, statement );
+        return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryClass() ) );
+    }
+
+
+    private List<ProposedRoutingPlan> routeDocument( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
+        return null;
     }
 
 

@@ -52,7 +52,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.document.LogicalDocuments;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
@@ -314,9 +314,9 @@ public class MqlToAlgConverter {
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
-        if ( usesDocumentModel ) {
+        /*if ( usesDocumentModel ) {
             root.usesDocumentModel = true;
-        }
+        }*/
         return root;
     }
 
@@ -753,7 +753,7 @@ public class MqlToAlgConverter {
 
     /**
      * Method transforms an insert into the appropriate {@link LogicalValues}
-     * when working with the relational model or the {@link LogicalDocuments} when handling a document model
+     * when working with the relational model or the {@link LogicalDocumentsValues} when handling a document model
      *
      * @param query the insert statement as Mql object
      * @param table the table/collection into which the values are inserted
@@ -801,7 +801,7 @@ public class MqlToAlgConverter {
      * @return the {@link Values} representation of the values
      */
     private AlgNode convertMultipleValues( BsonArray array, AlgDataType rowType ) {
-        LogicalDocuments docs = (LogicalDocuments) LogicalDocuments.create( cluster, ImmutableList.copyOf( array.asArray() ) );
+        LogicalDocumentsValues docs = (LogicalDocumentsValues) LogicalDocumentsValues.create( cluster, ImmutableList.copyOf( array.asArray() ) );
         /*if ( usesDocumentModel ) {
             return docs;
         } else {*/

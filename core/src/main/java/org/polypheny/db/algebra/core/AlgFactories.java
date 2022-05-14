@@ -32,7 +32,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.document.LogicalDocuments;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalExchange;
@@ -317,7 +317,6 @@ public class AlgFactories {
     }
 
 
-
     /**
      * Can create a {@link LogicalFilter} of the appropriate type for this rule's calling convention.
      */
@@ -509,8 +508,7 @@ public class AlgFactories {
         AlgNode createDocuments(
                 AlgOptCluster cluster,
                 ImmutableList<BsonValue> tuples,
-                AlgDataType rowType,
-                ImmutableList<ImmutableList<RexLiteral>> normalizedTuple );
+                AlgDataType rowType );
 
     }
 
@@ -521,13 +519,11 @@ public class AlgFactories {
         public AlgNode createDocuments(
                 AlgOptCluster cluster,
                 ImmutableList<BsonValue> tuples,
-                AlgDataType rowType,
-                ImmutableList<ImmutableList<RexLiteral>> normalizedTuple ) {
-            return LogicalDocuments.create(
+                AlgDataType rowType ) {
+            return LogicalDocumentsValues.create(
                     cluster,
                     ImmutableList.copyOf( tuples ),
-                    rowType,
-                    ImmutableList.copyOf( normalizedTuple ) );
+                    rowType );
         }
 
     }

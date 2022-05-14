@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core.document;
+package org.polypheny.db.algebra.core.relational;
 
-import com.google.common.collect.ImmutableList;
-import org.bson.BsonValue;
-import org.polypheny.db.rex.RexLiteral;
+import java.util.List;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
+
+public interface RelationalTransformable {
+
+    default CatalogReader getCatalogReader() {
+        throw new UnsupportedOperationException();
+    }
 
 
-public interface Documents {
+    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities );
 
-    ImmutableList<ImmutableList<RexLiteral>> getTuples();
-
-    ImmutableList<BsonValue> getDocumentTuples();
 
 }

@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
@@ -44,7 +45,7 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
-import org.polypheny.db.algebra.logical.document.LogicalDocuments;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
@@ -847,7 +848,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
                 if ( alg.getInput() instanceof GraphProject ) {
                     return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
-                    //inputs.addAll( ((LogicalGraphProject)alg.getInput()).ge );
                 }
 
                 break;
@@ -1121,9 +1121,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
-        } else if ( node instanceof LogicalValues ) {
+        } else if ( node instanceof Values ) {
             if ( node.getModel() == NamespaceType.DOCUMENT ) {
-                return handleDocuments( (LogicalDocuments) node, builder );
+                return handleDocuments( (LogicalDocumentsValues) node, builder );
             }
 
             LogicalValues values = (LogicalValues) node;

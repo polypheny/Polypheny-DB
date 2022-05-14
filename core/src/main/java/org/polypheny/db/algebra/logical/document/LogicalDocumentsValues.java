@@ -20,21 +20,14 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.Getter;
 import org.bson.BsonDocument;
-import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
-import org.bson.json.JsonMode;
-import org.bson.json.JsonWriterSettings;
 import org.bson.types.ObjectId;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.document.Documents;
+import org.polypheny.db.algebra.core.document.DocumentsValues;
+import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.metadata.AlgMdCollation;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -42,22 +35,20 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BsonUtil;
 
 
-public class LogicalDocuments extends LogicalValues implements Documents {
+public class LogicalDocumentsValues extends DocumentsValues implements RelationalTransformable {
 
     private final static PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-
-    private final AlgDataType rowType;
-    @Getter
-    private final ImmutableList<BsonValue> documentTuples;
 
 
     /**
@@ -87,37 +78,30 @@ public class LogicalDocuments extends LogicalValues implements Documents {
      * @param defaultRowType, substitution rowType, which is "_id", "_data" and possible fixed columns if they exist
      * @param traitSet the used traitSet
      * @param tuples the documents in their native BSON format
-     * @param normalizedTuples the documents in their substituted relational format
      */
-    public LogicalDocuments( AlgOptCluster cluster, AlgDataType defaultRowType, AlgTraitSet traitSet, ImmutableList<BsonValue> tuples, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-        super( cluster, traitSet, defaultRowType, validateLiterals( normalizedTuples, defaultRowType, cluster.getRexBuilder() ) );
-        this.documentTuples = validate( tuples, defaultRowType );
-        this.rowType = defaultRowType;
+    public LogicalDocumentsValues( AlgOptCluster cluster, AlgDataType defaultRowType, AlgTraitSet traitSet, ImmutableList<BsonValue> tuples ) {
+        super( cluster, traitSet, defaultRowType, tuples );
     }
 
 
     public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> values ) {
         List<AlgDataTypeField> fields = new ArrayList<>();
         fields.add( new AlgDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
-        fields.add( new AlgDataTypeFieldImpl( "_data", 1, typeFactory.createMapType( typeFactory.createPolyType( PolyType.VARCHAR, 2024 ), typeFactory.createPolyType( PolyType.ANY ) ) ) );
+        fields.add( new AlgDataTypeFieldImpl( "_data", 1, typeFactory.createPolyType( PolyType.JSON ) ) );//typeFactory.createMapType( typeFactory.createPolyType( PolyType.VARCHAR, 2024 ), typeFactory.createPolyType( PolyType.ANY ) ) ) );
         AlgDataType defaultRowType = new AlgRecordType( fields );
 
-        //ImmutableList<ImmutableList<RexLiteral>> normalizedTuples = normalize( tuples, rowTypes, defaultRowType );
-
-        return create( cluster, getOrAddId( values ), defaultRowType, normalizeToMap( values, defaultRowType, cluster.getRexBuilder() ) );
+        return create( cluster, getOrAddId( values ), defaultRowType );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> tuples, AlgDataType defaultRowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-        final AlgMetadataQuery mq = cluster.getMetadataQuery();
-        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
-                .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.values( mq, defaultRowType, normalizedTuples ) );
-        return new LogicalDocuments( cluster, defaultRowType, traitSet, tuples, normalizedTuples );
+    public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> tuples, AlgDataType defaultRowType ) {
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        return new LogicalDocumentsValues( cluster, defaultRowType, traitSet, tuples );
     }
 
 
     public static AlgNode create( LogicalValues input ) {
-        return create( input.getCluster(), bsonify( input.getTuples(), input.getRowType() ), input.getRowType(), input.getTuples() );
+        return create( input.getCluster(), bsonify( input.getTuples(), input.getRowType() ), input.getRowType() );
     }
 
 
@@ -169,16 +153,10 @@ public class LogicalDocuments extends LogicalValues implements Documents {
 
 
     @Override
-    public ImmutableList<ImmutableList<RexLiteral>> getTuples( AlgInput input ) {
-        return super.getTuples( input );
-    }
-
-
-    @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         assert inputs.isEmpty();
-        return new LogicalDocuments( getCluster(), rowType, traitSet, documentTuples, tuples );
+        return new LogicalDocumentsValues( getCluster(), rowType, traitSet, documentTuples );
     }
 
 
@@ -205,37 +183,6 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-    private ImmutableList<BsonValue> validate( ImmutableList<BsonValue> tuples, AlgDataType defaultRowType ) {
-        List<BsonValue> docs = new ArrayList<>();
-        List<String> names = defaultRowType.getFieldNames();
-
-        for ( BsonValue tuple : tuples ) {
-            BsonDocument document = new BsonDocument();
-            if ( tuple.isDocument() ) {
-                for ( String name : names ) {
-                    if ( tuple.asDocument().containsKey( name ) ) {
-                        document.put( name, tuple.asDocument().get( name ) );
-                    } else {
-                        document.put( name, new BsonNull() );
-                    }
-                }
-                BsonDocument data = new BsonDocument();
-                if ( tuple.asDocument().containsKey( "_data" ) ) {
-                    data.putAll( tuple.asDocument().get( "_data" ).asDocument() );
-                }
-                tuple.asDocument()
-                        .entrySet()
-                        .stream()
-                        .filter( e -> !names.contains( e.getKey() ) )
-                        .forEach( k -> data.put( k.getKey(), k.getValue() ) );
-
-            }
-            docs.add( document );
-        }
-        return ImmutableList.copyOf( docs );
-    }
-
-
     private static ImmutableList<ImmutableList<RexLiteral>> normalizeToMap( List<BsonValue> tuples, AlgDataType rowType, RexBuilder rexBuilder ) {
         List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
 
@@ -253,50 +200,16 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     }
 
 
-    private static ImmutableList<ImmutableList<RexLiteral>> normalize( List<BsonValue> tuples, RexBuilder rexBuilder ) {
-        List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
+    @Override
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities ) {
+        AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
 
-        JsonWriterSettings writerSettings = JsonWriterSettings.builder().outputMode( JsonMode.STRICT ).build();
+        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder() );
 
-        for ( BsonValue tuple : tuples ) {
-            List<RexLiteral> normalizedTuple = new ArrayList<>();
-            normalizedTuple.add( 0, rexBuilder.makeLiteral( ObjectId.get().toString() ) );
-            //normalizedTuple.add( 0, new RexLiteral( new NlsString( ObjectId.get().toString(), "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, 24 ), PolyType.CHAR ) );
-            String parsed = tuple.asDocument().toJson( writerSettings );
-            normalizedTuple.add( 1, rexBuilder.makeLiteral( parsed ) );
-            //normalizedTuple.add( new RexLiteral( new NlsString( parsed, "ISO-8859-1", SqlCollation.IMPLICIT ), typeFactory.createPolyType( PolyType.CHAR, parsed.length() ), PolyType.CHAR ) );
-            normalized.add( ImmutableList.copyOf( normalizedTuple ) );
-        }
+        LogicalValues jsonValues = new LogicalValues( cluster, out, entities.get( 0 ).getRowType(), normalize( documentTuples, cluster.getRexBuilder() ) );
 
-        return ImmutableList.copyOf( normalized );
+        return List.of( jsonValues );
     }
 
-
-    private static ImmutableList<ImmutableList<RexLiteral>> validateLiterals( ImmutableList<ImmutableList<RexLiteral>> tuples, AlgDataType rowType, RexBuilder rexBuilder ) {
-        List<ImmutableList<RexLiteral>> validated = new ArrayList<>();
-        List<String> names = rowType.getFieldNames();
-        for ( ImmutableList<RexLiteral> values : tuples ) {
-            List<RexLiteral> row = new ArrayList<>();
-            int pos = 0;
-            for ( String name : names ) {
-                if ( name.equals( "_id" ) ) {
-                    String id = values.get( pos ).getValueAs( String.class );
-                    if ( id.matches( "ObjectId\\([0-9abcdef]{24}\\)" ) ) {
-                        id = id.substring( 9, 33 );
-                    } else {
-                        id = ObjectId.get().toString();
-                    }
-                    row.add( rexBuilder.makeLiteral( id ) );
-
-                } else {
-                    row.add( values.get( pos ) );
-                }
-                pos++;
-            }
-            validated.add( ImmutableList.copyOf( row ) );
-        }
-
-        return ImmutableList.copyOf( validated );
-    }
 
 }

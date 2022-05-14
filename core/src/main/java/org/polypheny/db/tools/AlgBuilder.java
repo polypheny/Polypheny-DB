@@ -2163,8 +2163,8 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-        AlgNode documents = documentsFactory.createDocuments( cluster, tuples, rowType, copy( normalizedTuples ) );
+    public AlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType ) {
+        AlgNode documents = documentsFactory.createDocuments( cluster, tuples, rowType );
         push( documents );
         return this;
     }

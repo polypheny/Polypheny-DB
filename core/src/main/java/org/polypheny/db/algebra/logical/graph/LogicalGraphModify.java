@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.graph.GraphModify;
-import org.polypheny.db.algebra.core.graph.RelationalTransformable;
+import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;

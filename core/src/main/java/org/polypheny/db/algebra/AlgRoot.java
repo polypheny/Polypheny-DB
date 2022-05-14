@@ -26,6 +26,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
@@ -80,7 +82,6 @@ public class AlgRoot {
     public final Kind kind;
     public final ImmutableList<Pair<Integer, String>> fields;
     public final AlgCollation collation;
-    public boolean usesDocumentModel = false;
 
 
     /**
@@ -210,6 +211,11 @@ public class AlgRoot {
         return collations != null
                 && collations.size() == 1
                 && collations.get( 0 ).equals( collation );
+    }
+
+
+    public ModelTrait getModel() {
+        return alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE );
     }
 
 }

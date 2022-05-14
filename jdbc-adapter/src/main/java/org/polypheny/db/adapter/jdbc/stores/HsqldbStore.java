@@ -238,6 +238,7 @@ public class HsqldbStore extends AbstractJdbcStore {
                 return "LONGVARCHAR";
             case NODE:
             case EDGE:
+            case DOCUMENT:
                 return "LONGVARCHAR";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );

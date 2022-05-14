@@ -18,7 +18,7 @@ package org.polypheny.db.schema.document;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.logical.document.LogicalDocuments;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -49,8 +49,8 @@ public class DataModelShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalModify modify ) {
         if ( modify.getTable().getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
-            if ( modify.getInput() instanceof LogicalValues && !(modify.getInput() instanceof LogicalDocuments) ) {
-                modify.replaceInput( 0, LogicalDocuments.create( (LogicalValues) modify.getInput() ) );
+            if ( modify.getInput() instanceof LogicalValues && !(modify.getInput() instanceof LogicalDocumentsValues) ) {
+                modify.replaceInput( 0, LogicalDocumentsValues.create( (LogicalValues) modify.getInput() ) );
             }
             return super.visit( modify );
         }
