@@ -30,6 +30,7 @@ dependencies {
     implementation project(":mql-language")
     implementation project(":pig-language")
     implementation project(":cql-language")
+    implementation project(":polyscript-language")
     implementation project(":cassandra-adapter")
     implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")

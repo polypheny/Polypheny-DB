@@ -3,6 +3,9 @@ options {
     LOOKAHEAD = 3;
 }
 PARSER_BEGIN(PolyScript)
+
+package org.polypheny.db.polyscript.parser;
+
 import java.util.List;
     import java.util.ArrayList;
     public class PolyScript {
@@ -32,7 +35,7 @@ TOKEN : { < RETURN : "return" > }
 TOKEN : { < STRING : (["0"-"9", "a"-"z", "A"-"Z", "*", ";", ",", "'", " "])+ > }
 TOKEN : { < PAREN_STRING : (<LPAREN><STRING><RPAREN>) > }
 
-List<String> Start() : { List<String> queries = new ArrayList<String>(); String query; int parenCount; }
+public List<String> Start() : { List<String> queries = new ArrayList<String>(); String query; int parenCount; }
 {
     (<SQL>query = query() {queries.add(query);}<RPAREN>
     <SEMICOLON>
