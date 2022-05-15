@@ -1,0 +1,65 @@
+options {
+    STATIC = false ;
+    LOOKAHEAD = 3;
+}
+PARSER_BEGIN(PolyScript)
+import java.util.List;
+    import java.util.ArrayList;
+    public class PolyScript {
+        public static void main( String[] args ) throws ParseException, TokenMgrError {
+//            System.out.println("Initializing PolyScript...");
+            PolyScript parser = new PolyScript( System.in ) ;
+//            System.out.println("Parsing input...");
+            List<String> result = parser.Start() ;
+            System.out.println("done");
+            System.out.println(String.format("parsed query: %s", result));
+        }
+    }
+PARSER_END(PolyScript)
+
+// Lexical analyzer specification
+//SKIP : { " " }
+SKIP : { "\n" | "\r" | "\r\n" }
+TOKEN : { < SQL : "sql(" > }
+TOKEN : { < MQL : "mql" > }
+TOKEN : { < CQL : "cql" > }
+TOKEN : { < PY : "py" > }
+TOKEN : { < LPAREN : "(" > }
+TOKEN : { < RPAREN : ")" > }
+TOKEN : { < SEMICOLON : ";" > }
+TOKEN : { < COMMIT : "commit" > }
+TOKEN : { < RETURN : "return" > }
+TOKEN : { < STRING : (["0"-"9", "a"-"z", "A"-"Z", "*", ";", ",", "'", " "])+ > }
+TOKEN : { < PAREN_STRING : (<LPAREN><STRING><RPAREN>) > }
+
+List<String> Start() : { List<String> queries = new ArrayList<String>(); String query; int parenCount; }
+{
+    (<SQL>query = query() {queries.add(query);}<RPAREN>
+    <SEMICOLON>
+    |
+    <MQL><LPAREN> query = query() {queries.add(query);}<RPAREN>
+    <SEMICOLON>
+
+    |
+    <PY><LPAREN> query = query() {queries.add(query);}<RPAREN>
+    <SEMICOLON>
+    |
+    <CQL><LPAREN> query = query() {queries.add(query);}<RPAREN>
+    <SEMICOLON>)+
+    {
+        return queries;
+    }
+}
+
+
+String query():
+{
+    Token t;
+}
+{
+    t = <STRING><PAREN_STRING><STRING><PAREN_STRING> { return t.image; }
+    |
+    t = <STRING><PAREN_STRING> { return t.image; }
+    |
+    t = <STRING> { return t.image; }
+}

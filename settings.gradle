@@ -31,3 +31,5 @@ include 'ethereum-adapter'
 
 
 include 'dbms'
+include 'polyscript-language'
+

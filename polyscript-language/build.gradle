@@ -1,0 +1,97 @@
+import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+
+group "org.polypheny"
+
+
+configurations {
+    javacc
+}
+
+
+buildscript {
+    dependencies {
+        // JavaCC (https://github.com/johnmartel/javaccPlugin)
+        classpath group: 'ca.coglinc2.javacc', name: 'ca.coglinc2.javacc.gradle.plugin', version: javacc_plugin_version
+    }
+}
+
+
+dependencies {
+    // Javacc
+    javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version  // BSD 2-clause
+
+    implementation project(':core')
+    implementation project(':sql-language')
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+//    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+//
+//    testImplementation group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version  // Apache 2.0
+//    testImplementation group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version  // HSQLDB License (BSD-style)
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java","build/generated-sources"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+
+/**
+ * Compile Pipeline
+ */
+task generateParser (type: CompileJavaccTask) {
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: 'false', lookahead: '3']
+    inputDirectory = file('src/main/codegen/javacc')
+    outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/org/polypheny/db/polyscript/parser')
+}
+compileJava {
+    dependsOn("generateParser")
+}
+
+
+/**
+ * Tests
+ */
+test {
+    include '**/PolyScriptTest.class'
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
