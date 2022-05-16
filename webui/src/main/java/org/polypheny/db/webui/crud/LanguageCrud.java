@@ -106,11 +106,92 @@ public class LanguageCrud {
             case PIG:
                 results = anyPigQuery( session, request, transactionManager, userName, databaseName, observer );
                 break;
+            case POLYSCRIPT:
+                results = anyPolyScriptQuery( session, request, transactionManager, userName, databaseName, observer );
+                break;
             default:
                 return Collections.singletonList( new Result( "The used language seems not to be supported!" ) );
         }
 
         return results;
+    }
+
+    private static List<Result> anyPolyScriptQuery(     Session session,
+                                                        QueryRequest request,
+                                                        TransactionManager transactionManager,
+                                                        String userName,
+                                                        String databaseName,
+                                                        InformationObserver observer ) {
+        String query = request.query;
+        Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
+        try {
+            if ( query.trim().equals( "" ) ) {
+                throw new RuntimeException( "PolyScript query is an empty string!" );
+            }
+
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Starting to process PolyScript resource request. Session ID: {}.", session );
+            }
+
+            if ( request.analyze ) {
+                transaction.getQueryAnalyzer().setSession( session );
+            }
+
+            // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+            // and in case of auto commit of, the information is overwritten
+            InformationManager queryAnalyzer = null;
+            if ( request.analyze ) {
+                queryAnalyzer = transaction.getQueryAnalyzer().observe( observer );
+            }
+
+            Statement statement = transaction.createStatement();
+
+            long executionTime = System.nanoTime();
+            Processor processor = transaction.getProcessor( QueryLanguage.POLYSCRIPT );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Parsing" );
+            }
+            Node parsed = processor.parse( query );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().stop( "Parsing" );
+            }
+
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Translation" );
+            }
+            AlgRoot algRoot = processor.translate( statement, parsed, new QueryParameters( query, SchemaType.RELATIONAL ) );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().stop( "Translation" );
+            }
+
+            PolyResult polyResult = statement.getQueryProcessor().prepareQuery( algRoot, true );
+
+            Result result = getResult( QueryLanguage.POLYSCRIPT, statement, request, query, polyResult, request.noLimit );
+
+            String commitStatus;
+            try {
+                transaction.commit();
+                commitStatus = "Committed";
+            } catch ( TransactionException e ) {
+                log.error( "Error while committing", e );
+                try {
+                    transaction.rollback();
+                    commitStatus = "Rolled back";
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", e );
+                    commitStatus = "Error while rolling back";
+                }
+            }
+
+            executionTime = System.nanoTime() - executionTime;
+            if ( queryAnalyzer != null ) {
+                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, 1 );
+            }
+
+            return Collections.singletonList( result );
+        } catch ( Throwable t ) {
+            return Collections.singletonList( new Result( t ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() ) );
+        }
     }
 
 

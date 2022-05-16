@@ -27,6 +27,7 @@ import java.util.Set;
 
 public class PolyScriptNode implements Node {
     private final String statement;
+    private PolyScriptNode next;
 
     public PolyScriptNode(String statement) {
         this.statement = statement;
@@ -39,17 +40,17 @@ public class PolyScriptNode implements Node {
 
     @Override
     public Kind getKind() {
-        return null;
+        return Kind.PROCEDURE_CALL;
     }
 
     @Override
     public Catalog.QueryLanguage getLanguage() {
-        return null;
+        return Catalog.QueryLanguage.POLYSCRIPT;
     }
 
     @Override
     public boolean isA(Set<Kind> category) {
-        return false;
+        return getKind().belongsTo( category );
     }
 
     @Override

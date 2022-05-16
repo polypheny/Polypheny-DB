@@ -1677,7 +1677,9 @@ public abstract class Catalog {
         @SerializedName("rel")
         REL_ALG( SchemaType.RELATIONAL ),
         @SerializedName("pig")
-        PIG( SchemaType.RELATIONAL );
+        PIG( SchemaType.RELATIONAL ),
+        @SerializedName("ps")
+        POLYSCRIPT( SchemaType.RELATIONAL );
 
         @Getter
         private final SchemaType schemaType;
@@ -1700,8 +1702,10 @@ public abstract class Catalog {
                     return CQL;
                 case "pig":
                     return PIG;
+                case "ps":
+                    return POLYSCRIPT;
             }
-
+            // This exception doesn't appear in the the console and neither on the WS client
             throw new RuntimeException( "The query language seems not to be supported!" );
         }
     }

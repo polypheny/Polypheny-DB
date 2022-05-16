@@ -43,12 +43,7 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.processing.DataMigratorImpl;
-import org.polypheny.db.processing.JsonRelProcessorImpl;
-import org.polypheny.db.processing.MqlProcessorImpl;
-import org.polypheny.db.processing.Processor;
-import org.polypheny.db.processing.SqlProcessorImpl;
+import org.polypheny.db.processing.*;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -248,6 +243,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 return new MqlProcessorImpl();
             case PIG:
                 return new PigProcessorImpl();
+            case POLYSCRIPT:
+                return new PolyScriptProcessorImpl();
             default:
                 throw new RuntimeException( "This language seems to not be supported!" );
         }
