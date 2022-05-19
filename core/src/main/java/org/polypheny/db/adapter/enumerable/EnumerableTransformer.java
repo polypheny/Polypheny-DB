@@ -65,6 +65,10 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             return implementUnModifyTransform( implementor, pref );
         }
 
+        if ( outTrait == ModelTrait.RELATIONAL && outTrait == ModelTrait.DOCUMENT ) {
+            return implementDocument( implementor, pref );
+        }
+
         BlockBuilder builder = new BlockBuilder();
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
 
@@ -125,6 +129,11 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
                                 EnumUtils.NO_EXPRS,
                                 ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    private Result implementDocument( EnumerableAlgImplementor implementor, Prefer pref ) {
+        return implementor.visitChild( this, 0, (EnumerableAlg) getInput( 0 ), pref );
     }
 
 

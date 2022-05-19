@@ -52,6 +52,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
@@ -64,6 +65,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -275,13 +278,14 @@ public class MqlToAlgConverter {
 
         if ( table instanceof AlgOptTableImpl && table.getTable() instanceof LogicalView ) {
             node = LogicalViewScan.create( cluster, table );
+        } else if ( table instanceof AlgOptTableImpl && table.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
+            node = LogicalDocumentScan.create( cluster, table );
+            this.usesDocumentModel = true;
         } else {
             node = LogicalScan.create( cluster, table );
         }
 
-        if ( table.getTable() == null || table.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
-            this.usesDocumentModel = true;
-        }
+        AlgRecordType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
 
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
@@ -289,15 +293,15 @@ public class MqlToAlgConverter {
 
         switch ( kind ) {
             case FIND:
-                AlgNode find = convertFind( (MqlFind) query, table.getRowType(), node );
+                AlgNode find = convertFind( (MqlFind) query, rowType, node );
                 root = AlgRoot.of( find, find.getRowType(), Kind.SELECT );
                 break;
             case COUNT:
-                AlgNode count = convertCount( (MqlCount) query, table.getRowType(), node );
+                AlgNode count = convertCount( (MqlCount) query, rowType, node );
                 root = AlgRoot.of( count, count.getRowType(), Kind.SELECT );
                 break;
             case AGGREGATE:
-                AlgNode aggregate = convertAggregate( (MqlAggregate) query, table.getRowType(), node );
+                AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, node );
                 root = AlgRoot.of( aggregate, Kind.SELECT );
                 break;
             /// dmls
@@ -759,7 +763,7 @@ public class MqlToAlgConverter {
      * @param table the table/collection into which the values are inserted
      * @return the modified AlgNode
      */
-    private LogicalModify convertInsert( MqlInsert query, AlgOptTable table ) {
+    private AlgNode convertInsert( MqlInsert query, AlgOptTable table ) {
         return LogicalModify.create(
                 table,
                 catalogReader,
@@ -1503,7 +1507,7 @@ public class MqlToAlgConverter {
 
 
     private AlgDataTypeField getDefaultDataField( AlgDataType rowType ) {
-        return rowType.getField( "_data", false, false );
+        return rowType.getField( "d", false, false );
     }
 
 

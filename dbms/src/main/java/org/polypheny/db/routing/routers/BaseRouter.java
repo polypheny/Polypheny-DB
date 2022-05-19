@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
@@ -358,6 +359,16 @@ public abstract class BaseRouter {
                 builder.makeInputRef( nodesProperty.getRowType().getFieldList().get( 0 ).getType(), nodes.getRowType().getFieldList().size() ) );
 
         return new LogicalJoin( alg.getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+    }
+
+
+    protected RoutedAlgBuilder handleDocumentsScan( DocumentScan node, Statement statement, RoutedAlgBuilder builder ) {
+        List<CatalogColumn> columns = Catalog.getInstance().getColumns( node.getDocument().getTable().getTableId() );
+        AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
+        builder.scan( getSubstitutionTable( statement, node.getDocument().getTable().getTableId(), columns.get( 0 ).id ) );
+        builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType() ) );
+        return builder;
     }
 
 }

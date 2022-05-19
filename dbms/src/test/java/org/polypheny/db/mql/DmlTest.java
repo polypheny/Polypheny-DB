@@ -49,7 +49,7 @@ public class DmlTest extends MqlTestTemplate {
         assertTrue(
                 MongoConnection.checkResultSet(
                         result,
-                        ImmutableList.of( new Object[]{ "id_", data } ) ) );
+                        ImmutableList.of( new Object[]{ data } ), true ) );
 
     }
 
@@ -66,8 +66,15 @@ public class DmlTest extends MqlTestTemplate {
                 MongoConnection.checkResultSet(
                         result,
                         data.stream()
-                                .map( d -> new Object[]{ "id_", d } )
-                                .collect( Collectors.toList() ) ) );
+                                .map( d -> new Object[]{ d } )
+                                .collect( Collectors.toList() ), true ) );
+    }
+
+
+    @Test
+    @Category(FileExcluded.class)
+    public void deleteTest() {
+        deleteMany( "{}" );
     }
 
 }

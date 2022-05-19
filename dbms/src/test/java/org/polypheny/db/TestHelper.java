@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.BsonDocument;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.polypheny.db.catalog.Catalog;
@@ -318,19 +319,28 @@ public class TestHelper {
         }
 
 
-        public static boolean checkResultSet( Result result, List<Object[]> expected ) {
+        public static boolean checkResultSet( Result result, List<Object[]> expected, boolean containsId ) {
             assertEquals( expected.size(), result.getData().length );
 
             int j = 0;
             for ( String[] data : result.getData() ) {
                 int i = 0;
                 for ( String entry : data ) {
-                    if ( !result.getHeader()[i].name.equals( "_id" ) ) {
-                        if ( entry != null && expected.get( j )[i] != null ) {
-                            assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
+                    if ( containsId && !entry.contains( "_id" ) ) {
+                        return false;
+                    }
+
+                    if ( entry != null && expected.get( j )[i] != null ) {
+                        if ( containsId && result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
+                            BsonDocument doc = BsonDocument.parse( entry );
+                            doc.remove( "_id" );
+
+                            assertEquals( BsonDocument.parse( ((String) expected.get( j )[i]) ), doc );
                         } else {
-                            assertEquals( expected.get( j )[i], entry );
+                            assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
                         }
+                    } else {
+                        assertEquals( expected.get( j )[i], entry );
                     }
                     i++;
                 }

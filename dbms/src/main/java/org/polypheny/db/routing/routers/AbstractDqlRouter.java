@@ -32,6 +32,8 @@ import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
+import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
@@ -178,6 +180,10 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             builders = this.buildDql( node.getInput( i ), builders, statement, cluster, queryInformation );
+        }
+
+        if ( node instanceof LogicalDocumentScan ) {
+            return Lists.newArrayList( super.handleDocumentsScan( (DocumentScan) node, statement, builders.get( 0 ) ) );
         }
 
         if ( node instanceof LogicalScan && node.getTable() != null ) {

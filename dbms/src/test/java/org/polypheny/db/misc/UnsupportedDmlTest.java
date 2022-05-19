@@ -49,7 +49,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
         assertTrue(
                 MongoConnection.checkResultSet(
                         res,
-                        ImmutableList.of( new Object[]{ "id_", "{\"hi\":3,\"stock\":5}" } ) ) );
+                        ImmutableList.of( new Object[]{ "id_", "{\"hi\":3,\"stock\":5}" } ), true ) );
     }
 
 

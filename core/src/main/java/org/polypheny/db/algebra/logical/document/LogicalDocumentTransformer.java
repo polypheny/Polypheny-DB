@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.enumerable;
+package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class EnumerableDocumentTransformer extends DocumentTransformer implements EnumerableAlg {
+public class LogicalDocumentTransformer extends DocumentTransformer {
 
     /**
      * Creates an <code>AbstractRelNode</code>.
@@ -33,20 +33,14 @@ public class EnumerableDocumentTransformer extends DocumentTransformer implement
      * @param traitSet
      * @param rowType
      */
-    public EnumerableDocumentTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, AlgDataType rowType ) {
+    public LogicalDocumentTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, AlgDataType rowType ) {
         super( cluster, inputs, traitSet, rowType );
     }
 
 
     @Override
-    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        return implementor.visitChild( this, 0, (EnumerableAlg) getInput( 0 ), pref );
-    }
-
-
-    @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableDocumentTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, rowType );
+        return new LogicalDocumentTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, rowType );
     }
 
 }

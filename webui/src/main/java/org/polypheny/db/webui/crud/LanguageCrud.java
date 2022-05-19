@@ -362,7 +362,7 @@ public class LanguageCrud {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, polyResult, noLimit ) );
+                    results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, polyResult, noLimit ).setNamespaceType( NamespaceType.DOCUMENT ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }
@@ -516,7 +516,7 @@ public class LanguageCrud {
             return results;
 
         } catch ( Throwable t ) {
-            log.warn( "failed during execution" + request.query );
+            log.warn( "failed during execution\n" + request.query );
             ArrayList<Result> results = new ArrayList<>();
             attachError( transaction, results, query, t );
             return results;

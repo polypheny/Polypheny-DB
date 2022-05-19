@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -460,6 +461,7 @@ public abstract class DdlManager {
      */
     public abstract void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
 
+    public abstract void createCollection( long schemaId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException;
 
     /**
      * Add new partitions for the column
@@ -551,6 +553,8 @@ public abstract class DdlManager {
 
 
     public abstract long createGraphDatabase( long databaseId, String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement );
+
+    public abstract long createDocumentDatabase( long databaseId, String name, boolean modifiable, long userId, EntityType type, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement ) throws NamespaceAlreadyExistsException;
 
     public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
 

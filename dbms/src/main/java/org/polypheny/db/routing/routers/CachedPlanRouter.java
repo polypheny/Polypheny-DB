@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
@@ -54,6 +55,10 @@ public class CachedPlanRouter extends BaseRouter {
     private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, Statement statement, AlgOptCluster cluster, CachedProposedRoutingPlan cachedPlan ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan );
+        }
+
+        if ( node instanceof DocumentScan ) {
+            return super.handleDocumentsScan( (DocumentScan) node, statement, builder );
         }
 
         if ( node instanceof LogicalScan && node.getTable() != null ) {

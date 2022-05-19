@@ -45,6 +45,7 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
@@ -1096,7 +1097,20 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
 
-        if ( node instanceof LogicalScan && node.getTable() != null ) {
+        if ( node instanceof LogicalDocumentScan ) {
+            builder = super.handleScan(
+                    builder,
+                    placements.get( 0 ).tableId,
+                    placements.get( 0 ).adapterUniqueName,
+                    catalogEntity.getNamespaceName(),
+                    catalogEntity.name,
+                    placements.get( 0 ).physicalSchemaName,
+                    partitionPlacement.physicalTableName,
+                    partitionPlacement.partitionId );
+            LogicalScan scan = (LogicalScan) builder.build();
+            builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
+            return builder;
+        } else if ( node instanceof LogicalScan && node.getTable() != null ) {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
 
             if ( table.getTable() instanceof LogicalTable ) {

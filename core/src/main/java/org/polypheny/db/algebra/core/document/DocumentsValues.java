@@ -89,7 +89,7 @@ public abstract class DocumentsValues extends Values {
             String id = ObjectId.get().toString();
             if ( tuple.isDocument() && tuple.asDocument().containsKey( "_id" ) ) {
                 id = tuple.asDocument().get( "_id" ).toString();
-                tuple.asDocument().remove( "_id" );
+                //tuple.asDocument().remove( "_id" );
             }
 
             normalizedTuple.add( 0, rexBuilder.makeLiteral( id ) );

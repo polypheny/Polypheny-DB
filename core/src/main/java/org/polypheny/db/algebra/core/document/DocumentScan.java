@@ -14,36 +14,40 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.logical.graph;
+package org.polypheny.db.algebra.core.document;
 
 import java.util.List;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.core.graph.GraphTransformer;
-import org.polypheny.db.algebra.type.AlgDataType;
+import lombok.Getter;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.PolyType;
 
-public class LogicalGraphTransformer extends GraphTransformer {
+public abstract class DocumentScan extends AbstractAlgNode {
+
+    @Getter
+    private final AlgOptTable document;
+
 
     /**
      * Creates an <code>AbstractRelNode</code>.
      *
      * @param cluster
-     * @param inputs
-     * @param rowType
-     * @param operationOrder
-     * @param insert
+     * @param traitSet
      */
-    public LogicalGraphTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
-        super( cluster, traitSet, inputs, rowType, operationOrder, operation );
+    public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable document ) {
+        super( cluster, traitSet );
+        this.document = document;
+        this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, rowType, operationOrder, operation );
+    public String algCompareString() {
+        return "$" + getClass().getSimpleName() + "$" + document.getTable().getTableId() + "$";
     }
 
 }

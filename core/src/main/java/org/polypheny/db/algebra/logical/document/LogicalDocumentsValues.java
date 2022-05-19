@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AlgNode;
@@ -164,20 +165,14 @@ public class LogicalDocumentsValues extends DocumentsValues implements Relationa
         List<BsonValue> docs = new ArrayList<>();
 
         for ( BsonValue value : values ) {
-            BsonDocument doc = new BsonDocument();
             if ( value.isDocument() ) {
-                BsonValue id;
+                BsonValue id = new BsonString( new BsonObjectId().getValue().toString() );
                 if ( value.asDocument().containsKey( "_id" ) ) {
                     id = value.asDocument().get( "_id" );
-                } else {
-                    id = new BsonObjectId();
                 }
-                doc.put( "_id", id );
-
-                value.asDocument().remove( "_id" );
-                doc.put( "_data", value );
+                value.asDocument().put( "_id", id );
             }
-            docs.add( doc );
+            docs.add( value );
         }
         return ImmutableList.copyOf( docs );
     }

@@ -63,6 +63,7 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -291,11 +292,11 @@ public class DdlManagerImpl extends DdlManager {
                     catalog.addPartitionPlacement(
                             adapter.getAdapterId(),
                             catalogEntity.id,
-                            catalogEntity.partitionProperty.partitionIds.get(0),
+                            catalogEntity.partitionProperty.partitionIds.get( 0 ),
                             PlacementType.AUTOMATIC,
                             physicalSchemaName,
                             physicalTableName,
-                            DataPlacementRole.UPTODATE);
+                            DataPlacementRole.UPTODATE );
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }
@@ -792,7 +793,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE);
+                    DataPlacementRole.UPTODATE );
         }
 
         // Make sure that the stores have created the schema
@@ -1003,8 +1004,8 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogEntity.id );
-        if (!catalog.validateDataPlacementsConstraints(catalogEntity.id, storeInstance.getAdapterId(),
-                dataPlacement.columnPlacementsOnAdapter, dataPlacement.getAllPartitionIds())) {
+        if ( !catalog.validateDataPlacementsConstraints( catalogEntity.id, storeInstance.getAdapterId(),
+                dataPlacement.columnPlacementsOnAdapter, dataPlacement.getAllPartitionIds() ) ) {
 
             throw new LastPlacementException();
         }
@@ -1330,17 +1331,17 @@ public class DdlManagerImpl extends DdlManager {
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogEntity.id );
         List<Long> removedPartitionIdsFromDataPlacement = new ArrayList<>();
         // Removed Partition Ids
-        for (long partitionId : dataPlacement.getAllPartitionIds()) {
-            if (!intendedPartitionIds.contains(partitionId)) {
-                removedPartitionIdsFromDataPlacement.add(partitionId);
+        for ( long partitionId : dataPlacement.getAllPartitionIds() ) {
+            if ( !intendedPartitionIds.contains( partitionId ) ) {
+                removedPartitionIdsFromDataPlacement.add( partitionId );
             }
         }
 
         List<Long> newPartitionIdsOnDataPlacement = new ArrayList<>();
         // Added Partition Ids
         for ( long partitionId : intendedPartitionIds ) {
-            if (!dataPlacement.getAllPartitionIds().contains(partitionId)) {
-                newPartitionIdsOnDataPlacement.add(partitionId);
+            if ( !dataPlacement.getAllPartitionIds().contains( partitionId ) ) {
+                newPartitionIdsOnDataPlacement.add( partitionId );
             }
         }
 
@@ -1357,7 +1358,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE)
+                    DataPlacementRole.UPTODATE )
             );
 
             storeInstance.createTable( statement.getPrepareContext(), catalogEntity, newPartitionIdsOnDataPlacement );
@@ -1412,7 +1413,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE);
+                        DataPlacementRole.UPTODATE );
             }
 
             storeInstance.createTable( statement.getPrepareContext(), catalogEntity, newPartitions );
@@ -1742,11 +1743,11 @@ public class DdlManagerImpl extends DdlManager {
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
                     tableId,
-                    catalogMaterializedView.partitionProperty.partitionIds.get(0),
+                    catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE);
+                    DataPlacementRole.UPTODATE );
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
@@ -1797,8 +1798,6 @@ public class DdlManagerImpl extends DdlManager {
         CatalogGraphDatabase graph = catalog.getGraph( graphId );
         PolySchemaBuilder.getInstance().getCurrent();
 
-        //stores.forEach( s -> catalog.addGraphPlacement( s.getAdapterId(), graphId ) );
-
         for ( DataStore store : stores ) {
             catalog.addGraphPlacement( store.getAdapterId(), graphId );
 
@@ -1812,6 +1811,24 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
+    public long createDocumentDatabase( long databaseId, String name, boolean modifiable, long userId, EntityType type, @org.jetbrains.annotations.Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement ) throws NamespaceAlreadyExistsException {
+        // Check if there is already a schema with this name
+        if ( catalog.checkIfExistsNamespace( databaseId, name ) ) {
+            if ( ifNotExists ) {
+                // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
+                return catalog.getDocumentDatabase( Catalog.defaultDatabaseId, name ).id;
+            } else if ( replace ) {
+                throw new RuntimeException( "Replacing namespace is not yet supported." );
+            } else {
+                throw new NamespaceAlreadyExistsException();
+            }
+        } else {
+            return catalog.addDocumentDatabase( name, databaseId, userId, type );
+        }
+    }
+
+
     private void afterGraphLogistics( DataStore store, long graphId ) {
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphId );
         CatalogEntity nodes = catalog.getTable( mapping.nodesId );
@@ -1822,7 +1839,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
                 nodes.id,
-                nodes.partitionProperty.partitionIds.get(0),
+                nodes.partitionProperty.partitionIds.get( 0 ),
                 PlacementType.AUTOMATIC,
                 null,
                 null,
@@ -1832,7 +1849,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
                 nodeProperty.id,
-                nodeProperty.partitionProperty.partitionIds.get(0),
+                nodeProperty.partitionProperty.partitionIds.get( 0 ),
                 PlacementType.AUTOMATIC,
                 null,
                 null,
@@ -1842,7 +1859,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
                 edges.id,
-                edges.partitionProperty.partitionIds.get(0),
+                edges.partitionProperty.partitionIds.get( 0 ),
                 PlacementType.AUTOMATIC,
                 null,
                 null,
@@ -1852,7 +1869,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
                 edgeProperty.id,
-                edgeProperty.partitionProperty.partitionIds.get(0),
+                edgeProperty.partitionProperty.partitionIds.get( 0 ),
                 PlacementType.AUTOMATIC,
                 null,
                 null,
@@ -2058,11 +2075,11 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.addPartitionPlacement(
                         store.getAdapterId(),
                         catalogEntity.id,
-                        catalogEntity.partitionProperty.partitionIds.get(0),
+                        catalogEntity.partitionProperty.partitionIds.get( 0 ),
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE);
+                        DataPlacementRole.UPTODATE );
 
                 store.createTable( statement.getPrepareContext(), catalogEntity, catalogEntity.partitionProperty.partitionIds );
             }
@@ -2070,6 +2087,55 @@ public class DdlManagerImpl extends DdlManager {
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    @Override
+    public void createCollection( long schemaId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
+        // Check if there is already an entity with this name
+        if ( catalog.checkIfExistsEntity( schemaId, name ) ) {
+            if ( ifNotExists ) {
+                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
+                return;
+            } else {
+                throw new EntityAlreadyExistsException();
+            }
+        }
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+        }
+
+        long collectionId = catalog.addCollection(
+                name,
+                schemaId,
+                statement.getPrepareContext().getCurrentUserId(),
+                EntityType.ENTITY,
+                true );
+
+        // Initially create DataPlacement containers on every store the table should be placed.
+        stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), collectionId ) );
+
+        //catalog.updateTablePartitionProperties(tableId, partitionProperty);
+        CatalogCollection catalogCollection = catalog.getCollection( collectionId );
+
+        // Trigger rebuild of schema; triggers schema creation on adapters
+        PolySchemaBuilder.getInstance().getCurrent();
+
+        for ( DataStore store : stores ) {
+            catalog.addCollectionPlacement(
+                    store.getAdapterId(),
+                    catalogCollection.id,
+                    catalogCollection.partitionProperty.partitionIds.get( 0 ),
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    DataPlacementRole.UPTODATE );
+
+            store.createCollection( statement.getPrepareContext(), catalogCollection );
+        }
+
     }
 
 
@@ -2111,7 +2177,18 @@ public class DdlManagerImpl extends DdlManager {
             if ( !names.contains( "_data" ) ) {
                 ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );//new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
                 columns.add( new FieldInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
+            }/*
+            columns.clear();
+
+            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.DOCUMENT, PolyType.DOCUMENT, null, null, null, null, false );//new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
+            columns.add( new FieldInformation( "_document", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
+
+            // Remove any primaries
+            List<ConstraintInformation> primaries = constraints.stream().filter( c -> c.type == ConstraintType.PRIMARY ).collect( Collectors.toList() );
+            if ( primaries.size() > 0 ) {
+                primaries.forEach( constraints::remove );
             }
+            */
         }
     }
 
@@ -2341,7 +2418,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE);
+                        DataPlacementRole.UPTODATE );
             }
 
             // First create new tables
@@ -2419,11 +2496,11 @@ public class DdlManagerImpl extends DdlManager {
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
                     mergedTable.id,
-                    mergedTable.partitionProperty.partitionIds.get(0),
+                    mergedTable.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE);
+                    DataPlacementRole.UPTODATE );
 
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
