@@ -16,13 +16,16 @@
 
 package org.polypheny.db.algebra.logical.document;
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.core.relational.RelationalTransformable;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class LogicalDocumentScan extends DocumentScan {
+public class LogicalDocumentScan extends DocumentScan implements RelationalTransformable {
 
     /**
      * Creates an <code>AbstractRelNode</code>.
@@ -38,6 +41,12 @@ public class LogicalDocumentScan extends DocumentScan {
 
     public static AlgNode create( AlgOptCluster cluster, AlgOptTable table ) {
         return new LogicalDocumentScan( cluster, cluster.traitSet(), table );
+    }
+
+
+    @Override
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities ) {
+        return List.of( LogicalScan.create( getCluster(), entities.get( 0 ) ) );
     }
 
 }

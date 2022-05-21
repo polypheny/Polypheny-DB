@@ -34,12 +34,14 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.logical.graph.LogicalGraph;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -117,39 +119,9 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 List<Long> columnIds = new LinkedList<>();
                 catalog.getColumns( catalogEntity.id ).forEach( c -> columnIds.add( c.id ) );
                 if ( catalogEntity.entityType == EntityType.VIEW ) {
-                    LogicalView view = new LogicalView(
-                            catalogEntity.id,
-                            catalogEntity.getNamespaceName(),
-                            catalogEntity.name,
-                            columnIds,
-                            columnNames,
-                            AlgDataTypeImpl.proto( fieldInfo.build() ) );
-                    s.add( catalogEntity.name, view );
-                    tableMap.put( catalogEntity.name, view );
+                    buildView( tableMap, s, catalogEntity, columnNames, fieldInfo, columnIds );
                 } else if ( catalogEntity.entityType == EntityType.ENTITY || catalogEntity.entityType == EntityType.SOURCE || catalogEntity.entityType == EntityType.MATERIALIZED_VIEW ) {
-                    LogicalTable table = new LogicalTable(
-                            catalogEntity.id,
-                            catalogEntity.getNamespaceName(),
-                            catalogEntity.name,
-                            columnIds,
-                            columnNames,
-                            AlgDataTypeImpl.proto( rowType ),
-                            catalogNamespace.namespaceType );
-                    if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                        table.getConstraintIds()
-                                .addAll( catalog.getForeignKeys( catalogEntity.id ).stream()
-                                        .filter( f -> f.enforcementTime == EnforcementTime.ON_COMMIT )
-                                        .map( f -> f.referencedKeyTableId )
-                                        .collect( Collectors.toList() ) );
-                        table.getConstraintIds()
-                                .addAll( catalog.getExportedKeys( catalogEntity.id ).stream()
-                                        .filter( f -> f.enforcementTime == EnforcementTime.ON_COMMIT )
-                                        .map( f -> f.referencedKeyTableId )
-                                        .collect( Collectors.toList() ) );
-                    }
-
-                    s.add( catalogEntity.name, table );
-                    tableMap.put( catalogEntity.name, table );
+                    buildEntity( catalog, catalogNamespace, tableMap, s, catalogEntity, columnNames, rowType, columnIds );
                 } else {
                     throw new RuntimeException( "Unhandled table type: " + catalogEntity.entityType.name() );
                 }
@@ -171,9 +143,101 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             s.polyphenyDbSchema().setSchema( new LogicalGraph( graph.id ) );
         }
 
-        // Build adapter schema (physical schema)
         List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
-        for ( CatalogNamespace catalogNamespace : catalog.getSchemas( catalogDatabase.id, null ) ) {
+
+        buildPhysicalTables( polyphenyDbSchema, rootSchema, catalog, catalogDatabase, adapters );
+
+        buildPhysicalDocuments( polyphenyDbSchema, rootSchema, catalog, catalogDatabase, adapters );
+
+        buildPhysicalGraphs( polyphenyDbSchema, rootSchema, catalog, catalogDatabase );
+
+        isOutdated = false;
+        return polyphenyDbSchema;
+    }
+
+
+    private void buildPhysicalGraphs( AbstractPolyphenyDbSchema polyphenyDbSchema, SchemaPlus rootSchema, Catalog catalog, CatalogDatabase catalogDatabase ) {
+        // Build adapter schema (physical schema) GRAPH
+        for ( CatalogGraphDatabase graph : catalog.getGraphs( catalogDatabase.id, null ) ) {
+            for ( int adapterId : graph.placements ) {
+
+                CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
+                Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
+
+                if ( !adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) {
+                    continue;
+                }
+
+                final String schemaName = buildAdapterSchemaName( adapter.getUniqueName(), graph.name, placement.physicalName );
+
+                adapter.createGraphNamespace( rootSchema, schemaName, graph.id );
+                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH ).plus();
+                rootSchema.add( schemaName, s, NamespaceType.GRAPH );
+
+                rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentGraphNamespace() );
+            }
+        }
+    }
+
+
+    private void buildPhysicalDocuments( AbstractPolyphenyDbSchema polyphenyDbSchema, SchemaPlus rootSchema, Catalog catalog, CatalogDatabase catalogDatabase, List<CatalogAdapter> adapters ) {
+        // Build adapter schema (physical schema) DOCUMENT
+        for ( CatalogNamespace catalogNamespace : catalog.getSchemas( catalogDatabase.id, null ).stream().filter( s -> s.namespaceType == NamespaceType.DOCUMENT ).collect( Collectors.toList() ) ) {
+            for ( CatalogAdapter catalogAdapter : adapters ) {
+
+                Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
+
+                /*if ( !adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) {
+                    continue;
+                }*/
+
+                // Get list of documents on this adapter
+                Map<String, Set<Long>> documentIdsPerSchema = new HashMap<>();
+                for ( CatalogCollectionPlacement placement : Catalog.getInstance().getCollectionPlacements( catalogAdapter.id ) ) {
+                    documentIdsPerSchema.putIfAbsent( placement.physicalNamespaceName, new HashSet<>() );
+                    documentIdsPerSchema.get( placement.physicalNamespaceName ).add( placement.collectionId );
+                }
+
+                for ( String physicalSchemaName : documentIdsPerSchema.keySet() ) {
+                    Set<Long> tableIds = documentIdsPerSchema.get( physicalSchemaName );
+
+                    HashMap<String, Table> physicalTables = new HashMap<>();
+
+                    final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogNamespace.name, physicalSchemaName );
+
+                    adapter.createNewSchema( rootSchema, schemaName );
+                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName, catalogNamespace.namespaceType ).plus();
+                    for ( long tableId : tableIds ) {
+                        CatalogEntity catalogEntity = catalog.getTable( tableId );
+
+                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( adapter.getAdapterId(), tableId );
+
+                        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+                            if ( catalogNamespace.namespaceType == NamespaceType.GRAPH && catalogAdapter.supportedNamespaces.contains( catalogNamespace.namespaceType ) ) {
+                                continue;
+                            }
+
+                            Table table = adapter.createDocumentSchema(
+                                    catalogEntity,
+                                    Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogEntity.id ),
+                                    partitionPlacement );
+
+                            physicalTables.put( catalog.getTable( tableId ).name + "_" + partitionPlacement.partitionId, table );
+
+                            rootSchema.add( schemaName, s, catalogNamespace.namespaceType );
+                            physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
+                            rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    private void buildPhysicalTables( AbstractPolyphenyDbSchema polyphenyDbSchema, SchemaPlus rootSchema, Catalog catalog, CatalogDatabase catalogDatabase, List<CatalogAdapter> adapters ) {
+        // Build adapter schema (physical schema) RELATIONAL
+        for ( CatalogNamespace catalogNamespace : catalog.getSchemas( catalogDatabase.id, null ).stream().collect( Collectors.toList() ) ) {
             for ( CatalogAdapter catalogAdapter : adapters ) {
                 // Get list of tables on this adapter
                 Map<String, Set<Long>> tableIdsPerSchema = new HashMap<>();
@@ -217,30 +281,60 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 }
             }
         }
+    }
 
-        // Build adapter schema (physical schema)
-        for ( CatalogGraphDatabase graph : catalog.getGraphs( catalogDatabase.id, null ) ) {
-            for ( int adapterId : graph.placements ) {
 
-                CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
-                Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
+    private void buildView( Map<String, LogicalTable> tableMap, SchemaPlus s, CatalogEntity catalogEntity, List<String> columnNames, Builder fieldInfo, List<Long> columnIds ) {
+        LogicalView view = new LogicalView(
+                catalogEntity.id,
+                catalogEntity.getNamespaceName(),
+                catalogEntity.name,
+                columnIds,
+                columnNames,
+                AlgDataTypeImpl.proto( fieldInfo.build() ) );
+        s.add( catalogEntity.name, view );
+        tableMap.put( catalogEntity.name, view );
+    }
 
-                if ( !adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) {
-                    continue;
-                }
 
-                final String schemaName = buildAdapterSchemaName( adapter.getUniqueName(), graph.name, placement.physicalName );
-
-                adapter.createGraphNamespace( rootSchema, schemaName, graph.id );
-                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH ).plus();
-                rootSchema.add( schemaName, s, NamespaceType.GRAPH );
-
-                rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentGraphNamespace() );
+    private void buildEntity( Catalog catalog, CatalogNamespace catalogNamespace, Map<String, LogicalTable> tableMap, SchemaPlus s, CatalogEntity catalogEntity, List<String> columnNames, AlgDataType rowType, List<Long> columnIds ) {
+        LogicalTable table;
+        if ( catalogNamespace.namespaceType == NamespaceType.RELATIONAL ) {
+            table = new LogicalTable(
+                    catalogEntity.id,
+                    catalogEntity.getNamespaceName(),
+                    catalogEntity.name,
+                    columnIds,
+                    columnNames,
+                    AlgDataTypeImpl.proto( rowType ),
+                    catalogNamespace.namespaceType );
+            if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+                table.getConstraintIds()
+                        .addAll( catalog.getForeignKeys( catalogEntity.id ).stream()
+                                .filter( f -> f.enforcementTime == EnforcementTime.ON_COMMIT )
+                                .map( f -> f.referencedKeyTableId )
+                                .collect( Collectors.toList() ) );
+                table.getConstraintIds()
+                        .addAll( catalog.getExportedKeys( catalogEntity.id ).stream()
+                                .filter( f -> f.enforcementTime == EnforcementTime.ON_COMMIT )
+                                .map( f -> f.referencedKeyTableId )
+                                .collect( Collectors.toList() ) );
             }
+        } else if ( catalogNamespace.namespaceType == NamespaceType.DOCUMENT ) {
+            table = new LogicalDocument(
+                    catalogEntity.id,
+                    catalogEntity.getNamespaceName(),
+                    catalogEntity.name,
+                    columnIds,
+                    columnNames,
+                    AlgDataTypeImpl.proto( rowType ),
+                    catalogNamespace.namespaceType );
+        } else {
+            throw new RuntimeException( "Model is not supported" );
         }
 
-        isOutdated = false;
-        return polyphenyDbSchema;
+        s.add( catalogEntity.name, table );
+        tableMap.put( catalogEntity.name, table );
     }
 
 

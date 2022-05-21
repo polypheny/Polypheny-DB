@@ -62,15 +62,14 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogDocumentDatabase;
 import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
-import org.polypheny.db.catalog.entity.CatalogDocumentPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
@@ -94,6 +93,7 @@ import org.polypheny.db.catalog.exceptions.GraphAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
@@ -155,15 +155,11 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
 
     private static BTreeMap<Long, CatalogCollection> collections;
-    private static BTreeMap<Object[], CatalogEntity> collectionNames;
+    private static BTreeMap<Object[], CatalogCollection> collectionNames;
 
-    private static BTreeMap<Object[], CatalogDocumentPlacement> documentPlacements;
+    private static BTreeMap<Object[], CatalogCollectionPlacement> collectionPlacements;
 
     private static BTreeMap<Long, CatalogDocumentMapping> documentMappings;
-
-    private static BTreeMap<Long, CatalogDocumentDatabase> documentDatabases;
-
-    private static BTreeMap<Object[], CatalogDocumentDatabase> documentDatabasesNames;
 
     private static BTreeMap<Long, CatalogColumn> columns;
     private static BTreeMap<Object[], CatalogColumn> columnNames;
@@ -379,6 +375,7 @@ public class CatalogImpl extends Catalog {
             initSchemaInfo( db );
             initTableInfo( db );
             initGraphInfo( db );
+            initDocumentInfo( db );
             initColumnInfo( db );
             initKeysAndConstraintsInfo( db );
             initAdapterInfo( db );
@@ -687,6 +684,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @SuppressWarnings("unchecked")
     private void initGraphInfo( DB db ) {
         graphs = db.treeMap( "graphs", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         graphNames = db.treeMap( "graphNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
@@ -694,6 +692,17 @@ public class CatalogImpl extends Catalog {
 
         graphMappings = db.treeMap( "graphMappings", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         graphAliases = db.treeMap( "graphAliases", Serializer.STRING, Serializer.JAVA ).createOrOpen();
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private void initDocumentInfo( DB db ) {
+        collections = db.treeMap( "collections", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        collectionNames = db.treeMap( "collectionNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
+
+        documentMappings = db.treeMap( "documentMappings", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+
+        collectionPlacements = db.treeMap( "collectionPlacements", new SerializerArrayTuple( Serializer.LONG, Serializer.INTEGER ), Serializer.JAVA ).createOrOpen();
     }
 
 
@@ -1905,36 +1914,36 @@ public class CatalogImpl extends Catalog {
                 .partitionGroupIds( ImmutableList.copyOf( new ArrayList<>() ) )
                 .build();
 
-        if ( entityType == EntityType.VIEW ) {
-            CatalogView viewTable = new CatalogView(
-                    id,
-                    name,
-                    ImmutableList.of(),
-                    namespaceId,
-                    schema.databaseId,
-                    ownerId,
-                    entityType,
-                    query,//definition,
-                    null,
-                    ImmutableList.of(),
-                    modifiable,
-                    partitionProperty,
-                    algCollation,
-                    ImmutableList.of(),
-                    ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
-                            Entry::getKey,
-                            e -> ImmutableList.copyOf( e.getValue() )
-                    ) ) ),
-                    language //fieldList
-            );
-            addConnectedViews( underlyingTables, viewTable.id );
-            updateEntityLogistics( name, namespaceId, id, schema, viewTable );
-            algTypeInfo.put( id, fieldList );
-            nodeInfo.put( id, definition );
-        } else {
+        if ( entityType != EntityType.VIEW ) {
             // Should not happen, addViewTable is only called with EntityType.View
             throw new RuntimeException( "addViewTable is only possible with EntityType = VIEW" );
         }
+        CatalogView viewTable = new CatalogView(
+                id,
+                name,
+                ImmutableList.of(),
+                namespaceId,
+                schema.databaseId,
+                ownerId,
+                entityType,
+                query,//definition,
+                null,
+                ImmutableList.of(),
+                modifiable,
+                partitionProperty,
+                algCollation,
+                ImmutableList.of(),
+                ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
+                        Entry::getKey,
+                        e -> ImmutableList.copyOf( e.getValue() )
+                ) ) ),
+                language //fieldList
+        );
+        addConnectedViews( underlyingTables, viewTable.id );
+        updateEntityLogistics( name, namespaceId, id, schema, viewTable );
+        algTypeInfo.put( id, fieldList );
+        nodeInfo.put( id, definition );
+
         return id;
     }
 
@@ -2397,7 +2406,7 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public CatalogCollection getCollection( long id ) {
-        if ( collections.containsKey( id ) ) {
+        if ( !collections.containsKey( id ) ) {
             throw new UnknownTableIdRuntimeException( id );
         }
         return Objects.requireNonNull( collections.get( id ) );
@@ -2405,20 +2414,51 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean b ) {
-        return 0;
+    public long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
+        long id = entityIdBuilder.getAndIncrement();
+        CatalogNamespace namespace = getNamespace( schemaId );
+
+        CatalogCollection collection = new CatalogCollection( Catalog.defaultDatabaseId, schemaId, id, name, List.of() );
+
+        synchronized ( this ) {
+            collections.put( id, collection );
+            collectionNames.put( new Object[]{ namespace.databaseId, schemaId, name }, collection );
+            List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
+            children.add( id );
+            schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
+        }
+        listeners.firePropertyChange( "collection", null, entity );
+
+        return id;
     }
 
 
     @Override
-    public void addCollectionPlacement( int adapterId, long id, Long aLong, PlacementType placementType, Object o, Object o1, DataPlacementRole upToDate ) {
+    public long addDocumentPlacement( int adapterId, long collectionId, PlacementType automatic ) {
+        long id = partitionIdBuilder.getAndIncrement();
+        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, null, id );
+        CatalogCollection old = collections.get( collectionId );
+        if ( old == null ) {
+            throw new UnknownCollectionException( collectionId );
+        }
 
+        CatalogCollection collection = old.addPlacement( adapterId );
+
+        //addGraphPlacementLogistics( adapterId, graphId );
+
+        synchronized ( this ) {
+            collectionPlacements.put( new Object[]{ collectionId, adapterId }, placement );
+            collections.replace( collectionId, collection );
+            collectionNames.replace( new Object[]{ collection.databaseId, collection.schemaId, collection.name }, collection );
+        }
+        listeners.firePropertyChange( "collectionPlacement", null, placement );
+        return id;
     }
 
 
     @Override
     public CatalogDocumentMapping getDocumentMapping( long id ) {
-        if ( documentMappings.containsKey( id ) ) {
+        if ( !documentMappings.containsKey( id ) ) {
             throw new UnknownTableIdRuntimeException( id );
         }
         return Objects.requireNonNull( documentMappings.get( id ) );
@@ -2426,19 +2466,45 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addDocumentDatabase( String name, long databaseId, long userId, EntityType type ) {
+    public void addDocumentLogistics( long schemaId, long collectionId, String name, List<DataStore> stores ) throws GenericCatalogException {
+        long tableId = addEntity( name, schemaId, Catalog.defaultUserId, EntityType.ENTITY, true );
 
-        return databaseId;
+        stores.forEach( store -> addDataPlacement( store.getAdapterId(), tableId ) );
+
+        long idId = addColumn( "_id_", tableId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        long dataId = addColumn( "_data_", tableId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+
+        for ( DataStore s : stores ) {
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    idId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    dataId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        addPrimaryKey( tableId, List.of( idId, dataId ) );
+
+        CatalogDocumentMapping mapping = new CatalogDocumentMapping( collectionId, tableId, idId, dataId );
+
+        documentMappings.put( collectionId, mapping );
     }
 
 
     @Override
-    public CatalogDocumentDatabase getDocumentDatabase( long databaseId, String name ) {
-        CatalogDocumentDatabase database = documentDatabases.get( new Object[]{ databaseId, name } );
-        if ( database == null ) {
-            throw new RuntimeException( "Document database was not found." );
-        }
-        return database;
+    public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
+        return collectionPlacements.values().stream().filter( p -> p.adapter == adapterId ).collect( Collectors.toList() );
     }
 
 

@@ -16,23 +16,41 @@
 
 package org.polypheny.db.catalog.entity;
 
+import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import lombok.NonNull;
 
 public class CatalogCollection implements CatalogObject {
 
     public final long id;
-    public final CatalogPartitionGroup partitionProperty;
+    public final ImmutableList<Integer> placements;
+    public final String name;
+    public final long databaseId;
+    public final long schemaId;
 
 
-    public CatalogCollection( long id, CatalogPartitionGroup partitionProperty ) {
+    public CatalogCollection( long databaseId, long schemaId, long id, String name, @NonNull Collection<Integer> placements ) {
         this.id = id;
-        this.partitionProperty = partitionProperty;
+        this.databaseId = databaseId;
+        this.schemaId = schemaId;
+        this.name = name;
+        this.placements = ImmutableList.copyOf( placements );
     }
 
 
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];
+    }
+
+
+    public CatalogCollection addPlacement( int adapterId ) {
+        List<Integer> placements = new ArrayList<>( this.placements );
+        placements.add( adapterId );
+        return new CatalogCollection( databaseId, schemaId, id, name, placements );
     }
 
 }

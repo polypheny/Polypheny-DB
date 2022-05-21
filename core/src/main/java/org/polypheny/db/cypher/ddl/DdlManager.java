@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -553,8 +552,6 @@ public abstract class DdlManager {
 
 
     public abstract long createGraphDatabase( long databaseId, String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement );
-
-    public abstract long createDocumentDatabase( long databaseId, String name, boolean modifiable, long userId, EntityType type, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement ) throws NamespaceAlreadyExistsException;
 
     public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
 

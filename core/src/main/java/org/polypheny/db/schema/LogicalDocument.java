@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.schema;
 
 import java.util.List;
-import lombok.Getter;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
-@Getter
-public class GraphRequest extends QueryRequest {
+public class LogicalDocument extends LogicalTable {
 
-    public String namespaceName;
-
-    public List<String> nodeIds;
-
-    public List<String> edgeids;
-
-
-    public GraphRequest( String query, boolean analyze, boolean cache, String language, String database ) {
-        super( query, analyze, cache, language, database );
+    protected LogicalDocument( long tableId, String logicalSchemaName, String logicalTableName, List<Long> columnIds, List<String> logicalColumnNames, AlgProtoDataType protoRowType, NamespaceType schemaType ) {
+        super( tableId, logicalSchemaName, logicalTableName, columnIds, logicalColumnNames, protoRowType, schemaType );
     }
 
 }

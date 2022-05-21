@@ -21,10 +21,16 @@ import java.io.Serializable;
 public class CatalogDocumentMapping implements CatalogObject {
 
     public final long collectionId;
+    public final long tableId;
+    public final long idId;
+    public final long dataId;
 
 
-    public CatalogDocumentMapping( long collectionId ) {
+    public CatalogDocumentMapping( long collectionId, long tableId, long idId, long dataId ) {
         this.collectionId = collectionId;
+        this.tableId = tableId;
+        this.idId = idId;
+        this.dataId = dataId;
     }
 
 

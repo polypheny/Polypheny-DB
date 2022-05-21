@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,7 @@ public abstract class Adapter {
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
     private final List<NamespaceType> supportedNamespaceTypes;
+
 
 
     @Target(ElementType.TYPE)
@@ -328,6 +329,11 @@ public abstract class Adapter {
 
     public void createGraphNamespace( SchemaPlus rootSchema, String name, long id ) {
         throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
+    }
+
+
+    public Table createDocumentSchema( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnAdapterSortedByPhysicalPosition, CatalogPartitionPlacement partitionPlacement ) {
+        throw new UnsupportedOperationException( "It is not supported to create a document with this adapter." );
     }
 
 

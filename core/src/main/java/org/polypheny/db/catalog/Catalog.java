@@ -36,12 +36,12 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogDocumentDatabase;
 import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -1648,16 +1648,15 @@ public abstract class Catalog {
 
     public abstract CatalogCollection getCollection( long collectionId );
 
-    public abstract long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean b );
+    public abstract long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable );
 
-    public abstract void addCollectionPlacement( int adapterId, long id, Long aLong, PlacementType placementType, Object o, Object o1, DataPlacementRole upToDate );
+    public abstract long addDocumentPlacement( int adapterId, long collectionId, PlacementType automatic );
 
     public abstract CatalogDocumentMapping getDocumentMapping( long id );
 
-    public abstract long addDocumentDatabase( String name, long databaseId, long userId, EntityType type );
+    public abstract void addDocumentLogistics( long schemaId, long collectionId, String name, List<DataStore> stores ) throws GenericCatalogException;
 
-
-    public abstract CatalogDocumentDatabase getDocumentDatabase( long defaultDatabaseId, String name );
+    public abstract List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId );
 
     public abstract void close();
 

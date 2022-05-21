@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.catalog.exceptions;
 
-import java.util.List;
-import lombok.Getter;
+public class UnknownCollectionException extends CatalogRuntimeException {
 
-@Getter
-public class GraphRequest extends QueryRequest {
-
-    public String namespaceName;
-
-    public List<String> nodeIds;
-
-    public List<String> edgeids;
-
-
-    public GraphRequest( String query, boolean analyze, boolean cache, String language, String database ) {
-        super( query, analyze, cache, language, database );
+    public UnknownCollectionException( long collectionId ) {
+        super( "Unknown Collection with id: " + collectionId );
     }
 
 }

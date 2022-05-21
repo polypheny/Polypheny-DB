@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -68,7 +67,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.Crud;
-import org.polypheny.db.webui.Crud.QueryExecutionException;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.SortState;
@@ -615,33 +613,22 @@ public class LanguageCrud {
     public void createCollection( final Context ctx ) {
         EditCollectionRequest request = ctx.bodyAsClass( EditCollectionRequest.class );
         Transaction transaction = crud.getTransaction();
-        StringBuilder query = new StringBuilder();
-        StringJoiner colBuilder = new StringJoiner( "," );
-        String tableId = String.format( "\"%s\".\"%s\"", request.database, request.collection );
-        query.append( "CREATE TABLE " ).append( tableId ).append( "(" );
-        Result result;
-        colBuilder.add( "\"_id\" VARCHAR(24) NOT NULL" );
-        //colBuilder.add( "\"_data\" JSON" );
-        StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
-        primaryKeys.add( "\"_id\"" );
-        colBuilder.add( primaryKeys.toString() );
-        query.append( colBuilder );
-        query.append( ")" );
-        if ( request.store != null && !request.store.equals( "" ) ) {
-            query.append( String.format( " ON STORE \"%s\"", request.store ) );
-        }
 
+        String query = String.format( "db.createCollection(%s)", request.collection );
+
+        Result result;
         try {
-            int a = crud.executeSqlUpdate( transaction, query.toString() );
-            result = new Result( a ).setGeneratedQuery( query.toString() );
+            anyMongoQuery( null, new QueryRequest( query, false, false, "CYPHER", request.database ), crud.getTransactionManager(), crud.getUserId(), crud.getDatabaseId(), null );
+
+            result = new Result( 1 ).setGeneratedQuery( query.toString() );
             transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
+        } catch ( TransactionException e ) {
             log.error( "Caught exception while creating a table", e );
-            result = new Result( e ).setGeneratedQuery( query.toString() );
+            result = new Result( e ).setGeneratedQuery( query );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
-                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
+                log.error( "Could not rollback createCollection statement: {}", ex.getMessage(), ex );
             }
         }
         ctx.json( result );

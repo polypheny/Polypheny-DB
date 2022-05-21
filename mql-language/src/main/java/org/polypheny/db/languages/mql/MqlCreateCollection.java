@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.languages.mql;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
@@ -25,12 +24,8 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.cypher.ddl.DdlManager;
-import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.cypher.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -85,16 +80,14 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
                     .stream()
                     .map( store -> (DataStore) adapterManager.getAdapter( store ) )
                     .collect( Collectors.toList() );
-            DdlManager.getInstance().createEntity(
+            DdlManager.getInstance().createCollection(
                     schemaId,
                     name,
-                    ImmutableList.of(),
-                    ImmutableList.of(),
                     true,
                     dataStores.size() == 0 ? null : dataStores,
                     placementType,
                     statement );
-        } catch ( EntityAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException | UnknownColumnException | PartitionGroupNamesNotUniqueException e ) {
+        } catch ( EntityAlreadyExistsException e ) {
             throw new RuntimeException( "The generation of the collection was not possible, due to: " + e.getMessage() );
         }
     }

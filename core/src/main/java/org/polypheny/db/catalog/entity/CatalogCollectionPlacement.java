@@ -17,8 +17,25 @@
 package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
+import javax.annotation.Nullable;
 
-public class CatalogDocumentPlacement implements CatalogObject {
+public class CatalogCollectionPlacement implements CatalogObject {
+
+    public final int adapter;
+    public final long collectionId;
+    public final String physicalName;
+    public final long id;
+    public final String physicalNamespaceName;
+
+
+    public CatalogCollectionPlacement( int adapterId, long collectionId, @Nullable String physicalName, long id ) {
+        this.adapter = adapterId;
+        this.collectionId = collectionId;
+        this.physicalName = physicalName;
+        this.physicalNamespaceName = null;
+        this.id = id;
+    }
+
 
     @Override
     public Serializable[] getParameterArray() {

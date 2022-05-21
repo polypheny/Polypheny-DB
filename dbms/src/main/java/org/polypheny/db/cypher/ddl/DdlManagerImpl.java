@@ -68,6 +68,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
@@ -129,7 +130,6 @@ import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
@@ -1811,24 +1811,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    @Override
-    public long createDocumentDatabase( long databaseId, String name, boolean modifiable, long userId, EntityType type, @org.jetbrains.annotations.Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement ) throws NamespaceAlreadyExistsException {
-        // Check if there is already a schema with this name
-        if ( catalog.checkIfExistsNamespace( databaseId, name ) ) {
-            if ( ifNotExists ) {
-                // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
-                return catalog.getDocumentDatabase( Catalog.defaultDatabaseId, name ).id;
-            } else if ( replace ) {
-                throw new RuntimeException( "Replacing namespace is not yet supported." );
-            } else {
-                throw new NamespaceAlreadyExistsException();
-            }
-        } else {
-            return catalog.addDocumentDatabase( name, databaseId, userId, type );
-        }
-    }
-
-
     private void afterGraphLogistics( DataStore store, long graphId ) {
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphId );
         CatalogEntity nodes = catalog.getTable( mapping.nodesId );
@@ -1979,10 +1961,10 @@ public class DdlManagerImpl extends DdlManager {
     private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
         if ( algNode instanceof LogicalScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( ((LogicalTable) algNode.getTable().getTable()).getTableId(), underlyingColumns );
+            underlyingTables.put( algNode.getTable().getTable().getTableId(), underlyingColumns );
         } else if ( algNode instanceof LogicalViewScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( ((LogicalView) algNode.getTable().getTable()).getTableId(), underlyingColumns );
+            underlyingTables.put( algNode.getTable().getTable().getTableId(), underlyingColumns );
         }
         if ( algNode instanceof BiAlg ) {
             findUnderlyingTablesOfView( ((BiAlg) algNode).getLeft(), underlyingTables, fieldList );
@@ -2114,28 +2096,47 @@ public class DdlManagerImpl extends DdlManager {
                 EntityType.ENTITY,
                 true );
 
-        // Initially create DataPlacement containers on every store the table should be placed.
-        stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), collectionId ) );
+        try {
+            catalog.addDocumentLogistics( schemaId, collectionId, name, stores );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
 
-        //catalog.updateTablePartitionProperties(tableId, partitionProperty);
+        // Initially create DataPlacement containers on every store the table should be placed.
+        //stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), collectionId ) );
+
         CatalogCollection catalogCollection = catalog.getCollection( collectionId );
 
         // Trigger rebuild of schema; triggers schema creation on adapters
         PolySchemaBuilder.getInstance().getCurrent();
 
         for ( DataStore store : stores ) {
-            catalog.addCollectionPlacement(
+            catalog.addDocumentPlacement(
                     store.getAdapterId(),
                     catalogCollection.id,
-                    catalogCollection.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null,
-                    DataPlacementRole.UPTODATE );
+                    PlacementType.AUTOMATIC );
+
+            afterDocumentLogistics( store, collectionId );
 
             store.createCollection( statement.getPrepareContext(), catalogCollection );
         }
 
+    }
+
+
+    private void afterDocumentLogistics( DataStore store, long collectionId ) {
+        CatalogDocumentMapping mapping = catalog.getDocumentMapping( collectionId );
+        CatalogEntity table = catalog.getTable( mapping.tableId );
+
+        catalog.addPartitionPlacement(
+                store.getAdapterId(),
+                table.id,
+                table.partitionProperty.partitionIds.get( 0 ),
+                PlacementType.AUTOMATIC,
+                null,
+                null,
+                DataPlacementRole.UPTODATE
+        );
     }
 
 

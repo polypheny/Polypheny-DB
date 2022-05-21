@@ -510,13 +510,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean b ) {
+    public long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void addCollectionPlacement( int adapterId, long id, Long aLong, PlacementType placementType, Object o, Object o1, DataPlacementRole upToDate ) {
+    public void addCollectionPlacement() {
         throw new NotImplementedException();
     }
 
