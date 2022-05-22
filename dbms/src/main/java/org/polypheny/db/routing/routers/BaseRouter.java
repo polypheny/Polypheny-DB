@@ -366,6 +366,7 @@ public abstract class BaseRouter {
         List<CatalogColumn> columns = Catalog.getInstance().getColumns( node.getDocument().getTable().getTableId() );
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
         builder.scan( getSubstitutionTable( statement, node.getDocument().getTable().getTableId(), columns.get( 0 ).id ) );
+        //builder.push( AlgOptRule.convert( builder.build(), ModelTrait.RELATIONAL ) );
         builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType() ) );
         return builder;

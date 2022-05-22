@@ -269,7 +269,7 @@ public class MqlToAlgConverter {
      */
     public AlgRoot convert( MqlCollectionStatement query ) {
         Type kind = query.getMqlKind();
-        this.table = getTable( query, defaultDatabase );
+        this.table = getEntity( query, defaultDatabase );
         if ( table == null ) {
             throw new RuntimeException( "The used collection does not exist." );
         }
@@ -325,7 +325,7 @@ public class MqlToAlgConverter {
     }
 
 
-    private AlgOptTable getTable( MqlCollectionStatement query, String dbSchemaName ) {
+    private AlgOptTable getEntity( MqlCollectionStatement query, String dbSchemaName ) {
         return catalogReader.getTable( ImmutableList.of( dbSchemaName, query.getCollection() ) );
     }
 

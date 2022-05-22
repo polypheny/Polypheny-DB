@@ -187,9 +187,9 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                 Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
 
-                /*if ( !adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) {
+                if ( !adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) {
                     continue;
-                }*/
+                }
 
                 // Get list of documents on this adapter
                 Map<String, Set<Long>> documentIdsPerSchema = new HashMap<>();

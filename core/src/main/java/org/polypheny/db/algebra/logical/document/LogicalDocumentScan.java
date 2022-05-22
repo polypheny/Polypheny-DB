@@ -22,8 +22,10 @@ import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.ModelTrait;
 
 public class LogicalDocumentScan extends DocumentScan implements RelationalTransformable {
 
@@ -46,7 +48,7 @@ public class LogicalDocumentScan extends DocumentScan implements RelationalTrans
 
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities ) {
-        return List.of( LogicalScan.create( getCluster(), entities.get( 0 ) ) );
+        return List.of( AlgOptRule.convert( LogicalScan.create( getCluster(), entities.get( 0 ) ), ModelTrait.RELATIONAL ) );
     }
 
 }
