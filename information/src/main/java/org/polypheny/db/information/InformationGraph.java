@@ -20,6 +20,7 @@ package org.polypheny.db.information;
 import com.google.gson.annotations.SerializedName;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Setter;
@@ -56,6 +57,8 @@ public class InformationGraph extends Information {
     @SerializedName("max")
     private int maxY;
 
+    @Setter
+    private List<GraphColor> colorList = List.of(GraphColor.BLUE, GraphColor.LIGHTBLUE, GraphColor.YELLOW);
 
     /**
      * Constructor
