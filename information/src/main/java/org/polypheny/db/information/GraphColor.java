@@ -24,15 +24,24 @@ import com.google.gson.annotations.SerializedName;
  */
 public enum GraphColor {
 
-    // TODO: values
-    @SerializedName("#000000")
-    BLUE,
-    @SerializedName("#000011")
-    LIGHTBLUE,
-    @SerializedName("#000022")
-    YELLOW,
-    @SerializedName("#000033")
-    RED,
-    @SerializedName("#000044")
-    GREEN
+    @SerializedName("#F86C6B")
+    PASTEL_RED,
+    @SerializedName("#20A8d8")
+    BATTERY_CHARGED_BLUE,
+    @SerializedName("#FFC107")
+    MIKADO_YELLOW,
+    @SerializedName("#21576A")
+    POLICE_BLUE,
+    @SerializedName("#814848")
+    TUSCAN_RED,
+    @SerializedName("#88BB9A")
+    DARK_SEE_GREEN,
+    @SerializedName("#3A7C96")
+    JELLY_BEAN_BLUE,
+    @SerializedName("#914661")
+    TWILIGHT_LAVENDER,
+    @SerializedName("#BFA0AB")
+    SILVER_PINK,
+    @SerializedName("#BAD80A")
+    LIME
 }
