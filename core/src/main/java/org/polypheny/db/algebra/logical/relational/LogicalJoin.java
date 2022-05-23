@@ -72,7 +72,7 @@ public final class LogicalJoin extends Join {
      * @see #isSemiJoinDone()
      */
     public LogicalJoin( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean semiJoinDone, ImmutableList<AlgDataTypeField> systemFieldList ) {
-        super( cluster, traitSet, left, right, condition, variablesSet, joinType );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), left, right, condition, variablesSet, joinType );
         this.semiJoinDone = semiJoinDone;
         this.systemFieldList = Objects.requireNonNull( systemFieldList );
     }

@@ -30,6 +30,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
 
 
 /**
@@ -49,7 +50,7 @@ public final class LogicalModify extends Modify {
      * Use {@link #create} unless you know what you're doing.
      */
     public LogicalModify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, CatalogReader schema, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        super( cluster, traitSet, table, schema, input, operation, updateColumnList, sourceExpressionList, flattened );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, schema, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 

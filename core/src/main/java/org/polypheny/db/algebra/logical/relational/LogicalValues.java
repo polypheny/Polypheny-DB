@@ -32,6 +32,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 
 
@@ -50,7 +51,7 @@ public class LogicalValues extends Values {
      * @param tuples 2-dimensional array of tuple values to be produced; outer list contains tuples; each inner list is one tuple; all tuples must be of same length, conforming to rowType
      */
     public LogicalValues( AlgOptCluster cluster, AlgTraitSet traitSet, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples ) {
-        super( cluster, rowType, tuples, traitSet );
+        super( cluster, rowType, tuples, traitSet.replace( ModelTrait.RELATIONAL ) );
     }
 
 

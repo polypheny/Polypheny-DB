@@ -34,6 +34,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.util.ValidatorUtil;
 
 
@@ -85,6 +86,7 @@ public final class LogicalProject extends Project {
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( Convention.NONE )
+                .replace( ModelTrait.RELATIONAL )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, input, projects ) );
         return new LogicalProject( cluster, traitSet, input, projects, rowType );
     }

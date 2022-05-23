@@ -46,7 +46,7 @@ public class JdbcScan extends Scan implements JdbcAlg {
 
 
     public JdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
-        super( cluster, cluster.traitSet().contains( ModelTrait.GRAPH ) ? cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ) : cluster.traitSetOf( jdbcConvention ), table );
+        super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), table );
         this.jdbcTable = jdbcTable;
         assert jdbcTable != null;
     }
