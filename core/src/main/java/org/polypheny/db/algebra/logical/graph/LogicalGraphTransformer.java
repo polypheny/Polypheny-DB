@@ -34,7 +34,6 @@ public class LogicalGraphTransformer extends GraphTransformer {
      * @param inputs
      * @param rowType
      * @param operationOrder
-     * @param insert
      */
     public LogicalGraphTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, traitSet, inputs, rowType, operationOrder, operation );

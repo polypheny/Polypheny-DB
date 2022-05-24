@@ -28,12 +28,12 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogDocumentDatabase;
 import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -516,7 +516,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void addCollectionPlacement() {
+    public long addDocumentPlacement( int adapterId, long collectionId, PlacementType automatic ) {
         throw new NotImplementedException();
     }
 
@@ -528,13 +528,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addDocumentDatabase( String name, long databaseId, long userId, EntityType type ) {
+    public void addDocumentLogistics( long schemaId, long collectionId, String name, List<DataStore> stores ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogDocumentDatabase getDocumentDatabase( long defaultDatabaseId, String name ) {
+    public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
         throw new NotImplementedException();
     }
 

@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
@@ -885,7 +886,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgNode attachRelationalGraphUpdate( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable ) {
-        AlgNode project = LogicalProject.create( buildGraphDml( alg.getInput(), statement ), alg.operations, alg.ids );
+        AlgNode project = new LogicalGraphProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement ), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
@@ -909,7 +910,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgNode attachRelationalGraphDelete( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable ) {
-        AlgNode project = LogicalProject.create( buildGraphDml( alg.getInput(), statement ), alg.operations, alg.ids );
+        AlgNode project = new LogicalGraphProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement ), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();

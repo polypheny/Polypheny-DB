@@ -94,7 +94,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
-public class ConstraintEnforcer {
+public class ConstraintEnforceAttacher {
 
 
     /**
@@ -673,7 +673,7 @@ public class ConstraintEnforcer {
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "ConstraintEnforcement" );
                     Statement statement = transaction.createStatement();
                     QueryProcessor processor = statement.getQueryProcessor();
-                    List<EnforcementInformation> infos = ConstraintEnforcer
+                    List<EnforcementInformation> infos = ConstraintEnforceAttacher
                             .getConstraintAlg( new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY );
                     List<PolyResult> results = infos
                             .stream()

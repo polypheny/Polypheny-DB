@@ -66,6 +66,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
@@ -341,7 +342,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot constraintsRoot = indexUpdateRoot;
 
             if ( constraintsRoot.kind.belongsTo( Kind.DML ) && (RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) ) {
-                constraintsRoot = ConstraintEnforcer.handleConstraints( constraintsRoot, statement );
+                constraintsRoot = ConstraintEnforceAttacher.handleConstraints( constraintsRoot, statement );
             }
 
             //

@@ -241,7 +241,7 @@ public class FindTest extends MqlTestTemplate {
         assertTrue(
                 MongoConnection.checkResultSet(
                         result,
-                        ImmutableList.of( new Object[]{ "id_", "{\"test\":\"test\",\"key\":13}" } ), true ) );
+                        ImmutableList.of( new Object[]{ "{\"test\":\"test\",\"key\":13}" } ), true ) );
 
         result = find( "{\"test\":{\"$eq\": 1 }}", "{}" );
 
