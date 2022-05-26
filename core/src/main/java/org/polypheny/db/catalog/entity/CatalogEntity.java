@@ -142,6 +142,12 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
 
 
     @SneakyThrows
+    public String getOwnerName() {
+        return Catalog.getInstance().getUser( ownerId ).name;
+    }
+
+
+    @SneakyThrows
     public List<String> getColumnNames() {
         Catalog catalog = Catalog.getInstance();
         List<String> fieldNames = new LinkedList<>();
@@ -165,7 +171,9 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
                 null,
                 null,
                 null,
-                null
+                null,
+                getOwnerName()
+
         };
     }
 
