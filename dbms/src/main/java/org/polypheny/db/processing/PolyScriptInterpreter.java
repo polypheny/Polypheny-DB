@@ -27,19 +27,24 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.polyscript.parser.ParseException;
+import org.polypheny.db.polyscript.parser.PolyScript;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 
+import java.io.StringReader;
+import java.util.List;
+
 public class PolyScriptInterpreter implements ScriptInterpreter {
 
-    private final SqlProcessorImpl sqlProcessor;
+    private final SqlProcessorFacade sqlProcessorFacade;
 
     private final TransactionManager transactionManager;
 
-    public PolyScriptInterpreter(SqlProcessorImpl sqlProcessor, TransactionManager transactionManager) {
-        this.sqlProcessor = sqlProcessor;
+    public PolyScriptInterpreter(SqlProcessorFacade sqlFacade, TransactionManager transactionManager) {
+        this.sqlProcessorFacade = sqlFacade;
         this.transactionManager = transactionManager;
     }
 
@@ -48,40 +53,15 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
         int LANGUAGE_PREFIX = 3;
         int RPAREN_AND_SEMICOLON = 2;
         int LEFT_PAREN = 1;
-        String query = script.substring(LANGUAGE_PREFIX + LEFT_PAREN, script.length() - RPAREN_AND_SEMICOLON);
-        Node node = sqlProcessor.parse(query);
-        Catalog catalog = Catalog.getInstance();
-        Transaction transaction = getTransaction(
-                false,
-                false,
-                transactionManager,
-                catalog.getUser(Catalog.defaultUserId).name,
-                catalog.getDatabase(Catalog.defaultDatabaseId).name);
-        Statement statement = transaction.createStatement();
-        return runSql(node, script, statement);
-    }
-
-    private PolyResult runSql(Node parsed, String sql, Statement statement) {
-        PolyResult result;
-        QueryParameters parameters = new QueryParameters(sql, Catalog.SchemaType.RELATIONAL);
-        AlgRoot logicalRoot;
-        if (parsed.isA(Kind.DDL)) {
-            result = sqlProcessor.prepareDdl(statement, parsed, parameters);
-        } else {
-            Pair<Node, AlgDataType> validated = sqlProcessor.validate(statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean());
-            logicalRoot = sqlProcessor.translate(statement, validated.left, parameters);
-            result = statement.getQueryProcessor().prepareQuery(logicalRoot, true);
-        }
-        return result;
-    }
-
-    private static Transaction getTransaction(boolean analyze, boolean useCache, TransactionManager transactionManager, String userName, String databaseName) {
         try {
-            Transaction transaction = transactionManager.startTransaction(userName, databaseName, analyze, "Polypheny-org.polypheny.db.processing.PolyScriptInterpreter", Transaction.MultimediaFlavor.FILE);
-            transaction.setUseCache(useCache);
-            return transaction;
-        } catch (UnknownUserException | UnknownDatabaseException | UnknownSchemaException e) {
-            throw new RuntimeException("Error while starting transaction", e);
+            List<String> parsed = new PolyScript( new StringReader( script ) ).Start();
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
+        String query = script.substring(LANGUAGE_PREFIX + LEFT_PAREN, script.length() - RPAREN_AND_SEMICOLON);
+
+        return sqlProcessorFacade.runSql(query, transactionManager);
     }
+
+
 }
