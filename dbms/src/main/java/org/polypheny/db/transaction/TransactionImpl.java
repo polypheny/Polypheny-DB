@@ -243,10 +243,18 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 return new MqlProcessorImpl();
             case PIG:
                 return new PigProcessorImpl();
-            case POLYSCRIPT:
-                return new PolyScriptProcessorImpl();
             default:
                 throw new RuntimeException( "This language seems to not be supported!" );
+        }
+    }
+
+    @Override
+    public ScriptInterpreter getInterpreter(QueryLanguage language) {
+        switch (language) {
+            case POLYSCRIPT:
+                return new PolyScriptInterpreter(new SqlProcessorImpl(), transactionManager);
+            default:
+                throw new RuntimeException("This script seems to not be supported!");
         }
     }
 

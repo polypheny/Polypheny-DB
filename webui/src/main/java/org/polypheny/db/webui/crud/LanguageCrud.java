@@ -57,6 +57,7 @@ import org.polypheny.db.languages.mql.MqlUseDatabase;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.ScriptInterpreter;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -147,27 +148,14 @@ public class LanguageCrud {
             Statement statement = transaction.createStatement();
 
             long executionTime = System.nanoTime();
-            Processor processor = transaction.getProcessor( QueryLanguage.POLYSCRIPT );
+            ScriptInterpreter interpreter = transaction.getInterpreter( QueryLanguage.POLYSCRIPT );
             if ( transaction.isAnalyze() ) {
-                statement.getOverviewDuration().start( "Parsing" );
+                statement.getOverviewDuration().start( "Interpreting" );
             }
-            Node parsed = processor.parse( query );
+            PolyResult polyResult = interpreter.interprete(query);
             if ( transaction.isAnalyze() ) {
-                statement.getOverviewDuration().stop( "Parsing" );
+                statement.getOverviewDuration().stop( "Interpreting" );
             }
-
-            // NIC 16.05.2020: Arguably to be commented out/removed for PolyScript atm
-            if ( transaction.isAnalyze() ) {
-                statement.getOverviewDuration().start( "Translation" );
-            }
-            AlgRoot algRoot = processor.translate( statement, parsed, new QueryParameters( query, SchemaType.RELATIONAL ) );
-            if ( transaction.isAnalyze() ) {
-                statement.getOverviewDuration().stop( "Translation" );
-            }
-
-            // TODO: Hier neuer Typ ScriptProcessor einfügen, damit Script ausgeführt werden können.
-            // PolyScript ist kein Query!
-            PolyResult polyResult = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
             Result result = getResult( QueryLanguage.POLYSCRIPT, statement, request, query, polyResult, request.noLimit );
 

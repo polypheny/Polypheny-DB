@@ -27,6 +27,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.ScriptInterpreter;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
@@ -55,6 +56,8 @@ public interface Transaction {
     PolyphenyDbCatalogReader getCatalogReader();
 
     Processor getProcessor( QueryLanguage language );
+
+    ScriptInterpreter getInterpreter(QueryLanguage language );
 
     boolean isAnalyze();
 
