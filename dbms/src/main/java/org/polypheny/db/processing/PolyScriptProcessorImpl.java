@@ -19,6 +19,7 @@ package org.polypheny.db.processing;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.polyscript.PolyScriptNode;
@@ -77,6 +78,9 @@ public class PolyScriptProcessorImpl extends Processor {
 //        final PigAlgBuilder builder = PigAlgBuilder.create( statement );
 //        new Handler( builder ).handle( (Ast.PigNode) query );
 //        return AlgRoot.of( builder.build(), Kind.SELECT );
+//        AlgRoot.of(null, Kind.SELECT);
+        // TODO(nic): Show in meeting 18.05.2022
+        // use
         throw new RuntimeException( "The PolyScript implementation does not support translation." );
     }
 

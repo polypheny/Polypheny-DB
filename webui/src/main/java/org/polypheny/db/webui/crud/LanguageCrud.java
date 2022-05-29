@@ -156,6 +156,7 @@ public class LanguageCrud {
                 statement.getOverviewDuration().stop( "Parsing" );
             }
 
+            // NIC 16.05.2020: Arguably to be commented out/removed for PolyScript atm
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Translation" );
             }
@@ -164,6 +165,8 @@ public class LanguageCrud {
                 statement.getOverviewDuration().stop( "Translation" );
             }
 
+            // TODO: Hier neuer Typ ScriptProcessor einfügen, damit Script ausgeführt werden können.
+            // PolyScript ist kein Query!
             PolyResult polyResult = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
             Result result = getResult( QueryLanguage.POLYSCRIPT, statement, request, query, polyResult, request.noLimit );

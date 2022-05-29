@@ -27,6 +27,7 @@ import java.util.Set;
 
 public class PolyScriptNode implements Node {
     private final String statement;
+    private PolyScriptAction action;
     private PolyScriptNode next;
 
     public PolyScriptNode(String statement) {
@@ -35,7 +36,7 @@ public class PolyScriptNode implements Node {
 
     @Override
     public Node clone(ParserPos pos) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -65,6 +66,6 @@ public class PolyScriptNode implements Node {
 
     @Override
     public <R> R accept(NodeVisitor<R> visitor) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }
