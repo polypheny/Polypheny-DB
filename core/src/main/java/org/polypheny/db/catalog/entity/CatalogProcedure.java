@@ -48,8 +48,7 @@ public final class CatalogProcedure implements CatalogEntity {
     @Override
     public Serializable[] getParameterArray() {
         // throw UOE because should not be used.
-        return new Serializable[]{
-                getDatabaseName(), getSchemaName(), name, query, arguments };
+        throw new UnsupportedOperationException();
     }
 
     @SneakyThrows
