@@ -74,6 +74,14 @@ public interface MonitoringService {
 
 
     /**
+     * Return current number of pending monitoring evens in the queue.
+     *
+     * @return number of pending events in the queue;
+     */
+    public long getNumberOfElementsInQueue();
+
+
+    /**
      * Removes all data points for given monitoring persistent type.
      *
      * @param dataPointClass specific datapoint class of interest to remove
@@ -101,6 +109,7 @@ public interface MonitoringService {
      * @param executionTime the measured execution time.
      */
     void updateQueryPostCosts( @NonNull String physicalQueryClass, long executionTime );
+
 
     /**
      * Removes all aggregates post costs from cache.
