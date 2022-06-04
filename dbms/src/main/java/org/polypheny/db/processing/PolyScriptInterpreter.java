@@ -35,6 +35,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PolyScriptInterpreter implements ScriptInterpreter {
@@ -53,14 +54,39 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
         int LANGUAGE_PREFIX = 3;
         int RPAREN_AND_SEMICOLON = 2;
         int LEFT_PAREN = 1;
+        List<String> parsed = new ArrayList<>();
         try {
-            List<String> parsed = new PolyScript( new StringReader( script ) ).Start();
+            List<String> result = new PolyScript(new StringReader(script)).Start();
+            parsed.addAll(result);
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
-        String query = script.substring(LANGUAGE_PREFIX + LEFT_PAREN, script.length() - RPAREN_AND_SEMICOLON);
+        PolyResult result = null;
+        for (String line : parsed) {
+            String language = line.substring(0, LANGUAGE_PREFIX - 1);
+            String code = line.substring(LANGUAGE_PREFIX + LEFT_PAREN, line.length() - RPAREN_AND_SEMICOLON);
+            result = run(language, code); // return result of last executed query
+        }
+        return result;
+    }
 
-        return sqlProcessorFacade.runSql(query, transactionManager);
+    private PolyResult run(String language, String line) {
+        switch (language) {
+            case "SQL":
+                return process(line);
+            case "MQL":
+                return process(line);
+            case "CQL":
+                return process(line);
+            default:
+                throw new UnsupportedOperationException(
+                        String.format("The provided language %s isn't supported by the Interpreter", language)
+                );
+        }
+    }
+
+    private PolyResult process(String line) {
+        return sqlProcessorFacade.runSql(line, transactionManager);
     }
 
 
