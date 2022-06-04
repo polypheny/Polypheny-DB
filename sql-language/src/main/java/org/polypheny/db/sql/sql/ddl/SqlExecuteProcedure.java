@@ -40,7 +40,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement {
     private final SqlIdentifier identifier;
 
-    private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "EXEC PROCEDURE", Kind.PROCEDURE_CALL );
+    private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "EXEC PROCEDURE", Kind.PROCEDURE_EXEC );
 
     public SqlExecuteProcedure(ParserPos pos, SqlIdentifier identifier) {
         super(pos);

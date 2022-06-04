@@ -510,6 +510,11 @@ public enum Kind {
     PROCEDURE_CALL,
 
     /**
+     * ProcedureExec to launch a PolyScript
+     */
+    PROCEDURE_EXEC,
+
+    /**
      * NewSpecification
      */
     NEW_SPECIFICATION,
@@ -1392,7 +1397,8 @@ public enum Kind {
             DELETE,
             UPDATE,
             MERGE,
-            PROCEDURE_CALL );
+            PROCEDURE_CALL
+    );
 
     /**
      * Category consisting of all DDL operators.
@@ -1425,7 +1431,8 @@ public enum Kind {
             TRUNCATE,
             ALTER_SCHEMA,
             OTHER_DDL,
-            CREATE_PROCEDURE
+            CREATE_PROCEDURE,
+            PROCEDURE_EXEC
     );
 
     /**
