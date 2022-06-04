@@ -497,6 +497,18 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
     }
 }
 
+SqlCall SqlExecuteProcedure(Span s, boolean replace) :
+{
+    final SqlIdentifier id;
+}
+{
+    <EXEC><PROCEDURE>
+    id = CompoundIdentifier()
+    {
+        return SqlDdlNodes.executeProcedure(s.end(this), id);
+    }
+}
+
 SqlDrop SqlDropSchema(Span s, boolean replace) :
 {
     final boolean ifExists;

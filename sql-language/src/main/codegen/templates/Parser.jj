@@ -933,7 +933,7 @@ SqlNode SqlStmt() :
         stmt = SqlDrop()
     |
 </#if>
-        stmt = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+        stmt = SqlExecProcedure()
     |
         stmt = Explain()
     |
@@ -946,6 +946,8 @@ SqlNode SqlStmt() :
         stmt = SqlUpdate()
     |
         stmt = SqlMerge()
+    |
+        stmt = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
         stmt = SqlProcedureCall()
     )
@@ -1216,6 +1218,20 @@ SqlNode SqlProcedureCall() :
     routineCall = NamedRoutineCall(FunctionCategory.USER_DEFINED_PROCEDURE, ExprContext.ACCEPT_SUB_QUERY)
     {
         return (SqlCall) OperatorRegistry.get( OperatorName.PROCEDURE_CALL ).createCall(s.end(routineCall), routineCall);
+    }
+}
+
+SqlNode SqlExecProcedure() :
+{
+    SqlIdentifier id;
+    final Span s;
+}
+{
+    <EXEC><PROCEDURE> id = CompoundIdentifier() {
+        s = span();
+    }
+    {
+        return SqlDdlNodes.executeProcedure(s.end(this), id);
     }
 }
 
