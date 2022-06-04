@@ -71,6 +71,10 @@ public final class CatalogProcedure implements CatalogEntity {
         return name;
     }
 
+    public String getQuery() {
+        return query;
+    }
+
     static class ProcedureArguments implements CatalogEntity{
         private final List<String> arguments; // TODO not used yet
 

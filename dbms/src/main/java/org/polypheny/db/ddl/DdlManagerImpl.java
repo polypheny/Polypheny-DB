@@ -88,6 +88,9 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.processing.PolyScriptInterpreter;
+import org.polypheny.db.processing.SqlProcessorFacade;
+import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -96,6 +99,7 @@ import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -1719,7 +1723,9 @@ public class DdlManagerImpl extends DdlManager {
 
     public void executeProcedure(long databaseId, long schemaId, String procedureName) {
         try {
-            catalog.getProcedure(databaseId, schemaId, procedureName);
+            CatalogProcedure procedure = catalog.getProcedure(databaseId, schemaId, procedureName);
+            PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), TransactionManagerImpl.getInstance());
+            polyScriptInterpreter.interprete(procedure.getQuery());
         } catch (UnknownProcedureException e) {
             throw new RuntimeException(e);
         }
