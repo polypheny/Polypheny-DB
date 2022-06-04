@@ -63,11 +63,15 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
         }
         PolyResult result = null;
         for (String line : parsed) {
-            String language = line.substring(0, LANGUAGE_PREFIX - 1);
+            //String language = line.substring(0, LANGUAGE_PREFIX - 1);
             String code = line.substring(LANGUAGE_PREFIX + LEFT_PAREN, line.length() - RPAREN_AND_SEMICOLON);
-            result = run(language, code); // return result of last executed query
+            result = run(line); // return result of last executed query
         }
         return result;
+    }
+
+    private PolyResult run(String line) {
+        return process(line);
     }
 
     private PolyResult run(String language, String line) {
