@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 import com.google.common.collect.ImmutableList;
 import java.io.File;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,6 +94,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             dataSource.setPassword( "" );
             dataSource.setMaxTotal( -1 ); // No limit for number of connections (limited by connection handler; see settings maxConnections)
             dataSource.setDefaultAutoCommit( false );
+            dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
             return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
         }
     }
