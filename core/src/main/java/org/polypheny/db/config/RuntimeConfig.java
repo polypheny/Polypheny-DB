@@ -390,6 +390,13 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "processingExecutionGroup" ),
 
+    MONITORING_QUEUE_ACTIVE(
+            "runtime/monitoringQueueActive",
+            "Enables automatic monitoring of executed events in workload monitoring. If disabled no events are captured, hence the queue remains empty. This also effects routing!",
+            true,
+            ConfigType.BOOLEAN,
+            "monitoringSettingsQueueGroup" ),
+
     MONITORING_CORE_POOL_SIZE(
             "runtime/corePoolSize",
             "The number of threads to keep in the pool for processing workload monitoring events, even if they are idle.",

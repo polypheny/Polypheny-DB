@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryPostCost;
@@ -44,7 +45,9 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     @Override
     public void monitorEvent( @NonNull MonitoringEvent eventData ) {
-        this.monitoringQueue.queueEvent( eventData );
+        if ( RuntimeConfig.MONITORING_QUEUE_ACTIVE.getBoolean() ) {
+            this.monitoringQueue.queueEvent( eventData );
+        }
     }
 
 
@@ -69,6 +72,12 @@ public class MonitoringServiceImpl implements MonitoringService {
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         return this.repository.getDataPointsAfter( dataPointClass, timestamp );
+    }
+
+
+    @Override
+    public long getNumberOfElementsInQueue() {
+        return monitoringQueue.getNumberOfElementsInQueue();
     }
 
 
