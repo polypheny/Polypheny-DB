@@ -198,9 +198,17 @@ public class DdlParserTest extends SqlParserTest {
     @Test
     public void testCreateOrReplaceProcedure() {
         final String sql = "create procedure \"myudf\"\n"
-                + " $ 'select * from customers' $";
+                + " $ select * from customers $";
         final String expected = "CREATE PROCEDURE `myudf`"
                 + " $ 'select * from customers' $";
+        sql( sql ).ok( expected );
+    }
+    @Test
+    public void testCreatePolyScriptProcedure() {
+        final String sql = "create procedure \"myudf\"\n"
+                + " $ \'sql(select * from customers);\' $";
+        final String expected = "CREATE PROCEDURE `myudf`"
+                + " $ 'sql(select * from customers);' $";
         sql( sql ).ok( expected );
     }
 

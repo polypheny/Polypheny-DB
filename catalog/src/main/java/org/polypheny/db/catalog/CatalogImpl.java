@@ -40,12 +40,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.mapdb.BTreeMap;
-import org.mapdb.DB;
+import org.mapdb.*;
 import org.mapdb.DBException.SerializationError;
-import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.StatusService.ErrorConfig;
@@ -610,6 +606,7 @@ public class CatalogImpl extends Catalog {
         partitionGroups = db.treeMap( "partitionGroups", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         partitions = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         procedures = db.treeMap( "procedures", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        procedureNames = db.treeMap( "procedureNames", new SerializerArrayTuple(Serializer.LONG, Serializer.LONG, Serializer.STRING), Serializer.JAVA ).createOrOpen();
 
         partitionPlacements = db.treeMap( "partitionPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
 

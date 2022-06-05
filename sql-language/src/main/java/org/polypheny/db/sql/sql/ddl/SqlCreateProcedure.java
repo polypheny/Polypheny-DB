@@ -134,8 +134,7 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
         }
 
         try {
-            // TODO refactor Procedure to use proper syntax to extract params and query
-            instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, "");
+            instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, query.toString());
         } catch (GenericCatalogException | UnknownColumnException e) {
             e.printStackTrace();
         }
