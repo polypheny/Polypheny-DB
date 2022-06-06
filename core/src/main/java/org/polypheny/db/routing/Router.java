@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package org.polypheny.db.routing;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.GraphAlg;
+import org.polypheny.db.algebra.core.document.DocumentAlg;
+import org.polypheny.db.algebra.core.graph.GraphAlg;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -40,6 +41,8 @@ public interface Router {
     void resetCaches();
 
     <T extends AlgNode & GraphAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement );
+
+    <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement, LogicalQueryInformation queryInformation );
 
 }
 

@@ -2414,22 +2414,41 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
-        long id = entityIdBuilder.getAndIncrement();
+    public List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern ) {
+        if ( schemas.containsKey( namespaceId ) ) {
+
+            CatalogNamespace schema = Objects.requireNonNull( schemas.get( namespaceId ) );
+            if ( namePattern != null ) {
+                return Collections.singletonList( collectionNames.get( new Object[]{ schema.databaseId, namespaceId, namePattern.pattern } ) );
+            } else {
+                return new ArrayList<>( collectionNames.prefixSubMap( new Object[]{ schema.databaseId, namespaceId } ).values() );
+            }
+        }
+        return new ArrayList<>();
+    }
+
+
+    @Override
+    public long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
+        long collectionId = entityIdBuilder.getAndIncrement();
+        if ( id != null ) {
+            collectionId = id;
+        }
+
         CatalogNamespace namespace = getNamespace( schemaId );
 
-        CatalogCollection collection = new CatalogCollection( Catalog.defaultDatabaseId, schemaId, id, name, List.of() );
+        CatalogCollection collection = new CatalogCollection( Catalog.defaultDatabaseId, schemaId, collectionId, name, List.of(), EntityType.ENTITY, null );
 
         synchronized ( this ) {
-            collections.put( id, collection );
+            collections.put( collectionId, collection );
             collectionNames.put( new Object[]{ namespace.databaseId, schemaId, name }, collection );
             List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
-            children.add( id );
+            children.add( collectionId );
             schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
         }
         listeners.firePropertyChange( "collection", null, entity );
 
-        return id;
+        return collectionId;
     }
 
 
@@ -2449,7 +2468,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             collectionPlacements.put( new Object[]{ collectionId, adapterId }, placement );
             collections.replace( collectionId, collection );
-            collectionNames.replace( new Object[]{ collection.databaseId, collection.schemaId, collection.name }, collection );
+            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
         }
         listeners.firePropertyChange( "collectionPlacement", null, placement );
         return id;
@@ -2466,7 +2485,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void addDocumentLogistics( long schemaId, long collectionId, String name, List<DataStore> stores ) throws GenericCatalogException {
+    public long addDocumentLogistics( long schemaId, String name, List<DataStore> stores ) throws GenericCatalogException {
         long tableId = addEntity( name, schemaId, Catalog.defaultUserId, EntityType.ENTITY, true );
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), tableId ) );
@@ -2496,15 +2515,27 @@ public class CatalogImpl extends Catalog {
 
         addPrimaryKey( tableId, List.of( idId, dataId ) );
 
-        CatalogDocumentMapping mapping = new CatalogDocumentMapping( collectionId, tableId, idId, dataId );
+        CatalogDocumentMapping mapping = new CatalogDocumentMapping( tableId, idId, dataId );
 
-        documentMappings.put( collectionId, mapping );
+        documentMappings.put( tableId, mapping );
+
+        return tableId;
     }
 
 
     @Override
     public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
         return collectionPlacements.values().stream().filter( p -> p.adapter == adapterId ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId ) {
+        if ( !collectionPlacements.containsKey( new Object[]{ collectionId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( collectionId, adapterId );
+        }
+
+        return collectionPlacements.get( new Object[]{ collectionId, adapterId } );
     }
 
 

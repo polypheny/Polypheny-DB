@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.schema;
+package org.polypheny.db.algebra.core.document;
 
-import java.util.List;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+public interface DocumentAlg {
 
-public class LogicalDocument extends LogicalTable {
+    DocType getDocType();
 
-    protected LogicalDocument( long tableId, String logicalSchemaName, String logicalTableName, List<Long> columnIds, List<String> logicalColumnNames, AlgProtoDataType protoRowType, NamespaceType schemaType ) {
-        super( tableId, logicalSchemaName, logicalTableName, columnIds, logicalColumnNames, protoRowType, schemaType );
+    enum DocType {
+        SCAN, VALUES, PROJECT, MODIFY
+
     }
 
 }

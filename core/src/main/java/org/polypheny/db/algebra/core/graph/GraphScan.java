@@ -19,7 +19,6 @@ package org.polypheny.db.algebra.core.graph;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;

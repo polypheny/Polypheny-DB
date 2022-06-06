@@ -510,7 +510,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
+    public List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
         throw new NotImplementedException();
     }
 
@@ -528,13 +534,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void addDocumentLogistics( long schemaId, long collectionId, String name, List<DataStore> stores ) throws GenericCatalogException {
+    public long addDocumentLogistics( long schemaId, String name, List<DataStore> stores ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId ) {
         throw new NotImplementedException();
     }
 

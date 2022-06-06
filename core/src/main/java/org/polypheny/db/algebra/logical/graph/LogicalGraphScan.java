@@ -33,6 +33,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
@@ -49,7 +50,7 @@ public class LogicalGraphScan extends GraphScan implements RelationalTransformab
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities, CatalogReader catalogReader ) {
         assert !entities.isEmpty();
         AlgTraitSet out = getTraitSet().replace( ModelTrait.RELATIONAL );
         LogicalScan nodes = new LogicalScan( getCluster(), out, entities.get( 0 ) );

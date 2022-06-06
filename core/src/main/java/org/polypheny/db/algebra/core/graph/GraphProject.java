@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;

@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core.graph;
+package org.polypheny.db.algebra.logical.document;
 
-import lombok.Getter;
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public abstract class GraphFilter extends SingleAlg implements GraphAlg {
-
-    @Getter
-    private final RexNode condition;
-
+public class LogicalDocumentFilter extends DocumentFilter {
 
     /**
      * Creates a <code>SingleRel</code>.
@@ -37,21 +33,19 @@ public abstract class GraphFilter extends SingleAlg implements GraphAlg {
      * @param input Input relational expression
      * @param condition
      */
-    protected GraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
-        super( cluster, traits, input );
-        this.condition = condition;
+    protected LogicalDocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+        super( cluster, traits, input, condition );
+    }
+
+
+    public static LogicalDocumentFilter create( AlgNode node, RexNode condition ) {
+        return new LogicalDocumentFilter( node.getCluster(), node.getTraitSet(), node, condition );
     }
 
 
     @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + this.condition.hashCode() + "$" + getInput().algCompareString();
-    }
-
-
-    @Override
-    public NodeType getNodeType() {
-        return NodeType.FILTER;
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalDocumentFilter( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), condition );
     }
 
 }

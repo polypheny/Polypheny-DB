@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;

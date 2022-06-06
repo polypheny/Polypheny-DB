@@ -17,6 +17,7 @@
 package org.polypheny.db.routing;
 
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.transaction.Statement;
@@ -42,5 +43,7 @@ public interface DmlRouter {
     AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
 
     AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
+
+    AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation );
 
 }

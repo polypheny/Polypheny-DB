@@ -18,7 +18,6 @@ package org.polypheny.db.algebra.core.graph;
 
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;

@@ -26,13 +26,15 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.GraphAlg;
-import org.polypheny.db.algebra.GraphAlg.NodeType;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
+import org.polypheny.db.algebra.core.document.DocumentAlg;
+import org.polypheny.db.algebra.core.document.DocumentAlg.DocType;
 import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.core.graph.GraphAlg;
+import org.polypheny.db.algebra.core.graph.GraphAlg.NodeType;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
@@ -154,6 +156,24 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     @Override
+    public <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement, LogicalQueryInformation queryInformation ) {
+        if ( alg.getInputs().size() == 1 ) {
+            routeDocument( builder, (AlgNode & DocumentAlg) alg.getInput( 0 ), statement, queryInformation );
+            if ( builder.stackSize() > 0 ) {
+                alg.replaceInput( 0, builder.build() );
+            }
+            return alg;
+        } else if ( alg.getDocType() == DocType.SCAN ) {
+            builder.push( handleDocumentScan( (DocumentScan) alg, statement, builder, queryInformation ).build() );
+            return alg;
+        } else if ( alg.getDocType() == DocType.VALUES ) {
+            return alg;
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public void resetCaches() {
         joinedScanCache.invalidateAll();
     }
@@ -183,7 +203,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            return Lists.newArrayList( super.handleDocumentsScan( (DocumentScan) node, statement, builders.get( 0 ) ) );
+            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), queryInformation ) );
         }
 
         if ( node instanceof LogicalScan && node.getTable() != null ) {

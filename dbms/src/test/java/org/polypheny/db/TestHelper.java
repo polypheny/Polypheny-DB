@@ -379,12 +379,22 @@ public class TestHelper {
             assertEquals( expected.size(), result.getData().length );
 
             List<List<String>> parsedResults = new ArrayList<>();
-            int j = 0;
+
             for ( String[] data : result.getData() ) {
                 int i = 0;
                 List<String> row = new ArrayList<>();
                 for ( String entry : data ) {
                     if ( !result.getHeader()[i].name.equals( "_id" ) ) {
+                        if ( result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
+                            BsonDocument doc = BsonDocument.parse( entry );
+                            if ( excludeId ) {
+                                doc.remove( "_id" );
+                            }
+                            row.add( doc.toJson().replace( " ", "" ) );
+                            i++;
+                            continue;
+                        }
+
                         if ( entry != null ) {
                             row.add( entry.replace( " ", "" ) );
                         } else {
@@ -394,15 +404,10 @@ public class TestHelper {
                     i++;
                 }
                 parsedResults.add( row );
-                j++;
             }
             List<List<String>> parsedExpected = new ArrayList<>();
 
-            if ( !excludeId ) {
-                expected.forEach( row -> parsedExpected.add( Arrays.asList( row ) ) );
-            } else {
-                expected.forEach( row -> parsedExpected.add( Arrays.asList( row ).subList( 1, Arrays.asList( row ).size() ) ) );
-            }
+            expected.forEach( row -> parsedExpected.add( Arrays.asList( row ) ) );
 
             List<List<String>> finalExpected = parsedExpected
                     .stream()

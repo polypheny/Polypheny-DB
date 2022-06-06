@@ -14,44 +14,48 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core.graph;
+package org.polypheny.db.algebra.core.document;
 
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexNode;
 
-public abstract class GraphFilter extends SingleAlg implements GraphAlg {
+public class DocumentModify extends SingleAlg implements DocumentAlg {
 
+    public final Operation operation;
     @Getter
-    private final RexNode condition;
+    private final AlgOptTable table;
 
 
     /**
      * Creates a <code>SingleRel</code>.
      *
      * @param cluster Cluster this relational expression belongs to
+     * @param table
      * @param traits
      * @param input Input relational expression
-     * @param condition
+     * @param operation
      */
-    protected GraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    protected DocumentModify( AlgOptCluster cluster, AlgOptTable table, AlgTraitSet traits, AlgNode input, Operation operation ) {
         super( cluster, traits, input );
-        this.condition = condition;
+        this.operation = operation;
+        this.table = table;
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + this.condition.hashCode() + "$" + getInput().algCompareString();
+        return "$" + getClass().getSimpleName() + "$" + input.algCompareString();
     }
 
 
     @Override
-    public NodeType getNodeType() {
-        return NodeType.FILTER;
+    public DocType getDocType() {
+        return DocType.MODIFY;
     }
 
 }

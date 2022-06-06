@@ -138,7 +138,7 @@ public abstract class DataStore extends Adapter {
         Catalog catalog = Catalog.getInstance();
         CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
 
-        CatalogEntity collectionEntity = catalog.getTable( mapping.tableId );
+        CatalogEntity collectionEntity = catalog.getTable( mapping.collectionId );
         createTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
     }
 
@@ -148,7 +148,7 @@ public abstract class DataStore extends Adapter {
         Catalog catalog = Catalog.getInstance();
         CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
 
-        CatalogEntity collectionEntity = catalog.getTable( mapping.tableId );
+        CatalogEntity collectionEntity = catalog.getTable( mapping.collectionId );
         dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
     }
 

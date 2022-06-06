@@ -2090,18 +2090,20 @@ public class DdlManagerImpl extends DdlManager {
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
         }
 
-        long collectionId = catalog.addCollection(
+        long collectionId;
+        try {
+            collectionId = catalog.addDocumentLogistics( schemaId, name, stores );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
+
+        catalog.addCollection(
+                collectionId,
                 name,
                 schemaId,
                 statement.getPrepareContext().getCurrentUserId(),
                 EntityType.ENTITY,
                 true );
-
-        try {
-            catalog.addDocumentLogistics( schemaId, collectionId, name, stores );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
 
         // Initially create DataPlacement containers on every store the table should be placed.
         //stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), collectionId ) );
@@ -2127,7 +2129,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private void afterDocumentLogistics( DataStore store, long collectionId ) {
         CatalogDocumentMapping mapping = catalog.getDocumentMapping( collectionId );
-        CatalogEntity table = catalog.getTable( mapping.tableId );
+        CatalogEntity table = catalog.getTable( mapping.collectionId );
 
         catalog.addPartitionPlacement(
                 store.getAdapterId(),

@@ -198,9 +198,9 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void projectMultipleTest() {
         List<String[]> expected = Arrays.asList(
-                new String[]{ "_id", "1", null },
-                new String[]{ "_id", "1.3", "val" },
-                new String[]{ "_id", "test", "13" } );
+                new String[]{ "1", null },
+                new String[]{ "1.3", "val" },
+                new String[]{ "test", "13" } );
         insertMany( DATA_0 );
 
         Result result = find( "{}", "{\"test\":1,\"key\":1}" );
@@ -212,9 +212,9 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void projectRenameTest() {
         List<String[]> expected = Arrays.asList(
-                new String[]{ "_id", "1", null, "1" },
-                new String[]{ "_id", "1.3", "val", "1.3" },
-                new String[]{ "_id", "test", "13", "test" } );
+                new String[]{ "1", null, "1" },
+                new String[]{ "1.3", "val", "1.3" },
+                new String[]{ "test", "13", "test" } );
         insertMany( DATA_0 );
 
         Result result = find( "{}", "{\"test\":1,\"key\":1,\"newName\":\"$test\"}" );

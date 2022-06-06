@@ -18,8 +18,11 @@ package org.polypheny.db.algebra.core.relational;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.schema.ModifiableTable;
 
 public interface RelationalTransformable {
 
@@ -28,7 +31,11 @@ public interface RelationalTransformable {
     }
 
 
-    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities );
+    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities, CatalogReader catalogReader );
 
+
+    static Modify getModify( AlgOptTable table, CatalogReader catalogReader, AlgNode alg, Operation operation ) {
+        return table.unwrap( ModifiableTable.class ).toModificationAlg( alg.getCluster(), table, catalogReader, alg, operation, null, null, true );
+    }
 
 }

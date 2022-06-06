@@ -14,27 +14,29 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.algebra.core.graph;
 
-import java.io.Serializable;
+import org.polypheny.db.schema.graph.Graph;
 
-public class CatalogDocumentMapping implements CatalogObject {
+public interface GraphAlg {
 
-    public final long collectionId;
-    public final long idId;
-    public final long dataId;
+    NodeType getNodeType();
 
-
-    public CatalogDocumentMapping( long collectionId, long idId, long dataId ) {
-        this.collectionId = collectionId;
-        this.idId = idId;
-        this.dataId = dataId;
+    default Graph getGraph() {
+        return null;
     }
 
-
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    enum NodeType {
+        MATCH,
+        FILTER,
+        SCAN,
+        UNWIND,
+        PROJECT,
+        MODIFY,
+        VALUES,
+        AGGREGATE,
+        MERGE,
+        SORT
     }
 
 }

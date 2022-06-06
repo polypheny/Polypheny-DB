@@ -682,7 +682,7 @@ public class CypherToAlgConverter {
                 // simple unfiltered insert
                 add( LogicalGraphValues.create( cluster, cluster.traitSet(), nodes, nodeType, edges.stream().map( t -> Pair.of( t.left, t.right.edge ) ).collect( Collectors.toList() ), edgeType ) );
 
-                add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.INSERT, null, null ) );
+                add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, pop(), Operation.INSERT, null, null ) );
             } else {
                 // filtered DML
                 List<Pair<String, RexNode>> newNodes = new LinkedList<>();
@@ -736,7 +736,7 @@ public class CypherToAlgConverter {
 
                 add( new LogicalGraphProject( node.getCluster(), node.getTraitSet(), pop(), Pair.right( nodesAndEdges ), adjustedNames ) );
 
-                add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.INSERT, null, null ) );
+                add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, pop(), Operation.INSERT, null, null ) );
             }
             clearVariables();
         }
@@ -767,7 +767,7 @@ public class CypherToAlgConverter {
 
             List<Pair<String, RexNode>> updates = popNodes();
 
-            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
+            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
             clearVariables();
         }
 
@@ -779,7 +779,7 @@ public class CypherToAlgConverter {
 
             List<Pair<String, RexNode>> deletes = popNodes();
 
-            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.DELETE, Pair.left( deletes ), Pair.right( deletes ) ) );
+            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, pop(), Operation.DELETE, Pair.left( deletes ), Pair.right( deletes ) ) );
             clearVariables();
         }
 
@@ -820,7 +820,7 @@ public class CypherToAlgConverter {
 
             List<Pair<String, RexNode>> updates = popNodes();
 
-            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, catalogReader, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
+            add( new LogicalGraphModify( cluster, cluster.traitSet(), graph, pop(), Operation.UPDATE, Pair.left( updates ), Pair.right( updates ) ) );
             clearVariables();
         }
 

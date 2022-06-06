@@ -16,7 +16,6 @@
 
 package org.polypheny.db.algebra.rules;
 
-import lombok.Getter;
 import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableFilter;
@@ -48,7 +47,6 @@ public class GraphToEnumerableRule extends AlgOptRule {
     public static GraphToEnumerableRule VALUES_TO_ENUMERABLE = new GraphToEnumerableRule( Type.VALUES, operand( LogicalGraphValues.class, none() ), "GRAPH_VALUES_TO_ENUMERABLE" );
     //public static GraphToEnumerableRule SORT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.SORT, operand( LogicalGraphSort.class, any() ), "GRAPH_SORT_TO_ENUMERABLE" );
 
-    @Getter
     private final Type type;
 
 

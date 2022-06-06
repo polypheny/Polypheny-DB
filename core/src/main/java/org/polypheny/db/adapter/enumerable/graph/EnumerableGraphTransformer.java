@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable.graph;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -32,6 +32,9 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.enumerable.EnumUtils;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.graph.GraphTransformer;

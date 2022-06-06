@@ -31,18 +31,21 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -58,6 +61,8 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.routing.LogicalQueryInformation;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.TranslatableGraph;
@@ -124,7 +129,7 @@ public abstract class BaseRouter {
     }
 
 
-    protected RoutedAlgBuilder handleDocuments( LogicalDocumentsValues node, RoutedAlgBuilder builder ) {
+    protected RoutedAlgBuilder handleDocuments( LogicalDocumentValues node, RoutedAlgBuilder builder ) {
         return builder.documents( node.getDocumentTuples(), node.getRowType() );
     }
 
@@ -362,11 +367,46 @@ public abstract class BaseRouter {
     }
 
 
-    protected RoutedAlgBuilder handleDocumentsScan( DocumentScan node, Statement statement, RoutedAlgBuilder builder ) {
+    protected RoutedAlgBuilder handleDocumentScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation ) {
+        Catalog catalog = Catalog.getInstance();
+
+        if ( alg.getDocument().getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
+            return handleTransformerDocScan( alg, statement, builder, queryInformation );
+        }
+
+        CatalogCollection collection = catalog.getCollection( alg.getDocument().getTable().getTableId() );
+
+        for ( Integer adapterId : collection.placements ) {
+            CatalogAdapter adapter = catalog.getAdapter( adapterId );
+            NamespaceType sourceModel = alg.getDocument().getTable().getSchemaType();
+            if ( !adapter.supportedNamespaces.contains( sourceModel ) ) {
+                // document on relational
+                return handleDocumentOnRelational( alg, statement, builder );
+            }
+
+            return builder.push( alg );
+        }
+
+        throw new RuntimeException( "No placement found for the document." );
+    }
+
+
+    private RoutedAlgBuilder handleTransformerDocScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation ) {
+        AlgNode scan = builder.scan( alg.getDocument() ).build();
+
+        List<RoutedAlgBuilder> scans = ((AbstractDqlRouter) RoutingManager.getInstance().getRouters().get( 0 )).buildDql( scan, List.of( builder ), statement, alg.getCluster(), queryInformation );
+        builder.push( scans.get( 0 ).build() );
+        AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, alg.getRowType() ) );
+        return builder;
+    }
+
+
+    @NotNull
+    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan node, Statement statement, RoutedAlgBuilder builder ) {
         List<CatalogColumn> columns = Catalog.getInstance().getColumns( node.getDocument().getTable().getTableId() );
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
         builder.scan( getSubstitutionTable( statement, node.getDocument().getTable().getTableId(), columns.get( 0 ).id ) );
-        //builder.push( AlgOptRule.convert( builder.build(), ModelTrait.RELATIONAL ) );
         builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType() ) );
         return builder;

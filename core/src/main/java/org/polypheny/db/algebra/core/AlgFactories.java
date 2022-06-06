@@ -32,7 +32,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalExchange;
@@ -520,7 +520,7 @@ public class AlgFactories {
                 AlgOptCluster cluster,
                 ImmutableList<BsonValue> tuples,
                 AlgDataType rowType ) {
-            return LogicalDocumentsValues.create(
+            return LogicalDocumentValues.create(
                     cluster,
                     ImmutableList.copyOf( tuples ),
                     rowType );

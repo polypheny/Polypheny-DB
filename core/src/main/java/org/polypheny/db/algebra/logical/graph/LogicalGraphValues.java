@@ -37,6 +37,7 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.graph.PolyEdge;
@@ -113,7 +114,7 @@ public class LogicalGraphValues extends GraphValues implements RelationalTransfo
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities, CatalogReader catalogReader ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
 
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder() );

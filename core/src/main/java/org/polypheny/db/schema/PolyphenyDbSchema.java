@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.NameMap;
 
 
 public interface PolyphenyDbSchema {
@@ -100,6 +101,8 @@ public interface PolyphenyDbSchema {
 
     @Experimental
     boolean removeType( String name );
+
+    NameMap<TableEntry> getTableMap();
 
 
     /**

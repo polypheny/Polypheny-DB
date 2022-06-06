@@ -18,38 +18,37 @@ package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.schema.ModelTrait;
 
-public class LogicalDocumentScan extends DocumentScan implements RelationalTransformable {
+public class LogicalDocumentModify extends DocumentModify implements RelationalTransformable {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates a <code>SingleRel</code>.
      *
-     * @param cluster
-     * @param traitSet
-     * @param document
+     * @param cluster Cluster this relational expression belongs to
+     * @param table
+     * @param traits
+     * @param input Input relational expression
      */
-    public LogicalDocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable document ) {
-        super( cluster, traitSet, document );
+    protected LogicalDocumentModify( AlgOptCluster cluster, AlgOptTable table, AlgTraitSet traits, AlgNode input, Operation operation ) {
+        super( cluster, table, traits, input, operation );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, AlgOptTable table ) {
-        return new LogicalDocumentScan( cluster, cluster.traitSet(), table );
+    public static AlgNode create( AlgOptTable table, AlgNode input, Operation operation ) {
+        return new LogicalDocumentModify( input.getCluster(), table, input.getTraitSet(), input, operation );
     }
 
 
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities, CatalogReader catalogReader ) {
-        return List.of( AlgOptRule.convert( LogicalScan.create( getCluster(), entities.get( 0 ) ), ModelTrait.RELATIONAL ) );
+        return List.of( RelationalTransformable.getModify( entities.get( 0 ), catalogReader, values.get( 0 ), operation ) );
     }
 
 }

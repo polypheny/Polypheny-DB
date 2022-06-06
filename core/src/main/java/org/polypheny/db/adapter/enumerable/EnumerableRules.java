@@ -17,6 +17,8 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.polypheny.db.adapter.enumerable.graph.EnumerableGraphMatchRule;
+import org.polypheny.db.adapter.enumerable.graph.EnumerableGraphTransformerRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;

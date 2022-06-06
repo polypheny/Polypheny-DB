@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.operators.OperatorName;

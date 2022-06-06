@@ -42,6 +42,8 @@ import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
 import org.polypheny.db.algebra.logical.graph.LogicalGraph;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
@@ -347,32 +349,50 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalConditionalExecute alg ) {
         LogicalConditionalExecute newAlg = LogicalConditionalExecute.create( alg.getLeft(), alg.getRight(), alg );
         setNewForOldRel( alg, newAlg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalStreamer alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalBatchIterator alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphTransformer alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentTransformer alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentProject alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentFilter alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalConstraintEnforcer alg ) {
         LogicalConstraintEnforcer newAlg = LogicalConstraintEnforcer.create(
                 alg.getLeft(),
@@ -383,16 +403,19 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalTransformer alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphModify alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphScan scan ) {
         AlgNode alg = scan;
         if ( !(scan.getGraph() instanceof LogicalGraph) ) {
@@ -402,36 +425,43 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphProject project ) {
         rewriteGeneric( project );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphMatch match ) {
         rewriteGeneric( match );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphFilter filter ) {
         rewriteGeneric( filter );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphSort sort ) {
         rewriteGeneric( sort );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphAggregate aggregate ) {
         rewriteGeneric( aggregate );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalGraphUnwind unwind ) {
         rewriteGeneric( unwind );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalModify alg ) {
         LogicalModify newAlg =
                 LogicalModify.create(
@@ -446,6 +476,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalAggregate alg ) {
         AlgDataType inputType = alg.getInput().getRowType();
         for ( AlgDataTypeField field : inputType.getFieldList() ) {
@@ -459,6 +490,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( Sort alg ) {
         AlgCollation oldCollation = alg.getCollation();
         final AlgNode oldChild = alg.getInput();
@@ -480,6 +512,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalFilter alg ) {
         AlgNode newAlg =
                 alg.copy(
@@ -490,6 +523,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalJoin alg ) {
         LogicalJoin newAlg =
                 LogicalJoin.create(
@@ -502,6 +536,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalCorrelate alg ) {
         Builder newPos = ImmutableBitSet.builder();
         for ( int pos : alg.getRequiredColumns() ) {
@@ -522,36 +557,43 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( Collect alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( Uncollect alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalIntersect alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalMinus alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalUnion alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalModifyCollect alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalValues alg ) {
         // NOTE: UDT instances require invocation of a constructor method, which can't be represented by
         // the tuples stored in a LogicalValues, so we don't have to worry about them here.
@@ -559,16 +601,19 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalTableFunctionScan alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( Sample alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalProject alg ) {
         final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
         flattenProjections(
@@ -586,6 +631,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalCalc alg ) {
         // Translate the child.
         final AlgNode newInput = getNewForOldRel( alg.getInput() );
@@ -633,6 +679,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( SelfFlatteningRel alg ) {
         alg.flattenRel( this );
     }

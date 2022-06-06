@@ -57,7 +57,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
-import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
@@ -67,7 +66,10 @@ import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
+import org.polypheny.db.algebra.core.document.DocumentAlg;
+import org.polypheny.db.algebra.core.graph.GraphAlg;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
@@ -984,6 +986,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
         if ( logicalRoot.getModel() == ModelTrait.GRAPH ) {
             return routeGraph( logicalRoot, queryInformation, dmlRouter );
+        } else if ( logicalRoot.getModel() == ModelTrait.DOCUMENT ) {
+            return routeDocument( logicalRoot, queryInformation, dmlRouter );
         } else if ( logicalRoot.alg instanceof LogicalModify ) {
             AlgNode routedDml = dmlRouter.routeDml( (LogicalModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
@@ -1042,7 +1046,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<ProposedRoutingPlan> routeDocument( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
-        return null;
+        if ( logicalRoot.alg instanceof LogicalDocumentModify ) {
+            AlgNode routedDml = dmlRouter.routeDocumentDml( (LogicalDocumentModify) logicalRoot.alg, statement, queryInformation );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
+        }
+        RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
+        AlgNode node = RoutingManager.getInstance().getRouters().get( 0 ).routeDocument( builder, (AlgNode & DocumentAlg) logicalRoot.alg, statement, queryInformation );
+        return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryClass() ) );
     }
 
 
@@ -1064,7 +1074,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         RoutedAlgBuilder builder = RoutingManager.getInstance().getCachedPlanRouter().routeCached(
                 logicalRoot,
                 selectedCachedPlan,
-                statement );
+                statement,
+                queryInformation );
 
         if ( isAnalyze ) {
             statement.getRoutingDuration().stop( "Route Cached Plan" );

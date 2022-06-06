@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import lombok.NonNull;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.EntityType;
 
 public class CatalogCollection implements CatalogObject {
 
@@ -29,15 +32,19 @@ public class CatalogCollection implements CatalogObject {
     public final ImmutableList<Integer> placements;
     public final String name;
     public final long databaseId;
-    public final long schemaId;
+    public final long namespaceId;
+    public final EntityType entityType;
+    public final String physicalName;
 
 
-    public CatalogCollection( long databaseId, long schemaId, long id, String name, @NonNull Collection<Integer> placements ) {
+    public CatalogCollection( long databaseId, long namespaceId, long id, String name, @NonNull Collection<Integer> placements, EntityType type, String physicalName ) {
         this.id = id;
         this.databaseId = databaseId;
-        this.schemaId = schemaId;
+        this.namespaceId = namespaceId;
         this.name = name;
         this.placements = ImmutableList.copyOf( placements );
+        this.entityType = type;
+        this.physicalName = physicalName;
     }
 
 
@@ -50,7 +57,13 @@ public class CatalogCollection implements CatalogObject {
     public CatalogCollection addPlacement( int adapterId ) {
         List<Integer> placements = new ArrayList<>( this.placements );
         placements.add( adapterId );
-        return new CatalogCollection( databaseId, schemaId, id, name, placements );
+        return new CatalogCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
+    }
+
+
+    @SneakyThrows
+    public String getNamespaceName() {
+        return Catalog.getInstance().getNamespace( namespaceId ).name;
     }
 
 }

@@ -14,28 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra;
+package org.polypheny.db.schema;
 
-import org.polypheny.db.schema.graph.Graph;
+import java.util.List;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
-public interface GraphAlg {
+public class LogicalCollection extends LogicalTable {
 
-    NodeType getNodeType();
-
-    default Graph getGraph() {
-        return null;
-    }
-
-    enum NodeType {
-        MATCH,
-        FILTER,
-        SCAN,
-        UNWIND,
-        PROJECT,
-        MODIFY,
-        VALUES,
-        AGGREGATE,
-        MERGE, VALUES_DYNAMIC, SORT
+    protected LogicalCollection( long tableId, String logicalSchemaName, String logicalTableName, AlgProtoDataType protoRowType ) {
+        super( tableId, logicalSchemaName, logicalTableName, List.of( 0L ), List.of( "d" ), protoRowType, NamespaceType.DOCUMENT );
     }
 
 }

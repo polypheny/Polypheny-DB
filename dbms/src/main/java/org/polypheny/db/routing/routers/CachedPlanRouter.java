@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -46,19 +47,19 @@ public class CachedPlanRouter extends BaseRouter {
     final static Catalog catalog = Catalog.getInstance();
 
 
-    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement ) {
+    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement, LogicalQueryInformation queryInformation ) {
         final RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
-        return buildCachedSelect( logicalRoot.alg, builder, statement, logicalRoot.alg.getCluster(), routingPlanCached );
+        return buildCachedSelect( logicalRoot.alg, builder, statement, logicalRoot.alg.getCluster(), routingPlanCached, queryInformation );
     }
 
 
-    private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, Statement statement, AlgOptCluster cluster, CachedProposedRoutingPlan cachedPlan ) {
+    private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, Statement statement, AlgOptCluster cluster, CachedProposedRoutingPlan cachedPlan, LogicalQueryInformation queryInformation ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan );
+            builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan, queryInformation );
         }
 
         if ( node instanceof DocumentScan ) {
-            return super.handleDocumentsScan( (DocumentScan) node, statement, builder );
+            return super.handleDocumentScan( (DocumentScan) node, statement, builder, queryInformation );
         }
 
         if ( node instanceof LogicalScan && node.getTable() != null ) {

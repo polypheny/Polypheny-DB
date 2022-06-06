@@ -65,7 +65,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             return implementUnModifyTransform( implementor, pref );
         }
 
-        if ( outTrait == ModelTrait.RELATIONAL && outTrait == ModelTrait.DOCUMENT ) {
+        if ( outTrait == ModelTrait.DOCUMENT ) {
             return implementDocument( implementor, pref );
         }
 

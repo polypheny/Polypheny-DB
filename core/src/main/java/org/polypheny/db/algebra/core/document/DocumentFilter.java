@@ -14,32 +14,41 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core.graph;
+package org.polypheny.db.algebra.core.document;
 
-import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.rex.RexNode;
 
-public abstract class GraphAggregate extends Aggregate implements GraphAlg {
+public class DocumentFilter extends SingleAlg implements DocumentAlg {
 
-    protected GraphAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
+    public final RexNode condition;
+
+
+    /**
+     * Creates a <code>SingleRel</code>.
+     *
+     * @param cluster Cluster this relational expression belongs to
+     * @param traits
+     * @param input Input relational expression
+     */
+    protected DocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+        super( cluster, traits, input );
+        this.condition = condition;
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + super.algCompareString() + "$" + getInput().algCompareString();
+        return "$" + getClass().getSimpleName() + "$" + condition.hashCode() + "$" + input.algCompareString();
     }
 
 
     @Override
-    public NodeType getNodeType() {
-        return NodeType.AGGREGATE;
+    public DocType getDocType() {
+        return DocType.PROJECT;
     }
 
 }

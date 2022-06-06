@@ -388,7 +388,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private List<CatalogColumnPlacement> selectSourcePlacements( CatalogEntity table, List<CatalogColumn> columns, int excludingAdapterId ) {
+    public static List<CatalogColumnPlacement> selectSourcePlacements( CatalogEntity table, List<CatalogColumn> columns, int excludingAdapterId ) {
         // Find the adapter with the most column placements
         Catalog catalog = Catalog.getInstance();
         int adapterIdWithMostPlacements = -1;

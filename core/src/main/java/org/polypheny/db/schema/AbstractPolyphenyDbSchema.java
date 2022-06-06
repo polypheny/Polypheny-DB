@@ -61,6 +61,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     /**
      * Tables explicitly defined in this schema. Does not include tables in {@link #schema}.
      */
+    @Getter
     protected final NameMap<TableEntry> tableMap;
     protected final NameMultimap<FunctionEntry> functionMap;
     protected final NameMap<TypeEntry> typeMap;

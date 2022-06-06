@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core.graph;
+package org.polypheny.db.algebra.core.document;
 
-import lombok.Getter;
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public abstract class GraphFilter extends SingleAlg implements GraphAlg {
+public class DocumentProject extends SingleAlg implements DocumentAlg {
 
-    @Getter
-    private final RexNode condition;
+    public final List<? extends RexNode> projects;
 
 
     /**
@@ -35,23 +35,23 @@ public abstract class GraphFilter extends SingleAlg implements GraphAlg {
      * @param cluster Cluster this relational expression belongs to
      * @param traits
      * @param input Input relational expression
-     * @param condition
      */
-    protected GraphFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    protected DocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input );
-        this.condition = condition;
+        this.projects = projects;
+        this.rowType = rowType;
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + this.condition.hashCode() + "$" + getInput().algCompareString();
+        return "$" + getClass().getSimpleName() + "$" + projects.hashCode() + "$" + getInput().algCompareString();
     }
 
 
     @Override
-    public NodeType getNodeType() {
-        return NodeType.FILTER;
+    public DocType getDocType() {
+        return DocType.PROJECT;
     }
 
 }

@@ -105,7 +105,6 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
                 cluster,
                 cluster.traitSet().replace( Convention.NONE ),
                 graph,
-                catalogReader,
                 input,
                 operation,
                 ids,

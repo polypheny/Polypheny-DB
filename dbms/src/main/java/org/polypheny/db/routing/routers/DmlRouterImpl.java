@@ -38,6 +38,9 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
+import org.polypheny.db.algebra.core.document.DocumentProject;
+import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.graph.GraphProject;
 import org.polypheny.db.algebra.core.graph.GraphScan;
 import org.polypheny.db.algebra.core.graph.GraphValues;
@@ -45,8 +48,9 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentsValues;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
@@ -67,8 +71,11 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
@@ -782,6 +789,39 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
+    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation ) {
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+
+        CatalogCollection collection = Catalog.getInstance().getCollection( alg.getTable().getTable().getTableId() );
+
+        for ( int adapterId : collection.placements ) {
+            CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
+            CatalogCollectionPlacement placement = Catalog.getInstance().getCollectionPlacement( collection.id, adapterId );
+            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.name, collection.physicalName );
+
+            String collectionName = collection.name + "_" + placement.id;
+
+            PreparingTable table = reader.getTable( List.of( namespaceName, collectionName ) );
+            if ( !adapter.supportedNamespaces.contains( NamespaceType.DOCUMENT ) ) {
+                return attachRelationalModify( alg, statement );
+            }
+
+            return ((ModifiableTable) table).toModificationAlg(
+                    alg.getCluster(),
+                    (AlgOptTable) table,
+                    statement.getTransaction().getCatalogReader(),
+                    buildDocumentDml( alg.getInput(), statement, queryInformation ),
+                    alg.operation,
+                    null,
+                    null,
+                    true );
+        }
+
+        return alg;
+    }
+
+
+    @Override
     public AlgNode routeGraphDml( LogicalGraphModify alg, Statement statement ) {
         if ( alg.getGraph() == null ) {
             throw new RuntimeException( "Error while routing graph" );
@@ -808,7 +848,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     alg.getCluster(),
                     alg.getTraitSet(),
                     graph,
-                    alg.catalogReader,
+                    statement.getTransaction().getCatalogReader(),
                     buildGraphDml( alg.getInput(), statement ),
                     alg.operation,
                     alg.ids,
@@ -817,6 +857,19 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         return alg;
+    }
+
+
+    private AlgNode buildDocumentDml( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
+        if ( node instanceof DocumentScan ) {
+            return super.handleDocumentScan( (DocumentScan) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), queryInformation ).build();
+        }
+        int i = 0;
+        for ( AlgNode input : node.getInputs() ) {
+            node.replaceInput( i, buildDocumentDml( input, statement, queryInformation ) );
+            i++;
+        }
+        return node;
     }
 
 
@@ -833,6 +886,56 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
+    private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement ) {
+        CatalogDocumentMapping mapping = Catalog.getInstance().getDocumentMapping( alg.getTable().getTable().getTableId() );
+
+        PreparingTable collectionTable = getSubstitutionTable( statement, mapping.collectionId, mapping.idId );
+
+        List<AlgNode> inputs = new ArrayList<>();
+        switch ( alg.operation ) {
+            case INSERT:
+                if ( alg.getInput() instanceof DocumentValues ) {
+                    // simple value insert
+                    inputs.addAll( ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getCatalogReader() ) );
+                }
+                if ( alg.getInput() instanceof DocumentProject ) {
+                    return attachRelationalDocInsert( alg, statement, collectionTable );
+                }
+
+                break;
+            case UPDATE:
+                return attachRelationalDocUpdate( alg, statement, collectionTable );
+
+            case DELETE:
+                return attachRelationalDocDelete( alg, statement, collectionTable );
+            case MERGE:
+                break;
+        }
+
+        List<AlgNode> modifies = new ArrayList<>();
+        if ( inputs.get( 0 ) != null ) {
+            modifies.add( getModify( collectionTable, inputs.get( 0 ), statement, alg.operation, null, null ) );
+        }
+
+        return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.DOCUMENT ), modifies, true );
+    }
+
+
+    private AlgNode attachRelationalDocDelete( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable ) {
+        return null;
+    }
+
+
+    private AlgNode attachRelationalDocUpdate( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable ) {
+        return null;
+    }
+
+
+    private AlgNode attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable ) {
+        return null;
+    }
+
+
     private AlgNode attachRelationalModify( LogicalGraphModify alg, Statement statement ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
 
@@ -846,7 +949,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             case INSERT:
                 if ( alg.getInput() instanceof GraphValues ) {
                     // simple value insert
-                    inputs.addAll( ((LogicalGraphValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ) ) );
+                    inputs.addAll( ((LogicalGraphValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), statement.getTransaction().getCatalogReader() ) );
                 }
                 if ( alg.getInput() instanceof GraphProject ) {
                     return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
@@ -1138,7 +1241,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         } else if ( node instanceof Values ) {
             if ( node.getModel() == NamespaceType.DOCUMENT ) {
-                return handleDocuments( (LogicalDocumentsValues) node, builder );
+                return handleDocuments( (LogicalDocumentValues) node, builder );
             }
 
             LogicalValues values = (LogicalValues) node;

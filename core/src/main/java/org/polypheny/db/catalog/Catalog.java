@@ -91,6 +91,8 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -1648,15 +1650,19 @@ public abstract class Catalog {
 
     public abstract CatalogCollection getCollection( long collectionId );
 
-    public abstract long addCollection( String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable );
+    public abstract List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern );
+
+    public abstract long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable );
 
     public abstract long addDocumentPlacement( int adapterId, long collectionId, PlacementType automatic );
 
     public abstract CatalogDocumentMapping getDocumentMapping( long id );
 
-    public abstract void addDocumentLogistics( long schemaId, long collectionId, String name, List<DataStore> stores ) throws GenericCatalogException;
+    public abstract long addDocumentLogistics( long schemaId, String name, List<DataStore> stores ) throws GenericCatalogException;
 
     public abstract List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId );
+
+    public abstract CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId );
 
     public abstract void close();
 
@@ -1765,6 +1771,18 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownSchemaTypeException( name );
+        }
+
+
+        public AlgTrait getModelTrait() {
+            if ( this == NamespaceType.RELATIONAL ) {
+                return ModelTrait.RELATIONAL;
+            } else if ( this == NamespaceType.DOCUMENT ) {
+                return ModelTrait.DOCUMENT;
+            } else if ( this == NamespaceType.GRAPH ) {
+                return ModelTrait.GRAPH;
+            }
+            throw new RuntimeException( "Not found a suitable NamespaceType." );
         }
     }
 

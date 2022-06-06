@@ -198,6 +198,7 @@ public class Bindables {
             final Table table = algOptTable.unwrap( Table.class );
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
+                            .replace( table.getSchemaType().getModelTrait() )
                             .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
                                 if ( table != null ) {
                                     return table.getStatistic().getCollations();

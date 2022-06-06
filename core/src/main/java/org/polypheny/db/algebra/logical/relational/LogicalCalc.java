@@ -35,6 +35,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.schema.ModelTraitDef;
 
 
 /**
@@ -68,6 +69,7 @@ public final class LogicalCalc extends Calc {
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( Convention.NONE )
+                .replace( input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.calc( mq, input, program ) )
                 .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.calc( mq, input, program ) );
         return new LogicalCalc( cluster, traitSet, input, program );

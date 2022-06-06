@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable.graph;
 
 import java.util.stream.Collectors;
+import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -26,7 +27,7 @@ import org.polypheny.db.plan.Convention;
 
 public class EnumerableGraphTransformerRule extends ConverterRule {
 
-    EnumerableGraphTransformerRule() {
+    public EnumerableGraphTransformerRule() {
         super( GraphTransformer.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER, "EnumerableGraphTransformer" );
     }
 

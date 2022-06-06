@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable.graph;
 
+import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;

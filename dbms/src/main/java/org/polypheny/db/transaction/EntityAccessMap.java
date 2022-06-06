@@ -17,6 +17,15 @@
 package org.polypheny.db.transaction;
 
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -32,10 +41,6 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.Lock.LockMode;
-
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 
 /**
@@ -89,10 +94,10 @@ public class EntityAccessMap {
     /**
      * Constructs a EntityAccessMap for all entities accessed by a {@link AlgNode} and its descendants.
      *
-     * @param alg                the {@link AlgNode} for which to build the map
+     * @param alg the {@link AlgNode} for which to build the map
      * @param accessedPartitions tableScanId to Partitions
      */
-    public EntityAccessMap(AlgNode alg, Map<Integer, List<Long>> accessedPartitions) {
+    public EntityAccessMap( AlgNode alg, Map<Integer, List<Long>> accessedPartitions ) {
         // NOTE: This method must NOT retain a reference to the input alg, because we use it for cached statements, and we
         // don't want to retain any alg references after preparation completes.
         accessMap = new HashMap<>();
@@ -100,7 +105,7 @@ public class EntityAccessMap {
         //TODO @HENNLO remove this and rather integrate EntityAccessMap directly into Query Processor when DML Partitions can be queried
         this.accessedPartitions = accessedPartitions;
 
-        AlgOptUtil.go(new TableRelVisitor(), alg);
+        AlgOptUtil.go( new TableRelVisitor(), alg );
         accessLockMap = evaluateAccessLockMap();
     }
 
@@ -109,11 +114,11 @@ public class EntityAccessMap {
      * Constructs a EntityAccessMap for a single entity
      *
      * @param entityIdentifier fully qualified name of the entity, represented as a list
-     * @param mode             access mode for the entity
+     * @param mode access mode for the entity
      */
-    public EntityAccessMap(EntityIdentifier entityIdentifier, Mode mode) {
+    public EntityAccessMap( EntityIdentifier entityIdentifier, Mode mode ) {
         accessMap = new HashMap<>();
-        accessMap.put(entityIdentifier, mode);
+        accessMap.put( entityIdentifier, mode );
         accessLockMap = evaluateAccessLockMap();
 
         this.accessedPartitions = new HashMap<>();
@@ -124,16 +129,16 @@ public class EntityAccessMap {
     private Map<EntityIdentifier, LockMode> evaluateAccessLockMap() {
         return accessMap.entrySet()
                 .stream()
-                .filter(e -> Arrays.asList(Mode.READ_ACCESS, Mode.WRITE_ACCESS, Mode.READWRITE_ACCESS).contains(e.getValue()))
-                .collect(Collectors.toMap(Entry::getKey, e -> {
-                    if (e.getValue() == Mode.READ_ACCESS) {
+                .filter( e -> Arrays.asList( Mode.READ_ACCESS, Mode.WRITE_ACCESS, Mode.READWRITE_ACCESS ).contains( e.getValue() ) )
+                .collect( Collectors.toMap( Entry::getKey, e -> {
+                    if ( e.getValue() == Mode.READ_ACCESS ) {
                         return LockMode.SHARED;
-                    } else if (e.getValue() == Mode.WRITE_ACCESS || e.getValue() == Mode.READWRITE_ACCESS) {
+                    } else if ( e.getValue() == Mode.WRITE_ACCESS || e.getValue() == Mode.READWRITE_ACCESS ) {
                         return LockMode.EXCLUSIVE;
                     } else {
-                        throw new RuntimeException("LockMode not possible.");
+                        throw new RuntimeException( "LockMode not possible." );
                     }
-                }));
+                } ) );
     }
 
 
@@ -161,8 +166,8 @@ public class EntityAccessMap {
      * @param entityIdentifier qualified name of the entitiy of interest
      * @return true if entity is accessed
      */
-    public boolean isEntityAccessed(EntityIdentifier entityIdentifier) {
-        return accessMap.containsKey(entityIdentifier);
+    public boolean isEntityAccessed( EntityIdentifier entityIdentifier ) {
+        return accessMap.containsKey( entityIdentifier );
     }
 
 
@@ -172,8 +177,8 @@ public class EntityAccessMap {
      * @param entityIdentifier qualified name of the entity of interest
      * @return true if entity is accessed for read
      */
-    public boolean isEntityAccessedForRead(EntityIdentifier entityIdentifier) {
-        Mode mode = getEntityAccessMode(entityIdentifier);
+    public boolean isEntityAccessedForRead( EntityIdentifier entityIdentifier ) {
+        Mode mode = getEntityAccessMode( entityIdentifier );
         return (mode == Mode.READ_ACCESS) || (mode == Mode.READWRITE_ACCESS);
     }
 
@@ -184,8 +189,8 @@ public class EntityAccessMap {
      * @param entityIdentifier qualified name of the Entity of interest
      * @return true if Entity is accessed for write
      */
-    public boolean isEntityAccessedForWrite(EntityIdentifier entityIdentifier) {
-        Mode mode = getEntityAccessMode(entityIdentifier);
+    public boolean isEntityAccessedForWrite( EntityIdentifier entityIdentifier ) {
+        Mode mode = getEntityAccessMode( entityIdentifier );
         return (mode == Mode.WRITE_ACCESS) || (mode == Mode.READWRITE_ACCESS);
     }
 
@@ -196,9 +201,9 @@ public class EntityAccessMap {
      * @param entityIdentifier qualified name of the Entity of interest
      * @return access mode
      */
-    public Mode getEntityAccessMode(@NonNull EntityAccessMap.EntityIdentifier entityIdentifier) {
-        Mode mode = accessMap.get(entityIdentifier);
-        if (mode == null) {
+    public Mode getEntityAccessMode( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
+        Mode mode = accessMap.get( entityIdentifier );
+        if ( mode == null ) {
             return Mode.NO_ACCESS;
         }
         return mode;
@@ -211,14 +216,14 @@ public class EntityAccessMap {
      * @param table table of interest
      * @return qualified name
      */
-    public EntityIdentifier getQualifiedName(AlgOptTable table, long partitionId) {
-        if (!(table instanceof AlgOptTableImpl)) {
-            throw new RuntimeException("Unexpected table type: " + table.getClass());
+    public EntityIdentifier getQualifiedName( AlgOptTable table, long partitionId ) {
+        if ( !(table instanceof AlgOptTableImpl) ) {
+            throw new RuntimeException( "Unexpected table type: " + table.getClass() );
         }
-        if (!(((AlgOptTableImpl) table).getTable() instanceof LogicalTable)) {
-            throw new RuntimeException("Unexpected table type: " + ((AlgOptTableImpl) table).getTable().getClass());
+        if ( !(((AlgOptTableImpl) table).getTable() instanceof LogicalTable) ) {
+            throw new RuntimeException( "Unexpected table type: " + ((AlgOptTableImpl) table).getTable().getClass() );
         }
-        return new EntityIdentifier(((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId(), partitionId);
+        return new EntityIdentifier( ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId(), partitionId );
     }
 
 
@@ -228,10 +233,10 @@ public class EntityAccessMap {
     private class TableRelVisitor extends AlgVisitor {
 
         @Override
-        public void visit(AlgNode p, int ordinal, AlgNode parent) {
-            super.visit(p, ordinal, parent);
+        public void visit( AlgNode p, int ordinal, AlgNode parent ) {
+            super.visit( p, ordinal, parent );
             AlgOptTable table = p.getTable();
-            if (table == null) {
+            if ( table == null ) {
                 return;
             }
 
@@ -240,10 +245,10 @@ public class EntityAccessMap {
             // FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
             //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
             //  {@link AlgNode} interface.
-            if (p instanceof Modify) {
+            if ( p instanceof Modify ) {
                 newAccess = Mode.WRITE_ACCESS;
-                if (RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) {
-                    extractWriteConstraints((LogicalTable) table.getTable());
+                if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+                    extractWriteConstraints( (LogicalTable) table.getTable() );
                 }
             } else {
                 newAccess = Mode.READ_ACCESS;
@@ -253,20 +258,20 @@ public class EntityAccessMap {
             // If table has no info which partitions are accessed, ergo has no concrete entries in map
             // assume that all are accessed. --> Add all to AccessMap
             List<Long> relevantPartitions;
-            if (accessedPartitions.containsKey(p.getId())) {
-                relevantPartitions = accessedPartitions.get(p.getId());
+            if ( accessedPartitions.containsKey( p.getId() ) ) {
+                relevantPartitions = accessedPartitions.get( p.getId() );
             } else {
-                relevantPartitions = Catalog.getInstance().getTable(table.getTable().getTableId()).partitionProperty.partitionIds;
+                relevantPartitions = Catalog.getInstance().getTable( table.getTable().getTableId() ).partitionProperty.partitionIds;
             }
 
-            for (long partitionId : relevantPartitions) {
+            for ( long partitionId : relevantPartitions ) {
 
-                EntityIdentifier key = getQualifiedName(table, partitionId);
-                Mode oldAccess = accessMap.get(key);
-                if ((oldAccess != null) && (oldAccess != newAccess)) {
+                EntityIdentifier key = getQualifiedName( table, partitionId );
+                Mode oldAccess = accessMap.get( key );
+                if ( (oldAccess != null) && (oldAccess != newAccess) ) {
                     newAccess = Mode.READWRITE_ACCESS;
                 }
-                accessMap.put(key, newAccess);
+                accessMap.put( key, newAccess );
             }
         }
 
@@ -274,15 +279,15 @@ public class EntityAccessMap {
         /**
          * Retrieves an access map for linked tables based on foreign key constraints
          */
-        private void extractWriteConstraints(LogicalTable logicalTable) {
+        private void extractWriteConstraints( LogicalTable logicalTable ) {
 
-            for (long constraintTable : logicalTable.getConstraintIds()) {
-                for (long constraintPartitionIds
-                        : Catalog.getInstance().getTable(constraintTable).partitionProperty.partitionIds) {
+            for ( long constraintTable : logicalTable.getConstraintIds() ) {
+                for ( long constraintPartitionIds
+                        : Catalog.getInstance().getTable( constraintTable ).partitionProperty.partitionIds ) {
 
-                    EntityIdentifier id = new EntityIdentifier(constraintTable, constraintPartitionIds);
-                    if (!accessMap.containsKey(id)) {
-                        accessMap.put(id, Mode.READ_ACCESS);
+                    EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds );
+                    if ( !accessMap.containsKey( id ) ) {
+                        accessMap.put( id, Mode.READ_ACCESS );
                     }
                 }
             }
