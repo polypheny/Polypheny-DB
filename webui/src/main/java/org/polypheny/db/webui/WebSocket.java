@@ -33,7 +33,9 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -133,7 +135,7 @@ public class WebSocket implements Consumer<WsConfig> {
 
             case "RelAlgRequest":
             case "TableRequest":
-                Result result;
+                Result result = null;
                 if ( request.requestType.equals( "RelAlgRequest" ) ) {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {
@@ -145,7 +147,22 @@ public class WebSocket implements Consumer<WsConfig> {
                 } else {//TableRequest, is equal to UIRequest
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
-                        result = crud.getTable( uiRequest );
+                        CatalogNamespace namespace = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, uiRequest.getSchemaName() );
+                        switch ( namespace.namespaceType ) {
+                            case RELATIONAL:
+                                result = crud.getTable( uiRequest );
+                                break;
+                            case DOCUMENT:
+                                result = LanguageCrud.anyMongoQuery( ctx.session, new QueryRequest( String.format( "db.%s.find({})", uiRequest.getTableName() ), false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultDatabaseId, this.crud ).get( 0 );
+                                break;
+                            case GRAPH:
+                                result = LanguageCrud.anyCypherQuery( ctx.session, new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", uiRequest.getSchemaName() ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultDatabaseId, this.crud ).get( 0 );
+                                break;
+                        }
+                        if ( result == null ) {
+                            throw new RuntimeException( "Could not load data." );
+                        }
+
                     } catch ( Throwable t ) {
                         ctx.send( new Result( t ) );
                         return;

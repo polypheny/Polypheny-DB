@@ -385,12 +385,8 @@ public class TestHelper {
                 List<String> row = new ArrayList<>();
                 for ( String entry : data ) {
                     if ( !result.getHeader()[i].name.equals( "_id" ) ) {
-                        if ( result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
-                            BsonDocument doc = BsonDocument.parse( entry );
-                            if ( excludeId ) {
-                                doc.remove( "_id" );
-                            }
-                            row.add( doc.toJson().replace( " ", "" ) );
+                        BsonDocument doc = tryGetBson( result, excludeId, i, row, entry );
+                        if ( doc != null ) {
                             i++;
                             continue;
                         }
@@ -427,6 +423,29 @@ public class TestHelper {
             assertTrue( finalExpected.containsAll( parsedResults ) );
             assertTrue( parsedResults.containsAll( finalExpected ) );
             return true;
+        }
+
+
+        private static BsonDocument tryGetBson( Result result, boolean excludeId, int i, List<String> row, String entry ) {
+            BsonDocument doc = null;
+            if ( result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
+                doc = BsonDocument.parse( entry );
+                if ( excludeId ) {
+                    if ( !doc.containsKey( "_id" ) ) {
+                        fail();
+                    }
+                    doc.remove( "_id" );
+                }
+                row.add( doc.toJson().replace( " ", "" ) );
+            } else if ( result.getHeader()[i].dataType.toLowerCase().contains( "any" ) ) {
+                try {
+                    doc = BsonDocument.parse( entry );
+                } catch ( Exception e ) {
+                    // empty on purpose
+                }
+            }
+
+            return doc;
         }
 
     }

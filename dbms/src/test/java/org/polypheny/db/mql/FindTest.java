@@ -184,9 +184,9 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void projectExcludeSubTest() {
         List<String[]> expected = Arrays.asList(
-                new String[]{ "id_", "{\"test\":{}}" },
-                new String[]{ "id_", "{\"test\":{\"sub2\":[1,23]},\"key\":\"val\"}" },
-                new String[]{ "id_", "{\"test\":\"test\",\"key\":13}" } );
+                new String[]{ "{\"test\":{}}" },
+                new String[]{ "{\"test\":{\"sub2\":[1,23]},\"key\":\"val\"}" },
+                new String[]{ "{\"test\":\"test\",\"key\":13}" } );
         insertMany( DATA_1 );
 
         Result result = find( "{}", "{\"test.sub\":0}" );

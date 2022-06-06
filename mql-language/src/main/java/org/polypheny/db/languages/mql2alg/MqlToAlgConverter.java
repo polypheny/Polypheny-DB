@@ -2351,14 +2351,14 @@ public class MqlToAlgConverter {
                 List<String> names = new ArrayList<>( Collections.singletonList( defaultDataField.getName() ) );
 
                 // we only need to do this if it is the second time
-                if ( !excludes.contains( "_id" ) && !excludedId ) {
+                /*if ( !excludes.contains( "_id" ) && !excludedId ) {
                     names.add( 0, "_id" );
                     values.add( 0, RexInputRef.of( 0, rowType ) );
                 }
 
                 if ( excludes.contains( "_id" ) ) {
                     this.excludedId = true;
-                }
+                }*/
 
                 return LogicalDocumentProject.create( node, values, names );
             } else {
