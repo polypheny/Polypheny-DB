@@ -124,27 +124,36 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogEntity.name + " is not a Materialized View." );
         }
 
-        DataStore storeInstance = null;
-        if ( storeName != null ) {
-            storeInstance = getDataStoreInstance( storeName );
-            if ( storeInstance == null ) {
-                throw CoreUtil.newContextException(
-                        storeName.getPos(),
-                        RESOURCE.unknownAdapter( storeName.getSimple() ) );
-            }
-        }
-
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
-            DdlManager.getInstance().addIndex(
-                    catalogEntity,
-                    indexMethodName,
-                    columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
-                    indexName.getSimple(),
-                    unique,
-                    storeInstance,
-                    statement );
+            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
+                DdlManager.getInstance().addPolyphenyIndex(
+                        catalogEntity,
+                        indexMethodName,
+                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        indexName.getSimple(),
+                        unique,
+                        statement );
+            } else {
+                DataStore storeInstance = null;
+                if ( storeName != null ) {
+                    storeInstance = getDataStoreInstance( storeName );
+                    if ( storeInstance == null ) {
+                        throw CoreUtil.newContextException(
+                                storeName.getPos(),
+                                RESOURCE.unknownAdapter( storeName.getSimple() ) );
+                    }
+                }
+                DdlManager.getInstance().addIndex(
+                        catalogEntity,
+                        indexMethodName,
+                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        indexName.getSimple(),
+                        unique,
+                        storeInstance,
+                        statement );
+            }
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( UnknownNamespaceException e ) {
@@ -162,7 +171,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
         } catch ( MissingColumnPlacementException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.missingColumnPlacement( e.getColumnName(), storeInstance.getUniqueName() ) );
+                    RESOURCE.missingColumnPlacement( e.getColumnName() ) );
         } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
             throw new RuntimeException( e );
         }

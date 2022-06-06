@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.cypher.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -361,6 +362,14 @@ public enum RuntimeConfig {
             "constraintEnforcementGroup"
     ),
 
+    DEFAULT_INDEX_PLACEMENT_STRATEGY(
+            "runtime/indexPlacementStrategy",
+            "Where indexes should be placed if not explicitly specified.",
+            DefaultIndexPlacementStrategy.ALL_DATA_STORES,
+            ConfigType.ENUM,
+            "polystoreIndexGroup"
+    ),
+
     POLYSTORE_INDEXES_ENABLED(
             "runtime/polystoreIndexesEnabled",
             "Enable and maintain indexes on the polystore level.",
@@ -389,6 +398,13 @@ public enum RuntimeConfig {
             0,
             ConfigType.INTEGER,
             "processingExecutionGroup" ),
+
+    MONITORING_QUEUE_ACTIVE(
+            "runtime/monitoringQueueActive",
+            "Enables automatic monitoring of executed events in workload monitoring. If disabled no events are captured, hence the queue remains empty. This also effects routing!",
+            true,
+            ConfigType.BOOLEAN,
+            "monitoringSettingsQueueGroup" ),
 
     MONITORING_CORE_POOL_SIZE(
             "runtime/corePoolSize",

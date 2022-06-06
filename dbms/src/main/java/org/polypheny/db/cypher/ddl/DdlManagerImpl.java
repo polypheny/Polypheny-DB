@@ -101,6 +101,7 @@ import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.cypher.ddl.exception.AlterSourceException;
 import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
@@ -594,77 +595,161 @@ public class DdlManagerImpl extends DdlManager {
             throw new IndexExistsException();
         }
 
-        if ( location == null ) { // Polystore Index
-            String method;
-            String methodDisplayName;
-            if ( indexMethodName != null ) {
-                AvailableIndexMethod aim = null;
-                for ( AvailableIndexMethod availableIndexMethod : IndexManager.getAvailableIndexMethods() ) {
-                    if ( availableIndexMethod.name.equals( indexMethodName ) ) {
-                        aim = availableIndexMethod;
+        if ( location == null ) {
+            if ( RuntimeConfig.DEFAULT_INDEX_PLACEMENT_STRATEGY.getEnum() == DefaultIndexPlacementStrategy.POLYPHENY ) { // Polystore Index
+                addPolyphenyIndex( catalogEntity, indexMethodName, columnNames, indexName, isUnique, statement );
+            } else if ( RuntimeConfig.DEFAULT_INDEX_PLACEMENT_STRATEGY.getEnum() == DefaultIndexPlacementStrategy.ONE_DATA_STORE ) {
+                if ( indexMethodName != null ) {
+                    throw new RuntimeException( "It is not possible to specify a index method if no location has been specified." );
+                }
+                // Find a store that has all required columns
+                for ( CatalogDataPlacement dataPlacement : catalog.getDataPlacements( catalogEntity.id ) ) {
+                    boolean hasAllColumns = true;
+                    if ( ((DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId )).getAvailableIndexMethods().size() > 0 ) {
+                        for ( long columnId : columnIds ) {
+                            if ( !catalog.checkIfExistsColumnPlacement( dataPlacement.adapterId, columnId ) ) {
+                                hasAllColumns = false;
+                            }
+                        }
+                        if ( hasAllColumns ) {
+                            location = (DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
+                            break;
+                        }
                     }
                 }
-                if ( aim == null ) {
-                    throw new UnknownIndexMethodException();
+                if ( location == null ) {
+                    throw new RuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
                 }
-                method = aim.name;
-                methodDisplayName = aim.displayName;
-            } else {
-                method = IndexManager.getDefaultIndexMethod().name;
-                methodDisplayName = IndexManager.getDefaultIndexMethod().displayName;
+                addDataStoreIndex( catalogEntity, indexMethodName, indexName, isUnique, location, statement, columnIds, type );
+            } else if ( RuntimeConfig.DEFAULT_INDEX_PLACEMENT_STRATEGY.getEnum() == DefaultIndexPlacementStrategy.ALL_DATA_STORES ) {
+                if ( indexMethodName != null ) {
+                    throw new RuntimeException( "It is not possible to specify a index method if no location has been specified." );
+                }
+                boolean createdAtLeastOne = false;
+                for ( CatalogDataPlacement dataPlacement : catalog.getDataPlacements( catalogEntity.id ) ) {
+                    boolean hasAllColumns = true;
+                    if ( ((DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId )).getAvailableIndexMethods().size() > 0 ) {
+                        for ( long columnId : columnIds ) {
+                            if ( !catalog.checkIfExistsColumnPlacement( dataPlacement.adapterId, columnId ) ) {
+                                hasAllColumns = false;
+                            }
+                        }
+                        if ( hasAllColumns ) {
+                            DataStore loc = (DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
+                            String name = indexName + "_" + loc.getAdapterName();
+                            String nameSuffix = "";
+                            int counter = 0;
+                            while ( catalog.checkIfExistsIndex( catalogEntity.id, name + nameSuffix ) ) {
+                                nameSuffix = counter++ + "";
+                            }
+                            addDataStoreIndex( catalogEntity, indexMethodName, name + nameSuffix, isUnique, loc, statement, columnIds, type );
+                            createdAtLeastOne = true;
+                        }
+                    }
+                }
+                if ( !createdAtLeastOne ) {
+                    throw new RuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
+                }
             }
-
-            long indexId = catalog.addIndex(
-                    catalogEntity.id,
-                    columnIds,
-                    isUnique,
-                    method,
-                    methodDisplayName,
-                    0,
-                    type,
-                    indexName );
-
-            IndexManager.getInstance().addIndex( catalog.getIndex( indexId ), statement );
         } else { // Store Index
-
-            // Check if there if all required columns are present on this store
-            for ( long columnId : columnIds ) {
-                if ( !catalog.checkIfExistsColumnPlacement( location.getAdapterId(), columnId ) ) {
-                    throw new MissingColumnPlacementException( catalog.getField( columnId ).name );
-                }
-            }
-
-            String method;
-            String methodDisplayName;
-            if ( indexMethodName != null ) {
-                AvailableIndexMethod aim = null;
-                for ( AvailableIndexMethod availableIndexMethod : location.getAvailableIndexMethods() ) {
-                    if ( availableIndexMethod.name.equals( indexMethodName ) ) {
-                        aim = availableIndexMethod;
-                    }
-                }
-                if ( aim == null ) {
-                    throw new UnknownIndexMethodException();
-                }
-                method = aim.name;
-                methodDisplayName = aim.displayName;
-            } else {
-                method = location.getDefaultIndexMethod().name;
-                methodDisplayName = location.getDefaultIndexMethod().displayName;
-            }
-
-            long indexId = catalog.addIndex(
-                    catalogEntity.id,
-                    columnIds,
-                    isUnique,
-                    method,
-                    methodDisplayName,
-                    location.getAdapterId(),
-                    type,
-                    indexName );
-
-            location.addIndex( statement.getPrepareContext(), catalog.getIndex( indexId ), catalog.getPartitionsOnDataPlacement( location.getAdapterId(), catalogEntity.id ) );
+            addDataStoreIndex( catalogEntity, indexMethodName, indexName, isUnique, location, statement, columnIds, type );
         }
+    }
+
+
+    private void addDataStoreIndex( CatalogEntity catalogEntity, String indexMethodName, String indexName, boolean isUnique, DataStore location, Statement statement, List<Long> columnIds, IndexType type ) throws MissingColumnPlacementException, UnknownIndexMethodException, GenericCatalogException {
+        // Check if all required columns are present on this store
+        for ( long columnId : columnIds ) {
+            if ( !catalog.checkIfExistsColumnPlacement( location.getAdapterId(), columnId ) ) {
+                throw new MissingColumnPlacementException( catalog.getField( columnId ).name );
+            }
+        }
+
+        String method;
+        String methodDisplayName;
+        if ( indexMethodName != null ) {
+            AvailableIndexMethod aim = null;
+            for ( AvailableIndexMethod availableIndexMethod : location.getAvailableIndexMethods() ) {
+                if ( availableIndexMethod.name.equals( indexMethodName ) ) {
+                    aim = availableIndexMethod;
+                }
+            }
+            if ( aim == null ) {
+                throw new UnknownIndexMethodException();
+            }
+            method = aim.name;
+            methodDisplayName = aim.displayName;
+        } else {
+            method = location.getDefaultIndexMethod().name;
+            methodDisplayName = location.getDefaultIndexMethod().displayName;
+        }
+
+        long indexId = catalog.addIndex(
+                catalogEntity.id,
+                columnIds,
+                isUnique,
+                method,
+                methodDisplayName,
+                location.getAdapterId(),
+                type,
+                indexName );
+
+        location.addIndex(
+                statement.getPrepareContext(),
+                catalog.getIndex( indexId ),
+                catalog.getPartitionsOnDataPlacement( location.getAdapterId(), catalogEntity.id ) );
+    }
+
+
+    public void addPolyphenyIndex( CatalogEntity catalogEntity, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownNamespaceException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
+        List<Long> columnIds = new LinkedList<>();
+        for ( String columnName : columnNames ) {
+            CatalogColumn catalogColumn = catalog.getField( catalogEntity.id, columnName );
+            columnIds.add( catalogColumn.id );
+        }
+
+        IndexType type = IndexType.MANUAL;
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        if ( catalogEntity.entityType != EntityType.ENTITY && catalogEntity.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "It is only possible to add an index to a " + catalogEntity.entityType.name() );
+        }
+
+        // Check if there is already an index with this name for this table
+        if ( catalog.checkIfExistsIndex( catalogEntity.id, indexName ) ) {
+            throw new IndexExistsException();
+        }
+
+        String method;
+        String methodDisplayName;
+        if ( indexMethodName != null ) {
+            AvailableIndexMethod aim = null;
+            for ( AvailableIndexMethod availableIndexMethod : IndexManager.getAvailableIndexMethods() ) {
+                if ( availableIndexMethod.name.equals( indexMethodName ) ) {
+                    aim = availableIndexMethod;
+                }
+            }
+            if ( aim == null ) {
+                throw new UnknownIndexMethodException();
+            }
+            method = aim.name;
+            methodDisplayName = aim.displayName;
+        } else {
+            method = IndexManager.getDefaultIndexMethod().name;
+            methodDisplayName = IndexManager.getDefaultIndexMethod().displayName;
+        }
+
+        long indexId = catalog.addIndex(
+                catalogEntity.id,
+                columnIds,
+                isUnique,
+                method,
+                methodDisplayName,
+                0,
+                type,
+                indexName );
+
+        IndexManager.getInstance().addIndex( catalog.getIndex( indexId ), statement );
     }
 
 

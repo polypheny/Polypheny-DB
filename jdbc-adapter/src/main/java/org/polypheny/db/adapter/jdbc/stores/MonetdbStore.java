@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -133,6 +134,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
+        dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 

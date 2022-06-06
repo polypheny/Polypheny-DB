@@ -895,8 +895,8 @@ public interface PolyphenyDbResource {
     @BaseMessage("The specified data store does not support the index method ''{0}''!")
     ExInst<PolyphenyDbException> unknownIndexMethod( String indexMethod );
 
-    @BaseMessage("There is no placement of column ''{0}'' on the data store ''{1}''!")
-    ExInst<PolyphenyDbException> missingColumnPlacement( String columnName, String storeName );
+    @BaseMessage("There is no placement of column ''{0}'' on the specified data store!")
+    ExInst<PolyphenyDbException> missingColumnPlacement( String columnName );
 
     @BaseMessage("Unable to remove placement of column ''{0}'' because it is part of the index ''{1}''!")
     ExInst<PolyphenyDbException> indexPreventsRemovalOfPlacement( String indexName, String columnName );
