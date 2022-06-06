@@ -2049,13 +2049,13 @@ public class Crud implements InformationObserver {
         for ( String col : index.getColumns() ) {
             colJoiner.add( "\"" + col + "\"" );
         }
-        String onStore;
-        if ( index.getStoreUniqueName().equals( "Polypheny-DB" ) ) {
-            onStore = "";
-        } else {
-            onStore = String.format( "ON STORE \"%s\"", index.getStoreUniqueName() );
+        String store = "POLYPHENY";
+        if ( !index.getStoreUniqueName().equals( "Polypheny-DB" ) ) {
+            store = index.getStoreUniqueName();
         }
-        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner.toString(), index.getMethod(), onStore );
+        String onStore = String.format( "ON STORE \"%s\"", store );
+
+        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner, index.getMethod(), onStore );
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
