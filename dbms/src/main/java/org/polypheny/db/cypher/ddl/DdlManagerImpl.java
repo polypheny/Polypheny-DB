@@ -605,18 +605,20 @@ public class DdlManagerImpl extends DdlManager {
                 // Find a store that has all required columns
                 for ( CatalogDataPlacement dataPlacement : catalog.getDataPlacements( catalogEntity.id ) ) {
                     boolean hasAllColumns = true;
-                    for ( long columnId : columnIds ) {
-                        if ( !catalog.checkIfExistsColumnPlacement( dataPlacement.adapterId, columnId ) ) {
-                            hasAllColumns = false;
+                    if ( ((DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId )).getAvailableIndexMethods().size() > 0 ) {
+                        for ( long columnId : columnIds ) {
+                            if ( !catalog.checkIfExistsColumnPlacement( dataPlacement.adapterId, columnId ) ) {
+                                hasAllColumns = false;
+                            }
                         }
-                    }
-                    if ( hasAllColumns ) {
-                        location = (DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
-                        break;
+                        if ( hasAllColumns ) {
+                            location = (DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
+                            break;
+                        }
                     }
                 }
                 if ( location == null ) {
-                    throw new RuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that has all required columns!" );
+                    throw new RuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
                 }
                 addDataStoreIndex( catalogEntity, indexMethodName, indexName, isUnique, location, statement, columnIds, type );
             } else if ( RuntimeConfig.DEFAULT_INDEX_PLACEMENT_STRATEGY.getEnum() == DefaultIndexPlacementStrategy.ALL_DATA_STORES ) {
@@ -626,19 +628,21 @@ public class DdlManagerImpl extends DdlManager {
                 boolean createdAtLeastOne = false;
                 for ( CatalogDataPlacement dataPlacement : catalog.getDataPlacements( catalogEntity.id ) ) {
                     boolean hasAllColumns = true;
-                    for ( long columnId : columnIds ) {
-                        if ( !catalog.checkIfExistsColumnPlacement( dataPlacement.adapterId, columnId ) ) {
-                            hasAllColumns = false;
+                    if ( ((DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId )).getAvailableIndexMethods().size() > 0 ) {
+                        for ( long columnId : columnIds ) {
+                            if ( !catalog.checkIfExistsColumnPlacement( dataPlacement.adapterId, columnId ) ) {
+                                hasAllColumns = false;
+                            }
                         }
-                    }
-                    if ( hasAllColumns ) {
-                        DataStore loc = (DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
-                        addDataStoreIndex( catalogEntity, indexMethodName, indexName, isUnique, loc, statement, columnIds, type );
-                        createdAtLeastOne = true;
+                        if ( hasAllColumns ) {
+                            DataStore loc = (DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
+                            addDataStoreIndex( catalogEntity, indexMethodName, indexName, isUnique, loc, statement, columnIds, type );
+                            createdAtLeastOne = true;
+                        }
                     }
                 }
                 if ( !createdAtLeastOne ) {
-                    throw new RuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that has all required columns!" );
+                    throw new RuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
                 }
             }
         } else { // Store Index
