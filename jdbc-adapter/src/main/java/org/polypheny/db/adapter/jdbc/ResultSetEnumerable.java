@@ -102,6 +102,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
     private final static Gson gson = new Gson();
 
+    // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
+    // an one hour shift, as we lose this timezone information on retrieval
+    // therefore we use the offset if needed
+    public final static int OFFSET = Calendar.getInstance().getTimeZone().getRawOffset();
+
     private final ConnectionHandler connectionHandler;
     private final String sql;
     private final Function1<ResultSet, Function0<T>> rowBuilderFactory;
@@ -273,10 +278,6 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * method based on the type of the parameter.
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
-        // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
-        // an one hour shift, as we lose this timezone information on retrieval
-        // therefore we use the offset if needed
-        int offset = Calendar.getInstance().getTimeZone().getRawOffset();
         if ( value == null ) {
             preparedStatement.setNull( i, SqlType.NULL.id );
         } else if ( type instanceof IntervalPolyType && connectionHandler.getDialect().getIntervalParameterStrategy() != IntervalParameterStrategy.NONE ) {
@@ -290,9 +291,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } else if ( type != null && type.getPolyType() == PolyType.DATE && value instanceof Integer ) {
             preparedStatement.setDate( i, new java.sql.Date( DateString.fromDaysSinceEpoch( (Integer) value ).getMillisSinceEpoch() ) );
         } else if ( type != null && type.getPolyType() == PolyType.TIMESTAMP && value instanceof Long ) {
-            preparedStatement.setTimestamp( i, new java.sql.Timestamp( (Long) value - offset ) );
+            preparedStatement.setTimestamp( i, new java.sql.Timestamp( (Long) value - OFFSET ) );
         } else if ( type != null && type.getPolyType() == PolyType.TIME && value instanceof Integer ) {
-            preparedStatement.setTime( i, new java.sql.Time( TimeString.fromMillisOfDay( (Integer) value ).getMillisOfDay() - offset ) );
+            preparedStatement.setTime( i, new java.sql.Time( TimeString.fromMillisOfDay( (Integer) value ).getMillisOfDay() - OFFSET ) );
         } else if ( value instanceof Timestamp ) {
             preparedStatement.setTimestamp( i, (Timestamp) value );
         } else if ( value instanceof Time ) {
