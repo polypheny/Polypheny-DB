@@ -200,10 +200,22 @@ public abstract class DdlManager {
      * @param columnNames logical names of all columns on which to create the index
      * @param indexName name of the index
      * @param isUnique whether the index is unique
-     * @param location instance of the data store on which to create the index; null for creating a polystore index
+     * @param location instance of the data store on which to create the index; if null, default strategy is being used
      * @param statement the initial query statement
      */
     public abstract void addIndex( CatalogEntity catalogEntity, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownNamespaceException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException;
+
+    /**
+     * Adds an index located in Polypheny to a table
+     *
+     * @param catalogEntity the table to which an index should be added
+     * @param indexMethodName name of the indexMethod; can be null
+     * @param columnNames logical names of all columns on which to create the index
+     * @param indexName name of the index
+     * @param isUnique whether the index is unique
+     * @param statement the initial query statement
+     */
+    public abstract void addPolyphenyIndex( CatalogEntity catalogEntity, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownNamespaceException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException;
 
     /**
      * Adds new column placements to a table
@@ -216,7 +228,6 @@ public abstract class DdlManager {
      * @param statement the query statement
      */
     public abstract void addDataPlacement( CatalogEntity catalogEntity, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
-
 
     /**
      * Adds a new primary key to a table
@@ -720,6 +731,11 @@ public abstract class DdlManager {
             return node.toString();
         }
 
+    }
+
+
+    public enum DefaultIndexPlacementStrategy {
+        POLYPHENY, ONE_DATA_STORE, ALL_DATA_STORES
     }
 
 }

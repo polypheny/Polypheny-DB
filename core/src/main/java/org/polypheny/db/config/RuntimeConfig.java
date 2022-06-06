@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.cypher.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -359,6 +360,14 @@ public enum RuntimeConfig {
             ConstraintStrategy.AFTER_QUERY_EXECUTION,
             ConfigType.ENUM,
             "constraintEnforcementGroup"
+    ),
+
+    DEFAULT_INDEX_PLACEMENT_STRATEGY(
+            "runtime/indexPlacementStrategy",
+            "Where indexes should be placed if not explicitly specified.",
+            DefaultIndexPlacementStrategy.ALL_DATA_STORES,
+            ConfigType.ENUM,
+            "polystoreIndexGroup"
     ),
 
     POLYSTORE_INDEXES_ENABLED(

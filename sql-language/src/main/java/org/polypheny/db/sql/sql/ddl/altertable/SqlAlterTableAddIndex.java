@@ -122,35 +122,42 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-
         CatalogEntity catalogEntity = getCatalogTable( context, table );
 
         if ( catalogEntity.entityType != EntityType.ENTITY && catalogEntity.entityType != EntityType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + catalogEntity.name + " is not a table or materialized view." );
         }
 
-        DataStore storeInstance = null;
-        if ( storeName != null ) {
-            storeInstance = getDataStoreInstance( storeName );
-
-            if ( storeInstance == null ) {
-                throw CoreUtil.newContextException(
-                        storeName.getPos(),
-                        RESOURCE.unknownAdapter( storeName.getSimple() ) );
-            }
-        }
-
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
-            DdlManager.getInstance().addIndex(
-                    catalogEntity,
-                    indexMethodName,
-                    columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
-                    indexName.getSimple(),
-                    unique,
-                    storeInstance,
-                    statement );
+            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
+                DdlManager.getInstance().addPolyphenyIndex(
+                        catalogEntity,
+                        indexMethodName,
+                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        indexName.getSimple(),
+                        unique,
+                        statement );
+            } else {
+                DataStore storeInstance = null;
+                if ( storeName != null ) {
+                    storeInstance = getDataStoreInstance( storeName );
+                    if ( storeInstance == null ) {
+                        throw CoreUtil.newContextException(
+                                storeName.getPos(),
+                                RESOURCE.unknownAdapter( storeName.getSimple() ) );
+                    }
+                }
+                DdlManager.getInstance().addIndex(
+                        catalogEntity,
+                        indexMethodName,
+                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        indexName.getSimple(),
+                        unique,
+                        storeInstance,
+                        statement );
+            }
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( UnknownNamespaceException e ) {
@@ -168,7 +175,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         } catch ( MissingColumnPlacementException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.missingColumnPlacement( e.getColumnName(), storeInstance.getUniqueName() ) );
+                    RESOURCE.missingColumnPlacement( e.getColumnName() ) );
         } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
             throw new RuntimeException( e );
         }
