@@ -17,17 +17,16 @@
 package org.polypheny.db.transaction;
 
 
-import lombok.Getter;
-import lombok.NonNull;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.util.DeadlockException;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
+import lombok.NonNull;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.util.DeadlockException;
 
 
 // Based on code taken from https://github.com/dstibrany/LockManager
@@ -47,12 +46,12 @@ public class LockManager {
     }
 
 
-    public void lock(@NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction) throws DeadlockException {
+    public synchronized void lock( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
         // Decide on which locking  approach to focus
-        if (transaction.acceptsOutdated()) {
-            handleSecondaryLocks(idAccessMap, transaction);
+        if ( transaction.acceptsOutdated() ) {
+            handleSecondaryLocks( idAccessMap, transaction );
         } else {
-            handlePrimaryLocks(idAccessMap, transaction);
+            handlePrimaryLocks( idAccessMap, transaction );
         }
     }
 
@@ -104,21 +103,21 @@ public class LockManager {
     }
 
 
-    public void unlock(@NonNull Collection<EntityIdentifier> ids, @NonNull TransactionImpl transaction) {
+    public synchronized void unlock( @NonNull Collection<EntityIdentifier> ids, @NonNull TransactionImpl transaction ) {
         Iterator<EntityIdentifier> iter = ids.iterator();
         EntityIdentifier entityIdentifier;
-        while (iter.hasNext()) {
+        while ( iter.hasNext() ) {
             entityIdentifier = iter.next();
-            Lock lock = lockTable.get(entityIdentifier);
-            if (lock != null) {
-                lock.release(transaction);
+            Lock lock = lockTable.get( entityIdentifier );
+            if ( lock != null ) {
+                lock.release( transaction );
             }
-            transaction.removeLock(lock);
+            transaction.removeLock( lock );
         }
     }
 
 
-    public void removeTransaction( @NonNull TransactionImpl transaction ) {
+    public synchronized void removeTransaction( @NonNull TransactionImpl transaction ) {
         Set<Lock> txnLockList = transaction.getLocks();
         for ( Lock lock : txnLockList ) {
             lock.release( transaction );
@@ -126,13 +125,13 @@ public class LockManager {
     }
 
 
-    public boolean hasLock(@NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier) {
+    public synchronized boolean hasLock( @NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
         Set<Lock> lockList = transaction.getLocks();
-        if (lockList == null) {
+        if ( lockList == null ) {
             return false;
         }
-        for (Lock txnLock : lockList) {
-            if (txnLock == lockTable.get(entityIdentifier)) {
+        for ( Lock txnLock : lockList ) {
+            if ( txnLock == lockTable.get( entityIdentifier ) ) {
                 return true;
             }
         }
