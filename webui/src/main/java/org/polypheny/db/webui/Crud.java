@@ -424,6 +424,10 @@ public class Crud implements InformationObserver {
                     schemaTree.addChildren( collectionTree ).setRouterLink( "" );
                 }
             }
+            if ( schema.namespaceType == NamespaceType.GRAPH ) {
+                schemaTree.setRouterLink( request.routerLinkRoot + "/" + schema.name );
+            }
+
             result.add( schemaTree );
         }
 
