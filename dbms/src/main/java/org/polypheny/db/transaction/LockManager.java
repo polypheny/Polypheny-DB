@@ -17,17 +17,16 @@
 package org.polypheny.db.transaction;
 
 
-import lombok.Getter;
-import lombok.NonNull;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.util.DeadlockException;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
+import lombok.NonNull;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.util.DeadlockException;
 
 
 // Based on code taken from https://github.com/dstibrany/LockManager
@@ -47,12 +46,12 @@ public class LockManager {
     }
 
 
-    public void lock(@NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction) throws DeadlockException {
+    public void lock( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
         // Decide on which locking  approach to focus
-        if (transaction.acceptsOutdated()) {
-            handleSecondaryLocks(idAccessMap, transaction);
+        if ( transaction.acceptsOutdated() ) {
+            handleSecondaryLocks( idAccessMap, transaction );
         } else {
-            handlePrimaryLocks(idAccessMap, transaction);
+            handlePrimaryLocks( idAccessMap, transaction );
         }
     }
 
@@ -71,9 +70,9 @@ public class LockManager {
 
             try {
                 if (hasLock(transaction, pair.getKey()) && (pair.getValue() == lock.getMode())) {
-                    return;
+                    continue;
                 } else if (pair.getValue() == Lock.LockMode.SHARED && hasLock(transaction, pair.getKey()) && lock.getMode() == Lock.LockMode.EXCLUSIVE) {
-                    return;
+                    continue;
                 } else if ( pair.getValue() == Lock.LockMode.EXCLUSIVE && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.SHARED ) {
                     lock.upgrade( transaction );
                 } else {
@@ -104,16 +103,16 @@ public class LockManager {
     }
 
 
-    public void unlock(@NonNull Collection<EntityIdentifier> ids, @NonNull TransactionImpl transaction) {
+    public void unlock( @NonNull Collection<EntityIdentifier> ids, @NonNull TransactionImpl transaction ) {
         Iterator<EntityIdentifier> iter = ids.iterator();
         EntityIdentifier entityIdentifier;
-        while (iter.hasNext()) {
+        while ( iter.hasNext() ) {
             entityIdentifier = iter.next();
-            Lock lock = lockTable.get(entityIdentifier);
-            if (lock != null) {
-                lock.release(transaction);
+            Lock lock = lockTable.get( entityIdentifier );
+            if ( lock != null ) {
+                lock.release( transaction );
             }
-            transaction.removeLock(lock);
+            transaction.removeLock( lock );
         }
     }
 
@@ -126,13 +125,13 @@ public class LockManager {
     }
 
 
-    public boolean hasLock(@NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier) {
+    public boolean hasLock( @NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
         Set<Lock> lockList = transaction.getLocks();
-        if (lockList == null) {
+        if ( lockList == null ) {
             return false;
         }
-        for (Lock txnLock : lockList) {
-            if (txnLock == lockTable.get(entityIdentifier)) {
+        for ( Lock txnLock : lockList ) {
+            if ( txnLock == lockTable.get( entityIdentifier ) ) {
                 return true;
             }
         }
