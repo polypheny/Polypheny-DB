@@ -89,7 +89,7 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
             throw CoreUtil.newContextException( identifier.getPos(), RESOURCE.schemaNotFound( identifier.toString() ) );
         }
         
-        instance.executeProcedure(databaseId, schemaId, identifier.getSimple());
+        instance.executeProcedure(statement, databaseId, schemaId, identifier.getSimple());
     }
 
     @Override

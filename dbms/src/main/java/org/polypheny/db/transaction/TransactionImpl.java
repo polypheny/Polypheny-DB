@@ -252,7 +252,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     public ScriptInterpreter getInterpreter(QueryLanguage language) {
         switch (language) {
             case POLYSCRIPT:
-                return new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), transactionManager);
+                return new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), this);
             default:
                 throw new RuntimeException("This script seems to not be supported!");
         }

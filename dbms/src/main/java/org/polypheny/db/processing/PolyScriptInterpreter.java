@@ -17,22 +17,10 @@
 package org.polypheny.db.processing;
 
 import org.polypheny.db.PolyResult;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.polyscript.parser.ParseException;
 import org.polypheny.db.polyscript.parser.PolyScript;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.util.Pair;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -42,11 +30,11 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
 
     private final SqlProcessorFacade sqlProcessorFacade;
 
-    private final TransactionManager transactionManager;
+    private final Transaction transaction;
 
-    public PolyScriptInterpreter(SqlProcessorFacade sqlFacade, TransactionManager transactionManager) {
+    public PolyScriptInterpreter(SqlProcessorFacade sqlFacade, Transaction transaction) {
         this.sqlProcessorFacade = sqlFacade;
-        this.transactionManager = transactionManager;
+        this.transaction = transaction;
     }
 
     @Override
@@ -54,10 +42,14 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
         int LANGUAGE_PREFIX = 3;
         int RPAREN_AND_SEMICOLON = 2;
         int LEFT_PAREN = 1;
-        List<String> parsed = new ArrayList<>();
+        List<String> parsed;
         try {
-            List<String> result = new PolyScript(new StringReader(script)).Start();
-            parsed.addAll(result);
+            if(wrappedWithQuotes(script)) {
+                parsed = new PolyScript(new StringReader(removeWrappingQuotes(script))).Start();
+
+            } else {
+                parsed = new PolyScript(new StringReader(script)).Start();
+            }
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
@@ -68,6 +60,22 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
             result = run(line); // return result of last executed query
         }
         return result;
+    }
+
+    private boolean wrappedWithQuotes(String script) {
+        return firstCharacterIsQuote(script) && lastCharacterIsQuote(script);
+    }
+
+    private boolean firstCharacterIsQuote(String script) {
+        return script.startsWith("'");
+    }
+
+    private boolean lastCharacterIsQuote(String script) {
+        return script.lastIndexOf("'") == script.length() - 1;
+    }
+
+    private String removeWrappingQuotes(String script) {
+        return script.substring(1, script.length() - 1);
     }
 
     private PolyResult run(String line) {
@@ -90,7 +98,7 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
     }
 
     private PolyResult process(String line) {
-        return sqlProcessorFacade.runSql(line, transactionManager);
+        return sqlProcessorFacade.runSql(line, transaction);
     }
 
 

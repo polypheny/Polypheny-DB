@@ -1721,10 +1721,10 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addProcedure(schemaId, procedureName, databaseId, query, arguments);
     }
 
-    public void executeProcedure(long databaseId, long schemaId, String procedureName) {
+    public void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName) {
         try {
             CatalogProcedure procedure = catalog.getProcedure(databaseId, schemaId, procedureName);
-            PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), TransactionManagerImpl.getInstance());
+            PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), statement.getTransaction());
             polyScriptInterpreter.interprete(procedure.getQuery());
         } catch (UnknownProcedureException e) {
             throw new RuntimeException(e);

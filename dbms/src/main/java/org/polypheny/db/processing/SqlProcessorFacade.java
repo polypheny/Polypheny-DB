@@ -39,15 +39,8 @@ public class SqlProcessorFacade {
         this.sqlProcessor = sqlProcessor;
     }
 
-    PolyResult runSql(String sql, TransactionManager transactionManager) {
+    PolyResult runSql(String sql, Transaction transaction) {
         Node parsed = sqlProcessor.parse(sql);
-        Catalog catalog = Catalog.getInstance();
-        Transaction transaction = getTransaction(
-                false,
-                false,
-                transactionManager,
-                catalog.getUser(Catalog.defaultUserId).name,
-                catalog.getDatabase(Catalog.defaultDatabaseId).name);
         Statement statement = transaction.createStatement();
         PolyResult result;
         QueryParameters parameters = new QueryParameters(sql, Catalog.SchemaType.RELATIONAL);
@@ -60,15 +53,5 @@ public class SqlProcessorFacade {
             result = statement.getQueryProcessor().prepareQuery(logicalRoot, true);
         }
         return result;
-    }
-
-    private static Transaction getTransaction(boolean analyze, boolean useCache, TransactionManager transactionManager, String userName, String databaseName) {
-        try {
-            Transaction transaction = transactionManager.startTransaction(userName, databaseName, analyze, "Polypheny-org.polypheny.db.processing.PolyScriptInterpreter", Transaction.MultimediaFlavor.FILE);
-            transaction.setUseCache(useCache);
-            return transaction;
-        } catch (UnknownUserException | UnknownDatabaseException | UnknownSchemaException e) {
-            throw new RuntimeException("Error while starting transaction", e);
-        }
     }
 }
