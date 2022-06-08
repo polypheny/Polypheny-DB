@@ -46,7 +46,7 @@ public class LockManager {
     }
 
 
-    public synchronized void lock( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
+    public void lock( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
         // Decide on which locking  approach to focus
         if ( transaction.acceptsOutdated() ) {
             handleSecondaryLocks( idAccessMap, transaction );
@@ -70,9 +70,9 @@ public class LockManager {
 
             try {
                 if (hasLock(transaction, pair.getKey()) && (pair.getValue() == lock.getMode())) {
-                    return;
+                    continue;
                 } else if (pair.getValue() == Lock.LockMode.SHARED && hasLock(transaction, pair.getKey()) && lock.getMode() == Lock.LockMode.EXCLUSIVE) {
-                    return;
+                    continue;
                 } else if ( pair.getValue() == Lock.LockMode.EXCLUSIVE && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.SHARED ) {
                     lock.upgrade( transaction );
                 } else {
@@ -103,7 +103,7 @@ public class LockManager {
     }
 
 
-    public synchronized void unlock( @NonNull Collection<EntityIdentifier> ids, @NonNull TransactionImpl transaction ) {
+    public void unlock( @NonNull Collection<EntityIdentifier> ids, @NonNull TransactionImpl transaction ) {
         Iterator<EntityIdentifier> iter = ids.iterator();
         EntityIdentifier entityIdentifier;
         while ( iter.hasNext() ) {
@@ -117,7 +117,7 @@ public class LockManager {
     }
 
 
-    public synchronized void removeTransaction( @NonNull TransactionImpl transaction ) {
+    public void removeTransaction( @NonNull TransactionImpl transaction ) {
         Set<Lock> txnLockList = transaction.getLocks();
         for ( Lock lock : txnLockList ) {
             lock.release( transaction );
@@ -125,7 +125,7 @@ public class LockManager {
     }
 
 
-    public synchronized boolean hasLock( @NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
+    public boolean hasLock( @NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
         Set<Lock> lockList = transaction.getLocks();
         if ( lockList == null ) {
             return false;
