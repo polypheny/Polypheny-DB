@@ -20,65 +20,10 @@ package org.polypheny.db.webui;
 import au.com.bytecode.opencsv.CSVReader;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PushbackInputStream;
-import java.io.RandomAccessFile;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
-import java.util.StringJoiner;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Part;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.Getter;
@@ -89,7 +34,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.eclipse.jetty.websocket.api.Session;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
@@ -110,27 +54,12 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.PartitionType;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.*;
 import org.polypheny.db.catalog.NameGenerator;
-import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -141,12 +70,7 @@ import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationObserver;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationStacktrace;
-import org.polypheny.db.information.InformationText;
+import org.polypheny.db.information.*;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.nodes.Node;
@@ -162,12 +86,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.BsonUtil;
-import org.polypheny.db.util.DateTimeStringUtils;
-import org.polypheny.db.util.FileInputHandle;
-import org.polypheny.db.util.ImmutableIntList;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.*;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -176,22 +95,37 @@ import org.polypheny.db.webui.models.*;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
-import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
+import org.polypheny.db.webui.models.requests.*;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
-import org.polypheny.db.webui.models.requests.ClassifyAllData;
-import org.polypheny.db.webui.models.requests.ColumnRequest;
-import org.polypheny.db.webui.models.requests.ConstraintRequest;
-import org.polypheny.db.webui.models.requests.EditTableRequest;
-import org.polypheny.db.webui.models.requests.ExploreData;
-import org.polypheny.db.webui.models.requests.ExploreTables;
-import org.polypheny.db.webui.models.requests.HubRequest;
-import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
-import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
-import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.requests.RelAlgRequest;
-import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
-import org.polypheny.db.webui.models.requests.UIRequest;
+
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.Part;
+import java.io.*;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 
 @Slf4j
@@ -439,7 +373,7 @@ public class Crud implements InformationObserver {
                 .collect(Collectors.toList());
         ctx.json( procedures );
     }
-    
+
     private Procedure mapToApi(CatalogProcedure procedure) {
         return new Procedure(procedure.getName(), procedure.getSchemaName());
     }
@@ -4041,6 +3975,33 @@ public class Crud implements InformationObserver {
         }
     }
 
+    public void dropProcedure(Context context) {
+        String request = context.bodyAsClass( String.class );
+        Transaction transaction = getTransaction();
+        // TODO(nic): Sanitize input
+        String query = "DROP PROCEDURE " + request;
+        Result result;
+        result = runWithTransaction(transaction, query);
+        context.json( result );
+    }
+
+    private Result runWithTransaction(Transaction transaction, String query) {
+        Result result;
+        try {
+            int rows = executeSqlUpdate(transaction, query);
+            transaction.commit();
+            result = new Result( rows ).setGeneratedQuery(query);
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( String.format("Caught exception while running query %s", query), e );
+            result = new Result( e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+        return result;
+    }
 
     public static class QueryExecutionException extends Exception {
 

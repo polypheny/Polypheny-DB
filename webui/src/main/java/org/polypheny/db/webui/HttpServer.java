@@ -243,7 +243,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getTables", crud::getTables );
 
-        webuiServer.post( "/getProcedures", crud::getProcedures );
+        webuiServer.get( "/getProcedures", crud::getProcedures );
+
+        webuiServer.post( "/dropProcedure", crud::dropProcedure);
 
         webuiServer.post( "/renameTable", crud::renameTable );
 
@@ -253,7 +255,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createCollection", crud.languageCrud::createCollection );
 
-        webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames );
+        webuiServer.post( "/getGeneratedNames", crud::getGeneratedNames );
 
         webuiServer.post( "/getConstraints", crud::getConstraints );
 

@@ -896,6 +896,31 @@ public class CatalogImpl extends Catalog {
         return List.copyOf(procedures.getValues());
     }
 
+    /**
+     * Returns the procedure with the given name in the specified schema.
+     *
+     * @param databaseId    The id of the database
+     * @param schemaId      The id of the schema
+     * @param procedureName The name of the procedure
+     * @throws UnknownProcedureException If there is no procedure with this name in the specified database and schema.
+     */
+    @Override
+    public void deleteProcedure(long databaseId, long schemaId, String procedureName ) throws UnknownProcedureException {
+        Objects.requireNonNull(procedureName);
+        CatalogProcedure deletedProcedure;
+        synchronized (this) {
+            Object[] key = {databaseId, schemaId, procedureName};
+            deletedProcedure = procedureNames.remove(key);
+            if(deletedProcedure == null) {
+                throw new UnknownProcedureException(databaseId, schemaId, procedureName);
+            }
+            CatalogProcedure removedProcedure = procedures.remove(deletedProcedure.getProcedureId());
+            if(removedProcedure == null) {
+                throw new RuntimeException(String.format("Procedure that should have existed wasn't found: %s", deletedProcedure.getProcedureId()));
+            }
+        }
+    }
+
 
     /**
      * Adds a database

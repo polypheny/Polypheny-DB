@@ -1236,7 +1236,7 @@ public enum Kind {
     CREATE_PROCEDURE,
 
     /**
-     * {@code DROP FUNCTION} DDL statement.
+     * {@code DROP PROCEDURE} DDL statement.
      */
     DROP_PROCEDURE,
 
@@ -1432,7 +1432,8 @@ public enum Kind {
             ALTER_SCHEMA,
             OTHER_DDL,
             CREATE_PROCEDURE,
-            PROCEDURE_EXEC
+            PROCEDURE_EXEC,
+            DROP_PROCEDURE
     );
 
     /**

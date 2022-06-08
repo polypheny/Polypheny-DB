@@ -1562,6 +1562,8 @@ public abstract class Catalog {
 
     public abstract CatalogProcedure getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException;
 
+    public abstract void deleteProcedure(long databaseId, long schemaId, String procedureName ) throws UnknownProcedureException;
+
 
     public enum TableType {
         TABLE( 1 ),

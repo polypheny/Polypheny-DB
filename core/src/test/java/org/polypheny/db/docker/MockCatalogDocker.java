@@ -58,6 +58,11 @@ public class MockCatalogDocker extends MockCatalog {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void deleteProcedure(long databaseId, long schemaId, String procedureName) throws UnknownProcedureException {
+        throw new UnsupportedOperationException();
+    }
+
 
     @Override
     public boolean checkIfExistsAdapter( int adapterId ) {

@@ -282,5 +282,20 @@ public class DdlParserTest extends SqlParserTest {
         sql( sql ).ok( expected );
     }
 
+    @Test
+    public void testDropProcedure() {
+        final String sql = "drop procedure x.udf";
+        final String expected = "DROP PROCEDURE `X`.`UDF`";
+        sql( sql ).ok( expected );
+    }
+
+
+    @Test
+    public void testDropProcedureIfExists() {
+        final String sql = "drop procedure if exists \"my udf\"";
+        final String expected = "DROP PROCEDURE IF EXISTS `my udf`";
+        sql( sql ).ok( expected );
+    }
+
 }
 

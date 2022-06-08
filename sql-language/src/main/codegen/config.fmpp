@@ -74,6 +74,7 @@ data: {
             "org.polypheny.db.sql.sql.ddl.SqlAlterTable"
             "org.polypheny.db.sql.sql.ddl.SqlAlterView"
             "org.polypheny.db.sql.sql.ddl.SqlDdlNodes"
+            "org.polypheny.db.sql.sql.ddl.SqlDropProcedure"
             "org.polypheny.db.sql.sql.ddl.SqlTruncate"
             "org.polypheny.db.sql.sql.ddl.SqlCreateProcedure"
             "org.polypheny.db.sql.sql.ddl.SqlExecuteProcedure"
@@ -510,7 +511,7 @@ data: {
             "SqlDropView"
             "SqlDropMaterializedView"
             "SqlDropFunction"
-#            "SqlDropProcedure"
+            "SqlDropProcedure"
         ]
 
         # List of files in @includes directory that have parser method implementations for parsing custom SQL statements, literals or types

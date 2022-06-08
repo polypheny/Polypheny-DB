@@ -576,3 +576,14 @@ SqlDrop SqlDropFunction(Span s, boolean replace) :
     }
 }
 
+SqlDrop SqlDropProcedure(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <PROCEDURE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropProcedure(s.end(this), ifExists, id);
+    }
+}
+
