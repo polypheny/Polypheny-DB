@@ -29,8 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.AlgBuilder;
@@ -52,8 +52,8 @@ class CoWHashIndex extends Index {
     public CoWHashIndex(
             final long id,
             final String name,
-            final CatalogSchema schema,
-            final CatalogTable table,
+            final CatalogNamespace schema,
+            final CatalogEntity table,
             final List<String> columns,
             final List<String> targetColumns ) {
         this.id = id;
@@ -68,8 +68,8 @@ class CoWHashIndex extends Index {
     public CoWHashIndex(
             final long id,
             final String name,
-            final CatalogSchema schema,
-            final CatalogTable table,
+            final CatalogNamespace schema,
+            final CatalogEntity table,
             final String[] columns,
             final String[] targetColumns ) {
         this( id, name, schema, table, Arrays.asList( columns ), Arrays.asList( targetColumns ) );
@@ -375,8 +375,8 @@ class CoWHashIndex extends Index {
                 String method,
                 Boolean unique,
                 Boolean persistent,
-                CatalogSchema schema,
-                CatalogTable table,
+                CatalogNamespace schema,
+                CatalogEntity table,
                 List<String> columns,
                 List<String> targetColumns ) {
             return new CoWHashIndex( id, name, schema, table, columns, targetColumns );

@@ -21,8 +21,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -78,7 +78,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable table = getCatalogTable( context, oldName );
+        CatalogEntity table = getCatalogTable( context, oldName );
 
         if ( newName.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
@@ -86,7 +86,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
 
         try {
             DdlManager.getInstance().renameTable( table, newName.getSimple(), statement );
-        } catch ( TableAlreadyExistsException e ) {
+        } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( newName.getPos(), RESOURCE.tableExists( newName.getSimple() ) );
         }
     }

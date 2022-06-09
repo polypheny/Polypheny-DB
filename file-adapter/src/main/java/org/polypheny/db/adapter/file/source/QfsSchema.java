@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
@@ -92,7 +92,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
     }
 
 
-    public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createFileTable( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         ArrayList<Long> columnIds = new ArrayList<>();
@@ -101,7 +101,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
         columnPlacementsOnStore.sort( Comparator.comparingLong( p -> p.columnId ) );
         for ( CatalogColumnPlacement p : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn;
-            catalogColumn = Catalog.getInstance().getColumn( p.columnId );
+            catalogColumn = Catalog.getInstance().getField( p.columnId );
             if ( p.adapterId == source.getAdapterId() ) {
                 columnIds.add( p.columnId );
                 if ( catalogColumn.collectionsType != null ) {
@@ -125,23 +125,23 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
         }
         AlgProtoDataType protoRowType = AlgDataTypeImpl.proto( fieldInfo.build() );
         List<Long> pkIds;
-        if ( catalogTable.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        if ( catalogEntity.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogEntity.primaryKey );
             pkIds = primaryKey.columnIds;
         } else {
             pkIds = new ArrayList<>();
         }
         FileTranslatableTable table = new FileTranslatableTable(
                 this,
-                catalogTable.name + "_" + partitionPlacement.partitionId,
-                catalogTable.id,
+                catalogEntity.name + "_" + partitionPlacement.partitionId,
+                catalogEntity.id,
                 partitionPlacement.partitionId,
                 columnIds,
                 columnTypes,
                 columnNames,
                 pkIds,
                 protoRowType );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
+        tableMap.put( catalogEntity.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
 

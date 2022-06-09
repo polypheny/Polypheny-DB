@@ -26,9 +26,10 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -46,27 +47,27 @@ import org.polypheny.db.util.Pair;
 public class ExploreQueryProcessor {
 
     private final TransactionManager transactionManager;
-    private final String databaseName;
-    private final String userName;
+    private final long databaseId;
+    private final long userId;
     private final static int DEFAULT_SIZE = 200;
 
 
-    public ExploreQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
+    public ExploreQueryProcessor( final TransactionManager transactionManager, long userId, long databaseId ) {
         this.transactionManager = transactionManager;
-        this.userName = userName;
-        this.databaseName = databaseName;
+        this.userId = userId;
+        this.databaseId = databaseId;
     }
 
 
     public ExploreQueryProcessor( final TransactionManager transactionManager, Authenticator authenticator ) {
-        this( transactionManager, "pa", "APP" );
+        this( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
     }
 
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false, "Explore-by-Example", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+            return transactionManager.startTransaction( userId, databaseId, false, "Explore-by-Example", MultimediaFlavor.FILE );
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }
@@ -164,7 +165,7 @@ public class ExploreQueryProcessor {
         PolyResult result;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
 
-        Node parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
 
         if ( parsed.isA( Kind.DDL ) ) {
             // explore by example should not execute any ddls

@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 
 @EqualsAndHashCode
-public class CatalogQueryInterface implements CatalogEntity {
+public class CatalogQueryInterface implements CatalogObject {
 
     private static final long serialVersionUID = 4913728890561284443L;
 

@@ -17,17 +17,18 @@
 package org.polypheny.db.catalog.entity;
 
 
-import java.io.Serializable;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.replication.properties.UpdateInformation;
 
+import java.io.Serializable;
+
 
 /**
  * This class is considered the logical representation of a physical table on a specific store.
  */
-public class CatalogPartitionPlacement implements CatalogEntity {
+public class CatalogPartitionPlacement implements CatalogObject {
 
     private static final long serialVersionUID = 3035193464866141590L;
 

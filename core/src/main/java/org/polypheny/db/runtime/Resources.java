@@ -391,6 +391,7 @@ public class Resources {
                                     ? bundle.getString( key )
                                     : null;
                             if ( !equal( value, value2 ) ) {
+                                System.out.println( value + " - " + value2 );
                                 throw new AssertionError( "message for resource '" + method.getName() + "' is different between class and resource file" );
                             }
                         }

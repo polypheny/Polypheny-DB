@@ -27,8 +27,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -39,7 +39,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.replication.cdc.ChangeDataReplicationObject;
@@ -120,7 +120,7 @@ public class DataReplicatorImpl implements DataReplicator {
     @Override
     public AlgRoot buildInsertStatement( Statement statement, InsertReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement ) {
 
-        CatalogTable catalogTable = catalog.getTable( dataPlacement.tableId );
+        CatalogEntity catalogEntity = catalog.getTable( dataPlacement.tableId );
 
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
@@ -136,12 +136,12 @@ public class DataReplicatorImpl implements DataReplicator {
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
-        List<String> columnNames = catalogTable.getColumnNames();
+        List<String> columnNames = catalogEntity.getColumnNames();
         List<RexNode> values = new LinkedList<>();
 
         int columnIndex = 0;
-        for ( long columnId : catalogTable.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( columnId );
+        for ( long columnId : catalogEntity.fieldIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( columnId );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), columnIndex ) );//(int) catalogColumn.id ) );
             columnIndex++;
         }
@@ -168,7 +168,7 @@ public class DataReplicatorImpl implements DataReplicator {
     @Override
     public AlgRoot buildUpdateStatement( Statement statement, UpdateReplicationObject dataReplicationObject, CatalogDataPlacement dataPlacement, CatalogPartitionPlacement targetPartitionPlacement ) {
 
-        CatalogTable catalogTable = catalog.getTable( dataPlacement.tableId );
+        CatalogEntity catalogEntity = catalog.getTable( dataPlacement.tableId );
 
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
@@ -190,11 +190,11 @@ public class DataReplicatorImpl implements DataReplicator {
         RexNode capturedCondition = dataReplicationObject.getCondition();
         // build condition
         RexNode condition = null;
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogEntity.primaryKey );
         int columnIndex1 = 0;
         for ( long cid : primaryKey.columnIds ) {
             CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( dataPlacement.adapterId, cid );
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
                     new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), columnIndex1 )
@@ -208,12 +208,12 @@ public class DataReplicatorImpl implements DataReplicator {
         }
         builder = builder.filter( condition );
 
-        List<String> columnNames = catalogTable.getColumnNames();
+        List<String> columnNames = catalogEntity.getColumnNames();
         List<RexNode> values = new LinkedList<>();
 
         int columnIndex = 0;
-        for ( long columnId : catalogTable.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( columnId );
+        for ( long columnId : catalogEntity.fieldIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( columnId );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), columnIndex ) );//(int) catalogColumn.id ) );
             columnIndex++;
         }
@@ -251,19 +251,19 @@ public class DataReplicatorImpl implements DataReplicator {
         AlgOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
-        CatalogTable catalogTable = catalog.getTable( dataPlacement.tableId );
+        CatalogEntity catalogEntity = catalog.getTable( dataPlacement.tableId );
 
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
-        List<String> columnNames = catalogTable.getColumnNames();
+        List<String> columnNames = catalogEntity.getColumnNames();
         List<RexNode> values = new LinkedList<>();
 
         int columnIndex = 0;
-        for ( long columnId : catalogTable.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( columnId );
+        for ( long columnId : catalogEntity.fieldIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( columnId );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), columnIndex ) );//(int) catalogColumn.id ) );
             columnIndex++;
         }

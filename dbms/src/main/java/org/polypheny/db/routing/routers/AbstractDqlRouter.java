@@ -26,14 +26,21 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.core.BatchIterator;
-import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.algebra.core.common.BatchIterator;
+import org.polypheny.db.algebra.core.common.ConditionalExecute;
+import org.polypheny.db.algebra.core.document.DocumentAlg;
+import org.polypheny.db.algebra.core.document.DocumentAlg.DocType;
+import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.core.graph.GraphAlg;
+import org.polypheny.db.algebra.core.graph.GraphAlg.NodeType;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.routing.LogicalQueryInformation;
@@ -77,7 +84,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
      */
     protected abstract List<RoutedAlgBuilder> handleHorizontalPartitioning(
             AlgNode node,
-            CatalogTable catalogTable,
+            CatalogEntity catalogEntity,
             Statement statement,
             LogicalTable logicalTable,
             List<RoutedAlgBuilder> builders,
@@ -86,7 +93,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     protected abstract List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
             AlgNode node,
-            CatalogTable catalogTable,
+            CatalogEntity catalogEntity,
             Statement statement,
             LogicalTable logicalTable,
             List<RoutedAlgBuilder> builders,
@@ -95,7 +102,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     protected abstract List<RoutedAlgBuilder> handleNonePartitioning(
             AlgNode node,
-            CatalogTable catalogTable,
+            CatalogEntity catalogEntity,
             Statement statement,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
@@ -110,7 +117,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         // Reset cancel query this run
         this.cancelQuery = false;
 
-        if ( logicalRoot.alg instanceof LogicalTableModify ) {
+        if ( logicalRoot.alg instanceof LogicalModify ) {
             throw new IllegalStateException( "Should never happen for DML" );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             throw new IllegalStateException( "Should never happen for conditional executes" );
@@ -130,8 +137,45 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     @Override
+    public <T extends AlgNode & GraphAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement ) {
+        if ( alg.getInputs().size() == 1 ) {
+            routeGraph( builder, (AlgNode & GraphAlg) alg.getInput( 0 ), statement );
+            if ( builder.stackSize() > 0 ) {
+                alg.replaceInput( 0, builder.build() );
+            }
+            return alg;
+        } else if ( alg.getNodeType() == NodeType.SCAN ) {
+            //attachMappingsIfNecessary( alg );
+            builder.push( handleGraphScan( (LogicalGraphScan) alg, statement ) );
+            return alg;
+        } else if ( alg.getNodeType() == NodeType.VALUES ) {
+            return alg;
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement, LogicalQueryInformation queryInformation ) {
+        if ( alg.getInputs().size() == 1 ) {
+            routeDocument( builder, (AlgNode & DocumentAlg) alg.getInput( 0 ), statement, queryInformation );
+            if ( builder.stackSize() > 0 ) {
+                alg.replaceInput( 0, builder.build() );
+            }
+            return alg;
+        } else if ( alg.getDocType() == DocType.SCAN ) {
+            builder.push( handleDocumentScan( (DocumentScan) alg, statement, builder, queryInformation ).build() );
+            return alg;
+        } else if ( alg.getDocType() == DocType.VALUES ) {
+            return alg;
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public void resetCaches() {
-        joinedTableScanCache.invalidateAll();
+        joinedScanCache.invalidateAll();
     }
 
 
@@ -158,7 +202,11 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             builders = this.buildDql( node.getInput( i ), builders, statement, cluster, queryInformation );
         }
 
-        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
+        if ( node instanceof LogicalDocumentScan ) {
+            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), queryInformation ) );
+        }
+
+        if ( node instanceof LogicalScan && node.getTable() != null ) {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
 
             if ( !(table.getTable() instanceof LogicalTable) ) {
@@ -166,18 +214,18 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
 
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
-            CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
+            CatalogEntity catalogEntity = catalog.getTable( logicalTable.getTableId() );
 
             // Check if table is even horizontal partitioned
-            if ( catalogTable.partitionProperty.isPartitioned ) {
-                return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
+            if ( catalogEntity.partitionProperty.isPartitioned ) {
+                return handleHorizontalPartitioning( node, catalogEntity, statement, logicalTable, builders, cluster, queryInformation );
 
             } else {
                 // At the moment multiple strategies
-                if ( catalogTable.dataPlacements.size() > 1 ) {
-                    return handleVerticalPartitioningOrReplication( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
+                if ( catalogEntity.dataPlacements.size() > 1 ) {
+                    return handleVerticalPartitioningOrReplication( node, catalogEntity, statement, logicalTable, builders, cluster, queryInformation );
                 }
-                return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+                return handleNonePartitioning( node, catalogEntity, statement, builders, cluster, queryInformation );
             }
 
         } else if ( node instanceof LogicalValues ) {

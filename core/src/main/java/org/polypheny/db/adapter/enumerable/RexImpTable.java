@@ -72,6 +72,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
+import org.apache.calcite.linq4j.tree.ConditionalStatement;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ExpressionType;
@@ -310,6 +311,7 @@ public class RexImpTable {
         defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_ARRAY ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
         defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_SCALAR ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
 
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.DESERIALIZE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DESERIALIZE.method ), false );
         defineBinary( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
         defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
         defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
@@ -335,6 +337,32 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
         map.put( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
         map.put( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UNWIND ), new UnwindImplementor() );
+
+        // Cypher functions
+        CypherImplementor implementor = new CypherImplementor();
+        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ALL_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ANY_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NONE_MATCH ), implementor );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.GRAPH_PATH_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.GRAPH_NODE_EXTRACT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_FROM_PATH ), BuiltInMethod.GRAPH_EXTRACT_FROM_PATH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.GRAPH_NODE_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SET_PROPERTY ), BuiltInMethod.CYPHER_SET_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SET_PROPERTIES ), BuiltInMethod.CYPHER_SET_PROPERTIES.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_SET_LABELS ), BuiltInMethod.CYPHER_SET_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_REMOVE_LABELS ), BuiltInMethod.CYPHER_REMOVE_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
+
+        defineMethod( OperatorRegistry.get( OperatorName.DESERIALIZE_LIST ), BuiltInMethod.DESERIALIZE_LIST.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.DESERIALIZE_DIRECTORY ), BuiltInMethod.DESERIALIZE_DIRECTORY.method, NullPolicy.NONE );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
@@ -2476,19 +2504,15 @@ public class RexImpTable {
             builder.add(
                     Expressions.declare( 0, _list, Expressions.call( BuiltInMethod.DOC_GET_ARRAY.method, par ) )
             );
-            builder.add(
-                    Expressions.for_(
-                            Expressions.declare(
-                                    0, i_, Expressions.constant( 0 ) ),
-                            Expressions.lessThan( i_, Expressions.call( _list, "size" ) ),
-                            Expressions.postIncrementAssign( i_ ),
-                            Expressions.block(
-                                    Expressions.declare( 0, get_, Expressions.call( _list, "get", i_ ) ),
-                                    Expressions.ifThen(
-                                            startSubstitute( translator, call.getOperands().get( 1 ), 0, get_ ),
-                                            Expressions.block( Expressions.return_( null, Expressions.constant( true ) ) ) )
-                            )
-                    ) );
+            BlockStatement then = Expressions.block(
+                    Expressions.declare( 0, get_, Expressions.call( _list, "get", i_ ) ),
+                    Expressions.ifThen(
+                            startSubstitute( translator, call.getOperands().get( 1 ), 0, get_ ),
+                            Expressions.block( Expressions.return_( null, Expressions.constant( true ) ) ) )
+            );
+
+            builder.add( EnumUtils.for_( i_, _list, then ) );
+
             builder.add( Expressions.return_( null, predicate ) );
             translator.getList().append( "forLoop", builder.toBlock() );
             return predicate;
@@ -2525,6 +2549,101 @@ public class RexImpTable {
                 return node;
             }
             return null;
+        }
+
+    }
+
+
+    private static class CypherImplementor implements CallImplementor {
+
+        @Override
+        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+            // GRAPH, WHERE
+            switch ( call.op.getOperatorName() ) {
+                // if i0 is list:
+                //     throw exception
+                // List list = (List) i0;
+                // int count = 0;
+                // for e in list:
+                //    if where(e):
+                //      count++;
+                // return list.count() == count (ALL)
+                // return count == 1 (SINGLE)
+                // return count >= 1 (ANY)
+                // return count == 0 (NONE)
+                case CYPHER_ALL_MATCH:
+                case CYPHER_ANY_MATCH:
+                case CYPHER_NONE_MATCH:
+                case CYPHER_SINGLE_MATCH:
+                    BlockBuilder blockBuilder = translator.getList();
+
+                    RexNode list = call.getOperands().get( 0 );
+
+                    Expression list_ = translator.translate( list, NullAs.NULL );
+                    blockBuilder.add( Expressions.ifThen(
+                            Expressions.typeIs( list_, List.class ),
+                            Expressions.block(
+                                    Expressions.throw_(
+                                            Expressions.new_(
+                                                    RuntimeException.class,
+                                                    Expressions.constant( "The supplied element is no collection to test the predicate against." ) ) ) ) ) );
+
+                    ParameterExpression cList = Expressions.parameter( List.class );
+                    blockBuilder.add( Expressions.declare( Modifier.PRIVATE, cList, Expressions.convert_( list_, List.class ) ) );
+
+                    ParameterExpression count_ = Expressions.parameter( int.class, "count_" + System.nanoTime() );
+                    blockBuilder.add( Expressions.declare( Modifier.PRIVATE, count_, Expressions.constant( 0 ) ) );
+
+                    ParameterExpression i_ = Expressions.parameter( int.class, "i_" + System.nanoTime() );
+                    blockBuilder.add( Expressions.declare( Modifier.PRIVATE, i_, Expressions.constant( 0 ) ) );
+
+                    ConditionalStatement ifIncr = Expressions.ifThen( translator.translate( call.operands.get( 1 ) ), Expressions.block( Expressions.statement( Expressions.increment( i_ ) ) ) );
+
+                    blockBuilder.add( EnumUtils.for_( i_, cList, Expressions.block( ifIncr ) ) );
+
+                    ParameterExpression return_ = Expressions.parameter( boolean.class, "return_" );
+
+                    switch ( call.op.getOperatorName() ) {
+                        case CYPHER_ALL_MATCH:
+                            blockBuilder.add(
+                                    Expressions.declare(
+                                            Modifier.PRIVATE,
+                                            return_,
+                                            Expressions.equal( count_, Expressions.call( list_, "size" ) ) ) );
+
+                            return return_;
+                        case CYPHER_SINGLE_MATCH:
+                            blockBuilder.add(
+                                    Expressions.declare(
+                                            Modifier.PRIVATE,
+                                            return_,
+                                            Expressions.equal( count_, Expressions.constant( 1 ) ) ) );
+
+                            return return_;
+                        case CYPHER_NONE_MATCH:
+                            blockBuilder.add(
+                                    Expressions.declare(
+                                            Modifier.PRIVATE,
+                                            return_,
+                                            Expressions.equal( count_, Expressions.constant( 0 ) ) ) );
+
+                            return return_;
+                        case CYPHER_ANY_MATCH:
+                            blockBuilder.add(
+                                    Expressions.declare(
+                                            Modifier.PRIVATE,
+                                            return_,
+                                            Expressions.greaterThanOrEqual( count_, Expressions.constant( 1 ) ) ) );
+
+                            return return_;
+                    }
+
+                case CYPHER_PATH_MATCH:
+                    throw new UnsupportedOperationException( "Pattern match is not yet supported" );
+
+            }
+
+            throw new UnsupportedOperationException( "Cypher operation was not supported." );
         }
 
     }

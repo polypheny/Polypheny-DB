@@ -28,23 +28,23 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
@@ -58,8 +58,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     protected final LogicalAlgAnalyzeRexShuttle rexShuttle;
     @Getter
-    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (TableScanId) -> List partitionsValue
-    protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (TableScanId) -> (logical tableId -> List partitionsValue)
+    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (ScanId) -> List partitionsValue
+    protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (ScanId) -> (logical tableId -> List partitionsValue)
     @Getter
     protected final HashSet<String> hashBasis = new HashSet<>();
     @Getter
@@ -142,8 +142,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
-        hashBasis.add( "TableScan#" + scan.getTable().getQualifiedName() );
+    public AlgNode visit( Scan scan ) {
+        hashBasis.add( "Scan#" + scan.getTable().getQualifiedName() );
         // get available columns for every table scan
         this.getAvailableColumns( scan );
 
@@ -181,7 +181,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalJoin join ) {
-        if ( join.getLeft() instanceof LogicalTableScan && join.getRight() instanceof LogicalTableScan ) {
+        if ( join.getLeft() instanceof LogicalScan && join.getRight() instanceof LogicalScan ) {
             hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
         }
 
@@ -231,7 +231,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalTableModify modify ) {
+    public AlgNode visit( LogicalModify modify ) {
         hashBasis.add( "LogicalModify" );
         // e.g. inserts only have underlying values and need to attach the table correctly
         this.getAvailableColumns( modify );
@@ -273,13 +273,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         if ( !(logicalTable instanceof LogicalTable) ) {
             return;
         }
-        CatalogTable catalogTable = Catalog.getInstance().getTable( ((LogicalTable) logicalTable).getTableId() );
+        CatalogEntity catalogEntity = Catalog.getInstance().getTable( ((LogicalTable) logicalTable).getTableId() );
 
         // Only if table is partitioned
-        if ( catalogTable.partitionProperty.isPartitioned ) {
+        if ( catalogEntity.partitionProperty.isPartitioned ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,
-                    catalogTable.columnIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
+                    catalogEntity.fieldIds.indexOf( catalogEntity.partitionProperty.partitionColumnId ) );
             filter.accept( whereClauseVisitor );
 
             int scanId = filter.getInput().getId();

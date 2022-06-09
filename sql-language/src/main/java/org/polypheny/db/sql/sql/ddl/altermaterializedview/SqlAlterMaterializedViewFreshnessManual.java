@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.sql.ddl.altermaterializedview;
 
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -66,13 +66,13 @@ public class SqlAlterMaterializedViewFreshnessManual extends SqlAlterMaterialize
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, name );
+        CatalogEntity catalogEntity = getCatalogTable( context, name );
 
-        if ( catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
+        if ( catalogEntity.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogEntity.name + " is not a Materialized View." );
         }
 
-        DdlManager.getInstance().refreshView( statement, catalogTable.id );
+        DdlManager.getInstance().refreshView( statement, catalogEntity.id );
 
     }
 

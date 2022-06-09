@@ -19,8 +19,8 @@ package org.polypheny.db.sql.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -49,10 +49,10 @@ public class SqlDropMaterializedView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final CatalogTable catalogTable;
+        final CatalogEntity catalogEntity;
 
         try {
-            catalogTable = getCatalogTable( context, name );
+            catalogEntity = getCatalogTable( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
@@ -62,16 +62,16 @@ public class SqlDropMaterializedView extends SqlDropObject {
             }
         }
 
-        if ( catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use DROP MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
+        if ( catalogEntity.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "Not Possible to use DROP MATERIALIZED VIEW because " + catalogEntity.name + " is not a Materialized View." );
         }
 
         MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.isDroppingMaterialized = true;
-        materializedManager.deleteMaterializedViewFromInfo( catalogTable.id );
+        materializedManager.deleteMaterializedViewFromInfo( catalogEntity.id );
 
         try {
-            DdlManager.getInstance().dropMaterializedView( catalogTable, statement );
+            DdlManager.getInstance().dropMaterializedView( catalogEntity, statement );
         } catch ( DdlOnSourceException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
         }

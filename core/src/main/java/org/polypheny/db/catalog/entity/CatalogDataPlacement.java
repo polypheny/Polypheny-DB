@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import com.google.common.collect.ImmutableMap;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -35,7 +36,7 @@ import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 /**
  * Serves as a container, which holds all information related to a table entity placed on physical store.
  */
-public class CatalogDataPlacement implements CatalogEntity {
+public class CatalogDataPlacement implements CatalogObject {
 
     private static final long serialVersionUID = 3758054726464326557L;
     public final long tableId;
@@ -74,7 +75,7 @@ public class CatalogDataPlacement implements CatalogEntity {
             PlacementState placementState,
             ReplicationStrategy replicationStrategy,
             @NonNull final ImmutableList<Long> columnPlacementsOnAdapter,
-            @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter ) {
+            @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;
@@ -94,7 +95,7 @@ public class CatalogDataPlacement implements CatalogEntity {
 
     @SneakyThrows
     public String getLogicalSchemaName() {
-        return Catalog.getInstance().getTable( tableId ).getSchemaName();
+        return Catalog.getInstance().getTable( tableId ).getNamespaceName();
     }
 
 
@@ -107,7 +108,7 @@ public class CatalogDataPlacement implements CatalogEntity {
     @SneakyThrows
     public List<String> getLogicalColumnNames() {
         List<String> columnNames = new ArrayList<>();
-        columnPlacementsOnAdapter.forEach( columnId -> columnNames.add( Catalog.getInstance().getColumn( columnId ).name ) );
+        columnPlacementsOnAdapter.forEach( columnId -> columnNames.add( Catalog.getInstance().getField( columnId ).name ) );
         return columnNames;
     }
 
@@ -118,12 +119,12 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     public boolean hasColumnFullPlacement() {
-        return Catalog.getInstance().getTable( this.tableId ).columnIds.size() == columnPlacementsOnAdapter.size();
+        return Catalog.getInstance().getTable(this.tableId).fieldIds.size() == columnPlacementsOnAdapter.size();
     }
 
 
     public boolean hasPartitionFullPlacement() {
-        return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
+        return Catalog.getInstance().getTable(this.tableId).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
     }
 
 

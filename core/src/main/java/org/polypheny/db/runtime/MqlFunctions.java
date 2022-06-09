@@ -17,6 +17,7 @@
 package org.polypheny.db.runtime;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,6 +40,12 @@ import org.polypheny.db.util.Pair;
  * Repository class, which defines different functions used, when handling the document model
  */
 public class MqlFunctions {
+
+
+    public static final Gson GSON = new GsonBuilder()
+            .enableComplexMapKeySerialization()
+            .create();
+
 
     /**
      * This method extracts the provided the filter from the input.
@@ -116,11 +123,9 @@ public class MqlFunctions {
         if ( input instanceof BsonDocument ) {
             return ((BsonDocument) input).toJson();
         } else if ( input instanceof Map ) {
-            Gson gson = new Gson();
-            return gson.toJson( input );
+            return GSON.toJson( input );
         } else if ( input instanceof List ) {
-            Gson gson = new Gson();
-            return gson.toJson( input );
+            return GSON.toJson( input );
         } else {
             return input;
         }
@@ -206,7 +211,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateRemove( Object input, List names ) {
-        // TODO enable as soon as pushing down of TableModify is possible
+        // TODO enable as soon as pushing down of Modify is possible
         Map<String, ?> initial = (Map) deserializeBsonIfNecessary( input );
         Map<String, ?> doc = initial;
         String name;
@@ -233,7 +238,7 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateReplace( Object input, List names, List values ) {
-        // TODO enable as soon as pushing down of TableModify is possible
+        // TODO enable as soon as pushing down of Modify is possible
         Map<String, Object> initial = (Map) deserializeBsonIfNecessary( input );
         Map<String, Object> doc = initial;
         String name;
@@ -262,7 +267,7 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateRename( Object input, List names, List newNames ) {
-        // TODO enable as soon as pushing down of TableModify is possible
+        // TODO enable as soon as pushing down of Modify is possible
         Map<String, Object> initial = (Map) deserializeBsonIfNecessary( input );
         Map<String, Object> doc = initial;
         String name;

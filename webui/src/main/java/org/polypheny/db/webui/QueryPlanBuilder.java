@@ -104,7 +104,7 @@ public class QueryPlanBuilder {
             field2 = node.col2.split( "\\." );
         }
         switch ( node.type ) {
-            case "TableScan":
+            case "Scan":
                 return builder.scan( Util.tokenize( node.tableName, "." ) ).as( node.tableName );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );

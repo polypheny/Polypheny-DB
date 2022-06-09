@@ -20,8 +20,8 @@ package org.polypheny.db.processing;
 import lombok.Getter;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.CalcSplitRule;
-import org.polypheny.db.algebra.rules.FilterTableScanRule;
-import org.polypheny.db.algebra.rules.ProjectTableScanRule;
+import org.polypheny.db.algebra.rules.FilterScanRule;
+import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -39,10 +39,10 @@ public class HepQueryProcessor extends AbstractQueryProcessor {
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
                         .addRuleInstance( AggregateReduceFunctionsRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INTERPRETER )
-                        .addRuleInstance( ProjectTableScanRule.INSTANCE )
-                        .addRuleInstance( ProjectTableScanRule.INTERPRETER );
+                        .addRuleInstance( FilterScanRule.INSTANCE )
+                        .addRuleInstance( FilterScanRule.INTERPRETER )
+                        .addRuleInstance( ProjectScanRule.INSTANCE )
+                        .addRuleInstance( ProjectScanRule.INTERPRETER );
 
         planner = new HepPlanner( hepProgramBuilder.build() );
     }

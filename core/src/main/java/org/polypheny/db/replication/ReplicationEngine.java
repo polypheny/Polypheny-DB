@@ -31,7 +31,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
@@ -203,10 +203,10 @@ public abstract class ReplicationEngine {
 
         long replicationDataId = replicationDataIdBuilder.getAndIncrement();
 
-        // TODO @HENNLO As soon as policies are available check which replication strategy a given table has or allows and then distribute
+        // TODO @HENNLO As soon as policies are available check which replication strategy a given entity has or allows and then distribute
         // the changes based on the replication strategy. Each replication strategy can have different replication engines
-        CatalogTable table = Catalog.getInstance().getTable( cdcObject.getTableId() );
-        List<CatalogDataPlacement> secondaryDataPlacements = Catalog.getInstance().getDataPlacementsByReplicationStrategy( table.id, associatedStrategy );
+        CatalogEntity entity = Catalog.getInstance().getTable( cdcObject.getTableId() );
+        List<CatalogDataPlacement> secondaryDataPlacements = Catalog.getInstance().getDataPlacementsByReplicationStrategy( entity.id, associatedStrategy );
 
         // If there are no SecondaryPlacements that need to be refreshed we can skip immediately
         // Also if the parameterValues are empty this means there is nothing to be updated

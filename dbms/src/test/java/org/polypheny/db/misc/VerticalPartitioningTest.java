@@ -17,11 +17,6 @@
 package org.polypheny.db.misc;
 
 import com.google.common.collect.ImmutableList;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -33,12 +28,18 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.excluded.CassandraExcluded;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 
-@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
+@Category({AdapterTestSuite.class, CassandraExcluded.class})
 public class VerticalPartitioningTest {
 
 
@@ -167,7 +168,7 @@ public class VerticalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
 
                     // Check if initially as many DataPlacements are created as requested (one for each store)
                     Assert.assertEquals( 1, table.dataPlacements.size() );
@@ -175,10 +176,10 @@ public class VerticalPartitioningTest {
                     CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
 
                     // Check how many columnPlacements are added to the one DataPlacement
-                    Assert.assertEquals( table.columnIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
+                    Assert.assertEquals( table.fieldIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
-                    Assert.assertEquals( 1, dataPlacement.getAllPartitionIds().size() );
+                    Assert.assertEquals(1, dataPlacement.getAllPartitionIds().size());
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
@@ -310,7 +311,7 @@ public class VerticalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
 
                     CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
 

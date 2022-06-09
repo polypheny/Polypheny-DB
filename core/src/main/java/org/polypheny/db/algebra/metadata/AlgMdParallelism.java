@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.metadata;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Parallelism;
 import org.polypheny.db.util.BuiltInMethod;
@@ -80,7 +80,7 @@ public class AlgMdParallelism implements MetadataHandler<BuiltInMetadata.Paralle
     }
 
 
-    public Boolean isPhaseTransition( TableScan alg, AlgMetadataQuery mq ) {
+    public Boolean isPhaseTransition( Scan alg, AlgMetadataQuery mq ) {
         return true;
     }
 

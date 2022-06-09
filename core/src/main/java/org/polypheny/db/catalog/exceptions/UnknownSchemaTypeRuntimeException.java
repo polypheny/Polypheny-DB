@@ -20,7 +20,7 @@ package org.polypheny.db.catalog.exceptions;
 public class UnknownSchemaTypeRuntimeException extends CatalogRuntimeException {
 
     public UnknownSchemaTypeRuntimeException( final int id ) {
-        super( "There is no SchemaType with id: " + id );
+        super( "There is no NamespaceType with id: " + id );
     }
 
 }

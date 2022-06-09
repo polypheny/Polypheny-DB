@@ -31,7 +31,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.mql.mql.MqlTest;
 import org.polypheny.db.mql.mql2alg.Mql2AlgTest;
@@ -58,7 +58,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
     @Test
     public void testEmptyMatch() {
         AlgRoot root = translate( find( "" ) );
-        assertTrue( root.alg instanceof TableScan );
+        assertTrue( root.alg instanceof Scan );
     }
 
 
@@ -387,9 +387,9 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
     public void testEmptyProjection() {
         AlgRoot root = translate( find( "", "" ) );
 
-        assertTrue( root.alg instanceof TableScan );
+        assertTrue( root.alg instanceof Scan );
 
-        TableScan scan = (TableScan) root.alg;
+        Scan scan = (Scan) root.alg;
         assertTrue( scan.getRowType().getFieldNames().contains( "_id" ) );
         assertTrue( scan.getRowType().getFieldNames().contains( "_data" ) );
     }
@@ -614,7 +614,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
     private RexCall getConditionTestFilter( AlgRoot root ) {
         assertTrue( root.alg instanceof Filter );
         Filter filter = ((Filter) root.alg);
-        assertTrue( filter.getInput() instanceof TableScan );
+        assertTrue( filter.getInput() instanceof Scan );
         return (RexCall) filter.getCondition();
     }
 

@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.prepare;
@@ -92,21 +75,21 @@ import org.polypheny.db.algebra.rules.AggregateValuesRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
-import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.FilterScanRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
 import org.polypheny.db.algebra.rules.JoinPushExpressionsRule;
 import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
 import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
-import org.polypheny.db.algebra.rules.ProjectTableScanRule;
+import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRule;
+import org.polypheny.db.algebra.rules.ScanRule;
 import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveConstantKeysRule;
 import org.polypheny.db.algebra.rules.SortUnionTransposeRule;
-import org.polypheny.db.algebra.rules.TableScanRule;
 import org.polypheny.db.algebra.rules.ValuesReduceRule;
 import org.polypheny.db.algebra.stream.StreamRules;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -148,6 +131,7 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
@@ -169,6 +153,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      * either way. At some point this will become a preference, or we will run multiple phases: first disabled, then enabled.
      */
     private static final boolean ENABLE_COLLATION_TRAIT = true;
+
+    private static final boolean ENABLE_MODEL_TRAIT = true;
 
     /**
      * Whether the bindable convention should be the root convention of any plan. If not, enumerable convention is the default.
@@ -226,15 +212,20 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
-                    EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE );
+                    EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
+                    EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
+                    EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
+                    EnumerableRules.ENUMERABLE_UNWIND_RULE,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_TRANSFORMER_RULE
+            );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
-                    TableScanRule.INSTANCE,
+                    ScanRule.INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
-                    FilterTableScanRule.INSTANCE,
+                    FilterScanRule.INSTANCE,
                     ProjectFilterTransposeRule.INSTANCE,
                     FilterProjectTransposeRule.INSTANCE,
                     FilterJoinRule.FILTER_ON_JOIN,
@@ -423,6 +414,11 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
             planner.registerAbstractRelationalRules();
         }
+        if ( ENABLE_MODEL_TRAIT ) {
+            planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
+            planner.registerModelRules();
+        }
+
         AlgOptUtil.registerAbstractAlgs( planner );
         for ( AlgOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );
@@ -433,8 +429,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             }
         }
         planner.addRule( Bindables.BINDABLE_TABLE_SCAN_RULE );
-        planner.addRule( ProjectTableScanRule.INSTANCE );
-        planner.addRule( ProjectTableScanRule.INTERPRETER );
+        planner.addRule( ProjectScanRule.INSTANCE );
+        planner.addRule( ProjectScanRule.INTERPRETER );
 
         if ( ENABLE_ENUMERABLE ) {
             for ( AlgOptRule rule : ENUMERABLE_RULES ) {
@@ -563,7 +559,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         null,
                         StatementType.OTHER_DDL,
                         new ExecutionTimeMonitor(),
-                        SchemaType.RELATIONAL );
+                        NamespaceType.RELATIONAL );
             }
 
             final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
@@ -636,7 +632,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 bindable,
                 statementType,
                 new ExecutionTimeMonitor(),
-                SchemaType.RELATIONAL );
+                NamespaceType.RELATIONAL );
     }*/
 
 

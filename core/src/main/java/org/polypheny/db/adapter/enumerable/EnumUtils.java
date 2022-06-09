@@ -41,12 +41,15 @@ import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ForStatement;
+import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -56,6 +59,8 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 
@@ -277,6 +282,52 @@ public class EnumUtils {
             }
         }
         return e;
+    }
+
+
+    public static ForStatement for_( ParameterExpression i_, ParameterExpression _list, BlockStatement statement ) {
+        return Expressions.for_(
+                Expressions.declare(
+                        Modifier.PRIVATE, i_, Expressions.constant( 0 ) ),
+                Expressions.lessThan( i_, Expressions.call( _list, "size" ) ),
+                Expressions.postIncrementAssign( i_ ),
+                statement
+        );
+    }
+
+
+    /**
+     * E.g. {@code constantArrayList("x", "y")} returns "Arrays.asList('x', 'y')".
+     *
+     * @param values List of values
+     * @param clazz Type of values
+     * @return expression
+     */
+    public static <T> MethodCallExpression constantArrayList( List<T> values, Class<?> clazz ) {
+        return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit( clazz, constantList( values ) ) );
+    }
+
+
+    public static MethodCallExpression expressionList( List<Expression> expressions ) {
+        return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, expressions );
+    }
+
+
+    /**
+     * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
+     */
+    public static <T> List<Expression> constantList( List<T> values ) {
+        return values.stream().map( Expressions::constant ).collect( Collectors.toList() );
+    }
+
+
+    public static <T> Expression getExpression( T value, Class<T> clazz ) {
+        if ( value instanceof PolyDictionary ) {
+            return ((PolyDictionary) value).getAsExpression();
+        } else if ( value instanceof PolyList ) {
+            return ((PolyList<?>) value).getAsExpression();
+        }
+        return Expressions.constant( value, clazz );
     }
 
 }

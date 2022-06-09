@@ -101,7 +101,7 @@ public final class CatalogIndex implements Serializable {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class CatalogIndexColumn implements CatalogEntity {
+    public static class CatalogIndexColumn implements CatalogObject {
 
         private static final long serialVersionUID = -5596459769680478780L;
 

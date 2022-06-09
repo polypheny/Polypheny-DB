@@ -31,11 +31,11 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -106,18 +106,18 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
 
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                schemaId = catalog.getNamespace( name.names.get( 0 ), name.names.get( 1 ) ).id;
                 viewName = name.names.get( 2 );
             } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+                schemaId = catalog.getNamespace( context.getDatabaseId(), name.names.get( 0 ) ).id;
                 viewName = name.names.get( 1 );
             } else { // TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = catalog.getNamespace( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 viewName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
-        } catch ( UnknownSchemaException e ) {
+        } catch ( UnknownNamespaceException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
@@ -149,7 +149,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                     columns,
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
                     Catalog.QueryLanguage.SQL );
-        } catch ( TableAlreadyExistsException e ) {
+        } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // we just added the table/column so it has to exist or we have a internal problem

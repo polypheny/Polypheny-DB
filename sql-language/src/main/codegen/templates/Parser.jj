@@ -50,7 +50,7 @@ import ${importStr};
 </#list>
 
 
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.languages.NodeParseException;

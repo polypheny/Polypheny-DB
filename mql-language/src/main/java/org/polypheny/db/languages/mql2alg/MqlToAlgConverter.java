@@ -47,25 +47,26 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalDocuments;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -82,7 +83,6 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rex.RexBuilder;
@@ -90,7 +90,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
@@ -218,7 +217,8 @@ public class MqlToAlgConverter {
     private String defaultDatabase;
     private boolean notActive = false;
     private boolean usesDocumentModel;
-    private AlgOptTable table;
+    private AlgOptTable entity;
+    private MqlQueryParameters parameters;
 
 
     public MqlToAlgConverter( Processor mqlProcessor, PolyphenyDbCatalogReader catalogReader, AlgOptCluster cluster ) {
@@ -242,12 +242,13 @@ public class MqlToAlgConverter {
         _dataExists = true;
         notActive = false;
         elemMatchActive = false;
-        table = null;
+        entity = null;
     }
 
 
     public AlgRoot convert( Node query, QueryParameters parameters ) {
         resetDefaults();
+        this.parameters = (MqlQueryParameters) parameters;
         this.defaultDatabase = ((MqlQueryParameters) parameters).getDatabase();
         if ( query instanceof MqlCollectionStatement ) {
             return convert( (MqlCollectionStatement) query );
@@ -264,22 +265,29 @@ public class MqlToAlgConverter {
      */
     public AlgRoot convert( MqlCollectionStatement query ) {
         Type kind = query.getMqlKind();
-        this.table = getTable( query, defaultDatabase );
-        if ( table == null ) {
+        this.entity = getEntity( query, defaultDatabase );
+        if ( entity == null ) {
             throw new RuntimeException( "The used collection does not exist." );
         }
 
         AlgNode node;
 
-        if ( table instanceof AlgOptTableImpl && table.getTable() instanceof LogicalView ) {
+        /*if ( table instanceof AlgOptTableImpl && table.getTable() instanceof LogicalView ) {
             node = LogicalViewScan.create( cluster, table );
+        } else if ( table instanceof AlgOptTableImpl && table.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
+            node = LogicalDocumentScan.create( cluster, table );
+            this.usesDocumentModel = true;
         } else {
-            node = LogicalTableScan.create( cluster, table );
+            node = LogicalScan.create( cluster, table );
+        }*/
+        if ( entity.getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
+            _dataExists = false;
         }
 
-        if ( table.getTable() == null || table.getTable().getSchemaType() == SchemaType.DOCUMENT ) {
-            this.usesDocumentModel = true;
-        }
+        node = LogicalDocumentScan.create( cluster, entity );
+        this.usesDocumentModel = true;
+
+        AlgDataType rowType = entity.getRowType();//new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
 
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
@@ -287,38 +295,39 @@ public class MqlToAlgConverter {
 
         switch ( kind ) {
             case FIND:
-                AlgNode find = convertFind( (MqlFind) query, table.getRowType(), node );
+                AlgNode find = convertFind( (MqlFind) query, rowType, node );
                 root = AlgRoot.of( find, find.getRowType(), Kind.SELECT );
                 break;
             case COUNT:
-                AlgNode count = convertCount( (MqlCount) query, table.getRowType(), node );
+                AlgNode count = convertCount( (MqlCount) query, rowType, node );
                 root = AlgRoot.of( count, count.getRowType(), Kind.SELECT );
                 break;
             case AGGREGATE:
-                root = AlgRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), Kind.SELECT );
+                AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, node );
+                root = AlgRoot.of( aggregate, Kind.SELECT );
                 break;
             /// dmls
             case INSERT:
-                root = AlgRoot.of( convertInsert( (MqlInsert) query, table ), Kind.INSERT );
+                root = AlgRoot.of( convertInsert( (MqlInsert) query, entity ), Kind.INSERT );
                 break;
             case DELETE:
             case FIND_DELETE:
-                root = AlgRoot.of( convertDelete( (MqlDelete) query, table, node ), Kind.DELETE );
+                root = AlgRoot.of( convertDelete( (MqlDelete) query, entity, node ), Kind.DELETE );
                 break;
             case UPDATE:
-                root = AlgRoot.of( convertUpdate( (MqlUpdate) query, table, node ), Kind.UPDATE );
+                root = AlgRoot.of( convertUpdate( (MqlUpdate) query, entity, node ), Kind.UPDATE );
                 break;
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
         }
-        if ( usesDocumentModel ) {
+        /*if ( usesDocumentModel ) {
             root.usesDocumentModel = true;
-        }
+        }*/
         return root;
     }
 
 
-    private AlgOptTable getTable( MqlCollectionStatement query, String dbSchemaName ) {
+    private AlgOptTable getEntity( MqlCollectionStatement query, String dbSchemaName ) {
         return catalogReader.getTable( ImmutableList.of( dbSchemaName, query.getCollection() ) );
     }
 
@@ -499,7 +508,7 @@ public class MqlToAlgConverter {
      * @param key the left associated parent key
      * @param mergedUpdates collection, which combines all performed update steps according to the operation
      * @param rowType the default rowtype at this point
-     * @param node the transformed operation up to this step e.g. {@link TableScan} or {@link LogicalAggregate}
+     * @param node the transformed operation up to this step e.g. {@link Scan} or {@link LogicalAggregate}
      * @param table the active table
      * @return the unified UPDATE AlgNode
      */
@@ -554,7 +563,7 @@ public class MqlToAlgConverter {
                             getStringArray( removeNodes ) ) );
         }
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 table,
                 catalogReader,
                 node,
@@ -737,7 +746,7 @@ public class MqlToAlgConverter {
             node = wrapLimit( node, 1 );
         }
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 table,
                 catalogReader,
                 node,
@@ -750,22 +759,17 @@ public class MqlToAlgConverter {
 
     /**
      * Method transforms an insert into the appropriate {@link LogicalValues}
-     * when working with the relational model or the {@link LogicalDocuments} when handling a document model
+     * when working with the relational model or the {@link LogicalDocumentValues} when handling a document model
      *
      * @param query the insert statement as Mql object
      * @param table the table/collection into which the values are inserted
      * @return the modified AlgNode
      */
-    private LogicalTableModify convertInsert( MqlInsert query, AlgOptTable table ) {
-        LogicalTableModify modify = LogicalTableModify.create(
+    private AlgNode convertInsert( MqlInsert query, AlgOptTable table ) {
+        return LogicalDocumentModify.create(
                 table,
-                catalogReader,
                 convertMultipleValues( query.getValues(), table.getRowType() ),
-                Operation.INSERT,
-                null,
-                null,
-                false );
-        return modify;
+                Operation.INSERT );
     }
 
 
@@ -799,11 +803,11 @@ public class MqlToAlgConverter {
      * @return the {@link Values} representation of the values
      */
     private AlgNode convertMultipleValues( BsonArray array, AlgDataType rowType ) {
-        LogicalDocuments docs = (LogicalDocuments) LogicalDocuments.create( cluster, ImmutableList.copyOf( array.asArray() ) );
+        LogicalDocumentValues docs = (LogicalDocumentValues) LogicalDocumentValues.create( cluster, ImmutableList.copyOf( array.asArray() ) );
         if ( usesDocumentModel ) {
             return docs;
         } else {
-            return LogicalValues.create( cluster, rowType, docs.getTuples() );
+            return docs.getRelationalEquivalent();
         }
 
     }
@@ -901,7 +905,7 @@ public class MqlToAlgConverter {
         }
 
         AlgNode finalNode = node;
-        node = LogicalProject.create( node,
+        node = LogicalDocumentProject.create( node,
                 node.getRowType().getFieldList()
                         .stream()
                         .map( el -> {
@@ -942,9 +946,9 @@ public class MqlToAlgConverter {
             throw new RuntimeException( "The used root for $replaceRoot needs to either be a string or a document" );
         }
 
-        Project project;
+        DocumentProject project;
         if ( newRoot.isDocument() ) {
-            project = LogicalProject.create(
+            project = LogicalDocumentProject.create(
                     node,
                     Collections.singletonList( translateDocument( newRoot.asDocument(), node.getRowType(), null ) ),
                     Collections.singletonList( "_data" )
@@ -954,7 +958,7 @@ public class MqlToAlgConverter {
                 throw new RuntimeException( "The used root needs to be a reference to a field" );
             }
 
-            project = LogicalProject.create(
+            project = LogicalDocumentProject.create(
                     node,
                     Collections.singletonList( getIdentifier( newRoot.asString().getValue().substring( 1 ), node.getRowType() ) ),
                     Collections.singletonList( "_data" )
@@ -1021,7 +1025,7 @@ public class MqlToAlgConverter {
             values.add( call );
         }
 
-        return LogicalProject.create( node, values, names );
+        return LogicalDocumentProject.create( node, values, names );
     }
 
 
@@ -1124,14 +1128,14 @@ public class MqlToAlgConverter {
             nodes.addAll( projectionNodes );
             List<String> nodeNames = rowType.getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
             nodeNames.addAll( hiddenNames );
-            node = LogicalProject.create( node, nodes, nodeNames );
+            node = LogicalDocumentProject.create( node, nodes, nodeNames );
 
             node = nodeFunction.apply( node, node.getRowType() );
 
             nodes.removeAll( projectionNodes );
             nodeNames.removeAll( hiddenNames );
 
-            return LogicalProject.create( node, nodes, nodeNames );
+            return LogicalDocumentProject.create( node, nodes, nodeNames );
         }
         return nodeFunction.apply( node, node.getRowType() );
     }
@@ -1211,7 +1215,7 @@ public class MqlToAlgConverter {
             }
         }
 
-        node = LogicalProject.create( node, nodes, names );
+        node = LogicalDocumentProject.create( node, nodes, names );
 
         return groupBy( value, node, node.getRowType(), aggNames, ops );
     }
@@ -1354,7 +1358,7 @@ public class MqlToAlgConverter {
     private AlgNode combineFilter( BsonDocument filter, AlgNode node, AlgDataType rowType ) {
         RexNode condition = translateDocument( filter, rowType, null );
 
-        return LogicalFilter.create( node, condition );
+        return LogicalDocumentFilter.create( node, condition );
     }
 
 
@@ -1501,7 +1505,7 @@ public class MqlToAlgConverter {
 
 
     private AlgDataTypeField getDefaultDataField( AlgDataType rowType ) {
-        return rowType.getField( "_data", false, false );
+        return rowType.getField( "d", false, false );
     }
 
 
@@ -1753,7 +1757,7 @@ public class MqlToAlgConverter {
 
     private RexNode attachAccess( int index, AlgDataType rowType ) {
         CorrelationId correlId = cluster.createCorrel();
-        cluster.getMapCorrelToAlg().put( correlId, LogicalTableScan.create( cluster, table ) );
+        cluster.getMapCorrelToAlg().put( correlId, LogicalScan.create( cluster, entity ) );
         return builder.makeFieldAccess( builder.makeCorrel( rowType, correlId ), index );
     }
 
@@ -1897,7 +1901,7 @@ public class MqlToAlgConverter {
 
             String key = keys.get( 0 );
             if ( !rowType.getFieldNames().contains( key ) ) {
-                key = "_data";
+                key = getDefaultDataField( rowType ).getName();
             } else {
                 keys = keys.subList( 1, keys.size() );
             }
@@ -2347,16 +2351,16 @@ public class MqlToAlgConverter {
                 List<String> names = new ArrayList<>( Collections.singletonList( defaultDataField.getName() ) );
 
                 // we only need to do this if it is the second time
-                if ( !excludes.contains( "_id" ) && !excludedId ) {
+                /*if ( !excludes.contains( "_id" ) && !excludedId ) {
                     names.add( 0, "_id" );
                     values.add( 0, RexInputRef.of( 0, rowType ) );
                 }
 
                 if ( excludes.contains( "_id" ) ) {
                     this.excludedId = true;
-                }
+                }*/
 
-                return LogicalProject.create( node, values, names );
+                return LogicalDocumentProject.create( node, values, names );
             } else {
                 // we already projected the _data field away and have to work with what we got
                 List<RexNode> values = new ArrayList<>();
@@ -2369,7 +2373,7 @@ public class MqlToAlgConverter {
                     }
                 }
 
-                return LogicalProject.create( node, values, names );
+                return LogicalDocumentProject.create( node, values, names );
             }
         } else if ( isAddFields && _dataExists ) {
             List<String> names = rowType.getFieldNames();
@@ -2396,23 +2400,22 @@ public class MqlToAlgConverter {
                     }
                 }
 
-                node = LogicalProject.create( node, values, names );
+                node = LogicalDocumentProject.create( node, values, names );
             }
 
             return node;
         } else if ( includes.size() > 0 ) {
             List<RexNode> values = includesOrder.stream().map( includes::get ).collect( Collectors.toList() );
-            List<String> names = includesOrder;
 
-            if ( !includes.containsKey( "_id" ) && !excludedId ) {
-                names.add( 0, "_id" );
+            /*if ( !includes.containsKey( "_id" ) && !excludedId ) {
+                includesOrder.add( 0, "_id" );
                 values.add( 0, RexInputRef.of( 0, rowType ) );
-            }
+            }*/
 
             if ( isAddFields ) {
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                    if ( !names.contains( field.getName() ) ) {
-                        names.add( field.getName() );
+                    if ( !includesOrder.contains( field.getName() ) ) {
+                        includesOrder.add( field.getName() );
                         values.add( RexInputRef.of( field.getIndex(), rowType ) );
                     }
                 }
@@ -2421,7 +2424,7 @@ public class MqlToAlgConverter {
             // the _data field does not longer exist, as we made a projection "out" of it
             this._dataExists = false;
 
-            return LogicalProject.create( node, values, names );
+            return LogicalDocumentProject.create( node, values, includesOrder );
         }
         return node;
     }

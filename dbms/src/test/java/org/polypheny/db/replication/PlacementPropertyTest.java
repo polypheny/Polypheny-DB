@@ -32,7 +32,7 @@ import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 
 
@@ -53,12 +53,12 @@ public class PlacementPropertyTest {
 
                 try {
                     // Get Table
-                    CatalogTable table = Catalog.getInstance().getTables(
+                    CatalogEntity entity = Catalog.getInstance().getTables(
                             null, null, new Pattern( "parsesqlalterplacementreplicationstrategy" )
                     ).get( 0 );
 
                     // Get the single DataPlacement
-                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( entity.id );
 
                     // Check before replicationStrategy assignment that this initial DataPlacement is labeled as EAGER
                     Assert.assertEquals( allDataPlacements.get( 0 ).replicationStrategy, ReplicationStrategy.EAGER );
@@ -84,7 +84,7 @@ public class PlacementPropertyTest {
 
                     // Assert that they directly are created using replicationStrategy = EAGER by default
                     // Get both DataPlacements
-                    allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    allDataPlacements = Catalog.getInstance().getDataPlacements( entity.id );
 
                     // Check before replicationStrategy assignment that all DataPlacement are labeled as EAGER
                     for ( CatalogDataPlacement dataPlacement : allDataPlacements ) {
@@ -102,7 +102,7 @@ public class PlacementPropertyTest {
 
                     // Assert DataPlacements again
                     // Get that specific hsqldb placement
-                    CatalogDataPlacement dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, table.id );
+                    CatalogDataPlacement dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, entity.id );
 
                     // Check before replicationStrategy assignment that all DataPlacement are labeled as EAGERly replicated
                     Assert.assertEquals( dataPlacementHsqlDb.replicationStrategy, ReplicationStrategy.LAZY );
@@ -120,7 +120,7 @@ public class PlacementPropertyTest {
                             + "WITH REPLICATION LAZY" );
 
                     // Get that specific store3 placement
-                    CatalogDataPlacement dataPlacementStore3 = Catalog.getInstance().getDataPlacement( store3.id, table.id );
+                    CatalogDataPlacement dataPlacementStore3 = Catalog.getInstance().getDataPlacement( store3.id, entity.id );
 
                     // Assert if these new placements are correctly created with the desired strategy
                     Assert.assertEquals( dataPlacementStore3.replicationStrategy, ReplicationStrategy.LAZY );
@@ -132,7 +132,7 @@ public class PlacementPropertyTest {
                             + "WITH REPLICATION EAGER" );
 
                     // Get new version of dataPlacement
-                    dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, table.id );
+                    dataPlacementHsqlDb = Catalog.getInstance().getDataPlacement( hsqldb.id, entity.id );
 
                     // Assert if it is correct again
                     Assert.assertEquals( dataPlacementHsqlDb.replicationStrategy, ReplicationStrategy.LAZY );
@@ -165,7 +165,7 @@ public class PlacementPropertyTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "partitionpropertyconstrainttest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "partitionpropertyconstrainttest" ) ).get( 0 );
 
                     // Create two placements for one table
 

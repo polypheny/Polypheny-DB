@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.type.PolyType;
@@ -35,7 +35,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( CatalogEntity catalogEntity, String columnValue ) {
         long hashValue = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now
@@ -44,10 +44,10 @@ public class HashPartitionManager extends AbstractPartitionManager {
         }
 
         // Get designated HASH partition based on number of internal partitions
-        int partitionIndex = (int) (hashValue % catalogTable.partitionProperty.partitionIds.size());
+        int partitionIndex = (int) (hashValue % catalogEntity.partitionProperty.partitionIds.size());
 
         // Finally decide on which partition to put it
-        return catalogTable.partitionProperty.partitionIds.get( partitionIndex );
+        return catalogEntity.partitionProperty.partitionIds.get( partitionIndex );
     }
 
 

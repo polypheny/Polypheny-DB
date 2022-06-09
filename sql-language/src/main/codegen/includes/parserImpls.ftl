@@ -227,112 +227,109 @@ SqlAlterTable SqlAlterTable(Span s) :
         <OWNER> <TO>
         owner = SimpleIdentifier()
         {
-                return new SqlAlterTableOwner(s.end(this), table, owner);
-                }
-                |
-                <RENAME>
-                    <COLUMN>
-                        column = SimpleIdentifier()
-                        <TO>
-                            name = SimpleIdentifier()
-                            {
-                            return new SqlAlterTableRenameColumn(s.end(this), table, column, name);
-                            }
-                            |
-                            <REFRESH>
-                                (
-                                <ALL>
-                                    <PLACEMENTS>
-                                        {
-                                        return new SqlAlterTableRefreshPlacement(s.end(this), table, null, true);
-                                        }
-                                        |
-                                        <PLACEMENT>
-                                            <ON>
-                                                <STORE>
-                                                    store = SimpleIdentifier()
-                                                    {
-                                                    return new SqlAlterTableRefreshPlacement(s.end(this), table, store, false);
-                                                    }
-                                                    )
-                                                    |
-                                                    <ADD>
-                                                        <COLUMN>
-                                                            name = SimpleIdentifier()
-                                                            (
-                                                            type = DataType()
-                                                            (
-                                                            <NULL> { nullable = true; }
-                                                                |
-                                                                <NOT>
-                                                                    <NULL> { nullable = false; }
-                                                                        |
-                                                                        { nullable = true; }
-                                                                        )
-                                                                        (
-                                                                        <DEFAULT_>
-                                                                            defaultValue = Literal()
-                                                                            |
-                                                                            defaultValue = ArrayConstructor()
-                                                                            |
-                                                                            { defaultValue = null; }
-                                                                            )
-                                                                            (
-                                                                            <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
-                                                                                |
-                                                                                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
-                                                                                    |
-                                                                                    { afterColumn = null; beforeColumn = null; }
-                                                                                    )
-                                                                                    {
-                                                                                    return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
-                                                                                    }
-                                                                                    |
-                                                                                    <AS>
-                                                                                        physicalName = SimpleIdentifier()
-                                                                                        (
-                                                                                        <DEFAULT_>
-                                                                                            defaultValue = Literal()
-                                                                                            |
-                                                                                            defaultValue = ArrayConstructor()
-                                                                                            |
-                                                                                            { defaultValue = null; }
-                                                                                            )
-                                                                                            (
-                                                                                            <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
-                                                                                                |
-                                                                                                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
-                                                                                                    |
-                                                                                                    { afterColumn = null; beforeColumn = null; }
-                                                                                                    )
-                                                                                                    {
-                                                                                                    return new SqlAlterSourceTableAddColumn(s.end(this), table, name, physicalName, defaultValue, beforeColumn, afterColumn);
-                                                                                                    }
-                                                                                                    )
-                                                                                                    |
-                                                                                                    <DROP> <COLUMN>
-                                                                                                            column = SimpleIdentifier()
-                                                                                                            {
-                                                                                                            return new SqlAlterTableDropColumn(s.end(this), table, column);
-                                                                                                            }
-                                                                                                            |
-                                                                                                            <ADD> <PRIMARY> <KEY>
-                                                                                                                        (
-                                                                                                                        columnList = ParenthesizedSimpleIdentifierList()
-                                                                                                                        |
-                                                                                                                        column = SimpleIdentifier()
-                                                                                                                        {
-                                                                                                                        columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
-                                                                                                                        }
-                                                                                                                        )
-                                                                                                                        {
-                                                                                                                        return new SqlAlterTableAddPrimaryKey(s.end(this), table, columnList);
-                                                                                                                        }
-                                                                                                                        |
-                                                                                                                        <DROP> <PRIMARY> <KEY>
-                                                                                                                                    {
-                                                                                                                                    return new SqlAlterTableDropPrimaryKey(s.end(this), table);
-                                                                                                                                    }
+            return new SqlAlterTableOwner(s.end(this), table, owner);
+        }
+    |
+        <RENAME> <COLUMN>
+        column = SimpleIdentifier()
+        <TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterTableRenameColumn(s.end(this), table, column, name);
+        }
+    |
+        <REFRESH>
+        (
+            <ALL>
+            <PLACEMENTS>
+            {
+                return new SqlAlterTableRefreshPlacement(s.end(this), table, null, true);
+            }
+        |
+            <PLACEMENT>
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableRefreshPlacement(s.end(this), table, store, false);
+            }
+        )
+    |
+        <ADD> <COLUMN>
+        name = SimpleIdentifier()
+        (
+            type = DataType()
+            (
+                <NULL> { nullable = true; }
+            |
+                <NOT> <NULL> { nullable = false; }
+            |
+                { nullable = true; }
+        )
+        (
+            <DEFAULT_>
+            defaultValue = Literal()
+        |
+            defaultValue = ArrayConstructor()
+        |
+            { defaultValue = null; }
+        )
+        (
+            <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+        |
+            <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+        |
+            { afterColumn = null; beforeColumn = null; }
+        )
+        {
+            return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
+        }
+    |
+        <AS>
+        physicalName = SimpleIdentifier()
+        (
+        <DEFAULT_>
+        defaultValue = Literal()
+    |
+        defaultValue = ArrayConstructor()
+    |
+        { defaultValue = null; }
+    )
+    (
+        <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+    |
+        <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+    |
+        { afterColumn = null; beforeColumn = null; }
+    )
+    {
+        return new SqlAlterSourceTableAddColumn(s.end(this), table, name, physicalName, defaultValue, beforeColumn, afterColumn);
+    }
+    )
+|
+<DROP> <COLUMN>
+column = SimpleIdentifier()
+        {
+        return new SqlAlterTableDropColumn(s.end(this), table, column);
+        }
+        |
+        <ADD> <PRIMARY> <KEY>
+                    (
+                    columnList = ParenthesizedSimpleIdentifierList()
+                    |
+                    column = SimpleIdentifier()
+                    {
+                    columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                    }
+                    )
+                    {
+                    return new SqlAlterTableAddPrimaryKey(s.end(this), table, columnList);
+                    }
+                    |
+                    <DROP> <PRIMARY> <KEY>
+                                {
+                                return new SqlAlterTableDropPrimaryKey(s.end(this), table);
+                                }
                                                                                                                                     |
                                                                                                                                     <ADD> <CONSTRAINT>
                                                                                                                                             constraintName = SimpleIdentifier()
@@ -367,6 +364,8 @@ SqlAlterTable SqlAlterTable(Span s) :
                                                                                                                                                                     (
                                                                                                                                                                     <CASCADE> { onUpdate = "CASCADE"; }
                                                                                                                                                                         |
+                                                                                                                                                                        <NONE> { onUpdate = "NONE"; }
+                                                                                                                                                                        |
                                                                                                                                                                         <RESTRICT> { onUpdate = "RESTRICT"; }
                                                                                                                                                                             |
                                                                                                                                                                             <SET> <NULL> { onUpdate = "SET NULL"; }
@@ -381,9 +380,11 @@ SqlAlterTable SqlAlterTable(Span s) :
                                                                                                                                                                                                     (
                                                                                                                                                                                                     <CASCADE> { onDelete = "CASCADE"; }
                                                                                                                                                                                                         |
+                                                                                                                                                                                                        <NONE> { onDelete = "NONE"; }
+                                                                                                                                                                                                        |
                                                                                                                                                                                                         <RESTRICT> { onDelete = "RESTRICT"; }
-                                                                                                                                                                                                            |
-                                                                                                                                                                                                            <SET> <NULL> { onDelete = "SET NULL"; }
+                                                                                                                                                                                                        |
+                                                                                                                                                                                                        <SET> <NULL> { onDelete = "SET NULL"; }
                                                                                                                                                                                                                     |
                                                                                                                                                                                                                     <SET> <DEFAULT_> { onDelete = "SET DEFAULT"; }
                                                                                                                                                                                                                             )

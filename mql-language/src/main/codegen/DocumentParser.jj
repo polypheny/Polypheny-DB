@@ -115,7 +115,7 @@ PARSER_END(MqlParserImpl)
                  | "\f"
 }
 
-TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
+TOKEN : /* IDENTIFIERS */ // for nested documentValues check out Document_Splits()
 {
 < USE_DB: "use db" >
 |

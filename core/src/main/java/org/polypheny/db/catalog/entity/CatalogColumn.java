@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.type.PolyType;
 
 
 @EqualsAndHashCode
-public final class CatalogColumn implements CatalogEntity, Comparable<CatalogColumn> {
+public final class CatalogColumn implements CatalogObject, Comparable<CatalogColumn> {
 
     private static final long serialVersionUID = -6566756853822620430L;
 
@@ -53,7 +53,7 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     @EqualsAndHashCode.Exclude
     // lombok uses getter methods to compare objects
     // and this method depends on the catalog, which can lead to nullpointers -> doNotUseGetters
-    public SchemaType schemaType;
+    public NamespaceType namespaceType;
 
 
     public CatalogColumn(
@@ -102,17 +102,19 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
         }
         if ( collectionsType == PolyType.ARRAY ) {
             return typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+        } else if ( collectionsType == PolyType.MAP ) {
+            return typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
         } else {
             return elementType;
         }
     }
 
 
-    public SchemaType getSchemaType() {
-        if ( schemaType == null ) {
-            schemaType = Catalog.getInstance().getSchema( schemaId ).schemaType;
+    public NamespaceType getNamespaceType() {
+        if ( namespaceType == null ) {
+            namespaceType = Catalog.getInstance().getNamespace( schemaId ).namespaceType;
         }
-        return schemaType;
+        return namespaceType;
     }
 
 
@@ -124,7 +126,7 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getSchema( schemaId ).name;
+        return Catalog.getInstance().getNamespace( schemaId ).name;
     }
 
 
@@ -155,7 +157,7 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
                 null,
                 position,
                 nullable ? "YES" : "NO",
-                CatalogEntity.getEnumNameOrNull( collation ) };
+                CatalogObject.getEnumNameOrNull( collation ) };
     }
 
 
@@ -210,5 +212,6 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
         public final String collation;
 
     }
+
 
 }

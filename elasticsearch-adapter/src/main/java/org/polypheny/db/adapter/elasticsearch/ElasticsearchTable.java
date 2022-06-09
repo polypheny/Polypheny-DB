@@ -335,7 +335,7 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new ElasticsearchTableScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ), algOptTable, this, null );
+        return new ElasticsearchScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ), algOptTable, this, null );
     }
 
 

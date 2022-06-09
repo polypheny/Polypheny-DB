@@ -17,19 +17,20 @@
 package org.polypheny.db.transaction;
 
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
+
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public interface Transaction {
@@ -68,7 +69,7 @@ public interface Transaction {
 
     AtomicBoolean getCancelFlag();
 
-    CatalogSchema getDefaultSchema();
+    CatalogNamespace getDefaultSchema();
 
     void addChangedTable( String qualifiedTableName );
 
@@ -80,19 +81,19 @@ public interface Transaction {
 
     DataMigrator getDataMigrator();
 
-    void setUseCache( boolean useCache );
+    void setUseCache(boolean useCache);
 
     boolean getUseCache();
 
-    Set<CatalogTable> getCatalogTables();
+    Set<CatalogEntity> getCatalogEntities();
 
-    void setAcceptsOutdated( boolean acceptsOutdated );
+    void setAcceptsOutdated(boolean acceptsOutdated);
 
     boolean acceptsOutdated();
 
     AccessMode getAccessMode();
 
-    void updateAccessMode( AccessMode accessCandidate );
+    void updateAccessMode(AccessMode accessCandidate);
 
     void setNeedsChangeDataCapture( boolean needsChangeDataCapture );
 

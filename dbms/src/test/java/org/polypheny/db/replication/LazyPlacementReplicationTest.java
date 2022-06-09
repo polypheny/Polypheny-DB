@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
@@ -61,7 +61,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "generaleagerreplicationtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "generaleagerreplicationtest" ) ).get( 0 );
 
                     // Create two placements for one table
                     // Create another store
@@ -82,9 +82,9 @@ public class LazyPlacementReplicationTest {
                                     new Object[]{ 2, 70, "bar" } ) );
 
                     // Get the single DataPlacement
-                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( entity.id );
 
-                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getPartitionPlacements( table.id );
+                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getPartitionPlacements( entity.id );
 
                     // Check locking: ALL placements and partitions need to be locked
                     long txId = allPartitionPlacements.get( 0 ).updateInformation.txId;
@@ -124,7 +124,7 @@ public class LazyPlacementReplicationTest {
 
                 try {
 
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "generallazyreplicationtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "generallazyreplicationtest" ) ).get( 0 );
 
                     // Create two placements for one table
                     // Create another store
@@ -154,13 +154,13 @@ public class LazyPlacementReplicationTest {
 
                     LazyReplicationEngine lazyReplicationEngine = (LazyReplicationEngine) ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
 
-                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
+                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( entity.id );
 
                     // Check that queue is correctly enriched with two INSERTS
                     Assert.assertEquals( 2, lazyReplicationEngine.getPendingReplicationsPerPlacementSize( store1.id, allPartitionPlacements.get( 0 ).partitionId ) );
 
                     // Get the single DataPlacement
-                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( entity.id );
 
                     // Check locking: NOT all placements and partitions need to be locked
 
@@ -248,7 +248,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "replicationafterplacementrolechangetest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "replicationafterplacementrolechangetest" ) ).get( 0 );
 
                     // Disable automatic refresh operations to validate the deviation
 
@@ -295,7 +295,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "replicationcontrainttest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "replicationcontrainttest" ) ).get( 0 );
 
                     // Disable automatic refresh operations to validate the deviation
 
@@ -330,7 +330,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "preparedreplicationtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "preparedreplicationtest" ) ).get( 0 );
 
 
                 } finally {
@@ -354,7 +354,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "insertreplicationtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "insertreplicationtest" ) ).get( 0 );
 
                     LazyReplicationEngine lazyReplicationEngine = (LazyReplicationEngine) ReplicationEngineProvider.getInstance().getReplicationEngine( ReplicationStrategy.LAZY );
 
@@ -382,13 +382,13 @@ public class LazyPlacementReplicationTest {
                                     new Object[]{ 1, 30, "foo" },
                                     new Object[]{ 2, 70, "bar" } ) );
 
-                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( table.id );
+                    List<CatalogPartitionPlacement> allPartitionPlacements = Catalog.getInstance().getAllPartitionPlacementsByTable( entity.id );
 
                     // Check that queue is correctly enriched with two INSERTS
                     Assert.assertEquals( 2, lazyReplicationEngine.getPendingReplicationsPerPlacementSize( store1.id, allPartitionPlacements.get( 0 ).partitionId ) );
 
                     // Get the single DataPlacement
-                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    List<CatalogDataPlacement> allDataPlacements = Catalog.getInstance().getDataPlacements( entity.id );
 
                     // Check locking: NOT all placements and partitions need to be locked
 
@@ -453,7 +453,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "updatereplicationtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "updatereplicationtest" ) ).get( 0 );
 
                     // Disable automatic refresh operations to validate the deviation
 
@@ -488,7 +488,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "deletereplicationtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "deletereplicationtest" ) ).get( 0 );
 
                     // Disable automatic refresh operations to validate the deviation
 
@@ -523,7 +523,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "replicationwithverticalpartitioningtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "replicationwithverticalpartitioningtest" ) ).get( 0 );
 
                     // Disable automatic refresh operations to validate the deviation
 
@@ -558,7 +558,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "replicationwithhorizontalpartitioningtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "replicationwithhorizontalpartitioningtest" ) ).get( 0 );
 
                     // Disable automatic refresh operations to validate the deviation
 
@@ -593,7 +593,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "replicationwithhybridpartitioningtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "replicationwithhybridpartitioningtest" ) ).get( 0 );
 
                     // Disable automatic refresh operations to validate the deviation
 
@@ -628,7 +628,7 @@ public class LazyPlacementReplicationTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "multiinsertreplicationtest" ) ).get( 0 );
+                    CatalogEntity entity = Catalog.getInstance().getTables( null, null, new Pattern( "multiinsertreplicationtest" ) ).get( 0 );
 
                     statement.executeUpdate( "INSERT INTO multiinsert(tprimary,tvarchar,tinteger) VALUES (1,'Hans',5),(2,'Eva',7),(3,'Alice',89)" );
                     TestHelper.checkResultSet(

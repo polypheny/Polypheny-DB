@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Method;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify.Operation;
 
 
 /**

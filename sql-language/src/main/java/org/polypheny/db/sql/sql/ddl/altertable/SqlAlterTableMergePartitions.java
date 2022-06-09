@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -75,26 +75,26 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         // Check if table is even partitioned
-        if ( catalogTable.partitionProperty.partitionType != Catalog.PartitionType.NONE ) {
+        if ( catalogEntity.partitionProperty.partitionType != Catalog.PartitionType.NONE ) {
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName() );
+                log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogEntity.name, catalogEntity.id, catalogEntity.getNamespaceName() );
             }
 
-            DdlManager.getInstance().removePartitioning( catalogTable, statement );
+            DdlManager.getInstance().removePartitioning( catalogEntity, statement );
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Table: '{}' has been merged", catalogTable.name );
+                log.debug( "Table: '{}' has been merged", catalogEntity.name );
             }
         } else {
-            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned!" );
+            throw new RuntimeException( "Table '" + catalogEntity.name + "' is not partitioned!" );
         }
     }
 

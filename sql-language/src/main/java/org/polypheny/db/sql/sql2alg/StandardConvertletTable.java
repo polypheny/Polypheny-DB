@@ -682,6 +682,10 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         } else {
             type = rexBuilder.deriveReturnType( op, exprs );
         }
+        if ( type.getPolyType() == PolyType.ARRAY ) {
+            return rexBuilder.makeArray( type, RexUtil.flatten( exprs, op ) );
+        }
+
         return rexBuilder.makeCall( type, op, RexUtil.flatten( exprs, op ) );
     }
 

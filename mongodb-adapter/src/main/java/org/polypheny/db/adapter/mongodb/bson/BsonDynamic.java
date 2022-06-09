@@ -21,6 +21,7 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
 import org.bson.BsonString;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.type.PolyType;
 
@@ -34,10 +35,14 @@ public class BsonDynamic extends BsonDocument {
 
 
     public BsonDynamic( RexDynamicParam rexNode ) {
-        this( rexNode.getIndex(),
-                rexNode.getType().getPolyType() == PolyType.ARRAY
-                        ? rexNode.getType().getComponentType().getPolyType().getTypeName()
-                        : rexNode.getType().getPolyType().getTypeName() );
+        this( rexNode.getIndex(), getTypeString( rexNode.getType() ) );
+    }
+
+
+    private static String getTypeString( AlgDataType type ) {
+        return type.getPolyType() != PolyType.ARRAY
+                ? type.getPolyType().getTypeName()
+                : "ARRAY$" + getTypeString( type.getComponentType() );
     }
 
 

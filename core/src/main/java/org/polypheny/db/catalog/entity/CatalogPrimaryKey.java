@@ -59,7 +59,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class CatalogPrimaryKeyColumn implements CatalogEntity {
+    public static class CatalogPrimaryKeyColumn implements CatalogObject {
 
         private static final long serialVersionUID = 5426944084650275437L;
 

@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.prepare;
@@ -43,7 +26,7 @@ import java.util.Set;
 import java.util.function.Function;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
@@ -52,13 +35,13 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
@@ -307,18 +290,18 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
         }
         final AlgOptCluster cluster = context.getCluster();
         if ( Hook.ENABLE_BINDABLE.get( false ) ) {
-            return LogicalTableScan.create( cluster, this );
+            return LogicalScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE && table instanceof QueryableTable ) {
-            return EnumerableTableScan.create( cluster, this );
+            return EnumerableScan.create( cluster, this );
         }
         if ( table instanceof ScannableTable
                 || table instanceof FilterableTable
                 || table instanceof ProjectableFilterableTable ) {
-            return LogicalTableScan.create( cluster, this );
+            return LogicalScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE ) {
-            return EnumerableTableScan.create( cluster, this );
+            return EnumerableScan.create( cluster, this );
         }
         throw new AssertionError();
     }
@@ -519,7 +502,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
         @Override
-        public SchemaPlus add( String name, Schema schema, SchemaType schemaType ) {
+        public SchemaPlus add( String name, Schema schema, NamespaceType namespaceType ) {
             throw new UnsupportedOperationException();
         }
 

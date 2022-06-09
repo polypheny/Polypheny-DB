@@ -132,7 +132,7 @@ public class CassandraAdapterTest {
                 .query( "select * from \"userline\" where \"username\"='!PUBLIC!'" )
                 .limit( 1 )
                 .returns( "username=!PUBLIC!; time=e8754000-80b8-1fe9-8e73-e3698c967ddd; " + "tweet_id=f3c329de-d05b-11e5-b58b-90e2ba530b12\n" )
-                .explainContains( "PLAN=CassandraToEnumerableConverter\n" + "  CassandraFilter(condition=[=($0, '!PUBLIC!')])\n" + "    CassandraTableScan(table=[[twissandra, userline]]" );
+                .explainContains( "PLAN=CassandraToEnumerableConverter\n" + "  CassandraFilter(condition=[=($0, '!PUBLIC!')])\n" + "    CassandraScan(table=[[twissandra, userline]]" );
     }
 
 
@@ -143,7 +143,7 @@ public class CassandraAdapterTest {
                 .query( "select * from \"tweets\" where \"tweet_id\"='f3cd759c-d05b-11e5-b58b-90e2ba530b12'" )
                 .limit( 1 )
                 .returns( "tweet_id=f3cd759c-d05b-11e5-b58b-90e2ba530b12; " + "body=Lacus augue pede posuere.; username=JmuhsAaMdw\n" )
-                .explainContains( "PLAN=CassandraToEnumerableConverter\n" + "  CassandraFilter(condition=[=(CAST($0):CHAR(36), 'f3cd759c-d05b-11e5-b58b-90e2ba530b12')])\n" + "    CassandraTableScan(table=[[twissandra, tweets]]" );
+                .explainContains( "PLAN=CassandraToEnumerableConverter\n" + "  CassandraFilter(condition=[=(CAST($0):CHAR(36), 'f3cd759c-d05b-11e5-b58b-90e2ba530b12')])\n" + "    CassandraScan(table=[[twissandra, tweets]]" );
     }
 
 

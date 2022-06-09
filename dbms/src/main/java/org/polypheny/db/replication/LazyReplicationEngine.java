@@ -30,14 +30,15 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -284,23 +285,23 @@ public class LazyReplicationEngine extends ReplicationEngine {
 
         for ( Entry<Long, List<CatalogDataPlacement>> entry : catalog.getAllLazyReplicatedDataPlacementsByTable().entrySet() ) {
             long tableId = entry.getKey();
-            CatalogTable catalogTable = catalog.getTable( tableId );
+            CatalogEntity catalogEntity = catalog.getTable( tableId );
             List<DataStore> dataStores = new ArrayList<>();
 
             entry.getValue().forEach( dp -> dataStores.add( getDataStoreInstance( dp.adapterId ) ) );
 
             Transaction transaction = null;
             try {
-                transaction = transactionManager.startTransaction( "pa", catalogTable.getDatabaseName(), false, "Data Replicator" );
-                ddlManager.refreshDataPlacements( catalogTable, dataStores, transaction.createStatement() );
+                transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Data Replicator" );
+                ddlManager.refreshDataPlacements( catalogEntity, dataStores, transaction.createStatement() );
                 transaction.commit();
-                log.info( "Successfully refreshed all Data Placements of table: '{}'.", catalogTable.name );
-            } catch ( UnknownUserException | GenericCatalogException | UnknownDatabaseException | UnknownSchemaException | UnknownAdapterException | TransactionException e ) {
-                log.error( "Error while refreshing Data Placements of table: '{}'.", catalogTable.name, e );
+                log.info( "Successfully refreshed all Data Placements of table: '{}'.", catalogEntity.name );
+            } catch ( UnknownUserException | GenericCatalogException | UnknownDatabaseException | UnknownNamespaceException | UnknownAdapterException | TransactionException e ) {
+                log.error( "Error while refreshing Data Placements of table: '{}'.", catalogEntity.name, e );
                 if ( transaction != null ) {
                     try {
                         transaction.rollback();
-                        failedTables.add( catalogTable.name );
+                        failedTables.add( catalogEntity.name );
                     } catch ( TransactionException ex ) {
                         log.error( "Error while rolling back the transaction", e );
                     }
@@ -500,26 +501,26 @@ public class LazyReplicationEngine extends ReplicationEngine {
                                 + "\n\tTable: {}"
                                 + "\n\tTarget: {}"
                                 + "\n\tRemaining Dep.: {}"
-                                + "\n\tValues: {}"
-                        , replicationObject.getReplicationDataId()
-                        , replicationObject.getOperation()
-                        , replicationObject.getTableId()
-                        , targetPartitionPlacementIdentifier
-                        , replicationObject.getDependentReplicationIds()
-                        , replicationObject.getParameterValues() );
+                                + "\n\tValues: {}",
+                        replicationObject.getReplicationDataId(),
+                        replicationObject.getOperation(),
+                        replicationObject.getTableId(),
+                        targetPartitionPlacementIdentifier,
+                        replicationObject.getDependentReplicationIds(),
+                        replicationObject.getParameterValues() );
 
-                CatalogTable catalogTable = catalog.getTable( replicationObject.getTableId() );
+                CatalogEntity catalogEntity = catalog.getTable( replicationObject.getTableId() );
 
                 boolean success = false;
                 long modifications = 0;
                 try {
 
-                    transaction = transactionManager.startTransaction( "pa", catalogTable.getDatabaseName(), false, "Data Replicator" );
+                    transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Data Replicator" );
                     modifications = dataReplicator.replicateData( transaction, replicationObject, replicationId );
 
                     transaction.commit();
                     success = true;
-                } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException | TransactionException | OutdatedReplicationException e ) {
+                } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException | TransactionException | OutdatedReplicationException e ) {
                     log.error( "Error while replicating object ", e );
                     if ( transaction != null ) {
                         try {

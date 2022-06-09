@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.sql.sql2alg;
@@ -95,21 +78,21 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
@@ -120,7 +103,7 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -644,7 +627,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     /**
      * Having translated 'SELECT ... FROM ... [GROUP BY ...] [HAVING ...]', adds a relational expression to make the results unique.
      *
-     * If the SELECT clause contains duplicate expressions, adds {@link org.polypheny.db.algebra.logical.LogicalProject}s so that we are grouping on the minimal set of keys. The performance gain isn't huge, but
+     * If the SELECT clause contains duplicate expressions, adds {@link LogicalProject}s so that we are grouping on the minimal set of keys. The performance gain isn't huge, but
      * it is difficult to detect these duplicate expressions later.
      *
      * @param bb Blackboard
@@ -2113,7 +2096,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         } else if ( table instanceof AlgOptTableImpl && (((AlgOptTableImpl) table).getTable()) instanceof LogicalView ) {
             tableRel = LogicalViewScan.create( cluster, table );
         } else {
-            tableRel = LogicalTableScan.create( cluster, table );
+            tableRel = LogicalScan.create( cluster, table );
         }
         bb.setRoot( tableRel, true );
         if ( usedDataset[0] ) {
@@ -2865,16 +2848,16 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     targetTable,
                     catalogReader,
                     source,
-                    LogicalTableModify.Operation.INSERT,
+                    LogicalModify.Operation.INSERT,
                     null,
                     null,
                     false );
         }
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 source,
-                LogicalTableModify.Operation.INSERT,
+                LogicalModify.Operation.INSERT,
                 null,
                 null,
                 false );
@@ -2956,7 +2939,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final AlgOptTable targetTable = getTargetTable( call );
         final AlgDataType targetRowType = AlgOptTableImpl.realRowType( targetTable );
         final List<AlgDataTypeField> targetFields = targetRowType.getFieldList();
-        boolean isDocument = call.getSchemaType() == SchemaType.DOCUMENT;
+        boolean isDocument = call.getSchemaType() == NamespaceType.DOCUMENT;
 
         List<RexNode> sourceExps = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
         List<String> fieldNames = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) ); // TODO DL: reevaluate and make final again?
@@ -3079,7 +3062,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         } else {
 
             boolean allowDynamic = false;
-            if ( call.getSchemaType() == SchemaType.DOCUMENT ) {
+            if ( call.getSchemaType() == NamespaceType.DOCUMENT ) {
                 allowDynamic = true;
             }
 
@@ -3138,11 +3121,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private AlgNode convertDelete( SqlDelete call ) {
         AlgOptTable targetTable = getTargetTable( call );
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 sourceRel,
-                LogicalTableModify.Operation.DELETE,
+                LogicalModify.Operation.DELETE,
                 null,
                 null,
                 false );
@@ -3173,11 +3156,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 sourceRel,
-                LogicalTableModify.Operation.UPDATE,
+                LogicalModify.Operation.UPDATE,
                 targetColumnNameList,
                 rexNodeSourceExpressionListBuilder.build(),
                 false );
@@ -3250,11 +3233,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         algBuilder.push( join ).project( projects );
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 algBuilder.build(),
-                LogicalTableModify.Operation.MERGE,
+                LogicalModify.Operation.MERGE,
                 targetColumnNameList,
                 null,
                 false );

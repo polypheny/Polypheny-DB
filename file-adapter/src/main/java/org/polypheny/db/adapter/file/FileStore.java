@@ -45,10 +45,10 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
@@ -85,6 +85,9 @@ public class FileStore extends DataStore {
     private FileStoreSchema currentSchema;
 
     private final File WAL; // A folder containing the write ahead log
+
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -142,8 +145,8 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
+    public Table createTableSchema( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentSchema.createFileTable( catalogEntity, columnPlacementsOnStore, partitionPlacement );
     }
 
 
@@ -154,7 +157,7 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
+    public void createTable( Context context, CatalogEntity catalogEntity, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
         for ( long partitionId : partitionIds ) {
@@ -164,7 +167,7 @@ public class FileStore extends DataStore {
                     "unused",
                     "unused" );
 
-            for ( Long colId : catalogTable.columnIds ) {
+            for ( Long colId : catalogEntity.fieldIds ) {
                 File newColumnFolder = getColumnFolder( colId, partitionId );
                 if ( !newColumnFolder.mkdir() ) {
                     throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
@@ -172,7 +175,7 @@ public class FileStore extends DataStore {
             }
         }
 
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogEntity.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
                     placement.columnId,
@@ -184,13 +187,13 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
+    public void dropTable( Context context, CatalogEntity catalogEntity, List<Long> partitionIds ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         // TODO check if it is on this store?
 
         for ( long partitionId : partitionIds ) {
             catalog.deletePartitionPlacement( getAdapterId(), partitionId );
-            for ( Long colId : catalogTable.columnIds ) {
+            for ( Long colId : catalogEntity.fieldIds ) {
                 File f = getColumnFolder( colId, partitionId );
                 try {
                     FileUtils.deleteDirectory( f );
@@ -203,18 +206,18 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
         CatalogColumnPlacement ccp = null;
-        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogEntity.id ) ) {
             // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
             if ( p.columnId != catalogColumn.id ) {
                 ccp = p;
                 break;
             }
         }
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( ccp.adapterId, catalogTable.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( ccp.adapterId, catalogEntity.id ) ) {
             File newColumnFolder = getColumnFolder( catalogColumn.id, partitionPlacement.partitionId );
             if ( !newColumnFolder.mkdir() ) {
                 throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
@@ -223,7 +226,7 @@ public class FileStore extends DataStore {
             // Add default values
             if ( catalogColumn.defaultValue != null ) {
                 try {
-                    CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                    CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
                     File primaryKeyDir = new File( rootDir, getPhysicalColumnName( primaryKey.columnIds.get( 0 ), partitionPlacement.partitionId ) );
                     for ( File entry : primaryKeyDir.listFiles() ) {
                         FileModifier.write( new File( newColumnFolder, entry.getName() ), catalogColumn.defaultValue.value );
@@ -410,7 +413,7 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public void truncate( Context context, CatalogTable table ) {
+    public void truncate( Context context, CatalogEntity table ) {
         //context.getStatement().getTransaction().registerInvolvedStore( this );
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
             FileTranslatableTable fileTable = (FileTranslatableTable) currentSchema.getTable( table.name + "_" + partitionPlacement.partitionId );
@@ -446,9 +449,9 @@ public class FileStore extends DataStore {
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity ) {
         // TODO: Check if this is correct and ind better approach
-        List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey ).columnIds;
+        List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogEntity.primaryKey ).columnIds;
         return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );
     }
 

@@ -59,7 +59,9 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     public void insert( List<T> values ) {
         if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
             for ( T val : values ) {
-                insert( val );
+                if ( val != null ) {
+                    insert( val );
+                }
             }
         }
     }

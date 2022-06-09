@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.ConditionalExecute;
+import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -97,8 +97,8 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
                 exceptionClass,
                 exceptionMessage );
         ece.setCheckDescription( checkDescription );
-        ece.setCatalogSchema( catalogSchema );
-        ece.setCatalogTable( catalogTable );
+        ece.setCatalogNamespace( catalogNamespace );
+        ece.setCatalogEntity( catalogEntity );
         ece.setCatalogColumns( catalogColumns );
         ece.setValues( values );
         return ece;

@@ -22,7 +22,7 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.ConstraintEnforcer;
+import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
@@ -41,8 +41,8 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
      * @param exceptionClass
      * @param exceptionMessage
      */
-    public EnumerableConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
-        super( cluster, traitSet, modify, control, exceptionClass, exceptionMessage );
+    public EnumerableConstraintEnforcer(AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage) {
+        super(cluster, traitSet, modify, control, exceptionClass, exceptionMessage);
     }
 
 

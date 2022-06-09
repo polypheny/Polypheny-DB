@@ -27,9 +27,10 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.NameMap;
 
 
 public interface PolyphenyDbSchema {
@@ -57,7 +58,7 @@ public interface PolyphenyDbSchema {
     /**
      * Adds a child schema of this schema.
      */
-    PolyphenyDbSchema add( String name, Schema schema, SchemaType type );
+    PolyphenyDbSchema add( String name, Schema schema, NamespaceType type );
 
     TableEntry getTable( String tableName, boolean caseSensitive );
 
@@ -100,6 +101,8 @@ public interface PolyphenyDbSchema {
 
     @Experimental
     boolean removeType( String name );
+
+    NameMap<TableEntry> getTableMap();
 
 
     /**

@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
 import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
 import org.polypheny.db.nodes.Identifier;
@@ -40,7 +40,7 @@ public class SqlPlacementPropertyExtractor extends PlacementPropertyExtractor {
     }
 
 
-    public static PlacementPropertyInformation fromNodeLists( CatalogTable table, Map<SqlIdentifier, SqlIdentifier> propertyMapping ) throws UnknownPlacementStateException, UnknownPlacementPropertyException, UnknownReplicationStrategyException {
+    public static PlacementPropertyInformation fromNodeLists( CatalogEntity entity, Map<SqlIdentifier, SqlIdentifier> propertyMapping ) throws UnknownPlacementStateException, UnknownPlacementPropertyException, UnknownReplicationStrategyException {
 
         if ( propertyMapping == null || propertyMapping.isEmpty() ) {
             return null;
@@ -66,7 +66,7 @@ public class SqlPlacementPropertyExtractor extends PlacementPropertyExtractor {
 
         }
 
-        return createPlacementPropertyInformation( table );
+        return createPlacementPropertyInformation( entity );
     }
 
 

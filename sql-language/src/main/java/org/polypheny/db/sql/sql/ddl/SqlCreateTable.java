@@ -30,16 +30,16 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.DdlManager.ColumnInformation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
+import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
@@ -207,18 +207,18 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         try {
             // Cannot use getTable() here since table does not yet exist
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                schemaId = catalog.getNamespace( name.names.get( 0 ), name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );
             } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+                schemaId = catalog.getNamespace( context.getDatabaseId(), name.names.get( 0 ) ).id;
                 tableName = name.names.get( 1 );
             } else { // TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = catalog.getNamespace( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
-        } catch ( UnknownSchemaException e ) {
+        } catch ( UnknownNamespaceException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
@@ -226,17 +226,17 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
         PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
-        List<ColumnInformation> columns = null;
+        List<FieldInformation> columns = null;
         List<ConstraintInformation> constraints = null;
 
         if ( columnList != null ) {
-            Pair<List<ColumnInformation>, List<ConstraintInformation>> columnsConstraints = separateColumnList();
+            Pair<List<FieldInformation>, List<ConstraintInformation>> columnsConstraints = separateColumnList();
             columns = columnsConstraints.left;
             constraints = columnsConstraints.right;
         }
 
         try {
-            DdlManager.getInstance().createTable(
+            DdlManager.getInstance().createEntity(
                     schemaId,
                     tableName,
                     columns,
@@ -261,7 +261,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                         statement );
             }
 
-        } catch ( TableAlreadyExistsException e ) {
+        } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( tableName ) );
         } catch ( ColumnNotExistsException e ) {
             throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
@@ -276,8 +276,8 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
     }
 
 
-    private Pair<List<ColumnInformation>, List<ConstraintInformation>> separateColumnList() {
-        List<ColumnInformation> columnInformation = new ArrayList<>();
+    private Pair<List<FieldInformation>, List<ConstraintInformation>> separateColumnList() {
+        List<FieldInformation> fieldInformation = new ArrayList<>();
         List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
         int position = 1;
@@ -287,8 +287,8 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
                 String defaultValue = columnDeclaration.getExpression() == null ? null : columnDeclaration.getExpression().toString();
 
-                columnInformation.add(
-                        new ColumnInformation(
+                fieldInformation.add(
+                        new FieldInformation(
                                 columnDeclaration.getName().getSimple(),
                                 ColumnTypeInformation.fromDataTypeSpec( columnDeclaration.getDataType() ),
                                 columnDeclaration.getCollation(),
@@ -313,7 +313,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             position++;
         }
 
-        return new Pair<>( columnInformation, constraintInformation );
+        return new Pair<>( fieldInformation, constraintInformation );
 
     }
 

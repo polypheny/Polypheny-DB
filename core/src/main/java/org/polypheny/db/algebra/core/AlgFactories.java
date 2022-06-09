@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.algebra.core;
@@ -46,28 +29,29 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.SemiJoinType;
-import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalDocuments;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalSortExchange;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.core.common.ConditionalExecute;
+import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalSortExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
@@ -79,6 +63,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -111,7 +96,7 @@ public class AlgFactories {
 
     public static final ValuesFactory DEFAULT_VALUES_FACTORY = new ValuesFactoryImpl();
 
-    public static final TableScanFactory DEFAULT_TABLE_SCAN_FACTORY = new TableScanFactoryImpl();
+    public static final ScanFactory DEFAULT_TABLE_SCAN_FACTORY = new ScanFactoryImpl();
 
     public static final DocumentsFactory DEFAULT_DOCUMENTS_FACTORY = new DocumentsFactoryImpl();
 
@@ -321,6 +306,17 @@ public class AlgFactories {
     }
 
 
+    public interface TransformerFactory {
+
+        AlgNode createTransformer(
+                AlgNode input,
+                AlgDataType rowType,
+                List<PolyType> unsupportedTypes,
+                PolyType substituteType );
+
+    }
+
+
     /**
      * Can create a {@link LogicalFilter} of the appropriate type for this rule's calling convention.
      */
@@ -512,8 +508,7 @@ public class AlgFactories {
         AlgNode createDocuments(
                 AlgOptCluster cluster,
                 ImmutableList<BsonValue> tuples,
-                AlgDataType rowType,
-                ImmutableList<ImmutableList<RexLiteral>> normalizedTuple );
+                AlgDataType rowType );
 
     }
 
@@ -524,25 +519,23 @@ public class AlgFactories {
         public AlgNode createDocuments(
                 AlgOptCluster cluster,
                 ImmutableList<BsonValue> tuples,
-                AlgDataType rowType,
-                ImmutableList<ImmutableList<RexLiteral>> normalizedTuple ) {
-            return LogicalDocuments.create(
+                AlgDataType rowType ) {
+            return LogicalDocumentValues.create(
                     cluster,
                     ImmutableList.copyOf( tuples ),
-                    rowType,
-                    ImmutableList.copyOf( normalizedTuple ) );
+                    rowType );
         }
 
     }
 
 
     /**
-     * Can create a {@link TableScan} of the appropriate type for a rule's calling convention.
+     * Can create a {@link Scan} of the appropriate type for a rule's calling convention.
      */
-    public interface TableScanFactory {
+    public interface ScanFactory {
 
         /**
-         * Creates a {@link TableScan}.
+         * Creates a {@link Scan}.
          */
         AlgNode createScan( AlgOptCluster cluster, AlgOptTable table );
 
@@ -550,25 +543,25 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link TableScanFactory} that returns a {@link LogicalTableScan}.
+     * Implementation of {@link ScanFactory} that returns a {@link LogicalScan}.
      */
-    private static class TableScanFactoryImpl implements TableScanFactory {
+    private static class ScanFactoryImpl implements ScanFactory {
 
         @Override
         public AlgNode createScan( AlgOptCluster cluster, AlgOptTable table ) {
 
-            // Check if RelOptTable contains a View, in this case a LogicalViewTableScan needs to be created
+            // Check if RelOptTable contains a View, in this case a LogicalViewScan needs to be created
             if ( (((AlgOptTableImpl) table).getTable()) instanceof LogicalTable ) {
                 Catalog catalog = Catalog.getInstance();
                 long idLogical = ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId();
-                CatalogTable catalogTable = catalog.getTable( idLogical );
-                if ( catalogTable.tableType == TableType.VIEW ) {
+                CatalogEntity catalogEntity = catalog.getTable( idLogical );
+                if ( catalogEntity.entityType == EntityType.VIEW ) {
                     return LogicalViewScan.create( cluster, table );
                 } else {
-                    return LogicalTableScan.create( cluster, table );
+                    return LogicalScan.create( cluster, table );
                 }
             } else {
-                return LogicalTableScan.create( cluster, table );
+                return LogicalScan.create( cluster, table );
             }
         }
 
@@ -576,20 +569,20 @@ public class AlgFactories {
 
 
     /**
-     * Creates a {@link TableScanFactory} that can expand {@link TranslatableTable} instances.
+     * Creates a {@link ScanFactory} that can expand {@link TranslatableTable} instances.
      *
-     * @param tableScanFactory Factory for non-translatable tables
+     * @param scanFactory Factory for non-translatable tables
      * @return Table scan factory
      */
     @Nonnull
-    public static TableScanFactory expandingScanFactory( @Nonnull TableScanFactory tableScanFactory ) {
+    public static ScanFactory expandingScanFactory( @Nonnull ScanFactory scanFactory ) {
         return ( cluster, table ) -> {
             final TranslatableTable translatableTable = table.unwrap( TranslatableTable.class );
             if ( translatableTable != null ) {
                 final ToAlgContext toAlgContext = () -> cluster;
                 return translatableTable.toAlg( toAlgContext, table );
             }
-            return tableScanFactory.createScan( cluster, table );
+            return scanFactory.createScan( cluster, table );
         };
     }
 

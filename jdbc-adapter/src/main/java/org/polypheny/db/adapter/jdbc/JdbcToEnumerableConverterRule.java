@@ -39,6 +39,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -63,7 +64,7 @@ public class JdbcToEnumerableConverterRule extends ConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutTrait() );
+        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutTrait() ).replace( ModelTrait.RELATIONAL );
         return new JdbcToEnumerableConverter( alg.getCluster(), newTraitSet, alg );
     }
 

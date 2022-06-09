@@ -37,7 +37,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -58,7 +58,7 @@ public class PolyResult {
     private final long maxRowCount = -1;
     private final Kind kind;
     private Bindable<Object> bindable;
-    private final SchemaType schemaType;
+    private final NamespaceType namespaceType;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
     private final Convention resultConvention;
@@ -77,7 +77,7 @@ public class PolyResult {
      * on access e.g. {@link #getColumns()}
      *
      * @param rowType defines the types of the result
-     * @param schemaType type of the
+     * @param namespaceType type of the
      * @param executionTimeMonitor to keep track of different execution times
      * @param preparedResult nullable result, which holds all info from the execution
      * @param kind of initial query, which is used to get type of result e.g. DDL, DQL,...
@@ -86,14 +86,14 @@ public class PolyResult {
      */
     public PolyResult(
             @Nullable AlgDataType rowType,
-            SchemaType schemaType,
+            NamespaceType namespaceType,
             ExecutionTimeMonitor executionTimeMonitor,
             @Nullable PreparedResult preparedResult,
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
         this.rowType = rowType;
-        this.schemaType = schemaType;
+        this.namespaceType = namespaceType;
         this.executionTimeMonitor = executionTimeMonitor;
         this.preparedResult = preparedResult;
         this.kind = kind;

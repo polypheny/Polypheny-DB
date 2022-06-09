@@ -35,18 +35,18 @@ package org.polypheny.db.replication.properties;
 
 import org.polypheny.db.catalog.Catalog.PlacementState;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 
 
 public class PlacementPropertyInformation {
 
-    public final CatalogTable table;
+    public final CatalogEntity entity;
     public final PlacementState placementState;
     public final ReplicationStrategy replicationStrategy;
 
 
-    public PlacementPropertyInformation( CatalogTable table, PlacementState placementState, ReplicationStrategy replicationStrategy ) {
-        this.table = table;
+    public PlacementPropertyInformation( CatalogEntity entity, PlacementState placementState, ReplicationStrategy replicationStrategy ) {
+        this.entity = entity;
         this.placementState = placementState;
         this.replicationStrategy = replicationStrategy;
     }

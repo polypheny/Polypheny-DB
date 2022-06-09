@@ -23,8 +23,8 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -89,8 +89,8 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
+    public Table createTableSchema( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentSchema.createCsvTable( catalogEntity, columnPlacementsOnStore, this, partitionPlacement );
     }
 
 
@@ -101,7 +101,7 @@ public class CsvSource extends DataSource {
 
 
     @Override
-    public void truncate( Context context, CatalogTable table ) {
+    public void truncate( Context context, CatalogEntity table ) {
         throw new RuntimeException( "CSV adapter does not support truncate" );
     }
 

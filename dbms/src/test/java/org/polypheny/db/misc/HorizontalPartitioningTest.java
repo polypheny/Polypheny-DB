@@ -18,13 +18,6 @@ package org.polypheny.db.misc;
 
 
 import com.google.common.collect.ImmutableList;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -37,9 +30,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
@@ -50,9 +43,17 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-@SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+
+@SuppressWarnings({"SqlNoDataSourceInspection", "SqlDialectInspection"})
+@Category({AdapterTestSuite.class, CassandraExcluded.class})
 public class HorizontalPartitioningTest {
 
     @BeforeClass
@@ -532,7 +533,7 @@ public class HorizontalPartitioningTest {
                             + "( PARTITION parta VALUES(5,4), "
                             + "PARTITION partb VALUES(10,6))" );
 
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "rangepartitioning3" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "rangepartitioning3" ) ).get( 0 );
 
                     List<CatalogPartition> catalogPartitions = Catalog.getInstance().getPartitionsByTable( table.id );
 
@@ -642,7 +643,7 @@ public class HorizontalPartitioningTest {
                         + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many partitionPlacements are created as requested
@@ -703,7 +704,7 @@ public class HorizontalPartitioningTest {
                         + " USING FREQUENCY write  INTERVAL 10 minutes WITH  20 HASH PARTITIONS" );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Check if partition properties are correctly set and parsed
                     Assert.assertEquals( 600, ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() );
@@ -761,7 +762,7 @@ public class HorizontalPartitioningTest {
                     // This should execute two DML INSERTS on the target PartitionId and therefore redistribute the data
 
                     // Verify that the partition is now in HOT and was not before
-                    CatalogTable updatedTable = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
+                    CatalogEntity updatedTable = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -1176,7 +1177,7 @@ public class HorizontalPartitioningTest {
                         + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
-                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
+                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many DataPlacements are created as requested
@@ -1186,10 +1187,10 @@ public class HorizontalPartitioningTest {
                     CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
 
                     // Check how many columnPlacements are added to the one DataPlacement
-                    Assert.assertEquals( table.columnIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
+                    Assert.assertEquals( table.fieldIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
-                    Assert.assertEquals( partitionsToCreate, dataPlacement.getAllPartitionIds().size() );
+                    Assert.assertEquals(partitionsToCreate, dataPlacement.getAllPartitionIds().size());
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
@@ -1211,10 +1212,10 @@ public class HorizontalPartitioningTest {
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.getAdapterName().equals( "anotherstore" ) ) {
                             adapterId = dp.adapterId;
-                            Assert.assertEquals( 1, dp.getAllPartitionIds().size() );
+                            Assert.assertEquals(1, dp.getAllPartitionIds().size());
                         } else {
                             initialAdapterId = dp.adapterId;
-                            Assert.assertEquals( 4, dp.getAllPartitionIds().size() );
+                            Assert.assertEquals(4, dp.getAllPartitionIds().size());
                         }
                     }
 
@@ -1225,14 +1226,14 @@ public class HorizontalPartitioningTest {
                     dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
-                            Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, dp.getAllPartitionIds().size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            Assert.assertEquals(2, dp.columnPlacementsOnAdapter.size());
+                            Assert.assertEquals(3, dp.getAllPartitionIds().size());
+                            Assert.assertEquals(2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable(adapterId, table.id).size());
                             Assert.assertEquals( 3, Catalog.getInstance().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
-                            Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 4, dp.getAllPartitionIds().size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
+                            Assert.assertEquals(3, dp.columnPlacementsOnAdapter.size());
+                            Assert.assertEquals(4, dp.getAllPartitionIds().size());
+                            Assert.assertEquals(3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable(initialAdapterId, table.id).size());
                             Assert.assertEquals( 4, Catalog.getInstance().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
                     }
@@ -1242,7 +1243,7 @@ public class HorizontalPartitioningTest {
                     dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
 
                     for ( CatalogDataPlacement dp : dataPlacements ) {
-                        Assert.assertEquals( 1, dp.getAllPartitionIds().size() );
+                        Assert.assertEquals(1, dp.getAllPartitionIds().size());
                     }
 
                     //Still two data placements left

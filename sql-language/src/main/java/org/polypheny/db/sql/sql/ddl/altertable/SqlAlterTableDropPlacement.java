@@ -22,8 +22,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
@@ -83,19 +83,19 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         try {
-            DdlManager.getInstance().dropDataPlacement( catalogTable, storeInstance, statement );
+            DdlManager.getInstance().dropDataPlacement( catalogEntity, storeInstance, statement );
         } catch ( PlacementNotExistsException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
+                    RESOURCE.placementDoesNotExist( catalogEntity.name, storeName.getSimple() ) );
         } catch ( LastPlacementException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),

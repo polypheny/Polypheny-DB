@@ -82,7 +82,10 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
     CURSOR,
     COLUMN_LIST,
     GEO,
-    MULTIMEDIA;
+    MULTIMEDIA,
+    DOCUMENT,
+    PATH,
+    GRAPH;
 
     private static final Map<Integer, PolyTypeFamily> JDBC_TYPE_TO_FAMILY =
             ImmutableMap.<Integer, PolyTypeFamily>builder()

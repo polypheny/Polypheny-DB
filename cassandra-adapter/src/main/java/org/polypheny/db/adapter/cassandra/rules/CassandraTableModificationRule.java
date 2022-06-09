@@ -22,8 +22,8 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -36,28 +36,28 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public class CassandraTableModificationRule extends CassandraConverterRule {
 
     CassandraTableModificationRule( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( TableModify.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraTableModificationRule:" + out.getName() );
+        super( Modify.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraTableModificationRule:" + out.getName() );
     }
 
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
-        final TableModify tableModify = call.alg( 0 );
-        if ( tableModify.getTable().unwrap( CassandraTable.class ) == null ) {
+        final Modify modify = call.alg( 0 );
+        if ( modify.getTable().unwrap( CassandraTable.class ) == null ) {
             return false;
         }
 
-        if ( !tableModify.getTable().unwrap( CassandraTable.class ).getUnderlyingConvention().equals( this.out ) ) {
+        if ( !modify.getTable().unwrap( CassandraTable.class ).getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
-        return tableModify.getOperation() != Operation.MERGE;
+        return modify.getOperation() != Operation.MERGE;
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final TableModify modify = (TableModify) alg;
-        log.debug( "Converting to a {} CassandraTableModify", ((TableModify) alg).getOperation() );
+        final Modify modify = (Modify) alg;
+        log.debug( "Converting to a {} CassandraTableModify", ((Modify) alg).getOperation() );
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
         if ( modifiableTable == null ) {
             return null;

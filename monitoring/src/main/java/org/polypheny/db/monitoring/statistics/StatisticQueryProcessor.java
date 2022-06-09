@@ -26,13 +26,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -48,23 +47,23 @@ public class StatisticQueryProcessor {
 
     @Getter
     private final TransactionManager transactionManager;
-    private final String databaseName;
-    private final String userName;
+    private final long databaseId;
+    private final long userId;
 
 
     /**
      * LowCostQueries can be used to retrieve short answered queries
      * Idea is to expose a selected list of sql operations with a small list of results and not impact performance
      */
-    public StatisticQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
+    public StatisticQueryProcessor( final TransactionManager transactionManager, long userId, long databaseId ) {
         this.transactionManager = transactionManager;
-        this.databaseName = databaseName;
-        this.userName = userName;
+        this.databaseId = databaseId;
+        this.userId = userId;
     }
 
 
     public StatisticQueryProcessor( TransactionManager transactionManager, Authenticator authenticator ) {
-        this( transactionManager, "pa", "APP" );
+        this( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
     }
 
 
@@ -89,17 +88,17 @@ public class StatisticQueryProcessor {
         Catalog catalog = Catalog.getInstance();
         List<List<String>> result = new ArrayList<>();
         List<String> schemaTree = new ArrayList<>();
-        List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
-        for ( CatalogSchema schema : schemas ) {
+        List<CatalogNamespace> schemas = catalog.getSchemas( databaseId, null );
+        for ( CatalogNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
-            List<CatalogTable> childTables = catalog.getTables( schema.id, null );
-            for ( CatalogTable childTable : childTables ) {
+            List<CatalogEntity> childTables = catalog.getTables( schema.id, null );
+            for ( CatalogEntity childTable : childTables ) {
                 List<String> table = new ArrayList<>();
                 List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
                 for ( CatalogColumn catalogColumn : childColumns ) {
                     table.add( schema.name + "." + childTable.name + "." + catalogColumn.name );
                 }
-                if ( childTable.tableType == TableType.TABLE ) {
+                if ( childTable.entityType == EntityType.ENTITY ) {
                     tables.addAll( table );
                 }
             }
@@ -118,14 +117,14 @@ public class StatisticQueryProcessor {
     public List<QueryResult> getAllColumns() {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumn> catalogColumns = catalog.getColumns(
-                new Pattern( databaseName ),
+                null,
                 null,
                 null,
                 null );
         List<QueryResult> allColumns = new ArrayList<>();
 
         for ( CatalogColumn catalogColumn : catalogColumns ) {
-            if ( catalog.getTable( catalogColumn.tableId ).tableType != TableType.VIEW ) {
+            if ( catalog.getTable( catalogColumn.tableId ).entityType != EntityType.VIEW ) {
                 allColumns.add( new QueryResult( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ) );
             }
         }
@@ -138,17 +137,17 @@ public class StatisticQueryProcessor {
      *
      * @return all the tables ids
      */
-    public List<CatalogTable> getAllTable() {
+    public List<CatalogEntity> getAllTable() {
         Catalog catalog = Catalog.getInstance();
-        List<CatalogTable> catalogTables = catalog.getTables(
-                new Pattern( databaseName ),
+        List<CatalogEntity> catalogEntities = catalog.getTables(
+                null,
                 null,
                 null );
-        List<CatalogTable> allTables = new ArrayList<>();
+        List<CatalogEntity> allTables = new ArrayList<>();
 
-        for ( CatalogTable catalogTable : catalogTables ) {
-            if ( catalogTable.tableType != TableType.VIEW ) {
-                allTables.add( catalogTable );
+        for ( CatalogEntity catalogEntity : catalogEntities ) {
+            if ( catalogEntity.entityType != EntityType.VIEW ) {
+                allTables.add( catalogEntity );
             }
         }
         return allTables;
@@ -200,8 +199,8 @@ public class StatisticQueryProcessor {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false, "Statistics", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+            return transactionManager.startTransaction( userId, databaseId, false, "Statistics", MultimediaFlavor.FILE );
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

@@ -24,11 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -84,7 +84,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor ) {
+    public Transaction startTransaction( CatalogUser user, CatalogNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
@@ -95,24 +95,24 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin ) {
+    public Transaction startTransaction( CatalogUser user, CatalogNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin ) {
         return startTransaction( user, defaultSchema, database, analyze, origin, MultimediaFlavor.DEFAULT );
     }
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownNamespaceException {
         Catalog catalog = Catalog.getInstance();
-        CatalogUser catalogUser = catalog.getUser( user );
-        CatalogDatabase catalogDatabase = catalog.getDatabase( database );
-        CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
-        return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze, origin, flavor );
+        CatalogUser catalogUser = catalog.getUser( (int) userId );
+        CatalogDatabase catalogDatabase = catalog.getDatabase( databaseId );
+        CatalogNamespace catalogNamespace = catalog.getNamespace( catalogDatabase.id, catalogDatabase.defaultSchemaName );
+        return startTransaction( catalogUser, catalogNamespace, catalogDatabase, analyze, origin, flavor );
     }
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
-        return startTransaction( user, database, analyze, origin, MultimediaFlavor.DEFAULT );
+    public Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownNamespaceException {
+        return startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.DEFAULT );
     }
 
 

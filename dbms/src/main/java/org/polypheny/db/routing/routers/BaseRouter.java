@@ -28,22 +28,45 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.LogicalDocuments;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.routing.LogicalQueryInformation;
+import org.polypheny.db.routing.RoutingManager;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.PolySchemaBuilder;
+import org.polypheny.db.schema.TranslatableGraph;
+import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -54,7 +77,7 @@ import org.polypheny.db.transaction.Statement;
 @Slf4j
 public abstract class BaseRouter {
 
-    public static final Cache<Integer, AlgNode> joinedTableScanCache = CacheBuilder.newBuilder()
+    public static final Cache<Integer, AlgNode> joinedScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
 
@@ -77,7 +100,7 @@ public abstract class BaseRouter {
     }
 
 
-    public RoutedAlgBuilder handleTableScan(
+    public RoutedAlgBuilder handleScan(
             RoutedAlgBuilder builder,
             long tableId,
             String storeUniqueName,
@@ -86,9 +109,13 @@ public abstract class BaseRouter {
             String physicalSchemaName,
             String physicalTableName,
             long partitionId ) {
-        return builder.scan( ImmutableList.of(
+        AlgNode node = builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
-                logicalTableName + "_" + partitionId ) );
+                logicalTableName + "_" + partitionId ) ).build();
+
+        builder.push( node );
+
+        return builder;
     }
 
 
@@ -102,8 +129,8 @@ public abstract class BaseRouter {
     }
 
 
-    protected RoutedAlgBuilder handleDocuments( LogicalDocuments node, RoutedAlgBuilder builder ) {
-        return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
+    protected RoutedAlgBuilder handleDocuments( LogicalDocumentValues node, RoutedAlgBuilder builder ) {
+        return builder.documents( node.getDocumentTuples(), node.getRowType() );
     }
 
 
@@ -132,11 +159,11 @@ public abstract class BaseRouter {
     }
 
 
-    public AlgNode buildJoinedTableScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
+    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            AlgNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
+            AlgNode cachedNode = joinedScanCache.getIfPresent( placements.hashCode() );
             if ( cachedNode != null ) {
                 return cachedNode;
             }
@@ -159,7 +186,7 @@ public abstract class BaseRouter {
                 CatalogColumnPlacement ccp = ccps.get( 0 );
                 CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
 
-                builder = handleTableScan(
+                builder = handleScan(
                         builder,
                         ccp.tableId,
                         ccp.adapterUniqueName,
@@ -171,7 +198,7 @@ public abstract class BaseRouter {
                 // Final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> catalog.getColumn( col.columnId ) )
+                        .map( col -> catalog.getField( col.columnId ) )
                         .sorted( Comparator.comparingInt( col -> col.position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {
@@ -187,7 +214,7 @@ public abstract class BaseRouter {
                 List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
                 List<CatalogColumn> pkColumns = new LinkedList<>();
                 for ( long pkColumnId : pkColumnIds ) {
-                    pkColumns.add( catalog.getColumn( pkColumnId ) );
+                    pkColumns.add( catalog.getField( pkColumnId ) );
                 }
 
                 // Add primary key
@@ -206,7 +233,7 @@ public abstract class BaseRouter {
                     CatalogColumnPlacement ccp = ccps.get( 0 );
                     CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
 
-                    handleTableScan(
+                    handleScan(
                             builder,
                             ccp.tableId,
                             ccp.adapterUniqueName,
@@ -243,7 +270,7 @@ public abstract class BaseRouter {
                 // Final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> catalog.getColumn( col.columnId ) )
+                        .map( col -> catalog.getField( col.columnId ) )
                         .sorted( Comparator.comparingInt( col -> col.position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {
@@ -259,9 +286,130 @@ public abstract class BaseRouter {
 
         AlgNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            joinedTableScanCache.put( placements.hashCode(), node );
+            joinedScanCache.put( placements.hashCode(), node );
         }
         return node;
+    }
+
+
+    public AlgNode handleGraphScan( LogicalGraphScan alg, Statement statement ) {
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+
+        Catalog catalog = Catalog.getInstance();
+        CatalogGraphDatabase catalogGraph = catalog.getGraph( alg.getGraph().getId() );
+        for ( int adapterId : catalogGraph.placements ) {
+            CatalogAdapter adapter = catalog.getAdapter( adapterId );
+            CatalogGraphPlacement graphPlacement = catalog.getGraphPlacement( catalogGraph.id, adapterId );
+            String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
+
+            Graph graph = reader.getGraph( name );
+
+            if ( !(graph instanceof TranslatableGraph) ) {
+                // needs substitution later on
+                return getRelationalScan( alg, statement );
+            }
+
+            return new LogicalGraphScan( alg.getCluster(), alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
+
+
+        }
+        // substituted on optimization
+        return alg;
+    }
+
+
+    public AlgNode getRelationalScan( LogicalGraphScan alg, Statement statement ) {
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
+
+        PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId );
+        PreparingTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId );
+        PreparingTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId );
+        ;
+        PreparingTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId );
+
+        AlgNode node = buildSubstitutionJoin( alg, nodesTable, nodePropertiesTable );
+
+        AlgNode edge = buildSubstitutionJoin( alg, edgesTable, edgePropertiesTable );
+
+        return LogicalTransformer.create( List.of( node, edge ), alg.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, alg.getRowType() );
+
+    }
+
+
+    protected PreparingTable getSubstitutionTable( Statement statement, long tableId, long columnId ) {
+        CatalogEntity nodes = Catalog.getInstance().getTable( tableId );
+        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( columnId );
+        List<String> qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        placement.get( 0 ).adapterUniqueName,
+                        nodes.getNamespaceName(),
+                        placement.get( 0 ).physicalSchemaName
+                ),
+                nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
+
+        return statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+    }
+
+
+    protected AlgNode buildSubstitutionJoin( AlgNode alg, PreparingTable nodesTable, PreparingTable nodePropertiesTable ) {
+        AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
+        LogicalScan nodes = new LogicalScan( alg.getCluster(), out, nodesTable );
+        LogicalScan nodesProperty = new LogicalScan( alg.getCluster(), out, nodePropertiesTable );
+
+        RexBuilder builder = alg.getCluster().getRexBuilder();
+
+        RexNode nodeCondition = builder.makeCall(
+                OperatorRegistry.get( OperatorName.EQUALS ),
+                builder.makeInputRef( nodes.getRowType().getFieldList().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( nodesProperty.getRowType().getFieldList().get( 0 ).getType(), nodes.getRowType().getFieldList().size() ) );
+
+        return new LogicalJoin( alg.getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+    }
+
+
+    protected RoutedAlgBuilder handleDocumentScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation ) {
+        Catalog catalog = Catalog.getInstance();
+
+        if ( alg.getDocument().getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
+            return handleTransformerDocScan( alg, statement, builder, queryInformation );
+        }
+
+        CatalogCollection collection = catalog.getCollection( alg.getDocument().getTable().getTableId() );
+
+        for ( Integer adapterId : collection.placements ) {
+            CatalogAdapter adapter = catalog.getAdapter( adapterId );
+            NamespaceType sourceModel = alg.getDocument().getTable().getSchemaType();
+            if ( !adapter.supportedNamespaces.contains( sourceModel ) ) {
+                // document on relational
+                return handleDocumentOnRelational( alg, statement, builder );
+            }
+
+            return builder.push( alg );
+        }
+
+        throw new RuntimeException( "No placement found for the document." );
+    }
+
+
+    private RoutedAlgBuilder handleTransformerDocScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation ) {
+        AlgNode scan = builder.scan( alg.getDocument() ).build();
+
+        List<RoutedAlgBuilder> scans = ((AbstractDqlRouter) RoutingManager.getInstance().getRouters().get( 0 )).buildDql( scan, List.of( builder ), statement, alg.getCluster(), queryInformation );
+        builder.push( scans.get( 0 ).build() );
+        AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, alg.getRowType() ) );
+        return builder;
+    }
+
+
+    @NotNull
+    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan node, Statement statement, RoutedAlgBuilder builder ) {
+        List<CatalogColumn> columns = Catalog.getInstance().getColumns( node.getDocument().getTable().getTableId() );
+        AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
+        builder.scan( getSubstitutionTable( statement, node.getDocument().getTable().getTableId(), columns.get( 0 ).id ) );
+        builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType() ) );
+        return builder;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,12 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.externalize.AlgJson;
 import org.polypheny.db.algebra.externalize.AlgJsonReader;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
@@ -60,6 +60,7 @@ public class AlgWriterTest extends SqlLanguagelDependant {
             + "  \"Plan\": {\n"
             + "    \"id\": \"2\",\n"
             + "    \"relOp\": \"LogicalAggregate\",\n"
+            + "    \"model\": \"RELATIONAL\",\n"
             + "    \"group\": \"{0}\",\n"
             + "    \"aggs\": \"[COUNT(DISTINCT deptno), COUNT()]\",\n"
             + "    \"rowcount\": 1.5,\n"
@@ -70,6 +71,7 @@ public class AlgWriterTest extends SqlLanguagelDependant {
             + "      {\n"
             + "        \"id\": \"1\",\n"
             + "        \"relOp\": \"LogicalFilter\",\n"
+            + "        \"model\": \"RELATIONAL\",\n"
             + "        \"condition\": \"=(deptno, 10)\",\n"
             + "        \"rowcount\": 15.0,\n"
             + "        \"rows cost\": 115.0,\n"
@@ -78,7 +80,8 @@ public class AlgWriterTest extends SqlLanguagelDependant {
             + "        \"inputs\": [\n"
             + "          {\n"
             + "            \"id\": \"0\",\n"
-            + "            \"relOp\": \"LogicalTableScan\",\n"
+            + "            \"relOp\": \"LogicalScan\",\n"
+            + "            \"model\": \"RELATIONAL\",\n"
             + "            \"table\": \"[hr, emps]\",\n"
             + "            \"rowcount\": 100.0,\n"
             + "            \"rows cost\": 100.0,\n"
@@ -100,9 +103,9 @@ public class AlgWriterTest extends SqlLanguagelDependant {
     public void testWriter() {
         String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
-                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
-                    LogicalTableScan scan =
-                            LogicalTableScan.create(
+                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
+                    LogicalScan scan =
+                            LogicalScan.create(
                                     cluster,
                                     algOptSchema.getTableForMember( Arrays.asList( "hr", "emps" ) ) );
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -135,7 +138,7 @@ public class AlgWriterTest extends SqlLanguagelDependant {
     public void testReader() {
         String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
-                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                    rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
                     final AlgJsonReader reader = new AlgJsonReader( cluster, algOptSchema, rootSchema );
                     AlgNode node;
                     try {
@@ -150,7 +153,7 @@ public class AlgWriterTest extends SqlLanguagelDependant {
                 s,
                 Matchers.isLinux( "LogicalAggregate(group=[{0}], agg#0=[COUNT(DISTINCT $1)], agg#1=[COUNT()])\n"
                         + "  LogicalFilter(condition=[=($1, 10)])\n"
-                        + "    LogicalTableScan(table=[[hr, emps]])\n" ) );
+                        + "    LogicalScan(table=[[hr, emps]])\n" ) );
     }
 
 }

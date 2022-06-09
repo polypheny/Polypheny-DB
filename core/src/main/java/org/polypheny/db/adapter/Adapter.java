@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,12 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
@@ -67,10 +70,13 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 
+@Getter
 public abstract class Adapter {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
+    private final List<NamespaceType> supportedNamespaceTypes;
+
 
 
     @Target(ElementType.TYPE)
@@ -82,6 +88,8 @@ public abstract class Adapter {
         String description();
 
         DeployMode[] usedModes();
+
+        NamespaceType[] supportedSchemaTypes() default { NamespaceType.RELATIONAL };
 
     }
 
@@ -276,6 +284,8 @@ public abstract class Adapter {
             throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
+        this.supportedNamespaceTypes = Arrays.asList( properties.supportedSchemaTypes() );
+
         this.deployMode = DeployMode.fromString( settings.get( "mode" ) );
 
         this.adapterId = adapterId;
@@ -302,11 +312,37 @@ public abstract class Adapter {
 
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
-    public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement );
+    public abstract Table createTableSchema( CatalogEntity combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement );
 
     public abstract Schema getCurrentSchema();
 
-    public abstract void truncate( Context context, CatalogTable table );
+
+    public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
+        throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
+    }
+
+
+    public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
+        throw new UnsupportedOperationException( "It is not supported to drop a graph with this adapter." );
+    }
+
+
+    public void createGraphNamespace( SchemaPlus rootSchema, String name, long id ) {
+        throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
+    }
+
+
+    public Table createDocumentSchema( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnAdapterSortedByPhysicalPosition, CatalogPartitionPlacement partitionPlacement ) {
+        throw new UnsupportedOperationException( "It is not supported to create a document with this adapter." );
+    }
+
+
+    public Schema getCurrentGraphNamespace() {
+        throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
+    }
+
+
+    public abstract void truncate( Context context, CatalogEntity table );
 
     public abstract boolean prepare( PolyXid xid );
 
@@ -448,7 +484,7 @@ public abstract class Adapter {
                     catalog.getColumnPlacementsOnAdapterPerTable( adapterId, cpp.tableId ).forEach( placement -> {
                         physicalColumnNames.addRow(
                                 placement.columnId,
-                                catalog.getColumn( placement.columnId ).name,
+                                catalog.getField( placement.columnId ).name,
                                 cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName );
                     } )
             );

@@ -21,8 +21,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -80,9 +80,9 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         try {
             DdlManager.getInstance().renameSchema( newName.getSimple(), oldName.getSimple(), context.getDatabaseId() );
-        } catch ( SchemaAlreadyExistsException e ) {
+        } catch ( NamespaceAlreadyExistsException e ) {
             throw CoreUtil.newContextException( newName.getPos(), RESOURCE.schemaExists( newName.getSimple() ) );
-        } catch ( UnknownSchemaException e ) {
+        } catch ( UnknownNamespaceException e ) {
             throw CoreUtil.newContextException( oldName.getPos(), RESOURCE.schemaNotFound( oldName.getSimple() ) );
         }
     }

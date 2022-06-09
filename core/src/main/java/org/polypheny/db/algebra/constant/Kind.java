@@ -1315,7 +1315,14 @@ public enum Kind {
     /**
      * Document model {@code $exists} operator
      */
-    MQL_EXISTS;
+    MQL_EXISTS,
+
+    /*
+     * CYPHER
+     */
+    CYPHER_CREATE,
+
+    DESERIALIZE;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 

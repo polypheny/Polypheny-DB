@@ -3,7 +3,7 @@
 # These tables can implement their own simple filtering.
 #
 # A JSON model of a Polypheny-DB schema that is similar to model.json, except that it produces tables that implement TranslatableTable.
-# These tables are translated to a CsvTableScan relational expression which participates in query planning.
+# These tables are translated to a CsvScan relational expression which participates in query planning.
 #
 version: 1.0
 defaultSchema: SALES

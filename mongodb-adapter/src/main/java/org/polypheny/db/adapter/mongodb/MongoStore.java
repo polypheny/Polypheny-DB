@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.bson.BsonBinary;
@@ -49,18 +50,18 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerInstance;
@@ -93,6 +94,15 @@ public class MongoStore extends DataStore {
     private transient MongoSchema currentSchema;
     private String currentUrl;
     private final int dockerInstanceId;
+
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of();
+
+
+    @Override
+    public List<NamespaceType> getSupportedSchemaType() {
+        return ImmutableList.of( NamespaceType.RELATIONAL, NamespaceType.DOCUMENT );
+    }
 
 
     public MongoStore( int adapterId, String uniqueName, Map<String, String> settings ) {
@@ -165,7 +175,7 @@ public class MongoStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createTableSchema( CatalogEntity combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         return currentSchema.createTable( combinedTable, columnPlacementsOnStore, getAdapterId(), partitionPlacement );
     }
 
@@ -177,7 +187,7 @@ public class MongoStore extends DataStore {
 
 
     @Override
-    public void truncate( Context context, CatalogTable table ) {
+    public void truncate( Context context, CatalogEntity table ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
@@ -225,29 +235,29 @@ public class MongoStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
+    public void createTable( Context context, CatalogEntity catalogEntity, List<Long> partitionIds ) {
         Catalog catalog = Catalog.getInstance();
         commitAll();
 
         if ( this.currentSchema == null ) {
-            createNewSchema( null, Catalog.getInstance().getSchema( catalogTable.schemaId ).getName() );
+            createNewSchema( null, Catalog.getInstance().getNamespace( catalogEntity.namespaceId ).getName() );
         }
 
         for ( long partitionId : partitionIds ) {
-            String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
+            String physicalTableName = getPhysicalTableName( catalogEntity.id, partitionId );
             this.currentSchema.database.createCollection( physicalTableName );
 
             catalog.updatePartitionPlacementPhysicalNames(
                     getAdapterId(),
                     partitionId,
-                    catalogTable.getSchemaName(),
+                    catalogEntity.getNamespaceName(),
                     physicalTableName );
 
-            for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
+            for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogEntity.id ) ) {
                 catalog.updateColumnPlacementPhysicalNames(
                         getAdapterId(),
                         placement.columnId,
-                        catalogTable.getSchemaName(),
+                        catalogEntity.getNamespaceName(),
                         physicalTableName,
                         true );
             }
@@ -256,7 +266,7 @@ public class MongoStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
+    public void dropTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         //transactionProvider.startTransaction();
@@ -272,13 +282,13 @@ public class MongoStore extends DataStore {
 
 
     @Override
-    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         // updates all columns with this field if a default value is provided
 
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        catalogTable.partitionProperty.partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+        catalogEntity.partitionProperty.partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             Document field;
@@ -349,7 +359,7 @@ public class MongoStore extends DataStore {
             Document field = new Document().append( partitionPlacement.physicalTableName, 1 );
             Document filter = new Document().append( "$unset", field );
 
-            context.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( getAdapterId() ) );
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
             // DDL is auto-commit
             this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( new Document(), filter );
         }
@@ -381,7 +391,7 @@ public class MongoStore extends DataStore {
             case TEXT:
                 // stemd and stop words removed
             case HASHED:
-                throw new UnsupportedOperationException( "The mongodb adapter does not yet support this index" );
+                throw new UnsupportedOperationException( "The neo4j adapter does not yet support this index" );
         }
 
         Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, catalogIndex.name );
@@ -445,7 +455,7 @@ public class MongoStore extends DataStore {
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity ) {
         return ImmutableList.of();
     }
 

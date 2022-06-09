@@ -19,13 +19,16 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 @EqualsAndHashCode
-public class CatalogAdapter implements CatalogEntity {
+public class CatalogAdapter implements CatalogObject {
 
     private static final long serialVersionUID = -5837600302561930044L;
 
@@ -34,6 +37,7 @@ public class CatalogAdapter implements CatalogEntity {
     public final String adapterClazz;
     public final AdapterType type;
     public final ImmutableMap<String, String> settings;
+    public final List<NamespaceType> supportedNamespaces;
 
 
     public enum AdapterType {STORE, SOURCE}
@@ -50,6 +54,13 @@ public class CatalogAdapter implements CatalogEntity {
         this.adapterClazz = adapterClazz;
         this.type = adapterType;
         this.settings = ImmutableMap.copyOf( settings );
+        // general settings are provided by the annotations of the adapter class
+        try {
+            AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
+            this.supportedNamespaces = List.of( annotations.supportedSchemaTypes() );
+        } catch ( ClassNotFoundException e ) {
+            throw new RuntimeException( "The provided Adapter is not correctly annotated." );
+        }
     }
 
 

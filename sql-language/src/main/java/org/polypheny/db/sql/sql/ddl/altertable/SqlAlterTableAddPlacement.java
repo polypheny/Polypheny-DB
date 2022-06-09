@@ -26,9 +26,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
 import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
 import org.polypheny.db.ddl.DdlManager;
@@ -132,38 +132,38 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !catalogTable.partitionProperty.isPartitioned && (!partitionGroupsList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
+        if ( !catalogEntity.partitionProperty.isPartitioned && (!partitionGroupsList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogEntity.name + "'" );
         }
 
         List<Long> columnIds = new LinkedList<>();
         for ( SqlNode node : columnList.getSqlList() ) {
-            CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
+            CatalogColumn catalogColumn = getCatalogColumn( catalogEntity.id, (SqlIdentifier) node );
             columnIds.add( catalogColumn.id );
         }
 
         try {
             DdlManager.getInstance().addDataPlacement(
-                    catalogTable,
+                    catalogEntity,
                     columnIds,
                     partitionGroupsList,
                     partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
                     storeInstance,
                     statement,
-                    SqlPlacementPropertyExtractor.fromNodeLists( catalogTable, placementPropertyMap )
+                    SqlPlacementPropertyExtractor.fromNodeLists( catalogEntity, placementPropertyMap )
             );
         } catch ( PlacementAlreadyExistsException | UnknownPlacementStateException | InvalidPlacementPropertySpecification | UnknownPlacementPropertyException | UnknownReplicationStrategyException | UnsupportedStateTransitionException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
+                    RESOURCE.placementAlreadyExists( catalogEntity.name, storeName.getSimple() ) );
         }
 
     }

@@ -20,7 +20,7 @@ package org.polypheny.db.sql.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -52,10 +52,10 @@ public class SqlDropTable extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final CatalogTable table;
+        final CatalogEntity entity;
 
         try {
-            table = getCatalogTable( context, name );
+            entity = getCatalogTable( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
@@ -66,7 +66,7 @@ public class SqlDropTable extends SqlDropObject {
         }
 
         try {
-            DdlManager.getInstance().dropTable( table, statement );
+            DdlManager.getInstance().dropTable( entity, statement );
         } catch ( DdlOnSourceException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
         }

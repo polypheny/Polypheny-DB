@@ -37,7 +37,7 @@ package org.polypheny.db.schema;
 import java.util.Collection;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -53,17 +53,17 @@ public interface ModifiableTable extends QueryableTable {
      * Returns the modifiable collection.
      * Modifying the collection will change the table's contents.
      */
-    Collection getModifiableCollection();
+    Collection<?> getModifiableCollection();
 
     /**
      * Creates a relational expression that modifies this table.
      */
-    TableModify toModificationAlg(
+    Modify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptTable table,
             CatalogReader catalogReader,
             AlgNode child,
-            TableModify.Operation operation,
+            Modify.Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             boolean flattened );

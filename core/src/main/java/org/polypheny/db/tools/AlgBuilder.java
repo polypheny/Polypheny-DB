@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.tools;
@@ -73,6 +56,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
@@ -81,14 +65,14 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Match;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -163,7 +147,7 @@ public class AlgBuilder {
     private final AlgFactories.SemiJoinFactory semiJoinFactory;
     private final AlgFactories.CorrelateFactory correlateFactory;
     private final AlgFactories.ValuesFactory valuesFactory;
-    private final AlgFactories.TableScanFactory scanFactory;
+    private final ScanFactory scanFactory;
     private final AlgFactories.MatchFactory matchFactory;
     private final AlgFactories.DocumentsFactory documentsFactory;
     private final Deque<Frame> stack = new ArrayDeque<>();
@@ -224,7 +208,7 @@ public class AlgBuilder {
                         AlgFactories.DEFAULT_VALUES_FACTORY );
         this.scanFactory =
                 Util.first(
-                        context.unwrap( AlgFactories.TableScanFactory.class ),
+                        context.unwrap( ScanFactory.class ),
                         AlgFactories.DEFAULT_TABLE_SCAN_FACTORY );
         this.matchFactory =
                 Util.first(
@@ -234,6 +218,7 @@ public class AlgBuilder {
                 Util.first(
                         context.unwrap( AlgFactories.DocumentsFactory.class ),
                         AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
+
         final RexExecutor executor =
                 Util.first(
                         context.unwrap( RexExecutor.class ),
@@ -242,6 +227,7 @@ public class AlgBuilder {
                                 RexUtil.EXECUTOR ) );
         final AlgOptPredicateList predicates = AlgOptPredicateList.EMPTY;
         this.simplifier = new RexSimplify( cluster.getRexBuilder(), predicates, executor );
+
     }
 
 
@@ -1302,7 +1288,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a {@link TableScan} of the table with a given name.
+     * Creates a {@link Scan} of the table with a given name.
      *
      * Throws if the table does not exist.
      *
@@ -1323,8 +1309,16 @@ public class AlgBuilder {
     }
 
 
+    public AlgBuilder scan( @Nonnull AlgOptTable algOptTable ) {
+        final AlgNode scan = scanFactory.createScan( cluster, algOptTable );
+        push( scan );
+        rename( algOptTable.getRowType().getFieldNames() );
+        return this;
+    }
+
+
     /**
-     * Creates a {@link TableScan} of the table with a given name.
+     * Creates a {@link Scan} of the table with a given name.
      *
      * Throws if the table does not exist.
      *
@@ -2169,8 +2163,8 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-        AlgNode documents = documentsFactory.createDocuments( cluster, tuples, rowType, copy( normalizedTuples ) );
+    public AlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType ) {
+        AlgNode documents = documentsFactory.createDocuments( cluster, tuples, rowType );
         push( documents );
         return this;
     }
@@ -2502,6 +2496,7 @@ public class AlgBuilder {
     }
 
 
+
     /**
      * Information necessary to create a call to an aggregate function.
      *
@@ -2828,7 +2823,7 @@ public class AlgBuilder {
 
 
         private static String deriveAlias( AlgNode alg ) {
-            if ( alg instanceof TableScan ) {
+            if ( alg instanceof Scan ) {
                 final List<String> names = alg.getTable().getQualifiedName();
                 if ( !names.isEmpty() ) {
                     return Util.last( names );

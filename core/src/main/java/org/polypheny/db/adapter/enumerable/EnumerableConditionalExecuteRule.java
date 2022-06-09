@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.polypheny.db.adapter.enumerable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
@@ -42,8 +42,8 @@ public class EnumerableConditionalExecuteRule extends ConverterRule {
         final AlgNode action = AlgOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final EnumerableConditionalExecute ece = EnumerableConditionalExecute.create( input, action, lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
         ece.setCheckDescription( lce.getCheckDescription() );
-        ece.setCatalogSchema( lce.getCatalogSchema() );
-        ece.setCatalogTable( lce.getCatalogTable() );
+        ece.setCatalogNamespace( lce.getCatalogNamespace() );
+        ece.setCatalogEntity( lce.getCatalogEntity() );
         ece.setCatalogColumns( lce.getCatalogColumns() );
         ece.setValues( lce.getValues() );
         return ece;

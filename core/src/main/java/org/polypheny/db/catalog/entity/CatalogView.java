@@ -25,15 +25,15 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
-public class CatalogView extends CatalogTable {
+public class CatalogView extends CatalogEntity {
 
     private static final long serialVersionUID = -4453089531698670528L;
 
@@ -54,8 +54,7 @@ public class CatalogView extends CatalogTable {
             long schemaId,
             long databaseId,
             int ownerId,
-            String ownerName,
-            TableType tableType,
+            EntityType entityType,
             String query,
             Long primaryKey,
             ImmutableList<Integer> dataPlacements,
@@ -65,7 +64,7 @@ public class CatalogView extends CatalogTable {
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, dataPlacements,
+        super( id, name, columnIds, schemaId, databaseId, ownerId, entityType, primaryKey, dataPlacements,
                 modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
@@ -75,16 +74,15 @@ public class CatalogView extends CatalogTable {
 
 
     @Override
-    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+    public CatalogEntity getConnectedViews( ImmutableList<Long> newConnectedViews ) {
         return new CatalogView(
                 id,
                 name,
-                columnIds,
-                schemaId,
+                fieldIds,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,
@@ -98,16 +96,15 @@ public class CatalogView extends CatalogTable {
 
 
     @Override
-    public CatalogTable getRenamed( String newName ) {
+    public CatalogEntity getRenamed( String newName ) {
         return new CatalogView(
                 id,
                 newName,
-                columnIds,
-                schemaId,
+                fieldIds,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,
@@ -121,16 +118,15 @@ public class CatalogView extends CatalogTable {
 
 
     @Override
-    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+    public CatalogEntity getTableWithColumns( ImmutableList<Long> newColumnIds ) {
         return new CatalogView(
                 id,
                 name,
                 newColumnIds,
-                schemaId,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,

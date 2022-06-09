@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.cypher.CypherRegisterer;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
@@ -107,6 +108,9 @@ public class LanguageManagerImpl extends LanguageManager {
         }
         if ( !MqlRegisterer.isInit() ) {
             MqlRegisterer.registerOperators();
+        }
+        if ( !CypherRegisterer.isInit() ) {
+            CypherRegisterer.registerOperators();
         }
     }
 

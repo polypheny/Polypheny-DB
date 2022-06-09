@@ -50,8 +50,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
@@ -117,18 +117,18 @@ public class MongoSchema extends AbstractSchema {
     }
 
 
-    public MongoTable createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
+    public MongoTable createTable( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( placement.columnId );
             AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, MongoStore.getPhysicalColumnName( catalogColumn.name, catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
         }
-        MongoTable table = new MongoTable( catalogTable, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
+        MongoTable table = new MongoTable( catalogEntity, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
 
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
+        tableMap.put( catalogEntity.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
 

@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -50,40 +50,40 @@ public class SimpleRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, CatalogEntity catalogEntity, Statement statement, LogicalTable logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Do same as without any partitioning
-        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+        return handleNonePartitioning( node, catalogEntity, statement, builders, cluster, queryInformation );
     }
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, CatalogTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, CatalogEntity catalogEntity, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Get placements and convert into placement distribution
-        final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
+        final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogEntity );
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placements );
-        builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placements ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placements ) );
 
         return builders;
     }
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, CatalogEntity catalogEntity, Statement statement, LogicalTable logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogEntity.partitionProperty.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = partitionIds != null
-                ? partitionManager.getRelevantPlacements( catalogTable, partitionIds, Collections.emptyList() )
-                : partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds, Collections.emptyList() );
+                ? partitionManager.getRelevantPlacements( catalogEntity, partitionIds, Collections.emptyList() )
+                : partitionManager.getRelevantPlacements( catalogEntity, catalogEntity.partitionProperty.partitionIds, Collections.emptyList() );
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );
-        builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placementDistribution ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placementDistribution ) );
 
         return builders;
     }
@@ -101,7 +101,7 @@ public class SimpleRouter extends AbstractDqlRouter {
     /**
      * Execute the table scan on the first placement of a table
      */
-    private Map<Long, List<CatalogColumnPlacement>> selectPlacement( CatalogTable table ) {
+    private Map<Long, List<CatalogColumnPlacement>> selectPlacement( CatalogEntity table ) {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
@@ -127,7 +127,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( long cid : table.columnIds ) {
+        for ( long cid : table.fieldIds ) {
             if ( designatedPlacement.columnPlacementsOnAdapter.contains( cid ) ) {
                 placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
             } else {

@@ -29,14 +29,14 @@ import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rex.RexCall;
@@ -53,6 +53,7 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -140,6 +141,9 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Override
     public AlgNode visit( AlgNode other ) {
         if ( other instanceof LogicalModifyCollect ) {
+            if ( other.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+                return other;
+            }
             List<AlgNode> inputs = new ArrayList<>( other.getInputs().size() );
             for ( AlgNode node : other.getInputs() ) {
                 inputs.add( node.accept( this ) );
@@ -157,8 +161,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public AlgNode visit( LogicalTableModify initial ) {
-        LogicalTableModify modify = (LogicalTableModify) super.visit( initial );
+    public AlgNode visit( LogicalModify initial ) {
+        LogicalModify modify = (LogicalModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
         if ( modify.getSourceExpressionList() != null ) {
             newSourceExpression = new ArrayList<>();
@@ -204,7 +208,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     input.getRowType()
             );
         }
-        return new LogicalTableModify(
+        return new LogicalModify(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 modify.getTable(),

@@ -31,7 +31,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Lex;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
@@ -60,7 +60,7 @@ import org.polypheny.db.tools.ValidationException;
 public class LexCaseSensitiveTest extends SqlLanguagelDependant {
 
     private static Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
-        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 .defaultSchema( schema )

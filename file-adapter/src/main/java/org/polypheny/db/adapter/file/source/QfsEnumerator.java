@@ -61,13 +61,13 @@ public class QfsEnumerator<E> implements Enumerator<E> {
         if ( condition == null && this.projectionMapping != null ) {
             for ( int projection : this.projectionMapping ) {
                 long colId = columnIds[projection];
-                CatalogColumn col = Catalog.getInstance().getColumn( colId );
+                CatalogColumn col = Catalog.getInstance().getField( colId );
                 columns.add( col.name );
                 columnTypes.add( col.type );
             }
         } else {
             for ( long colId : columnIds ) {
-                CatalogColumn col = Catalog.getInstance().getColumn( colId );
+                CatalogColumn col = Catalog.getInstance().getField( colId );
                 columns.add( col.name );
                 columnTypes.add( col.type );
             }

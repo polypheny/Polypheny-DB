@@ -98,7 +98,7 @@
  *   Filter (gender='F')                         [exp 2, subset B]
  *     Project (deptno, gender, empno)           [exp 3, subset C]
  *       Project (deptno, gender, empno, salary) [exp 4, subset D]
- *         TableScan (emp)                       [exp 0, subset X]</pre>
+ *         Scan (emp)                       [exp 0, subset X]</pre>
  * </blockquote>
  *
  * Apply <code>PushFilterThroughProjectRule</code> to [exp 2, exp 3]:
@@ -107,7 +107,7 @@
  *   Project (deptno, gender, empno)             [exp 5, subset B]
  *     Filter (gender='F')                       [exp 6, subset E]
  *       Project (deptno, gender, empno, salary) [exp 4, subset D]
- *         TableScan (emp)                       [exp 0, subset X]</pre>
+ *         Scan (emp)                       [exp 0, subset X]</pre>
  * </blockquote>
  *
  * Two new expressions are created. Expression 5 is in subset B (because it is equivalent to expression 2), and expression 6 is in a new equivalence class, subset E.
@@ -121,7 +121,7 @@
  * <pre>Project (deptno)                              [exp 7, subset A]
  *   Filter (gender='F')                         [exp 6, subset E]
  *     Project (deptno, gender, empno, salary)   [exp 4, subset D]
- *       TableScan (emp)                         [exp 0, subset X]</pre>
+ *       Scan (emp)                         [exp 0, subset X]</pre>
  * </blockquote>
  * </li>
  *
@@ -132,7 +132,7 @@
  *   Project (deptno, gender, empno)             [exp 5, subset B]
  *     Project (deptno, gender, empno, salary)   [exp 8, subset E]
  *       Filter (gender='F')                     [exp 9, subset F]
- *         TableScan (emp)                       [exp 0, subset X]</pre>
+ *         Scan (emp)                       [exp 0, subset X]</pre>
  * </blockquote>
  * </li>
  * </ul>
@@ -143,7 +143,7 @@
  * <blockquote>
  * <pre>Project (deptno)                          [exp 10, subset A]
  *   Filter (gender='F')                     [exp 9, subset F]
- *     TableScan (emp)                       [exp 0, subset X]</pre>
+ *     Scan (emp)                       [exp 0, subset X]</pre>
  * </blockquote>
  *
  * TODO: show how rules can cause subsets to merge.

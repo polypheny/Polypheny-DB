@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -60,10 +43,10 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
@@ -992,15 +975,15 @@ public class JdbcRules {
          * Creates a JdbcTableModificationRule.
          */
         private JdbcTableModificationRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( TableModify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcTableModificationRule." + out );
+            super( Modify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcTableModificationRule." + out );
         }
 
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final TableModify tableModify = call.alg( 0 );
-            if ( tableModify.getTable().unwrap( JdbcTable.class ) != null ) {
-                JdbcTable table = tableModify.getTable().unwrap( JdbcTable.class );
+            final Modify modify = call.alg( 0 );
+            if ( modify.getTable().unwrap( JdbcTable.class ) != null ) {
+                JdbcTable table = modify.getTable().unwrap( JdbcTable.class );
                 if ( out.getJdbcSchema() == table.getSchema() ) {
                     return true;
                 }
@@ -1011,7 +994,7 @@ public class JdbcRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final TableModify modify = (TableModify) alg;
+            final Modify modify = (Modify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -1035,7 +1018,7 @@ public class JdbcRules {
     /**
      * Table-modification operator implemented in JDBC convention.
      */
-    public static class JdbcTableModify extends TableModify implements JdbcAlg {
+    public static class JdbcTableModify extends Modify implements JdbcAlg {
 
         private final Expression expression;
 
@@ -1066,6 +1049,7 @@ public class JdbcRules {
 
         @Override
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+            double cost = super.computeSelfCost( planner, mq ).getCosts();
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 

@@ -27,9 +27,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.languages.ParserPos;
@@ -99,20 +99,20 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
-        if ( !catalogTable.partitionProperty.isPartitioned ) {
-            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
+        if ( !catalogEntity.partitionProperty.isPartitioned ) {
+            throw new RuntimeException( "Table '" + catalogEntity.name + "' is not partitioned" );
         }
 
-        long tableId = catalogTable.id;
+        long tableId = catalogEntity.id;
 
         if ( partitionGroupList.isEmpty() && partitionGroupNamesList.isEmpty() ) {
-            throw new RuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + catalogTable.name + "'" );
+            throw new RuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + catalogEntity.name + "'" );
         }
 
         DataStore storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
@@ -123,10 +123,10 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
         int storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
-        if ( !catalogTable.dataPlacements.contains( storeId ) ) {
+        if ( !catalogEntity.dataPlacements.contains( storeId ) ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
+                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogEntity.name ) );
         }
 
         List<Long> tempPartitionList = new ArrayList<>();
@@ -137,10 +137,10 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             for ( int partitionId : partitionGroupList ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    tempPartitionList.add( catalogTable.partitionProperty.partitionGroupIds.get( partitionId ) );
+                    tempPartitionList.add( catalogEntity.partitionProperty.partitionGroupIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalogTable.partitionProperty.numPartitionGroups + " partitions" );
+                            + catalogEntity.name + "', has only " + catalogEntity.partitionProperty.numPartitionGroups + " partitions" );
                 }
             }
         }
@@ -159,7 +159,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 }
                 if ( !isPartOfTable ) {
                     throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalog.getPartitionGroupNames( tableId ) + " partitions" );
+                            + catalogEntity.name + "', has only " + catalog.getPartitionGroupNames( tableId ) + " partitions" );
                 }
             }
         }
@@ -168,19 +168,19 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
         if ( tempPartitionList.equals( catalog.getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
             log.info( "The data placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}",
-                    catalogTable.name, storeName, partitionGroupList );
+                    catalogEntity.name, storeName, partitionGroupList );
             return;
         }
         // Update
         try {
             DdlManager.getInstance().modifyPartitionPlacement(
-                    catalogTable,
+                    catalogEntity,
                     tempPartitionList,
                     storeInstance,
                     statement
             );
         } catch ( LastPlacementException e ) {
-            throw new RuntimeException( "Failed to execute requested partition modification. This change would remove one partition entirely from table '" + catalogTable.name + "'", e );
+            throw new RuntimeException( "Failed to execute requested partition modification. This change would remove one partition entirely from table '" + catalogEntity.name + "'", e );
         }
     }
 

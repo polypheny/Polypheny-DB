@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,16 @@ package org.polypheny.db.webui.models.requests;
 
 
 public class QueryRequest extends UIRequest {
+
+
+    public QueryRequest( String query, boolean analyze, boolean cache, String language, String database ) {
+        this.query = query;
+        this.analyze = analyze;
+        this.cache = cache;
+        this.language = language;
+        this.database = database;
+    }
+
 
     /**
      * A query from the SQL console

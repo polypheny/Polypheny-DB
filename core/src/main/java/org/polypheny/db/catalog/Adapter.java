@@ -30,6 +30,7 @@ public enum Adapter {
     MONETDB( "org.polypheny.db.adapter.jdbc.stores.MonetdbStore" ),
     COTTONTAIL( "org.polypheny.db.adapter.cottontail.CottontailStore" ),
     POSTGRESQL( "org.polypheny.db.adapter.jdbc.stores.PostgresqlStore" ),
+    NEO4J( "org.polypheny.db.adapter.neo4j.Neo4jStore" ),
     FILE( "org.polypheny.db.adapter.file.FileStore" );
 
     @Getter
@@ -64,6 +65,13 @@ public enum Adapter {
                 settings.put( "instanceId", "0" );
                 settings.put( "mode", "docker" );
                 settings.put( "trxLifetimeLimit", "1209600" );
+                break;
+            case NEO4J:
+                settings.put( "persistent", "true" );
+                settings.put( "port", "7687" );
+                settings.put( "mode", "docker" );
+                settings.put( "instanceId", "0" );
+                settings.put( "type", "neo4j" );
                 break;
             case HSQLDB:
                 settings.put( "type", "Memory" );

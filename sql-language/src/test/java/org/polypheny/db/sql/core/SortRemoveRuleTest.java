@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.rules.JoinToCorrelateRule;
 import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -68,7 +68,7 @@ public final class SortRemoveRuleTest extends SqlLanguagelDependant {
      */
     private AlgNode transform( String sql, RuleSet prepareRules ) throws Exception {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
-        final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema(), SchemaType.RELATIONAL );
+        final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema(), NamespaceType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )
                 .defaultSchema( defSchema )

@@ -54,7 +54,7 @@ public class DataContextImpl implements DataContext {
 
     @Getter
     @Setter
-    private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
+    private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data ExpressionType
     @Getter
     @Setter
     private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )

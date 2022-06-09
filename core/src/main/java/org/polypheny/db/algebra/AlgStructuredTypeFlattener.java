@@ -34,29 +34,43 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Collect;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Sample;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Uncollect;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalBatchIterator;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.common.LogicalStreamer;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.graph.LogicalGraph;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalStreamer;
-import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
@@ -102,7 +116,7 @@ import org.polypheny.db.util.mapping.Mappings;
  *
  * <blockquote><pre><code>
  * LogicalProject(C2=[$1], A2=[$0.A2])
- *   LogicalTableScan(table=[T])
+ *   LogicalScan(table=[T])
  * </code></pre></blockquote>
  * <p>
  * After flattening, the resulting tree looks like
@@ -336,15 +350,16 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalConditionalExecute alg ) {
         LogicalConditionalExecute newAlg = LogicalConditionalExecute.create( alg.getLeft(), alg.getRight(), alg );
         setNewForOldRel( alg, newAlg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalStreamer alg ) {
-        LogicalStreamer newAlg = LogicalStreamer.create( alg.getLeft(), alg.getRight() );
-        setNewForOldRel( alg, newAlg );
+        rewriteGeneric( alg );
     }
 
 
@@ -366,21 +381,109 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalBatchIterator alg ) {
-        LogicalBatchIterator newAlg = LogicalBatchIterator.create( alg.getInput() );
-        setNewForOldRel( alg, newAlg );
+        rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphTransformer alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentTransformer alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentProject alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentFilter alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalConstraintEnforcer alg ) {
-        LogicalConstraintEnforcer newAlg = LogicalConstraintEnforcer.create( alg.getLeft(), alg.getRight(), alg.getExceptionClasses(), alg.getExceptionMessages() );
+        LogicalConstraintEnforcer newAlg = LogicalConstraintEnforcer.create(
+                alg.getLeft(),
+                alg.getRight(),
+                alg.getExceptionClasses(),
+                alg.getExceptionMessages() );
         setNewForOldRel( alg, newAlg );
     }
 
 
-    public void rewriteAlg( LogicalTableModify alg ) {
-        LogicalTableModify newAlg =
-                LogicalTableModify.create(
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalTransformer alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphModify alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphScan scan ) {
+        AlgNode alg = scan;
+        if ( !(scan.getGraph() instanceof LogicalGraph) ) {
+            alg = scan.getGraph().toAlg( toAlgContext, scan.getGraph() );
+        }
+        setNewForOldRel( scan, alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphProject project ) {
+        rewriteGeneric( project );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphMatch match ) {
+        rewriteGeneric( match );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphFilter filter ) {
+        rewriteGeneric( filter );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphSort sort ) {
+        rewriteGeneric( sort );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphAggregate aggregate ) {
+        rewriteGeneric( aggregate );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalGraphUnwind unwind ) {
+        rewriteGeneric( unwind );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalModify alg ) {
+        LogicalModify newAlg =
+                LogicalModify.create(
                         alg.getTable(),
                         alg.getCatalogReader(),
                         getNewForOldRel( alg.getInput() ),
@@ -392,6 +495,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalAggregate alg ) {
         AlgDataType inputType = alg.getInput().getRowType();
         for ( AlgDataTypeField field : inputType.getFieldList() ) {
@@ -405,6 +509,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( Sort alg ) {
         AlgCollation oldCollation = alg.getCollation();
         final AlgNode oldChild = alg.getInput();
@@ -426,6 +531,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalFilter alg ) {
         AlgNode newAlg =
                 alg.copy(
@@ -436,6 +542,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalJoin alg ) {
         LogicalJoin newAlg =
                 LogicalJoin.create(
@@ -448,6 +555,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalCorrelate alg ) {
         Builder newPos = ImmutableBitSet.builder();
         for ( int pos : alg.getRequiredColumns() ) {
@@ -468,36 +576,43 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( Collect alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( Uncollect alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalIntersect alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalMinus alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalUnion alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalModifyCollect alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalValues alg ) {
         // NOTE: UDT instances require invocation of a constructor method, which can't be represented by
         // the tuples stored in a LogicalValues, so we don't have to worry about them here.
@@ -505,16 +620,19 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalTableFunctionScan alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( Sample alg ) {
         rewriteGeneric( alg );
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalProject alg ) {
         final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
         flattenProjections(
@@ -532,6 +650,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalCalc alg ) {
         // Translate the child.
         final AlgNode newInput = getNewForOldRel( alg.getInput() );
@@ -579,6 +698,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( SelfFlatteningRel alg ) {
         alg.flattenRel( this );
     }
@@ -696,7 +816,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteAlg( TableScan alg ) {
+    public void rewriteAlg( Scan alg ) {
         AlgNode newAlg = alg.getTable().toAlg( toAlgContext );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();

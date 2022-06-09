@@ -17,7 +17,7 @@
 package org.polypheny.db.languages;
 
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.interpreter.Node;
 
 /**
@@ -27,12 +27,12 @@ import org.polypheny.db.interpreter.Node;
 @Getter
 public class QueryParameters {
 
-    private final SchemaType schemaType;
+    private final NamespaceType namespaceType;
     private final String query;
 
 
-    public QueryParameters( String query, SchemaType schemaType ) {
-        this.schemaType = schemaType;
+    public QueryParameters( String query, NamespaceType namespaceType ) {
+        this.namespaceType = namespaceType;
         this.query = query;
     }
 

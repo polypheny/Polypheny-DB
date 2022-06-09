@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,7 +165,7 @@ public class RelBuilderTest {
                 createRelBuilder()
                         .scan( "employee" )
                         .build();
-        assertThat( root, Matchers.hasTree( "LogicalTableScan(table=[[public, employee]])\n" ) );
+        assertThat( root, Matchers.hasTree( "LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n" ) );
     }
 
 
@@ -178,7 +178,7 @@ public class RelBuilderTest {
                 createRelBuilder()
                         .scan( "public", "employee" )
                         .build();
-        assertThat( root, Matchers.hasTree( "LogicalTableScan(table=[[public, employee]])\n" ) );
+        assertThat( root, Matchers.hasTree( "LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n" ) );
     }
 
 
@@ -264,7 +264,7 @@ public class RelBuilderTest {
         AlgNode root = builder.scan( "employee" )
                 .filter( builder.literal( true ) )
                 .build();
-        assertThat( root, Matchers.hasTree( "LogicalTableScan(table=[[public, employee]])\n" ) );
+        assertThat( root, Matchers.hasTree( "LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n" ) );
     }
 
 
@@ -279,7 +279,7 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .filter( builder.equals( builder.literal( 1 ), builder.literal( 2 ) ) )
                         .build();
-        assertThat( root, Matchers.hasTree( "LogicalValues(tuples=[[]])\n" ) );
+        assertThat( root, Matchers.hasTree( "LogicalValues(model=[RELATIONAL], tuples=[[]])\n" ) );
     }
 
 
@@ -293,8 +293,8 @@ public class RelBuilderTest {
         AlgNode root = builder.scan( "employee" )
                 .filter( builder.equals( builder.field( "deptno" ), builder.literal( 20 ) ) )
                 .build();
-        final String expected = "LogicalFilter(condition=[=($7, 20)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalFilter(model=[RELATIONAL], condition=[=($7, 20)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -314,8 +314,8 @@ public class RelBuilderTest {
                                         builder.isNull( builder.field( 6 ) ) ),
                                 builder.isNotNull( builder.field( 3 ) ) )
                         .build();
-        final String expected = "LogicalFilter(condition=[AND(OR(=($7, 20), IS NULL($6)), IS NOT NULL($3))])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalFilter(model=[RELATIONAL], condition=[AND(OR(=($7, 20), IS NULL($6)), IS NOT NULL($3))])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -345,8 +345,8 @@ public class RelBuilderTest {
                                                 builder.field( "deptno" ),
                                                 builder.literal( 20 ) ) ) )
                         .build();
-        final String expected = "LogicalFilter(condition=[>($7, 20)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalFilter(model=[RELATIONAL], condition=[>($7, 20)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -369,7 +369,7 @@ public class RelBuilderTest {
                                         builder.literal( 20 ) ),
                                 builder.literal( false ) )
                         .build();
-        final String expected = "LogicalValues(tuples=[[]])\n";
+        final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -390,8 +390,8 @@ public class RelBuilderTest {
                                         builder.literal( 20 ) ),
                                 builder.literal( true ) )
                         .build();
-        final String expected = "LogicalFilter(condition=[>($7, 20)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalFilter(model=[RELATIONAL], condition=[>($7, 20)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -417,8 +417,8 @@ public class RelBuilderTest {
                 builder.literal( 30 ) );
         final AlgNode root = builder.filter( condition, condition, condition )
                 .build();
-        final String expected = "LogicalFilter(condition=[>($7, 20)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalFilter(model=[RELATIONAL], condition=[>($7, 20)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
 
         // Equivalent SQL:
@@ -429,8 +429,8 @@ public class RelBuilderTest {
                 .filter( condition, condition2, condition, condition )
                 .build();
         final String expected2 = ""
-                + "LogicalFilter(condition=[AND(>($7, 20), <($7, 30))])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalFilter(model=[RELATIONAL], condition=[AND(>($7, 20), <($7, 30))])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root2, Matchers.hasTree( expected2 ) );
     }
 
@@ -491,8 +491,8 @@ public class RelBuilderTest {
         // Note: CAST(commission) gets the commission alias because it occurs first
         // Note: AS(commission, C) becomes just $6
         final String expected = ""
-                + "LogicalProject(deptno=[$7], commission=[CAST($6):SMALLINT NOT NULL], $f2=[20], commission0=[$6], C=[$6])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], deptno=[$7], commission=[CAST($6):SMALLINT NOT NULL], $f2=[20], commission0=[$6], C=[$6])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -528,11 +528,11 @@ public class RelBuilderTest {
                                 builder.alias( builder.field( 6 ), "C" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(deptno=[$7], commission=[CAST($6):INTEGER NOT NULL],"
+                + "LogicalProject(model=[RELATIONAL], deptno=[$7], commission=[CAST($6):INTEGER NOT NULL],"
                 + " $f2=[OR(=($7, 20), AND(null:NULL, =($7, 10), IS NULL($6),"
                 + " IS NULL($7)), =($7, 30))], n2=[IS NULL($2)],"
                 + " nn2=[IS NOT NULL($3)], $f5=[20], commission0=[$6], C=[$6])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -544,7 +544,7 @@ public class RelBuilderTest {
                 builder.scan( "department" )
                         .project( builder.fields( Mappings.bijection( Arrays.asList( 0, 1, 2 ) ) ) )
                         .build();
-        final String expected = "LogicalTableScan(table=[[public, department]])\n";
+        final String expected = "LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -564,8 +564,8 @@ public class RelBuilderTest {
                         .as( "t1" )
                         .project( builder.field( "a" ), builder.field( "t1", "c" ) )
                         .build();
-        final String expected = "LogicalProject(a=[$0], c=[$2])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+        final String expected = "LogicalProject(model=[RELATIONAL], a=[$0], c=[$2])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -592,10 +592,10 @@ public class RelBuilderTest {
                                 builder.field( "a" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(c=[$2], a=[$0])\n"
-                + "  LogicalAggregate(group=[{0, 1, 2}], agg#0=[SUM($0)])\n"
-                + "    LogicalFilter(condition=[=($0, 20)])\n"
-                + "      LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalProject(model=[RELATIONAL], c=[$2], a=[$0])\n"
+                + "  LogicalAggregate(model=[RELATIONAL], group=[{0, 1, 2}], agg#0=[SUM($0)])\n"
+                + "    LogicalFilter(model=[RELATIONAL], condition=[=($0, 20)])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -607,8 +607,8 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .project( builder.fields( Mappings.bijection( Arrays.asList( 0, 1, 2 ) ) ) )
                         .build();
-        final String expected = "LogicalProject(empid=[$0], ename=[$1], job=[$2])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalProject(model=[RELATIONAL], empid=[$0], ename=[$1], job=[$2])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -629,16 +629,16 @@ public class RelBuilderTest {
     public void testProject1asInt() {
         project1( 1, PolyType.INTEGER,
                 "project(1 as INT) might omit type of 1 in the output plan as it is convention to omit INTEGER for integer literals",
-                "LogicalProject($f0=[1])\n"
-                        + "  LogicalValues(tuples=[[]])\n" );
+                "LogicalProject(model=[RELATIONAL], $f0=[1])\n"
+                        + "  LogicalValues(model=[RELATIONAL], tuples=[[]])\n" );
     }
 
 
     @Test
     public void testProject1asBigInt() {
         project1( 1, PolyType.BIGINT, "project(1 as BIGINT) should contain type of 1 in the output plan since the convention is to omit type of INTEGER",
-                "LogicalProject($f0=[1:BIGINT])\n"
-                        + "  LogicalValues(tuples=[[]])\n" );
+                "LogicalProject(model=[RELATIONAL], $f0=[1:BIGINT])\n"
+                        + "  LogicalValues(model=[RELATIONAL], tuples=[[]])\n" );
     }
 
 
@@ -651,7 +651,7 @@ public class RelBuilderTest {
                 builder.scan( "department" )
                         .rename( Arrays.asList( "deptno", null ) )
                         .build();
-        final String expected = "LogicalTableScan(table=[[public, department]])\n";
+        final String expected = "LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
 
         // No rename necessary (prefix matches)
@@ -667,8 +667,8 @@ public class RelBuilderTest {
                         .rename( Arrays.asList( "NAME", null, "deptno" ) )
                         .build();
         final String expected2 = ""
-                + "LogicalProject(NAME=[$0], name=[$1], deptno=[$2])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalProject(model=[RELATIONAL], NAME=[$0], name=[$1], deptno=[$2])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected2 ) );
 
         // If our requested list has non-unique names, we might get the same field names we started with. Don't add a useless project.
@@ -677,8 +677,8 @@ public class RelBuilderTest {
                         .rename( Arrays.asList( "deptno", null, "deptno" ) )
                         .build();
         final String expected3 = ""
-                + "LogicalProject(deptno=[$0], name=[$1], deptno0=[$2])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalProject(model=[RELATIONAL], deptno=[$0], name=[$1], deptno0=[$2])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected3 ) );
         root =
                 builder.scan( "department" )
@@ -707,7 +707,7 @@ public class RelBuilderTest {
         AlgNode root =
                 builder.values( new String[]{ "a", "b" }, true, 1, false, -50 )
                         .build();
-        final String expected = "LogicalValues(tuples=[[{ true, 1 }, { false, -50 }]])\n";
+        final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ true, 1 }, { false, -50 }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
 
         // When you rename Values, you get a Values with a new row type, no Project
@@ -727,8 +727,8 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .permute( Mappings.bijection( Arrays.asList( 1, 2, 0 ) ) )
                         .build();
-        final String expected = "LogicalProject(job=[$2], empid=[$0], ename=[$1])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalProject(model=[RELATIONAL], job=[$2], empid=[$0], ename=[$1])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -747,8 +747,8 @@ public class RelBuilderTest {
                         .convert( rowType, false )
                         .build();
         final String expected = ""
-                + "LogicalProject(deptno=[CAST($0):BIGINT NOT NULL], name=[CAST($1):VARCHAR(10) NOT NULL], loc=[CAST($2):VARCHAR(10) NOT NULL])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalProject(model=[RELATIONAL], deptno=[CAST($0):BIGINT NOT NULL], name=[CAST($1):VARCHAR(10) NOT NULL], loc=[CAST($2):VARCHAR(10) NOT NULL])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -767,8 +767,8 @@ public class RelBuilderTest {
                         .convert( rowType, true )
                         .build();
         final String expected = ""
-                + "LogicalProject(a=[CAST($0):BIGINT NOT NULL], b=[CAST($1):VARCHAR(10) NOT NULL], c=[CAST($2):VARCHAR(10) NOT NULL])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalProject(model=[RELATIONAL], a=[CAST($0):BIGINT NOT NULL], b=[CAST($1):VARCHAR(10) NOT NULL], c=[CAST($2):VARCHAR(10) NOT NULL])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -785,8 +785,8 @@ public class RelBuilderTest {
                         .aggregate( builder.groupKey(), builder.count( true, "C", builder.field( "deptno" ) ) )
                         .build();
         final String expected = ""
-                + "LogicalAggregate(group=[{}], C=[COUNT(DISTINCT $7)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalAggregate(model=[RELATIONAL], group=[{}], C=[COUNT(DISTINCT $7)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -814,9 +814,9 @@ public class RelBuilderTest {
                                                 builder.literal( 1 ) ) ).as( "S" ) )
                         .build();
         final String expected = ""
-                + "LogicalAggregate(group=[{1, 8}], C=[COUNT()], S=[SUM($9)])\n"
-                + "  LogicalProject(empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7], $f8=[+($4, $3)], $f9=[+($3, 1)])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalAggregate(model=[RELATIONAL], group=[{1, 8}], C=[COUNT()], S=[SUM($9)])\n"
+                + "  LogicalProject(model=[RELATIONAL], empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7], $f8=[+($4, $3)], $f9=[+($3, 1)])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -838,9 +838,9 @@ public class RelBuilderTest {
                         .aggregate( builder.groupKey( builder.field( 0 ) ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(ename=[$0])\n"
-                + "  LogicalAggregate(group=[{1}], C=[COUNT()])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], ename=[$0])\n"
+                + "  LogicalAggregate(model=[RELATIONAL], group=[{1}], C=[COUNT()])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -868,10 +868,10 @@ public class RelBuilderTest {
                                 builder.groupKey( builder.field( 0 ) ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(ename=[$0])\n"
-                + "  LogicalFilter(condition=[>($1, 3)])\n"
-                + "    LogicalAggregate(group=[{1}], C=[COUNT()])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], ename=[$0])\n"
+                + "  LogicalFilter(model=[RELATIONAL], condition=[>($1, 3)])\n"
+                + "    LogicalAggregate(model=[RELATIONAL], group=[{1}], C=[COUNT()])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -896,9 +896,9 @@ public class RelBuilderTest {
                                         .as( "C" ) )
                         .build();
         final String expected = ""
-                + "LogicalAggregate(group=[{7}], groups=[[{7}, {}]], C=[COUNT() FILTER $8])\n"
-                + "  LogicalProject(empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7], $f8=[>($0, 100)])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalAggregate(model=[RELATIONAL], group=[{7}], groups=[[{7}, {}]], C=[COUNT() FILTER $8])\n"
+                + "  LogicalProject(model=[RELATIONAL], empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7], $f8=[>($0, 100)])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -944,9 +944,9 @@ public class RelBuilderTest {
                                         .as( "C" ) )
                         .build();
         final String expected = ""
-                + "LogicalAggregate(group=[{7}], C=[SUM($5) FILTER $8])\n"
-                + "  LogicalProject(empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7], $f8=[IS TRUE(<($6, 100))])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalAggregate(model=[RELATIONAL], group=[{7}], C=[SUM($5) FILTER $8])\n"
+                + "  LogicalProject(model=[RELATIONAL], empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7], $f8=[IS TRUE(<($6, 100))])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -965,9 +965,9 @@ public class RelBuilderTest {
                         .aggregate( builder.groupKey( builder.alias( builder.field( "deptno" ), "departmentNo" ) ) )
                         .build();
         final String expected = ""
-                + "LogicalAggregate(group=[{0}])\n"
-                + "  LogicalProject(departmentNo=[$7])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalAggregate(model=[RELATIONAL], group=[{0}])\n"
+                + "  LogicalProject(model=[RELATIONAL], departmentNo=[$7])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -985,9 +985,9 @@ public class RelBuilderTest {
                                                 "d3" ) ) )
                         .build();
         final String expected = ""
-                + "LogicalAggregate(group=[{1}])\n"
-                + "  LogicalProject(deptno=[$7], d3=[+($7, 3)])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalAggregate(model=[RELATIONAL], group=[{1}])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$7], d3=[+($7, 3)])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1033,8 +1033,8 @@ public class RelBuilderTest {
                                         ImmutableList.of( ImmutableBitSet.of( 7 ), ImmutableBitSet.of( 6 ), ImmutableBitSet.of( 7 ) ) ) )
                         .build();
         final String expected = ""
-                + "LogicalAggregate(group=[{6, 7}], groups=[[{6}, {7}]])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalAggregate(model=[RELATIONAL], group=[{6, 7}], groups=[[{6}, {7}]])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1049,8 +1049,8 @@ public class RelBuilderTest {
                                 builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.GROUPING ), builder.field( "deptno" ) ).as( "g" ) )
                         .build();
         final String expected = ""
-                + "LogicalAggregate(group=[{6, 7}], g=[GROUPING($7)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalAggregate(model=[RELATIONAL], group=[{6, 7}], g=[GROUPING($7)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1106,9 +1106,9 @@ public class RelBuilderTest {
                         .project( builder.field( "deptno" ) )
                         .distinct()
                         .build();
-        final String expected = "LogicalAggregate(group=[{0}])\n"
-                + "  LogicalProject(deptno=[$7])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalAggregate(model=[RELATIONAL], group=[{0}])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$7])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1122,7 +1122,7 @@ public class RelBuilderTest {
                 builder.scan( "department" )
                         .distinct()
                         .build();
-        final String expected = "LogicalTableScan(table=[[public, department]])\n";
+        final String expected = "LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1138,10 +1138,10 @@ public class RelBuilderTest {
                         .project()
                         .distinct()
                         .build();
-        final String expected = "LogicalAggregate(group=[{}])\n"
-                + "  LogicalProject\n"
-                + "    LogicalFilter(condition=[IS NULL($6)])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalAggregate(model=[RELATIONAL], group=[{}])\n"
+                + "  LogicalProject(model=[RELATIONAL])\n"
+                + "    LogicalFilter(model=[RELATIONAL], condition=[IS NULL($6)])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1162,12 +1162,12 @@ public class RelBuilderTest {
                         .union( true )
                         .build();
         final String expected = ""
-                + "LogicalUnion(all=[true])\n"
-                + "  LogicalProject(deptno=[$0])\n"
-                + "    LogicalTableScan(table=[[public, department]])\n"
-                + "  LogicalProject(empid=[$0])\n"
-                + "    LogicalFilter(condition=[=($7, 20)])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalUnion(model=[RELATIONAL], all=[true])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$0])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, department]])\n"
+                + "  LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+                + "    LogicalFilter(model=[RELATIONAL], condition=[=($7, 20)])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1217,13 +1217,13 @@ public class RelBuilderTest {
                         .union( true, 3 )
                         .build();
         final String expected = ""
-                + "LogicalUnion(all=[true])\n"
-                + "  LogicalProject(deptno=[$0])\n"
-                + "    LogicalTableScan(table=[[public, department]])\n"
-                + "  LogicalProject(empid=[$0])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n"
-                + "  LogicalProject(deptno=[$7])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalUnion(model=[RELATIONAL], all=[true])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$0])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, department]])\n"
+                + "  LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$7])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1246,8 +1246,8 @@ public class RelBuilderTest {
                         .project( builder.field( "deptno" ) )
                         .union( true, 1 )
                         .build();
-        final String expected = "LogicalProject(deptno=[$7])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalProject(model=[RELATIONAL], deptno=[$7])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1273,12 +1273,12 @@ public class RelBuilderTest {
                         .intersect( false )
                         .build();
         final String expected = ""
-                + "LogicalIntersect(all=[false])\n"
-                + "  LogicalProject(deptno=[$0])\n"
-                + "    LogicalTableScan(table=[[public, department]])\n"
-                + "  LogicalProject(empid=[$0])\n"
-                + "    LogicalFilter(condition=[=($7, 20)])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalIntersect(model=[RELATIONAL], all=[false])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$0])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, department]])\n"
+                + "  LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+                + "    LogicalFilter(model=[RELATIONAL], condition=[=($7, 20)])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1302,13 +1302,13 @@ public class RelBuilderTest {
                         .intersect( true, 3 )
                         .build();
         final String expected = ""
-                + "LogicalIntersect(all=[true])\n"
-                + "  LogicalProject(deptno=[$0])\n"
-                + "    LogicalTableScan(table=[[public, department]])\n"
-                + "  LogicalProject(empid=[$0])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n"
-                + "  LogicalProject(deptno=[$7])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalIntersect(model=[RELATIONAL], all=[true])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$0])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, department]])\n"
+                + "  LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$7])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1334,12 +1334,12 @@ public class RelBuilderTest {
                         .minus( false )
                         .build();
         final String expected = ""
-                + "LogicalMinus(all=[false])\n"
-                + "  LogicalProject(deptno=[$0])\n"
-                + "    LogicalTableScan(table=[[public, department]])\n"
-                + "  LogicalProject(empid=[$0])\n"
-                + "    LogicalFilter(condition=[=($7, 20)])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalMinus(model=[RELATIONAL], all=[false])\n"
+                + "  LogicalProject(model=[RELATIONAL], deptno=[$0])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, department]])\n"
+                + "  LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+                + "    LogicalFilter(model=[RELATIONAL], condition=[=($7, 20)])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1366,10 +1366,10 @@ public class RelBuilderTest {
                                         builder.field( 2, 1, "deptno" ) ) )
                         .build();
         final String expected = ""
-                + "LogicalJoin(condition=[=($7, $8)], joinType=[inner])\n"
-                + "  LogicalFilter(condition=[IS NULL($6)])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalJoin(model=[RELATIONAL], condition=[=($7, $8)], joinType=[inner])\n"
+                + "  LogicalFilter(model=[RELATIONAL], condition=[IS NULL($6)])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1387,10 +1387,10 @@ public class RelBuilderTest {
                         .join( JoinAlgType.INNER, "deptno" )
                         .build();
         final String expected = ""
-                + "LogicalJoin(condition=[=($7, $8)], joinType=[inner])\n"
-                + "  LogicalFilter(condition=[IS NULL($6)])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalJoin(model=[RELATIONAL], condition=[=($7, $8)], joinType=[inner])\n"
+                + "  LogicalFilter(model=[RELATIONAL], condition=[IS NULL($6)])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root2, Matchers.hasTree( expected ) );
     }
 
@@ -1423,9 +1423,9 @@ public class RelBuilderTest {
                         .build();
         // Note that "dept.deptno IS NOT NULL" has been simplified away.
         final String expected = ""
-                + "LogicalJoin(condition=[AND(=($7, $8), =($0, 123))], joinType=[left])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalJoin(model=[RELATIONAL], condition=[AND(=($7, $8), =($0, 123))], joinType=[left])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1441,9 +1441,9 @@ public class RelBuilderTest {
                         .join( JoinAlgType.INNER )
                         .build();
         final String expected =
-                "LogicalJoin(condition=[true], joinType=[inner])\n"
-                        + "  LogicalTableScan(table=[[public, employee]])\n"
-                        + "  LogicalTableScan(table=[[public, department]])\n";
+                "LogicalJoin(model=[RELATIONAL], condition=[true], joinType=[inner])\n"
+                        + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                        + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1483,11 +1483,11 @@ public class RelBuilderTest {
                 .build();
         // Note that the join filter gets pushed to the right-hand input of LogicalCorrelate
         final String expected = ""
-                + "LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{7}])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n"
-                + "  LogicalFilter(condition=[=($cor0.salary, 1000)])\n"
-                + "    LogicalFilter(condition=[=($0, $cor0.deptno)])\n"
-                + "      LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalCorrelate(model=[RELATIONAL], correlation=[$cor0], joinType=[left], requiredColumns=[{7}])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "  LogicalFilter(model=[RELATIONAL], condition=[=($cor0.salary, 1000)])\n"
+                + "    LogicalFilter(model=[RELATIONAL], condition=[=($0, $cor0.deptno)])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1507,11 +1507,11 @@ public class RelBuilderTest {
                         .filter( builder.equals( builder.field( "e", "deptno" ), builder.field( "department", "deptno" ) ) )
                         .project( builder.field( "e", "ename" ), builder.field( "department", "name" ) )
                         .build();
-        final String expected = "LogicalProject(ename=[$1], name=[$9])\n"
-                + "  LogicalFilter(condition=[=($7, $8)])\n"
-                + "    LogicalJoin(condition=[true], joinType=[left])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n"
-                + "      LogicalTableScan(table=[[public, department]])\n";
+        final String expected = "LogicalProject(model=[RELATIONAL], ename=[$1], name=[$9])\n"
+                + "  LogicalFilter(model=[RELATIONAL], condition=[=($7, $8)])\n"
+                + "    LogicalJoin(model=[RELATIONAL], condition=[true], joinType=[left])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final AlgDataTypeField field = root.getRowType().getFieldList().get( 1 );
         assertThat( field.getName(), is( "name" ) );
@@ -1540,12 +1540,12 @@ public class RelBuilderTest {
                                 builder.equals( builder.field( "m", "empid" ), builder.field( "e", "mgr" ) ) )
                         .build();
         final String expected = ""
-                + "LogicalFilter(condition=[AND(=($7, $16), =($8, $3))])\n"
-                + "  LogicalJoin(condition=[true], joinType=[inner])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n"
-                + "    LogicalJoin(condition=[true], joinType=[inner])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n"
-                + "      LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalFilter(model=[RELATIONAL], condition=[AND(=($7, $16), =($8, $3))])\n"
+                + "  LogicalJoin(model=[RELATIONAL], condition=[true], joinType=[inner])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "    LogicalJoin(model=[RELATIONAL], condition=[true], joinType=[inner])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1560,9 +1560,9 @@ public class RelBuilderTest {
                         .project( builder.field( "e", "empid" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(empid=[$0])\n"
-                + "  LogicalSort(sort0=[$0], dir0=[ASC])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+                + "  LogicalSort(model=[RELATIONAL], sort0=[$0], dir0=[ASC])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1578,9 +1578,9 @@ public class RelBuilderTest {
                         .project( builder.field( "e", "empid" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(empid=[$0])\n"
-                + "  LogicalSort(sort0=[$1], dir0=[ASC], offset=[10], fetch=[20])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+                + "  LogicalSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC], offset=[10], fetch=[20])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1598,8 +1598,8 @@ public class RelBuilderTest {
                         .project( builder.field( "employee_alias", "deptno" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(deptno=[$7])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], deptno=[$7])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1626,8 +1626,8 @@ public class RelBuilderTest {
                                 builder.field( "employee_alias", "deptno" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(sum=[10], deptno=[$7])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], sum=[10], deptno=[$7])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1655,9 +1655,9 @@ public class RelBuilderTest {
                                         builder.field( "employee_alias", "deptno" ) ) )
                         .build();
         final String expected = ""
-                + "LogicalFilter(condition=[>($1, $2)])\n"
-                + "  LogicalProject($f1=[20], $f12=[10], deptno=[$7])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalFilter(model=[RELATIONAL], condition=[>($1, $2)])\n"
+                + "  LogicalProject(model=[RELATIONAL], $f1=[20], $f12=[10], deptno=[$7])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1679,10 +1679,10 @@ public class RelBuilderTest {
                                 builder.field( "employee_alias", "deptno" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(sum=[$1], deptno=[$0])\n"
-                + "  LogicalAggregate(group=[{0}], agg#0=[SUM($1)])\n"
-                + "    LogicalProject(deptno=[$7], $f1=[20])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], sum=[$1], deptno=[$0])\n"
+                + "  LogicalAggregate(model=[RELATIONAL], group=[{0}], agg#0=[SUM($1)])\n"
+                + "    LogicalProject(model=[RELATIONAL], deptno=[$7], $f1=[20])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1709,10 +1709,10 @@ public class RelBuilderTest {
                                 builder.field( "e", "mgr" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(deptno=[$8], empid=[$0], mgr=[$3])\n"
-                + "  LogicalJoin(condition=[true], joinType=[inner])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n"
-                + "    LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalProject(model=[RELATIONAL], deptno=[$8], empid=[$0], mgr=[$3])\n"
+                + "  LogicalJoin(model=[RELATIONAL], condition=[true], joinType=[inner])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1740,8 +1740,8 @@ public class RelBuilderTest {
                                 Util.last( builder.fields() ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(deptno=[$7], empid=[$0], mgr=[$3], x=[+($0, $3)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], deptno=[$7], empid=[$0], mgr=[$3], x=[+($0, $3)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1773,14 +1773,14 @@ public class RelBuilderTest {
                                 builder.field( "all", "empid" ) )
                         .build();
         final String expected = ""
-                + "LogicalProject(deptno=[$0], empid=[$2])\n"
-                + "  LogicalFilter(condition=[>($0, 100)])\n"
-                + "    LogicalProject(deptno=[$16], deptno0=[$16], empid=[$8], mgr=[$3])\n"
-                + "      LogicalJoin(condition=[true], joinType=[inner])\n"
-                + "        LogicalTableScan(table=[[public, employee]])\n"
-                + "        LogicalJoin(condition=[true], joinType=[inner])\n"
-                + "          LogicalTableScan(table=[[public, employee]])\n"
-                + "          LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalProject(model=[RELATIONAL], deptno=[$0], empid=[$2])\n"
+                + "  LogicalFilter(model=[RELATIONAL], condition=[>($0, 100)])\n"
+                + "    LogicalProject(model=[RELATIONAL], deptno=[$16], deptno0=[$16], empid=[$8], mgr=[$3])\n"
+                + "      LogicalJoin(model=[RELATIONAL], condition=[true], joinType=[inner])\n"
+                + "        LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "        LogicalJoin(model=[RELATIONAL], condition=[true], joinType=[inner])\n"
+                + "          LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "          LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1809,12 +1809,12 @@ public class RelBuilderTest {
                         .project( builder.fields( Lists.newArrayList( 1, 0 ) ) )
                         .build();
         final String expected = ""
-                + "LogicalProject($f1=[$1], empid=[$0])\n"
-                + "  LogicalUnion(all=[false])\n"
-                + "    LogicalProject(empid=[$0], $f1=[||($1, '-1')])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n"
-                + "    LogicalProject(empid=[$0], $f1=[||($1, '-2')])\n"
-                + "      LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalProject(model=[RELATIONAL], $f1=[$1], empid=[$0])\n"
+                + "  LogicalUnion(model=[RELATIONAL], all=[false])\n"
+                + "    LogicalProject(model=[RELATIONAL], empid=[$0], $f1=[||($1, '-1')])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "    LogicalProject(model=[RELATIONAL], empid=[$0], $f1=[||($1, '-2')])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1846,9 +1846,9 @@ public class RelBuilderTest {
                                         builder.literal( 123 ) ) )
                         .build();
         final String expected = ""
-                + "LogicalJoin(condition=[AND(=($7, $8), =($0, 123))], joinType=[left])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalJoin(model=[RELATIONAL], condition=[AND(=($7, $8), =($0, 123))], joinType=[left])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1889,11 +1889,11 @@ public class RelBuilderTest {
         // 8-15  employee as t2
         // 16-18 department as t3
         final String expected = ""
-                + "LogicalJoin(condition=[AND(=($7, $16), <>($10, $18))], joinType=[inner])\n"
-                + "  LogicalJoin(condition=[=($0, $8)], joinType=[inner])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n"
-                + "  LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalJoin(model=[RELATIONAL], condition=[AND(=($7, $16), <>($10, $18))], joinType=[inner])\n"
+                + "  LogicalJoin(model=[RELATIONAL], condition=[=($0, $8)], joinType=[inner])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -1912,7 +1912,7 @@ public class RelBuilderTest {
                                 builder.literal( false ) )
                         .empty()
                         .build();
-        final String expected = "LogicalValues(tuples=[[]])\n";
+        final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(INTEGER NOT NULL deptno, BOOLEAN NOT NULL $f1) NOT NULL";
         assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
@@ -1925,7 +1925,7 @@ public class RelBuilderTest {
         //   VALUES (true, 1), (false, -50) AS t(a, b)
         final AlgBuilder builder = createRelBuilder();
         AlgNode root = builder.values( new String[]{ "a", "b" }, true, 1, false, -50 ).build();
-        final String expected = "LogicalValues(tuples=[[{ true, 1 }, { false, -50 }]])\n";
+        final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ true, 1 }, { false, -50 }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BOOLEAN NOT NULL a, INTEGER NOT NULL b) NOT NULL";
         assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
@@ -1942,7 +1942,7 @@ public class RelBuilderTest {
         final AlgBuilder builder = createRelBuilder();
         AlgNode root =
                 builder.values( new String[]{ "a", null, "c" }, null, 1, "abc", false, null, "longer string" ).build();
-        final String expected = "LogicalValues(tuples=[[{ null, 1, 'abc' }, { false, null, 'longer string' }]])\n";
+        final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ null, 1, 'abc' }, { false, null, 'longer string' }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BOOLEAN a, INTEGER expr$1, CHAR(13) NOT NULL c) NOT NULL";
         assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
@@ -2018,7 +2018,7 @@ public class RelBuilderTest {
                         .add( "a", null, PolyType.VARCHAR, 10 )
                         .build();
         AlgNode root = builder.values( rowType, null, null, 1, null ).build();
-        final String expected = "LogicalValues(tuples=[[{ null, null }, { 1, null }]])\n";
+        final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ null, null }, { 1, null }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BIGINT NOT NULL a, VARCHAR(10) NOT NULL a) NOT NULL";
         assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
@@ -2036,8 +2036,8 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .sort( builder.field( 2 ), builder.desc( builder.field( 0 ) ) )
                         .build();
-        final String expected = "LogicalSort(sort0=[$2], sort1=[$0], dir0=[ASC], dir1=[DESC])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalSort(model=[RELATIONAL], sort0=[$2], sort1=[$0], dir0=[ASC], dir1=[DESC])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
 
         // same result using ordinals
@@ -2060,7 +2060,7 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .sortLimit( 0, -1, ImmutableList.of() )
                         .build();
-        final String expected = "LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2082,8 +2082,8 @@ public class RelBuilderTest {
                                 builder.field( "empid" ),
                                 builder.field( "hiredate" ) )
                         .build();
-        final String expected = "LogicalSort(sort0=[$0], sort1=[$7], sort2=[$4], dir0=[DESC], dir1=[ASC], dir2=[ASC])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected = "LogicalSort(model=[RELATIONAL], sort0=[$0], sort1=[$7], sort2=[$4], dir0=[DESC], dir1=[ASC], dir2=[ASC])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2106,10 +2106,10 @@ public class RelBuilderTest {
                                                 builder.field( 3 ) ) ) )
                         .build();
         final String expected =
-                "LogicalProject(empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7])\n"
-                        + "  LogicalSort(sort0=[$1], sort1=[$8], dir0=[DESC-nulls-last], dir1=[ASC-nulls-first])\n"
-                        + "    LogicalProject(empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7], $f8=[+($4, $3)])\n"
-                        + "      LogicalTableScan(table=[[public, employee]])\n";
+                "LogicalProject(model=[RELATIONAL], empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7])\n"
+                        + "  LogicalSort(model=[RELATIONAL], sort0=[$1], sort1=[$8], dir0=[DESC-nulls-last], dir1=[ASC-nulls-first])\n"
+                        + "    LogicalProject(model=[RELATIONAL], empid=[$0], ename=[$1], job=[$2], mgr=[$3], hiredate=[$4], salary=[$5], commission=[$6], deptno=[$7], $f8=[+($4, $3)])\n"
+                        + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2126,8 +2126,8 @@ public class RelBuilderTest {
                         .limit( 2, 10 )
                         .build();
         final String expected =
-                "LogicalSort(offset=[2], fetch=[10])\n"
-                        + "  LogicalTableScan(table=[[public, employee]])\n";
+                "LogicalSort(model=[RELATIONAL], offset=[2], fetch=[10])\n"
+                        + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2144,8 +2144,8 @@ public class RelBuilderTest {
                         .sortLimit( -1, 10, builder.desc( builder.field( "deptno" ) ) )
                         .build();
         final String expected =
-                "LogicalSort(sort0=[$7], dir0=[DESC], fetch=[10])\n"
-                        + "  LogicalTableScan(table=[[public, employee]])\n";
+                "LogicalSort(model=[RELATIONAL], sort0=[$7], dir0=[DESC], fetch=[10])\n"
+                        + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2161,7 +2161,7 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .sortLimit( -1, 0, builder.desc( builder.field( "deptno" ) ) )
                         .build();
-        final String expected = "LogicalValues(tuples=[[]])\n";
+        final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2185,9 +2185,9 @@ public class RelBuilderTest {
                 // make sure we can still access the field by alias
                 .project( builder.field( "F1" ) )
                 .build();
-        String expected = "LogicalProject(F1=[$1])\n"
-                + "  LogicalSort(sort0=[$0], dir0=[ASC], fetch=[1])\n"
-                + "    LogicalTableScan(table=[[public, employee]])\n";
+        String expected = "LogicalProject(model=[RELATIONAL], F1=[$1])\n"
+                + "  LogicalSort(model=[RELATIONAL], sort0=[$0], dir0=[ASC], fetch=[1])\n"
+                + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2206,8 +2206,8 @@ public class RelBuilderTest {
                         .limit( -1, 10 )
                         .build();
         final String expected = ""
-                + "LogicalSort(sort0=[$7], dir0=[DESC], fetch=[10])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalSort(model=[RELATIONAL], sort0=[$7], dir0=[DESC], fetch=[10])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
 
         final AlgNode root2 =
@@ -2235,10 +2235,10 @@ public class RelBuilderTest {
                         .limit( 3, 10 )
                         .build();
         final String expected = ""
-                + "LogicalProject(deptno=[$0], name=[$1], loc=[$2])\n"
-                + "  LogicalSort(sort0=[$3], dir0=[DESC], offset=[3], fetch=[10])\n"
-                + "    LogicalProject(deptno=[$0], name=[$1], loc=[$2], $f3=[+($0, 1)])\n"
-                + "      LogicalTableScan(table=[[public, department]])\n";
+                + "LogicalProject(model=[RELATIONAL], deptno=[$0], name=[$1], loc=[$2])\n"
+                + "  LogicalSort(model=[RELATIONAL], sort0=[$3], dir0=[DESC], offset=[3], fetch=[10])\n"
+                + "    LogicalProject(model=[RELATIONAL], deptno=[$0], name=[$1], loc=[$2], $f3=[+($0, 1)])\n"
+                + "      LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
 
         final AlgNode root2 =
@@ -2363,7 +2363,7 @@ public class RelBuilderTest {
         final AlgNode root = builder
                 .match( pattern, false, false, pdBuilder.build(), measuresBuilder.build(), after, subsets, false, partitionKeysBuilder.build(), orderKeysBuilder.build(), interval )
                 .build();
-        final String expected = "LogicalMatch(partition=[[$7]], order=[[0]], "
+        final String expected = "LogicalMatch(model=[RELATIONAL], partition=[[$7]], order=[[0]], "
                 + "outputFields=[[$7, 'start_nw', 'bottom_nw']], allRows=[false], "
                 + "after=[FLAG(SKIP TO NEXT ROW)], pattern=[(('STRT', "
                 + "PATTERN_QUANTIFIER('DOWN', 1, -1, false)), "
@@ -2373,7 +2373,7 @@ public class RelBuilderTest {
                 + "patternDefinitions=[[<(PREV(DOWN.$3, 0), PREV(DOWN.$3, 1)), "
                 + ">(PREV(UP.$3, 0), PREV(UP.$3, 1))]], "
                 + "inputFields=[[empid, ename, job, mgr, hiredate, salary, commission, deptno]])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2390,8 +2390,8 @@ public class RelBuilderTest {
                                         PolyType.BOOLEAN ) )
                         .build();
         final String expected = ""
-                + "LogicalFilter(condition=[CAST($0):BOOLEAN NOT NULL])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalFilter(model=[RELATIONAL], condition=[CAST($0):BOOLEAN NOT NULL])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2412,8 +2412,8 @@ public class RelBuilderTest {
                                                 builder.literal( 10 ) ) ) )
                         .build();
         final String expected = ""
-                + "LogicalFilter(condition=[=($7, 10)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+                + "LogicalFilter(model=[RELATIONAL], condition=[=($7, 10)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2424,20 +2424,20 @@ public class RelBuilderTest {
         builder.scan( "employee" );
 
         // One entry on the stack, a single-node tree
-        final String expected1 = "LogicalTableScan(table=[[public, employee]])\n";
+        final String expected1 = "LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( Util.toLinux( builder.toString() ), is( expected1 ) );
 
         // One entry on the stack, a two-node tree
         builder.filter( builder.equals( builder.field( 2 ), builder.literal( 3 ) ) );
-        final String expected2 = "LogicalFilter(condition=[=($2, 3)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected2 = "LogicalFilter(model=[RELATIONAL], condition=[=($2, 3)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( Util.toLinux( builder.toString() ), is( expected2 ) );
 
         // Two entries on the stack
         builder.scan( "department" );
-        final String expected3 = "LogicalTableScan(table=[[public, department]])\n"
-                + "LogicalFilter(condition=[=($2, 3)])\n"
-                + "  LogicalTableScan(table=[[public, employee]])\n";
+        final String expected3 = "LogicalScan(model=[RELATIONAL], table=[[public, department]])\n"
+                + "LogicalFilter(model=[RELATIONAL], condition=[=($2, 3)])\n"
+                + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( Util.toLinux( builder.toString() ), is( expected3 ) );
     }
 
@@ -2458,8 +2458,8 @@ public class RelBuilderTest {
                 .exchange( AlgDistributions.hash( Lists.newArrayList( 0 ) ) )
                 .build();
         final String expected =
-                "LogicalExchange(distribution=[hash[0]])\n"
-                        + "  LogicalTableScan(table=[[public, employee]])\n";
+                "LogicalExchange(model=[RELATIONAL], distribution=[hash[0]])\n"
+                        + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 
@@ -2474,8 +2474,8 @@ public class RelBuilderTest {
                                 AlgCollations.of( 0 ) )
                         .build();
         final String expected =
-                "LogicalSortExchange(distribution=[hash[0]], collation=[[0]])\n"
-                        + "  LogicalTableScan(table=[[public, employee]])\n";
+                "LogicalSortExchange(model=[RELATIONAL], distribution=[hash[0]], collation=[[0]])\n"
+                        + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
 

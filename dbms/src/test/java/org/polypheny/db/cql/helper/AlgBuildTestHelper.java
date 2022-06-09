@@ -78,8 +78,8 @@ public class AlgBuildTestHelper extends CqlTestHelper {
                     Catalog catalog = Catalog.getInstance();
 
                     for ( TableIndex tableIndex : tableIndices ) {
-                        for ( Long columnId : tableIndex.catalogTable.columnIds ) {
-                            CatalogColumn column = catalog.getColumn( columnId );
+                        for ( Long columnId : tableIndex.catalogEntity.fieldIds ) {
+                            CatalogColumn column = catalog.getField( columnId );
                             columnNames.add( tableIndex.fullyQualifiedName + "." + column.name );
                             RexInputRef inputRef = rexBuilder.makeInputRef( algBuilder.peek(), inputRefs.size() );
                             tableScanOrdinalities.put( columnId, inputRefs.size() );

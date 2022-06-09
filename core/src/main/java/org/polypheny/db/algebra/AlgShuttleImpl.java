@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.algebra;
@@ -39,24 +22,33 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalModifyDataCapture;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -110,7 +102,7 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
+    public AlgNode visit( Scan scan ) {
         return scan;
     }
 
@@ -188,7 +180,7 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( LogicalTableModify modify ) {
+    public AlgNode visit( LogicalModify modify ) {
         return visitChildren( modify );
     }
 
@@ -202,6 +194,60 @@ public class AlgShuttleImpl implements AlgShuttle {
     @Override
     public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
         return visitChildren( enforcer );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphModify modify ) {
+        return visitChildren( modify );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphScan scan ) {
+        return scan;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphValues values ) {
+        return values;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphFilter filter ) {
+        return visitChildren( filter );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphMatch match ) {
+        return visitChildren( match );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphProject project ) {
+        return visitChildren( project );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphAggregate aggregate ) {
+        return visitChildren( aggregate );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphSort sort ) {
+        return visitChildren( sort );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphUnwind unwind ) {
+        return visitChildren( unwind );
     }
 
 

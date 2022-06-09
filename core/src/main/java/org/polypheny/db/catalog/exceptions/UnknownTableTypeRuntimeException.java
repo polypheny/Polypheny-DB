@@ -20,7 +20,7 @@ package org.polypheny.db.catalog.exceptions;
 public class UnknownTableTypeRuntimeException extends CatalogRuntimeException {
 
     public UnknownTableTypeRuntimeException( final int id ) {
-        super( "There is no TableType with id: " + id );
+        super( "There is no EntityType with id: " + id );
     }
 
 }

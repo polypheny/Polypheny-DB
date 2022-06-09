@@ -25,7 +25,7 @@ import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
-public final class CatalogPartitionGroup implements CatalogEntity {
+public final class CatalogPartitionGroup implements CatalogObject {
 
     private static final long serialVersionUID = 2312903632511266177L;
 
@@ -83,7 +83,7 @@ public final class CatalogPartitionGroup implements CatalogEntity {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getSchema( schemaId ).name;
+        return Catalog.getInstance().getNamespace( schemaId ).name;
     }
 
 

@@ -27,10 +27,10 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
@@ -66,38 +66,38 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected CatalogTable getCatalogTable( Context context, SqlIdentifier tableName ) {
-        CatalogTable catalogTable;
+    protected CatalogEntity getCatalogTable( Context context, SqlIdentifier tableName ) {
+        CatalogEntity catalogEntity;
         try {
             long schemaId;
             String tableOldName;
             Catalog catalog = Catalog.getInstance();
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
+                schemaId = catalog.getNamespace( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
+                schemaId = catalog.getNamespace( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
                 tableOldName = tableName.names.get( 1 );
             } else { // TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = catalog.getNamespace( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableOldName = tableName.names.get( 0 );
             }
-            catalogTable = catalog.getTable( schemaId, tableOldName );
+            catalogEntity = catalog.getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
-        } catch ( UnknownSchemaException e ) {
+        } catch ( UnknownNamespaceException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
         }
-        return catalogTable;
+        return catalogEntity;
     }
 
 
     protected CatalogColumn getCatalogColumn( long tableId, SqlIdentifier columnName ) {
         CatalogColumn catalogColumn;
         try {
-            catalogColumn = Catalog.getInstance().getColumn( tableId, columnName.getSimple() );
+            catalogColumn = Catalog.getInstance().getField( tableId, columnName.getSimple() );
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnName.getPos(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
         }

@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -54,7 +37,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.JdbcAlg;
@@ -71,9 +54,9 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorTable;
@@ -86,7 +69,7 @@ import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -155,9 +138,9 @@ public class PlannerTest extends SqlLanguagelDependant {
                         + "FROM `emps`\n"
                         + "WHERE `name` LIKE '%e%'",
 
-                "LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-                        + "  LogicalFilter(condition=[LIKE($2, '%e%')])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                "LogicalProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
+                        + "  LogicalFilter(model=[RELATIONAL], condition=[LIKE($2, '%e%')])\n"
+                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -188,9 +171,9 @@ public class PlannerTest extends SqlLanguagelDependant {
                         + "ORDER BY `emps`.`deptno`\n"
                         + "OFFSET 10 ROWS",
 
-                "LogicalSort(sort0=[$1], dir0=[ASC], offset=[10])\n"
-                        + "  LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                "LogicalSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC], offset=[10])\n"
+                        + "  LogicalProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
+                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -235,7 +218,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     public void testValidateUserDefinedAggregate() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
         OperatorTable opTab = ChainedOperatorTable.of( stdOpTab, new ListSqlOperatorTable( ImmutableList.of( new MyCountAggFunction() ) ) );
@@ -290,7 +273,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     private Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -431,7 +414,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
     }
 
 
@@ -449,9 +432,9 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                equalTo( "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "  EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
+                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
     }
 
 
@@ -479,14 +462,14 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                equalTo( "EnumerableProject(deptno=[$1])\n"
-                        + "  EnumerableLimit(fetch=[10])\n"
-                        + "    EnumerableJoin(condition=[=($1, $5)], joinType=[left])\n"
-                        + "      EnumerableLimit(fetch=[10])\n"
-                        + "        EnumerableSort(sort0=[$1], dir0=[ASC])\n"
-                        + "          EnumerableTableScan(table=[[hr, emps]])\n"
-                        + "      EnumerableProject(deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
-                        + "        EnumerableTableScan(table=[[hr, depts]])\n" ) );
+                equalTo( "EnumerableProject(model=[RELATIONAL], deptno=[$1])\n"
+                        + "  EnumerableLimit(model=[RELATIONAL], fetch=[10])\n"
+                        + "    EnumerableJoin(model=[RELATIONAL], condition=[=($1, $5)], joinType=[left])\n"
+                        + "      EnumerableLimit(model=[RELATIONAL], fetch=[10])\n"
+                        + "        EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "          EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n"
+                        + "      EnumerableProject(model=[RELATIONAL], deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
+                        + "        EnumerableScan(model=[RELATIONAL], table=[[hr, depts]])\n" ) );
     }
 
 
@@ -498,9 +481,9 @@ public class PlannerTest extends SqlLanguagelDependant {
     public void testDuplicateSortPlan() throws Exception {
         runDuplicateSortCheck(
                 "select empid from ( select * from emps order by emps.deptno) order by deptno",
-                "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(empid=[$0], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "  EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1])\n"
+                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -512,9 +495,9 @@ public class PlannerTest extends SqlLanguagelDependant {
     public void testDuplicateSortPlanWithExpr() throws Exception {
         runDuplicateSortCheck(
                 "select empid+deptno from ( select empid, deptno from emps order by emps.deptno) order by deptno",
-                "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "  EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
+                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -522,9 +505,9 @@ public class PlannerTest extends SqlLanguagelDependant {
     public void testTwoSortRemoveInnerSort() throws Exception {
         runDuplicateSortCheck(
                 "select empid+deptno from ( select empid, deptno from emps order by empid) order by deptno",
-                "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "  EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
+                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -541,10 +524,10 @@ public class PlannerTest extends SqlLanguagelDependant {
                         + "   order by emps.deptno) "
                         + ")"
                         + "order by deptno",
-                "EnumerableSort(sort0=[$2], dir0=[ASC])\n"
-                        + "  EnumerableProject(emp_cnt=[$5], EXPR$1=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableWindow(window#0=[window(partition {1} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
-                        + "      EnumerableTableScan(table=[[hr, emps]])\n" );
+                "EnumerableSort(model=[RELATIONAL], sort0=[$2], dir0=[ASC])\n"
+                        + "  EnumerableProject(model=[RELATIONAL], emp_cnt=[$5], EXPR$1=[+($0, $1)], deptno=[$1])\n"
+                        + "    EnumerableWindow(model=[RELATIONAL], window#0=[window(partition {1} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
+                        + "      EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -558,9 +541,9 @@ public class PlannerTest extends SqlLanguagelDependant {
                         + "   order by emps.deptno) "
                         + ")"
                         + "order by deptno",
-                "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "  EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
+                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -602,9 +585,9 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                equalTo( "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(empid=[$0], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "  EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1])\n"
+                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
     }
 
 
@@ -627,7 +610,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableScan(table=[[hr, emps]])\n" ) );
     }
 
 
@@ -646,7 +629,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform2 = planner.transform( 0, traitSet, transform );
         assertThat(
                 toString( transform2 ),
-                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
     }
 
 
@@ -693,7 +676,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform2 = planner.transform( 1, traitSet, transform );
         assertThat(
                 toString( transform2 ),
-                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
     }
 
 
@@ -738,7 +721,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform2 = planner.transform( 1, traitSet1, transform );
         assertThat(
                 toString( transform2 ),
-                equalTo( "JdbcProject(name=[$2])\n  MockJdbcTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "JdbcProject(model=[RELATIONAL], name=[$2])\n  MockJdbcScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
     }
 
 
@@ -797,7 +780,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                containsString( "EnumerableJoin(condition=[=($0, $5)], joinType=[inner])" ) );
+                containsString( "EnumerableJoin(model=[RELATIONAL], condition=[=($0, $5)], joinType=[inner])" ) );
     }
 
 
@@ -814,14 +797,14 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "left join \"depts\" as d on e.\"deptno\" = d.\"deptno\"\n"
                 + "join \"dependents\" as p on e.\"empid\" = p.\"empid\"";
         final String expected = ""
-                + "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
-                + "  EnumerableProject(empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
-                + "    EnumerableJoin(condition=[=($0, $2)], joinType=[inner])\n"
-                + "      EnumerableTableScan(table=[[hr, dependents]])\n"
-                + "      EnumerableJoin(condition=[=($1, $5)], joinType=[left])\n"
-                + "        EnumerableTableScan(table=[[hr, emps]])\n"
-                + "        EnumerableProject(deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
-                + "          EnumerableTableScan(table=[[hr, depts]])";
+                + "EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
+                + "  EnumerableProject(model=[RELATIONAL], empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
+                + "    EnumerableJoin(model=[RELATIONAL], condition=[=($0, $2)], joinType=[inner])\n"
+                + "      EnumerableScan(model=[RELATIONAL], table=[[hr, dependents]])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($1, $5)], joinType=[left])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n"
+                + "        EnumerableProject(model=[RELATIONAL], deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[hr, depts]])";
         checkHeuristic( sql, expected );
     }
 
@@ -835,15 +818,15 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "right join \"depts\" as d on e.\"deptno\" = d.\"deptno\"\n"
                 + "join \"dependents\" as p on e.\"empid\" = p.\"empid\"";
         final String expected = ""
-                + "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
-                + "  EnumerableProject(empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
-                + "    EnumerableJoin(condition=[=($0, $2)], joinType=[inner])\n"
-                + "      EnumerableTableScan(table=[[hr, dependents]])\n"
-                + "      EnumerableProject(empid=[$5], deptno=[$6], name=[$7], salary=[$8], commission=[$9], deptno0=[$0], name0=[$1], employees=[$2], x=[$3], y=[$4])\n"
-                + "        EnumerableJoin(condition=[=($0, $6)], joinType=[left])\n"
-                + "          EnumerableProject(deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
-                + "            EnumerableTableScan(table=[[hr, depts]])\n"
-                + "          EnumerableTableScan(table=[[hr, emps]])";
+                + "EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
+                + "  EnumerableProject(model=[RELATIONAL], empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
+                + "    EnumerableJoin(model=[RELATIONAL], condition=[=($0, $2)], joinType=[inner])\n"
+                + "      EnumerableScan(model=[RELATIONAL], table=[[hr, dependents]])\n"
+                + "      EnumerableProject(model=[RELATIONAL], empid=[$5], deptno=[$6], name=[$7], salary=[$8], commission=[$9], deptno0=[$0], name0=[$1], employees=[$2], x=[$3], y=[$4])\n"
+                + "        EnumerableJoin(model=[RELATIONAL], condition=[=($0, $6)], joinType=[left])\n"
+                + "          EnumerableProject(model=[RELATIONAL], deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
+                + "            EnumerableScan(model=[RELATIONAL], table=[[hr, depts]])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])";
         checkHeuristic( sql, expected );
     }
 
@@ -857,14 +840,14 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "join \"depts\" as d on e.\"deptno\" = d.\"deptno\"\n"
                 + "right join \"dependents\" as p on e.\"empid\" = p.\"empid\"";
         final String expected = ""
-                + "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
-                + "  EnumerableProject(empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
-                + "    EnumerableJoin(condition=[=($0, $2)], joinType=[left])\n"
-                + "      EnumerableTableScan(table=[[hr, dependents]])\n"
-                + "      EnumerableJoin(condition=[=($1, $5)], joinType=[inner])\n"
-                + "        EnumerableTableScan(table=[[hr, emps]])\n"
-                + "        EnumerableProject(deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
-                + "          EnumerableTableScan(table=[[hr, depts]])";
+                + "EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
+                + "  EnumerableProject(model=[RELATIONAL], empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
+                + "    EnumerableJoin(model=[RELATIONAL], condition=[=($0, $2)], joinType=[left])\n"
+                + "      EnumerableScan(model=[RELATIONAL], table=[[hr, dependents]])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($1, $5)], joinType=[inner])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n"
+                + "        EnumerableProject(model=[RELATIONAL], deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[hr, depts]])";
         checkHeuristic( sql, expected );
     }
 
@@ -894,15 +877,15 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "where c.\"city\" = 'San Francisco'\n"
                 + "and p.\"brand_name\" = 'Washington'";
         final String expected = ""
-                + "EnumerableProject(product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], product_class_id=[$37], product_id0=[$38], brand_name=[$39], product_name=[$40], SKU=[$41], SRP=[$42], gross_weight=[$43], net_weight=[$44], recyclable_package=[$45], low_fat=[$46], units_per_case=[$47], cases_per_pallet=[$48], shelf_width=[$49], shelf_height=[$50], shelf_depth=[$51])\n"
-                + "  EnumerableProject(product_id0=[$44], time_id=[$45], customer_id0=[$46], promotion_id=[$47], store_id=[$48], store_sales=[$49], store_cost=[$50], unit_sales=[$51], customer_id=[$0], account_num=[$1], lname=[$2], fname=[$3], mi=[$4], address1=[$5], address2=[$6], address3=[$7], address4=[$8], city=[$9], state_province=[$10], postal_code=[$11], country=[$12], customer_region_id=[$13], phone1=[$14], phone2=[$15], birthdate=[$16], marital_status=[$17], yearly_income=[$18], gender=[$19], total_children=[$20], num_children_at_home=[$21], education=[$22], date_accnt_opened=[$23], member_card=[$24], occupation=[$25], houseowner=[$26], num_cars_owned=[$27], fullname=[$28], product_class_id=[$29], product_id=[$30], brand_name=[$31], product_name=[$32], SKU=[$33], SRP=[$34], gross_weight=[$35], net_weight=[$36], recyclable_package=[$37], low_fat=[$38], units_per_case=[$39], cases_per_pallet=[$40], shelf_width=[$41], shelf_height=[$42], shelf_depth=[$43])\n"
-                + "    EnumerableJoin(condition=[=($0, $46)], joinType=[inner])\n"
-                + "      EnumerableFilter(condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
-                + "        EnumerableTableScan(table=[[foodmart, customer]])\n"
-                + "      EnumerableJoin(condition=[=($1, $15)], joinType=[inner])\n"
-                + "        EnumerableFilter(condition=[=(CAST($2):VARCHAR, 'Washington')])\n"
-                + "          EnumerableTableScan(table=[[foodmart, product]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n";
+                + "EnumerableProject(model=[RELATIONAL], product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], product_class_id=[$37], product_id0=[$38], brand_name=[$39], product_name=[$40], SKU=[$41], SRP=[$42], gross_weight=[$43], net_weight=[$44], recyclable_package=[$45], low_fat=[$46], units_per_case=[$47], cases_per_pallet=[$48], shelf_width=[$49], shelf_height=[$50], shelf_depth=[$51])\n"
+                + "  EnumerableProject(model=[RELATIONAL], product_id0=[$44], time_id=[$45], customer_id0=[$46], promotion_id=[$47], store_id=[$48], store_sales=[$49], store_cost=[$50], unit_sales=[$51], customer_id=[$0], account_num=[$1], lname=[$2], fname=[$3], mi=[$4], address1=[$5], address2=[$6], address3=[$7], address4=[$8], city=[$9], state_province=[$10], postal_code=[$11], country=[$12], customer_region_id=[$13], phone1=[$14], phone2=[$15], birthdate=[$16], marital_status=[$17], yearly_income=[$18], gender=[$19], total_children=[$20], num_children_at_home=[$21], education=[$22], date_accnt_opened=[$23], member_card=[$24], occupation=[$25], houseowner=[$26], num_cars_owned=[$27], fullname=[$28], product_class_id=[$29], product_id=[$30], brand_name=[$31], product_name=[$32], SKU=[$33], SRP=[$34], gross_weight=[$35], net_weight=[$36], recyclable_package=[$37], low_fat=[$38], units_per_case=[$39], cases_per_pallet=[$40], shelf_width=[$41], shelf_height=[$42], shelf_depth=[$43])\n"
+                + "    EnumerableJoin(model=[RELATIONAL], condition=[=($0, $46)], joinType=[inner])\n"
+                + "      EnumerableFilter(model=[RELATIONAL], condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, customer]])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($1, $15)], joinType=[inner])\n"
+                + "        EnumerableFilter(model=[RELATIONAL], condition=[=(CAST($2):VARCHAR, 'Washington')])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, product]])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, sales_fact_1997]])\n";
         checkBushy( sql, expected );
     }
 
@@ -929,17 +912,17 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "where c.\"city\" = 'San Francisco'\n"
                 + "and p.\"brand_name\" = 'Washington'";
         final String expected = ""
-                + "EnumerableProject(product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], product_class_id=[$37], product_id0=[$38], brand_name=[$39], product_name=[$40], SKU=[$41], SRP=[$42], gross_weight=[$43], net_weight=[$44], recyclable_package=[$45], low_fat=[$46], units_per_case=[$47], cases_per_pallet=[$48], shelf_width=[$49], shelf_height=[$50], shelf_depth=[$51], product_class_id0=[$52], product_subcategory=[$53], product_category=[$54], product_department=[$55], product_family=[$56])\n"
-                + "  EnumerableProject(product_id0=[$49], time_id=[$50], customer_id0=[$51], promotion_id=[$52], store_id=[$53], store_sales=[$54], store_cost=[$55], unit_sales=[$56], customer_id=[$20], account_num=[$21], lname=[$22], fname=[$23], mi=[$24], address1=[$25], address2=[$26], address3=[$27], address4=[$28], city=[$29], state_province=[$30], postal_code=[$31], country=[$32], customer_region_id=[$33], phone1=[$34], phone2=[$35], birthdate=[$36], marital_status=[$37], yearly_income=[$38], gender=[$39], total_children=[$40], num_children_at_home=[$41], education=[$42], date_accnt_opened=[$43], member_card=[$44], occupation=[$45], houseowner=[$46], num_cars_owned=[$47], fullname=[$48], product_class_id=[$0], product_id=[$1], brand_name=[$2], product_name=[$3], SKU=[$4], SRP=[$5], gross_weight=[$6], net_weight=[$7], recyclable_package=[$8], low_fat=[$9], units_per_case=[$10], cases_per_pallet=[$11], shelf_width=[$12], shelf_height=[$13], shelf_depth=[$14], product_class_id0=[$15], product_subcategory=[$16], product_category=[$17], product_department=[$18], product_family=[$19])\n"
-                + "    EnumerableJoin(condition=[=($1, $49)], joinType=[inner])\n"
-                + "      EnumerableJoin(condition=[=($0, $15)], joinType=[inner])\n"
-                + "        EnumerableFilter(condition=[=(CAST($2):VARCHAR, 'Washington')])\n"
-                + "          EnumerableTableScan(table=[[foodmart, product]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, product_class]])\n"
-                + "      EnumerableJoin(condition=[=($0, $31)], joinType=[inner])\n"
-                + "        EnumerableFilter(condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
-                + "          EnumerableTableScan(table=[[foodmart, customer]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n";
+                + "EnumerableProject(model=[RELATIONAL], product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], product_class_id=[$37], product_id0=[$38], brand_name=[$39], product_name=[$40], SKU=[$41], SRP=[$42], gross_weight=[$43], net_weight=[$44], recyclable_package=[$45], low_fat=[$46], units_per_case=[$47], cases_per_pallet=[$48], shelf_width=[$49], shelf_height=[$50], shelf_depth=[$51], product_class_id0=[$52], product_subcategory=[$53], product_category=[$54], product_department=[$55], product_family=[$56])\n"
+                + "  EnumerableProject(model=[RELATIONAL], product_id0=[$49], time_id=[$50], customer_id0=[$51], promotion_id=[$52], store_id=[$53], store_sales=[$54], store_cost=[$55], unit_sales=[$56], customer_id=[$20], account_num=[$21], lname=[$22], fname=[$23], mi=[$24], address1=[$25], address2=[$26], address3=[$27], address4=[$28], city=[$29], state_province=[$30], postal_code=[$31], country=[$32], customer_region_id=[$33], phone1=[$34], phone2=[$35], birthdate=[$36], marital_status=[$37], yearly_income=[$38], gender=[$39], total_children=[$40], num_children_at_home=[$41], education=[$42], date_accnt_opened=[$43], member_card=[$44], occupation=[$45], houseowner=[$46], num_cars_owned=[$47], fullname=[$48], product_class_id=[$0], product_id=[$1], brand_name=[$2], product_name=[$3], SKU=[$4], SRP=[$5], gross_weight=[$6], net_weight=[$7], recyclable_package=[$8], low_fat=[$9], units_per_case=[$10], cases_per_pallet=[$11], shelf_width=[$12], shelf_height=[$13], shelf_depth=[$14], product_class_id0=[$15], product_subcategory=[$16], product_category=[$17], product_department=[$18], product_family=[$19])\n"
+                + "    EnumerableJoin(model=[RELATIONAL], condition=[=($1, $49)], joinType=[inner])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($0, $15)], joinType=[inner])\n"
+                + "        EnumerableFilter(model=[RELATIONAL], condition=[=(CAST($2):VARCHAR, 'Washington')])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, product]])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, product_class]])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($0, $31)], joinType=[inner])\n"
+                + "        EnumerableFilter(model=[RELATIONAL], condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, customer]])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, sales_fact_1997]])\n";
         checkBushy( sql, expected );
     }
 
@@ -962,18 +945,18 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "  on s.\"store_id\" = st.\"store_id\"\n"
                 + "where c.\"city\" = 'San Francisco'\n";
         final String expected = ""
-                + "EnumerableProject(product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], product_class_id=[$37], product_id0=[$38], brand_name=[$39], product_name=[$40], SKU=[$41], SRP=[$42], gross_weight=[$43], net_weight=[$44], recyclable_package=[$45], low_fat=[$46], units_per_case=[$47], cases_per_pallet=[$48], shelf_width=[$49], shelf_height=[$50], shelf_depth=[$51], product_class_id0=[$52], product_subcategory=[$53], product_category=[$54], product_department=[$55], product_family=[$56], store_id0=[$57], store_type=[$58], region_id=[$59], store_name=[$60], store_number=[$61], store_street_address=[$62], store_city=[$63], store_state=[$64], store_postal_code=[$65], store_country=[$66], store_manager=[$67], store_phone=[$68], store_fax=[$69], first_opened_date=[$70], last_remodel_date=[$71], store_sqft=[$72], grocery_sqft=[$73], frozen_sqft=[$74], meat_sqft=[$75], coffee_bar=[$76], video_store=[$77], salad_bar=[$78], prepared_food=[$79], florist=[$80])\n"
-                + "  EnumerableProject(product_id=[$29], time_id=[$30], customer_id0=[$31], promotion_id=[$32], store_id=[$33], store_sales=[$34], store_cost=[$35], unit_sales=[$36], customer_id=[$0], account_num=[$1], lname=[$2], fname=[$3], mi=[$4], address1=[$5], address2=[$6], address3=[$7], address4=[$8], city=[$9], state_province=[$10], postal_code=[$11], country=[$12], customer_region_id=[$13], phone1=[$14], phone2=[$15], birthdate=[$16], marital_status=[$17], yearly_income=[$18], gender=[$19], total_children=[$20], num_children_at_home=[$21], education=[$22], date_accnt_opened=[$23], member_card=[$24], occupation=[$25], houseowner=[$26], num_cars_owned=[$27], fullname=[$28], product_class_id=[$61], product_id0=[$62], brand_name=[$63], product_name=[$64], SKU=[$65], SRP=[$66], gross_weight=[$67], net_weight=[$68], recyclable_package=[$69], low_fat=[$70], units_per_case=[$71], cases_per_pallet=[$72], shelf_width=[$73], shelf_height=[$74], shelf_depth=[$75], product_class_id0=[$76], product_subcategory=[$77], product_category=[$78], product_department=[$79], product_family=[$80], store_id0=[$37], store_type=[$38], region_id=[$39], store_name=[$40], store_number=[$41], store_street_address=[$42], store_city=[$43], store_state=[$44], store_postal_code=[$45], store_country=[$46], store_manager=[$47], store_phone=[$48], store_fax=[$49], first_opened_date=[$50], last_remodel_date=[$51], store_sqft=[$52], grocery_sqft=[$53], frozen_sqft=[$54], meat_sqft=[$55], coffee_bar=[$56], video_store=[$57], salad_bar=[$58], prepared_food=[$59], florist=[$60])\n"
-                + "    EnumerableJoin(condition=[=($0, $31)], joinType=[inner])\n"
-                + "      EnumerableFilter(condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
-                + "        EnumerableTableScan(table=[[foodmart, customer]])\n"
-                + "      EnumerableJoin(condition=[=($0, $33)], joinType=[inner])\n"
-                + "        EnumerableJoin(condition=[=($4, $8)], joinType=[inner])\n"
-                + "          EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n"
-                + "          EnumerableTableScan(table=[[foodmart, store]])\n"
-                + "        EnumerableJoin(condition=[=($0, $15)], joinType=[inner])\n"
-                + "          EnumerableTableScan(table=[[foodmart, product]])\n"
-                + "          EnumerableTableScan(table=[[foodmart, product_class]])\n";
+                + "EnumerableProject(model=[RELATIONAL], product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], product_class_id=[$37], product_id0=[$38], brand_name=[$39], product_name=[$40], SKU=[$41], SRP=[$42], gross_weight=[$43], net_weight=[$44], recyclable_package=[$45], low_fat=[$46], units_per_case=[$47], cases_per_pallet=[$48], shelf_width=[$49], shelf_height=[$50], shelf_depth=[$51], product_class_id0=[$52], product_subcategory=[$53], product_category=[$54], product_department=[$55], product_family=[$56], store_id0=[$57], store_type=[$58], region_id=[$59], store_name=[$60], store_number=[$61], store_street_address=[$62], store_city=[$63], store_state=[$64], store_postal_code=[$65], store_country=[$66], store_manager=[$67], store_phone=[$68], store_fax=[$69], first_opened_date=[$70], last_remodel_date=[$71], store_sqft=[$72], grocery_sqft=[$73], frozen_sqft=[$74], meat_sqft=[$75], coffee_bar=[$76], video_store=[$77], salad_bar=[$78], prepared_food=[$79], florist=[$80])\n"
+                + "  EnumerableProject(model=[RELATIONAL], product_id=[$29], time_id=[$30], customer_id0=[$31], promotion_id=[$32], store_id=[$33], store_sales=[$34], store_cost=[$35], unit_sales=[$36], customer_id=[$0], account_num=[$1], lname=[$2], fname=[$3], mi=[$4], address1=[$5], address2=[$6], address3=[$7], address4=[$8], city=[$9], state_province=[$10], postal_code=[$11], country=[$12], customer_region_id=[$13], phone1=[$14], phone2=[$15], birthdate=[$16], marital_status=[$17], yearly_income=[$18], gender=[$19], total_children=[$20], num_children_at_home=[$21], education=[$22], date_accnt_opened=[$23], member_card=[$24], occupation=[$25], houseowner=[$26], num_cars_owned=[$27], fullname=[$28], product_class_id=[$61], product_id0=[$62], brand_name=[$63], product_name=[$64], SKU=[$65], SRP=[$66], gross_weight=[$67], net_weight=[$68], recyclable_package=[$69], low_fat=[$70], units_per_case=[$71], cases_per_pallet=[$72], shelf_width=[$73], shelf_height=[$74], shelf_depth=[$75], product_class_id0=[$76], product_subcategory=[$77], product_category=[$78], product_department=[$79], product_family=[$80], store_id0=[$37], store_type=[$38], region_id=[$39], store_name=[$40], store_number=[$41], store_street_address=[$42], store_city=[$43], store_state=[$44], store_postal_code=[$45], store_country=[$46], store_manager=[$47], store_phone=[$48], store_fax=[$49], first_opened_date=[$50], last_remodel_date=[$51], store_sqft=[$52], grocery_sqft=[$53], frozen_sqft=[$54], meat_sqft=[$55], coffee_bar=[$56], video_store=[$57], salad_bar=[$58], prepared_food=[$59], florist=[$60])\n"
+                + "    EnumerableJoin(model=[RELATIONAL], condition=[=($0, $31)], joinType=[inner])\n"
+                + "      EnumerableFilter(model=[RELATIONAL], condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, customer]])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($0, $33)], joinType=[inner])\n"
+                + "        EnumerableJoin(model=[RELATIONAL], condition=[=($4, $8)], joinType=[inner])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, sales_fact_1997]])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, store]])\n"
+                + "        EnumerableJoin(model=[RELATIONAL], condition=[=($0, $15)], joinType=[inner])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, product]])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, product_class]])\n";
         checkBushy( sql, expected );
     }
 
@@ -988,13 +971,13 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "  on s.\"customer_id\" = c.\"customer_id\"\n"
                 + "cross join \"department\"";
         final String expected = ""
-                + "EnumerableProject(product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], department_id=[$37], department_description=[$38])\n"
-                + "  EnumerableProject(product_id=[$2], time_id=[$3], customer_id=[$4], promotion_id=[$5], store_id=[$6], store_sales=[$7], store_cost=[$8], unit_sales=[$9], customer_id0=[$10], account_num=[$11], lname=[$12], fname=[$13], mi=[$14], address1=[$15], address2=[$16], address3=[$17], address4=[$18], city=[$19], state_province=[$20], postal_code=[$21], country=[$22], customer_region_id=[$23], phone1=[$24], phone2=[$25], birthdate=[$26], marital_status=[$27], yearly_income=[$28], gender=[$29], total_children=[$30], num_children_at_home=[$31], education=[$32], date_accnt_opened=[$33], member_card=[$34], occupation=[$35], houseowner=[$36], num_cars_owned=[$37], fullname=[$38], department_id=[$0], department_description=[$1])\n"
-                + "    EnumerableJoin(condition=[true], joinType=[inner])\n"
-                + "      EnumerableTableScan(table=[[foodmart, department]])\n"
-                + "      EnumerableJoin(condition=[=($2, $8)], joinType=[inner])\n"
-                + "        EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, customer]])\n";
+                + "EnumerableProject(model=[RELATIONAL], product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], department_id=[$37], department_description=[$38])\n"
+                + "  EnumerableProject(model=[RELATIONAL], product_id=[$2], time_id=[$3], customer_id=[$4], promotion_id=[$5], store_id=[$6], store_sales=[$7], store_cost=[$8], unit_sales=[$9], customer_id0=[$10], account_num=[$11], lname=[$12], fname=[$13], mi=[$14], address1=[$15], address2=[$16], address3=[$17], address4=[$18], city=[$19], state_province=[$20], postal_code=[$21], country=[$22], customer_region_id=[$23], phone1=[$24], phone2=[$25], birthdate=[$26], marital_status=[$27], yearly_income=[$28], gender=[$29], total_children=[$30], num_children_at_home=[$31], education=[$32], date_accnt_opened=[$33], member_card=[$34], occupation=[$35], houseowner=[$36], num_cars_owned=[$37], fullname=[$38], department_id=[$0], department_description=[$1])\n"
+                + "    EnumerableJoin(model=[RELATIONAL], condition=[true], joinType=[inner])\n"
+                + "      EnumerableScan(model=[RELATIONAL], table=[[foodmart, department]])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($2, $8)], joinType=[inner])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, sales_fact_1997]])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, customer]])\n";
         checkBushy( sql, expected );
     }
 
@@ -1011,15 +994,15 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "join \"employee\" as e\n"
                 + "  on d.\"department_id\" = e.\"department_id\"";
         final String expected = ""
-                + "EnumerableProject(product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], department_id=[$37], department_description=[$38], employee_id=[$39], full_name=[$40], first_name=[$41], last_name=[$42], position_id=[$43], position_title=[$44], store_id0=[$45], department_id0=[$46], birth_date=[$47], hire_date=[$48], end_date=[$49], salary=[$50], supervisor_id=[$51], education_level=[$52], marital_status0=[$53], gender0=[$54], management_role=[$55])\n"
-                + "  EnumerableProject(product_id=[$19], time_id=[$20], customer_id=[$21], promotion_id=[$22], store_id0=[$23], store_sales=[$24], store_cost=[$25], unit_sales=[$26], customer_id0=[$27], account_num=[$28], lname=[$29], fname=[$30], mi=[$31], address1=[$32], address2=[$33], address3=[$34], address4=[$35], city=[$36], state_province=[$37], postal_code=[$38], country=[$39], customer_region_id=[$40], phone1=[$41], phone2=[$42], birthdate=[$43], marital_status0=[$44], yearly_income=[$45], gender0=[$46], total_children=[$47], num_children_at_home=[$48], education=[$49], date_accnt_opened=[$50], member_card=[$51], occupation=[$52], houseowner=[$53], num_cars_owned=[$54], fullname=[$55], department_id=[$0], department_description=[$1], employee_id=[$2], full_name=[$3], first_name=[$4], last_name=[$5], position_id=[$6], position_title=[$7], store_id=[$8], department_id0=[$9], birth_date=[$10], hire_date=[$11], end_date=[$12], salary=[$13], supervisor_id=[$14], education_level=[$15], marital_status=[$16], gender=[$17], management_role=[$18])\n"
-                + "    EnumerableJoin(condition=[true], joinType=[inner])\n"
-                + "      EnumerableJoin(condition=[=($0, $9)], joinType=[inner])\n"
-                + "        EnumerableTableScan(table=[[foodmart, department]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, employee]])\n"
-                + "      EnumerableJoin(condition=[=($2, $8)], joinType=[inner])\n"
-                + "        EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, customer]])\n";
+                + "EnumerableProject(model=[RELATIONAL], product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], department_id=[$37], department_description=[$38], employee_id=[$39], full_name=[$40], first_name=[$41], last_name=[$42], position_id=[$43], position_title=[$44], store_id0=[$45], department_id0=[$46], birth_date=[$47], hire_date=[$48], end_date=[$49], salary=[$50], supervisor_id=[$51], education_level=[$52], marital_status0=[$53], gender0=[$54], management_role=[$55])\n"
+                + "  EnumerableProject(model=[RELATIONAL], product_id=[$19], time_id=[$20], customer_id=[$21], promotion_id=[$22], store_id0=[$23], store_sales=[$24], store_cost=[$25], unit_sales=[$26], customer_id0=[$27], account_num=[$28], lname=[$29], fname=[$30], mi=[$31], address1=[$32], address2=[$33], address3=[$34], address4=[$35], city=[$36], state_province=[$37], postal_code=[$38], country=[$39], customer_region_id=[$40], phone1=[$41], phone2=[$42], birthdate=[$43], marital_status0=[$44], yearly_income=[$45], gender0=[$46], total_children=[$47], num_children_at_home=[$48], education=[$49], date_accnt_opened=[$50], member_card=[$51], occupation=[$52], houseowner=[$53], num_cars_owned=[$54], fullname=[$55], department_id=[$0], department_description=[$1], employee_id=[$2], full_name=[$3], first_name=[$4], last_name=[$5], position_id=[$6], position_title=[$7], store_id=[$8], department_id0=[$9], birth_date=[$10], hire_date=[$11], end_date=[$12], salary=[$13], supervisor_id=[$14], education_level=[$15], marital_status=[$16], gender=[$17], management_role=[$18])\n"
+                + "    EnumerableJoin(model=[RELATIONAL], condition=[true], joinType=[inner])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($0, $9)], joinType=[inner])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, department]])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, employee]])\n"
+                + "      EnumerableJoin(model=[RELATIONAL], condition=[=($2, $8)], joinType=[inner])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, sales_fact_1997]])\n"
+                + "        EnumerableScan(model=[RELATIONAL], table=[[foodmart, customer]])\n";
         checkBushy( sql, expected );
     }
 
@@ -1028,7 +1011,7 @@ public class PlannerTest extends SqlLanguagelDependant {
      * Checks that a query returns a particular plan, using a planner with MultiJoinOptimizeBushyRule enabled.
      */
     private void checkBushy( String sql, String expected ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), SchemaType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
@@ -1084,19 +1067,19 @@ public class PlannerTest extends SqlLanguagelDependant {
 
 
     /**
-     * Rule to convert a {@link EnumerableTableScan} to an {@link MockJdbcTableScan}.
+     * Rule to convert a {@link EnumerableScan} to an {@link MockJdbcScan}.
      */
     private class MockJdbcTableRule extends ConverterRule {
 
         private MockJdbcTableRule( JdbcConvention out ) {
-            super( EnumerableTableScan.class, EnumerableConvention.INSTANCE, out, "MockJdbcTableRule" );
+            super( EnumerableScan.class, EnumerableConvention.INSTANCE, out, "MockJdbcTableRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final EnumerableTableScan scan = (EnumerableTableScan) alg;
-            return new MockJdbcTableScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
+            final EnumerableScan scan = (EnumerableScan) alg;
+            return new MockJdbcScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
         }
 
     }
@@ -1105,16 +1088,16 @@ public class PlannerTest extends SqlLanguagelDependant {
     /**
      * Relational expression representing a "mock" scan of a table in a JDBC data source.
      */
-    private static class MockJdbcTableScan extends TableScan implements JdbcAlg {
+    private static class MockJdbcScan extends Scan implements JdbcAlg {
 
-        MockJdbcTableScan( AlgOptCluster cluster, AlgOptTable table, JdbcConvention jdbcConvention ) {
+        MockJdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );
         }
 
 
         @Override
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new MockJdbcTableScan( getCluster(), table, (JdbcConvention) getConvention() );
+            return new MockJdbcScan( getCluster(), table, (JdbcConvention) getConvention() );
         }
 
 
@@ -1160,7 +1143,7 @@ public class PlannerTest extends SqlLanguagelDependant {
 
 
     public String checkTpchQuery( String tpchTestQuery ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ), SchemaType.RELATIONAL );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.configBuilder().setLex( Lex.MYSQL ).build() )
@@ -1220,7 +1203,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     public void testOrderByNonSelectColumn() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "tpch", new ReflectiveSchema( new TpchSchema() ), SchemaType.RELATIONAL );
+                .add( "tpch", new ReflectiveSchema( new TpchSchema() ), NamespaceType.RELATIONAL );
 
         String query = "select t.psPartkey from \n"
                 + "(select ps.psPartkey from `tpch`.`partsupp` ps \n"
@@ -1261,7 +1244,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                 plan,
                 equalTo( "LogicalSort(sort0=[$0], dir0=[ASC])\n"
                         + "  LogicalProject(psPartkey=[$0])\n"
-                        + "    EnumerableTableScan(table=[[tpch, partsupp]])\n" ) );
+                        + "    EnumerableScan(table=[[tpch, partsupp]])\n" ) );
     }
 
 
@@ -1281,8 +1264,8 @@ public class PlannerTest extends SqlLanguagelDependant {
     @Ignore
     public void testView() throws Exception {
         final String sql = "select * FROM dept";
-        final String expected = "LogicalProject(DEPTNO=[$0], DNAME=[$1])\n"
-                + "  LogicalValues(type=[RecordType(INTEGER DEPTNO, CHAR(11) DNAME)], tuples=[[{ 10, 'Sales      ' }, { 20, 'Marketing  ' }, { 30, 'Engineering' }, { 40, 'Empty      ' }]])\n";
+        final String expected = "LogicalProject(model=[RELATIONAL], DEPTNO=[$0], DNAME=[$1])\n"
+                + "  LogicalValues(model=[RELATIONAL], type=[RecordType(INTEGER DEPTNO, CHAR(11) DNAME)], tuples=[[{ 10, 'Sales      ' }, { 20, 'Marketing  ' }, { 30, 'Engineering' }, { 40, 'Empty      ' }]])\n";
         checkView( sql, is( expected ) );
     }
 
@@ -1292,10 +1275,10 @@ public class PlannerTest extends SqlLanguagelDependant {
     @Ignore
     public void testViewOnView() throws Exception {
         final String sql = "select * FROM dept30";
-        final String expected = "LogicalProject(DEPTNO=[$0], DNAME=[$1])\n"
-                + "  LogicalFilter(condition=[=($0, 30)])\n"
-                + "    LogicalProject(DEPTNO=[$0], DNAME=[$1])\n"
-                + "      LogicalValues(type=[RecordType(INTEGER DEPTNO, CHAR(11) DNAME)], tuples=[[{ 10, 'Sales      ' }, { 20, 'Marketing  ' }, { 30, 'Engineering' }, { 40, 'Empty      ' }]])\n";
+        final String expected = "LogicalProject(model=[RELATIONAL], DEPTNO=[$0], DNAME=[$1])\n"
+                + "  LogicalFilter(model=[RELATIONAL], condition=[=($0, 30)])\n"
+                + "    LogicalProject(model=[RELATIONAL], DEPTNO=[$0], DNAME=[$1])\n"
+                + "      LogicalValues(model=[RELATIONAL], type=[RecordType(INTEGER DEPTNO, CHAR(11) DNAME)], tuples=[[{ 10, 'Sales      ' }, { 20, 'Marketing  ' }, { 30, 'Engineering' }, { 40, 'Empty      ' }]])\n";
         checkView( sql, is( expected ) );
     }
 
@@ -1303,7 +1286,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     private void checkView( String sql, Matcher<String> matcher ) throws NodeParseException, ValidationException, AlgConversionException {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )

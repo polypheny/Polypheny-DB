@@ -64,8 +64,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.CalcSplitRule;
-import org.polypheny.db.algebra.rules.FilterTableScanRule;
-import org.polypheny.db.algebra.rules.ProjectTableScanRule;
+import org.polypheny.db.algebra.rules.FilterScanRule;
+import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.config.RuntimeConfig;
@@ -114,10 +114,10 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         final HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INTERPRETER )
-                        .addRuleInstance( ProjectTableScanRule.INSTANCE )
-                        .addRuleInstance( ProjectTableScanRule.INTERPRETER )
+                        .addRuleInstance( FilterScanRule.INSTANCE )
+                        .addRuleInstance( FilterScanRule.INTERPRETER )
+                        .addRuleInstance( ProjectScanRule.INSTANCE )
+                        .addRuleInstance( ProjectScanRule.INTERPRETER )
                         .build();
         final HepPlanner planner = new HepPlanner( hepProgram );
         planner.setRoot( rootRel );

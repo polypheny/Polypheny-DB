@@ -24,15 +24,15 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.sql.core.SqlLanguagelDependant;
@@ -49,15 +49,14 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
     @Ignore
     @Test
     public void exportTest() {
-        CatalogTable catalogTable = new CatalogTable(
+        CatalogEntity catalogEntity = new CatalogEntity(
                 4,
                 "stores",
                 ImmutableList.of(),
                 1,
                 1,
                 1,
-                "hans",
-                TableType.TABLE,
+                EntityType.ENTITY,
                 23L,
                 ImmutableList.of(),
                 true,
@@ -71,7 +70,7 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
 
         );
 
-        new CatalogSchema( 1, "public", 1, 1, "hans", SchemaType.RELATIONAL );
+        new CatalogNamespace( 1, "public", 1, 1, "hans", NamespaceType.RELATIONAL );
         new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" );
         new CatalogUser( 1, "hans", "secrete", 1L );
         new HashMap<>();
@@ -80,7 +79,7 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
                 new CatalogKey( 23L, 4, 1, 1, Arrays.asList( 5L, 6L ), EnforcementTime.ON_COMMIT ),
                 new CatalogKey( 24L, 4, 1, 1, Arrays.asList( 6L ), EnforcementTime.ON_COMMIT )
         );
-        String json = SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, true, true );
+        String json = SchemaToJsonMapper.exportTableDefinitionAsJson( catalogEntity, true, true );
         Assert.assertEquals( json, mockJson );
     }
 

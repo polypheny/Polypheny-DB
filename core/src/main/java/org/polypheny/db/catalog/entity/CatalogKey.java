@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
-public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
+public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     public final long id;
     public final long tableId;
@@ -61,7 +61,7 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getSchema( schemaId ).name;
+        return Catalog.getInstance().getNamespace( schemaId ).name;
     }
 
 
@@ -76,7 +76,7 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
         Catalog catalog = Catalog.getInstance();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : columnIds ) {
-            columnNames.add( catalog.getColumn( columnId ).name );
+            columnNames.add( catalog.getField( columnId ).name );
         }
         return columnNames;
     }

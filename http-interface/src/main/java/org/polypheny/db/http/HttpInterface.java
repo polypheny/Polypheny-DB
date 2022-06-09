@@ -128,6 +128,9 @@ public class HttpInterface extends QueryInterface {
 
             post( "/cql", ctx -> anyQuery( QueryLanguage.CQL, ctx ) );
 
+            post( "/cypher", ctx -> anyQuery( QueryLanguage.CYPHER, ctx ) );
+            post( "/opencypher", ctx -> anyQuery( QueryLanguage.CYPHER, ctx ) );
+
             StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
         } );
     }
@@ -141,8 +144,9 @@ public class HttpInterface extends QueryInterface {
                 null,
                 query,
                 transactionManager,
-                Catalog.getInstance().getUser( Catalog.defaultUserId ).name,
-                Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name, null );
+                Catalog.defaultUserId,
+                Catalog.defaultDatabaseId,
+                null );
         ctx.json( results.toArray( new Result[0] ) );
 
         if ( !statementCounters.containsKey( language ) ) {

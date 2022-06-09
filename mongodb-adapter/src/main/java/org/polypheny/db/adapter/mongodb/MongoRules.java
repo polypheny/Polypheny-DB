@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.adapter.mongodb;
@@ -63,21 +46,21 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Documents;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.core.document.DocumentValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -558,7 +541,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link MongoFilter}.
+     * Rule to convert a {@link LogicalFilter} to a {@link MongoFilter}.
      */
     private static class MongoFilterRule extends MongoConverterRule {
 
@@ -590,7 +573,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link MongoProject}.
+     * Rule to convert a {@link LogicalProject} to a {@link MongoProject}.
      */
     private static class MongoProjectRule extends MongoConverterRule {
 
@@ -685,12 +668,12 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             Values values = (Values) alg;
-            if ( values.getModel() == SchemaType.DOCUMENT ) {
-                Documents documents = (Documents) alg;
+            if ( values.getModel() == NamespaceType.DOCUMENT ) {
+                DocumentValues documentValues = (DocumentValues) alg;
                 return new MongoDocuments(
                         alg.getCluster(),
                         alg.getRowType(),
-                        documents.getDocumentTuples(),
+                        documentValues.getDocumentTuples(),
                         alg.getTraitSet().replace( out ),
                         values.getTuples()
                 );
@@ -747,11 +730,11 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, MongoTableModificationRule::mongoSupported, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
+            super( Modify.class, MongoTableModificationRule::mongoSupported, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
         }
 
 
-        private static boolean mongoSupported( TableModify modify ) {
+        private static boolean mongoSupported( Modify modify ) {
             if ( !modify.isInsert() ) {
                 return true;
             }
@@ -769,7 +752,7 @@ public class MongoRules {
 
 
             @Override
-            public AlgNode visit( TableScan scan ) {
+            public AlgNode visit( Scan scan ) {
                 supported = false;
                 return super.visit( scan );
             }
@@ -788,7 +771,7 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final TableModify modify = (TableModify) alg;
+            final Modify modify = (Modify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -813,7 +796,7 @@ public class MongoRules {
     }
 
 
-    private static class MongoTableModify extends TableModify implements MongoAlg {
+    private static class MongoTableModify extends Modify implements MongoAlg {
 
 
         private final GridFSBucket bucket;
@@ -1140,10 +1123,10 @@ public class MongoRules {
             }
 
             BsonDocument doc = new BsonDocument();
-            CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
+            CatalogEntity catalogEntity = implementor.mongoTable.getCatalogEntity();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
             assert input.getRowType().getFieldCount() == this.getTable().getRowType().getFieldCount();
-            Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
+            Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogEntity );
 
             implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
 
@@ -1153,7 +1136,7 @@ public class MongoRules {
                     // preparedInsert
                     doc.append( physicalMapping.get( pos ), new BsonDynamic( (RexDynamicParam) rexNode ) );
                 } else if ( rexNode instanceof RexLiteral ) {
-                    doc.append( getPhysicalName( input, catalogTable, pos ), BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
+                    doc.append( getPhysicalName( input, catalogEntity, pos ), BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
                 } else if ( rexNode instanceof RexCall ) {
                     PolyType type = table
                             .getTable()
@@ -1179,10 +1162,10 @@ public class MongoRules {
         }
 
 
-        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogTable catalogTable ) {
+        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogEntity catalogEntity ) {
             Map<Integer, String> map = new HashMap<>();
-            List<String> names = catalogTable.getColumnNames();
-            List<Long> ids = catalogTable.columnIds;
+            List<String> names = catalogEntity.getColumnNames();
+            List<Long> ids = catalogEntity.fieldIds;
             int pos = 0;
             for ( String name : Pair.left( fieldList ) ) {
                 map.put( pos, MongoStore.getPhysicalColumnName( name, ids.get( names.indexOf( name ) ) ) );
@@ -1192,10 +1175,10 @@ public class MongoRules {
         }
 
 
-        private String getPhysicalName( MongoProject input, CatalogTable catalogTable, int pos ) {
+        private String getPhysicalName( MongoProject input, CatalogEntity catalogEntity, int pos ) {
             String logicalName = input.getRowType().getFieldNames().get( pos );
-            int index = catalogTable.getColumnNames().indexOf( logicalName );
-            return MongoStore.getPhysicalColumnName( logicalName, catalogTable.columnIds.get( index ) );
+            int index = catalogEntity.getColumnNames().indexOf( logicalName );
+            return MongoStore.getPhysicalColumnName( logicalName, catalogEntity.fieldIds.get( index ) );
         }
 
 
@@ -1218,7 +1201,7 @@ public class MongoRules {
 
         private void handleDirectInsert( Implementor implementor, MongoValues values ) {
             List<BsonDocument> docs = new ArrayList<>();
-            CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
+            CatalogEntity catalogEntity = implementor.mongoTable.getCatalogEntity();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
 
             AlgDataType valRowType = rowType;
@@ -1227,8 +1210,8 @@ public class MongoRules {
                 valRowType = values.getRowType();
             }
 
-            List<String> columnNames = catalogTable.getColumnNames();
-            List<Long> columnIds = catalogTable.columnIds;
+            List<String> columnNames = catalogEntity.getColumnNames();
+            List<Long> columnIds = catalogEntity.fieldIds;
             for ( ImmutableList<RexLiteral> literals : values.tuples ) {
                 BsonDocument doc = new BsonDocument();
                 int pos = 0;
@@ -1254,7 +1237,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert an {@link org.polypheny.db.algebra.logical.LogicalAggregate}
+     * Rule to convert an {@link LogicalAggregate}
      * to an {@link MongoAggregate}.
      */
     private static class MongoAggregateRule extends MongoConverterRule {

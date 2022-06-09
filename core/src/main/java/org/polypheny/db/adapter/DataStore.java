@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.util.ArrayList;
@@ -24,15 +25,22 @@ import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
-
+@Slf4j
 public abstract class DataStore extends Adapter {
 
     @Getter
@@ -49,11 +57,17 @@ public abstract class DataStore extends Adapter {
     }
 
 
-    public abstract void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
+    public List<NamespaceType> getSupportedSchemaType() {
+        log.info( "Using default NamespaceType support." );
+        return ImmutableList.of( NamespaceType.RELATIONAL );
+    }
 
-    public abstract void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
 
-    public abstract void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn );
+    public abstract void createTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds );
+
+    public abstract void dropTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds );
+
+    public abstract void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn );
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
@@ -67,7 +81,76 @@ public abstract class DataStore extends Adapter {
 
     public abstract AvailableIndexMethod getDefaultIndexMethod();
 
-    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable );
+    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity );
+
+
+    @Override
+    public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
+        // overwrite this if the datastore supports graph
+        createGraphSubstitution( context, graphDatabase );
+    }
+
+
+    @Override
+    public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
+        // overwrite this if the datastore supports graph
+        dropGraphSubstitution( context, graphPlacement );
+    }
+
+
+    private void createGraphSubstitution( Context context, CatalogGraphDatabase graphDatabase ) {
+        CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
+
+        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodesId );
+        createTable( context, nodes, nodes.partitionProperty.partitionIds );
+
+        CatalogEntity nodeProperty = Catalog.getInstance().getTable( mapping.nodesPropertyId );
+        createTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
+
+        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgesId );
+        createTable( context, edges, edges.partitionProperty.partitionIds );
+
+        CatalogEntity edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
+        createTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
+    }
+
+
+    private void dropGraphSubstitution( Context context, CatalogGraphPlacement graphPlacement ) {
+        Catalog catalog = Catalog.getInstance();
+        CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
+
+        CatalogEntity nodes = catalog.getTable( mapping.nodesId );
+        dropTable( context, nodes, nodes.partitionProperty.partitionIds );
+
+        CatalogEntity nodeProperty = catalog.getTable( mapping.nodesPropertyId );
+        dropTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
+
+        CatalogEntity edges = catalog.getTable( mapping.edgesId );
+        dropTable( context, edges, edges.partitionProperty.partitionIds );
+
+        CatalogEntity edgeProperty = catalog.getTable( mapping.edgesPropertyId );
+        dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
+    }
+
+
+    public void createCollection( Context prepareContext, CatalogCollection catalogCollection ) {
+        // overwrite this if the datastore supports document
+        Catalog catalog = Catalog.getInstance();
+        CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
+
+        CatalogEntity collectionEntity = catalog.getTable( mapping.collectionId );
+        createTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
+    }
+
+
+    public void dropCollection( Context prepareContext, CatalogCollection catalogCollection ) {
+        // overwrite this if the datastore supports document
+        Catalog catalog = Catalog.getInstance();
+        CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
+
+        CatalogEntity collectionEntity = catalog.getTable( mapping.collectionId );
+        dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
+    }
 
 
     @AllArgsConstructor
@@ -89,7 +172,7 @@ public abstract class DataStore extends Adapter {
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
             for ( long columnId : columnIds ) {
-                columnNames.add( Catalog.getInstance().getColumn( columnId ).name );
+                columnNames.add( Catalog.getInstance().getField( columnId ).name );
             }
             return columnNames;
         }

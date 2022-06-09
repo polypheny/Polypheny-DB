@@ -52,8 +52,8 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptPredicateList;
@@ -76,7 +76,7 @@ import org.polypheny.db.util.Util;
  *
  * This should be used to infer whether same filters are applied on a given plan by materialized view rewriting rules.
  *
- * The output predicates might contain references to columns produced by TableScan operators ({@link RexTableInputRef}). In turn, each TableScan operator is identified uniquely by its qualified name and an identifier.
+ * The output predicates might contain references to columns produced by Scan operators ({@link RexTableInputRef}). In turn, each Scan operator is identified uniquely by its qualified name and an identifier.
  *
  * If the provider cannot infer the lineage for any of the expressions contain in any of the predicates, it will return null. Observe that this is different from the empty list of predicates, which means that there are not predicates in the (sub)plan.
  */
@@ -114,7 +114,7 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
     /**
      * Extract predicates for a table scan.
      */
-    public AlgOptPredicateList getAllPredicates( TableScan table, AlgMetadataQuery mq ) {
+    public AlgOptPredicateList getAllPredicates( Scan table, AlgMetadataQuery mq ) {
         return AlgOptPredicateList.EMPTY;
     }
 

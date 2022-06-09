@@ -19,7 +19,7 @@ package org.polypheny.db.replication.cdc;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.Pair;

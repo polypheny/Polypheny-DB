@@ -48,6 +48,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -87,7 +88,6 @@ public class HttpRestServer extends QueryInterface {
     private final RequestParser requestParser;
     private final int port;
     private final String uniqueName;
-    private final String databaseName = "APP";
 
     // Counter
     private final AtomicLong deleteCounter = new AtomicLong();
@@ -135,7 +135,7 @@ public class HttpRestServer extends QueryInterface {
             config.enableCorsForAllOrigins();
         } ).start( port );
 
-        Rest rest = new Rest( transactionManager, "pa", databaseName );
+        Rest rest = new Rest( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
         restRoutes( restServer, rest );
 
         log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );

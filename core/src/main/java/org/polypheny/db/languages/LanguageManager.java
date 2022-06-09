@@ -64,6 +64,13 @@ public abstract class LanguageManager {
     private static LanguageManager instance;
 
 
+    static {
+        if ( !DefaultRegisterer.isInit() ) {
+            DefaultRegisterer.registerOperators();
+        }
+    }
+
+
     public static synchronized LanguageManager setAndGetInstance( LanguageManager manager ) {
         if ( manager != null ) {
             instance = manager;

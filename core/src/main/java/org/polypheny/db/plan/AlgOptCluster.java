@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.metadata.MetadataFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
 
 
 /**
@@ -74,8 +75,8 @@ public class AlgOptCluster {
      *
      * For use only from {@link #create} and {@link AlgOptQuery}.
      */
-    private AlgOptCluster( AlgOptPlanner planner, AlgDataTypeFactory typeFactory, RexBuilder rexBuilder, AtomicInteger nextCorrel ) {
-        this.nextCorrel = nextCorrel;
+    private AlgOptCluster( AlgOptPlanner planner, AlgDataTypeFactory typeFactory, RexBuilder rexBuilder, AlgTraitSet traitSet ) {
+        this.nextCorrel = new AtomicInteger( 0 );
         this.mapCorrelToAlg = new HashMap<>();
         this.planner = Objects.requireNonNull( planner );
         this.typeFactory = Objects.requireNonNull( typeFactory );
@@ -84,7 +85,7 @@ public class AlgOptCluster {
 
         // set up a default alg metadata provider, giving the planner first crack at everything
         setMetadataProvider( DefaultAlgMetadataProvider.INSTANCE );
-        this.emptyTraitSet = planner.emptyTraitSet();
+        this.emptyTraitSet = traitSet;
         assert emptyTraitSet.size() == planner.getAlgTraitDefs().size();
     }
 
@@ -93,7 +94,26 @@ public class AlgOptCluster {
      * Creates a cluster.
      */
     public static AlgOptCluster create( AlgOptPlanner planner, RexBuilder rexBuilder ) {
-        return new AlgOptCluster( planner, rexBuilder.getTypeFactory(), rexBuilder, new AtomicInteger( 0 ) );
+        return AlgOptCluster.create( planner, rexBuilder, planner.emptyTraitSet() );
+    }
+
+
+    public static AlgOptCluster createDocument( AlgOptPlanner planner, RexBuilder rexBuilder ) {
+        AlgTraitSet traitSet = planner.emptyTraitSet().replace( ModelTrait.DOCUMENT );
+
+        return AlgOptCluster.create( planner, rexBuilder, traitSet );
+    }
+
+
+    public static AlgOptCluster createGraph( AlgOptPlanner planner, RexBuilder rexBuilder ) {
+        AlgTraitSet traitSet = planner.emptyTraitSet().replace( ModelTrait.GRAPH );
+
+        return AlgOptCluster.create( planner, rexBuilder, traitSet );
+    }
+
+
+    private static AlgOptCluster create( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet ) {
+        return new AlgOptCluster( planner, rexBuilder.getTypeFactory(), rexBuilder, traitSet );
     }
 
 

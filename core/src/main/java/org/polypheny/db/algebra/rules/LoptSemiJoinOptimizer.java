@@ -243,7 +243,7 @@ public class LoptSemiJoinOptimizer {
 
         // Find the best index
         final List<Integer> bestKeyOrder = new ArrayList<>();
-        LcsTableScan tmpFactRel = (LcsTableScan) factTable.toAlg( factRel::getCluster );
+        LcsScan tmpFactRel = (LcsScan) factTable.toAlg( factRel::getCluster );
 
         LcsIndexOptimizer indexOptimizer = new LcsIndexOptimizer( tmpFactRel );
         FemLocalIndex bestIndex =
@@ -671,7 +671,7 @@ public class LoptSemiJoinOptimizer {
     /**
      * Dummy class to allow code to compile.
      */
-    private static class LcsTableScan {
+    private static class LcsScan {
 
     }
 
@@ -681,7 +681,7 @@ public class LoptSemiJoinOptimizer {
      */
     private static class LcsIndexOptimizer {
 
-        LcsIndexOptimizer( LcsTableScan alg ) {
+        LcsIndexOptimizer( LcsScan alg ) {
         }
 
 

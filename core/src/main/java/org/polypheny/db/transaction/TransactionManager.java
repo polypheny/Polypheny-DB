@@ -18,24 +18,24 @@ package org.polypheny.db.transaction;
 
 
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 
 
 public interface TransactionManager {
 
-    Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin );
+    Transaction startTransaction( CatalogUser user, CatalogNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin );
 
-    Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor );
+    Transaction startTransaction( CatalogUser user, CatalogNamespace defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor );
 
-    Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
+    Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownNamespaceException;
 
-    Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
+    Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownNamespaceException;
 
     void removeTransaction( PolyXid xid );
 

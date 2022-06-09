@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -59,19 +42,19 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalWindow;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -106,7 +89,7 @@ public class Bindables {
     }
 
 
-    public static final AlgOptRule BINDABLE_TABLE_SCAN_RULE = new BindableTableScanRule( AlgFactories.LOGICAL_BUILDER );
+    public static final AlgOptRule BINDABLE_TABLE_SCAN_RULE = new BindableScanRule( AlgFactories.LOGICAL_BUILDER );
 
     public static final AlgOptRule BINDABLE_FILTER_RULE = new BindableFilterRule( AlgFactories.LOGICAL_BUILDER );
 
@@ -152,26 +135,26 @@ public class Bindables {
 
 
     /**
-     * Rule that converts a {@link org.polypheny.db.algebra.core.TableScan} to bindable convention.
+     * Rule that converts a {@link Scan} to bindable convention.
      */
-    public static class BindableTableScanRule extends AlgOptRule {
+    public static class BindableScanRule extends AlgOptRule {
 
         /**
-         * Creates a BindableTableScanRule.
+         * Creates a BindableScanRule.
          *
          * @param algBuilderFactory Builder for relational expressions
          */
-        public BindableTableScanRule( AlgBuilderFactory algBuilderFactory ) {
-            super( operand( LogicalTableScan.class, none() ), algBuilderFactory, null );
+        public BindableScanRule( AlgBuilderFactory algBuilderFactory ) {
+            super( operand( LogicalScan.class, none() ), algBuilderFactory, null );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final LogicalTableScan scan = call.alg( 0 );
+            final LogicalScan scan = call.alg( 0 );
             final AlgOptTable table = scan.getTable();
-            if ( BindableTableScan.canHandle( table ) ) {
-                call.transformTo( BindableTableScan.create( scan.getCluster(), table ) );
+            if ( BindableScan.canHandle( table ) ) {
+                call.transformTo( BindableScan.create( scan.getCluster(), table ) );
             }
         }
 
@@ -181,18 +164,18 @@ public class Bindables {
     /**
      * Scan of a table that implements {@link ScannableTable} and therefore can be converted into an {@link Enumerable}.
      */
-    public static class BindableTableScan extends TableScan implements BindableAlg {
+    public static class BindableScan extends Scan implements BindableAlg {
 
         public final ImmutableList<RexNode> filters;
         public final ImmutableIntList projects;
 
 
         /**
-         * Creates a BindableTableScan.
+         * Creates a BindableScan.
          *
          * Use {@link #create} unless you know what you are doing.
          */
-        BindableTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
+        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
             super( cluster, traitSet, table );
             this.filters = Objects.requireNonNull( filters );
             this.projects = Objects.requireNonNull( projects );
@@ -201,27 +184,28 @@ public class Bindables {
 
 
         /**
-         * Creates a BindableTableScan.
+         * Creates a BindableScan.
          */
-        public static BindableTableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
+        public static BindableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
             return create( cluster, algOptTable, ImmutableList.of(), identity( algOptTable ) );
         }
 
 
         /**
-         * Creates a BindableTableScan.
+         * Creates a BindableScan.
          */
-        public static BindableTableScan create( AlgOptCluster cluster, AlgOptTable algOptTable, List<RexNode> filters, List<Integer> projects ) {
+        public static BindableScan create( AlgOptCluster cluster, AlgOptTable algOptTable, List<RexNode> filters, List<Integer> projects ) {
             final Table table = algOptTable.unwrap( Table.class );
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
+                            .replace( table.getSchemaType().getModelTrait() )
                             .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
                                 if ( table != null ) {
                                     return table.getStatistic().getCollations();
                                 }
                                 return ImmutableList.of();
                             } );
-            return new BindableTableScan( cluster, traitSet, algOptTable, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
+            return new BindableScan( cluster, traitSet, algOptTable, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
         }
 
 
@@ -266,7 +250,7 @@ public class Bindables {
 
         @Override
         public String algCompareString() {
-            return "BindableTableScan$" +
+            return "BindableScan$" +
                     String.join( ".", table.getQualifiedName() ) +
                     (filters != null ? filters.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                     (projects != null ? projects.toString() : "") + "&";
@@ -377,7 +361,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link BindableProject}.
+     * Rule to convert a {@link LogicalProject} to a {@link BindableProject}.
      */
     public static class BindableProjectRule extends ConverterRule {
 
@@ -506,7 +490,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalJoin} to a {@link BindableJoin}.
+     * Rule to convert a {@link LogicalJoin} to a {@link BindableJoin}.
      */
     public static class BindableJoinRule extends ConverterRule {
 
@@ -828,7 +812,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalWindow} to a {@link BindableWindow}.
+     * Rule to convert a {@link LogicalWindow} to a {@link BindableWindow}.
      */
     public static class BindableWindowRule extends ConverterRule {
 

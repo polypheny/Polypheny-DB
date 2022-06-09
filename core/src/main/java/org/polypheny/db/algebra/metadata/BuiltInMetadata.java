@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.rex.RexNode;
@@ -122,7 +123,7 @@ public abstract class BuiltInMetadata {
         /**
          * Determines whether a specified set of columns from a specified relational expression are unique.
          *
-         * For example, if the relational expression is a {@code TableScan} to T(A, B, C, D) whose key is (A, B), then:
+         * For example, if the relational expression is a {@code Scan} to T(A, B, C, D) whose key is (A, B), then:
          * <ul>
          * <li>{@code areColumnsUnique([0, 1])} yields true,
          * <li>{@code areColumnsUnique([0])} yields false,
@@ -472,8 +473,8 @@ public abstract class BuiltInMetadata {
         /**
          * Given the input expression applied on the given {@link AlgNode}, this provider returns the expression with its lineage resolved.
          *
-         * In particular, the result will be a set of nodes which might contain references to columns in TableScan operators ({@link RexTableInputRef}). An expression can have more than one lineage expression due to
-         * Union operators. However, we do not check column equality in Filter predicates. Each TableScan operator below the node is identified uniquely by its qualified name and its entity number.
+         * In particular, the result will be a set of nodes which might contain references to columns in Scan operators ({@link RexTableInputRef}). An expression can have more than one lineage expression due to
+         * Union operators. However, we do not check column equality in Filter predicates. Each Scan operator below the node is identified uniquely by its qualified name and its entity number.
          *
          * For example, if the expression is {@code $0 + 2} and {@code $0} originated from column {@code $3} in the {@code 0} occurrence of table {@code A} in the plan, result will be: {@code A.#0.$3 + 2}.
          * Occurrences are generated in no particular order, but it is guaranteed that if two expressions referred to the same table, the qualified name + occurrence will be the same.
@@ -505,7 +506,7 @@ public abstract class BuiltInMetadata {
         /**
          * This provider returns the tables used by a given plan.
          *
-         * In particular, the result will be a set of unique table references ({@link AlgTableRef}) corresponding to each TableScan operator in the plan. These table references are
+         * In particular, the result will be a set of unique table references ({@link AlgTableRef}) corresponding to each Scan operator in the plan. These table references are
          * composed by the table qualified name and an entity number.
          *
          * Importantly, the table identifiers returned by this metadata provider will be consistent with the unique identifiers used by the {@link ExpressionLineage} provider,
@@ -638,7 +639,7 @@ public abstract class BuiltInMetadata {
      * Metadata about the predicates that hold in the rows emitted from a relational expression.
      *
      * The difference with respect to {@link Predicates} provider is that this provider tries to extract ALL predicates even if they are not applied on the output expressions of the relational expression; we rely
-     * on {@link RexTableInputRef} to reference origin columns in {@link org.polypheny.db.algebra.core.TableScan} for the result predicates.
+     * on {@link RexTableInputRef} to reference origin columns in {@link Scan} for the result predicates.
      */
     public interface AllPredicates extends Metadata {
 
@@ -673,7 +674,7 @@ public abstract class BuiltInMetadata {
         /**
          * Returns whether each physical operator implementing this relational expression belongs to a different process than its inputs.
          *
-         * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link org.polypheny.db.algebra.core.TableScan},
+         * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link Scan},
          * or with a phase-change node such as an {@link org.polypheny.db.algebra.core.Exchange}. Hadoop's shuffle operator (a form of sort-exchange) causes data to be sent across the network.
          */
         Boolean isPhaseTransition();

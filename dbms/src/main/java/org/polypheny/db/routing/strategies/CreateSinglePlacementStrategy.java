@@ -23,15 +23,15 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 
 
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
-        CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
-        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.dataPlacements.get( 0 ) ) );
+        CatalogEntity catalogEntity = Catalog.getInstance().getTable( addedColumn.tableId );
+        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogEntity.dataPlacements.get( 0 ) ) );
     }
 
 

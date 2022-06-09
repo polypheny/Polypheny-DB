@@ -24,8 +24,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
@@ -140,18 +140,18 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         try {
             // Check if table is already partitioned
-            if ( catalogTable.partitionProperty.partitionType == Catalog.PartitionType.NONE ) {
+            if ( catalogEntity.partitionProperty.partitionType == Catalog.PartitionType.NONE ) {
                 DdlManager.getInstance().addPartitioning(
                         PartitionInformation.fromNodeLists(
-                                catalogTable,
+                                catalogEntity,
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
                                 partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
@@ -163,14 +163,14 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                         statement );
 
             } else {
-                throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
+                throw new RuntimeException( "Table '" + catalogEntity.name + "' is already partitioned" );
             }
         } catch ( UnknownPartitionTypeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( PartitionGroupNamesNotUniqueException e ) {
             throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );
         } catch ( UnknownColumnException e ) {
-            throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.columnNotFoundInTable( partitionColumn.getSimple(), catalogTable.name ) );
+            throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.columnNotFoundInTable( partitionColumn.getSimple(), catalogEntity.name ) );
         }
     }
 

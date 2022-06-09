@@ -22,8 +22,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -94,16 +94,16 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         try {
             DdlManager.getInstance().addColumnPlacement(
-                    catalogTable,
+                    catalogEntity,
                     columnName.getSimple(),
                     storeInstance,
                     statement );
@@ -114,11 +114,11 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
         } catch ( PlacementNotExistsException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
+                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogEntity.name ) );
         } catch ( PlacementAlreadyExistsException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
+                    RESOURCE.placementAlreadyExists( catalogEntity.name, storeName.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {
             throw CoreUtil.newContextException(
                     columnName.getPos(),

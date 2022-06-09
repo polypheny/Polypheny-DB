@@ -24,7 +24,7 @@ import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
-public final class CatalogUser implements CatalogEntity, Comparable<CatalogUser> {
+public final class CatalogUser implements CatalogObject, Comparable<CatalogUser> {
 
     private static final long serialVersionUID = -3456842618158263847L;
 
@@ -42,8 +42,8 @@ public final class CatalogUser implements CatalogEntity, Comparable<CatalogUser>
     }
 
 
-    public CatalogSchema getDefaultSchema() {
-        return Catalog.getInstance().getSchema( defaultSchema );
+    public CatalogNamespace getDefaultSchema() {
+        return Catalog.getInstance().getNamespace( defaultSchema );
     }
 
 

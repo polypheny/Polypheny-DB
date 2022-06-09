@@ -16,13 +16,13 @@
 
 package org.polypheny.db.transaction;
 
+import org.polypheny.db.transaction.Transaction.AccessMode;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-import org.polypheny.db.transaction.Transaction.AccessMode;
 
 
 // Based on code taken from https://github.com/dstibrany/LockManager

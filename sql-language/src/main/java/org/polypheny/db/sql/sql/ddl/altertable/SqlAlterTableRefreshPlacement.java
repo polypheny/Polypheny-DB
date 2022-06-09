@@ -25,8 +25,8 @@ import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ReplicationStrategy;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -95,24 +95,24 @@ public class SqlAlterTableRefreshPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         List<DataStore> dataStores = new ArrayList<>();
 
         // Add all eagerly replicated stores
         if ( allPlacements ) {
-            Catalog.getInstance().getDataPlacementsByReplicationStrategy( catalogTable.id, ReplicationStrategy.LAZY ).forEach( dp ->
+            Catalog.getInstance().getDataPlacementsByReplicationStrategy( catalogEntity.id, ReplicationStrategy.LAZY ).forEach( dp ->
                     dataStores.add( getDataStoreInstance( dp.adapterId ) )
             );
         } else {
             DataStore storeInstance = getDataStoreInstance( storeName );
-            if ( Catalog.getInstance().checkIfExistsDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) ) {
+            if ( Catalog.getInstance().checkIfExistsDataPlacement( storeInstance.getAdapterId(), catalogEntity.id ) ) {
 
-                if ( Catalog.getInstance().getDataPlacement( storeInstance.getAdapterId(), catalogTable.id ).replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
+                if ( Catalog.getInstance().getDataPlacement( storeInstance.getAdapterId(), catalogEntity.id ).replicationStrategy.equals( ReplicationStrategy.EAGER ) ) {
                     throw new RuntimeException( "The placement on store '" + storeName + "' is updated EAGERLY. Nothing to refresh here." );
                 }
                 dataStores.add( storeInstance );
@@ -120,7 +120,7 @@ public class SqlAlterTableRefreshPlacement extends SqlAlterTable {
         }
 
         try {
-            DdlManager.getInstance().refreshDataPlacements( catalogTable, dataStores, statement );
+            DdlManager.getInstance().refreshDataPlacements( catalogEntity, dataStores, statement );
         } catch ( UnknownAdapterException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),

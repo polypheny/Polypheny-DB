@@ -36,6 +36,7 @@ package org.polypheny.db.rex;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.Gson;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigDecimal;
@@ -43,10 +44,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.AbstractList;
+import java.util.AbstractMap;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -55,6 +59,13 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CompositeList;
@@ -157,7 +168,9 @@ import org.polypheny.db.util.Util;
  * </tr>
  * </table>
  */
-public class RexLiteral extends RexNode {
+public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
+
+    private static final Gson gson = new Gson();
 
     /**
      * The value of this literal. Must be consistent with its type, as per {@link #valueMatchesType}. For example, you can't store an {@link Integer} value here just because you feel like it -- all numbers are
@@ -398,17 +411,28 @@ public class RexLiteral extends RexNode {
                 return value instanceof Enum;
             case ROW:
             case MULTISET:
-                return value instanceof List;
+            case ARRAY:
+                return value instanceof PolyList;
             case ANY:
                 // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains an integer literal surrounded by a cast function.
                 return false;
+            case GRAPH:
+                return value instanceof PolyGraph;
+            case NODE:
+                return value instanceof PolyNode;
+            case EDGE:
+                return value instanceof PolyEdge;
+            case PATH:
+                return value instanceof PolyPath;
+            case MAP:
+                return value instanceof Map;
             default:
                 throw Util.unexpected( typeName );
         }
     }
 
 
-    private static String toJavaString( Comparable value, PolyType typeName, AlgDataType type, RexDigestIncludeType includeType ) {
+    private static String toJavaString( Comparable<?> value, PolyType typeName, AlgDataType type, RexDigestIncludeType includeType ) {
         assert includeType != RexDigestIncludeType.OPTIONAL : "toJavaString must not be called with includeType=OPTIONAL";
         String fullTypeString = type.getFullTypeString();
         if ( value == null ) {
@@ -494,7 +518,7 @@ public class RexLiteral extends RexNode {
                 || o instanceof ByteString ) {
             return litmus.succeed();
         } else if ( o instanceof List ) {
-            List list = (List) o;
+            @SuppressWarnings("unchecked") List<Object> list = (List<Object>) o;
             for ( Object o1 : list ) {
                 if ( !validConstant( o1, litmus ) ) {
                     return litmus.fail( "not a constant: {}", o1 );
@@ -502,8 +526,8 @@ public class RexLiteral extends RexNode {
             }
             return litmus.succeed();
         } else if ( o instanceof Map ) {
-            @SuppressWarnings("unchecked") final Map<Object, Object> map = (Map) o;
-            for ( Map.Entry entry : map.entrySet() ) {
+            @SuppressWarnings("unchecked") final Map<Object, Object> map = (Map<Object, Object>) o;
+            for ( Map.Entry<Object, Object> entry : map.entrySet() ) {
                 if ( !validConstant( entry.getKey(), litmus ) ) {
                     return litmus.fail( "not a constant: {}", entry.getKey() );
                 }
@@ -607,7 +631,7 @@ public class RexLiteral extends RexNode {
      * @param typeName Type family
      * @param includeType if representation should include data type
      */
-    private static void printAsJava( Comparable value, PrintWriter pw, PolyType typeName, boolean java, RexDigestIncludeType includeType ) {
+    private static void printAsJava( Comparable<?> value, PrintWriter pw, PolyType typeName, boolean java, RexDigestIncludeType includeType ) {
         switch ( typeName ) {
             case CHAR:
                 NlsString nlsString = (NlsString) value;
@@ -624,7 +648,7 @@ public class RexLiteral extends RexNode {
                 break;
             case DECIMAL:
                 assert value instanceof BigDecimal;
-                pw.print( value.toString() );
+                pw.print( value );
                 break;
             case DOUBLE:
                 assert value instanceof BigDecimal;
@@ -656,17 +680,11 @@ public class RexLiteral extends RexNode {
                 pw.print( value );
                 break;
             case TIME:
-                assert value instanceof TimeString;
-                pw.print( value );
-                break;
             case TIME_WITH_LOCAL_TIME_ZONE:
                 assert value instanceof TimeString;
                 pw.print( value );
                 break;
             case TIMESTAMP:
-                assert value instanceof TimestampString;
-                pw.print( value );
-                break;
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 assert value instanceof TimestampString;
                 pw.print( value );
@@ -692,8 +710,9 @@ public class RexLiteral extends RexNode {
                 }
                 break;
             case MULTISET:
+            case ARRAY:
             case ROW:
-                @SuppressWarnings("unchecked") final List<RexLiteral> list = (List) value;
+                @SuppressWarnings("unchecked") final List<RexLiteral> list = (List<RexLiteral>) value;
                 pw.print(
                         new AbstractList<String>() {
                             @Override
@@ -707,6 +726,37 @@ public class RexLiteral extends RexNode {
                                 return list.size();
                             }
                         } );
+                break;
+            case MAP:
+                @SuppressWarnings("unchecked") final Map<RexLiteral, RexLiteral> map = (Map<RexLiteral, RexLiteral>) value;
+                pw.print(
+                        new AbstractMap<String, String>() {
+                            @Override
+                            public Set<Entry<String, String>> entrySet() {
+                                return map
+                                        .entrySet()
+                                        .stream()
+                                        .map( e -> new SimpleImmutableEntry<>( e.getKey().computeDigest( includeType ), e.getValue().computeDigest( includeType ) ) )
+                                        .collect( Collectors.toSet() );
+                            }
+                        }
+                );
+                break;
+            case NODE:
+                assert value instanceof PolyNode;
+                pw.print( value );
+                break;
+            case EDGE:
+                assert value instanceof PolyEdge;
+                pw.print( value );
+                break;
+            case GRAPH:
+                assert value instanceof PolyGraph;
+                pw.print( value );
+                break;
+            case PATH:
+                assert value instanceof PolyPath;
+                pw.print( value );
                 break;
             default:
                 assert valueMatchesType( value, typeName, true );
@@ -769,9 +819,17 @@ public class RexLiteral extends RexNode {
             case DATE:
             case TIMESTAMP:
                 return getValueAs( Calendar.class );
+            case MAP:
+                return getValueAsPolyMap();
             default:
                 return value;
         }
+    }
+
+
+    private PolyMap<Comparable<?>, Comparable<?>> getValueAsPolyMap() {
+        return new PolyMap<Comparable<?>, Comparable<?>>( ((Map<RexLiteral, RexLiteral>) value).entrySet().stream()
+                .collect( Collectors.toMap( e -> e.getKey().getValueForQueryParameterizer(), e -> e.getValue().getValueForQueryParameterizer() ) ) );
     }
 
 
@@ -810,7 +868,10 @@ public class RexLiteral extends RexNode {
                 return getValueAs( Float.class );
             case DOUBLE:
                 return getValueAs( Double.class );
-
+            case ARRAY:
+                return ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toCollection( PolyList::new ) );
+            case MAP:
+                return getValueAsPolyMap();
             /*case BINARY:
             case VARBINARY:
                 break;
@@ -1015,6 +1076,37 @@ public class RexLiteral extends RexNode {
                     return clazz.cast( getValueAs( BigDecimal.class ).signum() < 0 );
                 }
                 break;
+            case MAP:
+                if ( clazz == Map.class ) {
+                    return clazz.cast( value );
+                }
+                break;
+            case ARRAY:
+                if ( clazz == List.class ) {
+                    return clazz.cast( value );
+                } else if ( clazz == String.class ) {
+                    return clazz.cast( gson.toJson( ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toList() ) ) );
+                }
+                break;
+            case NODE:
+                if ( clazz == PolyNode.class ) {
+                    return clazz.cast( value );
+                } else if ( clazz == byte[].class ) {
+                    return clazz.cast( PolySerializer.serializeAndCompress( value ) );
+                }
+                break;
+            case EDGE:
+                if ( clazz == PolyEdge.class ) {
+                    return clazz.cast( value );
+                } else if ( clazz == byte[].class ) {
+                    return clazz.cast( PolySerializer.serializeAndCompress( value ) );
+                }
+                break;
+            case PATH:
+                if ( clazz == PolyPath.class ) {
+                    return clazz.cast( value );
+                }
+                break;
         }
         throw new AssertionError( "cannot convert " + typeName + " literal to " + clazz );
     }
@@ -1151,6 +1243,30 @@ public class RexLiteral extends RexNode {
     @Override
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitLiteral( this, arg );
+    }
+
+
+    @Override
+    public int compareTo( RexLiteral o ) {
+        if ( !this.value.getClass().equals( o.value.getClass() ) ) {
+            return -1;
+        }
+
+        int comp = this.value.compareTo( o.value );
+
+        if ( comp != 0 ) {
+            return -1;
+        }
+
+        return this.digest.equals( o.digest )
+                ? 0 : this.digest.length() > o.digest.length()
+                ? 1 : -1;
+    }
+
+
+    public List<RexLiteral> getRexList() {
+        assert value instanceof PolyList;
+        return (List<RexLiteral>) value;
     }
 
 }

@@ -32,7 +32,7 @@ public class MongoRowType extends AlgRecordType {
 
     public MongoRowType( StructKind kind, List<AlgDataTypeField> fields, MongoTable mongoTable ) {
         super( kind, fields );
-        Catalog.getInstance().getColumns( mongoTable.getCatalogTable().id ).forEach( column -> {
+        Catalog.getInstance().getColumns( mongoTable.getCatalogEntity().id ).forEach( column -> {
             idToName.put( column.id, column.name );
             nameToId.put( column.name, column.id );
         } );

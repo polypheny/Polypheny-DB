@@ -25,8 +25,8 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementStateException;
 import org.polypheny.db.catalog.exceptions.UnknownReplicationStrategyException;
 import org.polypheny.db.ddl.DdlManager;
@@ -102,10 +102,10 @@ public class SqlAlterTableModifyPlacementProperties extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
 
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         if ( placementPropertyMap.isEmpty() ) {
@@ -120,17 +120,17 @@ public class SqlAlterTableModifyPlacementProperties extends SqlAlterTable {
         }
         int storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
-        if ( !catalogTable.dataPlacements.contains( storeId ) ) {
+        if ( !catalogEntity.dataPlacements.contains( storeId ) ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
+                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogEntity.name ) );
         }
 
 
         // Update
         try {
             DdlManager.getInstance().modifyDataPlacementProperties(
-                    SqlPlacementPropertyExtractor.fromNodeLists( catalogTable, placementPropertyMap ),
+                    SqlPlacementPropertyExtractor.fromNodeLists( catalogEntity, placementPropertyMap ),
                     storeInstance,
                     statement
             );

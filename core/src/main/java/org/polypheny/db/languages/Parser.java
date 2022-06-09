@@ -17,6 +17,7 @@
 package org.polypheny.db.languages;
 
 import java.io.Reader;
+import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
@@ -84,6 +85,10 @@ public interface Parser {
     Node parseQuery( String query ) throws NodeParseException;
 
     Node parseStmt() throws NodeParseException;
+
+    default List<? extends Node> parseStmts() throws NodeParseException {
+        throw new UnsupportedOperationException( "This operation is not supported by the used parser.");
+    }
 
     /**
      * Interface to define the configuration for a SQL parser.

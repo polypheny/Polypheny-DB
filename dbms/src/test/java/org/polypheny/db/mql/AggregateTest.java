@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $match( "{\"test\":\"test\"}" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkResultSet( result, expected, true );
     }
 
 
@@ -104,7 +104,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $match( "{\"$or\":[{\"test\": 1}, {\"test\": 1.3}]}" ), $match( "{\"test\": 1}" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkResultSet( result, expected, true );
     }
 
 
@@ -116,7 +116,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $match( "{\"test\": 1.3}" ), $project( "{\"key.key\":1, \"test\":1}" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkResultSet( result, expected, true );
     }
 
     //$addFields
@@ -160,7 +160,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $count( "newName" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkResultSet( result, expected, true );
     }
 
     //$group
@@ -337,12 +337,12 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $sort( "{\"key\":1}" ) );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkResultSet( result, expected, true );
 
         result = aggregate( $sort( "{\"key\":-1}" ) );
         List<Object[]> reversed = new ArrayList<>( expected );
         Collections.reverse( reversed );
-        MongoConnection.checkResultSet( result, reversed );
+        MongoConnection.checkResultSet( result, reversed, true );
     }
 
     //$unset

@@ -305,6 +305,7 @@ public class Smalls {
             public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
                 return true;
             }
+
         };
     }
 

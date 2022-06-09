@@ -66,6 +66,7 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepare;
 import org.polypheny.db.prepare.PolyphenyDbPrepare.ParseResult;
 import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
+import org.polypheny.db.schema.graph.QueryableGraph;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
@@ -232,6 +233,12 @@ public final class Schemas {
     public static <E> Queryable<E> queryable( DataContext root, SchemaPlus schema, Class<E> clazz, String tableName ) {
         QueryableTable table = (QueryableTable) schema.getTable( tableName );
         return table.asQueryable( root, schema, tableName );
+    }
+
+
+    public static <E> Queryable<E> graph( DataContext root, SchemaPlus schema ) {
+        QueryableGraph graph = (QueryableGraph) schema.polyphenyDbSchema().getSchema();
+        return graph.asQueryable( root, graph );
     }
 
 

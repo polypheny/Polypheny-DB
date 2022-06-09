@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.ConfigManager;
@@ -64,7 +64,7 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
-import org.polypheny.db.processing.ConstraintEnforcer.ConstraintTracker;
+import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
 import org.polypheny.db.replication.ReplicationEngineProvider;
 import org.polypheny.db.replication.ReplicationEngineProviderImpl;
 import org.polypheny.db.transaction.PUID;
@@ -111,7 +111,7 @@ public class PolyphenyDb {
     @Option(name = { "-daemon" }, description = "Disable splash screen")
     public boolean daemonMode = false;
 
-    @Option(name = { "-defaultStore" }, description = "Type of default store")
+    @Option(name = {"-defaultStore"}, description = "Type of default store")
     public String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
@@ -330,15 +330,15 @@ public class PolyphenyDb {
             Catalog.defaultStore = Adapter.fromString( defaultStoreName );
             Catalog.defaultSource = Adapter.fromString( defaultSourceName );
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
-            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
-            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
             catalog.restoreViews( trx );
             trx.commit();
-        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
+        } catch ( UnknownDatabaseException | UnknownUserException | UnknownNamespaceException | TransactionException e ) {
             if ( trx != null ) {
                 try {
                     trx.rollback();
@@ -373,7 +373,7 @@ public class PolyphenyDb {
         try {
             IndexManager.getInstance().initialize( transactionManager );
             IndexManager.getInstance().restoreIndexes();
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException | UnknownTableException | TransactionException | UnknownKeyException e ) {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 

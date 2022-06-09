@@ -22,8 +22,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
@@ -120,10 +120,10 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( catalogEntity.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
         }
 
         if ( column.names.size() != 1 ) {
@@ -131,7 +131,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type store (and not source)
-        for ( int storeId : catalogTable.dataPlacements ) {
+        for ( int storeId : catalogEntity.dataPlacements ) {
             getDataStoreInstance( storeId );
         }
 
@@ -140,7 +140,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         try {
             DdlManager.getInstance().addColumn(
                     column.getSimple(),
-                    catalogTable,
+                    catalogEntity,
                     beforeColumnName == null ? null : beforeColumnName.getSimple(),
                     afterColumnName == null ? null : afterColumnName.getSimple(),
                     ColumnTypeInformation.fromDataTypeSpec( type ),

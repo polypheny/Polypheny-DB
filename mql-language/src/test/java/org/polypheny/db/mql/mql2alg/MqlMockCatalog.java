@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.mql2alg;
+package org.polypheny.db.mql.mql2alg;
 
 import org.polypheny.db.catalog.MockCatalog;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogUser;
 
 
 public class MqlMockCatalog extends MockCatalog {
 
     @Override
-    public CatalogSchema getSchema( long schemaId ) {
-        return new CatalogSchema( 1, "private", 0, 0, "tester", SchemaType.DOCUMENT );
+    public CatalogNamespace getNamespace( long schemaId ) {
+        return new CatalogNamespace( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT );
     }
 
 

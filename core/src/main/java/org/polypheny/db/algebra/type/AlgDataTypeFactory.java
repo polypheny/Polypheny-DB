@@ -279,6 +279,8 @@ public interface AlgDataTypeFactory {
      */
     FieldInfoBuilder builder();
 
+    AlgDataType createPathType( List<AlgDataTypeField> pathType );
+
 
     /**
      * Callback that provides enough information to create fields.

@@ -37,13 +37,13 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer.EnforcementInformation;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
@@ -52,7 +52,8 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.processing.ConstraintEnforcer;
+import org.polypheny.db.processing.ConstraintEnforceAttacher;
+import org.polypheny.db.processing.CypherProcessorImpl;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
@@ -83,7 +84,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final CatalogUser user;
     @Getter
-    private final CatalogSchema defaultSchema;
+    private final CatalogNamespace defaultSchema;
     @Getter
     private final CatalogDatabase database;
 
@@ -104,7 +105,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private final Set<CatalogTable> catalogTables = new TreeSet<>();
+    private final Set<CatalogEntity> catalogEntities = new TreeSet<>();
 
     @Getter
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
@@ -127,7 +128,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             PolyXid xid,
             TransactionManagerImpl transactionManager,
             CatalogUser user,
-            CatalogSchema defaultSchema,
+            CatalogNamespace defaultSchema,
             CatalogDatabase database,
             boolean analyze,
             String origin,
@@ -178,11 +179,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
         }
 
-        if ( !catalogTables.isEmpty() ) {
+        if ( !catalogEntities.isEmpty() ) {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
-            List<EnforcementInformation> infos = ConstraintEnforcer
-                    .getConstraintAlg( catalogTables, statement, EnforcementTime.ON_COMMIT );
+            List<EnforcementInformation> infos = ConstraintEnforceAttacher
+                    .getConstraintAlg( catalogEntities, statement, EnforcementTime.ON_COMMIT );
             List<PolyResult> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );
@@ -336,6 +337,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 return new MqlProcessorImpl();
             case PIG:
                 return new PigProcessorImpl();
+            case CYPHER:
+                return new CypherProcessorImpl();
             default:
                 throw new RuntimeException( "This language seems to not be supported!" );
         }
@@ -388,7 +391,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void setUseCache( boolean useCache ) {
+    public void setUseCache(boolean useCache) {
         this.useCache = useCache;
     }
 
@@ -402,13 +405,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     /**
      * Used to specify if a TX was started using freshness tolerance levels and
      * therefore allows the usage of outdated replicas.
-     *
+     * <p>
      * If this is active no DML operations are possible for this TX.
      * If however a DML operation was already executed by this TX.
      * This TX can now support no more freshness-related queries.
      */
     @Override
-    public void setAcceptsOutdated( boolean acceptsOutdated ) {
+    public void setAcceptsOutdated(boolean acceptsOutdated) {
         this.acceptsOutdated = acceptsOutdated;
     }
 
@@ -426,28 +429,28 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void updateAccessMode( AccessMode accessModeCandidate ) {
+    public void updateAccessMode(AccessMode accessModeCandidate) {
 
         // If TX is already in RW access we can skip immediately
-        if ( this.accessMode.equals( AccessMode.READWRITE_ACCESS ) || this.accessMode.equals( accessModeCandidate ) ) {
+        if (this.accessMode.equals(AccessMode.READWRITE_ACCESS) || this.accessMode.equals(accessModeCandidate)) {
             return;
         }
 
-        switch ( accessModeCandidate ) {
+        switch (accessModeCandidate) {
             case WRITE_ACCESS:
-                if ( this.accessMode.equals( AccessMode.READ_ACCESS ) ) {
+                if (this.accessMode.equals(AccessMode.READ_ACCESS)) {
                     accessModeCandidate = AccessMode.READWRITE_ACCESS;
                 }
                 break;
 
             case READ_ACCESS:
-                if ( this.accessMode.equals( AccessMode.WRITE_ACCESS ) ) {
+                if (this.accessMode.equals(AccessMode.WRITE_ACCESS)) {
                     accessModeCandidate = AccessMode.READWRITE_ACCESS;
                 }
                 break;
 
             case NO_ACCESS:
-                throw new RuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
+                throw new RuntimeException("Not possible to reset the access mode to NO_ACCESS");
         }
 
         // If nothing else has matched so far. It's safe to simply use the input

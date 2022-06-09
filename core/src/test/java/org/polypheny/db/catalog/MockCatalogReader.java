@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
@@ -193,12 +193,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     protected void registerSchema( MockSchema schema ) {
-        rootSchema.add( schema.name, new AbstractSchema(), SchemaType.RELATIONAL );
+        rootSchema.add( schema.name, new AbstractSchema(), NamespaceType.RELATIONAL );
     }
 
 
     private void registerNestedSchema( MockSchema parentSchema, MockSchema schema ) {
-        rootSchema.getSubSchema( parentSchema.getName(), true ).add( schema.name, new AbstractSchema(), SchemaType.RELATIONAL );
+        rootSchema.getSubSchema( parentSchema.getName(), true ).add( schema.name, new AbstractSchema(), NamespaceType.RELATIONAL );
     }
 
 
@@ -468,7 +468,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
         @Override
         public AlgNode toAlg( ToAlgContext context ) {
-            return LogicalTableScan.create( context.getCluster(), this );
+            return LogicalScan.create( context.getCluster(), this );
         }
 
 
@@ -856,6 +856,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
             // For testing
             return call.getKind() != Kind.MAX && (parent.getKind() == Kind.SELECT || parent.getKind() == Kind.FILTER);
         }
+
 
 
         @Override

@@ -22,8 +22,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -48,7 +48,7 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
 
     private final SqlIdentifier name;
 
-    private final SchemaType type;
+    private final NamespaceType type;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE SCHEMA", Kind.CREATE_SCHEMA );
 
@@ -56,10 +56,10 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
     /**
      * Creates a SqlCreateSchema.
      */
-    SqlCreateSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
+    SqlCreateSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
-        this.type = schemaType;
+        this.type = namespaceType;
     }
 
 
@@ -92,8 +92,8 @@ public class SqlCreateSchema extends SqlCreate implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         try {
-            DdlManager.getInstance().createSchema( name.getSimple(), context.getDatabaseId(), type, context.getCurrentUserId(), ifNotExists, replace );
-        } catch ( SchemaAlreadyExistsException e ) {
+            DdlManager.getInstance().createNamespace( name.getSimple(), context.getDatabaseId(), type, context.getCurrentUserId(), ifNotExists, replace );
+        } catch ( NamespaceAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaExists( name.getSimple() ) );
         }
 

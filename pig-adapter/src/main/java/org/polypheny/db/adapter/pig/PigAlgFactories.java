@@ -40,6 +40,7 @@ import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -55,7 +56,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class PigAlgFactories {
 
-    public static final Context ALL_PIG_REL_FACTORIES = Contexts.of( PigTableScanFactory.INSTANCE, PigFilterFactory.INSTANCE, PigAggregateFactory.INSTANCE, PigJoinFactory.INSTANCE );
+    public static final Context ALL_PIG_REL_FACTORIES = Contexts.of( PigScanFactory.INSTANCE, PigFilterFactory.INSTANCE, PigAggregateFactory.INSTANCE, PigJoinFactory.INSTANCE );
 
 
     // prevent instantiation
@@ -64,16 +65,16 @@ public class PigAlgFactories {
 
 
     /**
-     * Implementation of {@link AlgFactories.TableScanFactory} that returns a {@link PigTableScan}.
+     * Implementation of {@link ScanFactory} that returns a {@link PigScan}.
      */
-    public static class PigTableScanFactory implements AlgFactories.TableScanFactory {
+    public static class PigScanFactory implements ScanFactory {
 
-        public static final PigTableScanFactory INSTANCE = new PigTableScanFactory();
+        public static final PigScanFactory INSTANCE = new PigScanFactory();
 
 
         @Override
         public AlgNode createScan( AlgOptCluster cluster, AlgOptTable table ) {
-            return new PigTableScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), table );
+            return new PigScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), table );
         }
 
     }

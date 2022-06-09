@@ -20,9 +20,9 @@ package org.polypheny.db.webui.models;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 
 
@@ -38,10 +38,10 @@ public class Placement {
     String tableType;
 
 
-    public Placement( final boolean isPartitioned, final List<String> partitionNames, final TableType tableType ) {
+    public Placement( final boolean isPartitioned, final List<String> partitionNames, final EntityType entityType ) {
         this.isPartitioned = isPartitioned;
         this.partitionNames = partitionNames;
-        this.tableType = tableType.name();
+        this.tableType = entityType.name();
     }
 
 

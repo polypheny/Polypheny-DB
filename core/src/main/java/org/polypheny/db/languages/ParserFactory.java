@@ -33,4 +33,8 @@ public interface ParserFactory {
      */
     ParserImpl getParser( Reader stream );
 
+    default ParserImpl getParser( String query ){
+        throw new UnsupportedOperationException( "This operation is not allowed for the used parser.");
+    }
+
 }

@@ -19,10 +19,13 @@ package org.polypheny.db.adapter.mongodb.util;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
@@ -86,12 +89,12 @@ public class MongoDynamic {
                 } else {
                     pos = bsonIndex.asInt32().getValue();
                 }
-                PolyType polyTyp = PolyType.valueOf( ((BsonDocument) preDocument).get( "_type" ).asString().getValue() );
+                Queue<PolyType> polyTypes = Arrays.stream( ((BsonDocument) preDocument).get( "_type" ).asString().getValue().split( "\\$" ) ).map( PolyType::valueOf ).collect( Collectors.toCollection( LinkedList::new ) );
 
                 if ( isDoc ) {
-                    addHandle( pos, (BsonDocument) parent, (String) key, polyTyp, isRegex, isFunction );
+                    addHandle( pos, (BsonDocument) parent, (String) key, polyTypes, isRegex, isFunction );
                 } else {
-                    addHandle( pos, (BsonArray) parent, (int) key, polyTyp, isRegex, isFunction );
+                    addHandle( pos, (BsonArray) parent, (int) key, polyTypes, isRegex, isFunction );
                 }
 
             } else {
@@ -114,13 +117,13 @@ public class MongoDynamic {
      * @param index of the corresponding prepared parameter (?3 -> 3)
      * @param doc parent of dynamic
      * @param key key where object is found from parent ( parent is BsonDocument )
-     * @param type type of the object itself, to retrieve the correct MongoDB type
+     * @param types type of the object itself, to retrieve the correct MongoDB type
      * @param isRegex flag if the BsonDynamic is a regex, which needs to adjusted
      * @param isFunction flag if the BsonDynamic is defined function, which has to be retrieved uniquely
      */
-    public void addHandle( long index, BsonDocument doc, String key, PolyType type, Boolean isRegex, Boolean isFunction ) {
+    public void addHandle( long index, BsonDocument doc, String key, Queue<PolyType> types, Boolean isRegex, Boolean isFunction ) {
         if ( !arrayHandles.containsKey( index ) ) {
-            this.transformerMap.put( index, BsonUtil.getBsonTransformer( type, bucket ) );
+            this.transformerMap.put( index, BsonUtil.getBsonTransformer( types, bucket ) );
             this.isRegexMap.put( index, isRegex );
             this.isFuncMap.put( index, isFunction );
             this.docHandles.put( index, new ArrayList<>() );
@@ -136,13 +139,13 @@ public class MongoDynamic {
      * @param index of the corresponding prepared parameter (?3 -> 3)
      * @param array parent of dynamic
      * @param pos position where object is found from parent ( parent is BsonArray )
-     * @param type type of the object itself, to retrieve the correct MongoDB type
+     * @param types type of the object itself, to retrieve the correct MongoDB type
      * @param isRegex flag if the BsonDynamic is a regex, which needs to adjusted
      * @param isFunction flag if the BsonDynamic is defined function, which has to be retrieved uniquely
      */
-    public void addHandle( long index, BsonArray array, int pos, PolyType type, Boolean isRegex, Boolean isFunction ) {
+    public void addHandle( long index, BsonArray array, int pos, Queue<PolyType> types, Boolean isRegex, Boolean isFunction ) {
         if ( !arrayHandles.containsKey( index ) ) {
-            this.transformerMap.put( index, BsonUtil.getBsonTransformer( type, bucket ) );
+            this.transformerMap.put( index, BsonUtil.getBsonTransformer( types, bucket ) );
             this.isRegexMap.put( index, isRegex );
             this.isFuncMap.put( index, isFunction );
             this.docHandles.put( index, new ArrayList<>() );

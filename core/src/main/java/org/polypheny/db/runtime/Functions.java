@@ -112,6 +112,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists.ComparableList;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -1051,7 +1052,7 @@ public class Functions {
      */
     public static boolean geAny( Object b0, Object b1 ) {
         if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
-            //noinspection unchecked
+            //noinspection unchecked,rawtypes
             return ((Comparable) b0).compareTo( b1 ) >= 0;
         } else if ( allAssignable( Number.class, b0, b1 ) ) {
             return ge( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
@@ -3788,6 +3789,16 @@ public class Functions {
         } catch ( Exception e ) {
             return false;
         }
+    }
+
+
+    public static List<?> deserializeList( String parsed ) {
+        return gson.fromJson( parsed, List.class );
+    }
+
+
+    public static PolyDictionary deserializeDirectory( String parsed ) {
+        return gson.fromJson( parsed, PolyDictionary.class );
     }
 
 

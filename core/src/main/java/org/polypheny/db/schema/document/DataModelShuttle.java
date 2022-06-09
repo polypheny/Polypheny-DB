@@ -18,16 +18,27 @@ package org.polypheny.db.schema.document;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.logical.LogicalDocuments;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.type.PolyType;
 
 
 /**
  * Shuttle, which transforms a normal LogicalValues to LogicalValues
  */
 public class DataModelShuttle extends AlgShuttleImpl {
+
+    private final AlgBuilder builder;
+
+
+    public DataModelShuttle( AlgBuilder builder ) {
+        this.builder = builder;
+    }
+
 
     @Override
     public AlgNode visit( LogicalValues values ) {
@@ -36,14 +47,20 @@ public class DataModelShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalTableModify modify ) {
-        if ( modify.getTable().getTable().getSchemaType() == SchemaType.DOCUMENT ) {
-            if ( modify.getInput() instanceof LogicalValues && !(modify.getInput() instanceof LogicalDocuments) ) {
-                modify.replaceInput( 0, LogicalDocuments.create( (LogicalValues) modify.getInput() ) );
+    public AlgNode visit( LogicalModify modify ) {
+        if ( modify.getTable().getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
+            if ( modify.getInput() instanceof LogicalValues && !(modify.getInput() instanceof LogicalDocumentValues) ) {
+                modify.replaceInput( 0, LogicalDocumentValues.create( (LogicalValues) modify.getInput() ) );
             }
             return super.visit( modify );
         }
         return super.visit( modify );
     }
+
+
+    private static boolean containsType( AlgDataType rowType, PolyType type ) {
+        return rowType.getFieldList().stream().anyMatch( f -> f.getType().getPolyType() == type );
+    }
+
 
 }

@@ -39,18 +39,18 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -96,7 +96,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         this.transactionManager = transactionManager;
         this.materializedInfo = new ConcurrentHashMap<>();
         this.updateCandidates = new HashMap<>();
-        this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
+        this.intervalToUpdate = Collections.synchronizedList(new ArrayList<>());
         registerFreshnessLoop();
     }
 
@@ -172,16 +172,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
-     * @param tableNames table that was changed
+     * @param tableNames  table that was changed
      */
     @Override
     public void addTables( Transaction transaction, List<String> tableNames ) {
         if ( tableNames.size() > 1 ) {
             try {
-                CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
-                long id = catalogTable.id;
-                if ( !catalogTable.getConnectedViews().isEmpty() ) {
-                    updateCandidates.put( transaction.getXid(), id );
+                CatalogEntity catalogEntity = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
+                long id = catalogEntity.id;
+                if ( !catalogEntity.getConnectedViews().isEmpty() ) {
+                    updateCandidates.put(transaction.getXid(), id);
                 }
             } catch ( UnknownTableException e ) {
                 throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
@@ -198,8 +198,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public void updateCommittedXid( PolyXid xid ) {
-        if ( updateCandidates.containsKey( xid ) ) {
-            materializedUpdate( updateCandidates.remove( xid ) );
+        if (updateCandidates.containsKey(xid)) {
+            materializedUpdate(updateCandidates.remove(xid));
         }
     }
 
@@ -211,12 +211,12 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void materializedUpdate( Long potentialInteresting ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( potentialInteresting );
-        List<Long> connectedViews = catalogTable.getConnectedViews();
+        CatalogEntity catalogEntity = catalog.getTable( potentialInteresting );
+        List<Long> connectedViews = catalogEntity.getConnectedViews();
 
         for ( Long id : connectedViews ) {
-            CatalogTable view = catalog.getTable( id );
-            if ( view.tableType == TableType.MATERIALIZED_VIEW ) {
+            CatalogEntity view = catalog.getTable( id );
+            if ( view.entityType == EntityType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
                     int numberUpdated = materializedCriteria.getTimesUpdated();
@@ -272,12 +272,12 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( Long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( materializedId );
+        CatalogEntity catalogEntity = catalog.getTable( materializedId );
 
         try {
             Transaction transaction = getTransactionManager().startTransaction(
-                    catalogTable.ownerName,
-                    catalog.getDatabase( catalogTable.databaseId ).name,
+                    catalogEntity.ownerId,
+                    catalogEntity.databaseId,
                     false,
                     "Materialized View" );
 
@@ -285,18 +285,17 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 Statement statement = transaction.createStatement();
                 Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
                 // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-                idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
+                idAccessMap.add(Pair.of(LockManager.GLOBAL_LOCK, LockMode.SHARED));
                 // Get locks for individual tables
-                EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
-                idAccessMap.addAll( accessMap.getAccessedEntityPair() );
-                LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
-
+                EntityAccessMap accessMap = new EntityAccessMap(((CatalogMaterializedView) catalogEntity).getDefinition(), new HashMap<>());
+                idAccessMap.addAll(accessMap.getAccessedEntityPair());
+                LockManager.INSTANCE.lock(idAccessMap, (TransactionImpl) statement.getTransaction());
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }
             updateData( transaction, materializedId );
             commitTransaction( transaction );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
         }
         updateMaterializedTime( materializedId );
@@ -344,7 +343,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
 
         List<Integer> ids = new ArrayList<>();
-        if ( catalog.checkIfExistsTable( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
+        if ( catalog.checkIfExistsEntity( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
             CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( materializedId );
             for ( int id : catalogMaterializedView.dataPlacements ) {
                 ids.add( id );
@@ -353,7 +352,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 int localAdapterIndex = catalogMaterializedView.dataPlacements.indexOf( id );
                 catalog.getDataPlacement( catalogMaterializedView.dataPlacements.get( localAdapterIndex ), catalogMaterializedView.id )
                         .columnPlacementsOnAdapter.forEach( col ->
-                                catalogColumns.add( catalog.getColumn( col ) )
+                                catalogColumns.add( catalog.getField( col ) )
                         );
                 columns.put( id, catalogColumns );
             }

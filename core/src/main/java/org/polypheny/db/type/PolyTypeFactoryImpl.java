@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.util.Collation;
@@ -137,6 +138,12 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     public AlgDataType createSqlIntervalType( IntervalQualifier intervalQualifier ) {
         AlgDataType newType = new IntervalPolyType( typeSystem, intervalQualifier, false );
         return canonize( newType );
+    }
+
+
+    @Override
+    public AlgDataType createPathType( List<AlgDataTypeField> pathType ) {
+        return new PathType( false, pathType );
     }
 
 

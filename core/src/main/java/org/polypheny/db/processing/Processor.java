@@ -17,6 +17,7 @@
 package org.polypheny.db.processing;
 
 
+import java.util.List;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
@@ -43,7 +44,7 @@ import org.polypheny.db.util.Pair;
 
 public abstract class Processor {
 
-    public abstract Node parse( String query );
+    public abstract List<? extends Node> parse( String query );
 
     public abstract Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
@@ -77,7 +78,7 @@ public abstract class Processor {
         Catalog.getInstance().commit();
         return new PolyResult(
                 null,
-                parameters.getSchemaType(),
+                parameters.getNamespaceType(),
                 new ExecutionTimeMonitor(),
                 null,
                 Kind.CREATE_SCHEMA, // technically correct, maybe change

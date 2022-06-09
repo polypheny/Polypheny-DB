@@ -25,8 +25,8 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.type.PolyType;
@@ -42,12 +42,12 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( CatalogEntity catalogEntity, String columnValue ) {
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
         // Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : Catalog.getInstance().getPartitionsByTable( catalogTable.id ) ) {
+        for ( CatalogPartition catalogPartition : Catalog.getInstance().getPartitionsByTable( catalogEntity.id ) ) {
             if ( unboundPartitionId == -1 && catalogPartition.isUnbound ) {
                 unboundPartitionId = catalogPartition.id;
                 break;
@@ -80,7 +80,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
         super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
         if ( partitionColumn.type.getFamily() != PolyTypeFamily.NUMERIC ) {
-            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected Type: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
+            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected ExpressionType: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
         }
 
         for ( List<String> partitionQualifiers : partitionGroupQualifiers ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,14 +34,18 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -287,7 +291,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.logical.LogicalProject}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalProject}.
      */
     public TrimResult trimFields( Project project, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = project.getRowType();
@@ -365,7 +369,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.logical.LogicalFilter}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalFilter}.
      */
     public TrimResult trimFields( Filter filter, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = filter.getRowType();
@@ -451,7 +455,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.logical.LogicalJoin}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalJoin}.
      */
     public TrimResult trimFields( Join join, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final int fieldCount = join.getSystemFieldList().size() + join.getLeft().getRowType().getFieldCount() + join.getRight().getRowType().getFieldCount();
@@ -636,7 +640,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.logical.LogicalAggregate}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalAggregate}.
      */
     public TrimResult trimFields( Aggregate aggregate, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         // Fields:
@@ -742,9 +746,9 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.logical.LogicalTableModify}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalModify}.
      */
-    public TrimResult trimFields( LogicalTableModify modifier, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( LogicalModify modifier, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         // Ignore what consumer wants. We always project all columns.
         Util.discard( fieldsUsed );
 
@@ -766,7 +770,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
             throw new AssertionError( "Expected identity mapping, got " + inputMapping );
         }
 
-        LogicalTableModify newModifier = modifier;
+        LogicalModify newModifier = modifier;
         if ( newInput != input ) {
             newModifier =
                     modifier.copy(
@@ -782,7 +786,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.logical.LogicalTableFunctionScan}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalTableFunctionScan}.
      */
     public TrimResult trimFields( LogicalTableFunctionScan tabFun, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = tabFun.getRowType();
@@ -819,7 +823,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.logical.LogicalValues}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalValues}.
      */
     public TrimResult trimFields( LogicalValues values, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = values.getRowType();
@@ -867,9 +871,9 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalTableScan}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalScan}.
      */
-    public TrimResult trimFields( final TableScan tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( final Scan tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final int fieldCount = tableAccessRel.getRowType().getFieldCount();
         if ( fieldsUsed.equals( ImmutableBitSet.range( fieldCount ) ) && extraFields.isEmpty() ) {
             // If there is nothing to project or if we are projecting everything then no need to introduce another AlgNode

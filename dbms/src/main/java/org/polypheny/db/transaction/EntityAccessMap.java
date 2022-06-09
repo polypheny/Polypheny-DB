@@ -33,7 +33,7 @@ import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptTable;
@@ -245,7 +245,7 @@ public class EntityAccessMap {
             // FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
             //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
             //  {@link AlgNode} interface.
-            if ( p instanceof TableModify ) {
+            if ( p instanceof Modify ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
                     extractWriteConstraints( (LogicalTable) table.getTable() );

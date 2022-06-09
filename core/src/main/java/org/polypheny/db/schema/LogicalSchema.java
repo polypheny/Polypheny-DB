@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 
@@ -27,12 +28,17 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 public class LogicalSchema implements Schema {
 
     private final String schemaName;
+
+    @Getter
     private final Map<String, LogicalTable> tableMap;
 
+    private final Map<String, LogicalTable> collectionMap;
 
-    public LogicalSchema( String schemaName, Map<String, LogicalTable> tableMap ) {
+
+    public LogicalSchema( String schemaName, Map<String, LogicalTable> tableMap, Map<String, LogicalTable> collectionMap ) {
         this.schemaName = schemaName;
         this.tableMap = tableMap;
+        this.collectionMap = collectionMap;
     }
 
 
@@ -98,7 +104,7 @@ public class LogicalSchema implements Schema {
 
     @Override
     public Schema snapshot( SchemaVersion version ) {
-        return new LogicalSchema( schemaName, tableMap );
+        return new LogicalSchema( schemaName, tableMap, collectionMap );
     }
 
 }

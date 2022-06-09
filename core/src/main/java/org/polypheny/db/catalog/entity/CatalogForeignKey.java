@@ -76,7 +76,7 @@ public final class CatalogForeignKey extends CatalogKey {
 
     @SneakyThrows
     public String getReferencedKeySchemaName() {
-        return Catalog.getInstance().getSchema( referencedKeySchemaId ).name;
+        return Catalog.getInstance().getNamespace( referencedKeySchemaId ).name;
     }
 
 
@@ -91,7 +91,7 @@ public final class CatalogForeignKey extends CatalogKey {
         Catalog catalog = Catalog.getInstance();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : referencedKeyColumnIds ) {
-            columnNames.add( catalog.getColumn( columnId ).name );
+            columnNames.add( catalog.getField( columnId ).name );
         }
         return columnNames;
     }
@@ -131,7 +131,7 @@ public final class CatalogForeignKey extends CatalogKey {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class CatalogForeignKeyColumn implements CatalogEntity {
+    public static class CatalogForeignKeyColumn implements CatalogObject {
 
         private static final long serialVersionUID = -1496390493702171203L;
 

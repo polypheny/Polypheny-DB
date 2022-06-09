@@ -222,7 +222,7 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new GeodeTableScan( cluster, cluster.traitSetOf( GeodeAlg.CONVENTION ), algOptTable, this, null );
+        return new GeodeScan( cluster, cluster.traitSetOf( GeodeAlg.CONVENTION ), algOptTable, this, null );
     }
 
 

@@ -43,11 +43,11 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -139,7 +139,7 @@ public class RequestParser {
 
     public ResourceGetRequest parseGetResourceRequest( HttpServletRequest req, String resourceName ) throws ParserException {
 
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<CatalogEntity> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( req ), tables );
 
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
@@ -158,7 +158,7 @@ public class RequestParser {
 
 
     public ResourcePostRequest parsePostResourceRequest( Context ctx, String resourceName, Gson gson ) throws ParserException {
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<CatalogEntity> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         List<List<Pair<RequestColumn, Object>>> values = this.parseValues( ctx, gson, nameMapping );
@@ -168,7 +168,7 @@ public class RequestParser {
 
 
     public ResourcePostRequest parsePostMultipartRequest( String resourceName, String[] projections, List<Object> insertValues ) throws ParserException {
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<CatalogEntity> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         List<List<Pair<RequestColumn, Object>>> values = parseInsertStatementBody( insertValues, nameMapping );
@@ -179,7 +179,7 @@ public class RequestParser {
 
     public ResourcePatchRequest parsePatchResourceRequest( Context ctx, String resourceName, Gson gson ) throws ParserException {
         // TODO js: make sure it's only a single resource
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<CatalogEntity> tables = this.parseTables( resourceName );
         // TODO js: make sure there are no actual projections
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
@@ -193,7 +193,7 @@ public class RequestParser {
 
 
     public ResourcePatchRequest parsePatchMultipartRequest( String resourceName, String[] projections, Map<String, String[]> filterMap, List<Object> insertValues ) {
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<CatalogEntity> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         Filters filters = this.parseFilters( filterMap, nameMapping );
@@ -204,7 +204,7 @@ public class RequestParser {
 
     public ResourceDeleteRequest parseDeleteResourceRequest( HttpServletRequest request, String resourceName ) throws ParserException {
         // TODO js: make sure it's only a single resource
-        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<CatalogEntity> tables = this.parseTables( resourceName );
 
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
 
@@ -224,16 +224,16 @@ public class RequestParser {
      * @throws ParserException thrown if unable to parse table list
      */
     @VisibleForTesting
-    List<CatalogTable> parseTables( String tableList ) throws ParserException {
+    List<CatalogEntity> parseTables( String tableList ) throws ParserException {
         log.debug( "Starting to parse table list: {}", tableList );
         if ( tableList == null ) {
             throw new ParserException( ParserErrorCode.TABLE_LIST_GENERIC, "null" );
         }
         String[] tableNameList = tableList.split( "," );
 
-        List<CatalogTable> tables = new ArrayList<>();
+        List<CatalogEntity> tables = new ArrayList<>();
         for ( String tableName : tableNameList ) {
-            CatalogTable temp = this.parseCatalogTableName( tableName );
+            CatalogEntity temp = this.parseCatalogTableName( tableName );
             tables.add( temp );
             log.debug( "Added table \"{}\" to table list.", tableName );
         }
@@ -251,7 +251,7 @@ public class RequestParser {
      * @throws ParserException thrown if unable to parse table name
      */
     @VisibleForTesting
-    CatalogTable parseCatalogTableName( String tableName ) throws ParserException {
+    CatalogEntity parseCatalogTableName( String tableName ) throws ParserException {
         String[] tableElements = tableName.split( "\\." );
         if ( tableElements.length != 2 ) {
             log.warn( "Table name \"{}\" not possible to parse.", tableName );
@@ -259,12 +259,12 @@ public class RequestParser {
         }
 
         try {
-            CatalogTable table = this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] );
+            CatalogEntity table = this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] );
             if ( log.isDebugEnabled() ) {
                 log.debug( "Finished parsing table \"{}\".", tableName );
             }
             return table;
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
             log.error( "Unable to fetch table: {}.", tableName, e );
             throw new ParserException( ParserErrorCode.TABLE_LIST_UNKNOWN_TABLE, tableName );
         }
@@ -272,15 +272,15 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<RequestColumn> newParseProjectionsAndAggregations( String[] possibleProjectionValues, List<CatalogTable> tables ) throws ParserException {
+    List<RequestColumn> newParseProjectionsAndAggregations( String[] possibleProjectionValues, List<CatalogEntity> tables ) throws ParserException {
         // Helper structures & data
         Map<Long, Integer> tableOffsets = new HashMap<>();
         Set<Long> validColumns = new HashSet<>();
         int columnOffset = 0;
-        for ( CatalogTable table : tables ) {
+        for ( CatalogEntity table : tables ) {
             tableOffsets.put( table.id, columnOffset );
-            validColumns.addAll( table.columnIds );
-            columnOffset += table.columnIds.size();
+            validColumns.addAll( table.fieldIds );
+            columnOffset += table.fieldIds.size();
         }
 
         List<RequestColumn> columns;
@@ -304,12 +304,12 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<RequestColumn> generateRequestColumnsWithoutProject( List<CatalogTable> tables, Map<Long, Integer> tableOffsets ) {
+    List<RequestColumn> generateRequestColumnsWithoutProject( List<CatalogEntity> tables, Map<Long, Integer> tableOffsets ) {
         List<RequestColumn> columns = new ArrayList<>();
         long internalPosition = 0L;
-        for ( CatalogTable table : tables ) {
-            for ( long columnId : table.columnIds ) {
-                CatalogColumn column = this.catalog.getColumn( columnId );
+        for ( CatalogEntity table : tables ) {
+            for ( long columnId : table.fieldIds ) {
+                CatalogColumn column = this.catalog.getField( columnId );
                 int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
                 RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, true );
                 columns.add( requestColumn );
@@ -337,7 +337,7 @@ public class RequestParser {
                 try {
                     catalogColumn = this.getCatalogColumnFromString( columnName );
                     log.debug( "Fetched catalog column for projection key: {}.", columnName );
-                } catch ( UnknownColumnException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
+                } catch ( UnknownColumnException | UnknownDatabaseException | UnknownNamespaceException | UnknownTableException e ) {
                     log.warn( "Unable to fetch column: {}.", columnName, e );
                     throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, columnName );
                 }
@@ -362,7 +362,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            CatalogColumn column = this.catalog.getColumn( columnId );
+            CatalogColumn column = this.catalog.getField( columnId );
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );
@@ -412,14 +412,14 @@ public class RequestParser {
     }
 
 
-    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownDatabaseException, UnknownSchemaException, UnknownTableException {
+    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownDatabaseException, UnknownNamespaceException, UnknownTableException {
         String[] splitString = name.split( "\\." );
         if ( splitString.length != 3 ) {
             log.warn( "Column name is not 3 fields long. Got: {}", name );
             throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, name );
         }
 
-        return this.catalog.getColumn( this.databaseName, splitString[0], splitString[1], splitString[2] );
+        return this.catalog.getField( this.databaseName, splitString[0], splitString[1], splitString[2] );
 
     }
 
@@ -744,9 +744,9 @@ public class RequestParser {
     }
 
 
-    public Map<String, CatalogColumn> generateNameMapping( List<CatalogTable> tables ) {
+    public Map<String, CatalogColumn> generateNameMapping( List<CatalogEntity> tables ) {
         Map<String, CatalogColumn> nameMapping = new HashMap<>();
-        for ( CatalogTable table : tables ) {
+        for ( CatalogEntity table : tables ) {
             for ( CatalogColumn column : this.catalog.getColumns( table.id ) ) {
                 nameMapping.put( column.getSchemaName() + "." + column.getTableName() + "." + column.name, column );
             }

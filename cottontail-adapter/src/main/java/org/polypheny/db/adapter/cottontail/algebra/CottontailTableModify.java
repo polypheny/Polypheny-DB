@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImple
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -50,13 +50,13 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public class CottontailTableModify extends TableModify implements CottontailAlg {
+public class CottontailTableModify extends Modify implements CottontailAlg {
 
     public final CottontailTable cottontailTable;
 
 
     /**
-     * Creates a {@code TableModify}.
+     * Creates a {@code Modify}.
      *
      * The UPDATE operation has format like this:
      * <blockquote>

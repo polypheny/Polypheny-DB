@@ -24,10 +24,10 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -60,14 +60,15 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
         long schemaId;
         try {
-            schemaId = catalog.getSchema( context.getDatabaseId(), database ).id;
-        } catch ( UnknownSchemaException e ) {
+            schemaId = catalog.getNamespace( context.getDatabaseId(), database ).id;
+        } catch ( UnknownNamespaceException e ) {
             throw new RuntimeException( "Poly schema was not found." );
         }
 
         Node mqlNode = statement.getTransaction()
                 .getProcessor( QueryLanguage.MONGO_QL )
-                .parse( buildQuery() );
+                .parse( buildQuery() )
+                .get( 0 );
 
         AlgRoot algRoot = statement.getTransaction()
                 .getProcessor( QueryLanguage.MONGO_QL )
@@ -89,7 +90,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
                     algRoot.alg.getRowType().getFieldNames(),
                     buildQuery(),
                     Catalog.QueryLanguage.MONGO_QL );
-        } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+        } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         } // we just added the table/column, so it has to exist, or we have an internal problem
     }

@@ -24,7 +24,7 @@ import org.polypheny.db.adapter.file.FileTranslatableTable;
 import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -40,7 +40,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
 
-public class FileTableModify extends TableModify implements FileAlg {
+public class FileTableModify extends Modify implements FileAlg {
 
     public FileTableModify( AlgOptCluster cluster, AlgTraitSet traits, AlgOptTable table, CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traits, table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );

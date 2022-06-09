@@ -215,13 +215,19 @@ public class AlgWriterImpl implements AlgWriter {
 
     private boolean checkInputsPresentInExplain( AlgNode node ) {
         int i = 0;
-        if ( values.size() > 0 && values.get( 0 ).left.equals( "subset" ) ) {
+        if ( values.size() > i && values.get( i ).left.equals( "subset" ) ) {
             ++i;
         }
+
+        if ( values.size() > i && (values.get( i ).left.equals( "model" )) ) {
+            ++i;
+        }
+
         for ( AlgNode input : node.getInputs() ) {
             assert values.get( i ).right == input;
             ++i;
         }
+
         return true;
     }
 

@@ -22,13 +22,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
@@ -119,35 +119,44 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
-        if ( catalogTable.tableType != TableType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
-        }
-
-        DataStore storeInstance = null;
-        if ( storeName != null ) {
-            storeInstance = getDataStoreInstance( storeName );
-            if ( storeInstance == null ) {
-                throw CoreUtil.newContextException(
-                        storeName.getPos(),
-                        RESOURCE.unknownAdapter( storeName.getSimple() ) );
-            }
+        CatalogEntity catalogEntity = getCatalogTable( context, table );
+        if ( catalogEntity.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogEntity.name + " is not a Materialized View." );
         }
 
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
-            DdlManager.getInstance().addIndex(
-                    catalogTable,
-                    indexMethodName,
-                    columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
-                    indexName.getSimple(),
-                    unique,
-                    storeInstance,
-                    statement );
+            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
+                DdlManager.getInstance().addPolyphenyIndex(
+                        catalogEntity,
+                        indexMethodName,
+                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        indexName.getSimple(),
+                        unique,
+                        statement );
+            } else {
+                DataStore storeInstance = null;
+                if ( storeName != null ) {
+                    storeInstance = getDataStoreInstance( storeName );
+                    if ( storeInstance == null ) {
+                        throw CoreUtil.newContextException(
+                                storeName.getPos(),
+                                RESOURCE.unknownAdapter( storeName.getSimple() ) );
+                    }
+                }
+                DdlManager.getInstance().addIndex(
+                        catalogEntity,
+                        indexMethodName,
+                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        indexName.getSimple(),
+                        unique,
+                        storeInstance,
+                        statement );
+            }
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
-        } catch ( UnknownSchemaException e ) {
+        } catch ( UnknownNamespaceException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( e.getSchemaName() ) );
         } catch ( UnknownTableException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName() ) );
@@ -162,7 +171,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
         } catch ( MissingColumnPlacementException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.missingColumnPlacement( e.getColumnName(), storeInstance.getUniqueName() ) );
+                    RESOURCE.missingColumnPlacement( e.getColumnName() ) );
         } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
             throw new RuntimeException( e );
         }

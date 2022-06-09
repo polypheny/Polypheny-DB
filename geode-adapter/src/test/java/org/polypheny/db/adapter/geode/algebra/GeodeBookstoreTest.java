@@ -94,7 +94,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "Treatises\n" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeFilter(condition=[=(CAST($0):INTEGER, 123)])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])" )
+//                        + "    GeodeScan(table=[[geode, BookMaster]])" )
 //                .queryContains( GeodeAssertions.query( expectedQuery ) );
 //    }
 //
@@ -109,7 +109,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "Treatises\n" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeFilter(condition=[AND(>($0, 122), <=($0, 123))])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])" )
+//                        + "    GeodeScan(table=[[geode, BookMaster]])" )
 //                .queryContains( GeodeAssertions.query( "SELECT * FROM /BookMaster WHERE itemNumber > 122 AND itemNumber <= 123" ) );
 //    }
 //
@@ -126,7 +126,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "  GeodeProject(author=[$4])\n"
 //                        + "    GeodeFilter(condition=[OR(=(CAST($0):INTEGER, 123), "
 //                        + "=(CAST($0):INTEGER, 789))])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookMaster]])\n" )
+//                        + "      GeodeScan(table=[[geode, BookMaster]])\n" )
 //                .queryContains( GeodeAssertions.query( expectedQuery ) );
 //    }
 //
@@ -141,7 +141,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "  GeodeProject(author=[$4])\n"
 //                        + "    GeodeFilter(condition=[OR(AND(>($0, 123), =(CAST($0):INTEGER, 789)), "
 //                        + "=(CAST($4):VARCHAR, 'Daisy Mae West'))])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookMaster]])\n"
+//                        + "      GeodeScan(table=[[geode, BookMaster]])\n"
 //                        + "\n" )
 //                .queryContains( GeodeAssertions.query( "SELECT author AS author FROM /BookMaster WHERE (itemNumber > 123 AND itemNumber = 789) OR author = 'Daisy Mae West'" ) );
 //    }
@@ -168,7 +168,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(author=[$4])\n"
 //                        + "    GeodeFilter(condition=[>($0, 123)])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookMaster]])" )
+//                        + "      GeodeScan(table=[[geode, BookMaster]])" )
 //                .queryContains( GeodeAssertions.query( "SELECT author AS author FROM /BookMaster WHERE itemNumber > 123" ) );
 //    }
 //
@@ -183,7 +183,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "Treatises\n" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeSort(fetch=[1])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])" );
+//                        + "    GeodeScan(table=[[geode, BookMaster]])" );
 //    }
 //
 //
@@ -198,7 +198,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeSort(sort0=[$0], dir0=[ASC])\n"
 //                        + "    GeodeProject(yearPublished=[$3])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookMaster]])\n" );
+//                        + "      GeodeScan(table=[[geode, BookMaster]])\n" );
 //    }
 //
 //
@@ -212,7 +212,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(yearPublished=[$3])\n"
 //                        + "    GeodeSort(sort0=[$3], dir0=[ASC], fetch=[2])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookMaster]])\n" );
+//                        + "      GeodeScan(table=[[geode, BookMaster]])\n" );
 //    }
 //
 //
@@ -247,7 +247,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(yearPublished=[$0])\n"
 //                        + "    GeodeAggregate(group=[{3, 4}])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookMaster]])" );
+//                        + "      GeodeScan(table=[[geode, BookMaster]])" );
 //    }
 //
 //
@@ -263,7 +263,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "yearPublished=2011\n" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{3}])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])" );
+//                        + "    GeodeScan(table=[[geode, BookMaster]])" );
 //    }
 //
 //
@@ -279,7 +279,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "yearPublished=2011; EXPR$1=59.99\n" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{3}], EXPR$1=[MAX($2)])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])" );
+//                        + "    GeodeScan(table=[[geode, BookMaster]])" );
 //    }
 //
 //
@@ -292,7 +292,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .returnsValue( "3" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{}], EXPR$0=[COUNT($2)])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])\n" );
+//                        + "    GeodeScan(table=[[geode, BookMaster]])\n" );
 //    }
 //
 //
@@ -304,7 +304,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .returns( "EXPR$0=3\n" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{}], EXPR$0=[COUNT()])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])\n" );
+//                        + "    GeodeScan(table=[[geode, BookMaster]])\n" );
 //    }
 //
 //
@@ -317,7 +317,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "yearPublished=2011; EXPR$1=2\n" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{3}], EXPR$1=[COUNT($2)])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])\n" );
+//                        + "    GeodeScan(table=[[geode, BookMaster]])\n" );
 //    }
 //
 //
@@ -330,7 +330,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{}], EXPR$0=[MAX($2)], EXPR$1=[MIN($2)], EXPR$2=[SUM($2)"
 //                        + "], EXPR$3=[AVG($2)])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])\n" );
+//                        + "    GeodeScan(table=[[geode, BookMaster]])\n" );
 //    }
 //
 //
@@ -345,7 +345,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                        + "EXPR$4=11.989999771118164\n" )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{3}], EXPR$1=[MAX($2)], EXPR$2=[MIN($2)], EXPR$3=[SUM($2)], EXPR$4=[AVG($2)])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookMaster]])\n" );
+//                        + "    GeodeScan(table=[[geode, BookMaster]])\n" );
 //    }
 //
 //
@@ -360,7 +360,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(yearPublished=[$0], MAXCOST=[$2], author=[$1])\n"
 //                        + "    GeodeAggregate(group=[{3, 4}], MAXCOST=[MAX($2)])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookMaster]])\n" );
+//                        + "      GeodeScan(table=[[geode, BookMaster]])\n" );
 //    }
 //
 //
@@ -371,7 +371,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .returnsCount( 2 )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeSort(fetch=[2])\n"
-//                        + "    GeodeTableScan(table=[[geode, BookCustomer]])\n" );
+//                        + "    GeodeScan(table=[[geode, BookCustomer]])\n" );
 //    }
 //
 //
@@ -387,7 +387,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(primaryAddress=[$3])\n"
 //                        + "    GeodeSort(fetch=[2])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookCustomer]])\n" );
+//                        + "      GeodeScan(table=[[geode, BookCustomer]])\n" );
 //    }
 //
 //
@@ -401,7 +401,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(city=[ITEM($3, 'city')])\n"
 //                        + "    GeodeSort(fetch=[2])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookCustomer]])\n" );
+//                        + "      GeodeScan(table=[[geode, BookCustomer]])\n" );
 //    }
 //
 //
@@ -415,7 +415,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(EXPR$0=[ITEM($3, 'addressLine2')])\n"
 //                        + "    GeodeSort(fetch=[2])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookCustomer]])\n" );
+//                        + "      GeodeScan(table=[[geode, BookCustomer]])\n" );
 //    }
 //
 //
@@ -432,7 +432,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(postalCode=[ITEM($3, 'postalCode')])\n"
 //                        + "    GeodeFilter(condition=[>(ITEM($3, 'postalCode'), '0')])\n"
-//                        + "      GeodeTableScan(table=[[geode, BookCustomer]])\n" )
+//                        + "      GeodeScan(table=[[geode, BookCustomer]])\n" )
 //                .queryContains( GeodeAssertions.query( "SELECT primaryAddress.postalCode AS postalCode FROM /BookCustomer WHERE primaryAddress.postalCode > '0'" ) );
 //    }
 //

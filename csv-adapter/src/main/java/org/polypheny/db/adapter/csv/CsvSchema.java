@@ -49,8 +49,8 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyType;
@@ -83,13 +83,13 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    public Table createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createCsvTable( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getField( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
@@ -98,7 +98,7 @@ public class CsvSchema extends AbstractSchema {
 
         String csvFileName = Catalog
                 .getInstance()
-                .getColumnPlacementsOnAdapterPerTable( csvSource.getAdapterId(), catalogTable.id ).iterator().next()
+                .getColumnPlacementsOnAdapterPerTable( csvSource.getAdapterId(), catalogEntity.id ).iterator().next()
                 .physicalSchemaName;
         Source source;
         try {
@@ -107,8 +107,8 @@ public class CsvSchema extends AbstractSchema {
             throw new RuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        CsvTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource, catalogTable.id );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
+        CsvTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource, catalogEntity.id );
+        tableMap.put( catalogEntity.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
 

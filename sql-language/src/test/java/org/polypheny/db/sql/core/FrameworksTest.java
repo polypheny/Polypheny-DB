@@ -37,22 +37,22 @@ import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -126,7 +126,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
                     // "SELECT * FROM myTable"
                     final AlgOptAbstractTable algOptTable = new AlgOptAbstractTable( algOptSchema, "myTable", table.getRowType( typeFactory ) ) {
                     };
-                    final EnumerableTableScan tableRel = EnumerableTableScan.create( cluster, algOptTable );
+                    final EnumerableScan tableRel = EnumerableScan.create( cluster, algOptTable );
 
                     // "WHERE i > 1"
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -150,7 +150,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
         String s = AlgOptUtil.dumpPlan( "", x, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
         assertThat(
                 Util.toLinux( s ),
-                equalTo( "EnumerableFilter(condition=[>($1, 1)])\n  EnumerableTableScan(table=[[myTable]])\n" ) );
+                equalTo( "EnumerableFilter(model=[RELATIONAL], condition=[>($1, 1)])\n  EnumerableScan(model=[RELATIONAL], table=[[myTable]])\n" ) );
     }
 
 
@@ -242,7 +242,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
     public void testFrameworksValidatorWithIdentifierExpansion() throws Exception {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
@@ -277,7 +277,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
     public void testSchemaPath() {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
+                .add( "hr", new ReflectiveSchema( new HrSchema() ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
@@ -314,7 +314,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
     public void testUpdate() throws Exception {
         Table table = new TableImpl();
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
-        SchemaPlus schema = rootSchema.add( "x", new AbstractSchema(), SchemaType.RELATIONAL );
+        SchemaPlus schema = rootSchema.add( "x", new AbstractSchema(), NamespaceType.RELATIONAL );
         schema.add( "MYTABLE", table );
         List<AlgTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
@@ -412,8 +412,8 @@ public class FrameworksTest extends SqlLanguagelDependant {
 
 
         @Override
-        public TableModify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-            return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+        public Modify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, Modify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+            return LogicalModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
 
 
