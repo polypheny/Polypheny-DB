@@ -151,7 +151,9 @@ public class IndexManager {
 
     public void restoreIndexes() throws UnknownNamespaceException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
         for ( final CatalogIndex index : Catalog.getInstance().getIndexes() ) {
-            addIndex( index );
+            if ( index.location == 0 ) {
+                addIndex( index );
+            }
         }
     }
 

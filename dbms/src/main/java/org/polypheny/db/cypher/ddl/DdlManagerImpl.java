@@ -636,7 +636,7 @@ public class DdlManagerImpl extends DdlManager {
                         }
                         if ( hasAllColumns ) {
                             DataStore loc = (DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
-                            String name = indexName + "_" + loc.getAdapterName();
+                            String name = indexName + "_" + loc.getUniqueName();
                             String nameSuffix = "";
                             int counter = 0;
                             while ( catalog.checkIfExistsIndex( catalogEntity.id, name + nameSuffix ) ) {
