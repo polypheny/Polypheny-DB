@@ -28,10 +28,11 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
-//    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
-//
-//    testImplementation group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version  // Apache 2.0
-//    testImplementation group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version  // HSQLDB License (BSD-style)
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
 }
 
 
