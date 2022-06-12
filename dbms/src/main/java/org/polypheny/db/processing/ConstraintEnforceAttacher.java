@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -668,7 +669,7 @@ public class ConstraintEnforceAttacher {
                             .getInstance()
                             .getTables( null, null, null )
                             .stream()
-                            .filter( t -> t.entityType == EntityType.ENTITY )
+                            .filter( t -> t.entityType == EntityType.ENTITY && t.getNamespaceType() == NamespaceType.RELATIONAL )
                             .collect( Collectors.toList() );
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "ConstraintEnforcement" );
                     Statement statement = transaction.createStatement();
