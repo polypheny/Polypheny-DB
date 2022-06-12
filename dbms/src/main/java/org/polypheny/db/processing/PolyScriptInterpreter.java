@@ -59,6 +59,11 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
             String code = line.substring(LANGUAGE_PREFIX + LEFT_PAREN, line.length() - RPAREN_AND_SEMICOLON);
             result = run(line); // return result of last executed query
         }
+        try {
+            transaction.commit();
+        } catch (TransactionException e) {
+            throw new RuntimeException(e);
+        }
         return result;
     }
 
