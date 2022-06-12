@@ -159,6 +159,9 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        // Configuration shall not be persisted
+        ConfigManager.memoryMode = (testMode || memoryCatalog);
+
         // Select behavior depending on arguments
         boolean showSplashScreen;
         boolean trayMenu;
@@ -218,9 +221,6 @@ public class PolyphenyDb {
                 throw new RuntimeException( "Unable to create the backup folder." );
             }
         }
-
-        // Configuration shall not be persisted
-        ConfigManager.memoryMode = (testMode || memoryCatalog);
 
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
