@@ -2442,9 +2442,9 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             collections.put( collectionId, collection );
             collectionNames.put( new Object[]{ namespace.databaseId, schemaId, name }, collection );
-            List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
+            /*List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
             children.add( collectionId );
-            schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
+            schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );*/
         }
         listeners.firePropertyChange( "collection", null, entity );
 

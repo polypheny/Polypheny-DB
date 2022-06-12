@@ -2381,7 +2381,7 @@ public class MqlToAlgConverter {
             // we have to implement the added fields into the _data field
             // as this is later used to retrieve them when projecting
 
-            int dataIndex = rowType.getFieldNames().indexOf( "_data" );
+            int dataIndex = rowType.getFieldNames().indexOf( "d" );
 
             for ( Entry<String, RexNode> entry : includes.entrySet() ) {
                 List<RexNode> values = new ArrayList<>();

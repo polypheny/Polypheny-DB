@@ -72,6 +72,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
+import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
@@ -230,6 +231,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     FilterJoinRule.FILTER_ON_JOIN,
                     JoinPushExpressionsRule.INSTANCE,
                     AggregateExpandDistinctAggregatesRule.INSTANCE,
+                    DocumentAggregateToAggregateRule.INSTANCE,
                     AggregateReduceFunctionsRule.INSTANCE,
                     FilterAggregateTransposeRule.INSTANCE,
                     ProjectWindowTransposeRule.INSTANCE,

@@ -387,6 +387,10 @@ public class TestHelper {
                     if ( !result.getHeader()[i].name.equals( "_id" ) ) {
                         BsonDocument doc = tryGetBson( result, excludeId, i, row, entry );
                         if ( doc != null ) {
+                            if ( excludeId && result.getHeader()[i].name.equals( "d" ) ) {
+                                doc.remove( "_id" );
+                            }
+                            row.add( doc.toJson().replace( " ", "" ) );
                             i++;
                             continue;
                         }

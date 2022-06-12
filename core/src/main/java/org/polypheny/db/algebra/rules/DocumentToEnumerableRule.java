@@ -68,10 +68,13 @@ public class DocumentToEnumerableRule extends AlgOptRule {
 
         try {
             AlgNode node = new EnumerableAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls );
+            // Rule AggregateExpandDistinctAggregatesRule is only applied on Aggregate
+            //AlgNode node = new LogicalAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls );
+
             call.transformTo( node );
+
         } catch ( InvalidAlgException e ) {
             //EnumerableRules.LOGGER.debug( e.toString() );
-            throw new RuntimeException( e );
         }
     }
 
