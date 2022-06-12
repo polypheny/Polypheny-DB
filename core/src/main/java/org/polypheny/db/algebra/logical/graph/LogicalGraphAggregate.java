@@ -24,9 +24,25 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.graph.GraphAggregate;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.ImmutableBitSet;
 
 public class LogicalGraphAggregate extends GraphAggregate {
+
+
+    /**
+     * Creates a LogicalAggregate.
+     */
+    public static LogicalGraphAggregate create( final AlgNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        return create_( input, false, groupSet, groupSets, aggCalls );
+    }
+
+
+    private static LogicalGraphAggregate create_( final AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        final AlgOptCluster cluster = input.getCluster();
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        return new LogicalGraphAggregate( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
+    }
 
 
     public LogicalGraphAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {

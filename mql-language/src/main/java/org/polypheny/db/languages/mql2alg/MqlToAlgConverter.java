@@ -52,12 +52,12 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
@@ -508,7 +508,7 @@ public class MqlToAlgConverter {
      * @param key the left associated parent key
      * @param mergedUpdates collection, which combines all performed update steps according to the operation
      * @param rowType the default rowtype at this point
-     * @param node the transformed operation up to this step e.g. {@link Scan} or {@link LogicalAggregate}
+     * @param node the transformed operation up to this step e.g. {@link Scan} or {@link LogicalDocumentAggregate}
      * @param table the active table
      * @return the unified UPDATE AlgNode
      */
@@ -776,7 +776,7 @@ public class MqlToAlgConverter {
     private AlgNode convertCount( MqlCount query, AlgDataType rowType, AlgNode node ) {
         node = convertQuery( query, rowType, node );
 
-        return LogicalAggregate.create(
+        return LogicalDocumentAggregate.create(
                 node,
                 ImmutableBitSet.of(),
                 Collections.singletonList( ImmutableBitSet.of() ),
@@ -1264,14 +1264,14 @@ public class MqlToAlgConverter {
             String groupName = groupBy.asString().getValue().substring( 1 );
             int index = rowType.getFieldNames().indexOf( groupName );
 
-            node = LogicalAggregate.create(
+            node = LogicalDocumentAggregate.create(
                     node,
                     ImmutableBitSet.of( index ),
                     Collections.singletonList( ImmutableBitSet.of( index ) ),
                     convertedAggs );
         } else {
 
-            node = LogicalAggregate.create(
+            node = LogicalDocumentAggregate.create(
                     node,
                     ImmutableBitSet.of(),
                     Collections.singletonList( ImmutableBitSet.of() ),
@@ -1296,7 +1296,7 @@ public class MqlToAlgConverter {
         if ( !value.isString() ) {
             throw new RuntimeException( "$count pipeline stage needs only a string" );
         }
-        return LogicalAggregate.create(
+        return LogicalDocumentAggregate.create(
                 node,
                 ImmutableBitSet.of(),
                 Collections.singletonList( ImmutableBitSet.of() ),

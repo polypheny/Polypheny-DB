@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
@@ -388,6 +389,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentFilter alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    public void rewriteAlg( LogicalDocumentAggregate alg ) {
         rewriteGeneric( alg );
     }
 

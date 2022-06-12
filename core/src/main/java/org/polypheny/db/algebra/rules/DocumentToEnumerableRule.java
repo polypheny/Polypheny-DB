@@ -16,11 +16,14 @@
 
 package org.polypheny.db.algebra.rules;
 
+import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableFilter;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.plan.AlgOptRule;
@@ -32,7 +35,7 @@ public class DocumentToEnumerableRule extends AlgOptRule {
 
     public static DocumentToEnumerableRule PROJECT_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.PROJECT, operand( LogicalDocumentProject.class, any() ), "DOCUMENT_PROJECT_TO_ENUMERABLE" );
 
-
+    public static DocumentToEnumerableRule AGGREGATE_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.AGGREGATE, operand( LogicalDocumentAggregate.class, any() ), "DOCUMENT_AGGREGATE_TO_ENUMERABLE" );
     public static DocumentToEnumerableRule FILTER_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.FILTER, operand( LogicalDocumentFilter.class, any() ), "DOCUMENT_FILTER_TO_ENUMERABLE" );
 
     private final Type type;
@@ -48,13 +51,28 @@ public class DocumentToEnumerableRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         if ( type == Type.PROJECT ) {
             convertProject( call );
-
         } else if ( type == Type.FILTER ) {
             convertFilter( call );
+        } else if ( type == Type.AGGREGATE ) {
+            convertAggregate( call );
         } else {
             throw new UnsupportedOperationException( "This document is not supported." );
         }
 
+    }
+
+
+    private void convertAggregate( AlgOptRuleCall call ) {
+        LogicalDocumentAggregate aggregate = call.alg( 0 );
+        AlgTraitSet out = aggregate.getTraitSet().replace( EnumerableConvention.INSTANCE );
+
+        try {
+            AlgNode node = new EnumerableAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls );
+            call.transformTo( node );
+        } catch ( InvalidAlgException e ) {
+            //EnumerableRules.LOGGER.debug( e.toString() );
+            throw new RuntimeException( e );
+        }
     }
 
 
