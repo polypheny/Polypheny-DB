@@ -161,6 +161,7 @@ public class PolyphenyDb {
 
         // Configuration shall not be persisted
         ConfigManager.memoryMode = (testMode || memoryCatalog);
+        ConfigManager.resetCatalogOnStartup = resetCatalog;
 
         // Select behavior depending on arguments
         boolean showSplashScreen;

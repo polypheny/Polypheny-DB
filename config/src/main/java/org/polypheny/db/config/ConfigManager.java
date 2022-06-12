@@ -56,6 +56,7 @@ public class ConfigManager {
     private static final String DEFAULT_CONFIGURATION_DIRECTORY_NAME = "config";
 
     public static boolean memoryMode = true; // If true, then changes are saved in-memory only and will be lost after restart.
+    public static boolean resetCatalogOnStartup = false; // If true, no changes a read from an existing config file
 
     private static boolean usesExternalConfigFile = false;
 
@@ -296,7 +297,7 @@ public class ConfigManager {
             throw new ConfigRuntimeException( "Cannot register two configuration elements with the same key: " + config.getKey() );
         } else {
             try {
-                if ( !(memoryMode && !usesExternalConfigFile) ) {
+                if ( !(memoryMode && !usesExternalConfigFile) && !resetCatalogOnStartup ) {
                     // Check if the config file contains this key and if so set the value to the one defined in the config file
                     if ( configFile.hasPath( config.getKey() ) ) {
                         config.setValueFromFile( configFile );
@@ -304,7 +305,7 @@ public class ConfigManager {
                 }
                 this.configs.put( config.getKey(), config );
 
-                // Observe every registered config that if config is changed Manager gets notified and can persist the changed config
+                // Observe every registered config that if config is changed, the manager gets notified and can persist the changes
                 config.addObserver( new ConfigManagerListener() );
             } catch ( Exception e ) {
                 throw new ConfigRuntimeException( "Error while registering config: " + config.getKey() );
