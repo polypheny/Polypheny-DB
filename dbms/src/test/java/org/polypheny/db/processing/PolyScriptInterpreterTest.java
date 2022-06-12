@@ -17,12 +17,10 @@
 package org.polypheny.db.processing;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.polypheny.db.PolyResult;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 
 class PolyScriptInterpreterTest {
@@ -30,9 +28,10 @@ class PolyScriptInterpreterTest {
     @Test
     void interprete() {
         SqlProcessorFacade sqlProcessorFacade = Mockito.mock(SqlProcessorFacade.class);
+        MqlProcessorImpl mqlProcessor = Mockito.mock(MqlProcessorImpl.class);
 
-        TransactionManager transactionManager = Mockito.mock(TransactionManager.class);
-        PolyScriptInterpreter sut = new PolyScriptInterpreter(sqlProcessorFacade, transactionManager);
+        Transaction transactionManager = Mockito.mock(Transaction.class);
+        PolyScriptInterpreter sut = new PolyScriptInterpreter(sqlProcessorFacade, transactionManager, mqlProcessor);
 
         PolyResult result = sut.interprete("sql(select * from emps);");
 

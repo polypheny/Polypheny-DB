@@ -897,7 +897,7 @@ public class CatalogImpl extends Catalog {
     }
 
     /**
-     * Returns the procedure with the given name in the specified schema.
+     * Deletes the procedure with the given name in the specified schema.
      *
      * @param databaseId    The id of the database
      * @param schemaId      The id of the schema
