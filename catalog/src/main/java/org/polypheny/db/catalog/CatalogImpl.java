@@ -870,6 +870,7 @@ public class CatalogImpl extends Catalog {
             procedures.put(id, procedure);
             procedureNames.put(new Object[]{databaseId, schemaId, procedureName}, procedure);
         }
+        db.commit();
     }
 
     /**
@@ -919,6 +920,7 @@ public class CatalogImpl extends Catalog {
                 throw new RuntimeException(String.format("Procedure that should have existed wasn't found: %s", deletedProcedure.getProcedureId()));
             }
         }
+        db.commit();
     }
 
 
