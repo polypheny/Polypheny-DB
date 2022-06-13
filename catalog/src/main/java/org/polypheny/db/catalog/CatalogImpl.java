@@ -2491,7 +2491,7 @@ public class CatalogImpl extends Catalog {
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), tableId ) );
 
         long idId = addColumn( "_id_", tableId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-        long dataId = addColumn( "_data_", tableId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        long dataId = addColumn( "_data_", tableId, 1, PolyType.JSON, null, null, null, null, null, false, Collation.getDefaultCollation() );
 
         for ( DataStore s : stores ) {
             addColumnPlacement(

@@ -167,7 +167,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             if ( catalogColumn.collectionsType != null ) {
                 builder.append( " " ).append( catalogColumn.collectionsType.toString() );
             }
-            if ( catalogColumn.length != null ) {
+            if ( catalogColumn.length != null && catalogColumn.type != PolyType.JSON ) {
                 builder.append( "(" );
                 builder.append( catalogColumn.length );
                 if ( catalogColumn.scale != null ) {
@@ -344,8 +344,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
-            case JSON:
                 return "VARCHAR";
+            case JSON:
+                return "TEXT";
             case DATE:
                 return "DATE";
             case TIME:
