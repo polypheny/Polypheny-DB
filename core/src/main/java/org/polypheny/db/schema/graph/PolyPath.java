@@ -328,7 +328,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
             assert !isRef;
 
             if ( source == null ) {
-                log.warn( "There appeared an empty source on an edge" );
+                log.debug( "There appeared an empty source on an edge" );
                 return false;
             }
             assert this.source != null;
@@ -342,7 +342,7 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
             }
 
             if ( target == null ) {
-                log.warn( "There appeared an empty target on an edge" );
+                log.debug( "There appeared an empty target on an edge" );
                 return false;
             }
             assert this.target != null;
