@@ -167,7 +167,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             if ( catalogColumn.collectionsType != null ) {
                 builder.append( " " ).append( catalogColumn.collectionsType.toString() );
             }
-            if ( catalogColumn.length != null && catalogColumn.type != PolyType.JSON ) {
+            if ( catalogColumn.length != null ) {
                 builder.append( "(" );
                 builder.append( catalogColumn.length );
                 if ( catalogColumn.scale != null ) {

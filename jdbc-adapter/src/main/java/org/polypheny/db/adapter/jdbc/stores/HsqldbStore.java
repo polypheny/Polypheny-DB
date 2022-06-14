@@ -94,7 +94,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             dataSource.setPassword( "" );
             dataSource.setMaxTotal( -1 ); // No limit for number of connections (limited by connection handler; see settings maxConnections)
             dataSource.setDefaultAutoCommit( false );
-            dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
+            dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_COMMITTED );
             return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
         }
     }
@@ -228,7 +228,6 @@ public class HsqldbStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
-            case JSON:
                 return "VARCHAR";
             case DATE:
                 return "DATE";
@@ -238,6 +237,7 @@ public class HsqldbStore extends AbstractJdbcStore {
                 return "TIMESTAMP";
             case ARRAY:
                 return "LONGVARCHAR";
+            case JSON:
             case NODE:
             case EDGE:
             case DOCUMENT:
