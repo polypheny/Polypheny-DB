@@ -853,7 +853,7 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
         Optional<CatalogProcedure> existingProcedure = getProcedure(databaseId, schemaId, procedureName);
         if(existingProcedure.isPresent()) {
             throw new ProcedureAlreadyExistsException(databaseId, schemaId, procedureName);
@@ -868,7 +868,9 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) {
+    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) {
+        long id = procedureIdBuilder.getAndIncrement();
+        CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, query, arguments);
         synchronized (this) {
             procedures.replace(procedure.getProcedureId(), procedure);
             procedureNames.replace(new Object[]{databaseId, schemaId, procedure.getName()}, procedure);

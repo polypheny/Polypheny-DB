@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogProcedure;
+import org.polypheny.db.catalog.exceptions.ProcedureAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
 
 /**
@@ -46,13 +47,13 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
-    public void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) {
-        throw new UnsupportedOperationException();
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
+
     }
 
     @Override
-    public void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) {
-        throw new UnsupportedOperationException();
+    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
+
     }
 
     @Override

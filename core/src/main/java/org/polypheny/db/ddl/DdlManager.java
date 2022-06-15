@@ -466,19 +466,12 @@ public abstract class DdlManager {
      *
      * @param schemaId the id of schema
      * @param procedureName the name of the new procedure
-     */
-    public abstract void createProcedure( Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments) throws GenericCatalogException, UnknownColumnException;
-
-    /**
-     * Replace a procedure
-     *
-     * @param schemaId the id of schema
      * @param databaseId the id of the database
-     * @param procedureId the id of the procedure to be updated
-     * @param procedure the procedure to update the existing one
+     * @param replace whether to replace an existing or insert a new procedure
+     * @param query the body of the procedure
+     * @param arguments the arguments to the procedure (optional)
      */
-    public abstract void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) throws GenericCatalogException, UnknownColumnException;
-
+    public abstract void createProcedure( Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments);
 
     /**
      * Execute a procedure

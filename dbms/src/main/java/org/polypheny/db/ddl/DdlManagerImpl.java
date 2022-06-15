@@ -1712,15 +1712,14 @@ public class DdlManagerImpl extends DdlManager {
 
     public void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments) {
         try {
-            catalog.addProcedure(schemaId, procedureName, databaseId, query, arguments);
+            if(replace) {
+                catalog.updateProcedure(schemaId, procedureName, databaseId, query, arguments);
+            } else {
+                catalog.createProcedure(schemaId, procedureName, databaseId, query, arguments);
+            }
         } catch (ProcedureAlreadyExistsException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) {
-        catalog.updateProcedure(schemaId, databaseId, procedureId, procedure);
     }
 
     public void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName) {

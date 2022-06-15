@@ -20,6 +20,7 @@ import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogProcedure;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.exceptions.ProcedureAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
 
 import java.util.Collections;
@@ -34,19 +35,18 @@ public class MqlMockCatalog extends MockCatalog {
         return new CatalogSchema( 1, "private", 0, 0, "tester", SchemaType.DOCUMENT );
     }
 
-
     @Override
     public CatalogUser getUser( int userId ) {
         return new CatalogUser( 0, "name", "name", 1 );
     }
 
     @Override
-    public void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) {
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
 
     }
 
     @Override
-    public void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) {
+    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
 
     }
 

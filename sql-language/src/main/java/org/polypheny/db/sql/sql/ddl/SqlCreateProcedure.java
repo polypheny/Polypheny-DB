@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogProcedure;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -133,10 +134,6 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
-        try {
-            instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, query.toString());
-        } catch (GenericCatalogException | UnknownColumnException e) {
-            e.printStackTrace();
-        }
+        instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, query.toString());
     }
 }
