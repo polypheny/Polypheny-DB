@@ -802,7 +802,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             String collectionName = collection.name + "_" + placement.id;
 
             PreparingTable table = reader.getTable( List.of( namespaceName, collectionName ) );
-            if ( !adapter.supportedNamespaces.contains( NamespaceType.DOCUMENT ) ) {
+            if ( !adapter.getSupportedNamespaces().contains( NamespaceType.DOCUMENT ) ) {
                 return attachRelationalModify( alg, statement );
             }
 
