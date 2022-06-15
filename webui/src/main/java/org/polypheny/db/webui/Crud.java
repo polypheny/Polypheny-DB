@@ -367,7 +367,17 @@ public class Crud implements InformationObserver {
     }
 
     void getProcedures(final Context ctx) {
-        CatalogSchema schema = catalog.getSchema(getTransaction().getDefaultSchema().id);
+        Transaction transaction = getTransaction();
+        CatalogSchema schema = catalog.getSchema(transaction.getDefaultSchema().id);
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
         List<Procedure> procedures = catalog.getProcedures(schema.id).stream()
                 .map(this::mapToApi)
                 .collect(Collectors.toList());
