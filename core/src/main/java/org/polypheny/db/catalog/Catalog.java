@@ -22,10 +22,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.annotations.SerializedName;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
+
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -1555,12 +1553,14 @@ public abstract class Catalog {
 
     public abstract void clear();
 
-    public abstract void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments);
+    public abstract void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException;
+
+    public abstract void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure);
 
     public abstract List<CatalogProcedure> getProcedures(Long schemaId);
 
 
-    public abstract CatalogProcedure getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException;
+    public abstract Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException;
 
     public abstract void deleteProcedure(long databaseId, long schemaId, String procedureName ) throws UnknownProcedureException;
 

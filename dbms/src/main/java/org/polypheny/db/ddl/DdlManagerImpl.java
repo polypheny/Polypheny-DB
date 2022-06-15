@@ -19,15 +19,7 @@ package org.polypheny.db.ddl;
 
 import com.google.common.collect.ImmutableList;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
@@ -1718,13 +1710,26 @@ public class DdlManagerImpl extends DdlManager {
         materializedManager.addData(statement.getTransaction(), stores, addedColumns, algRoot, catalogMaterializedView);
     }
 
-    public void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments) throws GenericCatalogException, UnknownColumnException {
-        catalog.addProcedure(schemaId, procedureName, databaseId, query, arguments);
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments) {
+        try {
+            catalog.addProcedure(schemaId, procedureName, databaseId, query, arguments);
+        } catch (ProcedureAlreadyExistsException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) {
+        catalog.updateProcedure(schemaId, databaseId, procedureId, procedure);
     }
 
     public void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName) {
         try {
-            CatalogProcedure procedure = catalog.getProcedure(databaseId, schemaId, procedureName);
+            Optional<CatalogProcedure> optionalProcedure = catalog.getProcedure(databaseId, schemaId, procedureName);
+            if(optionalProcedure.isEmpty()) {
+                throw new RuntimeException("Unknown procedure");
+            }
+            CatalogProcedure procedure = optionalProcedure.get();
             PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), statement.getTransaction());
             polyScriptInterpreter.interprete(procedure.getQuery());
         } catch (UnknownProcedureException e) {

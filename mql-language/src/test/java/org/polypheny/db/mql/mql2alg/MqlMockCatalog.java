@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 public class MqlMockCatalog extends MockCatalog {
@@ -45,13 +46,23 @@ public class MqlMockCatalog extends MockCatalog {
     }
 
     @Override
+    public void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) {
+
+    }
+
+    @Override
     public List<CatalogProcedure> getProcedures(Long schemaId) {
         return Collections.emptyList();
     }
 
     @Override
-    public CatalogProcedure getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException {
-        return new CatalogProcedure(1L, "myProcedure", 2L, 3L, "");
+    public Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) {
+        return Optional.of(new CatalogProcedure(1L, "myProcedure", 2L, 3L, ""));
+    }
+
+    @Override
+    public void deleteProcedure(long databaseId, long schemaId, String procedureName) {
+
     }
 
 

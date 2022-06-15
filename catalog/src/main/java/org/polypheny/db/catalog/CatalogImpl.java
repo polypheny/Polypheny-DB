@@ -22,18 +22,8 @@ import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -863,12 +853,25 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) {
+    public void addProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
+        Optional<CatalogProcedure> existingProcedure = getProcedure(databaseId, schemaId, procedureName);
+        if(existingProcedure.isPresent()) {
+            throw new ProcedureAlreadyExistsException(databaseId, schemaId, procedureName);
+        }
         long id = procedureIdBuilder.getAndIncrement();
         CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, query, arguments);
         synchronized (this) {
             procedures.put(id, procedure);
             procedureNames.put(new Object[]{databaseId, schemaId, procedureName}, procedure);
+        }
+        db.commit();
+    }
+
+    @Override
+    public void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) {
+        synchronized (this) {
+            procedures.replace(procedure.getProcedureId(), procedure);
+            procedureNames.replace(new Object[]{databaseId, schemaId, procedure.getName()}, procedure);
         }
         db.commit();
     }
@@ -879,17 +882,13 @@ public class CatalogImpl extends Catalog {
      * @param databaseId    The id of the database
      * @param schemaId      The id of the schema
      * @param procedureName The name of the procedure
-     * @return The table
-     * @throws UnknownTableException If there is no procedure with this name in the specified database and schema.
+     * @return An optional containing the procedure or empty
      */
     @Override
-    public CatalogProcedure getProcedure(long databaseId, long schemaId, String procedureName ) throws UnknownProcedureException {
-        try {
-            CatalogSchema schema = getSchema( schemaId );
-            return Objects.requireNonNull( procedureNames.get( new Object[]{ schema.databaseId, schemaId, procedureName } ) );
-        } catch ( NullPointerException e ) {
-            throw new UnknownProcedureException(databaseId, schemaId, procedureName);
-        }
+    public Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String procedureName ) {
+        CatalogSchema schema = getSchema( schemaId );
+        CatalogProcedure procedure = procedureNames.get(new Object[]{schema.databaseId, schemaId, procedureName});
+        return procedure == null ? Optional.empty() : Optional.of(procedure);
     }
 
     @Override

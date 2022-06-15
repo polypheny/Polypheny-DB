@@ -20,6 +20,8 @@ package org.polypheny.db.docker;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -49,12 +51,17 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
+    public void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<CatalogProcedure> getProcedures(Long schemaId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CatalogProcedure getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException {
+    public Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException {
         throw new UnsupportedOperationException();
     }
 

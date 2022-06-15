@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.entity.CatalogProcedure;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.*;
@@ -467,6 +468,16 @@ public abstract class DdlManager {
      * @param procedureName the name of the new procedure
      */
     public abstract void createProcedure( Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments) throws GenericCatalogException, UnknownColumnException;
+
+    /**
+     * Replace a procedure
+     *
+     * @param schemaId the id of schema
+     * @param databaseId the id of the database
+     * @param procedureId the id of the procedure to be updated
+     * @param procedure the procedure to update the existing one
+     */
+    public abstract void updateProcedure(Long schemaId, Long databaseId, Long procedureId, CatalogProcedure procedure) throws GenericCatalogException, UnknownColumnException;
 
 
     /**
