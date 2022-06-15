@@ -97,7 +97,7 @@ public class Neo4jStore extends DataStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "neo4j:4.4-community", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 7687, port )
                 .withEnvironmentVariable( String.format( "NEO4J_AUTH=%s/%s", user, pass ) )
-                .withReadyTest( this::testConnection, 20000 )
+                .withReadyTest( this::testConnection, 50000 )
                 .build();
 
         DockerManager.getInstance().initialize( container ).start();
