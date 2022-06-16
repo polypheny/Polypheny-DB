@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class CatalogAdapter implements CatalogObject {
     public final String adapterClazz;
     public final AdapterType type;
     public final ImmutableMap<String, String> settings;
-    public final List<NamespaceType> supportedNamespaces;
+    private List<NamespaceType> supportedNamespaces;
 
 
     public enum AdapterType {STORE, SOURCE}
@@ -54,13 +54,20 @@ public class CatalogAdapter implements CatalogObject {
         this.adapterClazz = adapterClazz;
         this.type = adapterType;
         this.settings = ImmutableMap.copyOf( settings );
-        // general settings are provided by the annotations of the adapter class
-        try {
-            AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
-            this.supportedNamespaces = List.of( annotations.supportedSchemaTypes() );
-        } catch ( ClassNotFoundException e ) {
-            throw new RuntimeException( "The provided Adapter is not correctly annotated." );
+    }
+
+
+    public List<NamespaceType> getSupportedNamespaces() {
+        if ( supportedNamespaces == null ) {
+            // general settings are provided by the annotations of the adapter class
+            try {
+                AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
+                this.supportedNamespaces = List.of( annotations.supportedSchemaTypes() );
+            } catch ( ClassNotFoundException e ) {
+                throw new RuntimeException( "The provided adapter is not correctly annotated." );
+            }
         }
+        return supportedNamespaces;
     }
 
 
@@ -77,4 +84,5 @@ public class CatalogAdapter implements CatalogObject {
         public final String name;
 
     }
+
 }

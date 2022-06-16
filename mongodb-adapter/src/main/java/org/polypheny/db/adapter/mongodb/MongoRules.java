@@ -51,6 +51,9 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.document.DocumentValues;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
@@ -59,7 +62,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -114,7 +116,11 @@ public class MongoRules {
             MongoFilterRule.INSTANCE,
             MongoProjectRule.INSTANCE,
             MongoAggregateRule.INSTANCE,
-            MongoTableModificationRule.INSTANCE
+            MongoTableModificationRule.INSTANCE,
+            MongoDocumentFilterRule.INSTANCE,
+            MongoDocumentProjectRule.INSTANCE,
+            MongoDocumentAggregateRule.INSTANCE,
+            MongoDocumentsRule.INSTANCE
     };
 
 
@@ -572,6 +578,35 @@ public class MongoRules {
     }
 
 
+    private static class MongoDocumentFilterRule extends MongoConverterRule {
+
+        private static final MongoDocumentFilterRule INSTANCE = new MongoDocumentFilterRule();
+
+
+        private MongoDocumentFilterRule() {
+            super(
+                    LogicalDocumentFilter.class,
+                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
+                    Convention.NONE,
+                    MongoAlg.CONVENTION,
+                    "MongoDocumentFilterRule" );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
+            final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
+            return new MongoFilter(
+                    alg.getCluster(),
+                    traitSet,
+                    convert( filter.getInput(), out ),
+                    filter.condition );
+        }
+
+    }
+
+
     /**
      * Rule to convert a {@link LogicalProject} to a {@link MongoProject}.
      */
@@ -600,6 +635,37 @@ public class MongoRules {
                     traitSet,
                     convert( project.getInput(), out ),
                     project.getProjects(),
+                    project.getRowType() );
+        }
+
+    }
+
+
+    private static class MongoDocumentProjectRule extends MongoConverterRule {
+
+        private static final MongoDocumentProjectRule INSTANCE = new MongoDocumentProjectRule();
+
+
+        private MongoDocumentProjectRule() {
+            super(
+                    LogicalDocumentProject.class,
+                    project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
+                            && !containsIncompatible( project ),
+                    Convention.NONE,
+                    MongoAlg.CONVENTION,
+                    "MongoDocumentProjectRule" );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalDocumentProject project = (LogicalDocumentProject) alg;
+            final AlgTraitSet traitSet = project.getTraitSet().replace( out );
+            return new MongoProject(
+                    project.getCluster(),
+                    traitSet,
+                    convert( project.getInput(), out ),
+                    project.projects,
                     project.getRowType() );
         }
 
@@ -668,16 +734,7 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             Values values = (Values) alg;
-            if ( values.getModel() == NamespaceType.DOCUMENT ) {
-                DocumentValues documentValues = (DocumentValues) alg;
-                return new MongoDocuments(
-                        alg.getCluster(),
-                        alg.getRowType(),
-                        documentValues.getDocumentTuples(),
-                        alg.getTraitSet().replace( out ),
-                        values.getTuples()
-                );
-            }
+
             return new MongoValues(
                     values.getCluster(),
                     values.getRowType(),
@@ -703,16 +760,37 @@ public class MongoRules {
     }
 
 
-    public static class MongoDocuments extends Values implements MongoAlg {
+    public static class MongoDocumentsRule extends MongoConverterRule {
+
+        private static final MongoDocumentsRule INSTANCE = new MongoDocumentsRule();
 
 
-        private final ImmutableList<BsonValue> documentTuples;
+        private MongoDocumentsRule() {
+            super( DocumentValues.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoDocumentRule." + MongoAlg.CONVENTION );
+        }
 
 
-        public MongoDocuments( AlgOptCluster cluster, AlgDataType defaultRowType, ImmutableList<BsonValue> documentTuples, AlgTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-            super( cluster, defaultRowType, normalizedTuples, traitSet );
-            //this.tuples = normalizedTuples;
-            this.documentTuples = documentTuples;
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            DocumentValues documentValues = (DocumentValues) alg;
+            return new MongoDocuments(
+                    alg.getCluster(),
+                    alg.getRowType(),
+                    documentValues.getDocumentTuples(),
+                    alg.getTraitSet().replace( out )
+            );
+
+
+        }
+
+    }
+
+
+    public static class MongoDocuments extends DocumentValues implements MongoAlg {
+
+
+        public MongoDocuments( AlgOptCluster cluster, AlgDataType defaultRowType, ImmutableList<BsonValue> documentTuples, AlgTraitSet traitSet ) {
+            super( cluster, traitSet, defaultRowType, documentTuples );
         }
 
 
@@ -1265,6 +1343,40 @@ public class MongoRules {
                         agg.getGroupSet(),
                         agg.getGroupSets(),
                         agg.getAggCallList() );
+            } catch ( InvalidAlgException e ) {
+                LOGGER.warn( e.toString() );
+                return null;
+            }
+        }
+
+    }
+
+
+    private static class MongoDocumentAggregateRule extends MongoConverterRule {
+
+        public static final AlgOptRule INSTANCE = new MongoDocumentAggregateRule();
+
+
+        private MongoDocumentAggregateRule() {
+            super( LogicalDocumentAggregate.class, r -> true, Convention.NONE, MongoAlg.CONVENTION,
+                    "MongoDocumentAggregateRule" );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalDocumentAggregate agg = (LogicalDocumentAggregate) alg;
+            final AlgTraitSet traitSet =
+                    agg.getTraitSet().replace( out );
+            try {
+                return new MongoAggregate(
+                        alg.getCluster(),
+                        traitSet,
+                        convert( agg.getInput(), traitSet.simplify() ),
+                        agg.indicator,
+                        agg.groupSet,
+                        agg.groupSets,
+                        agg.aggCalls );
             } catch ( InvalidAlgException e ) {
                 LOGGER.warn( e.toString() );
                 return null;

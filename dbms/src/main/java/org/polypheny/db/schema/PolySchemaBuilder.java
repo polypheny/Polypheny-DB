@@ -290,7 +290,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( adapter.getAdapterId(), tableId );
 
                         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                            if ( catalogNamespace.namespaceType == NamespaceType.GRAPH && catalogAdapter.supportedNamespaces.contains( catalogNamespace.namespaceType ) ) {
+                            if ( catalogNamespace.namespaceType == NamespaceType.GRAPH && catalogAdapter.getSupportedNamespaces().contains( catalogNamespace.namespaceType ) ) {
                                 continue;
                             }
 
@@ -339,7 +339,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( adapter.getAdapterId(), tableId );
 
                         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                            if ( catalogNamespace.namespaceType == NamespaceType.GRAPH && catalogAdapter.supportedNamespaces.contains( catalogNamespace.namespaceType ) ) {
+                            if ( catalogNamespace.namespaceType == NamespaceType.GRAPH && catalogAdapter.getSupportedNamespaces().contains( catalogNamespace.namespaceType ) ) {
                                 continue;
                             }
 

@@ -379,7 +379,7 @@ public abstract class BaseRouter {
         for ( Integer adapterId : collection.placements ) {
             CatalogAdapter adapter = catalog.getAdapter( adapterId );
             NamespaceType sourceModel = alg.getDocument().getTable().getSchemaType();
-            if ( !adapter.supportedNamespaces.contains( sourceModel ) ) {
+            if ( !adapter.getSupportedNamespaces().contains( sourceModel ) ) {
                 // document on relational
                 return handleDocumentOnRelational( alg, statement, builder );
             }
