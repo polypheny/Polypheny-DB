@@ -16,21 +16,22 @@
 
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
+import org.polypheny.db.languages.polyscript.Expression;
+import org.polypheny.db.languages.polyscript.Script;
 import org.polypheny.db.polyscript.parser.ParseException;
 import org.polypheny.db.polyscript.parser.PolyScript;
 
 import java.io.StringReader;
-import java.util.List;
 
 public class PolyScriptParserTest {
 
     @Test
     public void parseMultiLines() throws ParseException {
-        List<String> result = new PolyScript(new StringReader("sql(select * from emps1);sql(select * from emps2);")).Start();
-        assertEquals(2, result.size());
-        String first = result.get(0);
-        assertEquals( "select * from emps1", first);
-        String second = result.get(1);
-        assertEquals( "select * from emps2", second);
+        Script result = new PolyScript(new StringReader("sql(select * from emps1);sql(select * from emps2);")).Start();
+        assertEquals(2, result.stream().count());
+        Expression first = result.stream().findFirst().get();
+        assertEquals( "select * from emps1", first.getValue());
+        Expression second = result.stream().skip(1).findFirst().get();
+        assertEquals( "select * from emps2", second.getValue());
     }
 }

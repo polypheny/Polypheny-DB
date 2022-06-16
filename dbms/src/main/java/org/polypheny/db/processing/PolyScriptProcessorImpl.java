@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.polyscript.PolyScriptNode;
+import org.polypheny.db.languages.polyscript.Script;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.piglet.Ast;
 import org.polypheny.db.piglet.parser.ParseException;
@@ -47,7 +48,7 @@ public class PolyScriptProcessorImpl extends Processor {
             log.debug( "Parsing PolyScript statement ..." );
         }
         stopWatch.start();
-        List<String> parsed;
+        Script parsed;
         if ( log.isDebugEnabled() ) {
             log.debug( "POLYSCRIPT: {}", query );
         }

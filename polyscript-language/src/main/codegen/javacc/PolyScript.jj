@@ -4,63 +4,92 @@ options {
     LOOKAHEAD = 3;
 }
 PARSER_BEGIN(PolyScript)
-    package org.polypheny.db.polyscript.parser;
+package org.polypheny.db.polyscript.parser;
 
-    import java.util.List;
-    import java.util.ArrayList;
-    public class PolyScript {
-        public static void main( String[] args ) throws ParseException, TokenMgrError {
-            PolyScript parser = new PolyScript( System.in ) ;
-            List<String> result = parser.Start() ;
-            System.out.println("done");
-            System.out.println(String.format("parsed query: %s", result));
-        }
+import java.util.List;
+import java.util.ArrayList;
+import org.polypheny.db.languages.polyscript.Script;
+import org.polypheny.db.languages.polyscript.Expression;
+import org.polypheny.db.languages.polyscript.SqlExpression;
+import org.polypheny.db.languages.polyscript.CqlExpression;
+import org.polypheny.db.languages.polyscript.MqlExpression;
+
+public class PolyScript {
+    public static void main( String[] args ) throws ParseException, TokenMgrError {
+        PolyScript parser = new PolyScript( System.in ) ;
+        Script result = parser.Start() ;
+        System.out.println(String.format("parsed query: %s", result));
     }
+}
+
 PARSER_END(PolyScript)
 
 // Lexical analyzer specification
-//SKIP : { " " }
 SKIP : { "\n" | "\r" | "\r\n" }
 TOKEN : { < SQL : "sql(" > }
-TOKEN : { < MQL : "mql" > }
-TOKEN : { < CQL : "cql" > }
-TOKEN : { < PY : "py" > }
+TOKEN : { < MQL : "mql(" > }
+TOKEN : { < CQL : "cql(" > }
+TOKEN : { < PY : "py(" > }
 TOKEN : { < LPAREN : "(" > }
 TOKEN : { < RPAREN : ")" > }
 TOKEN : { < SEMICOLON : ";" > }
 TOKEN : { < COMMIT : "commit" > }
 TOKEN : { < RETURN : "return" > }
-TOKEN : { < STRING : (["0"-"9", "a"-"z", "A"-"Z", "*", "'", " "])+ > }
+
+TOKEN : { < STRING : (["0"-"9", "a"-"z", "A"-"Z", "*", "'", " ", ".", "{", "}", "[", "]", ":"])+ > }
 TOKEN : { < PAREN_STRING : (<LPAREN><STRING><RPAREN>) > }
 
-List<String> Start() : { List<String> queries = new ArrayList<String>(); String query; }
+Script Start() : {
+ List<Expression> expressions = new ArrayList<Expression>();
+ Expression expression;
+  }
 {
-    (<SQL>query = query() {queries.add(query);}<RPAREN>
+    (<SQL>expression = sqlExpression() {expressions.add(expression);}<RPAREN>
     <SEMICOLON>
     |
-    <MQL><LPAREN> query = query() {queries.add(query);}<RPAREN>
-    <SEMICOLON>
-
-    |
-    <PY><LPAREN> query = query() {queries.add(query);}<RPAREN>
+    <MQL> expression = mqlExpression() {expressions.add(expression);}<RPAREN>
     <SEMICOLON>
     |
-    <CQL><LPAREN> query = query() {queries.add(query);}<RPAREN>
+    <CQL> expression = cqlExpression() {expressions.add(expression);}<RPAREN>
     <SEMICOLON>)+
     {
-        return queries;
-    }
+    return new Script(expressions);
+}
 }
 
-
-String query():
+Expression sqlExpression():
 {
     Token t;
 }
 {
-    t = <STRING><PAREN_STRING><STRING><PAREN_STRING> { return t.image; }
+    t = <STRING><PAREN_STRING><STRING><PAREN_STRING> { return new SqlExpression(t.image); }
     |
-    t = <STRING><PAREN_STRING> { return t.image; }
+    t = <STRING><PAREN_STRING> { return new SqlExpression(t.image); }
     |
-    t = <STRING> { return t.image; }
+    t = <STRING> { return new SqlExpression(t.image); }
 }
+
+Expression mqlExpression():
+{
+    Token t;
+}
+{
+    t = <STRING><PAREN_STRING><STRING><PAREN_STRING> { return new MqlExpression(t.image); }
+    |
+    t = <STRING><PAREN_STRING> { return new MqlExpression(t.image); }
+    |
+    t = <STRING> { return new MqlExpression(t.image); }
+}
+
+Expression cqlExpression():
+{
+    Token t;
+}
+{
+    t = <STRING><PAREN_STRING><STRING><PAREN_STRING> { return new CqlExpression(t.image); }
+    |
+    t = <STRING><PAREN_STRING> { return new CqlExpression(t.image); }
+    |
+    t = <STRING> { return new CqlExpression(t.image); }
+}
+
