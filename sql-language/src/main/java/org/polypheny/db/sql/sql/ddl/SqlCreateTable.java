@@ -34,8 +34,11 @@ import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.cypher.ddl.DdlManager.ConstraintInformation;
@@ -58,6 +61,7 @@ import org.polypheny.db.sql.sql.SqlOperator;
 import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
@@ -271,6 +275,8 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             // We just added the table/column so it has to exist or we have an internal problem
+            throw new RuntimeException( e );
+        } catch ( UnknownDatabaseException | UnknownTableException | TransactionException | UnknownNamespaceException | UnknownUserException | UnknownKeyException e ) {
             throw new RuntimeException( e );
         }
     }

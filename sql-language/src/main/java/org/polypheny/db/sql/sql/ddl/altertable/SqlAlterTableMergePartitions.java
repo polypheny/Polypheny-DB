@@ -23,6 +23,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -33,6 +39,7 @@ import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -88,7 +95,11 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
                 log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogEntity.name, catalogEntity.id, catalogEntity.getNamespaceName() );
             }
 
-            DdlManager.getInstance().removePartitioning( catalogEntity, statement );
+            try {
+                DdlManager.getInstance().removePartitioning( catalogEntity, statement );
+            } catch ( UnknownDatabaseException | GenericCatalogException | UnknownTableException | TransactionException | UnknownNamespaceException | UnknownUserException | UnknownKeyException e ) {
+                throw new RuntimeException( "Error while merging partitions", e );
+            }
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Table: '{}' has been merged", catalogEntity.name );

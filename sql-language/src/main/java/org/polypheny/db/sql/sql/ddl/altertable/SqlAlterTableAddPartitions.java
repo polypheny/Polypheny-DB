@@ -28,7 +28,12 @@ import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.cypher.ddl.exception.PartitionGroupNamesNotUniqueException;
@@ -43,6 +48,7 @@ import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -165,7 +171,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Table '" + catalogEntity.name + "' is already partitioned" );
             }
-        } catch ( UnknownPartitionTypeException | GenericCatalogException e ) {
+        } catch ( UnknownPartitionTypeException | GenericCatalogException | UnknownDatabaseException | UnknownTableException | TransactionException | UnknownNamespaceException | UnknownUserException | UnknownKeyException e ) {
             throw new RuntimeException( e );
         } catch ( PartitionGroupNamesNotUniqueException e ) {
             throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );

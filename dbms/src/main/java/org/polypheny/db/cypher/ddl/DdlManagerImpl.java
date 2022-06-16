@@ -1083,7 +1083,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropDataPlacement( CatalogEntity catalogEntity, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException {
-
         // Check whether this placement exists
         if ( !catalogEntity.dataPlacements.contains( storeInstance.getAdapterId() ) ) {
             throw new PlacementNotExistsException();
@@ -1518,14 +1517,13 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( removedPartitions.size() > 0 ) {
-            storeInstance.dropTable( statement.getPrepareContext(), catalogEntity, removedPartitions );
-
-            //  Indexes on this new Partition Placement if there is already an index
+            //  Remove indexes
             for ( CatalogIndex currentIndex : catalog.getIndexes( catalogEntity.id, false ) ) {
                 if ( currentIndex.location == storeId ) {
                     storeInstance.dropIndex( statement.getPrepareContext(), currentIndex, removedPartitions );
                 }
             }
+            storeInstance.dropTable( statement.getPrepareContext(), catalogEntity, removedPartitions );
         }
 
         // Reset query plan cache, implementation cache & routing cache
@@ -2283,7 +2281,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException {
+    public void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException, UnknownDatabaseException, UnknownTableException, TransactionException, UnknownNamespaceException, UnknownUserException, UnknownKeyException {
         CatalogColumn catalogColumn = catalog.getField( partitionInfo.table.id, partitionInfo.columnName );
 
         PartitionType actualPartitionType = PartitionType.getByName( partitionInfo.typeName );
@@ -2529,6 +2527,34 @@ public class DdlManagerImpl extends DdlManager {
                     unPartitionedTable.partitionProperty.partitionIds,
                     partitionedTable.partitionProperty.partitionIds );
         }
+
+        // Adjust indexes
+        List<CatalogIndex> indexes = catalog.getIndexes( unPartitionedTable.id, false );
+        for ( CatalogIndex index : indexes ) {
+            // Remove old index
+            DataStore ds = ((DataStore) AdapterManager.getInstance().getAdapter( index.location ));
+            ds.dropIndex( statement.getPrepareContext(), index, unPartitionedTable.partitionProperty.partitionIds );
+            catalog.deleteIndex( index.id );
+            // Add new index
+            long newIndexId = catalog.addIndex(
+                    partitionedTable.id,
+                    index.key.columnIds,
+                    index.unique,
+                    index.method,
+                    index.methodDisplayName,
+                    index.location,
+                    index.type,
+                    index.name );
+            if ( index.location == 0 ) {
+                IndexManager.getInstance().addIndex( catalog.getIndex( newIndexId ), statement );
+            } else {
+                ds.addIndex(
+                        statement.getPrepareContext(),
+                        catalog.getIndex( newIndexId ),
+                        catalog.getPartitionsOnDataPlacement( ds.getAdapterId(), unPartitionedTable.id ) );
+            }
+        }
+
         // Remove old tables
         stores.forEach( store -> store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds ) );
         catalog.deletePartitionGroup( unPartitionedTable.id, unPartitionedTable.namespaceId, unPartitionedTable.partitionProperty.partitionGroupIds.get( 0 ) );
@@ -2539,7 +2565,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void removePartitioning( CatalogEntity partitionedTable, Statement statement ) {
+    public void removePartitioning( CatalogEntity partitionedTable, Statement statement ) throws UnknownDatabaseException, GenericCatalogException, UnknownTableException, TransactionException, UnknownNamespaceException, UnknownUserException, UnknownKeyException {
         long tableId = partitionedTable.id;
 
         if ( log.isDebugEnabled() ) {
@@ -2599,7 +2625,9 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), mergedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getField( cp.columnId ) ) );
 
             // TODO @HENNLO Check if this can be omitted
-            catalog.updateDataPlacement( store.getAdapterId(), mergedTable.id,
+            catalog.updateDataPlacement(
+                    store.getAdapterId(),
+                    mergedTable.id,
                     catalog.getDataPlacement( store.getAdapterId(), mergedTable.id ).columnPlacementsOnAdapter,
                     mergedTable.partitionProperty.partitionIds );
             //
@@ -2612,6 +2640,33 @@ public class DdlManagerImpl extends DdlManager {
                     necessaryColumns,
                     placementDistribution,
                     mergedTable.partitionProperty.partitionIds );
+        }
+
+        // Adjust indexes
+        List<CatalogIndex> indexes = catalog.getIndexes( partitionedTable.id, false );
+        for ( CatalogIndex index : indexes ) {
+            // Remove old index
+            DataStore ds = (DataStore) AdapterManager.getInstance().getAdapter( index.location );
+            ds.dropIndex( statement.getPrepareContext(), index, partitionedTable.partitionProperty.partitionIds );
+            catalog.deleteIndex( index.id );
+            // Add new index
+            long newIndexId = catalog.addIndex(
+                    mergedTable.id,
+                    index.key.columnIds,
+                    index.unique,
+                    index.method,
+                    index.methodDisplayName,
+                    index.location,
+                    index.type,
+                    index.name );
+            if ( index.location == 0 ) {
+                IndexManager.getInstance().addIndex( catalog.getIndex( newIndexId ), statement );
+            } else {
+                ds.addIndex(
+                        statement.getPrepareContext(),
+                        catalog.getIndex( newIndexId ),
+                        catalog.getPartitionsOnDataPlacement( ds.getAdapterId(), mergedTable.id ) );
+            }
         }
 
         // Needs to be separated from loop above. Otherwise we loose data
