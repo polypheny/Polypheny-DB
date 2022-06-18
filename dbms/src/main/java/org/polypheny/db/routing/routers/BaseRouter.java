@@ -36,6 +36,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
@@ -46,6 +47,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -56,6 +58,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingTable;
@@ -369,6 +372,7 @@ public abstract class BaseRouter {
 
     protected RoutedAlgBuilder handleDocumentScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation ) {
         Catalog catalog = Catalog.getInstance();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         if ( alg.getDocument().getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
             return handleTransformerDocScan( alg, statement, builder, queryInformation );
@@ -379,12 +383,17 @@ public abstract class BaseRouter {
         for ( Integer adapterId : collection.placements ) {
             CatalogAdapter adapter = catalog.getAdapter( adapterId );
             NamespaceType sourceModel = alg.getDocument().getTable().getSchemaType();
+
             if ( !adapter.getSupportedNamespaces().contains( sourceModel ) ) {
                 // document on relational
                 return handleDocumentOnRelational( alg, statement, builder );
             }
+            CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, adapterId );
+            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.name, placement.physicalNamespaceName );
+            String collectionName = collection.name + "_" + placement.id;
+            AlgOptTable collectionTable = reader.getDocument( List.of( namespaceName, collectionName ) );
 
-            return builder.push( alg );
+            return builder.push( LogicalDocumentScan.create( alg.getCluster(), collectionTable ) );
         }
 
         throw new RuntimeException( "No placement found for the document." );

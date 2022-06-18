@@ -2455,7 +2455,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addDocumentPlacement( int adapterId, long collectionId, PlacementType automatic ) {
         long id = partitionIdBuilder.getAndIncrement();
-        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, null, id );
+        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, null, null, id );
         CatalogCollection old = collections.get( collectionId );
         if ( old == null ) {
             throw new UnknownCollectionException( collectionId );
@@ -2472,6 +2472,23 @@ public class CatalogImpl extends Catalog {
         }
         listeners.firePropertyChange( "collectionPlacement", null, placement );
         return id;
+    }
+
+
+    @Override
+    public void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
+        CatalogCollection old = getCollection( collectionId );
+        if ( old == null ) {
+            throw new UnknownCollectionException( collectionId );
+        }
+
+        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, physicalCollectionName, physicalNamespaceName, old.id );
+        CatalogCollection collection = old.setPhysicalName( physicalCollectionName );
+        synchronized ( this ) {
+            collections.replace( collectionId, collection );
+            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
+            collectionPlacements.replace( new Object[]{ collectionId, adapterId }, placement );
+        }
     }
 
 

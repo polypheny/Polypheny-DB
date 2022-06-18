@@ -56,6 +56,8 @@ import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -80,6 +82,7 @@ import org.polypheny.db.util.BsonUtil;
 @AdapterProperties(
         name = "MongoDB",
         description = "MongoDB is a document-based database system.",
+        supportedSchemaTypes = { NamespaceType.DOCUMENT, NamespaceType.RELATIONAL },
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingBoolean(name = "persistent", defaultValue = false)
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
@@ -198,6 +201,12 @@ public class MongoStore extends DataStore {
 
 
     @Override
+    public Table createDocumentSchema( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+        return this.currentSchema.createCollection( catalogEntity, partitionPlacement );
+    }
+
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         return true;
     }
@@ -262,6 +271,27 @@ public class MongoStore extends DataStore {
                         true );
             }
         }
+    }
+
+
+    @Override
+    public void createCollection( Context prepareContext, CatalogCollection catalogCollection, long adapterId ) {
+        Catalog catalog = Catalog.getInstance();
+        commitAll();
+
+        if ( this.currentSchema == null ) {
+            createNewSchema( null, Catalog.getInstance().getNamespace( catalogCollection.namespaceId ).getName() );
+        }
+
+        String physicalCollectionName = getPhysicalTableName( catalogCollection.id, adapterId );
+        this.currentSchema.database.createCollection( physicalCollectionName );
+
+        catalog.updateCollectionPartitionPhysicalNames(
+                catalogCollection.id,
+                getAdapterId(),
+                catalogCollection.getNamespaceName(),
+                this.currentSchema.database.getName(),
+                physicalCollectionName );
     }
 
 

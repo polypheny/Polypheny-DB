@@ -170,9 +170,9 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void projectExcludeTest() {
         List<String[]> expected = Arrays.asList(
-                new String[]{ "id_", "{}" },
-                new String[]{ "id_", "{\"key\":\"val\"}" },
-                new String[]{ "id_", "{\"key\":13}" } );
+                new String[]{ "{}" },
+                new String[]{ "{\"key\":\"val\"}" },
+                new String[]{ "{\"key\":13}" } );
         insertMany( DATA_0 );
 
         Result result = find( "{}", "{\"test\":0}" );

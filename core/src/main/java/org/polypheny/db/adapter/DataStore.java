@@ -133,7 +133,7 @@ public abstract class DataStore extends Adapter {
     }
 
 
-    public void createCollection( Context prepareContext, CatalogCollection catalogCollection ) {
+    public void createCollection( Context prepareContext, CatalogCollection catalogCollection, long adapterId ) {
         // overwrite this if the datastore supports document
         Catalog catalog = Catalog.getInstance();
         CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );

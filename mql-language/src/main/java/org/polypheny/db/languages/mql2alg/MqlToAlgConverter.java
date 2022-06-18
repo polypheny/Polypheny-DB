@@ -57,11 +57,8 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -563,14 +560,13 @@ public class MqlToAlgConverter {
                             getStringArray( removeNodes ) ) );
         }
 
-        return LogicalModify.create(
+        return LogicalDocumentModify.create(
                 table,
-                catalogReader,
                 node,
+                catalogReader,
                 Operation.UPDATE,
                 Collections.singletonList( key ),
-                Collections.singletonList( createJsonify( updateChain ) ),
-                false );
+                Collections.singletonList( createJsonify( updateChain ) ) );
     }
 
 
@@ -746,20 +742,17 @@ public class MqlToAlgConverter {
             node = wrapLimit( node, 1 );
         }
 
-        return LogicalModify.create(
+        return LogicalDocumentModify.create(
                 table,
-                catalogReader,
                 node,
-                Operation.DELETE,
+                catalogReader, Operation.DELETE,
                 null,
-                null,
-                false );
+                null );
     }
 
 
     /**
-     * Method transforms an insert into the appropriate {@link LogicalValues}
-     * when working with the relational model or the {@link LogicalDocumentValues} when handling a document model
+     * Method transforms an insert into the appropriate {@link LogicalDocumentValues}
      *
      * @param query the insert statement as Mql object
      * @param table the table/collection into which the values are inserted
@@ -769,7 +762,9 @@ public class MqlToAlgConverter {
         return LogicalDocumentModify.create(
                 table,
                 convertMultipleValues( query.getValues(), table.getRowType() ),
-                Operation.INSERT );
+                catalogReader, Operation.INSERT,
+                null,
+                null );
     }
 
 
@@ -1044,7 +1039,7 @@ public class MqlToAlgConverter {
             throw new RuntimeException( "$skip pipeline stage needs a positive number after" );
         }
 
-        return LogicalSort.create( node, AlgCollations.of(), convertLiteral( value ), null );
+        return LogicalDocumentSort.create( node, AlgCollations.of(), convertLiteral( value ), null );
     }
 
 
@@ -1063,7 +1058,7 @@ public class MqlToAlgConverter {
             throw new RuntimeException( "$limit pipeline stage needs a positive number after" );
         }
 
-        return LogicalSort.create( node, AlgCollations.of(), null, convertLiteral( value ) );
+        return LogicalDocumentSort.create( node, AlgCollations.of(), null, convertLiteral( value ) );
     }
 
 
@@ -1099,7 +1094,7 @@ public class MqlToAlgConverter {
                 node,
                 rowType,
                 names,
-                ( newNode, newRowType ) -> LogicalSort.create( newNode, AlgCollations.of( generateCollation( dirs, names, newRowType.getFieldNames() ) ), null, null ) );
+                ( newNode, newRowType ) -> LogicalDocumentSort.create( newNode, AlgCollations.of( generateCollation( dirs, names, newRowType.getFieldNames() ) ), null, null ) );
     }
 
 
@@ -1343,7 +1338,7 @@ public class MqlToAlgConverter {
 
     private AlgNode wrapLimit( AlgNode node, int limit ) {
         final AlgCollation collation = cluster.traitSet().canonize( AlgCollations.of( new ArrayList<>() ) );
-        return LogicalSort.create(
+        return LogicalDocumentSort.create(
                 node,
                 collation,
                 null,
@@ -1757,7 +1752,7 @@ public class MqlToAlgConverter {
 
     private RexNode attachAccess( int index, AlgDataType rowType ) {
         CorrelationId correlId = cluster.createCorrel();
-        cluster.getMapCorrelToAlg().put( correlId, LogicalScan.create( cluster, entity ) );
+        cluster.getMapCorrelToAlg().put( correlId, LogicalDocumentScan.create( cluster, entity ) );
         return builder.makeFieldAccess( builder.makeCorrel( rowType, correlId ), index );
     }
 

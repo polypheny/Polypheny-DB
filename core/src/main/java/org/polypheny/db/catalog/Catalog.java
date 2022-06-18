@@ -1664,6 +1664,8 @@ public abstract class Catalog {
 
     public abstract CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId );
 
+    public abstract void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName );
+
     public abstract void close();
 
     public abstract void clear();

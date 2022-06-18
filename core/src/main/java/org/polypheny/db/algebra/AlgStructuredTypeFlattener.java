@@ -44,7 +44,10 @@ import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
 import org.polypheny.db.algebra.logical.graph.LogicalGraph;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
@@ -93,6 +96,7 @@ import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.schema.LogicalCollection;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -393,8 +397,31 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
+    @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentAggregate alg ) {
         rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentModify alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentSort alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentScan scan ) {
+        AlgNode alg = scan;
+        if ( !(scan.getTable() instanceof LogicalCollection) ) {
+            alg = scan.getDocument().toAlg( toAlgContext );
+        }
+        setNewForOldRel( scan, alg );
     }
 
 

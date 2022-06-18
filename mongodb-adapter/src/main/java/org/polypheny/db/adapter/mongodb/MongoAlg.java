@@ -79,7 +79,7 @@ public interface MongoAlg extends AlgNode {
         @Getter
         public boolean hasProject = false;
 
-        MongoTable mongoTable;
+        MongoEntity mongoEntity;
         @Setter
         @Getter
         private boolean isDML;
@@ -117,8 +117,8 @@ public interface MongoAlg extends AlgNode {
             if ( this.staticRowType != null ) {
                 return;
             }
-            if ( mongoTable != null ) {
-                this.staticRowType = MongoRowType.fromRecordType( staticRowType, mongoTable );
+            if ( mongoEntity != null ) {
+                this.staticRowType = MongoRowType.fromRecordType( staticRowType, mongoEntity );
             } else {
                 this.staticRowType = staticRowType;
             }
@@ -126,9 +126,9 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = mongoTable.getCatalogEntity().getColumnNames().indexOf( name );
+            int index = mongoEntity.getCatalogEntity().getColumnNames().indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( name, mongoTable.getCatalogEntity().fieldIds.get( index ) );
+                return MongoStore.getPhysicalColumnName( name, mongoEntity.getCatalogEntity().fieldIds.get( index ) );
             }
             throw new RuntimeException( "This column is not part of the table." );
         }

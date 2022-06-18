@@ -21,28 +21,34 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.rex.RexNode;
 
 public class LogicalDocumentModify extends DocumentModify implements RelationalTransformable {
 
     /**
      * Creates a <code>SingleRel</code>.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param table
      * @param traits
+     * @param table
+     * @param catalogReader
      * @param input Input relational expression
      */
-    protected LogicalDocumentModify( AlgOptCluster cluster, AlgOptTable table, AlgTraitSet traits, AlgNode input, Operation operation ) {
-        super( cluster, table, traits, input, operation );
+    public LogicalDocumentModify( AlgTraitSet traits, AlgOptTable table, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+        super( traits, table, catalogReader, input, operation, keys, updates );
     }
 
 
-    public static AlgNode create( AlgOptTable table, AlgNode input, Operation operation ) {
-        return new LogicalDocumentModify( input.getCluster(), table, input.getTraitSet(), input, operation );
+    public static LogicalDocumentModify create( AlgOptTable table, AlgNode input, CatalogReader catalogReader, Operation operation, List<String> keys, List<RexNode> updates ) {
+        return new LogicalDocumentModify( input.getTraitSet(), table, catalogReader, input, operation, keys, updates );
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalDocumentModify( traitSet, getCollection(), getCatalogReader(), inputs.get( 0 ), operation, getKeys(), getUpdates() );
     }
 
 

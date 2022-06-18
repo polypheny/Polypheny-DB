@@ -353,6 +353,8 @@ public abstract class Prepare {
         @Override
         PreparingTable getTable( List<String> names );
 
+        AlgOptTable getDocument( List<String> names );
+
         Graph getGraph( String name );
 
         ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();

@@ -276,7 +276,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 }
 
                 for ( String physicalSchemaName : documentIdsPerSchema.keySet() ) {
-                    Set<Long> tableIds = documentIdsPerSchema.get( physicalSchemaName );
+                    Set<Long> collectionIds = documentIdsPerSchema.get( physicalSchemaName );
 
                     HashMap<String, Table> physicalTables = new HashMap<>();
 
@@ -284,22 +284,17 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                     adapter.createNewSchema( rootSchema, schemaName );
                     SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName, catalogNamespace.namespaceType ).plus();
-                    for ( long tableId : tableIds ) {
-                        CatalogEntity catalogEntity = catalog.getTable( tableId );
+                    for ( long collectionId : collectionIds ) {
+                        CatalogCollection catalogEntity = catalog.getCollection( collectionId );
 
-                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( adapter.getAdapterId(), tableId );
-
-                        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                            if ( catalogNamespace.namespaceType == NamespaceType.GRAPH && catalogAdapter.getSupportedNamespaces().contains( catalogNamespace.namespaceType ) ) {
+                        for ( CatalogCollectionPlacement partitionPlacement : catalogEntity.placements.stream().map( p -> Catalog.getInstance().getCollectionPlacement( collectionId, adapter.getAdapterId() ) ).collect( Collectors.toList() ) ) {
+                            if ( catalogNamespace.namespaceType != NamespaceType.DOCUMENT && catalogAdapter.getSupportedNamespaces().contains( catalogNamespace.namespaceType ) ) {
                                 continue;
                             }
 
-                            Table table = adapter.createDocumentSchema(
-                                    catalogEntity,
-                                    Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogEntity.id ),
-                                    partitionPlacement );
+                            Table table = adapter.createDocumentSchema( catalogEntity, partitionPlacement );
 
-                            physicalTables.put( catalog.getTable( tableId ).name + "_" + partitionPlacement.partitionId, table );
+                            physicalTables.put( catalog.getCollection( collectionId ).name + "_" + partitionPlacement.id, table );
 
                             rootSchema.add( schemaName, s, catalogNamespace.namespaceType );
                             physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
@@ -339,7 +334,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                         List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( adapter.getAdapterId(), tableId );
 
                         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                            if ( catalogNamespace.namespaceType == NamespaceType.GRAPH && catalogAdapter.getSupportedNamespaces().contains( catalogNamespace.namespaceType ) ) {
+                            if ( catalogNamespace.namespaceType != NamespaceType.RELATIONAL && catalogAdapter.getSupportedNamespaces().contains( catalogNamespace.namespaceType ) ) {
                                 continue;
                             }
 

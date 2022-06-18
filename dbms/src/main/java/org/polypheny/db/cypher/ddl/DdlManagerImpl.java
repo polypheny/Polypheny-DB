@@ -2197,14 +2197,14 @@ public class DdlManagerImpl extends DdlManager {
         PolySchemaBuilder.getInstance().getCurrent();
 
         for ( DataStore store : stores ) {
-            catalog.addDocumentPlacement(
+            long placementId = catalog.addDocumentPlacement(
                     store.getAdapterId(),
                     catalogCollection.id,
                     PlacementType.AUTOMATIC );
 
             afterDocumentLogistics( store, collectionId );
 
-            store.createCollection( statement.getPrepareContext(), catalogCollection );
+            store.createCollection( statement.getPrepareContext(), catalogCollection, store.getAdapterId() );
         }
 
     }

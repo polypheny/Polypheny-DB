@@ -16,40 +16,64 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.rex.RexNode;
 
-public class DocumentModify extends SingleAlg implements DocumentAlg {
+public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
 
     public final Operation operation;
     @Getter
-    private final AlgOptTable table;
+    private final AlgOptTable collection;
+    @Getter
+    private final List<String> keys;
+    @Getter
+    private final List<RexNode> updates;
+    @Getter
+    private final CatalogReader catalogReader;
 
 
     /**
      * Creates a <code>SingleRel</code>.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param table
      * @param traits
+     * @param catalogReader
      * @param input Input relational expression
      * @param operation
      */
-    protected DocumentModify( AlgOptCluster cluster, AlgOptTable table, AlgTraitSet traits, AlgNode input, Operation operation ) {
-        super( cluster, traits, input );
+    protected DocumentModify( AlgTraitSet traits, AlgOptTable collection, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
+        super( input.getCluster(), input.getTraitSet(), input );
         this.operation = operation;
-        this.table = table;
+        this.collection = collection;
+        this.keys = keys;
+        this.updates = updates;
+        this.catalogReader = catalogReader;
+        this.traitSet = traits;
+    }
+
+
+    @Override
+    public AlgDataType deriveRowType() {
+        return AlgOptUtil.createDmlRowType( Kind.INSERT, getCluster().getTypeFactory() );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + input.algCompareString();
+        String compare = "$" + getClass().getSimpleName() + "$" + input.algCompareString();
+        if ( keys != null ) {
+            compare += "$" + keys.hashCode() + "$" + updates.hashCode();
+        }
+        return compare;
     }
 
 

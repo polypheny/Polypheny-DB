@@ -16,9 +16,13 @@
 
 package org.polypheny.db.algebra.logical.document;
 
+import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentProject;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -38,13 +42,15 @@ public class LogicalDocumentProject extends DocumentProject {
      * @param rowType
      */
     protected LogicalDocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
-        super( cluster, traits, input, projects, rowType );
+        super( cluster, traits, input, new ArrayList<>( projects ), rowType );
     }
 
 
     public static LogicalDocumentProject create( AlgNode node, List<RexNode> ids, List<String> fieldNames ) {
+        final AlgMetadataQuery mq = node.getCluster().getMetadataQuery();
         final AlgDataType rowType = RexUtil.createStructType( node.getCluster().getTypeFactory(), ids, fieldNames, ValidatorUtil.F_SUGGESTER );
-        return new LogicalDocumentProject( node.getCluster(), node.getTraitSet(), node, ids, rowType );
+        AlgTraitSet traitSet = node.getCluster().traitSet().replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, node, ids ) );
+        return new LogicalDocumentProject( node.getCluster(), traitSet, node, ids, rowType );
     }
 
 

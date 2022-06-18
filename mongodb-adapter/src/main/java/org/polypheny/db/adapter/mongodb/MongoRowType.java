@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ public class MongoRowType extends AlgRecordType {
     private final HashMap<String, Long> nameToId = new HashMap<>();
 
 
-    public MongoRowType( StructKind kind, List<AlgDataTypeField> fields, MongoTable mongoTable ) {
+    public MongoRowType( StructKind kind, List<AlgDataTypeField> fields, MongoEntity mongoEntity ) {
         super( kind, fields );
-        Catalog.getInstance().getColumns( mongoTable.getCatalogEntity().id ).forEach( column -> {
+        Catalog.getInstance().getColumns( mongoEntity.getTableId() ).forEach( column -> {
             idToName.put( column.id, column.name );
             nameToId.put( column.name, column.id );
         } );
@@ -61,8 +61,8 @@ public class MongoRowType extends AlgRecordType {
     }
 
 
-    public static AlgRecordType fromRecordType( AlgRecordType rowType, MongoTable mongoTable ) {
-        return new MongoRowType( rowType.getStructKind(), rowType.getFieldList(), mongoTable );
+    public static AlgRecordType fromRecordType( AlgRecordType rowType, MongoEntity mongoEntity ) {
+        return new MongoRowType( rowType.getStructKind(), rowType.getFieldList(), mongoEntity );
     }
 
 

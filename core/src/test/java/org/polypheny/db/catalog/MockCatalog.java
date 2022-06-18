@@ -1350,13 +1350,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updateGraphPlacementPhysicalNames(long id, int adapterId, String physicalGraphName) {
+    public void updateGraphPlacementPhysicalNames( long id, int adapterId, String physicalGraphName ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole(long tableId, long partitionId, DataPlacementRole role) {
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
         throw new NotImplementedException();
     }
 

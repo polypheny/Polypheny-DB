@@ -48,6 +48,8 @@ import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
@@ -332,7 +334,7 @@ public abstract class Adapter {
     }
 
 
-    public Table createDocumentSchema( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnAdapterSortedByPhysicalPosition, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createDocumentSchema( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
         throw new UnsupportedOperationException( "It is not supported to create a document with this adapter." );
     }
 

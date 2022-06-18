@@ -66,4 +66,9 @@ public class CatalogCollection implements CatalogObject {
         return Catalog.getInstance().getNamespace( namespaceId ).name;
     }
 
+
+    public CatalogCollection setPhysicalName( String physicalCollectionName ) {
+        return new CatalogCollection( databaseId, namespaceId, id, name, placements, entityType, physicalCollectionName );
+    }
+
 }

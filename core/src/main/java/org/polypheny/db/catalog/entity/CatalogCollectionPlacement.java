@@ -28,11 +28,11 @@ public class CatalogCollectionPlacement implements CatalogObject {
     public final String physicalNamespaceName;
 
 
-    public CatalogCollectionPlacement( int adapterId, long collectionId, @Nullable String physicalName, long id ) {
+    public CatalogCollectionPlacement( int adapterId, long collectionId, @Nullable String physicalName, String physicalNamespaceName, long id ) {
         this.adapter = adapterId;
         this.collectionId = collectionId;
         this.physicalName = physicalName;
-        this.physicalNamespaceName = null;
+        this.physicalNamespaceName = physicalNamespaceName;
         this.id = id;
     }
 

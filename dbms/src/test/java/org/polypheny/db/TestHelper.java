@@ -385,7 +385,7 @@ public class TestHelper {
                 List<String> row = new ArrayList<>();
                 for ( String entry : data ) {
                     if ( !result.getHeader()[i].name.equals( "_id" ) ) {
-                        BsonDocument doc = tryGetBson( result, excludeId, i, row, entry );
+                        BsonDocument doc = tryGetBson( result, i, entry );
                         if ( doc != null ) {
                             if ( excludeId && result.getHeader()[i].name.equals( "d" ) ) {
                                 doc.remove( "_id" );
@@ -430,17 +430,10 @@ public class TestHelper {
         }
 
 
-        private static BsonDocument tryGetBson( Result result, boolean excludeId, int i, List<String> row, String entry ) {
+        private static BsonDocument tryGetBson( Result result, int i, String entry ) {
             BsonDocument doc = null;
             if ( result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
                 doc = BsonDocument.parse( entry );
-                if ( excludeId ) {
-                    if ( !doc.containsKey( "_id" ) ) {
-                        fail();
-                    }
-                    doc.remove( "_id" );
-                }
-                row.add( doc.toJson().replace( " ", "" ) );
             } else if ( result.getHeader()[i].dataType.toLowerCase().contains( "any" ) ) {
                 try {
                     doc = BsonDocument.parse( entry );

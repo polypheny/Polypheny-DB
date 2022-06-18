@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -34,7 +17,6 @@
 package org.polypheny.db.adapter.mongodb;
 
 
-import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
@@ -48,6 +30,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -55,6 +39,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
@@ -69,7 +54,11 @@ public class MongoSchema extends AbstractSchema {
     @Getter
     private final Convention convention = MongoAlg.CONVENTION;
 
-    private final Map<String, Table> tableMap;
+    @Getter
+    private final Map<String, Table> tableMap = new HashMap<>();
+
+    @Getter
+    private final Map<String, Table> collectionMap = new HashMap<>();
     private final MongoClient connection;
     private final TransactionProvider transactionProvider;
     @Getter
@@ -80,29 +69,14 @@ public class MongoSchema extends AbstractSchema {
      * Creates a MongoDB schema.
      *
      * @param database Mongo database name, e.g. "foodmart"
-     * @param tableMap
      * @param transactionProvider
      */
-    public MongoSchema( String database, Map<String, Table> tableMap, MongoClient connection, TransactionProvider transactionProvider ) {
+    public MongoSchema( String database, MongoClient connection, TransactionProvider transactionProvider ) {
         super();
-        this.tableMap = tableMap;
         this.transactionProvider = transactionProvider;
         this.connection = connection;
         this.database = this.connection.getDatabase( database );
         this.bucket = GridFSBuckets.create( this.database, database );
-    }
-
-
-    /**
-     * Allows tests to inject their instance of the database.
-     *
-     * @param database existing mongo database instance
-     * @param connection
-     * @param transactionProvider
-     */
-    @VisibleForTesting
-    MongoSchema( String database, MongoClient connection, TransactionProvider transactionProvider ) {
-        this( database, new HashMap<>(), connection, transactionProvider );
     }
 
 
@@ -111,13 +85,7 @@ public class MongoSchema extends AbstractSchema {
     }
 
 
-    @Override
-    protected Map<String, Table> getTableMap() {
-        return tableMap;
-    }
-
-
-    public MongoTable createTable( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
+    public MongoEntity createTable( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
@@ -126,9 +94,23 @@ public class MongoSchema extends AbstractSchema {
             AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, MongoStore.getPhysicalColumnName( catalogColumn.name, catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
         }
-        MongoTable table = new MongoTable( catalogEntity, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
+        MongoEntity table = new MongoEntity( catalogEntity, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
 
         tableMap.put( catalogEntity.name + "_" + partitionPlacement.partitionId, table );
+        return table;
+    }
+
+
+    public Table createCollection( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+
+        AlgDataType type = typeFactory.createPolyType( PolyType.DOCUMENT );
+        fieldInfo.add( "d", "d", type ).nullable( false );
+
+        MongoEntity table = new MongoEntity( catalogEntity, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, partitionPlacement.adapter, partitionPlacement );
+
+        tableMap.put( catalogEntity.name + "_" + partitionPlacement.id, table );
         return table;
     }
 

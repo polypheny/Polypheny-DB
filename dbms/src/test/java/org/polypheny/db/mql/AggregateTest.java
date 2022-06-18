@@ -236,7 +236,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $limit( 1 ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, false );
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
 
         result = aggregate( $limit( 2 ) );
 
@@ -244,7 +244,7 @@ public class AggregateTest extends MqlTestTemplate {
                 new String[]{ "{\"test\":\"val1\",\"key\":1}" },
                 new String[]{ "{\"test\":\"val2\",\"key\":5}" } );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, false );
+        MongoConnection.checkUnorderedResultSet( result, expected, true );
     }
 
     //$replaceRoot

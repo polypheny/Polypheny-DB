@@ -102,6 +102,7 @@ import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.ModifiableCollection;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
@@ -792,29 +793,28 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation ) {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
-        CatalogCollection collection = Catalog.getInstance().getCollection( alg.getTable().getTable().getTableId() );
+        CatalogCollection collection = Catalog.getInstance().getCollection( alg.getCollection().getTable().getTableId() );
 
         for ( int adapterId : collection.placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
             CatalogCollectionPlacement placement = Catalog.getInstance().getCollectionPlacement( collection.id, adapterId );
-            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.name, collection.physicalName );
+            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.name, placement.physicalNamespaceName );
 
             String collectionName = collection.name + "_" + placement.id;
 
-            PreparingTable table = reader.getTable( List.of( namespaceName, collectionName ) );
+            AlgOptTable document = reader.getDocument( List.of( namespaceName, collectionName ) );
             if ( !adapter.getSupportedNamespaces().contains( NamespaceType.DOCUMENT ) ) {
                 return attachRelationalModify( alg, statement );
             }
 
-            return ((ModifiableTable) table).toModificationAlg(
+            return ((ModifiableCollection) document.getTable()).toModificationAlg(
                     alg.getCluster(),
-                    (AlgOptTable) table,
+                    document,
                     statement.getTransaction().getCatalogReader(),
                     buildDocumentDml( alg.getInput(), statement, queryInformation ),
                     alg.operation,
                     null,
-                    null,
-                    true );
+                    null );
         }
 
         return alg;
@@ -887,7 +887,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement ) {
-        CatalogDocumentMapping mapping = Catalog.getInstance().getDocumentMapping( alg.getTable().getTable().getTableId() );
+        CatalogDocumentMapping mapping = Catalog.getInstance().getDocumentMapping( alg.getCollection().getTable().getTableId() );
 
         PreparingTable collectionTable = getSubstitutionTable( statement, mapping.collectionId, mapping.idId );
 

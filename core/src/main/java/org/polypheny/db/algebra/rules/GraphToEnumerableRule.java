@@ -102,7 +102,7 @@ public class GraphToEnumerableRule extends AlgOptRule {
 
         AlgNode node;
         if ( sort.getCollation().getFieldCollations().isEmpty() ) {
-            node = EnumerableLimit.create( input, sort.getRexSkip(), sort.getRexSkip() );
+            node = EnumerableLimit.create( input, sort.getRexSkip(), sort.getRexLimit() );
         } else {
             node = EnumerableSort.create( input, sort.getCollation(), sort.getRexSkip(), sort.getRexLimit() );
         }
