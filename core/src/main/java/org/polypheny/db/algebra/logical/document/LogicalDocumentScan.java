@@ -42,8 +42,8 @@ public class LogicalDocumentScan extends DocumentScan implements RelationalTrans
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, AlgOptTable table ) {
-        return new LogicalDocumentScan( cluster, cluster.traitSet(), table );
+    public static AlgNode create( AlgOptCluster cluster, AlgOptTable collection ) {
+        return new LogicalDocumentScan( cluster, cluster.traitSet(), collection );
     }
 
 

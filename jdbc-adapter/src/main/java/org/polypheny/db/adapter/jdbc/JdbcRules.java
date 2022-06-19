@@ -73,6 +73,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.sql.sql.SqlAggFunction;
@@ -606,7 +607,7 @@ public class JdbcRules {
 
             return new JdbcFilter(
                     alg.getCluster(),
-                    alg.getTraitSet().replace( out ),
+                    alg.getTraitSet().replace( out ).replace( ModelTrait.RELATIONAL ),
                     convert( filter.getInput(), filter.getInput().getTraitSet().replace( out ) ),
                     filter.getCondition() );
         }

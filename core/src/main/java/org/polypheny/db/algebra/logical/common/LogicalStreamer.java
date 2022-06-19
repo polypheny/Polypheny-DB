@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Streamer;
+import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -75,6 +76,27 @@ public class LogicalStreamer extends Streamer {
         // if underlying adapter cannot handle it natively
         AlgNode input = getChild( modify.getInput() );
 
+        return getLogicalStreamer( modify, algBuilder, rexBuilder, input );
+    }
+
+
+    public static LogicalStreamer create( DocumentModify modify, AlgBuilder algBuilder ) {
+        RexBuilder rexBuilder = algBuilder.getRexBuilder();
+
+        if ( !isModifyApplicable( modify ) ) {
+            return null;
+        }
+
+        /////// query
+        // first we create the query, which could retrieve the values for the prepared modify
+        // if underlying adapter cannot handle it natively
+        AlgNode input = getChild( modify.getInput() );
+
+        return getLogicalStreamer( modify, algBuilder, rexBuilder, input );
+    }
+
+
+    private static LogicalStreamer getLogicalStreamer( Modify modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
         if ( input == null ) {
             throw new RuntimeException( "Error while creating Streamer." );
         }
@@ -132,6 +154,64 @@ public class LogicalStreamer extends Streamer {
     }
 
 
+    private static LogicalStreamer getLogicalStreamer( DocumentModify modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
+        if ( input == null ) {
+            throw new RuntimeException( "Error while creating Streamer." );
+        }
+
+        // add all previous variables e.g. _id, _data(previous), _data(updated)
+        // might only extract previous refs used in condition e.g. _data
+        List<String> update = new ArrayList<>( getOldFieldsNames( input.getRowType().getFieldNames() ) );
+        List<RexNode> source = new ArrayList<>( getOldFieldRefs( input.getRowType() ) );
+
+        AlgNode query = input;
+
+        if ( modify.getKeys() != null && modify.getUpdates() != null ) {
+            // update and source list are not null
+            update.addAll( modify.getKeys() );
+            source.addAll( modify.getUpdates() );
+
+            // we project the needed sources out and modify them to fit the prepared
+            query = LogicalProject.create( modify.getInput(), source, update );
+        }
+
+        /////// prepared
+
+        if ( !modify.isInsert() ) {
+            // get collection, which is modified
+            algBuilder.scan( modify.getTable().getQualifiedName() );
+            // at the moment no data model is able to conditionally insert
+            attachFilter( modify, algBuilder, rexBuilder );
+        } else {
+            //algBuilder.push( LogicalValues.createOneRow( input.getCluster() ) );
+
+            assert input.getRowType().getFieldCount() == modify.getTable().getRowType().getFieldCount();
+            // attach a projection, so the values can be inserted on execution
+            algBuilder.push(
+                    LogicalProject.create(
+                            LogicalValues.createOneRow( input.getCluster() ),
+                            input.getRowType()
+                                    .getFieldList()
+                                    .stream()
+                                    .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
+                                    .collect( Collectors.toList() ),
+                            input.getRowType() )
+            );
+        }
+
+        LogicalModify prepared = LogicalModify.create(
+                        modify.getTable(),
+                        modify.getCatalogReader(),
+                        algBuilder.build(),
+                        modify.operation,
+                        modify.getKeys(),
+                        modify.getUpdates() == null ? null : createSourceList( modify, rexBuilder ),
+                        false )
+                .isStreamed( true );
+        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
+    }
+
+
     private static List<RexNode> createSourceList( Modify modify, RexBuilder rexBuilder ) {
         return modify.getUpdateColumnList()
                 .stream()
@@ -144,7 +224,35 @@ public class LogicalStreamer extends Streamer {
     }
 
 
+    private static List<RexNode> createSourceList( DocumentModify modify, RexBuilder rexBuilder ) {
+        return modify.getUpdates()
+                .stream()
+                .map( name -> {
+                    int size = modify.getRowType().getFieldList().size();
+                    int index = modify.getTable().getRowType().getFieldNames().indexOf( name );
+                    return rexBuilder.makeDynamicParam(
+                            modify.getTable().getRowType().getFieldList().get( index ).getType(), size + index );
+                } ).collect( Collectors.toList() );
+    }
+
+
     private static void attachFilter( Modify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+        List<RexNode> fields = new ArrayList<>();
+        int i = 0;
+        for ( AlgDataTypeField field : modify.getTable().getRowType().getFieldList() ) {
+            fields.add(
+                    algBuilder.equals(
+                            rexBuilder.makeInputRef( modify.getTable().getRowType(), i ),
+                            rexBuilder.makeDynamicParam( field.getType(), i ) ) );
+            i++;
+        }
+        algBuilder.filter( fields.size() == 1
+                ? fields.get( 0 )
+                : algBuilder.and( fields ) );
+    }
+
+
+    private static void attachFilter( DocumentModify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
         for ( AlgDataTypeField field : modify.getTable().getRowType().getFieldList() ) {
@@ -173,9 +281,20 @@ public class LogicalStreamer extends Streamer {
         if ( modify.isInsert() && modify.getInput() instanceof Values ) {
             // simple insert, which all store should be able to handle by themselves
             return false;
+        } else if ( modify.isDelete() && modify.getInput() instanceof Scan ) {
+            // simple delete, which all store should be able to handle by themselves
+            return false;
         }
+        return true;
+    }
 
-        if ( modify.isDelete() && modify.getInput() instanceof Scan ) {
+
+    public static boolean isModifyApplicable( DocumentModify modify ) {
+
+        if ( modify.isInsert() && modify.getInput() instanceof Values ) {
+            // simple insert, which all store should be able to handle by themselves
+            return false;
+        } else if ( modify.isDelete() && modify.getInput() instanceof Scan ) {
             // simple delete, which all store should be able to handle by themselves
             return false;
         }

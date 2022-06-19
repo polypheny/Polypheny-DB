@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
+import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
@@ -48,8 +49,13 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
@@ -62,6 +68,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -70,6 +77,7 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
@@ -82,6 +90,7 @@ import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -798,13 +807,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         for ( int adapterId : collection.placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
             CatalogCollectionPlacement placement = Catalog.getInstance().getCollectionPlacement( collection.id, adapterId );
-            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.name, placement.physicalNamespaceName );
+            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
 
             String collectionName = collection.name + "_" + placement.id;
 
             AlgOptTable document = reader.getDocument( List.of( namespaceName, collectionName ) );
             if ( !adapter.getSupportedNamespaces().contains( NamespaceType.DOCUMENT ) ) {
-                return attachRelationalModify( alg, statement );
+                return attachRelationalModify( alg, statement, queryInformation );
             }
 
             return ((ModifiableCollection) document.getTable()).toModificationAlg(
@@ -886,7 +895,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement ) {
+    private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation ) {
         CatalogDocumentMapping mapping = Catalog.getInstance().getDocumentMapping( alg.getCollection().getTable().getTableId() );
 
         PreparingTable collectionTable = getSubstitutionTable( statement, mapping.collectionId, mapping.idId );
@@ -894,45 +903,118 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<AlgNode> inputs = new ArrayList<>();
         switch ( alg.operation ) {
             case INSERT:
-                if ( alg.getInput() instanceof DocumentValues ) {
-                    // simple value insert
-                    inputs.addAll( ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getCatalogReader() ) );
-                }
-                if ( alg.getInput() instanceof DocumentProject ) {
-                    return attachRelationalDocInsert( alg, statement, collectionTable );
-                }
-
-                break;
+                return attachRelationalDocInsert( alg, statement, collectionTable, queryInformation ).get( 0 );
             case UPDATE:
-                return attachRelationalDocUpdate( alg, statement, collectionTable );
-
             case DELETE:
-                return attachRelationalDocDelete( alg, statement, collectionTable );
+                return attachRelationalDoc( alg, statement, collectionTable, queryInformation ).get( 0 );
             case MERGE:
-                break;
+                throw new RuntimeException( "MERGE is not supported." );
+            default:
+                throw new RuntimeException( "Unknown update operation for document." );
         }
-
+        /*
         List<AlgNode> modifies = new ArrayList<>();
         if ( inputs.get( 0 ) != null ) {
             modifies.add( getModify( collectionTable, inputs.get( 0 ), statement, alg.operation, null, null ) );
         }
 
         return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.DOCUMENT ), modifies, true );
+         */
     }
 
 
-    private AlgNode attachRelationalDocDelete( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable ) {
-        return null;
+    private List<AlgNode> attachRelationalDoc( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable, LogicalQueryInformation queryInformation ) {
+        RoutedAlgBuilder builder = attachDocUpdate( alg.getInput(), statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation );
+        RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
+        AlgBuilder algBuilder = AlgBuilder.create( statement );
+        if ( alg.operation == Operation.UPDATE ) {
+            assert alg.getUpdates().size() == 1;
+            AlgNode old = builder.build();
+            builder.push(
+                    LogicalDocumentProject.create( old, List.of( alg.getUpdates().get( 0 ) ), List.of( old.getRowType().getFieldList().get( 0 ).getName() ) ) );
+        }
+        AlgNode query = builder.build();
+        query = createDocumentTransform( query, rexBuilder );
+        builder.push( new LogicalTransformer( alg.getCluster(), List.of( query ), alg.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.DOCUMENT, ModelTrait.RELATIONAL, query.getRowType() ) );
+
+        AlgNode collector = builder.build();
+
+        builder.scan( collectionTable );
+
+        builder.filter( algBuilder.equals(
+                rexBuilder.makeInputRef( collectionTable.getRowType().getFieldList().get( 0 ).getType(), 0 ),
+                rexBuilder.makeDynamicParam( collectionTable.getRowType().getFieldList().get( 0 ).getType(), 0 ) ) );
+
+        LogicalModify modify;
+        if ( alg.operation == Operation.UPDATE ) {
+            modify = (LogicalModify) getModify( collectionTable, builder.build(), statement, alg.operation, List.of( "_data_" ), List.of( rexBuilder.makeDynamicParam( alg.getCluster().getTypeFactory().createPolyType( PolyType.JSON ), 1 ) ) );
+        } else {
+            modify = (LogicalModify) getModify( collectionTable, builder.build(), statement, alg.operation, null, null );
+        }
+
+        modify.isStreamed( true );
+        return List.of( LogicalStreamer.create( collector, modify ) );
     }
 
 
-    private AlgNode attachRelationalDocUpdate( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable ) {
-        return null;
+    private AlgNode createDocumentTransform( AlgNode query, RexBuilder rexBuilder ) {
+        List<String> names = new ArrayList<>();
+        List<RexNode> updates = new ArrayList<>();
+
+        names.add( "_id_" );
+        names.add( "_data_" );
+        updates.add( rexBuilder.makeCall( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_QUERY_VALUE ), List.of( RexInputRef.of( 0, query.getRowType() ), rexBuilder.makeArray( rexBuilder.getTypeFactory().createArrayType( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ), List.of( rexBuilder.makeLiteral( "_id" ) ) ) ) ) );
+        updates.add( RexInputRef.of( 0, query.getRowType() ) );
+
+        return LogicalProject.create( query, updates, names );
     }
 
 
-    private AlgNode attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable ) {
-        return null;
+    private RoutedAlgBuilder attachDocUpdate( AlgNode alg, Statement statement, PreparingTable collectionTable, RoutedAlgBuilder builder, LogicalQueryInformation information ) {
+        switch ( ((DocumentAlg) alg).getDocType() ) {
+
+            case SCAN:
+                handleDocumentScan( (DocumentScan) alg, statement, builder, information );
+                break;
+            case VALUES:
+                builder.push( LogicalDocumentValues.create( alg.getCluster(), ((DocumentValues) alg).documentTuples ) );
+                break;
+            case PROJECT:
+                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information );
+                builder.push( LogicalDocumentProject.create( builder.build(), ((DocumentProject) alg).projects, alg.getRowType().getFieldNames() ) );
+                break;
+            case FILTER:
+                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information );
+                LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
+                builder.push( LogicalDocumentFilter.create( builder.build(), filter.condition ) );
+                break;
+            case AGGREGATE:
+                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information );
+                LogicalDocumentAggregate aggregate = (LogicalDocumentAggregate) alg;
+                builder.push( LogicalDocumentAggregate.create( builder.build(), aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls ) );
+                break;
+            case SORT:
+                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information );
+                LogicalDocumentSort sort = (LogicalDocumentSort) alg;
+                builder.push( LogicalDocumentSort.create( builder.build(), sort.collation, sort.offset, sort.fetch ) );
+                break;
+            case MODIFY:
+                break;
+            default:
+                throw new RuntimeException( "Modifies cannot be nested." );
+        }
+        return builder;
+    }
+
+
+    private List<AlgNode> attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable, LogicalQueryInformation queryInformation ) {
+        if ( alg.getInput() instanceof DocumentValues ) {
+            // simple value insert
+            AlgNode values = ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getCatalogReader() ).get( 0 );
+            return List.of( getModify( collectionTable, values, statement, alg.operation, null, null ) );
+        }
+
+        return List.of( attachDocUpdate( alg, statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation ).build() );
     }
 
 

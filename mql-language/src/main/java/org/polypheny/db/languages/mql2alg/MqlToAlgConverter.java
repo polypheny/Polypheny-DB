@@ -427,7 +427,7 @@ public class MqlToAlgConverter {
             updates.clear();
         }
 
-        return finalizeUpdates( "_data", mergedUpdates, rowType, node, table );
+        return finalizeUpdates( "d", mergedUpdates, rowType, node, table );
 
 
     }
@@ -1956,7 +1956,7 @@ public class MqlToAlgConverter {
      */
     private RexNode convertJsonSchema( BsonValue bsonValue, AlgDataType rowType ) {
         if ( bsonValue.isDocument() ) {
-            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexInputRef.of( getIndexOfParentField( "_data", rowType ), rowType ) ) );
+            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexInputRef.of( getIndexOfParentField( "d", rowType ), rowType ) ) );
         } else {
             throw new RuntimeException( "After $jsonSchema there needs to follow a document" );
         }

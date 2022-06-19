@@ -88,8 +88,13 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
             List<RexLiteral> normalizedTuple = new ArrayList<>();
             String id = ObjectId.get().toString();
             if ( tuple.isDocument() && tuple.asDocument().containsKey( "_id" ) ) {
-                if ( tuple.asDocument().get( "_id" ).isObjectId() ) {
-                    id = tuple.asDocument().get( "_id" ).asObjectId().toString();
+                BsonValue bsonId = tuple.asDocument().get( "_id" );
+                if ( bsonId.isObjectId() ) {
+                    id = bsonId.asObjectId().toString();
+                } else if ( bsonId.isString() ) {
+                    id = bsonId.asString().getValue();
+                } else {
+                    throw new RuntimeException( "Error while transforming document to relational values" );
                 }
 
             }

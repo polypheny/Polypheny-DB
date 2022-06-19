@@ -16,11 +16,15 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.PolyType;
 
 public abstract class DocumentScan extends AbstractAlgNode implements DocumentAlg {
 
@@ -37,7 +41,7 @@ public abstract class DocumentScan extends AbstractAlgNode implements DocumentAl
     public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable document ) {
         super( cluster, traitSet );
         this.document = document;
-        this.rowType = document.getRowType();//new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
+        this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );//new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
     }
 
 

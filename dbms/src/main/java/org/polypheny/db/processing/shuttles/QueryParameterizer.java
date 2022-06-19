@@ -216,7 +216,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getOperation(),
                 modify.getUpdateColumnList(),
                 newSourceExpression,
-                modify.isFlattened() );
+                modify.isFlattened() )
+                .isStreamed( modify.isStreamed() );
 
     }
 

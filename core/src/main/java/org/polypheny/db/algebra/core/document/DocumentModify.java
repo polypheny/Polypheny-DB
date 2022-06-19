@@ -82,4 +82,14 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
         return DocType.MODIFY;
     }
 
+
+    public boolean isInsert() {
+        return operation == Operation.INSERT;
+    }
+
+
+    public boolean isDelete() {
+        return operation == Operation.DELETE;
+    }
+
 }

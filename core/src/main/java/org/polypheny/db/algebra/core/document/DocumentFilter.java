@@ -48,7 +48,7 @@ public class DocumentFilter extends SingleAlg implements DocumentAlg {
 
     @Override
     public DocType getDocType() {
-        return DocType.PROJECT;
+        return DocType.FILTER;
     }
 
 }

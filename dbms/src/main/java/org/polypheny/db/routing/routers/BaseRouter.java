@@ -389,7 +389,7 @@ public abstract class BaseRouter {
                 return handleDocumentOnRelational( alg, statement, builder );
             }
             CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, adapterId );
-            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.name, placement.physicalNamespaceName );
+            String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             String collectionName = collection.name + "_" + placement.id;
             AlgOptTable collectionTable = reader.getDocument( List.of( namespaceName, collectionName ) );
 
