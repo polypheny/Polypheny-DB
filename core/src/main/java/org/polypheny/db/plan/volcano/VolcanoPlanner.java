@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
@@ -88,6 +89,7 @@ import org.polypheny.db.util.Util;
 /**
  * VolcanoPlanner optimizes queries by transforming expressions selectively according to a dynamic programming algorithm.
  */
+@Slf4j
 public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     protected static final double COST_IMPROVEMENT = .5;
@@ -1340,12 +1342,13 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         // Ensure that its sub-expressions are registered.
         alg = alg.onRegister( this );
 
+        //log.warn( "size is: " + provenanceMap.size() );
         // Record its provenance. (Rule call may be null.)
         if ( ruleCallStack.isEmpty() ) {
-            provenanceMap.put( alg, Provenance.EMPTY );
+            //provenanceMap.put( alg, Provenance.EMPTY );
         } else {
             final VolcanoRuleCall ruleCall = ruleCallStack.peek();
-            provenanceMap.put( alg, new RuleProvenance( ruleCall.rule, ImmutableList.copyOf( ruleCall.algs ), ruleCall.id ) );
+            //provenanceMap.put( alg, new RuleProvenance( ruleCall.rule, ImmutableList.copyOf( ruleCall.algs ), ruleCall.id ) );
         }
 
         // If it is equivalent to an existing expression, return the set that the equivalent expression belongs to.
