@@ -59,46 +59,40 @@ Script Start() : {
 
 Expression sqlExpression():
 {
-    Token t1;
-    Token t2;
-    Token t3;
-    Token t4;
+    String t;
 }
 {
-    t1 = <STRING> t2=<PAREN_STRING> t3=<STRING> t4=<PAREN_STRING>  { return new SqlExpression(t1.image + t2.image + t3.image + t4.image); }
-    |
-    t1 = <STRING> { return new SqlExpression(t1.image + t2.image); }
-    |
-    t1 = <STRING> { return new SqlExpression(t1.image); }
+    t = expr() { return new SqlExpression(t); }
 }
 
 Expression mqlExpression():
 {
-    Token t1;
-    Token t2;
-    Token t3;
-    Token t4;
+    String t;
 }
 {
-    t1 = <STRING> t2=<PAREN_STRING> t3=<STRING> t4=<PAREN_STRING>  { return new MqlExpression(t1.image + t2.image + t3.image + t4.image); }
-    |
-    t1 = <STRING> t2=<PAREN_STRING>  { return new MqlExpression(t1.image + t2.image); }
-    |
-    t1 = <STRING> { return new MqlExpression(t1.image); }
+    t = expr() { return new MqlExpression(t); }
 }
 
 Expression cqlExpression():
 {
+    String t;
+}
+{
+    t = expr() { return new CqlExpression(t); }
+}
+
+
+String expr():
+{
     Token t1;
     Token t2;
     Token t3;
     Token t4;
 }
 {
-    t1 = <STRING> t2=<PAREN_STRING> t3=<STRING> t4=<PAREN_STRING> {  return new CqlExpression(t1.image + t2.image + t3.image + t4.image); }
+    t1 = <STRING> t2=<PAREN_STRING> t3=<STRING> t4=<PAREN_STRING> {  return t1.image + t2.image + t3.image + t4.image; }
     |
-    t1 = <STRING> t2=<PAREN_STRING>  { return new CqlExpression(t1.image + t2.image); }
+    t1 = <STRING> t2=<PAREN_STRING>  { return t1.image + t2.image; }
     |
-    t1 = <STRING> { return new CqlExpression(t1.image); }
+    t1 = <STRING> { return t1.image; }
 }
-
