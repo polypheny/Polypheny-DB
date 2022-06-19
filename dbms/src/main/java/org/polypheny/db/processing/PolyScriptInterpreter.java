@@ -57,12 +57,20 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
+        PolyResult result = runScript(parsed);
+        closeTransaction();
+        return result;
+    }
+
+    private PolyResult runScript(Script parsed) {
         PolyResult result = null;
-        // TODO: Not pretty
+        // TODO: Not pretty (toList call)
+        //parsed.stream().map(this::run).findFirst();
+        //parsed.stream().map(this::run).reduce((e1, e2) -> e2).get();
+
         for (Expression expression : parsed.stream().collect(Collectors.toList())) {
             result = run(expression); // return result of last executed query
         }
-        closeTransaction();
         return result;
     }
 
