@@ -28,10 +28,9 @@ class PolyScriptInterpreterTest {
     @Test
     void interprete() {
         SqlProcessorFacade sqlProcessorFacade = Mockito.mock(SqlProcessorFacade.class);
-        MqlProcessorImpl mqlProcessor = Mockito.mock(MqlProcessorImpl.class);
 
         Transaction transactionManager = Mockito.mock(Transaction.class);
-        PolyScriptInterpreter sut = new PolyScriptInterpreter(sqlProcessorFacade, transactionManager, mqlProcessor);
+        PolyScriptInterpreter sut = new PolyScriptInterpreter(sqlProcessorFacade, transactionManager);
 
         PolyResult result = sut.interprete("sql(select * from emps);");
 
