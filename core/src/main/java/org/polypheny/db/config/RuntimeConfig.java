@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.cypher.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
@@ -28,6 +29,7 @@ import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
+@Slf4j
 public enum RuntimeConfig {
 
     APPROXIMATE_DISTINCT_COUNT(
@@ -540,6 +542,19 @@ public enum RuntimeConfig {
         monitoringSettingsQueueGroup.withTitle( "Processing Queue" );
         configManager.registerWebUiPage( monitoringSettingsPage );
         configManager.registerWebUiGroup( monitoringSettingsQueueGroup );
+        MONITORING_QUEUE_ACTIVE.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                String status = c.getBoolean() ? "Enabled" : "Disabled";
+                log.warn( "{} workload monitoring", status );
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+
+            }
+        } );
 
         // Partitioning
         final WebUiPage partitionSettingsPage = new WebUiPage(
