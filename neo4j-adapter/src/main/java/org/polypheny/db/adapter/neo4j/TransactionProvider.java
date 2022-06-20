@@ -105,8 +105,8 @@ public class TransactionProvider {
 
     public Transaction getDdlTransaction() {
         if ( ddlSession == null || ddlTransaction == null ) {
-            Session session = db.session();
-            ddlTransaction = session.beginTransaction();
+            ddlSession = db.session();
+            ddlTransaction = ddlSession.beginTransaction();
         }
         return ddlTransaction;
     }
@@ -114,7 +114,7 @@ public class TransactionProvider {
 
     public void commitDdlTransaction() {
         if ( ddlSession == null || ddlTransaction == null ) {
-            throw new RuntimeException( "There is no onging DDL transaction!" );
+            throw new RuntimeException( "There is no ongoing DDL transaction!" );
         }
         ddlTransaction.commit();
         ddlTransaction.close();
