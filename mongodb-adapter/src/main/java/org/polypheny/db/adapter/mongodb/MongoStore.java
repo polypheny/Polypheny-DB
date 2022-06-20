@@ -400,47 +400,53 @@ public class MongoStore extends DataStore {
     public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        HASH_FUNCTION type = HASH_FUNCTION.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
-        switch ( type ) {
-            case SINGLE:
-                List<String> columns = catalogIndex.key.getColumnNames();
-                if ( columns.size() > 1 ) {
-                    throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
-                }
-                addCompositeIndex( catalogIndex, columns );
-                break;
+        IndexTypes type = IndexTypes.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
 
-            case DEFAULT:
-            case COMPOUND:
-                addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames() );
-                break;
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
+        String physicalIndexName = "idx" + catalogIndex.key.tableId + "_" + catalogIndex.id;
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            switch ( type ) {
+                case SINGLE:
+                    List<String> columns = catalogIndex.key.getColumnNames();
+                    if ( columns.size() > 1 ) {
+                        throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
+                    }
+                    addCompositeIndex( catalogIndex, columns, partitionPlacement );
+                    break;
+
+                case DEFAULT:
+                case COMPOUND:
+                    addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames(), partitionPlacement );
+                    break;
+/*
             case MULTIKEY:
                 //array
             case GEOSPATIAL:
             case TEXT:
                 // stemd and stop words removed
             case HASHED:
-                throw new UnsupportedOperationException( "The neo4j adapter does not yet support this index" );
+                throw new UnsupportedOperationException( "The MongoDB adapter does not yet support this type of index: " + type );*/
+            }
         }
 
-        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, catalogIndex.name );
+        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
-    private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns ) {
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogIndex.key.tableId ) ) {
-            Document doc = new Document();
-            columns.forEach( name -> doc.append( name, 1 ) );
+    private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns, CatalogPartitionPlacement partitionPlacement ) {
+        Document doc = new Document();
+        columns.forEach( name -> doc.append( name, 1 ) );
 
-            IndexOptions options = new IndexOptions();
-            options.unique( catalogIndex.unique );
-            options.name( catalogIndex.name );
+        IndexOptions options = new IndexOptions();
+        options.unique( catalogIndex.unique );
+        options.name( catalogIndex.name + "_" + partitionPlacement.partitionId );
 
-            this.currentSchema.database
-                    .getCollection( partitionPlacement.physicalTableName )
-                    .createIndex( doc, options );
-        }
+        this.currentSchema.database
+                .getCollection( partitionPlacement.physicalTableName )
+                .createIndex( doc, options );
     }
 
 
@@ -452,7 +458,7 @@ public class MongoStore extends DataStore {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.name );
+            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.name + "_" + partitionPlacement.partitionId );
         }
     }
 
@@ -472,15 +478,15 @@ public class MongoStore extends DataStore {
 
     @Override
     public List<AvailableIndexMethod> getAvailableIndexMethods() {
-        return Arrays.stream( HASH_FUNCTION.values() )
-                .map( HASH_FUNCTION::asMethod )
+        return Arrays.stream( IndexTypes.values() )
+                .map( IndexTypes::asMethod )
                 .collect( Collectors.toList() );
     }
 
 
     @Override
     public AvailableIndexMethod getDefaultIndexMethod() {
-        return HASH_FUNCTION.COMPOUND.asMethod();
+        return IndexTypes.COMPOUND.asMethod();
     }
 
 
@@ -534,14 +540,14 @@ public class MongoStore extends DataStore {
     }
 
 
-    private enum HASH_FUNCTION {
+    private enum IndexTypes {
         DEFAULT,
         COMPOUND,
-        SINGLE,
-        MULTIKEY,
+        SINGLE;
+        /*MULTIKEY,
         GEOSPATIAL,
         TEXT,
-        HASHED;
+        HASHED;*/
 
 
         public AvailableIndexMethod asMethod() {

@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.neo4j;
 import com.google.common.collect.ImmutableList;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -250,16 +251,22 @@ public class Neo4jStore extends DataStore {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         IndexTypes type = IndexTypes.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
         List<Long> columns = catalogIndex.key.columnIds;
-        for ( Long partitionId : partitionIds ) {
+
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+
+        String physicalIndexName = "idx" + catalogIndex.key.tableId + "_" + catalogIndex.id;
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             switch ( type ) {
                 case DEFAULT:
                 case COMPOSITE:
-                    addCompositeIndex( context.getStatement().getTransaction().getXid(), catalogIndex, columns, catalog.getPartitionPlacement( getAdapterId(), partitionId ) );
+                    addCompositeIndex( context.getStatement().getTransaction().getXid(), catalogIndex, columns, partitionPlacement );
                     break;
             }
         }
 
-        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, catalogIndex.name );
+        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
@@ -267,7 +274,7 @@ public class Neo4jStore extends DataStore {
         String fields = columnIds.stream().map( id -> String.format( "n.%s", getPhysicalFieldName( id ) ) ).collect( Collectors.joining( ", " ) );
         executeDdlTrx( xid, String.format(
                 "CREATE INDEX %s FOR (n:%s) on (%s)",
-                catalogIndex.name,
+                catalogIndex.name + "_" + partitionPlacement.partitionId,
                 getPhysicalEntityName( catalogIndex.key.schemaId, catalogIndex.key.tableId, partitionPlacement.partitionId ),
                 fields ) );
     }
@@ -281,8 +288,8 @@ public class Neo4jStore extends DataStore {
                 .map( id -> catalog.getPartitionPlacement( getAdapterId(), id ) )
                 .collect( Collectors.toList() );
 
-        for ( CatalogPartitionPlacement ignored : partitionPlacements ) {
-            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "DROP INDEX %s", catalogIndex.physicalName ) );
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "DROP INDEX %s" + "_" + partitionPlacement.partitionId ) );
         }
     }
 
