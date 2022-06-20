@@ -31,6 +31,9 @@ public class TransactionProvider {
 
     private final ConcurrentHashMap<PolyXid, Pair<Session, Transaction>> register = new ConcurrentHashMap<>();
 
+    private Session ddlSession;
+    private Transaction ddlTransaction;
+
 
     /**
      * Handler class, which abstract the transaction logic of the neo4j driver.
@@ -97,6 +100,27 @@ public class TransactionProvider {
         Transaction trx = session.beginTransaction();
         register.put( xid, Pair.of( session, trx ) );
         return trx;
+    }
+
+
+    public Transaction getDdlTransaction() {
+        if ( ddlSession == null || ddlTransaction == null ) {
+            Session session = db.session();
+            ddlTransaction = session.beginTransaction();
+        }
+        return ddlTransaction;
+    }
+
+
+    public void commitDdlTransaction() {
+        if ( ddlSession == null || ddlTransaction == null ) {
+            throw new RuntimeException( "There is no onging DDL transaction!" );
+        }
+        ddlTransaction.commit();
+        ddlTransaction.close();
+        ddlSession.close();
+        ddlTransaction = null;
+        ddlSession = null;
     }
 
 }

@@ -177,11 +177,11 @@ public class Neo4jStore extends DataStore {
 
 
     public void executeDdlTrx( PolyXid xid, List<String> queries ) {
-        Transaction trx = transactionProvider.get( xid );
+        Transaction trx = transactionProvider.getDdlTransaction();
         for ( String query : queries ) {
             trx.run( query );
         }
-        transactionProvider.commit( xid );
+        transactionProvider.commitDdlTransaction();
     }
 
 
