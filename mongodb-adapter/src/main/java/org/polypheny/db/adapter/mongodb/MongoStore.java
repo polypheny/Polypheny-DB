@@ -414,12 +414,12 @@ public class MongoStore extends DataStore {
                     if ( columns.size() > 1 ) {
                         throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
                     }
-                    addCompositeIndex( catalogIndex, columns, partitionPlacement );
+                    addCompositeIndex( catalogIndex, columns, partitionPlacement, physicalIndexName );
                     break;
 
                 case DEFAULT:
                 case COMPOUND:
-                    addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames(), partitionPlacement );
+                    addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames(), partitionPlacement, physicalIndexName );
                     break;
 /*
             case MULTIKEY:
@@ -436,13 +436,13 @@ public class MongoStore extends DataStore {
     }
 
 
-    private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns, CatalogPartitionPlacement partitionPlacement ) {
+    private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns, CatalogPartitionPlacement partitionPlacement, String physicalIndexName ) {
         Document doc = new Document();
         columns.forEach( name -> doc.append( name, 1 ) );
 
         IndexOptions options = new IndexOptions();
         options.unique( catalogIndex.unique );
-        options.name( catalogIndex.name + "_" + partitionPlacement.partitionId );
+        options.name( physicalIndexName + "_" + partitionPlacement.partitionId );
 
         this.currentSchema.database
                 .getCollection( partitionPlacement.physicalTableName )

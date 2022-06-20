@@ -261,7 +261,7 @@ public class Neo4jStore extends DataStore {
             switch ( type ) {
                 case DEFAULT:
                 case COMPOSITE:
-                    addCompositeIndex( context.getStatement().getTransaction().getXid(), catalogIndex, columns, partitionPlacement );
+                    addCompositeIndex( context.getStatement().getTransaction().getXid(), catalogIndex, columns, partitionPlacement, physicalIndexName );
                     break;
             }
         }
@@ -270,11 +270,11 @@ public class Neo4jStore extends DataStore {
     }
 
 
-    private void addCompositeIndex( PolyXid xid, CatalogIndex catalogIndex, List<Long> columnIds, CatalogPartitionPlacement partitionPlacement ) {
+    private void addCompositeIndex( PolyXid xid, CatalogIndex catalogIndex, List<Long> columnIds, CatalogPartitionPlacement partitionPlacement, String physicalIndexName ) {
         String fields = columnIds.stream().map( id -> String.format( "n.%s", getPhysicalFieldName( id ) ) ).collect( Collectors.joining( ", " ) );
         executeDdlTrx( xid, String.format(
                 "CREATE INDEX %s FOR (n:%s) on (%s)",
-                catalogIndex.name + "_" + partitionPlacement.partitionId,
+                physicalIndexName + "_" + partitionPlacement.partitionId,
                 getPhysicalEntityName( catalogIndex.key.schemaId, catalogIndex.key.tableId, partitionPlacement.partitionId ),
                 fields ) );
     }
@@ -289,7 +289,7 @@ public class Neo4jStore extends DataStore {
                 .collect( Collectors.toList() );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "DROP INDEX %s" + "_" + partitionPlacement.partitionId ) );
+            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "DROP INDEX %s", catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
         }
     }
 
