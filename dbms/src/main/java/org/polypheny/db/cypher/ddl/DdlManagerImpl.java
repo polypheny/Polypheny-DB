@@ -1435,7 +1435,6 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( newPartitionIdsOnDataPlacement.size() > 0 ) {
-
             newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
                     storeInstance.getAdapterId(),
                     catalogEntity.id,
@@ -1445,7 +1444,6 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     DataPlacementRole.UPTODATE )
             );
-
             storeInstance.createTable( statement.getPrepareContext(), catalogEntity, newPartitionIdsOnDataPlacement );
         }
 

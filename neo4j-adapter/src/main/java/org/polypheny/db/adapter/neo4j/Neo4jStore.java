@@ -116,7 +116,6 @@ public class Neo4jStore extends DataStore {
 
         addInformationPhysicalNames();
         enableInformationPage();
-
     }
 
 
@@ -174,7 +173,6 @@ public class Neo4jStore extends DataStore {
                         true );
             }
         }
-
     }
 
 
@@ -183,6 +181,7 @@ public class Neo4jStore extends DataStore {
         for ( String query : queries ) {
             trx.run( query );
         }
+        transactionProvider.commit( xid );
     }
 
 
@@ -232,7 +231,6 @@ public class Neo4jStore extends DataStore {
                     getPhysicalFieldName( catalogColumn.id ),
                     false );
         }
-
     }
 
 
@@ -289,7 +287,9 @@ public class Neo4jStore extends DataStore {
                 .collect( Collectors.toList() );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-            executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format( "DROP INDEX %s", catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
+            executeDdlTrx(
+                    context.getStatement().getTransaction().getXid(),
+                    String.format( "DROP INDEX %s", catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
         }
     }
 
