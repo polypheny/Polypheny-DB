@@ -158,8 +158,7 @@ public class DockerInstance extends DockerManager {
                 }
                 client.removeContainerCmd( id ).exec();
             } catch ( Exception e ) {
-                log.warn( "Error while removing old docker container. Try killing the container now." );
-                client.killContainerCmd( id ).exec();
+                log.warn( "Error while removing old docker container." );
             }
         } );
     }
