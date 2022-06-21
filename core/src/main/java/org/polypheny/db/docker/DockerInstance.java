@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
@@ -64,6 +65,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
  * For now, we have no way to determent if a previously created/running container with the same name
  * was created by Polypheny, so we try to reuse it.
  */
+@Slf4j
 public class DockerInstance extends DockerManager {
 
     @Getter
@@ -74,7 +76,7 @@ public class DockerInstance extends DockerManager {
     private final List<Image> availableImages = new ArrayList<>();
     private final HashMap<Integer, ImmutableList<String>> containersOnAdapter = new HashMap<>();
 
-    // as Docker does not allow two containers with the same name or which expose the same port ( ports only for running containers )
+    // As Docker does not allow two containers with the same name or which expose the same port (ports only for running containers )
     // we have to track them, so we can return correct messages to the user
     @Getter
     private final List<Integer> usedPorts = new ArrayList<>();
@@ -116,7 +118,7 @@ public class DockerInstance extends DockerManager {
         Catalog catalog = Catalog.getInstance();
 
         outer:
-        for ( com.github.dockerjava.api.model.Container container : client.listContainersCmd().withShowAll( true ).exec() ) {// docker returns the names with a prefixed "/", so we remove it
+        for ( com.github.dockerjava.api.model.Container container : client.listContainersCmd().withShowAll( true ).exec() ) {// Docker returns the names with a prefixed "/", so we remove it
             List<String> names = Arrays
                     .stream( container.getNames() )
                     .map( cont -> cont.substring( 1 ) )
@@ -124,14 +126,13 @@ public class DockerInstance extends DockerManager {
 
             List<String> normalizedNames = names.stream().map( Container::getFromPhysicalName ).collect( Collectors.toList() );
 
-            // when we have old containers, which belonged to a non-consistent adapter we remove them
-
+            // When we have old containers, which belonged to a non-consistent adapter we remove them
             for ( String name : names ) {
                 String[] splits = name.split( "_polypheny_" );
                 if ( splits.length == 2 ) {
                     String unparsedAdapterId = splits[1];
                     boolean isTestContainer = splits[1].contains( "_test" );
-                    // if the container was annotate with "_test", it has to be deleted if a new run in testMode was started
+                    // If the container was annotated with "_test", it has to be deleted if a new run in testMode was started
                     if ( isTestContainer ) {
                         unparsedAdapterId = unparsedAdapterId.replace( "_test", "" );
                     }
@@ -139,7 +140,7 @@ public class DockerInstance extends DockerManager {
                     int adapterId = Integer.parseInt( unparsedAdapterId );
                     if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer || Catalog.resetDocker ) {
                         idsToRemove.put( container.getId(), container.getState().equalsIgnoreCase( "running" ) );
-                        // as we remove this container later we skip the name and port adding
+                        // As we remove this container later we skip the name and port adding
                         continue outer;
                     }
                 }
@@ -149,13 +150,17 @@ public class DockerInstance extends DockerManager {
             usedNames.addAll( normalizedNames );
         }
 
-        // we have to check if we accessed a mocking catalog as we don't want to remove all dockerInstance when running tests
-
+        // We have to check if we accessed a mocking catalog as we don't want to remove all dockerInstance when running tests
         idsToRemove.forEach( ( id, isRunning ) -> {
-            if ( isRunning ) {
-                client.stopContainerCmd( id ).exec();
+            try {
+                if ( isRunning ) {
+                    client.stopContainerCmd( id ).exec();
+                }
+                client.removeContainerCmd( id ).exec();
+            } catch ( Exception e ) {
+                log.warn( "Error while removing old docker container. Try killing the container now." );
+                client.killContainerCmd( id ).exec();
             }
-            client.removeContainerCmd( id ).exec();
         } );
     }
 
@@ -235,7 +240,7 @@ public class DockerInstance extends DockerManager {
             download( container.image );
         }
 
-        // we add the name and the ports to our book-keeping functions as all previous checks passed
+        // We add the name and the ports to our book-keeping functions as all previous checks passed
         // both get added above but the port is not always visible, e.g. when container is stopped
         usedPorts.addAll( container.internalExternalPortMapping.values() );
         usedNames.add( container.uniqueName );
@@ -250,12 +255,12 @@ public class DockerInstance extends DockerManager {
         registerIfAbsent( container );
 
         if ( container.getStatus() == ContainerStatus.DESTROYED ) {
-            // we got an already destroyed container which we have to recreate in Docker and call this method again
+            // We got an already destroyed container which we have to recreate in Docker and call this method again
             initialize( container ).start();
             return;
         }
 
-        // we have to check if the container is running and start it if its not
+        // We have to check if the container is running and start it if its not
         InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
         ContainerState state = containerInfo.getState();
         if ( Objects.equals( state.getStatus(), "exited" ) ) {
@@ -263,7 +268,7 @@ public class DockerInstance extends DockerManager {
         } else if ( Objects.equals( state.getStatus(), "created" ) ) {
             client.startContainerCmd( container.getPhysicalName() ).exec();
 
-            // while the container is started the underlying system is not, so we have to probe it multiple times
+            // While the container is started the underlying system is not, so we have to probe it multiple times
             waitTillStarted( container );
 
             if ( container.afterCommands.size() != 0 ) {
@@ -307,14 +312,13 @@ public class DockerInstance extends DockerManager {
      * @param container the container with specifies the afterCommands and to which they are applied
      */
     private void execAfterInitCommands( Container container ) {
-
         ExecCreateCmdResponse cmd = client
                 .execCreateCmd( container.getContainerId() )
                 .withAttachStdout( true )
                 .withCmd( container.afterCommands.toArray( new String[0] ) )
                 .exec();
 
-        ResultCallbackTemplate<ResultCallback<Frame>, Frame> callback = new ResultCallbackTemplate<ResultCallback<Frame>, Frame>() {
+        ResultCallbackTemplate<ResultCallback<Frame>, Frame> callback = new ResultCallbackTemplate<>() {
             @Override
             public void onNext( Frame event ) {
 
@@ -410,7 +414,7 @@ public class DockerInstance extends DockerManager {
     protected void updateConfigs() {
         ConfigDocker newConfig = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId );
         if ( !currentConfig.equals( newConfig ) ) {
-            // something changed and we need to get a new client, which matches the new config
+            // Something changed and we need to get a new client, which matches the new config
             this.client = generateClient( instanceId );
             this.dockerRunning = testDockerRunning( instanceId );
             RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( dockerRunning );
@@ -437,7 +441,6 @@ public class DockerInstance extends DockerManager {
 
     @Override
     public void destroy( Container container ) {
-
         // While testing the container status itself is possible, in error cases, there might be no status set.
         // Therefore, we have to test by retrieving the container again from the client.
         String status = client.inspectContainerCmd( container.getContainerId() ).exec().getState().getStatus();
@@ -460,7 +463,7 @@ public class DockerInstance extends DockerManager {
     }
 
 
-    // non-conflicting initializer for DockerManagerImpl()
+    // Non-conflicting initializer for DockerManagerImpl()
     protected DockerInstance generateNewSession( int instanceId ) {
         return new DockerInstance( instanceId );
     }
