@@ -34,6 +34,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataStore;
@@ -178,10 +179,17 @@ public class Neo4jStore extends DataStore {
 
     public void executeDdlTrx( PolyXid xid, List<String> queries ) {
         Transaction trx = transactionProvider.getDdlTransaction();
-        for ( String query : queries ) {
-            trx.run( query );
+        try {
+            for ( String query : queries ) {
+                trx.run( query );
+            }
+
+            transactionProvider.commitDdlTransaction();
+        } catch ( Neo4jException e ) {
+            transactionProvider.rollbackDdlTransaction();
+            throw new RuntimeException( e );
         }
-        transactionProvider.commitDdlTransaction();
+
     }
 
 

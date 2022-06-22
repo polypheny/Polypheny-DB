@@ -123,4 +123,16 @@ public class TransactionProvider {
         ddlSession = null;
     }
 
+
+    public void rollbackDdlTransaction() {
+        if ( !ddlTransaction.isOpen() ) {
+            throw new RuntimeException( "There is no ongoing DDL transaction!" );
+        }
+        ddlTransaction.rollback();
+        ddlTransaction.close();
+        ddlSession.close();
+        ddlTransaction = null;
+        ddlSession = null;
+    }
+
 }
