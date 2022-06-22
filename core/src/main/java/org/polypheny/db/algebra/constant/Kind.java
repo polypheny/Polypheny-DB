@@ -1241,6 +1241,10 @@ public enum Kind {
     DROP_PROCEDURE,
 
     /**
+     * {@code CREATRE TRIGGER} DDL statement.
+     */
+    CREATE_TRIGGER,
+    /**
      * DDL statement not handled above.
      *
      * <b>Note to other projects</b>: If you are extending Polypheny-DB's SQL parser and have your own object types you no
@@ -1433,7 +1437,8 @@ public enum Kind {
             OTHER_DDL,
             CREATE_PROCEDURE,
             PROCEDURE_EXEC,
-            DROP_PROCEDURE
+            DROP_PROCEDURE,
+            CREATE_TRIGGER
     );
 
     /**

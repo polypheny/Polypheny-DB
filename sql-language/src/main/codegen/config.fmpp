@@ -77,6 +77,7 @@ data: {
             "org.polypheny.db.sql.sql.ddl.SqlDropProcedure"
             "org.polypheny.db.sql.sql.ddl.SqlTruncate"
             "org.polypheny.db.sql.sql.ddl.SqlCreateProcedure"
+            "org.polypheny.db.sql.sql.ddl.SqlCreateTrigger"
             "org.polypheny.db.sql.sql.ddl.SqlExecuteProcedure"
             "org.polypheny.db.sql.sql.ddl.altermaterializedview.SqlAlterMaterializedViewAddIndex"
             "org.polypheny.db.sql.sql.ddl.altermaterializedview.SqlAlterMaterializedViewDropIndex"
@@ -135,6 +136,7 @@ data: {
             "JAR"
             "FILE"
             "ARCHIVE"
+            "REPLICATION"
         ]
 
         # List of keywords from "keywords" section that are not reserved.
@@ -501,6 +503,7 @@ data: {
             "SqlCreateMaterializedView"
             "SqlCreateFunction"
             "SqlCreateProcedure"
+            "SqlCreateTrigger"
         ]
 
         # List of methods for parsing extensions to "DROP" calls. Each must accept arguments "(SqlParserPos pos)".

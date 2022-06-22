@@ -34,6 +34,14 @@ boolean IfExistsOpt() :
     { return false; }
 }
 
+boolean NotForReplicationOpt() :
+{
+}
+{
+    <NOT><FOR><REPLICATION> { return true; }
+    |
+    { return false; }
+}
 
 SqlCreate SqlCreateSchema(Span s, boolean replace) :
 {
@@ -494,6 +502,50 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
     <DOLLAR>
     {
         return SqlDdlNodes.createProcedure(s.end(this), replace, ifNotExists, id, query);
+    }
+}
+
+String ztring() :
+{
+    Token t1;
+}
+{
+    t1 = <INSERT> { return "sql"; }
+    |
+    t1 = <UPDATE> { return "mql"; }
+    |
+    t1 = <DELETE> { return "cql"; }
+}
+
+SqlCreate SqlCreateTrigger(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final boolean notForReplication;
+    final SqlIdentifier schema;
+    final SqlIdentifier name;
+    final SqlIdentifier table;
+    String event;
+    final SqlNode query;
+}
+{
+    <TRIGGER> ifNotExists = IfNotExistsOpt()
+    schema = CompoundIdentifier()
+    name = CompoundIdentifier()
+    <ON>
+    table = CompoundIdentifier()
+    <AFTER>
+    (
+        <INSERT> { event = "INSERT"; }
+        |
+        <UPDATE> { event = "UPDATE"; }
+        |
+        <DELETE> { event = "DELETE"; }
+    )
+    notForReplication = NotForReplicationOpt()
+    <DOLLAR>
+    query = StringLiteral()
+    {
+        return SqlDdlNodes.createTrigger(s.end(this), replace, ifNotExists, schema, name, table, event, notForReplication, query);
     }
 }
 

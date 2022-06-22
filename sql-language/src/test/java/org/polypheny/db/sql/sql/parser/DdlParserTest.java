@@ -221,6 +221,14 @@ public class DdlParserTest extends SqlParserTest {
         sql( sql ).ok( expected );
     }
 
+    @Test
+    public void testCreateOrReplaceTrigger() {
+        final String sql = "create trigger \"mySchema\"\n\"myudf\"\n"
+                + " ON \"myTable\" after insert $ \'select * from customers;\'";
+        final String expected = "CREATE TRIGGER `mySchema`.`myudf`"
+                + " ON `myTable` AFTER INSERT $ 'select * from customers;'";
+        sql( sql ).ok( expected );
+    }
 
     @Test
     public void testDropSchema() {
