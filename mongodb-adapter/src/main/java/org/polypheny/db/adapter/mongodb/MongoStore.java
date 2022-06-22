@@ -113,7 +113,7 @@ public class MongoStore extends DataStore {
 
         this.port = Integer.parseInt( settings.get( "port" ) );
 
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:4.4.7", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:5.0.9", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 27017, port )
                 .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
                 .withReadyTest( this::testConnection, 20000 )
@@ -405,7 +405,7 @@ public class MongoStore extends DataStore {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
-        String physicalIndexName = "idx" + catalogIndex.key.tableId + "_" + catalogIndex.id;
+        String physicalIndexName = getPhysicalIndexName( catalogIndex );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             switch ( type ) {
@@ -436,6 +436,11 @@ public class MongoStore extends DataStore {
     }
 
 
+    private String getPhysicalIndexName( CatalogIndex catalogIndex ) {
+        return "idx" + catalogIndex.key.tableId + "_" + catalogIndex.id;
+    }
+
+
     private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns, CatalogPartitionPlacement partitionPlacement, String physicalIndexName ) {
         Document doc = new Document();
         columns.forEach( name -> doc.append( name, 1 ) );
@@ -458,7 +463,7 @@ public class MongoStore extends DataStore {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.name + "_" + partitionPlacement.partitionId );
+            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.physicalName + "_" + partitionPlacement.partitionId );
         }
     }
 

@@ -441,7 +441,8 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
                 changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket, changes );
             } catch ( MongoException e ) {
                 mongoEntity.getTransactionProvider().rollback( xid );
-                throw new RuntimeException( e.getMessage().replace( "_data.", "" ), e );
+                log.warn( e.getMessage() );
+                throw new RuntimeException( e.getMessage(), e );
             }
 
             long finalChanges = changes;
