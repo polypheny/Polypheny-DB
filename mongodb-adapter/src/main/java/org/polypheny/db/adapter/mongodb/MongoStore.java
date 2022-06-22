@@ -88,10 +88,13 @@ import org.polypheny.db.util.BsonUtil;
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
 @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
+@AdapterSettingInteger(name = "dmlRetries", defaultValue = 2)
 public class MongoStore extends DataStore {
 
     private final String host;
     private final int port;
+    @Getter
+    private final int dmlRetries;
     private transient MongoClient client;
     private final transient TransactionProvider transactionProvider;
     private transient MongoSchema currentSchema;
@@ -116,7 +119,7 @@ public class MongoStore extends DataStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:5.0.9", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 27017, port )
                 .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
-                .withReadyTest( this::testConnection, 50000 )
+                .withReadyTest( this::testConnection, 100000 )
                 .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
                 .build();
         this.host = container.getHost();
@@ -133,15 +136,22 @@ public class MongoStore extends DataStore {
         this.transactionProvider = new TransactionProvider( this.client );
         MongoDatabase db = this.client.getDatabase( "admin" );
         Document configs = new Document( "setParameter", 1 );
-        String trxLifetimeLimit;
-        if ( settings.containsKey( "trxLifetimeLimit" ) ) {
-            trxLifetimeLimit = settings.get( "trxLifetimeLimit" );
-        } else {
-            trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( "trxLifetimeLimit" );
-        }
+        String trxLifetimeLimit = getSetting( settings, "trxLifetimeLimit" );
         configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( trxLifetimeLimit ) );
         configs.put( "cursorTimeoutMillis", 6 * 600000 );
         db.runCommand( configs );
+        this.dmlRetries = Integer.parseInt( getSetting( settings, "dmlRetries" ) );
+    }
+
+
+    private String getSetting( Map<String, String> settings, String key ) {
+        String trxLifetimeLimit;
+        if ( settings.containsKey( key ) ) {
+            trxLifetimeLimit = settings.get( key );
+        } else {
+            trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( key );
+        }
+        return trxLifetimeLimit;
     }
 
 
@@ -173,7 +183,7 @@ public class MongoStore extends DataStore {
         if ( splits.length >= 2 ) {
             database = splits[0] + "_" + splits[1];
         }
-        currentSchema = new MongoSchema( database, this.client, transactionProvider );
+        currentSchema = new MongoSchema( database, this.client, transactionProvider, this );
     }
 
 

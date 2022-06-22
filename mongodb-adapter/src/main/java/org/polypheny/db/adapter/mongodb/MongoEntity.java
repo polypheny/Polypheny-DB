@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -434,28 +435,41 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
             ClientSession session = mongoEntity.getTransactionProvider().startTransaction( xid );
             GridFSBucket bucket = mongoEntity.getMongoSchema().getBucket();
 
-            long changes = 0;
+            final long changes;
 
-            try {
-                // while this should not happen, we still can handle it and return a corrected message back and rollback
-                changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket, changes );
-            } catch ( MongoException e ) {
-                mongoEntity.getTransactionProvider().rollback( xid );
-                log.warn( e.getMessage() );
-                throw new RuntimeException( e.getMessage(), e );
-            }
+            Supplier<Long> dml = () -> doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket );
+            changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
 
-            long finalChanges = changes;
             return new AbstractEnumerable<>() {
                 @Override
                 public Enumerator<Object> enumerator() {
-                    return new IterWrapper( Collections.singletonList( (Object) finalChanges ).iterator() );
+                    return new IterWrapper( Collections.singletonList( (Object) changes ).iterator() );
                 }
             };
         }
 
 
-        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoEntity mongoEntity, ClientSession session, GridFSBucket bucket, long changes ) {
+        private long tryDML( MongoEntity mongoEntity, PolyXid xid, Supplier<Long> dml, int retries ) {
+            final long changes;
+            try {
+                // while this should not happen, we still can handle it and return a corrected message back and rollback
+                changes = dml.get();
+            } catch ( MongoException e ) {
+                if ( e.getCode() == 112 && retries > 0 ) {
+                    // write exceptions can happen during DMLs, this is apparently normal and can be handled by manually retrying
+                    log.warn( "retrying: " + retries );
+                    return tryDML( mongoEntity, xid, dml, retries - 1 );
+                }
+                mongoEntity.getTransactionProvider().rollback( xid );
+                log.warn( e.getMessage() );
+                throw new RuntimeException( e.getMessage(), e );
+            }
+            return changes;
+        }
+
+
+        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoEntity mongoEntity, ClientSession session, GridFSBucket bucket ) {
+            long changes = 0;
             switch ( operation ) {
                 case INSERT:
                     if ( dataContext.getParameterValues().size() != 0 ) {
