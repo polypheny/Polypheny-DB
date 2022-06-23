@@ -93,8 +93,8 @@ public class TransactionProvider {
                     session.abortTransaction();
                 }
             } finally {
-                session.close();
                 synchronized ( this ) {
+                    session.close();
                     sessions.remove( xid );
                 }
             }
@@ -127,8 +127,8 @@ public class TransactionProvider {
             } catch ( MongoClientException e ) {
                 // empty on purpose
             } finally {
-                sessions.get( xid ).close();
                 synchronized ( this ) {
+                    sessions.get( xid ).close();
                     sessions.remove( xid );
                 }
             }

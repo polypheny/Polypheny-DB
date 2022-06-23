@@ -435,17 +435,24 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
             ClientSession session = mongoEntity.getTransactionProvider().startTransaction( xid );
             GridFSBucket bucket = mongoEntity.getMongoSchema().getBucket();
 
-            final long changes;
+            try {
+                final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket );
 
-            Supplier<Long> dml = () -> doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket );
-            changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
+                return new AbstractEnumerable<>() {
+                    @Override
+                    public Enumerator<Object> enumerator() {
+                        return new IterWrapper( Collections.singletonList( (Object) changes ).iterator() );
+                    }
+                };
+            } catch ( MongoException e ) {
+                mongoEntity.getTransactionProvider().rollback( xid );
+                log.warn( "Failed" );
+                log.warn( String.format( "op: %s\nfilter: %s\nops: [%s]", operation.name(), filter, String.join( ";", operations ) ) );
+                log.warn( e.getMessage() );
+                throw new RuntimeException( e.getMessage(), e );
+            }
+            //final long changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
 
-            return new AbstractEnumerable<>() {
-                @Override
-                public Enumerator<Object> enumerator() {
-                    return new IterWrapper( Collections.singletonList( (Object) changes ).iterator() );
-                }
-            };
         }
 
 
@@ -455,11 +462,11 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
                 // while this should not happen, we still can handle it and return a corrected message back and rollback
                 changes = dml.get();
             } catch ( MongoException e ) {
-                if ( e.getCode() == 112 && retries > 0 ) {
+                /*if ( e.getCode() == 112 && retries > 0 ) {
                     // write exceptions can happen during DMLs, this is apparently normal and can be handled by manually retrying
                     log.warn( "retrying: " + retries );
                     return tryDML( mongoEntity, xid, dml, retries - 1 );
-                }
+                }*/
                 mongoEntity.getTransactionProvider().rollback( xid );
                 log.warn( e.getMessage() );
                 throw new RuntimeException( e.getMessage(), e );
