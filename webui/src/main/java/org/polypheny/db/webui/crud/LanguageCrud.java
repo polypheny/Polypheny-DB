@@ -514,11 +514,16 @@ public class LanguageCrud {
             return results;
 
         } catch ( Throwable t ) {
-            log.warn( "failed during execution\n" + request.query );
+            printLog( t, request );
             ArrayList<Result> results = new ArrayList<>();
             attachError( transaction, results, query, t );
             return results;
         }
+    }
+
+
+    private static void printLog( Throwable t, QueryRequest request ) {
+        log.warn( "Failed during execution\nquery:" + request.query + "\nMsg:" + t.getMessage() + "\nCause:" + t.getCause().getMessage() );
     }
 
 
