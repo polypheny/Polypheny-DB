@@ -81,6 +81,7 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -325,7 +326,11 @@ public class MqlToAlgConverter {
 
 
     private AlgOptTable getEntity( MqlCollectionStatement query, String dbSchemaName ) {
-        return catalogReader.getTable( ImmutableList.of( dbSchemaName, query.getCollection() ) );
+        PreparingTable table = catalogReader.getTable( ImmutableList.of( dbSchemaName, query.getCollection() ) );
+        if ( table == null ) {
+            return catalogReader.getDocument( ImmutableList.of( dbSchemaName, query.getCollection() ) );
+        }
+        return table;
     }
 
 
