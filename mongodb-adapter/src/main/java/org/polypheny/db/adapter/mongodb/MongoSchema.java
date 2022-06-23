@@ -63,6 +63,8 @@ public class MongoSchema extends AbstractSchema {
     private final TransactionProvider transactionProvider;
     @Getter
     private final GridFSBucket bucket;
+    @Getter
+    private final MongoStore store;
 
 
     /**
@@ -70,13 +72,15 @@ public class MongoSchema extends AbstractSchema {
      *
      * @param database Mongo database name, e.g. "foodmart"
      * @param transactionProvider
+     * @param mongoStore
      */
-    public MongoSchema( String database, MongoClient connection, TransactionProvider transactionProvider ) {
+    public MongoSchema( String database, MongoClient connection, TransactionProvider transactionProvider, MongoStore mongoStore ) {
         super();
         this.transactionProvider = transactionProvider;
         this.connection = connection;
         this.database = this.connection.getDatabase( database );
         this.bucket = GridFSBuckets.create( this.database, database );
+        this.store = mongoStore;
     }
 
 
