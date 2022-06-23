@@ -439,7 +439,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
                 TransactionBody<Object> transactionBody = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, xid, bucket );
                 //final long changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
                 //doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket );
-                ClientSession session = mongoEntity.getTransactionProvider().getSession( xid );
+                ClientSession session = mongoEntity.getTransactionProvider().startTransaction( xid, false );
                 return new AbstractEnumerable<>() {
                     @Override
                     public Enumerator<Object> enumerator() {
