@@ -281,7 +281,7 @@ public class DockerInstance extends DockerManager {
 
 
     /**
-     * The container gets probed until the defined ready supplier returns true or the timout is reached
+     * The container gets probed until the defined ready supplier returns true or the timeout is reached
      *
      * @param container the container which is waited for
      */

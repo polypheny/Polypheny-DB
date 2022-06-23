@@ -113,7 +113,7 @@ public class MongoStore extends DataStore {
 
         this.port = Integer.parseInt( settings.get( "port" ) );
 
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:5.0.9", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:4.4.14", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 27017, port )
                 .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
                 .withReadyTest( this::testConnection, 50000 )
