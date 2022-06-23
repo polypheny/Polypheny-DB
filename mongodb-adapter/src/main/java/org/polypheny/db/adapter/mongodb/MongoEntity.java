@@ -432,11 +432,12 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
             MongoEntity mongoEntity = getTable();
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( mongoEntity.getStoreId() ) );
-            ClientSession session = mongoEntity.getTransactionProvider().startTransaction( xid );
             GridFSBucket bucket = mongoEntity.getMongoSchema().getBucket();
 
             try {
-                final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket );
+                Supplier<Long> dml = () -> doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, xid, bucket );
+                final long changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
+                //doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket );
 
                 return new AbstractEnumerable<>() {
                     @Override
@@ -451,8 +452,6 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
                 log.warn( e.getMessage() );
                 throw new RuntimeException( e.getMessage(), e );
             }
-            //final long changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
-
         }
 
 
@@ -462,11 +461,11 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
                 // while this should not happen, we still can handle it and return a corrected message back and rollback
                 changes = dml.get();
             } catch ( MongoException e ) {
-                /*if ( e.getCode() == 112 && retries > 0 ) {
+                if ( e.getCode() == 112 && retries > 0 ) {
                     // write exceptions can happen during DMLs, this is apparently normal and can be handled by manually retrying
                     log.warn( "retrying: " + retries );
                     return tryDML( mongoEntity, xid, dml, retries - 1 );
-                }*/
+                }
                 mongoEntity.getTransactionProvider().rollback( xid );
                 log.warn( e.getMessage() );
                 throw new RuntimeException( e.getMessage(), e );
@@ -475,8 +474,9 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         }
 
 
-        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoEntity mongoEntity, ClientSession session, GridFSBucket bucket ) {
+        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoEntity mongoEntity, PolyXid xid, GridFSBucket bucket ) {
             long changes = 0;
+            ClientSession session = mongoEntity.getTransactionProvider().startTransaction( xid );
             switch ( operation ) {
                 case INSERT:
                     if ( dataContext.getParameterValues().size() != 0 ) {
