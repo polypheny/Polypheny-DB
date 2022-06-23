@@ -53,19 +53,21 @@ public class TransactionProvider {
      * @param xid the PolyXid to which the transaction belongs
      * @return the corresponding session, which holds the information of the transaction
      */
-    public ClientSession startTransaction( PolyXid xid ) {
+    public ClientSession startTransaction( PolyXid xid, boolean withTrx ) {
         TransactionOptions options = TransactionOptions.builder().build();
 
         ClientSession session;
         if ( !sessions.containsKey( xid ) ) {
             session = client.startSession();
-            session.startTransaction( options );
+            if ( withTrx ) {
+                session.startTransaction( options );
+            }
             synchronized ( this ) {
                 sessions.put( xid, session );
             }
         } else {
             session = sessions.get( xid );
-            if ( !session.hasActiveTransaction() ) {
+            if ( withTrx && !session.hasActiveTransaction() ) {
                 session.startTransaction();
             }
         }
@@ -140,7 +142,7 @@ public class TransactionProvider {
 
     public ClientSession getSession( PolyXid xid ) {
         if ( !sessions.containsKey( xid ) ) {
-            startTransaction( xid );
+            return startTransaction( xid, true );
         }
         return sessions.get( xid );
     }

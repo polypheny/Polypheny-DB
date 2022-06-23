@@ -22,6 +22,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.model.DeleteManyModel;
 import com.mongodb.client.model.DeleteOneModel;
@@ -435,14 +436,14 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
             GridFSBucket bucket = mongoEntity.getMongoSchema().getBucket();
 
             try {
-                Supplier<Long> dml = () -> doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, xid, bucket );
-                final long changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
+                TransactionBody<Object> transactionBody = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, xid, bucket );
+                //final long changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
                 //doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket );
-
+                ClientSession session = mongoEntity.getTransactionProvider().getSession( xid );
                 return new AbstractEnumerable<>() {
                     @Override
                     public Enumerator<Object> enumerator() {
-                        return new IterWrapper( Collections.singletonList( (Object) changes ).iterator() );
+                        return new IterWrapper( Collections.singletonList( session.withTransaction( transactionBody ) ).iterator() );
                     }
                 };
             } catch ( MongoException e ) {
@@ -474,109 +475,111 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         }
 
 
-        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoEntity mongoEntity, PolyXid xid, GridFSBucket bucket ) {
-            long changes = 0;
-            ClientSession session = mongoEntity.getTransactionProvider().startTransaction( xid );
-            switch ( operation ) {
-                case INSERT:
-                    if ( dataContext.getParameterValues().size() != 0 ) {
-                        assert operations.size() == 1;
-                        // prepared
-                        MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
-                        List<Document> inserts = util.getAll( dataContext.getParameterValues() );
-                        mongoEntity.getCollection().insertMany( session, inserts );
-                        changes = inserts.size();
-                    } else {
-                        // direct
-                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).collect( Collectors.toList() );
-                        mongoEntity.getCollection().insertMany( session, docs );
-                        changes = docs.size();
-                    }
-                    break;
+        private TransactionBody<Object> doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoEntity mongoEntity, PolyXid xid, GridFSBucket bucket ) {
+            //ClientSession session = mongoEntity.getTransactionProvider().startTransaction( xid );
 
-                case UPDATE:
-                    assert operations.size() == 1;
-                    // we use only update docs
-                    if ( dataContext.getParameterValues().size() != 0 ) {
-                        // prepared we use document update not pipeline
-                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
-                        MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
-                        for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
-                            if ( onlyOne ) {
-                                if ( needsDocument ) {
-                                    changes += mongoEntity
-                                            .getCollection()
-                                            .updateOne( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
-                                            .getModifiedCount();
+            return () -> {
+                long changes = 0;
+                switch ( operation ) {
+                    case INSERT:
+                        if ( dataContext.getParameterValues().size() != 0 ) {
+                            assert operations.size() == 1;
+                            // prepared
+                            MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
+                            List<Document> inserts = util.getAll( dataContext.getParameterValues() );
+                            mongoEntity.getCollection().insertMany( inserts );
+                            return inserts.size();
+                        } else {
+                            // direct
+                            List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).collect( Collectors.toList() );
+                            mongoEntity.getCollection().insertMany( docs );
+                            return docs.size();
+                        }
+
+                    case UPDATE:
+                        assert operations.size() == 1;
+                        // we use only update docs
+                        if ( dataContext.getParameterValues().size() != 0 ) {
+                            // prepared we use document update not pipeline
+                            MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
+                            MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
+                            for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
+                                if ( onlyOne ) {
+                                    if ( needsDocument ) {
+                                        changes += mongoEntity
+                                                .getCollection()
+                                                .updateOne( filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                                .getModifiedCount();
+                                    } else {
+                                        changes += mongoEntity
+                                                .getCollection()
+                                                .updateOne( filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                                .getModifiedCount();
+                                    }
                                 } else {
-                                    changes += mongoEntity
-                                            .getCollection()
-                                            .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
-                                            .getModifiedCount();
-                                }
-                            } else {
-                                if ( needsDocument ) {
-                                    changes += mongoEntity
-                                            .getCollection()
-                                            .updateMany( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
-                                            .getModifiedCount();
-                                } else {
-                                    changes += mongoEntity
-                                            .getCollection()
-                                            .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
-                                            .getModifiedCount();
+                                    if ( needsDocument ) {
+                                        changes += mongoEntity
+                                                .getCollection()
+                                                .updateMany( filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                                .getModifiedCount();
+                                    } else {
+                                        changes += mongoEntity
+                                                .getCollection()
+                                                .updateMany( filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                                .getModifiedCount();
+                                    }
                                 }
                             }
-                        }
-                    } else {
-                        // direct
-                        if ( onlyOne ) {
-                            changes = mongoEntity
-                                    .getCollection()
-                                    .updateOne( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
-                                    .getModifiedCount();
                         } else {
-                            changes = mongoEntity
-                                    .getCollection()
-                                    .updateMany( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
-                                    .getModifiedCount();
+                            // direct
+                            if ( onlyOne ) {
+                                changes = mongoEntity
+                                        .getCollection()
+                                        .updateOne( BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
+                                        .getModifiedCount();
+                            } else {
+                                changes = mongoEntity
+                                        .getCollection()
+                                        .updateMany( BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
+                                        .getModifiedCount();
+                            }
+
                         }
+                        break;
 
-                    }
-                    break;
+                    case DELETE:
+                        if ( dataContext.getParameterValues().size() != 0 ) {
+                            // prepared
+                            MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
+                            List<? extends WriteModel<Document>> filters;
+                            if ( onlyOne ) {
+                                filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteOneModel::new );
+                            } else {
+                                filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
+                            }
 
-                case DELETE:
-                    if ( dataContext.getParameterValues().size() != 0 ) {
-                        // prepared
-                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
-                        List<? extends WriteModel<Document>> filters;
-                        if ( onlyOne ) {
-                            filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteOneModel::new );
+                            changes = mongoEntity.getCollection().bulkWrite( filters ).getDeletedCount();
                         } else {
-                            filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
+                            // direct
+                            if ( onlyOne ) {
+                                changes = mongoEntity
+                                        .getCollection()
+                                        .deleteOne( BsonDocument.parse( filter ) )
+                                        .getDeletedCount();
+                            } else {
+                                changes = mongoEntity
+                                        .getCollection()
+                                        .deleteMany( BsonDocument.parse( filter ) )
+                                        .getDeletedCount();
+                            }
                         }
+                        break;
 
-                        changes = mongoEntity.getCollection().bulkWrite( session, filters ).getDeletedCount();
-                    } else {
-                        // direct
-                        if ( onlyOne ) {
-                            changes = mongoEntity
-                                    .getCollection()
-                                    .deleteOne( session, BsonDocument.parse( filter ) )
-                                    .getDeletedCount();
-                        } else {
-                            changes = mongoEntity
-                                    .getCollection()
-                                    .deleteMany( session, BsonDocument.parse( filter ) )
-                                    .getDeletedCount();
-                        }
-                    }
-                    break;
-
-                case MERGE:
-                    throw new RuntimeException( "MERGE IS NOT SUPPORTED" );
-            }
-            return changes;
+                    case MERGE:
+                        throw new RuntimeException( "MERGE IS NOT SUPPORTED" );
+                }
+                return changes;
+            };
         }
 
     }
