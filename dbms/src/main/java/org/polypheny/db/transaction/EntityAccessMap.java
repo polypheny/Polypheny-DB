@@ -34,6 +34,8 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.graph.GraphAlg;
+import org.polypheny.db.algebra.core.graph.GraphModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptTable;
@@ -220,10 +222,10 @@ public class EntityAccessMap {
         if ( !(table instanceof AlgOptTableImpl) ) {
             throw new RuntimeException( "Unexpected table type: " + table.getClass() );
         }
-        if ( !(((AlgOptTableImpl) table).getTable() instanceof LogicalTable) ) {
-            throw new RuntimeException( "Unexpected table type: " + ((AlgOptTableImpl) table).getTable().getClass() );
+        if ( !(table.getTable() instanceof LogicalTable) ) {
+            throw new RuntimeException( "Unexpected table type: " + table.getTable().getClass() );
         }
-        return new EntityIdentifier( ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId(), partitionId );
+        return new EntityIdentifier( table.getTable().getTableId(), partitionId );
     }
 
 
@@ -237,6 +239,9 @@ public class EntityAccessMap {
             super.visit( p, ordinal, parent );
             AlgOptTable table = p.getTable();
             if ( table == null ) {
+                if ( p instanceof GraphAlg ) {
+                    attachGraph( (GraphAlg) p );
+                }
                 return;
             }
 
@@ -273,6 +278,23 @@ public class EntityAccessMap {
                 }
                 accessMap.put( key, newAccess );
             }
+        }
+
+
+        private void attachGraph( GraphAlg p ) {
+            if ( p.getGraph() == null ) {
+                return;
+            }
+
+            Mode newAccess;
+            if ( p instanceof GraphModify ) {
+                newAccess = Mode.WRITE_ACCESS;
+            } else {
+                newAccess = Mode.READ_ACCESS;
+            }
+            // as graph is on the namespace level in the full polyschema it is unique and can be used like this
+            EntityIdentifier key = new EntityIdentifier( p.getGraph().getId(), 0 );
+            accessMap.put( key, newAccess );
         }
 
 
