@@ -34,6 +34,8 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.document.DocumentAlg;
+import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.graph.GraphAlg;
 import org.polypheny.db.algebra.core.graph.GraphModify;
 import org.polypheny.db.catalog.Catalog;
@@ -42,6 +44,7 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 
 
@@ -225,7 +228,7 @@ public class EntityAccessMap {
         if ( !(table.getTable() instanceof LogicalTable) ) {
             throw new RuntimeException( "Unexpected table type: " + table.getTable().getClass() );
         }
-        return new EntityIdentifier( table.getTable().getTableId(), partitionId );
+        return new EntityIdentifier( table.getTable().getTableId(), partitionId, NamespaceLevel.ENTITY_LEVEL );
     }
 
 
@@ -241,6 +244,9 @@ public class EntityAccessMap {
             if ( table == null ) {
                 if ( p instanceof GraphAlg ) {
                     attachGraph( (GraphAlg) p );
+                }
+                if ( p instanceof DocumentAlg ) {
+                    attachDocument( (DocumentAlg) p );
                 }
                 return;
             }
@@ -281,6 +287,23 @@ public class EntityAccessMap {
         }
 
 
+        private void attachDocument( DocumentAlg p ) {
+            if ( p.getDocument() == null ) {
+                return;
+            }
+
+            Mode newAccess;
+            if ( p instanceof DocumentModify ) {
+                newAccess = Mode.WRITE_ACCESS;
+            } else {
+                newAccess = Mode.READ_ACCESS;
+            }
+            // as documents are using the same id space as tables this will work
+            EntityIdentifier key = new EntityIdentifier( p.getDocument().getTable().getTableId(), 0, NamespaceLevel.ENTITY_LEVEL );
+            accessMap.put( key, newAccess );
+        }
+
+
         private void attachGraph( GraphAlg p ) {
             if ( p.getGraph() == null ) {
                 return;
@@ -293,7 +316,7 @@ public class EntityAccessMap {
                 newAccess = Mode.READ_ACCESS;
             }
             // as graph is on the namespace level in the full polyschema it is unique and can be used like this
-            EntityIdentifier key = new EntityIdentifier( p.getGraph().getId(), 0 );
+            EntityIdentifier key = new EntityIdentifier( p.getGraph().getId(), 0, NamespaceLevel.NAMESPACE_LEVEL );
             accessMap.put( key, newAccess );
         }
 
@@ -307,7 +330,7 @@ public class EntityAccessMap {
                 for ( long constraintPartitionIds
                         : Catalog.getInstance().getTable( constraintTable ).partitionProperty.partitionIds ) {
 
-                    EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds );
+                    EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds, NamespaceLevel.ENTITY_LEVEL );
                     if ( !accessMap.containsKey( id ) ) {
                         accessMap.put( id, Mode.READ_ACCESS );
                     }
@@ -325,6 +348,16 @@ public class EntityAccessMap {
 
         long tableId;
         long partitionId;
+        // the locking checks for an existing EntityIdentifier, which is identified, by its id an partition
+        // this is done on the entity level, the graph model defines the graph on the namespace level and this could lead to conflicts
+        // therefore we can add the level to the identifier
+        NamespaceLevel namespaceLevel;
+
+
+        enum NamespaceLevel {
+            NAMESPACE_LEVEL,
+            ENTITY_LEVEL
+        }
 
     }
 

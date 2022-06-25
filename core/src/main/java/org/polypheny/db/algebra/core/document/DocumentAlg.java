@@ -16,9 +16,17 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptTable;
+
 public interface DocumentAlg {
 
     DocType getDocType();
+
+    default AlgOptTable getDocument() {
+        assert this instanceof AlgNode;
+        return ((AlgNode) this).getTable();
+    }
 
     enum DocType {
         SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, MODIFY

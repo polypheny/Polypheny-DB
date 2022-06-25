@@ -344,7 +344,7 @@ public class Neo4jStore extends DataStore {
         final Expression expression = Schemas.subSchemaExpression( rootSchema, name, NeoNamespace.class );
         String namespaceName;
         String[] splits = name.split( "_" );
-        if ( splits.length == 3 ) {
+        if ( splits.length >= 3 ) {
             namespaceName = splits[1];
         } else {
             throw new RuntimeException( "Error while generating new namespace" );
