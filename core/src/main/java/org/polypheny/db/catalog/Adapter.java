@@ -65,7 +65,6 @@ public enum Adapter {
                 settings.put( "instanceId", "0" );
                 settings.put( "mode", "docker" );
                 settings.put( "trxLifetimeLimit", "1209600" );
-                settings.put( "dmlRetries", "3" );
                 break;
             case NEO4J:
                 settings.put( "persistent", "true" );

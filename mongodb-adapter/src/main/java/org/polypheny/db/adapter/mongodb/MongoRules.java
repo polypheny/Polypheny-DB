@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.document.DocumentModify;
+import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -118,6 +119,7 @@ public class MongoRules {
             MongoProjectRule.INSTANCE,
             MongoAggregateRule.INSTANCE,
             MongoTableModificationRule.INSTANCE,
+            MongoDocumentSortRule.INSTANCE,
             MongoDocumentFilterRule.INSTANCE,
             MongoDocumentProjectRule.INSTANCE,
             MongoDocumentAggregateRule.INSTANCE,
@@ -541,6 +543,33 @@ public class MongoRules {
                     traitSet,
                     convert( sort.getInput(), traitSet.replace( AlgCollations.EMPTY ) ),
                     sort.getCollation(),
+                    sort.offset,
+                    sort.fetch );
+        }
+
+    }
+
+
+    private static class MongoDocumentSortRule extends MongoConverterRule {
+
+        public static final MongoDocumentSortRule INSTANCE = new MongoDocumentSortRule();
+
+
+        private MongoDocumentSortRule() {
+            super( DocumentSort.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoDocumentSortRule" );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final DocumentSort sort = (DocumentSort) alg;
+
+            final AlgTraitSet traitSet = sort.getTraitSet().replace( out );
+            return new MongoSort(
+                    alg.getCluster(),
+                    traitSet,
+                    convert( sort.getInput(), out ),
+                    sort.collation,
                     sort.offset,
                     sort.fetch );
         }

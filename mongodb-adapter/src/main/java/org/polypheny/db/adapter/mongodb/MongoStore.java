@@ -94,8 +94,6 @@ public class MongoStore extends DataStore {
 
     private final String host;
     private final int port;
-    @Getter
-    private final int dmlRetries;
     private transient MongoClient client;
     private final transient TransactionProvider transactionProvider;
     private transient MongoSchema currentSchema;
@@ -141,7 +139,6 @@ public class MongoStore extends DataStore {
         configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( trxLifetimeLimit ) );
         configs.put( "cursorTimeoutMillis", 6 * 600000 );
         db.runCommand( configs );
-        this.dmlRetries = Integer.parseInt( getSetting( settings, "dmlRetries" ) );
     }
 
 

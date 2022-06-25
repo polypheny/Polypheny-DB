@@ -28,6 +28,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.algebra.AlgNode;
@@ -61,7 +62,6 @@ public interface MongoAlg extends AlgNode {
 
         final List<Pair<String, String>> list = new ArrayList<>();
         public List<BsonDocument> operations = new ArrayList<>();
-        public List<BsonDocument> groups = new ArrayList<>();
         public BsonArray filter = new BsonArray();
         @Getter
         @Setter
@@ -137,7 +137,7 @@ public interface MongoAlg extends AlgNode {
         public BsonDocument getFilter() {
             BsonDocument filter;
             if ( this.filter.size() == 1 ) {
-                filter = this.filter.get( 0 ).asDocument();
+                filter = getFilter( this.filter.get( 0 ).asDocument() );
             } else if ( this.filter.size() == 0 ) {
                 filter = new BsonDocument();
             } else {
@@ -145,6 +145,23 @@ public interface MongoAlg extends AlgNode {
             }
 
             return filter;
+        }
+
+
+        public BsonDocument getFilter( BsonDocument filter ) {
+            if ( filter.size() != 1 ) {
+                return filter;
+            }
+            String key = filter.keySet().iterator().next();
+            BsonValue value = filter.values().iterator().next();
+            if ( !key.equals( "$or" ) && !key.equals( "$and" ) ) {
+                return filter;
+            }
+
+            if ( !value.isArray() || value.asArray().size() != 1 ) {
+                return filter;
+            }
+            return value.asArray().get( 0 ).asDocument();
         }
 
 

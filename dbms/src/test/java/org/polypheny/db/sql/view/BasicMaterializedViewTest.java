@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1107,7 +1107,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "TRUNCATE TABLE viewTestDepTable" );
                     connection.commit();
 
-                    waiter.await( 2, TimeUnit.SECONDS );
+                    waiter.await( 5, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of() );
@@ -1124,7 +1124,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
-                    waiter.await( 2, TimeUnit.SECONDS );
+                    waiter.await( 5, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
