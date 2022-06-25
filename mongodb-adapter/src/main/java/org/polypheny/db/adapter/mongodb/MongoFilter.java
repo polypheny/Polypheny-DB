@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.adapter.mongodb;
@@ -151,12 +134,29 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonDocument value = translateFinalOr( condition );
             if ( !value.isEmpty() ) {
                 implementor.filter.add( value );
-                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", value ) ) );
+                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", getFilter( value ) ) ) );
             }
 
             if ( preProjections.size() != 0 ) {
                 implementor.preProjections.add( preProjections );
             }
+        }
+
+
+        public static BsonDocument getFilter( BsonDocument filter ) {
+            if ( filter.size() != 1 ) {
+                return filter;
+            }
+            String key = filter.keySet().iterator().next();
+            BsonValue value = filter.values().iterator().next();
+            if ( !key.equals( "$or" ) && !key.equals( "$and" ) ) {
+                return filter;
+            }
+
+            if ( !value.isArray() || value.asArray().size() != 1 ) {
+                return filter;
+            }
+            return getFilter( value.asArray().get( 0 ).asDocument() );
         }
 
 

@@ -418,7 +418,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
 
 
         /**
-         * This methods handles direct DMLs(which already have the values)
+         * This method handles direct DMLs(which already have the values)
          *
          * @param operation which defines which kind the DML is
          * @param filter filter operations
