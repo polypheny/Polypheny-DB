@@ -17,10 +17,18 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.lang.reflect.Modifier;
 import java.util.List;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.function.Function;
+import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -62,20 +70,21 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
         Result modify = implementor.visitChild( this, 0, (EnumerableAlg) getLeft(), pref );
         Result control = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
+        // move into lambda
+        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), modify.block );
+
+        ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "executor" + System.nanoTime() ) );
+
+        // move executor enumerable into a lambda so parameters get not prematurely
+        FunctionExpression<Function<?>> expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
+        builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );
+
         MethodCallExpression transformContext = Expressions.call(
                 BuiltInMethod.ENFORCE_CONSTRAINT.method,
-                builder.append( builder.newName( "modify" + System.nanoTime() ), modify.block ),
+                exp,
                 builder.append( builder.newName( "control" + System.nanoTime() ), control.block ),
                 Expressions.constant( this.getExceptionClasses() ),
                 Expressions.constant( this.getExceptionMessages() ) );
-
-        /*builder.add(
-                Expressions.ifThenElse(
-                        conditionExp,
-                        Expressions.block( Expressions.statement( Expressions.return_( null,  ) ) ),
-                        Expressions.throw_( Expressions.new_( getExceptionClass(), Expressions.constant( getExceptionMessage() ) ) )
-                )
-        );*/
 
         builder.add( Expressions.return_( null, transformContext ) );
 

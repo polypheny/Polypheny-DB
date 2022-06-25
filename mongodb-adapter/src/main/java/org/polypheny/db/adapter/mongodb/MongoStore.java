@@ -77,6 +77,7 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 @AdapterProperties(
@@ -453,7 +454,8 @@ public class MongoStore extends DataStore {
 
     private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns, CatalogPartitionPlacement partitionPlacement, String physicalIndexName ) {
         Document doc = new Document();
-        columns.forEach( name -> doc.append( name, 1 ) );
+
+        Pair.zip( catalogIndex.key.columnIds, columns ).forEach( p -> doc.append( getPhysicalColumnName( p.right, p.left ), 1 ) );
 
         IndexOptions options = new IndexOptions();
         options.unique( catalogIndex.unique );

@@ -64,8 +64,6 @@ public class EnumerableGraphTransformer extends GraphTransformer implements Enum
         BlockBuilder builder = new BlockBuilder();
 
         return buildInsert( implementor, pref, builder );
-
-        //throw new RuntimeException( "Operation is not supported for non-graph adapters." );
     }
 
 
@@ -76,7 +74,7 @@ public class EnumerableGraphTransformer extends GraphTransformer implements Enum
             inputs.add( implementor.visitChild( this, i, (EnumerableAlg) input, pref ) );
             i++;
         }
-        List<Expression> enumerables = inputs.stream().map( j -> attachLambdaEnumerable( builder, j.block ) ).collect( Collectors.toList() );
+        List<Expression> enumerables = inputs.stream().map( j -> attachLambdaEnumerable( j.block ) ).collect( Collectors.toList() );
 
         MethodCallExpression splitter = Expressions.call(
                 BuiltInMethod.SPLIT_GRAPH_MODIFY.method,
@@ -91,8 +89,8 @@ public class EnumerableGraphTransformer extends GraphTransformer implements Enum
     }
 
 
-    private Expression attachLambdaEnumerable( BlockBuilder builder, BlockStatement blockStatement ) {
-
+    private Expression attachLambdaEnumerable( BlockStatement blockStatement ) {
+        BlockBuilder builder = new BlockBuilder();
         Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), blockStatement );
 
         ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "enumerable" + System.nanoTime() ) );
@@ -101,8 +99,10 @@ public class EnumerableGraphTransformer extends GraphTransformer implements Enum
         FunctionExpression<Function<?>> expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
 
         builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );
+        builder.add( Expressions.return_( null, executor ) );
 
-        return exp;
+        //return exp;
+        return Expressions.lambda( builder.toBlock() );
     }
 
 

@@ -130,7 +130,7 @@ import org.polypheny.db.type.PolyType;
 public enum BuiltInMethod {
     BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
-    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", Enumerable.class, Enumerable.class, List.class, List.class ),
+    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", Function0.class, Enumerable.class, List.class, List.class ),
     TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
     TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
     TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),

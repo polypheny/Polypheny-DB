@@ -22,7 +22,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public class DocumentFilter extends SingleAlg implements DocumentAlg {
+public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
     public final RexNode condition;
 

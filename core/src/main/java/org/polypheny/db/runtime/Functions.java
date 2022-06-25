@@ -340,10 +340,10 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> enforceConstraint( Enumerable<Object[]> modify, Enumerable<Object[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+    public static Enumerable<?> enforceConstraint( Function0<Enumerable<Object>> modify, Enumerable<Object[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
         List<Object> results = new ArrayList<>();
         try {
-            for ( Object object : modify ) {
+            for ( Object object : modify.apply() ) {
                 results.add( object );
             }
         } catch ( Exception e ) {

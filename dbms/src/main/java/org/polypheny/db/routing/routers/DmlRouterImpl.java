@@ -822,8 +822,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     statement.getTransaction().getCatalogReader(),
                     buildDocumentDml( alg.getInput(), statement, queryInformation ),
                     alg.operation,
-                    null,
-                    null );
+                    alg.getKeys(),
+                    alg.getUpdates() );
         }
 
         return alg;

@@ -34,13 +34,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.bson.BsonDocument;
@@ -53,7 +53,6 @@ import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.adapter.mongodb.MongoEnumerator.IterWrapper;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify;
@@ -255,7 +254,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         if ( list.isEmpty() ) {
             list.add( new BsonDocument( "$match", new BsonDocument() ) );
         }
-        //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+        // list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
@@ -398,7 +397,6 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
                     arrayClass,
                     operations,
                     values,
-                    //BsonDocument.parse( filter ),
                     preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ),
                     logicalCols );
         }
@@ -436,15 +434,8 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
 
             try {
                 final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, xid, bucket );
-                //final long changes = tryDML( mongoEntity, xid, dml, mongoEntity.getMongoSchema().getStore().getDmlRetries() );
-                //doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, session, bucket );
 
-                return new AbstractEnumerable<>() {
-                    @Override
-                    public Enumerator<Object> enumerator() {
-                        return new IterWrapper( Collections.singletonList( (Object) changes ).iterator() );
-                    }
-                };
+                return Linq4j.asEnumerable( Collections.singletonList( changes ) );
             } catch ( MongoException e ) {
                 mongoEntity.getTransactionProvider().rollback( xid );
                 log.warn( "Failed" );
@@ -452,25 +443,6 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
                 log.warn( e.getMessage() );
                 throw new RuntimeException( e.getMessage(), e );
             }
-        }
-
-
-        private long tryDML( MongoEntity mongoEntity, PolyXid xid, Supplier<Long> dml, int retries ) {
-            final long changes;
-            try {
-                // while this should not happen, we still can handle it and return a corrected message back and rollback
-                changes = dml.get();
-            } catch ( MongoException e ) {
-                if ( e.getCode() == 112 && retries > 0 ) {
-                    // write exceptions can happen during DMLs, this is apparently normal and can be handled by manually retrying
-                    log.warn( "retrying: " + retries );
-                    return tryDML( mongoEntity, xid, dml, retries - 1 );
-                }
-                mongoEntity.getTransactionProvider().rollback( xid );
-                log.warn( e.getMessage() );
-                throw new RuntimeException( e.getMessage(), e );
-            }
-            return changes;
         }
 
 

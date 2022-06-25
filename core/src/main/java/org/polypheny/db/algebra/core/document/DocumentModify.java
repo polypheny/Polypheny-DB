@@ -73,7 +73,7 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
         if ( keys != null ) {
             compare += "$" + keys.hashCode() + "$" + updates.hashCode();
         }
-        return compare;
+        return compare + "$" + input.algCompareString();
     }
 
 

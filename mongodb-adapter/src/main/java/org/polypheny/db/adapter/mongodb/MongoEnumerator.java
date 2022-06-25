@@ -266,49 +266,5 @@ class MongoEnumerator implements Enumerator<Object> {
     }
 
 
-    public static class IterWrapper implements Enumerator<Object> {
-
-        private final Iterator<Object> iterator;
-        Object current;
-
-
-        public IterWrapper( Iterator<Object> iterator ) {
-            this.iterator = iterator;
-        }
-
-
-        @Override
-        public Object current() {
-            return current;
-        }
-
-
-        @Override
-        public boolean moveNext() {
-            if ( iterator.hasNext() ) {
-                current = iterator.next();
-                return true;
-            } else {
-                current = null;
-                return false;
-            }
-        }
-
-
-        @Override
-        public void reset() {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public void close() {
-            // do nothing
-            //throw new UnsupportedOperationException();
-        }
-
-    }
-
-
 }
 
