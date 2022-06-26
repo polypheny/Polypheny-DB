@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -58,17 +59,6 @@ import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 
 public interface NeoUtil {
-
-    static Object asString( Object o, AlgDataType type ) {
-        return asString( o, type.getPolyType(), getComponentTypeOrParent( type ) );
-    }
-
-    static Object asString( Object o, PolyType type, PolyType componentType ) {
-        if ( o == null ) {
-            return null;
-        }
-        return o.toString();
-    }
 
     static Function1<Value, Object> getTypeFunction( PolyType type, PolyType componentType ) {
         Function1<Value, Object> getter = getUnnullableTypeFunction( type, componentType );
@@ -94,12 +84,12 @@ public interface NeoUtil {
             case SMALLINT:
             case INTEGER:
             case DATE:
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return Value::asInt;
-            case BIGINT:
             case TIME:
             case TIME_WITH_LOCAL_TIME_ZONE:
+                return Value::asInt;
+            case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            case BIGINT:
                 return Value::asLong;
             case DECIMAL:
             case FLOAT:
@@ -333,16 +323,18 @@ public interface NeoUtil {
                 break;
             case JSON:
                 break;
+            case SYMBOL:
+                return literal.getValue().toString();
         }
         throw new UnsupportedOperationException( "Type is not supported by the Neo4j adapter." );
     }
 
-    static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName ) {
+    static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
         switch ( operatorName ) {
             case AND:
                 return o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " AND " ) );
             case DIVIDE:
-                return o -> String.format( "toFloat(%s) / %s", o.get( 0 ), o.get( 1 ) );
+                return handleDivide( operatorName, operands, returnType );
             case DIVIDE_INTEGER:
                 return o -> String.format( "%s / %s", o.get( 0 ), o.get( 1 ) );
             case EQUALS:
@@ -370,8 +362,9 @@ public interface NeoUtil {
             case OR:
                 return o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " OR " ) );
             case PLUS:
-            case DATETIME_PLUS:
                 return o -> String.format( "%s + %s", o.get( 0 ), o.get( 1 ) );
+            case DATETIME_PLUS:
+                return null;
             case IS_NOT_NULL:
                 return o -> String.format( "%s IS NOT NULL ", o.get( 0 ) );
             case IS_NULL:
@@ -399,17 +392,13 @@ public interface NeoUtil {
             case NOT_LIKE:
                 return o -> String.format( "NOT ( %s =~ '%s' )", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
             case LIKE:
-                return o -> String.format( "%s =~ '%s'", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+                return handleLike( operands );
             case POWER:
                 return o -> String.format( "%s^%s", o.get( 0 ), o.get( 1 ) );
             case SQRT:
                 return o -> String.format( "sqrt(%s)", o.get( 0 ) );
             case MOD:
                 return o -> o.get( 0 ) + " % " + o.get( 1 );
-            case FLOOR:
-                return o -> "floor(" + o.get( 0 ) + ")";
-            case CEIL:
-                return o -> "ceil(" + o.get( 0 ) + ")";
             case LOG10:
                 return o -> String.format( "log10(toFloat(%s))", o.get( 0 ) );
             case ABS:
@@ -478,6 +467,20 @@ public interface NeoUtil {
 
     }
 
+    static Function1<List<String>, String> handleDivide( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
+        if ( PolyType.APPROX_TYPES.contains( returnType.getPolyType() ) ) {
+            return o -> String.format( "toFloat(%s) / %s", o.get( 0 ), o.get( 1 ) );
+        }
+        return o -> String.format( "toInteger(toFloat(%s) / %s)", o.get( 0 ), o.get( 1 ) );
+    }
+
+    static Function1<List<String>, String> handleLike( List<RexNode> operands ) {
+        if ( operands.get( 1 ).isA( Kind.INPUT_REF ) ) {
+            return o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
+        }
+        return o -> String.format( "%s =~ '%s'", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+    }
+
     static String getAsRegex( String like ) {
         String adjusted = like.replace( "\\.", "." );
         //adjusted = adjusted.replace( ".", "_dot_" );
@@ -530,6 +533,8 @@ public interface NeoUtil {
                     return ((java.sql.Timestamp) value).toInstant().getEpochSecond();
                 }
                 return ((TimestampString) value).getMillisSinceEpoch();
+            /*case ARRAY:
+                return ((List<?>) value).stream().map( v -> NeoUtil.fixParameterValue( v, Pair.of( type.right, type.right ) ) ).collect( Collectors.toList());*/
         }
         return value;
     }
@@ -548,7 +553,7 @@ public interface NeoUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
-            if ( NeoUtil.getOpAsNeo( call.op.getOperatorName() ) == null ) {
+            if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type ) == null ) {
                 supports = false;
             }
             return super.visitCall( call );

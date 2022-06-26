@@ -364,7 +364,7 @@ public class ForeignKeyConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
                     connection.commit(); // todo remove when auto-commit works
-                    statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
+                    statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 3), (1, 1)" );
                     connection.commit(); // todo remove when auto-commit works
                     try {
                         statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );

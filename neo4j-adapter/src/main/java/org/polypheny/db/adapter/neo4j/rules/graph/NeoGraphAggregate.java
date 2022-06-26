@@ -82,7 +82,7 @@ public class NeoGraphAggregate extends GraphAggregate implements NeoGraphAlg {
                 if ( refs.isEmpty() ) {
                     refs.add( "*" );
                 }
-                finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.getAggregation().getOperatorName() ) ).apply( refs ) );
+                finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.getAggregation().getOperatorName(), List.of(), agg.type ) ).apply( refs ) );
             }
 
             implementor.add( with_( list_( finalRow.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() ) ) ) );

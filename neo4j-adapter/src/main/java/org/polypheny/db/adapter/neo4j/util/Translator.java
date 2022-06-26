@@ -156,7 +156,7 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String getFinalFunction( RexCall call, List<String> ops ) {
-        Function1<List<String>, String> getter = NeoUtil.getOpAsNeo( call.op.getOperatorName() );
+        Function1<List<String>, String> getter = NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type );
         assert getter != null : "Function is not supported by the Neo4j adapter.";
         if ( useBrackets ) {
             return "(" + getter.apply( ops ) + ")";
