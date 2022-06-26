@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.csv;
+package org.polypheny.db.adapter.excel;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,13 +29,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.pf4j.Extension;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.csv.CsvTable.Flavor;
+import org.polypheny.db.adapter.excel.ExcelTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -50,28 +50,23 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-@Extension
+@Slf4j
 @AdapterProperties(
-        name = "CSV",
-        description = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
+        name = "Excel",
+        description = "An adapter for querying Excel files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED)
 @AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 1)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class CsvSource extends DataSource {
 
-    private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
-
-    private URL csvDir;
-    private CsvSchema currentSchema;
+public class ExcelSource extends DataSource{
+    private URL excelDir;
+    private ExcelSchema currentSchema;
     private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
+    public ExcelSource( int storeId, String uniqueName, Map<String, String> settings, boolean dataReadOnly ) {
 
-
-    public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly  ) {
         super( storeId, uniqueName, settings, true );
 
         // Validate maxStringLength setting
@@ -80,35 +75,32 @@ public class CsvSource extends DataSource {
             throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
         }
 
-        setCsvDir( settings );
+        setExcelDir( settings );
         addInformationExportedColumns();
         enableInformationPage();
     }
-
-
-    private void setCsvDir( Map<String, String> settings ) {
+    private void setExcelDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
         if ( dir.startsWith( "classpath://" ) ) {
-            csvDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
+            excelDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
         } else {
             try {
-                csvDir = new File( dir ).toURI().toURL();
+                excelDir = new File( dir ).toURI().toURL();
             } catch ( MalformedURLException e ) {
                 throw new RuntimeException( e );
             }
         }
     }
 
-
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new CsvSchema( csvDir, Flavor.SCANNABLE );
+        currentSchema = new ExcelSchema( excelDir, Flavor.SCANNABLE );
     }
 
 
     @Override
     public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
+        return currentSchema.createExcelTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
     }
 
 
@@ -120,7 +112,40 @@ public class CsvSource extends DataSource {
 
     @Override
     public void truncate( Context context, CatalogTable table ) {
-        throw new RuntimeException( "CSV adapter does not support truncate" );
+        throw new RuntimeException( "Excel adapter does not support truncate" );
+    }
+
+
+    @Override
+    public boolean prepare( PolyXid xid ) {
+        log.debug( "Excel Store does not support prepare()." );
+        return true;
+    }
+
+
+    @Override
+    public void commit( PolyXid xid ) {
+        log.debug( "Excel Store does not support commit()." );
+    }
+
+
+    @Override
+    public void rollback( PolyXid xid ) {
+        log.debug( "Excel Store does not support rollback()." );
+    }
+
+
+    @Override
+    public void shutdown() {
+        removeInformationPage();
+    }
+
+
+    @Override
+    protected void reloadSettings( List<String> updatedSettings ) {
+        if ( updatedSettings.contains( "directory" ) ) {
+            setExcelDir( settings );
+        }
     }
 
 
@@ -131,7 +156,7 @@ public class CsvSource extends DataSource {
         }
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
-        if ( csvDir.getProtocol().equals( "jar" ) ) {
+        if ( excelDir.getProtocol().equals( "jar" ) ) {
             List<CatalogColumnPlacement> ccps = Catalog
                     .getInstance()
                     .getColumnPlacementsOnAdapter( getAdapterId() );
@@ -140,9 +165,9 @@ public class CsvSource extends DataSource {
                 fileNames.add( ccp.physicalSchemaName );
             }
         } else {
-            File[] files = Sources.of( csvDir )
+            File[] files = Sources.of( excelDir )
                     .file()
-                    .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) );
+                    .listFiles( ( d, name ) -> name.endsWith( ".xlsx" ) || name.endsWith( ".xlsx.gz" ) );
             fileNames = Arrays.stream( files )
                     .sequential()
                     .map( File::getName )
@@ -155,14 +180,14 @@ public class CsvSource extends DataSource {
                 physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
             }
             physicalTableName = physicalTableName
-                    .substring( 0, physicalTableName.length() - ".csv".length() )
+                    .substring( 0, physicalTableName.length() - ".xlsx".length() )
                     .trim()
                     .replaceAll( "[^a-z0-9_]+", "" );
 
             List<ExportedColumn> list = new ArrayList<>();
             int position = 1;
             try {
-                Source source = Sources.of( new URL( csvDir, fileName ) );
+                Source source = Sources.of( new URL( excelDir, fileName ) );
                 BufferedReader reader = new BufferedReader( source.reader() );
                 String firstLine = reader.readLine();
                 for ( String col : firstLine.split( "," ) ) {
@@ -236,41 +261,6 @@ public class CsvSource extends DataSource {
         }
         return exportedColumnCache;
     }
-
-
-    @Override
-    public boolean prepare( PolyXid xid ) {
-        log.debug( "CSV Store does not support prepare()." );
-        return true;
-    }
-
-
-    @Override
-    public void commit( PolyXid xid ) {
-        log.debug( "CSV Store does not support commit()." );
-    }
-
-
-    @Override
-    public void rollback( PolyXid xid ) {
-        log.debug( "CSV Store does not support rollback()." );
-    }
-
-
-    @Override
-    public void shutdown() {
-        removeInformationPage();
-    }
-
-
-    @Override
-    protected void reloadSettings( List<String> updatedSettings ) {
-        if ( updatedSettings.contains( "directory" ) ) {
-            setCsvDir( settings );
-        }
-    }
-
-
     private void addInformationExportedColumns() {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
             InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
@@ -292,5 +282,4 @@ public class CsvSource extends DataSource {
             informationElements.add( table );
         }
     }
-
 }
