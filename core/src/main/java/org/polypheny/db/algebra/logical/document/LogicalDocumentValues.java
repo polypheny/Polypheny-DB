@@ -83,8 +83,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
 
     public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> values ) {
         List<AlgDataTypeField> fields = new ArrayList<>();
-        fields.add( new AlgDataTypeFieldImpl( "_id_", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
-        fields.add( new AlgDataTypeFieldImpl( "_data_", 1, typeFactory.createPolyType( PolyType.JSON ) ) );//typeFactory.createMapType( typeFactory.createPolyType( PolyType.VARCHAR, 2024 ), typeFactory.createPolyType( PolyType.ANY ) ) ) );
+        fields.add( new AlgDataTypeFieldImpl( "d", 0, typeFactory.createPolyType( PolyType.DOCUMENT ) ) );//typeFactory.createMapType( typeFactory.createPolyType( PolyType.VARCHAR, 2024 ), typeFactory.createPolyType( PolyType.ANY ) ) ) );
         AlgDataType defaultRowType = new AlgRecordType( fields );
 
         return create( cluster, values, defaultRowType );

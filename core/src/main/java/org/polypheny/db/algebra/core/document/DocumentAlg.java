@@ -30,7 +30,6 @@ public interface DocumentAlg {
 
     enum DocType {
         SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, MODIFY
-
     }
 
 }

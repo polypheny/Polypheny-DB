@@ -64,6 +64,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -1264,7 +1265,7 @@ public class MongoRules {
 
 
         private void handlePreparedInsert( Implementor implementor, MongoProject input ) {
-            if ( !(input.getInput() instanceof MongoValues) && input.getInput().getRowType().getFieldList().size() == 1 ) {
+            if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getRowType().getFieldList().size() == 1 ) {
                 return;
             }
 
@@ -1272,7 +1273,14 @@ public class MongoRules {
             CatalogEntity catalogEntity = implementor.mongoEntity.getCatalogEntity();
             GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
             assert input.getRowType().getFieldCount() == this.getTable().getRowType().getFieldCount();
-            Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogEntity );
+            Map<Integer, String> physicalMapping = null;
+            if ( input.getInput() instanceof MongoValues ) {
+                physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogEntity );
+            } else if ( input.getInput() instanceof MongoDocuments ) {
+                physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), implementor.mongoEntity.getCatalogCollection() );
+            } else {
+                throw new RuntimeException( "Mapping for physical mongo fields not found" );
+            }
 
             implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
 
@@ -1305,6 +1313,13 @@ public class MongoRules {
                 pos++;
             }
             implementor.operations = Collections.singletonList( doc );
+        }
+
+
+        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogCollection catalogCollection ) {
+            Map<Integer, String> map = new HashMap<>();
+            map.put( 0, "d" );
+            return map;
         }
 
 
