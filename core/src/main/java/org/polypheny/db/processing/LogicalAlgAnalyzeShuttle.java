@@ -29,7 +29,25 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.graph.GraphAlg;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.graph.LogicalGraph;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalExchange;
@@ -45,9 +63,11 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -66,7 +86,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     protected final LinkedHashMap<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
     protected final HashMap<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
     @Getter
-    protected final List<String> tables = new ArrayList<>();
+    protected final List<String> entities = new ArrayList<>();
     private final Statement statement;
 
     @Getter
@@ -124,6 +144,132 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalAggregate aggregate ) {
         hashBasis.add( "LogicalAggregate#" + aggregate.getAggCallList() );
         return visitChild( aggregate, 0, aggregate.getInput() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphModify modify ) {
+        return super.visit( modify );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphScan scan ) {
+        hashBasis.add( "GraphScan#" + scan.getGraph().getId() );
+
+        return super.visit( scan );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphFilter filter ) {
+        hashBasis.add( "LogicalGraphFilter" );
+        super.visit( filter );
+        filter.accept( this.rexShuttle );
+
+        getPartitioningInfo( filter );
+
+        return filter;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphMatch match ) {
+        hashBasis.add( "LogicalGraphMatch" );
+        match.accept( this.rexShuttle );
+        return visitChildren( match );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphProject project ) {
+        hashBasis.add( "LogicalGraphProject#" + project.getProjects().size() );
+        super.visit( project );
+        project.accept( this.rexShuttle );
+        return project;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphAggregate aggregate ) {
+        hashBasis.add( "LogicalGraphAggregate#" + aggregate.getAggCallList() );
+        return visitChild( aggregate, 0, aggregate.getInput() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphSort sort ) {
+        hashBasis.add( "LogicalGraphSort" );
+        return visitChild( sort, 0, sort.getInput() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphUnwind unwind ) {
+        hashBasis.add( "LogicalGraphUnion#" + unwind.index + "#" + unwind.alias );
+        return visitChild( unwind, 0, unwind.getInput() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphTransformer transformer ) {
+        hashBasis.add( "LogicalGraphTransformer" );
+        return visitChildren( transformer );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentModify modify ) {
+        return super.visit( modify );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentAggregate aggregate ) {
+        hashBasis.add( "LogicalDocumentAggregate#" + aggregate.aggCalls );
+        return visitChild( aggregate, 0, aggregate.getInput() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentFilter filter ) {
+        hashBasis.add( "LogicalDocumentFilter" );
+        super.visit( filter );
+        filter.accept( this.rexShuttle );
+
+        getPartitioningInfo( filter );
+
+        return filter;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentProject project ) {
+        hashBasis.add( "LogicalDocumentProject#" + project.projects.size() );
+        super.visit( project );
+        project.accept( this.rexShuttle );
+        return project;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentScan scan ) {
+        hashBasis.add( "LogicalDocumentScan#" + scan.getDocument().getTable().getTableId() );
+        return super.visit( scan );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentSort sort ) {
+        hashBasis.add( "LogicalDocumentSort" );
+        return visitChildren( sort );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentTransformer transformer ) {
+        hashBasis.add( "LogicalDocumentTransformer#" + transformer.inTrait.getDataModel().name() + "#" + transformer.outTrait.getDataModel().name() );
+        return visitChildren( transformer );
     }
 
 
@@ -247,7 +393,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getAvailableColumns( AlgNode scan ) {
-        this.tables.addAll( scan.getTable().getQualifiedName() );
+        this.entities.addAll( scan.getTable().getQualifiedName() );
         final Table table = scan.getTable().getTable();
         LogicalTable logicalTable = (table instanceof LogicalTable) ? (LogicalTable) table : null;
         if ( logicalTable != null ) {
@@ -273,7 +419,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         if ( !(logicalTable instanceof LogicalTable) ) {
             return;
         }
-        CatalogEntity catalogEntity = Catalog.getInstance().getTable( ((LogicalTable) logicalTable).getTableId() );
+        CatalogEntity catalogEntity = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
         // Only if table is partitioned
         if ( catalogEntity.partitionProperty.isPartitioned ) {
@@ -296,6 +442,57 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
                 }
             }
         }
+    }
+
+
+    private void getPartitioningInfo( LogicalDocumentFilter filter ) {
+        AlgOptTableImpl table = (AlgOptTableImpl) filter.getInput().getTable();
+        if ( table == null ) {
+            return;
+        }
+
+        final Table logicalTable = table.getTable();
+        if ( !(logicalTable instanceof LogicalTable) ) {
+            return;
+        }
+        CatalogEntity catalogEntity = Catalog.getInstance().getTable( logicalTable.getTableId() );
+
+        // Only if table is partitioned
+        if ( catalogEntity.partitionProperty.isPartitioned ) {
+            WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
+                    statement,
+                    catalogEntity.fieldIds.indexOf( catalogEntity.partitionProperty.partitionColumnId ) );
+            filter.accept( whereClauseVisitor );
+
+            int scanId = filter.getInput().getId();
+
+            if ( !partitionValueFilterPerScan.containsKey( scanId ) ) {
+                partitionValueFilterPerScan.put( scanId, new HashSet<>() );
+            }
+
+            if ( whereClauseVisitor.valueIdentified ) {
+                if ( !whereClauseVisitor.getValues().isEmpty() && !whereClauseVisitor.isUnsupportedFilter() ) {
+                    partitionValueFilterPerScan.get( scanId ).addAll( whereClauseVisitor.getValues().stream()
+                            .map( Object::toString )
+                            .collect( Collectors.toSet() ) );
+                }
+            }
+        }
+    }
+
+
+    private void getPartitioningInfo( LogicalGraphFilter filter ) {
+        Graph graph = ((GraphAlg) filter.getInput()).getGraph();
+        if ( graph == null ) {
+            return;
+        }
+
+        if ( !(graph instanceof LogicalGraph) ) {
+            return;
+        }
+        CatalogGraphDatabase catalogEntity = Catalog.getInstance().getGraph( graph.getId() );
+
+        // Only if table is partitioned
     }
 
 }

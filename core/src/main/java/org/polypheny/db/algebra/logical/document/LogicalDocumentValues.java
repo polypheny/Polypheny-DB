@@ -24,6 +24,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -142,6 +143,17 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     }
 
 
+    public static LogicalDocumentValues createOneRow( AlgOptCluster cluster ) {
+        final AlgDataType rowType =
+                cluster.getTypeFactory()
+                        .builder()
+                        .add( "ZERO", null, PolyType.INTEGER )
+                        .nullable( false )
+                        .build();
+        return new LogicalDocumentValues( cluster, rowType, cluster.traitSet(), ImmutableList.<BsonValue>builder().build() );
+    }
+
+
     @Override
     public NamespaceType getModel() {
         return NamespaceType.DOCUMENT;
@@ -154,5 +166,12 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
         assert inputs.isEmpty();
         return new LogicalDocumentValues( getCluster(), rowType, traitSet, documentTuples );
     }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
+    }
+
 
 }

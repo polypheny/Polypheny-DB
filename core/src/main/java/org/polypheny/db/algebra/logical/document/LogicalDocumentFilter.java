@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -33,7 +34,7 @@ public class LogicalDocumentFilter extends DocumentFilter {
      * @param input Input relational expression
      * @param condition
      */
-    protected LogicalDocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    public LogicalDocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );
     }
 
@@ -45,7 +46,19 @@ public class LogicalDocumentFilter extends DocumentFilter {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentFilter( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), condition );
+        return copy( traitSet, inputs.get( 0 ), condition );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
+    }
+
+
+    @Override
+    protected AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+        return new LogicalDocumentFilter( input.getCluster(), traitSet, input, condition );
     }
 
 }

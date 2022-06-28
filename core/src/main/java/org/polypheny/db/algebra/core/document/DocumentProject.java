@@ -17,12 +17,14 @@
 package org.polypheny.db.algebra.core.document;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 
 public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
@@ -52,6 +54,17 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
     @Override
     public DocType getDocType() {
         return DocType.PROJECT;
+    }
+
+
+    @Override
+    public AlgNode accept( RexShuttle shuttle ) {
+        List<RexNode> exp = this.projects.stream().map( p -> (RexNode) p ).collect( Collectors.toList() );
+        List<RexNode> exps = shuttle.apply( exp );
+        if ( exp == exps ) {
+            return this;
+        }
+        return copy( traitSet, List.of( input ) );
     }
 
 }

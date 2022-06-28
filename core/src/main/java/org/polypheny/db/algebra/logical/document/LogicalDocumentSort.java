@@ -20,6 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -51,6 +52,12 @@ public class LogicalDocumentSort extends DocumentSort implements DocumentAlg {
     @Override
     public DocType getDocType() {
         return DocType.SORT;
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

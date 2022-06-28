@@ -22,6 +22,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 
 public abstract class GraphFilter extends SingleAlg implements GraphAlg {
 
@@ -53,5 +54,18 @@ public abstract class GraphFilter extends SingleAlg implements GraphAlg {
     public NodeType getNodeType() {
         return NodeType.FILTER;
     }
+
+
+    @Override
+    public AlgNode accept( RexShuttle shuttle ) {
+        RexNode condition = shuttle.apply( this.condition );
+        if ( this.condition == condition ) {
+            return this;
+        }
+        return copy( traitSet, getInput(), condition );
+    }
+
+
+    protected abstract AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition );
 
 }

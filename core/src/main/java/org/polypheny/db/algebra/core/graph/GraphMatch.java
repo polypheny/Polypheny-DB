@@ -18,9 +18,11 @@ package org.polypheny.db.algebra.core.graph;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -29,6 +31,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 
 public abstract class GraphMatch extends SingleAlg implements GraphAlg {
 
@@ -77,6 +80,17 @@ public abstract class GraphMatch extends SingleAlg implements GraphAlg {
     @Override
     public NodeType getNodeType() {
         return NodeType.MATCH;
+    }
+
+
+    @Override
+    public AlgNode accept( RexShuttle shuttle ) {
+        List<RexNode> exp = this.matches.stream().map( m -> (RexNode) m ).collect( Collectors.toList() );
+        List<RexNode> exps = shuttle.apply( exp );
+        if ( exp == exps ) {
+            return this;
+        }
+        return new LogicalGraphMatch( getCluster(), traitSet, input, exps.stream().map( e -> (RexCall) e ).collect( Collectors.toList() ), names );
     }
 
 }

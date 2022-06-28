@@ -253,7 +253,7 @@ public class EntityAccessMap {
 
             Mode newAccess;
 
-            // FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
+            //  FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
             //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
             //  {@link AlgNode} interface.
             if ( p instanceof Modify ) {

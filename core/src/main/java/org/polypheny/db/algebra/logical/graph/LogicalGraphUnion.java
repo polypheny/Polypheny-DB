@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.graph;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -33,6 +34,12 @@ public class LogicalGraphUnion extends Union {
     @Override
     public SetOp copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         return new LogicalGraphUnion( inputs.get( 0 ).getCluster(), traitSet, inputs, all );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

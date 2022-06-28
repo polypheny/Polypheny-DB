@@ -41,6 +41,12 @@ public class LogicalGraphFilter extends GraphFilter {
 
 
     @Override
+    protected AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+        return new LogicalGraphFilter( getCluster(), traitSet, input, condition );
+    }
+
+
+    @Override
     protected AlgDataType deriveRowType() {
         return input.getRowType();
     }
@@ -48,7 +54,7 @@ public class LogicalGraphFilter extends GraphFilter {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphFilter( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getCondition() );
+        return copy( traitSet, inputs.get( 0 ), getCondition() );
     }
 
 
@@ -56,5 +62,6 @@ public class LogicalGraphFilter extends GraphFilter {
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
     }
+
 
 }

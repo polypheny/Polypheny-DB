@@ -25,12 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
+import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
@@ -88,6 +95,30 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
+    public AlgNode visit( LogicalGraphFilter oFilter ) {
+        LogicalGraphFilter filter = (LogicalGraphFilter) super.visit( oFilter );
+        RexNode condition = filter.getCondition();
+        return new LogicalGraphFilter(
+                filter.getCluster(),
+                filter.getTraitSet(),
+                filter.getInput(),
+                condition.accept( this ) );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentFilter oFilter ) {
+        LogicalDocumentFilter filter = (LogicalDocumentFilter) super.visit( oFilter );
+        RexNode condition = filter.condition;
+        return new LogicalDocumentFilter(
+                filter.getCluster(),
+                filter.getTraitSet(),
+                filter.getInput(),
+                condition.accept( this ) );
+    }
+
+
+    @Override
     public AlgNode visit( LogicalProject oProject ) {
         LogicalProject project = (LogicalProject) super.visit( oProject );
         List<RexNode> newProjects = new ArrayList<>();
@@ -95,6 +126,38 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             newProjects.add( node.accept( this ) );
         }
         return new LogicalProject(
+                project.getCluster(),
+                project.getTraitSet(),
+                project.getInput(),
+                newProjects,
+                project.getRowType() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalGraphProject oProject ) {
+        LogicalGraphProject project = (LogicalGraphProject) super.visit( oProject );
+        List<RexNode> newProjects = new ArrayList<>();
+        for ( RexNode node : oProject.getProjects() ) {
+            newProjects.add( node.accept( this ) );
+        }
+        return new LogicalGraphProject(
+                project.getCluster(),
+                project.getTraitSet(),
+                project.getInput(),
+                newProjects,
+                project.getNames() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentProject oProject ) {
+        LogicalDocumentProject project = (LogicalDocumentProject) super.visit( oProject );
+        List<RexNode> newProjects = new ArrayList<>();
+        for ( RexNode node : oProject.projects ) {
+            newProjects.add( node.accept( this ) );
+        }
+        return new LogicalDocumentProject(
                 project.getCluster(),
                 project.getTraitSet(),
                 project.getInput(),
@@ -218,6 +281,66 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 newSourceExpression,
                 modify.isFlattened() )
                 .isStreamed( modify.isStreamed() );
+
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentModify initial ) {
+        LogicalDocumentModify modify = (LogicalDocumentModify) super.visit( initial );
+        List<RexNode> newSourceExpression = null;
+        if ( modify.getUpdates() != null ) {
+            newSourceExpression = new ArrayList<>();
+            for ( RexNode node : modify.getUpdates() ) {
+                newSourceExpression.add( node.accept( this ) );
+            }
+        }
+        AlgNode input = modify.getInput();
+        if ( input instanceof LogicalDocumentValues ) {
+            List<RexNode> projects = new ArrayList<>();
+            boolean firstRow = true;
+            HashMap<Integer, Integer> idxMapping = new HashMap<>();
+            this.batchSize = ((LogicalDocumentValues) input).documentTuples.size();
+            for ( BsonValue node : ((LogicalDocumentValues) input).documentTuples ) {
+                int i = 0;
+                int idx;
+
+                if ( !idxMapping.containsKey( i ) ) {
+                    idx = index.getAndIncrement();
+                    idxMapping.put( i, idx );
+                } else {
+                    idx = idxMapping.get( i );
+                }
+
+                AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                if ( firstRow ) {
+                    projects.add( new RexDynamicParam( type, idx ) );
+                }
+                if ( !values.containsKey( idx ) ) {
+                    types.add( type );
+                    values.put( idx, new ArrayList<>( ((LogicalDocumentValues) input).documentTuples.size() ) );
+                }
+                values.get( idx ).add( new ParameterValue( idx, type, node ) );
+
+                firstRow = false;
+            }
+            LogicalDocumentValues logicalValues = LogicalDocumentValues.createOneRow( input.getCluster() );
+            input = new LogicalDocumentProject(
+                    input.getCluster(),
+                    input.getTraitSet(),
+                    logicalValues,
+                    projects,
+                    input.getRowType()
+            );
+        }
+        return new LogicalDocumentModify(
+                modify.getTraitSet(),
+                modify.getCollection(),
+                modify.getCatalogReader(),
+                input,
+                modify.operation,
+                modify.getKeys(),
+                newSourceExpression );
 
     }
 

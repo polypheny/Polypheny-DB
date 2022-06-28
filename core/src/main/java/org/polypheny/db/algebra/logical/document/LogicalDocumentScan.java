@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
@@ -50,6 +51,12 @@ public class LogicalDocumentScan extends DocumentScan implements RelationalTrans
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities, CatalogReader catalogReader ) {
         return List.of( AlgOptRule.convert( LogicalScan.create( getCluster(), entities.get( 0 ) ), ModelTrait.RELATIONAL ) );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

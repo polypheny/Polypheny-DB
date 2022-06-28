@@ -47,6 +47,12 @@ public class NeoGraphFilter extends GraphFilter implements NeoGraphAlg {
 
 
     @Override
+    protected AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+        return new NeoGraphFilter( getCluster(), traitSet, input, condition );
+    }
+
+
+    @Override
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
         Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );

@@ -21,6 +21,14 @@ import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
@@ -28,6 +36,7 @@ import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
 import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
@@ -99,6 +108,24 @@ public interface AlgShuttle {
     AlgNode visit( LogicalGraphSort sort );
 
     AlgNode visit( LogicalGraphUnwind unwind );
+
+    AlgNode visit( LogicalGraphTransformer transformer );
+
+    AlgNode visit( LogicalDocumentModify modify );
+
+    AlgNode visit( LogicalDocumentAggregate aggregate );
+
+    AlgNode visit( LogicalDocumentFilter filter );
+
+    AlgNode visit( LogicalDocumentProject project );
+
+    AlgNode visit( LogicalDocumentScan scan );
+
+    AlgNode visit( LogicalDocumentSort sort );
+
+    AlgNode visit( LogicalDocumentTransformer transformer );
+
+    AlgNode visit( LogicalDocumentValues values );
 
     AlgNode visit( LogicalConstraintEnforcer constraintEnforcer );
 

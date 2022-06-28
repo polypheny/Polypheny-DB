@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -78,6 +79,12 @@ public class LogicalTransformer extends Transformer {
             i++;
         }
         return writer;
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

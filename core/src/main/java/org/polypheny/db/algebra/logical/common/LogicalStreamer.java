@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.enumerable.EnumerableTableModify;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
@@ -267,6 +268,12 @@ public class LogicalStreamer extends Streamer {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ) );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

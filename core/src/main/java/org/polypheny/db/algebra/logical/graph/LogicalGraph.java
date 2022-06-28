@@ -133,4 +133,5 @@ public class LogicalGraph implements RelationalTransformable, Schema, Graph, Tra
         throw new RuntimeException( "toAlg() is not implemented for Logical Graphs!" );
     }
 
+
 }

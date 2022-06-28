@@ -51,4 +51,5 @@ public class LogicalGraphMatch extends GraphMatch {
         return shuttle.visit( this );
     }
 
+
 }

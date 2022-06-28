@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -41,7 +42,7 @@ public class LogicalDocumentProject extends DocumentProject {
      * @param projects
      * @param rowType
      */
-    protected LogicalDocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    public LogicalDocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input, new ArrayList<>( projects ), rowType );
     }
 
@@ -59,5 +60,10 @@ public class LogicalDocumentProject extends DocumentProject {
         return new LogicalDocumentProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), projects, rowType );
     }
 
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
+    }
 
 }

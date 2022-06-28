@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentTransformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -41,6 +42,12 @@ public class LogicalDocumentTransformer extends DocumentTransformer {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalDocumentTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, rowType );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

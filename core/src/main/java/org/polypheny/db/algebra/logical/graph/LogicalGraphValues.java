@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.graph.GraphValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -218,6 +219,12 @@ public class LogicalGraphValues extends GraphValues implements RelationalTransfo
 
     public boolean isEmptyGraphValues() {
         return edges.isEmpty() && nodes.isEmpty();
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }

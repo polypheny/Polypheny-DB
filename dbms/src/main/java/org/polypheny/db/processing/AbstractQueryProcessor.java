@@ -1285,7 +1285,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 analyzeRelShuttle.availableColumns,
                 analyzeRelShuttle.availableColumnsWithTable,
                 analyzeRelShuttle.getUsedColumns(),
-                analyzeRelShuttle.getTables() );
+                analyzeRelShuttle.getEntities() );
         this.prepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery, queryInformation );
 
         return queryInformation;

@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
@@ -69,6 +70,12 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalDocumentAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), indicator, groupSet, groupSets, aggCalls );
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }
