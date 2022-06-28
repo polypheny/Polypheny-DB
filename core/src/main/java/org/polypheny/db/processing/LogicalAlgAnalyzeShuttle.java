@@ -254,7 +254,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
-        hashBasis.add( "LogicalDocumentScan#" + scan.getDocument().getTable().getTableId() );
+        hashBasis.add( "LogicalDocumentScan#" + scan.getCollection().getTable().getTableId() );
         return super.visit( scan );
     }
 

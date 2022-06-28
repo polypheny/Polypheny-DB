@@ -23,7 +23,7 @@ public interface DocumentAlg {
 
     DocType getDocType();
 
-    default AlgOptTable getDocument() {
+    default AlgOptTable getCollection() {
         assert this instanceof AlgNode;
         return ((AlgNode) this).getTable();
     }

@@ -243,10 +243,10 @@ public class EntityAccessMap {
             AlgOptTable table = p.getTable();
             if ( table == null ) {
                 if ( p instanceof GraphAlg ) {
-                    attachGraph( (GraphAlg) p );
+                    attachGraph( (AlgNode & GraphAlg) p );
                 }
                 if ( p instanceof DocumentAlg ) {
-                    attachDocument( (DocumentAlg) p );
+                    attachDocument( (AlgNode & DocumentAlg) p );
                 }
                 return;
             }
@@ -287,8 +287,8 @@ public class EntityAccessMap {
         }
 
 
-        private void attachDocument( DocumentAlg p ) {
-            if ( p.getDocument() == null ) {
+        private <T extends AlgNode & DocumentAlg> void attachDocument( T p ) {
+            if ( p.getCollection() == null ) {
                 return;
             }
 
@@ -299,7 +299,7 @@ public class EntityAccessMap {
                 newAccess = Mode.READ_ACCESS;
             }
             // as documents are using the same id space as tables this will work
-            EntityIdentifier key = new EntityIdentifier( p.getDocument().getTable().getTableId(), 0, NamespaceLevel.ENTITY_LEVEL );
+            EntityIdentifier key = new EntityIdentifier( p.getCollection().getTable().getTableId(), 0, NamespaceLevel.ENTITY_LEVEL );
             accessMap.put( key, newAccess );
         }
 

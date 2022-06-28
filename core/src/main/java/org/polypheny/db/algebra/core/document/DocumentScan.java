@@ -29,7 +29,7 @@ import org.polypheny.db.type.PolyType;
 public abstract class DocumentScan extends AbstractAlgNode implements DocumentAlg {
 
     @Getter
-    private final AlgOptTable document;
+    private final AlgOptTable collection;
 
 
     /**
@@ -38,16 +38,16 @@ public abstract class DocumentScan extends AbstractAlgNode implements DocumentAl
      * @param cluster
      * @param traitSet
      */
-    public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable document ) {
+    public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable collection ) {
         super( cluster, traitSet );
-        this.document = document;
+        this.collection = collection;
         this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );//new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + document.getTable().getTableId() + "$";
+        return "$" + getClass().getSimpleName() + "$" + collection.getTable().getTableId() + "$";
     }
 
 

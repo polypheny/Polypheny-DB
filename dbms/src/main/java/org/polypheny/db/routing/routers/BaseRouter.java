@@ -374,15 +374,15 @@ public abstract class BaseRouter {
         Catalog catalog = Catalog.getInstance();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
-        if ( alg.getDocument().getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
+        if ( alg.getCollection().getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
             return handleTransformerDocScan( alg, statement, builder, queryInformation );
         }
 
-        CatalogCollection collection = catalog.getCollection( alg.getDocument().getTable().getTableId() );
+        CatalogCollection collection = catalog.getCollection( alg.getCollection().getTable().getTableId() );
 
         for ( Integer adapterId : collection.placements ) {
             CatalogAdapter adapter = catalog.getAdapter( adapterId );
-            NamespaceType sourceModel = alg.getDocument().getTable().getSchemaType();
+            NamespaceType sourceModel = alg.getCollection().getTable().getSchemaType();
 
             if ( !adapter.getSupportedNamespaces().contains( sourceModel ) ) {
                 // document on relational
@@ -401,7 +401,7 @@ public abstract class BaseRouter {
 
 
     private RoutedAlgBuilder handleTransformerDocScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation ) {
-        AlgNode scan = builder.scan( alg.getDocument() ).build();
+        AlgNode scan = builder.scan( alg.getCollection() ).build();
 
         List<RoutedAlgBuilder> scans = ((AbstractDqlRouter) RoutingManager.getInstance().getRouters().get( 0 )).buildDql( scan, List.of( builder ), statement, alg.getCluster(), queryInformation );
         builder.push( scans.get( 0 ).build() );
@@ -413,9 +413,9 @@ public abstract class BaseRouter {
 
     @NotNull
     private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan node, Statement statement, RoutedAlgBuilder builder ) {
-        List<CatalogColumn> columns = Catalog.getInstance().getColumns( node.getDocument().getTable().getTableId() );
+        List<CatalogColumn> columns = Catalog.getInstance().getColumns( node.getCollection().getTable().getTableId() );
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
-        builder.scan( getSubstitutionTable( statement, node.getDocument().getTable().getTableId(), columns.get( 0 ).id ) );
+        builder.scan( getSubstitutionTable( statement, node.getCollection().getTable().getTableId(), columns.get( 0 ).id ) );
         builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType() ) );
         return builder;
