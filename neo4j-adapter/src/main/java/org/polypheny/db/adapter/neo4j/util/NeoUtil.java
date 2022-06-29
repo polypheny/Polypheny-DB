@@ -134,7 +134,7 @@ public interface NeoUtil {
             case MAP:
             case DOCUMENT:
             case JSON:
-                return Value::asMap;
+                return Value::asString;
             case GRAPH:
                 return null;
             case NODE:

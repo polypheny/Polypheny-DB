@@ -267,13 +267,14 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    private Map<String, String> getToPhysicalMapping( @Nullable NeoProject project ) {
+    private Map<String, String> getToPhysicalMapping( @Nullable AlgNode node ) {
         Map<String, String> mapping = new HashMap<>();
         for ( AlgDataTypeField field : table.getRowType().getFieldList() ) {
             mapping.put( field.getName(), entity.physicalEntityName + "." + field.getPhysicalName() );
         }
 
-        if ( project != null ) {
+        if ( node instanceof NeoProject ) {
+            NeoProject project = (NeoProject) node;
             for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
                 if ( !mapping.containsKey( field.getName() ) ) {
                     Translator translator = new Translator( project.getRowType(), project.getRowType(), new HashMap<>(), this, null, true );
@@ -292,9 +293,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addUpdate( NeoModify neoModify ) {
-        NeoProject project = (NeoProject) last;
-
-        Map<String, String> mapping = getToPhysicalMapping( project );
+        Map<String, String> mapping = getToPhysicalMapping( last );
 
         List<NeoStatement> nodes = new ArrayList<>();
         int i = 0;

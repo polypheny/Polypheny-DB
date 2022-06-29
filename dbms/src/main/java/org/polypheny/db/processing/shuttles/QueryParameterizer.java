@@ -102,7 +102,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 filter.getCluster(),
                 filter.getTraitSet(),
                 filter.getInput(),
-                condition.accept( this ) );
+                condition );
     }
 
 
@@ -137,15 +137,15 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Override
     public AlgNode visit( LogicalGraphProject oProject ) {
         LogicalGraphProject project = (LogicalGraphProject) super.visit( oProject );
-        List<RexNode> newProjects = new ArrayList<>();
+        /*List<RexNode> newProjects = new ArrayList<>();
         for ( RexNode node : oProject.getProjects() ) {
             newProjects.add( node.accept( this ) );
-        }
+        }*/ //todo support parameterization for graph
         return new LogicalGraphProject(
                 project.getCluster(),
                 project.getTraitSet(),
                 project.getInput(),
-                newProjects,
+                project.getProjects(),
                 project.getNames() );
     }
 
