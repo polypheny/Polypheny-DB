@@ -56,7 +56,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
@@ -551,9 +550,9 @@ public class AlgFactories {
         public AlgNode createScan( AlgOptCluster cluster, AlgOptTable table ) {
 
             // Check if RelOptTable contains a View, in this case a LogicalViewScan needs to be created
-            if ( (((AlgOptTableImpl) table).getTable()) instanceof LogicalTable ) {
+            if ( (table.getTable()) instanceof LogicalTable ) {
                 Catalog catalog = Catalog.getInstance();
-                long idLogical = ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId();
+                long idLogical = table.getTable().getTableId();
                 CatalogEntity catalogEntity = catalog.getTable( idLogical );
                 if ( catalogEntity.entityType == EntityType.VIEW ) {
                     return LogicalViewScan.create( cluster, table );

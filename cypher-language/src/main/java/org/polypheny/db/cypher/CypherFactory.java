@@ -71,6 +71,7 @@ import org.polypheny.db.cypher.clause.CypherUseClause;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
+import org.polypheny.db.cypher.ddl.CypherAddPlacement;
 import org.polypheny.db.cypher.ddl.CypherAlterUser;
 import org.polypheny.db.cypher.ddl.CypherCreateIndex;
 import org.polypheny.db.cypher.ddl.CypherCreateIndex.IndexType;
@@ -553,6 +554,10 @@ public interface CypherFactory {
 
     static CypherUseClause createUse( ParserPos pos, CypherExpression expression ) {
         return new CypherUseClause( pos, expression );
+    }
+
+    static CypherAddPlacement addPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> either ) {
+        return new CypherAddPlacement( pos, either );
     }
 
     static CypherAdminCommand dropRole( ParserPos pos, CypherSimpleEither<String, CypherParameter> roleName, boolean ifExists ) {

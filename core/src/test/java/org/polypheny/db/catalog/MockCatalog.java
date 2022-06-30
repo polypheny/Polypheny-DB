@@ -192,7 +192,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void addGraphLogistics( long id, List<DataStore> stores ) throws GenericCatalogException {
+    public void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 
@@ -534,7 +534,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addDocumentLogistics( long schemaId, String name, List<DataStore> stores ) throws GenericCatalogException {
+    public long addDocumentLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 

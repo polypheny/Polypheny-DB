@@ -1871,9 +1871,17 @@ public class DdlManagerImpl extends DdlManager {
         // add general graph
         long graphId = catalog.addGraphDatabase( databaseId, graphName, stores, modifiable, ifNotExists, replace );
 
+        addGraphDatabasePlacement( graphId, stores, false, statement );
+
+        return graphId;
+    }
+
+
+    @Override
+    public long addGraphDatabasePlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement ) {
         try {
-            catalog.addGraphLogistics( graphId, stores );
-        } catch ( GenericCatalogException e ) {
+            catalog.addGraphLogistics( graphId, stores, onlyPlacement );
+        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
             throw new RuntimeException();
         }
 
@@ -1889,7 +1897,6 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         return graphId;
-
     }
 
 
@@ -2173,7 +2180,7 @@ public class DdlManagerImpl extends DdlManager {
 
         long collectionId;
         try {
-            collectionId = catalog.addDocumentLogistics( schemaId, name, stores );
+            collectionId = catalog.addDocumentLogistics( schemaId, name, stores, false );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
@@ -2187,8 +2194,6 @@ public class DdlManagerImpl extends DdlManager {
                 true );
 
         // Initially create DataPlacement containers on every store the table should be placed.
-        //stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), collectionId ) );
-
         CatalogCollection catalogCollection = catalog.getCollection( collectionId );
 
         // Trigger rebuild of schema; triggers schema creation on adapters
@@ -2205,6 +2210,34 @@ public class DdlManagerImpl extends DdlManager {
             store.createCollection( statement.getPrepareContext(), catalogCollection, store.getAdapterId() );
         }
 
+    }
+
+
+    @Override
+    public void addCollectionPlacement( long namespaceId, String name, List<DataStore> stores, Statement statement ) {
+        long collectionId;
+        try {
+            collectionId = catalog.addDocumentLogistics( namespaceId, name, stores, true );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
+
+        // Initially create DataPlacement containers on every store the table should be placed.
+        CatalogCollection catalogCollection = catalog.getCollection( collectionId );
+
+        // Trigger rebuild of schema; triggers schema creation on adapters
+        PolySchemaBuilder.getInstance().getCurrent();
+
+        for ( DataStore store : stores ) {
+            long placementId = catalog.addDocumentPlacement(
+                    store.getAdapterId(),
+                    catalogCollection.id,
+                    PlacementType.AUTOMATIC );
+
+            afterDocumentLogistics( store, collectionId );
+
+            store.createCollection( statement.getPrepareContext(), catalogCollection, store.getAdapterId() );
+        }
     }
 
 

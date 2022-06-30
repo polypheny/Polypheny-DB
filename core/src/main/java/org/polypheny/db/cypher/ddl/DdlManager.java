@@ -473,6 +473,8 @@ public abstract class DdlManager {
 
     public abstract void createCollection( long schemaId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException;
 
+    public abstract void addCollectionPlacement( long namespaceId, String name, List<DataStore> stores, Statement statement );
+
     /**
      * Add new partitions for the column
      *
@@ -570,6 +572,9 @@ public abstract class DdlManager {
 
 
     public abstract void replaceGraphAlias( long graphId, String oldAlias, String alias );
+
+
+    public abstract long addGraphDatabasePlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
 
 
     /**

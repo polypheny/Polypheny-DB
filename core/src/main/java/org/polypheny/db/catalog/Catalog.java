@@ -316,7 +316,7 @@ public abstract class Catalog {
 
     public abstract long addGraphDatabase( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
 
-    public abstract void addGraphLogistics( long id, List<DataStore> stores ) throws GenericCatalogException;
+    public abstract void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException;
 
     public abstract void deleteGraph( long id );
 
@@ -1658,7 +1658,7 @@ public abstract class Catalog {
 
     public abstract CatalogDocumentMapping getDocumentMapping( long id );
 
-    public abstract long addDocumentLogistics( long schemaId, String name, List<DataStore> stores ) throws GenericCatalogException;
+    public abstract long addDocumentLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException;
 
     public abstract List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId );
 

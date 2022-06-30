@@ -300,6 +300,9 @@ public abstract class BaseRouter {
 
         Catalog catalog = Catalog.getInstance();
         CatalogGraphDatabase catalogGraph = catalog.getGraph( alg.getGraph().getId() );
+
+        List<AlgNode> scans = new ArrayList<>();
+
         for ( int adapterId : catalogGraph.placements ) {
             CatalogAdapter adapter = catalog.getAdapter( adapterId );
             CatalogGraphPlacement graphPlacement = catalog.getGraphPlacement( catalogGraph.id, adapterId );
@@ -309,15 +312,19 @@ public abstract class BaseRouter {
 
             if ( !(graph instanceof TranslatableGraph) ) {
                 // needs substitution later on
-                return getRelationalScan( alg, statement );
+                scans.add( getRelationalScan( alg, statement ) );
+                continue;
             }
 
+            // a native placement was used, we go with that
             return new LogicalGraphScan( alg.getCluster(), alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
-
-
         }
-        // substituted on optimization
-        return alg;
+        if ( scans.size() < 1 ) {
+            throw new RuntimeException( "Error while routing graph query." );
+        }
+
+        // rather naive selection strategy
+        return scans.get( 0 );
     }
 
 
@@ -380,13 +387,16 @@ public abstract class BaseRouter {
 
         CatalogCollection collection = catalog.getCollection( alg.getCollection().getTable().getTableId() );
 
+        List<RoutedAlgBuilder> scans = new ArrayList<>();
+
         for ( Integer adapterId : collection.placements ) {
             CatalogAdapter adapter = catalog.getAdapter( adapterId );
             NamespaceType sourceModel = alg.getCollection().getTable().getSchemaType();
 
             if ( !adapter.getSupportedNamespaces().contains( sourceModel ) ) {
                 // document on relational
-                return handleDocumentOnRelational( alg, statement, builder );
+                scans.add( handleDocumentOnRelational( alg, statement, builder ) );
+                continue;
             }
             CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, adapterId );
             String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
@@ -396,7 +406,12 @@ public abstract class BaseRouter {
             return builder.push( LogicalDocumentScan.create( alg.getCluster(), collectionTable ) );
         }
 
-        throw new RuntimeException( "No placement found for the document." );
+        if ( scans.size() < 1 ) {
+            throw new RuntimeException( "No placement found for the document." );
+        }
+
+        // rather basic selection for non-native
+        return scans.get( 0 );
     }
 
 

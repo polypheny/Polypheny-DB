@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
                     .filter( t -> t.name.equals( getCollection() ) )
                     .findAny();
 
-            if ( !table.isPresent() ) {
+            if ( table.isEmpty() ) {
                 throw new RuntimeException( "The target for the rename is not valid." );
             }
 

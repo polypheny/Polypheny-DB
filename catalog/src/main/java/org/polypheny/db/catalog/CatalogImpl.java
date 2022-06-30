@@ -1388,15 +1388,27 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void addGraphLogistics( long id, List<DataStore> stores ) throws GenericCatalogException {
+    public void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException {
         /// --- nodes
         // table id nodes -> id, node, labels
-        long nodesId = addEntity( "_nodes_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        long nodesId;
+        if ( !onlyPlacement ) {
+            nodesId = addEntity( "_nodes_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        } else {
+            nodesId = getTable( id, "_nodes_" ).id;
+        }
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), nodesId ) );
 
-        long idNodeId = addColumn( "_id_", nodesId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-        long labelNodeId = addColumn( "_label_", nodesId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        long idNodeId;
+        long labelNodeId;
+        if ( !onlyPlacement ) {
+            idNodeId = addColumn( "_id_", nodesId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            labelNodeId = addColumn( "_label_", nodesId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        } else {
+            idNodeId = getField( nodesId, "_id_" ).id;
+            labelNodeId = getField( nodesId, "_label_" ).id;
+        }
 
         for ( DataStore s : stores ) {
             addColumnPlacement(
@@ -1418,18 +1430,35 @@ public class CatalogImpl extends Catalog {
             );
         }
 
-        addPrimaryKey( nodesId, List.of( idNodeId, labelNodeId ) );
+        if ( !onlyPlacement ) {
+            addPrimaryKey( nodesId, List.of( idNodeId, labelNodeId ) );
+        }
 
         /// --- node properties
 
         // table id nodes -> id, node, labels
-        long nodesPropertyId = addEntity( "_n_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        long nodesPropertyId;
+        if ( !onlyPlacement ) {
+            nodesPropertyId = addEntity( "_n_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        } else {
+            nodesPropertyId = getTable( id, "_n_properties_" ).id;
+        }
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), nodesPropertyId ) );
 
-        long idNodesPropertyId = addColumn( "_id_", nodesPropertyId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-        long keyNodePropertyId = addColumn( "_key_", nodesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-        long valueNodePropertyId = addColumn( "_value_", nodesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        long idNodesPropertyId;
+        long keyNodePropertyId;
+        long valueNodePropertyId;
+
+        if ( !onlyPlacement ) {
+            idNodesPropertyId = addColumn( "_id_", nodesPropertyId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            keyNodePropertyId = addColumn( "_key_", nodesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            valueNodePropertyId = addColumn( "_value_", nodesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        } else {
+            idNodesPropertyId = getTable( nodesPropertyId, "_id_" ).id;
+            keyNodePropertyId = getTable( nodesPropertyId, "_key_" ).id;
+            valueNodePropertyId = getTable( nodesPropertyId, "_value_" ).id;
+        }
 
         for ( DataStore s : stores ) {
             addColumnPlacement(
@@ -1460,19 +1489,38 @@ public class CatalogImpl extends Catalog {
             );
         }
 
-        addPrimaryKey( nodesPropertyId, List.of( idNodesPropertyId, keyNodePropertyId ) );
+        if ( !onlyPlacement ) {
+            addPrimaryKey( nodesPropertyId, List.of( idNodesPropertyId, keyNodePropertyId ) );
+        }
 
         /// --- edges
 
         // table id relationships -> id, rel, labels
-        long edgesId = addEntity( "_edges_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        long edgesId;
+        if ( !onlyPlacement ) {
+            edgesId = addEntity( "_edges_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        } else {
+            edgesId = getTable( id, "_edges_" ).id;
+        }
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), edgesId ) );
 
-        long idEdgeId = addColumn( "_id_", edgesId, 0, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
-        long labelEdgeId = addColumn( "_label_", edgesId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-        long sourceEdgeId = addColumn( "_l_id_", edgesId, 2, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
-        long targetEdgeId = addColumn( "_r_id_", edgesId, 3, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
+        long idEdgeId;
+        long labelEdgeId;
+        long sourceEdgeId;
+        long targetEdgeId;
+
+        if ( !onlyPlacement ) {
+            idEdgeId = addColumn( "_id_", edgesId, 0, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
+            labelEdgeId = addColumn( "_label_", edgesId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            sourceEdgeId = addColumn( "_l_id_", edgesId, 2, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
+            targetEdgeId = addColumn( "_r_id_", edgesId, 3, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
+        } else {
+            idEdgeId = getField( edgesId, "_id_" ).id;
+            labelEdgeId = getField( edgesId, "_label_" ).id;
+            sourceEdgeId = getField( edgesId, "_l_id_" ).id;
+            targetEdgeId = getField( edgesId, "_r_id_" ).id;
+        }
 
         for ( DataStore store : stores ) {
             addColumnPlacement(
@@ -1512,18 +1560,35 @@ public class CatalogImpl extends Catalog {
             );
         }
 
-        addPrimaryKey( edgesId, Collections.singletonList( idEdgeId ) );
+        if ( !onlyPlacement ) {
+            addPrimaryKey( edgesId, Collections.singletonList( idEdgeId ) );
+        }
 
         /// --- edge properties
 
         // table id nodes -> id, node, labels
-        long edgesPropertyId = addEntity( "_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        long edgesPropertyId;
+        if ( !onlyPlacement ) {
+            edgesPropertyId = addEntity( "_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        } else {
+            edgesPropertyId = getTable( id, "_properties_" ).id;
+        }
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), edgesPropertyId ) );
 
-        long idEdgePropertyId = addColumn( "_id_", edgesPropertyId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-        long keyEdgePropertyId = addColumn( "_key_", edgesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-        long valueEdgePropertyId = addColumn( "_value_", edgesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        long idEdgePropertyId;
+        long keyEdgePropertyId;
+        long valueEdgePropertyId;
+
+        if ( !onlyPlacement ) {
+            idEdgePropertyId = addColumn( "_id_", edgesPropertyId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            keyEdgePropertyId = addColumn( "_key_", edgesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            valueEdgePropertyId = addColumn( "_value_", edgesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        } else {
+            idEdgePropertyId = getTable( edgesPropertyId, "_id_" ).id;
+            keyEdgePropertyId = getTable( edgesPropertyId, "_key_" ).id;
+            valueEdgePropertyId = getTable( edgesPropertyId, "_value_" ).id;
+        }
 
         for ( DataStore s : stores ) {
             addColumnPlacement(
@@ -1554,28 +1619,30 @@ public class CatalogImpl extends Catalog {
             );
         }
 
-        addPrimaryKey( edgesPropertyId, List.of( idEdgePropertyId, keyEdgePropertyId ) );
+        if ( !onlyPlacement ) {
+            addPrimaryKey( edgesPropertyId, List.of( idEdgePropertyId, keyEdgePropertyId ) );
 
-        CatalogGraphMapping mapping = new CatalogGraphMapping(
-                id,
-                nodesId,
-                idNodeId,
-                labelNodeId,
-                nodesPropertyId,
-                idNodesPropertyId,
-                keyNodePropertyId,
-                valueNodePropertyId,
-                edgesId,
-                idEdgeId,
-                labelEdgeId,
-                sourceEdgeId,
-                targetEdgeId,
-                edgesPropertyId,
-                idEdgePropertyId,
-                keyEdgePropertyId,
-                valueEdgePropertyId );
+            CatalogGraphMapping mapping = new CatalogGraphMapping(
+                    id,
+                    nodesId,
+                    idNodeId,
+                    labelNodeId,
+                    nodesPropertyId,
+                    idNodesPropertyId,
+                    keyNodePropertyId,
+                    valueNodePropertyId,
+                    edgesId,
+                    idEdgeId,
+                    labelEdgeId,
+                    sourceEdgeId,
+                    targetEdgeId,
+                    edgesPropertyId,
+                    idEdgePropertyId,
+                    keyEdgePropertyId,
+                    valueEdgePropertyId );
 
-        graphMappings.put( id, mapping );
+            graphMappings.put( id, mapping );
+        }
 
     }
 
@@ -2502,13 +2569,33 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addDocumentLogistics( long schemaId, String name, List<DataStore> stores ) throws GenericCatalogException {
-        long tableId = addEntity( name, schemaId, Catalog.defaultUserId, EntityType.ENTITY, true );
+    public long addDocumentLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
+        long tableId;
+        if ( onlyPlacement ) {
+            try {
+                tableId = getTable( schemaId, name ).id;
+            } catch ( UnknownTableException e ) {
+                throw new RuntimeException( e );
+            }
+        } else {
+            tableId = addEntity( name, schemaId, Catalog.defaultUserId, EntityType.ENTITY, true );
+        }
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), tableId ) );
 
-        long idId = addColumn( "_id_", tableId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-        long dataId = addColumn( "_data_", tableId, 1, PolyType.JSON, null, null, null, null, null, false, Collation.getDefaultCollation() );
+        long idId;
+        long dataId;
+        if ( !onlyPlacement ) {
+            idId = addColumn( "_id_", tableId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            dataId = addColumn( "_data_", tableId, 1, PolyType.JSON, null, null, null, null, null, false, Collation.getDefaultCollation() );
+        } else {
+            try {
+                idId = getField( tableId, "_id_" ).id;
+                dataId = getField( tableId, "_data_" ).id;
+            } catch ( UnknownColumnException e ) {
+                throw new RuntimeException( "Error while adding a document placement." );
+            }
+        }
 
         for ( DataStore s : stores ) {
             addColumnPlacement(
@@ -2532,9 +2619,10 @@ public class CatalogImpl extends Catalog {
 
         addPrimaryKey( tableId, List.of( idId, dataId ) );
 
-        CatalogDocumentMapping mapping = new CatalogDocumentMapping( tableId, idId, dataId );
-
-        documentMappings.put( tableId, mapping );
+        if ( !onlyPlacement ) {
+            CatalogDocumentMapping mapping = new CatalogDocumentMapping( tableId, idId, dataId );
+            documentMappings.put( tableId, mapping );
+        }
 
         return tableId;
     }

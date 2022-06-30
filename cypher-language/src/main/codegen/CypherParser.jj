@@ -377,6 +377,7 @@ TOKEN [IGNORE_CASE] :
     | < PASSWORDS: "PASSWORDS" >
     | < PERIODIC: "PERIODIC" >
     | < PLAINTEXT: "PLAINTEXT" >
+    | < PLACEMENT: "PLACEMENT" >
     | < PLUS: "+" >
     | < POINT: "POINT">
     | < POPULATED: "POPULATED">
@@ -1514,11 +1515,31 @@ CypherUseClause UseClause() :
 {
     Token t;
     CypherExpression e;
+    CypherUseClause u;
 }
 {
-    t=<USE> ( LOOKAHEAD( 2 ) <GRAPH> )? e=Expression()
+    t=<USE> (
+        <PLACEMENT>  u=AddPlacement(t)
+        {
+            return u;
+        }
+        |
+        (LOOKAHEAD( 2 ) <GRAPH> )? e=Expression()
+        {
+            return CypherFactory.createUse( pos( t ), e );
+        }
+    )
+
+}
+
+CypherUseClause AddPlacement( Token t) :
+{
+     CypherSimpleEither<String, CypherParameter> store = null;
+}
+{
+    store=SymbolicDatabaseNameStringOrParameter()
     {
-        return CypherFactory.createUse( pos( t ), e );
+        return CypherFactory.addPlacement( pos( t ), store );
     }
 }
 

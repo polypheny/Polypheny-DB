@@ -523,7 +523,7 @@ public class LanguageCrud {
 
 
     private static void printLog( Throwable t, QueryRequest request ) {
-        log.warn( "Failed during execution\nquery:" + request.query + "\nMsg:" + t.getMessage() + "\nCause:" + t.getCause().getMessage() );
+        log.warn( "Failed during execution\nquery:" + request.query + "\nMsg:" + t.getMessage() );
     }
 
 

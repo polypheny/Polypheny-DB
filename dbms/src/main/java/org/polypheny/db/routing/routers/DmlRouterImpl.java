@@ -804,6 +804,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         CatalogCollection collection = Catalog.getInstance().getCollection( alg.getCollection().getTable().getTableId() );
 
+        List<AlgNode> modifies = new ArrayList<>();
+
         for ( int adapterId : collection.placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
             CatalogCollectionPlacement placement = Catalog.getInstance().getCollectionPlacement( collection.id, adapterId );
@@ -816,17 +818,21 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 return attachRelationalModify( alg, statement, queryInformation );
             }
 
-            return ((ModifiableCollection) document.getTable()).toModificationAlg(
+            modifies.add( ((ModifiableCollection) document.getTable()).toModificationAlg(
                     alg.getCluster(),
                     document,
                     statement.getTransaction().getCatalogReader(),
                     buildDocumentDml( alg.getInput(), statement, queryInformation ),
                     alg.operation,
                     alg.getKeys(),
-                    alg.getUpdates() );
+                    alg.getUpdates() ) );
         }
 
-        return alg;
+        if ( modifies.size() == 1 ) {
+            return modifies.get( 0 );
+        }
+
+        return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet(), modifies, true );
     }
 
 
@@ -839,6 +845,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
+        List<AlgNode> modifies = new ArrayList<>();
         for ( int adapterId : catalogGraph.placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
             CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
@@ -853,7 +860,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 throw new RuntimeException( "Graph is not modifiable." );
             }
 
-            return ((ModifiableGraph) graph).toModificationAlg(
+            modifies.add( ((ModifiableGraph) graph).toModificationAlg(
                     alg.getCluster(),
                     alg.getTraitSet(),
                     graph,
@@ -861,11 +868,15 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     buildGraphDml( alg.getInput(), statement ),
                     alg.operation,
                     alg.ids,
-                    alg.operations );
+                    alg.operations ) );
 
         }
 
-        return alg;
+        if ( modifies.size() == 1 ) {
+            return modifies.get( 0 );
+        }
+
+        return new LogicalModifyCollect( modifies.get( 0 ).getCluster(), modifies.get( 0 ).getTraitSet(), modifies, true );
     }
 
 
