@@ -458,6 +458,11 @@ public class TestHelper {
         }
 
 
+        public static Result executeGetResponse( String query, String database ) {
+            return getBody( execute( "/cypher", query, database ) );
+        }
+
+
         private static Result getBody( HttpResponse<String> res ) {
             try {
                 Result[] result = gson.fromJson( res.getBody(), Result[].class );

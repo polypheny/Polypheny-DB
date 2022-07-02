@@ -1722,13 +1722,8 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException {
         // Check if there is already a table with this name
-        if ( catalog.checkIfExistsEntity( schemaId, viewName ) ) {
-            if ( ifNotExists ) {
-                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
-                return;
-            } else {
-                throw new EntityAlreadyExistsException();
-            }
+        if ( assertEntityExists( schemaId, viewName, ifNotExists ) ) {
+            return;
         }
 
         if ( stores == null ) {
@@ -2085,13 +2080,8 @@ public class DdlManagerImpl extends DdlManager {
     public void createEntity( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
         try {
             // Check if there is already an entity with this name
-            if ( catalog.checkIfExistsEntity( schemaId, name ) ) {
-                if ( ifNotExists ) {
-                    // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
-                    return;
-                } else {
-                    throw new EntityAlreadyExistsException();
-                }
+            if ( assertEntityExists( schemaId, name, ifNotExists ) ) {
+                return;
             }
 
             fields = new ArrayList<>( fields );
@@ -2163,14 +2153,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createCollection( long schemaId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
-        // Check if there is already an entity with this name
-        if ( catalog.checkIfExistsEntity( schemaId, name ) ) {
-            if ( ifNotExists ) {
-                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
-                return;
-            } else {
-                throw new EntityAlreadyExistsException();
-            }
+        if ( assertEntityExists( schemaId, name, ifNotExists ) ) {
+            return;
         }
 
         if ( stores == null ) {
@@ -2200,7 +2184,7 @@ public class DdlManagerImpl extends DdlManager {
         PolySchemaBuilder.getInstance().getCurrent();
 
         for ( DataStore store : stores ) {
-            long placementId = catalog.addDocumentPlacement(
+            catalog.addDocumentPlacement(
                     store.getAdapterId(),
                     catalogCollection.id,
                     PlacementType.AUTOMATIC );
@@ -2210,6 +2194,34 @@ public class DdlManagerImpl extends DdlManager {
             store.createCollection( statement.getPrepareContext(), catalogCollection, store.getAdapterId() );
         }
 
+    }
+
+
+    private boolean assertEntityExists( long namespaceId, String name, boolean ifNotExists ) throws EntityAlreadyExistsException {
+        // Check if there is already an entity with this name
+        if ( catalog.checkIfExistsEntity( namespaceId, name ) ) {
+            if ( ifNotExists ) {
+                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
+                return true;
+            } else {
+                throw new EntityAlreadyExistsException();
+            }
+        }
+        return false;
+    }
+
+
+    @Override
+    public void dropCollection( CatalogCollection catalogCollection, Statement statement ) {
+        AdapterManager manager = AdapterManager.getInstance();
+
+        for ( Integer adapterId : catalogCollection.placements ) {
+            DataStore store = (DataStore) manager.getAdapter( adapterId );
+
+            store.dropCollection( statement.getPrepareContext(), catalogCollection );
+        }
+        catalog.deleteCollection( catalogCollection );
+        catalog.removeDocumentLogistics( catalogCollection );
     }
 
 

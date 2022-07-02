@@ -1671,6 +1671,12 @@ public abstract class Catalog {
     public abstract void clear();
 
 
+    public abstract void removeDocumentLogistics( CatalogCollection catalogCollection );
+
+
+    public abstract void deleteCollection( CatalogCollection catalogCollection );
+
+
     public enum EntityType {
         ENTITY( 1 ),
         SOURCE( 2 ),

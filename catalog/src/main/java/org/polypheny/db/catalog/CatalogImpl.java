@@ -94,6 +94,7 @@ import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
+import org.polypheny.db.catalog.exceptions.UnknownCollectionPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
@@ -1455,9 +1456,9 @@ public class CatalogImpl extends Catalog {
             keyNodePropertyId = addColumn( "_key_", nodesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
             valueNodePropertyId = addColumn( "_value_", nodesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
         } else {
-            idNodesPropertyId = getTable( nodesPropertyId, "_id_" ).id;
-            keyNodePropertyId = getTable( nodesPropertyId, "_key_" ).id;
-            valueNodePropertyId = getTable( nodesPropertyId, "_value_" ).id;
+            idNodesPropertyId = getField( nodesPropertyId, "_id_" ).id;
+            keyNodePropertyId = getField( nodesPropertyId, "_key_" ).id;
+            valueNodePropertyId = getField( nodesPropertyId, "_value_" ).id;
         }
 
         for ( DataStore s : stores ) {
@@ -1585,9 +1586,9 @@ public class CatalogImpl extends Catalog {
             keyEdgePropertyId = addColumn( "_key_", edgesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
             valueEdgePropertyId = addColumn( "_value_", edgesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
         } else {
-            idEdgePropertyId = getTable( edgesPropertyId, "_id_" ).id;
-            keyEdgePropertyId = getTable( edgesPropertyId, "_key_" ).id;
-            valueEdgePropertyId = getTable( edgesPropertyId, "_value_" ).id;
+            idEdgePropertyId = getField( edgesPropertyId, "_id_" ).id;
+            keyEdgePropertyId = getField( edgesPropertyId, "_key_" ).id;
+            valueEdgePropertyId = getField( edgesPropertyId, "_value_" ).id;
         }
 
         for ( DataStore s : stores ) {
@@ -2509,9 +2510,6 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             collections.put( collectionId, collection );
             collectionNames.put( new Object[]{ namespace.databaseId, schemaId, name }, collection );
-            /*List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
-            children.add( collectionId );
-            schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );*/
         }
         listeners.firePropertyChange( "collection", null, entity );
 
@@ -2629,6 +2627,24 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
+    public void removeDocumentLogistics( CatalogCollection catalogCollection ) {
+        CatalogDocumentMapping mapping = documentMappings.get( catalogCollection.id );
+        deleteTable( Objects.requireNonNull( mapping ).collectionId );
+    }
+
+
+    @Override
+    public void deleteCollection( CatalogCollection catalogCollection ) {
+        synchronized ( this ) {
+            collections.remove( catalogCollection.namespaceId );
+            collectionNames.remove( new Object[]{ catalogCollection.databaseId, catalogCollection.namespaceId, catalogCollection.name } );
+            catalogCollection.placements.forEach( p -> collectionPlacements.remove( new Object[]{ catalogCollection.id, p } ) );
+        }
+        listeners.firePropertyChange( "collection", null, null );
+    }
+
+
+    @Override
     public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
         return collectionPlacements.values().stream().filter( p -> p.adapter == adapterId ).collect( Collectors.toList() );
     }
@@ -2637,7 +2653,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId ) {
         if ( !collectionPlacements.containsKey( new Object[]{ collectionId, adapterId } ) ) {
-            throw new UnknownGraphPlacementsException( collectionId, adapterId );
+            throw new UnknownCollectionPlacementException( collectionId, adapterId );
         }
 
         return collectionPlacements.get( new Object[]{ collectionId, adapterId } );

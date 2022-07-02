@@ -1,0 +1,92 @@
+/*
+ * Copyright 2019-2022 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.cypher;
+
+import static org.junit.Assert.assertEquals;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import org.junit.Test;
+import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+
+public class DdlTest extends CypherTestTemplate {
+
+    final static String graphName = "product";
+
+
+    @Test
+    public void addCollectionTest() {
+        Catalog catalog = Catalog.getInstance();
+
+        execute( "CREATE DATABASE " + graphName );
+
+        CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+
+        assertEquals( 1, catalog.getGraphs( graph.databaseId, new Pattern( graphName ) ).size() );
+
+        execute( "DROP DATABASE " + graphName );
+
+        assertEquals( 0, catalog.getGraphs( graph.databaseId, new Pattern( graphName ) ).size() );
+
+        execute( "CREATE DATABASE " + graphName );
+
+        assertEquals( 1, catalog.getGraphs( graph.databaseId, new Pattern( graphName ) ).size() );
+
+        execute( "DROP DATABASE " + graphName );
+    }
+
+
+    @Test
+    public void addPlacementTest() throws SQLException {
+        Catalog catalog = Catalog.getInstance();
+
+        execute( "CREATE DATABASE " + graphName );
+
+        CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+
+        assertEquals( 1, graph.placements.size() );
+
+        addStore( "store1" );
+
+        execute( String.format( "USE PLACEMENT %s", "store1" ), graphName );
+
+        graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+
+        assertEquals( 2, graph.placements.size() );
+
+        execute( "DROP DATABASE " + graphName );
+
+    }
+
+
+    private void addStore( String name ) throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                        + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+            }
+        }
+    }
+
+}

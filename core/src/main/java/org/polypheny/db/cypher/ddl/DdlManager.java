@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
@@ -575,6 +576,9 @@ public abstract class DdlManager {
 
 
     public abstract long addGraphDatabasePlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
+
+
+    public abstract void dropCollection( CatalogCollection catalogCollection, Statement statement );
 
 
     /**

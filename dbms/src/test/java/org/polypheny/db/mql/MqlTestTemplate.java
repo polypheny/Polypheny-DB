@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,11 @@ public class MqlTestTemplate {
 
     protected static void dropDatabase() {
         dropDatabase( database );
+    }
+
+
+    public Result execute( String doc ) {
+        return MongoConnection.executeGetResponse( doc );
     }
 
 

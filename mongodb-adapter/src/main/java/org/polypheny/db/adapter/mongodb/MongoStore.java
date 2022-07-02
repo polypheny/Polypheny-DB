@@ -304,6 +304,17 @@ public class MongoStore extends DataStore {
 
 
     @Override
+    public void dropCollection( Context context, CatalogCollection catalogCollection ) {
+        Catalog catalog = Catalog.getInstance();
+        commitAll();
+        context.getStatement().getTransaction().registerInvolvedAdapter( this );
+        CatalogCollectionPlacement placement = catalog.getCollectionPlacement( catalogCollection.id, getAdapterId() );
+
+        this.currentSchema.database.getCollection( placement.physicalName ).drop();
+    }
+
+
+    @Override
     public void dropTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );

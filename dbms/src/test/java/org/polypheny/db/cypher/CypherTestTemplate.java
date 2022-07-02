@@ -107,6 +107,15 @@ public class CypherTestTemplate {
     }
 
 
+    public static Result execute( String query, String database ) {
+        Result res = CypherConnection.executeGetResponse( query, database );
+        if ( res.getError() != null ) {
+            fail( res.getError() );
+        }
+        return res;
+    }
+
+
     protected boolean containsNodes( Result res, boolean exclusive, TestObject... nodes ) {
         if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
             return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
