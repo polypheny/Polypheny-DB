@@ -149,6 +149,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalGraphModify modify ) {
+        hashBasis.add( "LogicalGraphModify" );
         return super.visit( modify );
     }
 
@@ -220,6 +221,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentModify modify ) {
+        hashBasis.add( "LogicalDocumentModify" );
+
         return super.visit( modify );
     }
 
