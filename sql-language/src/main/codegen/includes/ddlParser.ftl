@@ -505,16 +505,16 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
     }
 }
 
-String ztring() :
+String parseEvent() :
 {
     Token t1;
 }
 {
-    t1 = <INSERT> { return "sql"; }
+    t1 = <INSERT> { return "INSERT"; }
     |
-    t1 = <UPDATE> { return "mql"; }
+    t1 = <UPDATE> { return "UPDATE"; }
     |
-    t1 = <DELETE> { return "cql"; }
+    t1 = <DELETE> { return "DELETE"; }
 }
 
 SqlCreate SqlCreateTrigger(Span s, boolean replace) :
@@ -534,13 +534,7 @@ SqlCreate SqlCreateTrigger(Span s, boolean replace) :
     <ON>
     table = CompoundIdentifier()
     <AFTER>
-    (
-        <INSERT> { event = "INSERT"; }
-        |
-        <UPDATE> { event = "UPDATE"; }
-        |
-        <DELETE> { event = "DELETE"; }
-    )
+    event = parseEvent()
     notForReplication = NotForReplicationOpt()
     <DOLLAR>
     query = StringLiteral()
