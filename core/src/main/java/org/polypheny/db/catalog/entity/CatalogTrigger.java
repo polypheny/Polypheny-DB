@@ -74,4 +74,7 @@ public final class CatalogTrigger implements CatalogEntity {
         return query;
     }
 
+    public long getTriggerId() {
+        return triggerId;
+    }
 }

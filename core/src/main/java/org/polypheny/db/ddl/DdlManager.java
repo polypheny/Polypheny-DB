@@ -494,6 +494,15 @@ public abstract class DdlManager {
     public abstract void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query);
 
     /**
+     * Delete a trigger
+     *
+     * @param schemaId the id of schema
+     * @param triggerName the name of the new trigger
+     * @param databaseId the id of the database
+     */
+    public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName);
+
+    /**
      * Add new partitions for the column
      *
      * @param partitionInfo the information concerning the partition

@@ -938,12 +938,25 @@ public class CatalogImpl extends Catalog {
      * @param query         The query to run
      */
     @Override
-    public void createTrigger(long databaseId, long schemaId, String triggerName, String table, Event event, String query) {
+    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query) {
         long id = procedureIdBuilder.getAndIncrement();
         CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, query);
         synchronized (this) {
             triggers.put(id, trigger);
             triggerNames.put(new Object[]{databaseId, schemaId, triggerName}, trigger);
+        }
+    }
+
+    @Override
+    public void dropTrigger(long databaseId, Long schemaId, String triggerName) {
+        Object[] triggerKey = {databaseId, schemaId, triggerName};
+        CatalogTrigger catalogTrigger = triggerNames.get(triggerKey);
+        if(catalogTrigger == null) {
+            throw new RuntimeException("Given trigger doesn't exist in Catalog: " + triggerName);
+        }
+        synchronized (this) {
+            triggers.remove(catalogTrigger.getTriggerId());
+            triggerNames.remove(triggerKey);
         }
     }
 

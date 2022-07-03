@@ -164,6 +164,13 @@ public class SqlDdlNodes {
         return new SqlDropProcedure( pos, ifExists, name );
     }
 
+    /**
+     * Creates a DROP TRIGGER.
+     */
+    public static SqlDrop dropTrigger( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropTrigger( pos, ifExists, name );
+    }
+
 
     /**
      * Creates a column declaration.

@@ -633,3 +633,14 @@ SqlDrop SqlDropProcedure(Span s, boolean replace) :
     }
 }
 
+SqlDrop SqlDropTrigger(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <TRIGGER> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropTrigger(s.end(this), ifExists, id);
+    }
+}
+

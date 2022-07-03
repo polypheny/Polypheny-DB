@@ -1334,7 +1334,7 @@ public enum Kind {
     /**
      * Document model {@code $exists} operator
      */
-    MQL_EXISTS;
+    MQL_EXISTS, DROP_TRIGGER;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 
@@ -1438,7 +1438,8 @@ public enum Kind {
             CREATE_PROCEDURE,
             PROCEDURE_EXEC,
             DROP_PROCEDURE,
-            CREATE_TRIGGER
+            CREATE_TRIGGER,
+            DROP_TRIGGER
     );
 
     /**

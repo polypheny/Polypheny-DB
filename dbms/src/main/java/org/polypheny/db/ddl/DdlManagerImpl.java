@@ -1743,8 +1743,19 @@ public class DdlManagerImpl extends DdlManager {
         if(replace) {
             //catalog.updateTrigger(databaseId, schemaId, triggerName, table, event, query);
         } else {
-            catalog.createTrigger(databaseId, schemaId, triggerName, table, polyphenyEvent, query);
+            CatalogTable catalogTable;
+            try {
+                catalogTable = catalog.getTable(schemaId, table);
+            } catch (UnknownTableException e) {
+                throw new RuntimeException(e);
+            }
+            catalog.createTrigger(databaseId, schemaId, triggerName, catalogTable, polyphenyEvent, query);
         }
+    }
+
+    @Override
+    public void dropTrigger(long databaseId, Long schemaId, String triggerName) {
+        catalog.dropTrigger(databaseId, schemaId, triggerName);
     }
 
     private Event mapEventType(String event) {
