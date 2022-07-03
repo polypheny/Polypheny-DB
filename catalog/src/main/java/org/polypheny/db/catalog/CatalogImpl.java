@@ -864,7 +864,6 @@ public class CatalogImpl extends Catalog {
             procedures.put(id, procedure);
             procedureNames.put(new Object[]{databaseId, schemaId, procedureName}, procedure);
         }
-        db.commit();
     }
 
     @Override
@@ -875,7 +874,6 @@ public class CatalogImpl extends Catalog {
             procedures.replace(procedure.getProcedureId(), procedure);
             procedureNames.replace(new Object[]{databaseId, schemaId, procedure.getName()}, procedure);
         }
-        db.commit();
     }
 
     /**
@@ -921,7 +919,6 @@ public class CatalogImpl extends Catalog {
                 throw new RuntimeException(String.format("Procedure that should have existed wasn't found: %s", deletedProcedure.getProcedureId()));
             }
         }
-        db.commit();
     }
 
 
