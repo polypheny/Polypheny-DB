@@ -52,6 +52,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Event;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -1733,6 +1734,29 @@ public class DdlManagerImpl extends DdlManager {
             polyScriptInterpreter.interprete(procedure.getQuery());
         } catch (UnknownProcedureException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query) {
+        Event polyphenyEvent = mapEventType(event);
+        if(replace) {
+            //catalog.updateTrigger(databaseId, schemaId, triggerName, table, event, query);
+        } else {
+            catalog.createTrigger(databaseId, schemaId, triggerName, table, polyphenyEvent, query);
+        }
+    }
+
+    private Event mapEventType(String event) {
+        switch (event) {
+            case "INSERT":
+                return Event.CREATE;
+            case "UPDATE":
+                return Event.UPDATE;
+            case "DELETE":
+                return Event.DELETE;
+            default:
+                throw new RuntimeException("No mapping from event type given: " + event);
         }
     }
 

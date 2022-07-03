@@ -103,6 +103,24 @@ public class SqlCreateTrigger extends SqlCreate implements ExecutableStatement {
 
     @Override
     public void execute(Context context, Statement statement, QueryParameters parameters) {
-
+        DdlManager instance = DdlManager.getInstance();
+        Catalog catalog = Catalog.getInstance();
+        long schemaId;
+        long databaseId = context.getDatabaseId();
+        try {
+            if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TriggerName
+                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                databaseId = catalog.getDatabase(name.names.get(0)).id;
+            } else if ( name.names.size() == 2 ) { // SchemaName.Triggername
+                schemaId = catalog.getSchema( databaseId, name.names.get( 0 ) ).id;
+            } else { // TriggerName
+                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+            }
+        } catch ( UnknownDatabaseException e ) {
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.databaseNotFound( name.toString() ) );
+        } catch ( UnknownSchemaException e ) {
+            throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
+        }
+        instance.createTrigger(databaseId, schemaId, name.getSimple(), replace, table.getSimple(), event, query.toString());
     }
 }

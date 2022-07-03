@@ -482,6 +482,18 @@ public abstract class DdlManager {
     public abstract void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName);
 
     /**
+     * Create a new trigger
+     *
+     * @param schemaId the id of schema
+     * @param triggerName the name of the new trigger
+     * @param databaseId the id of the database
+     * @param replace whether to replace an existing or insert a new trigger
+     * @param event the table event on which to bind the trigger
+     * @param query the body of the trigger
+     */
+    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query);
+
+    /**
      * Add new partitions for the column
      *
      * @param partitionInfo the information concerning the partition

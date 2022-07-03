@@ -114,6 +114,10 @@ public class CatalogImpl extends Catalog {
 
     private static BTreeMap<Object[], CatalogProcedure> procedureNames;
 
+    private static BTreeMap<Long, CatalogTrigger> triggers;
+
+    private static BTreeMap<Object[], CatalogTrigger> triggerNames;
+
     private static Long openTable;
 
     private static final AtomicInteger adapterIdBuilder = new AtomicInteger( 1 );
@@ -597,6 +601,8 @@ public class CatalogImpl extends Catalog {
         partitions = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         procedures = db.treeMap( "procedures", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         procedureNames = db.treeMap( "procedureNames", new SerializerArrayTuple(Serializer.LONG, Serializer.LONG, Serializer.STRING), Serializer.JAVA ).createOrOpen();
+        triggers = db.treeMap( "triggers", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        triggerNames = db.treeMap( "triggerNames", new SerializerArrayTuple(Serializer.LONG, Serializer.LONG, Serializer.STRING), Serializer.JAVA ).createOrOpen();
 
         partitionPlacements = db.treeMap( "partitionPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
 
@@ -918,6 +924,26 @@ public class CatalogImpl extends Catalog {
             if(removedProcedure == null) {
                 throw new RuntimeException(String.format("Procedure that should have existed wasn't found: %s", deletedProcedure.getProcedureId()));
             }
+        }
+    }
+
+    /**
+     * Creates a new trigger with the given name in the specified schema.
+     *
+     * @param databaseId    The id of the database
+     * @param schemaId      The id of the schema
+     * @param triggerName   The name of the trigger
+     * @param triggerName   The name of the table
+     * @param event         The event on which to execute the trigger
+     * @param query         The query to run
+     */
+    @Override
+    public void createTrigger(long databaseId, long schemaId, String triggerName, String table, Event event, String query) {
+        long id = procedureIdBuilder.getAndIncrement();
+        CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, query);
+        synchronized (this) {
+            triggers.put(id, trigger);
+            triggerNames.put(new Object[]{databaseId, schemaId, triggerName}, trigger);
         }
     }
 
