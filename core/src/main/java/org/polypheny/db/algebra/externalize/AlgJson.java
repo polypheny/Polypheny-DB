@@ -90,6 +90,12 @@ public class AlgJson {
                     "org.polypheny.db.adapter.enumerable.",
                     "org.polypheny.db.adapter.jdbc.",
                     "org.polypheny.db.adapter.jdbc.JdbcRules$",
+                    "org.polypheny.db.adapter.neo4j.",
+                    "org.polypheny.db.adapter.neo4j.rules.graph.",
+                    "org.polypheny.db.adapter.neo4j.rules.NeoGraphRules$",
+                    "org.polypheny.db.adapter.neo4j.rules.relational.",
+                    "org.polypheny.db.adapter.neo4j.rules.NeoRules$",
+                    "org.polypheny.db.adapter.neo4j.NeoRules$",
                     "org.polypheny.db.interpreter.Bindables$" );
 
 

@@ -577,6 +577,8 @@ public abstract class DdlManager {
 
     public abstract long addGraphDatabasePlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
 
+    public abstract void removeGraphDatabasePlacement( long graphId, DataStore dataStores, Statement statement );
+
 
     public abstract void dropCollection( CatalogCollection catalogCollection, Statement statement );
 

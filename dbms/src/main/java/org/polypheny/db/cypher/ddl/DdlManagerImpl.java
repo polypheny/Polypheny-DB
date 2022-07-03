@@ -1895,6 +1895,23 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
+    public void removeGraphDatabasePlacement( long graphId, DataStore store, Statement statement ) {
+        catalog.deleteGraphPlacement( store, graphId );
+
+        CatalogGraphDatabase graph = catalog.getGraph( graphId );
+        PolySchemaBuilder.getInstance().getCurrent();
+
+        catalog.addGraphPlacement( store.getAdapterId(), graphId );
+
+        afterGraphLogistics( store, graphId );
+
+        store.createGraph( statement.getPrepareContext(), graph );
+
+
+    }
+
+
     private void afterGraphLogistics( DataStore store, long graphId ) {
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphId );
         CatalogEntity nodes = catalog.getTable( mapping.nodesId );

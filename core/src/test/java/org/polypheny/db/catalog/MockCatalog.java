@@ -216,7 +216,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void deleteGraphPlacements( int adapterId, long graphId ) {
+    public void deleteGraphPlacement( DataStore adapterId, long graphId ) {
         throw new NotImplementedException();
     }
 

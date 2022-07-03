@@ -22,6 +22,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
@@ -30,6 +32,7 @@ import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
+@Category({ AdapterTestSuite.class })
 public class DdlTest extends MqlTestTemplate {
 
     final static String collectionName = "doc";
@@ -59,22 +62,60 @@ public class DdlTest extends MqlTestTemplate {
     public void addPlacementTest() throws UnknownNamespaceException, SQLException {
         Catalog catalog = Catalog.getInstance();
 
-        execute( "db.createCollection(\"" + collectionName + "\")" );
+        try {
+            execute( "db.createCollection(\"" + collectionName + "\")" );
 
-        CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+            CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
 
-        CatalogCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            CatalogCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-        assertEquals( collection.placements.size(), 1 );
+            assertEquals( collection.placements.size(), 1 );
 
-        addStore( "store1" );
+            addStore( "store1" );
 
-        execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, "store1" ) );
+            execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, "store1" ) );
 
-        collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+            collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
-        assertEquals( collection.placements.size(), 2 );
+            assertEquals( collection.placements.size(), 2 );
 
+        } finally {
+            removeStore( "store1" );
+        }
+
+    }
+
+
+    @Test
+    public void deletePlacementTest() throws UnknownNamespaceException, SQLException {
+        Catalog catalog = Catalog.getInstance();
+
+        try {
+            execute( "db.createCollection(\"" + collectionName + "\")" );
+
+            CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+
+            CatalogCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+
+            assertEquals( collection.placements.size(), 1 );
+
+            addStore( "store1" );
+
+            execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, "store1" ) );
+
+            collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+
+            assertEquals( collection.placements.size(), 2 );
+
+            execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, "store1" ) );
+
+            collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
+
+            assertEquals( collection.placements.size(), 1 );
+
+        } finally {
+            removeStore( "store1" );
+        }
     }
 
 
@@ -85,6 +126,18 @@ public class DdlTest extends MqlTestTemplate {
 
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                         + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+            }
+        }
+    }
+
+
+    private void removeStore( String name ) throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "ALTER ADAPTERS DROP \"" + name + "\"" );
 
             }
         }

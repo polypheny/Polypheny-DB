@@ -77,6 +77,7 @@ import org.polypheny.db.cypher.ddl.CypherCreateIndex;
 import org.polypheny.db.cypher.ddl.CypherCreateIndex.IndexType;
 import org.polypheny.db.cypher.ddl.CypherCreateUser;
 import org.polypheny.db.cypher.ddl.CypherDropIndex;
+import org.polypheny.db.cypher.ddl.CypherDropPlacement;
 import org.polypheny.db.cypher.ddl.CypherDropRole;
 import org.polypheny.db.cypher.ddl.CypherDropUser;
 import org.polypheny.db.cypher.ddl.CypherGrantRoles;
@@ -558,6 +559,10 @@ public interface CypherFactory {
 
     static CypherAddPlacement addPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> either ) {
         return new CypherAddPlacement( pos, either );
+    }
+
+    static CypherDropPlacement dropPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> store ) {
+        return new CypherDropPlacement( pos, store.getLeft() );
     }
 
     static CypherAdminCommand dropRole( ParserPos pos, CypherSimpleEither<String, CypherParameter> roleName, boolean ifExists ) {

@@ -115,19 +115,24 @@ public class NeoGraphModify extends GraphModify implements NeoGraphAlg {
         } else {
             if ( !implementor.statements.isEmpty() ) {
                 if ( implementor.getLast() instanceof GraphProject ) {
-                    // match -> project -> create
-                    GraphProject project = (GraphProject) implementor.getLast();
-                    List<NeoStatement> statements = new ArrayList<>();
-                    for ( RexNode projectProject : project.getProjects() ) {
-                        Translator translator = new Translator( project.getRowType(), project.getInput().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, true );
-                        statements.add( literal_( projectProject.accept( translator ) ) );
-                    }
-                    implementor.add( create_( statements ) );
+                    //List<NeoStatement> statements = buildReturnProject( implementor );
+                    implementor.add( create_( buildReturnProject( (GraphProject) implementor.getLast(), implementor.getGraph().mappingLabel ) ) );
                     return;
                 }
             }
         }
         throw new RuntimeException( "No values before modify." );
+    }
+
+
+    public static List<NeoStatement> buildReturnProject( GraphProject project, String mappingLabel ) {
+        // match -> project -> create
+        List<NeoStatement> statements = new ArrayList<>();
+        for ( RexNode projectProject : project.getProjects() ) {
+            Translator translator = new Translator( project.getRowType(), project.getInput().getRowType(), new HashMap<>(), null, mappingLabel, true );
+            statements.add( literal_( projectProject.accept( translator ) ) );
+        }
+        return statements;
     }
 
 

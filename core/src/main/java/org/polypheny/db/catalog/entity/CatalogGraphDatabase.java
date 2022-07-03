@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
@@ -67,6 +68,11 @@ public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGr
         List<Integer> placements = new ArrayList<>( this.placements );
         placements.add( adapterId );
         return new CatalogGraphDatabase( databaseId, id, name, ownerId, modifiable, placements );
+    }
+
+
+    public CatalogGraphDatabase removePlacement( int adapterId ) {
+        return new CatalogGraphDatabase( databaseId, id, name, ownerId, modifiable, placements.stream().filter( i -> i != adapterId ).collect( Collectors.toList() ) );
     }
 
 }

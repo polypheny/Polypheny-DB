@@ -22,11 +22,14 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 
+@Category({ AdapterTestSuite.class })
 public class DdlTest extends CypherTestTemplate {
 
     final static String graphName = "product";
@@ -57,22 +60,58 @@ public class DdlTest extends CypherTestTemplate {
     @Test
     public void addPlacementTest() throws SQLException {
         Catalog catalog = Catalog.getInstance();
+        try {
+            execute( "CREATE DATABASE " + graphName );
 
-        execute( "CREATE DATABASE " + graphName );
+            CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
 
-        CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            assertEquals( 1, graph.placements.size() );
 
-        assertEquals( 1, graph.placements.size() );
+            addStore( "store1" );
 
-        addStore( "store1" );
+            execute( String.format( "USE PLACEMENT %s", "store1" ), graphName );
 
-        execute( String.format( "USE PLACEMENT %s", "store1" ), graphName );
+            graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
 
-        graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+            assertEquals( 2, graph.placements.size() );
 
-        assertEquals( 2, graph.placements.size() );
+            execute( "DROP DATABASE " + graphName );
 
-        execute( "DROP DATABASE " + graphName );
+        } finally {
+
+            removeStore( "store1" );
+        }
+
+    }
+
+
+    @Test
+    public void deletePlacementTest() throws SQLException {
+        try {
+            Catalog catalog = Catalog.getInstance();
+
+            execute( "CREATE DATABASE " + graphName );
+
+            CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+
+            assertEquals( 1, graph.placements.size() );
+
+            addStore( "store1" );
+
+            execute( String.format( "USE PLACEMENT %s", "store1" ), graphName );
+
+            graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+
+            assertEquals( 2, graph.placements.size() );
+
+            execute( String.format( "DROP PLACEMENT %s", "store1" ), graphName );
+
+            execute( "DROP DATABASE " + graphName );
+
+        } finally {
+
+            removeStore( "store1" );
+        }
 
     }
 
@@ -84,6 +123,18 @@ public class DdlTest extends CypherTestTemplate {
 
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                         + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+            }
+        }
+    }
+
+
+    private void removeStore( String name ) throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "ALTER ADAPTERS DROP \"" + name + "\"" );
 
             }
         }

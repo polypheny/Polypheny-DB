@@ -1458,7 +1458,7 @@ public abstract class Catalog {
 
     public abstract long addGraphPlacement( int adapterId, long graphId );
 
-    public abstract void deleteGraphPlacements( int adapterId, long graphId );
+    public abstract void deleteGraphPlacement( DataStore store, long graphId );
 
     public abstract void updateGraphPlacementPhysicalNames( long graph, int adapterId, String physicalGraphName );
 

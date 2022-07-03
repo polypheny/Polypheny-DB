@@ -1770,7 +1770,6 @@ CypherClause DeleteClause() :
 }
 
 // MATCH
-
 CypherClause MatchClause() :
 {
     Token optionalT = null;
@@ -3056,6 +3055,7 @@ CypherWithGraph DropCommand() throws Exception:
         | s=DropConstraint( start )
         | s=DropIndex( start )
         | s=DropAlias( start )
+        | s=DropPlacement( start )
     )
     {
         return s;
@@ -4927,6 +4927,17 @@ CypherSimpleEither<Map<String, CypherExpression>, CypherParameter> Options() :
     <OPTIONS> optionz = MapOrParameter()
     {
         return optionz;
+    }
+}
+
+CypherAdminCommand DropPlacement( Token start ):
+{
+    CypherSimpleEither<String, CypherParameter> store = null;
+}
+{
+    <PLACEMENT> store=SymbolicDatabaseNameStringOrParameter()
+    {
+        return CypherFactory.dropPlacement( pos( start ), store );
     }
 }
 

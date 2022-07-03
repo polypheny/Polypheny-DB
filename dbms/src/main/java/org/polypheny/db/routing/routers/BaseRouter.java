@@ -312,7 +312,7 @@ public abstract class BaseRouter {
 
             if ( !(graph instanceof TranslatableGraph) ) {
                 // needs substitution later on
-                scans.add( getRelationalScan( alg, statement ) );
+                scans.add( getRelationalScan( alg, adapterId, statement ) );
                 continue;
             }
 
@@ -328,14 +328,14 @@ public abstract class BaseRouter {
     }
 
 
-    public AlgNode getRelationalScan( LogicalGraphScan alg, Statement statement ) {
+    public AlgNode getRelationalScan( LogicalGraphScan alg, int adapterId, Statement statement ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
 
-        PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId );
-        PreparingTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId );
-        PreparingTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId );
+        PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );
+        PreparingTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId );
+        PreparingTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId, adapterId );
         ;
-        PreparingTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId );
+        PreparingTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId, adapterId );
 
         AlgNode node = buildSubstitutionJoin( alg, nodesTable, nodePropertiesTable );
 
@@ -346,14 +346,14 @@ public abstract class BaseRouter {
     }
 
 
-    protected PreparingTable getSubstitutionTable( Statement statement, long tableId, long columnId ) {
+    protected PreparingTable getSubstitutionTable( Statement statement, long tableId, long columnId, int adapterId ) {
         CatalogEntity nodes = Catalog.getInstance().getTable( tableId );
-        List<CatalogColumnPlacement> placement = Catalog.getInstance().getColumnPlacement( columnId );
+        CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( adapterId, columnId );
         List<String> qualifiedTableName = ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName(
-                        placement.get( 0 ).adapterUniqueName,
+                        placement.adapterUniqueName,
                         nodes.getNamespaceName(),
-                        placement.get( 0 ).physicalSchemaName
+                        placement.physicalSchemaName
                 ),
                 nodes.name + "_" + nodes.partitionProperty.partitionIds.get( 0 ) );
 
@@ -395,7 +395,7 @@ public abstract class BaseRouter {
 
             if ( !adapter.getSupportedNamespaces().contains( sourceModel ) ) {
                 // document on relational
-                scans.add( handleDocumentOnRelational( alg, statement, builder ) );
+                scans.add( handleDocumentOnRelational( alg, adapterId, statement, builder ) );
                 continue;
             }
             CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, adapterId );
@@ -427,10 +427,10 @@ public abstract class BaseRouter {
 
 
     @NotNull
-    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan node, Statement statement, RoutedAlgBuilder builder ) {
+    private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan node, Integer adapterId, Statement statement, RoutedAlgBuilder builder ) {
         List<CatalogColumn> columns = Catalog.getInstance().getColumns( node.getCollection().getTable().getTableId() );
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
-        builder.scan( getSubstitutionTable( statement, node.getCollection().getTable().getTableId(), columns.get( 0 ).id ) );
+        builder.scan( getSubstitutionTable( statement, node.getCollection().getTable().getTableId(), columns.get( 0 ).id, adapterId ) );
         builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType() ) );
         return builder;

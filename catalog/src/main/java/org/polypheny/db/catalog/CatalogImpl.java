@@ -5341,16 +5341,22 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void deleteGraphPlacements( int adapterId, long graphId ) {
-        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
-            throw new UnknownGraphPlacementsException( graphId, adapterId );
+    public void deleteGraphPlacement( DataStore store, long graphId ) {
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, store.getAdapterId() } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, store.getAdapterId() );
         }
-        CatalogGraphPlacement graph = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
+        CatalogGraphPlacement placement = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, store.getAdapterId() } ) );
 
-        deleteGraphPlacementLogistics( graph.graphId, adapterId );
+        deleteGraphPlacementLogistics( placement.graphId, store.getAdapterId() );
+
+        CatalogGraphDatabase old = Objects.requireNonNull( graphs.get( placement.graphId ) );
+
+        CatalogGraphDatabase graph = old.removePlacement( store.getAdapterId() );
 
         synchronized ( this ) {
-            graphPlacements.remove( new Object[]{ graphId, adapterId } );
+            graphPlacements.remove( new Object[]{ graphId, store.getAdapterId() } );
+            graphs.replace( graphId, graph );
+            graphNames.replace( new Object[]{ Catalog.defaultDatabaseId, graph.name }, graph );
         }
         listeners.firePropertyChange( "graphPlacements", null, null );
     }

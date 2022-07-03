@@ -89,7 +89,6 @@ import org.polypheny.db.util.Pair;
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
 @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
-@AdapterSettingInteger(name = "dmlRetries", defaultValue = 2)
 public class MongoStore extends DataStore {
 
     private final String host;

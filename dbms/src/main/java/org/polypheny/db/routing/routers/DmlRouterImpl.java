@@ -815,7 +815,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             AlgOptTable document = reader.getDocument( List.of( namespaceName, collectionName ) );
             if ( !adapter.getSupportedNamespaces().contains( NamespaceType.DOCUMENT ) ) {
-                return attachRelationalModify( alg, statement, queryInformation );
+                // move "slower" updates in front
+                modifies.add( 0, attachRelationalModify( alg, statement, adapterId, queryInformation ) );
+                continue;
             }
 
             modifies.add( ((ModifiableCollection) document.getTable()).toModificationAlg(
@@ -853,7 +855,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             Graph graph = reader.getGraph( name );
             if ( graph == null ) {
-                return attachRelationalModify( alg, statement );
+                // move "slower" updates in front
+                modifies.add( 0, attachRelationalModify( alg, adapterId, statement ) );
+                continue;
             }
 
             if ( !(graph instanceof ModifiableGraph) ) {
@@ -906,10 +910,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation ) {
+    private AlgNode attachRelationalModify( LogicalDocumentModify alg, Statement statement, int adapterId, LogicalQueryInformation queryInformation ) {
         CatalogDocumentMapping mapping = Catalog.getInstance().getDocumentMapping( alg.getCollection().getTable().getTableId() );
 
-        PreparingTable collectionTable = getSubstitutionTable( statement, mapping.collectionId, mapping.idId );
+        PreparingTable collectionTable = getSubstitutionTable( statement, mapping.collectionId, mapping.idId, adapterId );
 
         List<AlgNode> inputs = new ArrayList<>();
         switch ( alg.operation ) {
@@ -1029,13 +1033,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalModify( LogicalGraphModify alg, Statement statement ) {
+    private AlgNode attachRelationalModify( LogicalGraphModify alg, int adapterId, Statement statement ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
 
-        PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId );
-        PreparingTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId );
-        PreparingTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId );
-        PreparingTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId );
+        PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );
+        PreparingTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId );
+        PreparingTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId, adapterId );
+        PreparingTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId, adapterId );
 
         List<AlgNode> inputs = new ArrayList<>();
         switch ( alg.operation ) {
