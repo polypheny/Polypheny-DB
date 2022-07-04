@@ -1559,6 +1559,8 @@ public abstract class Catalog {
 
     public abstract List<CatalogProcedure> getProcedures(Long schemaId);
 
+    public abstract List<CatalogTrigger> getTriggers(Long schemaId);
+
 
     public abstract Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException;
 

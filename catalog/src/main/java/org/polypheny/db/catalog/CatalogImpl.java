@@ -902,6 +902,11 @@ public class CatalogImpl extends Catalog {
         return List.copyOf(procedures.getValues());
     }
 
+    @Override
+    public List<CatalogTrigger> getTriggers(Long schemaId) {
+        return List.copyOf(triggers.getValues());
+    }
+
     /**
      * Deletes the procedure with the given name in the specified schema.
      *
@@ -933,14 +938,14 @@ public class CatalogImpl extends Catalog {
      * @param databaseId    The id of the database
      * @param schemaId      The id of the schema
      * @param triggerName   The name of the trigger
-     * @param triggerName   The name of the table
+     * @param table         The referenced table
      * @param event         The event on which to execute the trigger
      * @param query         The query to run
      */
     @Override
     public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query) {
         long id = procedureIdBuilder.getAndIncrement();
-        CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, query);
+        CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, table.id, query);
         synchronized (this) {
             triggers.put(id, trigger);
             triggerNames.put(new Object[]{databaseId, schemaId, triggerName}, trigger);
@@ -1813,8 +1818,16 @@ public class CatalogImpl extends Catalog {
                 openTable = null;
             }
 
+            triggerNames.values().stream()
+                    .filter(trigger -> trigger.getTableId() == tableId)
+                    .forEach(t -> removeLinkedTriggers(table, t));
         }
         listeners.firePropertyChange( "table", table, null );
+    }
+
+    private void removeLinkedTriggers(CatalogTable table, CatalogTrigger t) {
+        triggerNames.remove(new Object[]{table.databaseId, table.schemaId, t.getName()});
+        triggers.remove(t.getTriggerId());
     }
 
 
