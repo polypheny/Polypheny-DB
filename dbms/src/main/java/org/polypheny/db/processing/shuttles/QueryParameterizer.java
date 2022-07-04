@@ -69,20 +69,31 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     private final AtomicInteger index;
     @Getter
     private final Map<Integer, List<ParameterValue>> values;
+
+    @Getter
+    private final Map<Integer, Map<Integer, List<ParameterValue>>> docs;
+
     @Getter
     private final List<AlgDataType> types;
+    private final boolean asymmetric;
     private int batchSize;
 
 
-    public QueryParameterizer( int indexStart, List<AlgDataType> parameterRowType ) {
+    public QueryParameterizer( int indexStart, List<AlgDataType> parameterRowType, boolean asymmetric ) {
         index = new AtomicInteger( indexStart );
         values = new HashMap<>();
         types = new ArrayList<>( parameterRowType );
+        this.asymmetric = asymmetric;
+        docs = new HashMap<>();
     }
 
 
     @Override
     public AlgNode visit( LogicalFilter oFilter ) {
+        if ( asymmetric ) {
+            return oFilter;
+        }
+
         LogicalFilter filter = (LogicalFilter) super.visit( oFilter );
         RexNode condition = filter.getCondition();
         return new LogicalFilter(
@@ -120,6 +131,9 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public AlgNode visit( LogicalProject oProject ) {
+        if ( asymmetric ) {
+            return oProject;
+        }
         LogicalProject project = (LogicalProject) super.visit( oProject );
         List<RexNode> newProjects = new ArrayList<>();
         for ( RexNode node : oProject.getProjects() ) {
@@ -204,7 +218,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     public AlgNode visit( AlgNode other ) {
         if ( other instanceof LogicalModifyCollect ) {
             if ( other.getTraitSet().contains( ModelTrait.GRAPH ) ) {
-                return other;
+                //return other;
             }
             List<AlgNode> inputs = new ArrayList<>( other.getInputs().size() );
             for ( AlgNode node : other.getInputs() ) {
@@ -224,6 +238,10 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public AlgNode visit( LogicalModify initial ) {
+        if ( asymmetric ) {
+            return visitAsymmetricModify( initial );
+        }
+
         LogicalModify modify = (LogicalModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
         if ( modify.getSourceExpressionList() != null ) {
@@ -282,6 +300,74 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.isFlattened() )
                 .isStreamed( modify.isStreamed() );
 
+    }
+
+
+    public AlgNode visitAsymmetricModify( LogicalModify initial ) {
+        LogicalModify modify = (LogicalModify) super.visit( initial );
+        List<RexNode> newSourceExpression = null;
+        if ( modify.getSourceExpressionList() != null ) {
+            newSourceExpression = new ArrayList<>();
+            for ( RexNode node : modify.getSourceExpressionList() ) {
+                newSourceExpression.add( node.accept( this ) );
+            }
+        }
+        AlgNode input = modify.getInput();
+        if ( input instanceof LogicalValues ) {
+            List<RexNode> projects = new ArrayList<>();
+            boolean firstRow = true;
+            HashMap<Integer, Integer> idxMapping = new HashMap<>();
+            this.batchSize = ((LogicalValues) input).tuples.size();
+
+            int entires = docs.size();
+            HashMap<Integer, List<ParameterValue>> doc = new HashMap<>();
+
+            for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
+                int i = 0;
+                for ( RexLiteral literal : node ) {
+                    int idx;
+                    if ( !idxMapping.containsKey( i ) ) {
+                        idx = index.getAndIncrement();
+                        idxMapping.put( i, idx );
+                    } else {
+                        idx = idxMapping.get( i );
+                    }
+                    AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                    if ( firstRow ) {
+                        projects.add( new RexDynamicParam( type, idx ) );
+                    }
+                    if ( !doc.containsKey( idx ) ) {
+                        types.add( type );
+                        doc.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
+                    }
+                    doc.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                    i++;
+                }
+                firstRow = false;
+            }
+
+            docs.put( entires, doc );
+
+            LogicalValues logicalValues = LogicalValues.createOneRow( input.getCluster() );
+            input = new LogicalProject(
+                    input.getCluster(),
+                    input.getTraitSet(),
+                    logicalValues,
+                    projects,
+                    input.getRowType()
+            );
+        }
+        return new LogicalModify(
+                modify.getCluster(),
+                modify.getTraitSet(),
+                modify.getTable(),
+                modify.getCatalogReader(),
+                input,
+                modify.getOperation(),
+                modify.getUpdateColumnList(),
+                newSourceExpression,
+                modify.isFlattened() )
+                .isStreamed( modify.isStreamed() );
     }
 
 

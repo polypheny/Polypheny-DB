@@ -1098,17 +1098,36 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         parameterRowType.getFieldList().forEach( algDataTypeField -> parameterRowTypeList.add( algDataTypeField.getType() ) );
 
         // Parameterize
-        QueryParameterizer queryParameterizer = new QueryParameterizer( parameterRowType.getFieldCount(), parameterRowTypeList );
+        QueryParameterizer queryParameterizer = new QueryParameterizer( parameterRowType.getFieldCount(), parameterRowTypeList, routed.getTraitSet().contains( ModelTrait.GRAPH ) );
         AlgNode parameterized = routed.accept( queryParameterizer );
         List<AlgDataType> types = queryParameterizer.getTypes();
 
-        // Add values to data context
-        for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
-            List<Object> o = new ArrayList<>();
-            for ( ParameterValue v : values ) {
-                o.add( v.getValue() );
+        if ( routed.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+            // we are not as strict in the context when dealing with graph queries/mixed-model queries
+            statement.getDataContext().setMixedModel( true );
+            // graph updates are not symmetric and need special logic to allow to be parameterized
+            for ( Map<Integer, List<ParameterValue>> value : queryParameterizer.getDocs().values() ) {
+                // Add values to data context
+                for ( List<DataContext.ParameterValue> values : value.values() ) {
+                    List<Object> o = new ArrayList<>();
+                    for ( ParameterValue v : values ) {
+                        o.add( v.getValue() );
+                    }
+                    statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
+                }
+
+                statement.getDataContext().addContext();
             }
-            statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
+            statement.getDataContext().resetContext();
+        } else {
+            // Add values to data context
+            for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
+                List<Object> o = new ArrayList<>();
+                for ( ParameterValue v : values ) {
+                    o.add( v.getValue() );
+                }
+                statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
+            }
         }
 
         // parameterRowType

@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.polypheny.db.adapter.enumerable.common.EnumerableContextSwitcherRule;
 import org.polypheny.db.adapter.enumerable.graph.EnumerableGraphMatchRule;
 import org.polypheny.db.adapter.enumerable.graph.EnumerableGraphTransformerRule;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -54,6 +55,8 @@ public class EnumerableRules {
     public static final EnumerableConditionalExecuteFalseRule ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE = new EnumerableConditionalExecuteFalseRule();
 
     public static final EnumerableStreamerRule ENUMERABLE_STREAMER_RULE = new EnumerableStreamerRule();
+
+    public static final EnumerableContextSwitcherRule ENUMERABLE_CONTEXT_SWITCHER_RULE = new EnumerableContextSwitcherRule();
 
     public static final EnumerableTableModifyToStreamerRule ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE = new EnumerableTableModifyToStreamerRule();
 

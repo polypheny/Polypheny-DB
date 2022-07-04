@@ -191,6 +191,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
+                    EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_BATCH_ITERATOR_RULE,
                     EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,

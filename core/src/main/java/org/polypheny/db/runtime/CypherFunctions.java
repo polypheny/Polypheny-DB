@@ -133,7 +133,7 @@ public class CypherFunctions {
             String key = (String) o[5];
             String val = (String) o[6];
 
-            if ( !id.equals( oldId ) ) {
+            if ( id != null && !id.equals( oldId ) ) {
                 if ( oldId != null ) {
                     edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
                 }
@@ -181,7 +181,7 @@ public class CypherFunctions {
             String key = (String) o[3];
             String val = (String) o[4];
 
-            if ( !id.equals( oldId ) ) {
+            if ( id != null && !id.equals( oldId ) ) {
                 if ( oldId != null ) {
                     nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), List.copyOf( oldLabels ), null ) );
                 }

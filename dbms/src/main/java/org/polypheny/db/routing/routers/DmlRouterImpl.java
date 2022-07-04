@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.core.graph.GraphValues;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -869,7 +870,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     alg.getTraitSet(),
                     graph,
                     statement.getTransaction().getCatalogReader(),
-                    buildGraphDml( alg.getInput(), statement ),
+                    buildGraphDml( alg.getInput(), statement, adapterId ),
                     alg.operation,
                     alg.ids,
                     alg.operations ) );
@@ -889,24 +890,26 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             return super.handleDocumentScan( (DocumentScan) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), queryInformation ).build();
         }
         int i = 0;
+        List<AlgNode> inputs = new ArrayList<>();
         for ( AlgNode input : node.getInputs() ) {
-            node.replaceInput( i, buildDocumentDml( input, statement, queryInformation ) );
+            inputs.add( i, buildDocumentDml( input, statement, queryInformation ) );
             i++;
         }
-        return node;
+        return node.copy( node.getTraitSet(), inputs );
     }
 
 
-    private AlgNode buildGraphDml( AlgNode node, Statement statement ) {
+    private AlgNode buildGraphDml( AlgNode node, Statement statement, int adapterId ) {
         if ( node instanceof GraphScan ) {
-            return super.handleGraphScan( (LogicalGraphScan) node, statement );
+            return super.handleGraphScan( (LogicalGraphScan) node, statement, adapterId );
         }
         int i = 0;
+        List<AlgNode> inputs = new ArrayList<>();
         for ( AlgNode input : node.getInputs() ) {
-            node.replaceInput( i, buildGraphDml( input, statement ) );
+            inputs.add( i, buildGraphDml( input, statement, adapterId ) );
             i++;
         }
-        return node;
+        return node.copy( node.getTraitSet(), inputs );
     }
 
 
@@ -1049,35 +1052,35 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     inputs.addAll( ((LogicalGraphValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), statement.getTransaction().getCatalogReader() ) );
                 }
                 if ( alg.getInput() instanceof GraphProject ) {
-                    return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                    return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
                 }
 
                 break;
             case UPDATE:
-                return attachRelationalGraphUpdate( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                return attachRelationalGraphUpdate( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
 
             case DELETE:
-                return attachRelationalGraphDelete( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                return attachRelationalGraphDelete( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
             case MERGE:
                 break;
         }
 
         List<AlgNode> modifies = new ArrayList<>();
         if ( inputs.get( 0 ) != null ) {
-            modifies.add( getModify( nodesTable, inputs.get( 0 ), statement, alg.operation, null, null ) );
+            modifies.add( switchContext( getModify( nodesTable, inputs.get( 0 ), statement, alg.operation, null, null ) ) );
         }
 
         if ( inputs.get( 1 ) != null ) {
-            modifies.add( getModify( nodePropertiesTable, inputs.get( 1 ), statement, alg.operation, null, null ) );
+            modifies.add( switchContext( getModify( nodePropertiesTable, inputs.get( 1 ), statement, alg.operation, null, null ) ) );
         }
 
         if ( inputs.size() > 2 ) {
             if ( inputs.get( 2 ) != null ) {
-                modifies.add( getModify( edgesTable, inputs.get( 2 ), statement, alg.operation, null, null ) );
+                modifies.add( switchContext( getModify( edgesTable, inputs.get( 2 ), statement, alg.operation, null, null ) ) );
             }
 
             if ( inputs.get( 3 ) != null ) {
-                modifies.add( getModify( edgePropertiesTable, inputs.get( 3 ), statement, alg.operation, null, null ) );
+                modifies.add( switchContext( getModify( edgePropertiesTable, inputs.get( 3 ), statement, alg.operation, null, null ) ) );
             }
         }
 
@@ -1085,8 +1088,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalGraphUpdate( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable ) {
-        AlgNode project = new LogicalGraphProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement ), alg.operations, alg.ids );
+    private AlgNode attachRelationalGraphUpdate( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
+        AlgNode project = new LogicalGraphProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement, adapterId ), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
@@ -1109,8 +1112,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalGraphDelete( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable ) {
-        AlgNode project = new LogicalGraphProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement ), alg.operations, alg.ids );
+    private AlgNode attachRelationalGraphDelete( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
+        AlgNode project = new LogicalGraphProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement, adapterId ), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
@@ -1162,8 +1165,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalRelatedInsert( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable ) {
-        AlgNode project = buildGraphDml( alg.getInput(), statement );
+    private AlgNode attachRelationalRelatedInsert( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
+        AlgNode project = buildGraphDml( alg.getInput(), statement, adapterId );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
@@ -1269,6 +1272,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         return inputs;
 
+    }
+
+
+    private AlgNode switchContext( AlgNode node ) {
+        return new LogicalContextSwitcher( node );
     }
 
 

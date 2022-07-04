@@ -59,6 +59,14 @@ public class DataContextImpl implements DataContext {
     @Setter
     private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
+    private final Map<Integer, List<Map<Long, Object>>> otherParameterValues;
+
+    int i = 0;
+
+    @Getter
+    @Setter
+    private boolean isMixedModel = false;
+
 
     public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
         this.queryProvider = queryProvider;
@@ -97,6 +105,7 @@ public class DataContextImpl implements DataContext {
 
         parameterTypes = new HashMap<>();
         parameterValues = new LinkedList<>();
+        otherParameterValues = new HashMap<>();
     }
 
 
@@ -172,6 +181,33 @@ public class DataContextImpl implements DataContext {
     public void resetParameterValues() {
         parameterTypes = new HashMap<>();
         parameterValues = new ArrayList<>();
+    }
+
+
+    @Override
+    public void switchContext() {
+        if ( otherParameterValues.containsKey( i ) ) {
+            parameterValues = otherParameterValues.get( i );
+        }
+        i++;
+    }
+
+
+    @Override
+    public void addContext() {
+        otherParameterValues.put( otherParameterValues.size(), parameterValues );
+        parameterValues = new ArrayList<>();
+    }
+
+
+    @Override
+    public void resetContext() {
+        i = 0;
+        if ( otherParameterValues.size() > 0 ) {
+            parameterValues = otherParameterValues.get( i );
+        } else {
+            parameterValues = new ArrayList<>();
+        }
     }
 
 

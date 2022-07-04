@@ -105,6 +105,25 @@ public interface DataContext {
         return getParameterValues().get( 0 ).get( index );
     }
 
+    default boolean isMixedModel() {
+        return false;
+    }
+
+    default void setMixedModel( boolean isMixedModel ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void switchContext() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void addContext() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void resetContext() {
+        throw new UnsupportedOperationException();
+    }
 
     @Data
     class ParameterValue {
@@ -263,7 +282,7 @@ public interface DataContext {
 
         @Override
         public void setParameterTypes( Map<Long, AlgDataType> types ) {
-
+            //empty on purpose
         }
 
     }

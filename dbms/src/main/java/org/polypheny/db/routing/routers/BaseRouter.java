@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.document.DocumentScan;
@@ -295,7 +296,7 @@ public abstract class BaseRouter {
     }
 
 
-    public AlgNode handleGraphScan( LogicalGraphScan alg, Statement statement ) {
+    public AlgNode handleGraphScan( LogicalGraphScan alg, Statement statement, @Nullable Integer placementId ) {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         Catalog catalog = Catalog.getInstance();
@@ -303,7 +304,12 @@ public abstract class BaseRouter {
 
         List<AlgNode> scans = new ArrayList<>();
 
-        for ( int adapterId : catalogGraph.placements ) {
+        List<Integer> placements = catalogGraph.placements;
+        if ( placementId != null ) {
+            placements = List.of( placementId );
+        }
+
+        for ( int adapterId : placements ) {
             CatalogAdapter adapter = catalog.getAdapter( adapterId );
             CatalogGraphPlacement graphPlacement = catalog.getGraphPlacement( catalogGraph.id, adapterId );
             String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );
