@@ -533,6 +533,8 @@ public interface NeoUtil {
                     return ((java.sql.Timestamp) value).toInstant().getEpochSecond();
                 }
                 return ((TimestampString) value).getMillisSinceEpoch();
+            case DOCUMENT:
+                return value.toString();
             /*case ARRAY:
                 return ((List<?>) value).stream().map( v -> NeoUtil.fixParameterValue( v, Pair.of( type.right, type.right ) ) ).collect( Collectors.toList());*/
         }
