@@ -800,16 +800,21 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation ) {
+    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId ) {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         CatalogCollection collection = Catalog.getInstance().getCollection( alg.getCollection().getTable().getTableId() );
 
         List<AlgNode> modifies = new ArrayList<>();
 
-        for ( int adapterId : collection.placements ) {
-            CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
-            CatalogCollectionPlacement placement = Catalog.getInstance().getCollectionPlacement( collection.id, adapterId );
+        List<Integer> placements = collection.placements;
+        if ( adapterId != null ) {
+            placements = List.of( adapterId );
+        }
+
+        for ( int placementId : placements ) {
+            CatalogAdapter adapter = Catalog.getInstance().getAdapter( placementId );
+            CatalogCollectionPlacement placement = Catalog.getInstance().getCollectionPlacement( collection.id, placementId );
             String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
 
             String collectionName = collection.name + "_" + placement.id;
@@ -817,7 +822,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             AlgOptTable document = reader.getDocument( List.of( namespaceName, collectionName ) );
             if ( !adapter.getSupportedNamespaces().contains( NamespaceType.DOCUMENT ) ) {
                 // move "slower" updates in front
-                modifies.add( 0, attachRelationalModify( alg, statement, adapterId, queryInformation ) );
+                modifies.add( 0, attachRelationalModify( alg, statement, placementId, queryInformation ) );
                 continue;
             }
 
@@ -887,7 +892,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     private AlgNode buildDocumentDml( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
         if ( node instanceof DocumentScan ) {
-            return super.handleDocumentScan( (DocumentScan) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), queryInformation ).build();
+            return super.handleDocumentScan( (DocumentScan) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), queryInformation, null ).build();
         }
         int i = 0;
         List<AlgNode> inputs = new ArrayList<>();
@@ -918,31 +923,24 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         PreparingTable collectionTable = getSubstitutionTable( statement, mapping.collectionId, mapping.idId, adapterId );
 
-        List<AlgNode> inputs = new ArrayList<>();
+
         switch ( alg.operation ) {
             case INSERT:
-                return attachRelationalDocInsert( alg, statement, collectionTable, queryInformation ).get( 0 );
+                return attachRelationalDocInsert( alg, statement, collectionTable, queryInformation, adapterId ).get( 0 );
             case UPDATE:
             case DELETE:
-                return attachRelationalDoc( alg, statement, collectionTable, queryInformation ).get( 0 );
+                return attachRelationalDoc( alg, statement, collectionTable, queryInformation, adapterId ).get( 0 );
             case MERGE:
                 throw new RuntimeException( "MERGE is not supported." );
             default:
                 throw new RuntimeException( "Unknown update operation for document." );
         }
-        /*
-        List<AlgNode> modifies = new ArrayList<>();
-        if ( inputs.get( 0 ) != null ) {
-            modifies.add( getModify( collectionTable, inputs.get( 0 ), statement, alg.operation, null, null ) );
-        }
 
-        return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.DOCUMENT ), modifies, true );
-         */
     }
 
 
-    private List<AlgNode> attachRelationalDoc( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable, LogicalQueryInformation queryInformation ) {
-        RoutedAlgBuilder builder = attachDocUpdate( alg.getInput(), statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation );
+    private List<AlgNode> attachRelationalDoc( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable, LogicalQueryInformation queryInformation, int adapterId ) {
+        RoutedAlgBuilder builder = attachDocUpdate( alg.getInput(), statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation, adapterId );
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         if ( alg.operation == Operation.UPDATE ) {
@@ -988,31 +986,31 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private RoutedAlgBuilder attachDocUpdate( AlgNode alg, Statement statement, PreparingTable collectionTable, RoutedAlgBuilder builder, LogicalQueryInformation information ) {
+    private RoutedAlgBuilder attachDocUpdate( AlgNode alg, Statement statement, PreparingTable collectionTable, RoutedAlgBuilder builder, LogicalQueryInformation information, int adapterId ) {
         switch ( ((DocumentAlg) alg).getDocType() ) {
 
             case SCAN:
-                handleDocumentScan( (DocumentScan) alg, statement, builder, information );
+                handleDocumentScan( (DocumentScan) alg, statement, builder, information, adapterId );
                 break;
             case VALUES:
                 builder.push( LogicalDocumentValues.create( alg.getCluster(), ((DocumentValues) alg).documentTuples ) );
                 break;
             case PROJECT:
-                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information );
+                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
                 builder.push( LogicalDocumentProject.create( builder.build(), ((DocumentProject) alg).projects, alg.getRowType().getFieldNames() ) );
                 break;
             case FILTER:
-                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information );
+                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
                 LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
                 builder.push( LogicalDocumentFilter.create( builder.build(), filter.condition ) );
                 break;
             case AGGREGATE:
-                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information );
+                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
                 LogicalDocumentAggregate aggregate = (LogicalDocumentAggregate) alg;
                 builder.push( LogicalDocumentAggregate.create( builder.build(), aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls ) );
                 break;
             case SORT:
-                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information );
+                attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
                 LogicalDocumentSort sort = (LogicalDocumentSort) alg;
                 builder.push( LogicalDocumentSort.create( builder.build(), sort.collation, sort.offset, sort.fetch ) );
                 break;
@@ -1025,14 +1023,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private List<AlgNode> attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable, LogicalQueryInformation queryInformation ) {
+    private List<AlgNode> attachRelationalDocInsert( LogicalDocumentModify alg, Statement statement, PreparingTable collectionTable, LogicalQueryInformation queryInformation, int adapterId ) {
         if ( alg.getInput() instanceof DocumentValues ) {
             // simple value insert
             AlgNode values = ((LogicalDocumentValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( collectionTable ), statement.getTransaction().getCatalogReader() ).get( 0 );
             return List.of( getModify( collectionTable, values, statement, alg.operation, null, null ) );
         }
 
-        return List.of( attachDocUpdate( alg, statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation ).build() );
+        return List.of( attachDocUpdate( alg, statement, collectionTable, RoutedAlgBuilder.create( statement, alg.getCluster() ), queryInformation, adapterId ).build() );
     }
 
 

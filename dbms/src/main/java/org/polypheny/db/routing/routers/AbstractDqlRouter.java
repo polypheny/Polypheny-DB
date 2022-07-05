@@ -164,7 +164,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
             return alg;
         } else if ( alg.getDocType() == DocType.SCAN ) {
-            builder.push( handleDocumentScan( (DocumentScan) alg, statement, builder, queryInformation ).build() );
+            builder.push( handleDocumentScan( (DocumentScan) alg, statement, builder, queryInformation, null ).build() );
             return alg;
         } else if ( alg.getDocType() == DocType.VALUES ) {
             return alg;
@@ -203,7 +203,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), queryInformation ) );
+            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), queryInformation, null ) );
         }
 
         if ( node instanceof LogicalScan && node.getTable() != null ) {

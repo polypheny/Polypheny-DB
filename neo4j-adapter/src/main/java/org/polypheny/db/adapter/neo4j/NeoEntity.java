@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -187,7 +188,7 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
          */
         private Map<String, Object> toParameters( Map<Long, Object> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
             Map<String, Object> parameters = new HashMap<>();
-            for ( Entry<Long, Object> entry : values.entrySet() ) {
+            for ( Entry<Long, Object> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).collect( Collectors.toList() ) ) {
                 parameters.put( NeoUtil.asParameter( entry.getKey(), false ), NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ) ) );
             }
             return parameters;

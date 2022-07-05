@@ -1047,7 +1047,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private List<ProposedRoutingPlan> routeDocument( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
         if ( logicalRoot.alg instanceof LogicalDocumentModify ) {
-            AlgNode routedDml = dmlRouter.routeDocumentDml( (LogicalDocumentModify) logicalRoot.alg, statement, queryInformation );
+            AlgNode routedDml = dmlRouter.routeDocumentDml( (LogicalDocumentModify) logicalRoot.alg, statement, queryInformation, null );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
         }
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );

@@ -383,7 +383,7 @@ public abstract class BaseRouter {
     }
 
 
-    protected RoutedAlgBuilder handleDocumentScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation ) {
+    protected RoutedAlgBuilder handleDocumentScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation, Integer adapterId ) {
         Catalog catalog = Catalog.getInstance();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
@@ -395,16 +395,21 @@ public abstract class BaseRouter {
 
         List<RoutedAlgBuilder> scans = new ArrayList<>();
 
-        for ( Integer adapterId : collection.placements ) {
-            CatalogAdapter adapter = catalog.getAdapter( adapterId );
+        List<Integer> placements = collection.placements;
+        if ( adapterId != null ) {
+            placements = List.of( adapterId );
+        }
+
+        for ( Integer placementId : placements ) {
+            CatalogAdapter adapter = catalog.getAdapter( placementId );
             NamespaceType sourceModel = alg.getCollection().getTable().getSchemaType();
 
             if ( !adapter.getSupportedNamespaces().contains( sourceModel ) ) {
                 // document on relational
-                scans.add( handleDocumentOnRelational( alg, adapterId, statement, builder ) );
+                scans.add( handleDocumentOnRelational( alg, placementId, statement, builder ) );
                 continue;
             }
-            CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, adapterId );
+            CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, placementId );
             String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             String collectionName = collection.name + "_" + placement.id;
             AlgOptTable collectionTable = reader.getDocument( List.of( namespaceName, collectionName ) );

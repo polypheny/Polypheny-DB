@@ -44,6 +44,6 @@ public interface DmlRouter {
 
     AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
 
-    AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation );
+    AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId );
 
 }
