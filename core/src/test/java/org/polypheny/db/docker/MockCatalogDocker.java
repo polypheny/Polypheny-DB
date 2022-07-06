@@ -22,10 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.polypheny.db.catalog.Event;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogProcedure;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogTrigger;
 import org.polypheny.db.catalog.exceptions.ProcedureAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
 
@@ -62,12 +65,27 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
+    public List<CatalogTrigger> getTriggers(Long schemaId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void deleteProcedure(long databaseId, long schemaId, String procedureName) throws UnknownProcedureException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void dropTrigger(long databaseId, Long schemaId, String triggerName) {
         throw new UnsupportedOperationException();
     }
 
