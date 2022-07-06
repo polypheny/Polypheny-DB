@@ -100,7 +100,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
                     } else if ( catalogTable.tableType == TableType.VIEW ) {
                         ViewWriterOrchestrator viewWriterOrchestrator = new ViewWriterOrchestrator();
-                        viewWriterOrchestrator.writeView();
+
+                        viewWriterOrchestrator.writeView(node, statement, catalogTable);
+
                     }
                     throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                 }

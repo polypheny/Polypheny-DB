@@ -18,17 +18,25 @@ package org.polypheny.db.view;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.processing.SqlProcessorImpl;
 
 class ViewWriterOrchestratorTest {
+
+    @Test
+    void name() {
+        SqlProcessorImpl sqlProcessor = new SqlProcessorImpl();
+        sqlProcessor.parse("select * from emps;");
+    }
 
     @Test
     void writeView() {
         ViewWriterOrchestrator sut = new ViewWriterOrchestrator();
         try {
-            sut.writeView();
+            sut.writeView(null, null, null);
             Assertions.fail();
         } catch (RuntimeException e) {
             // expected
         }
     }
+
 }
