@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.ddl;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
@@ -26,22 +27,30 @@ import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
-import org.polypheny.db.cypher.clause.CypherUseClause;
-import org.polypheny.db.cypher.cypher2alg.CypherQueryParameters;
+import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
-public class CypherAddPlacement extends CypherUseClause implements ExecutableStatement {
+public class CypherAddPlacement extends CypherAdminCommand implements ExecutableStatement {
 
     private final String store;
+    private final String database;
 
 
-    public CypherAddPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> either ) {
-        super( pos, null );
-        this.store = either.getLeft();
+    public CypherAddPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherSimpleEither<String, CypherParameter> storeName ) {
+        super( pos );
+        this.database = getNameOrNull( databaseName );
+        this.store = getNameOrNull( storeName );
+
+        if ( this.database == null ) {
+            throw new RuntimeException( "Unknown database name." );
+        }
+        if ( this.store == null ) {
+            throw new RuntimeException( "Unknown store name." );
+        }
     }
 
 
@@ -50,7 +59,7 @@ public class CypherAddPlacement extends CypherUseClause implements ExecutableSta
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( ((CypherQueryParameters) parameters).getDatabaseName() ) );
+        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( this.database ) );
 
         List<DataStore> dataStores = Stream.of( store )
                 .map( store -> (DataStore) adapterManager.getAdapter( store ) )
@@ -58,6 +67,10 @@ public class CypherAddPlacement extends CypherUseClause implements ExecutableSta
 
         if ( graphs.size() != 1 ) {
             throw new RuntimeException( "Error while adding graph placement" );
+        }
+
+        if ( graphs.get( 0 ).placements.stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
+            throw new RuntimeException( "Could not create placement of graph as it already exists." );
         }
 
         DdlManager.getInstance().addGraphDatabasePlacement( graphs.get( 0 ).id, dataStores, true, statement );

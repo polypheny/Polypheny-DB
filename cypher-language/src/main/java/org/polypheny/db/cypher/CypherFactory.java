@@ -557,12 +557,12 @@ public interface CypherFactory {
         return new CypherUseClause( pos, expression );
     }
 
-    static CypherAddPlacement addPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> either ) {
-        return new CypherAddPlacement( pos, either );
+    static CypherAdminCommand addPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherSimpleEither<String, CypherParameter> store ) {
+        return new CypherAddPlacement( pos, databaseName, store );
     }
 
-    static CypherDropPlacement dropPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> store ) {
-        return new CypherDropPlacement( pos, store.getLeft() );
+    static CypherAdminCommand dropPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherSimpleEither<String, CypherParameter> store ) {
+        return new CypherDropPlacement( pos, databaseName, store );
     }
 
     static CypherAdminCommand dropRole( ParserPos pos, CypherSimpleEither<String, CypherParameter> roleName, boolean ifExists ) {
@@ -714,8 +714,8 @@ public interface CypherFactory {
         return new CypherWaitClause( wait, nanos );
     }
 
-    static CypherAdminCommand createDatabase( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither options ) {
-        return new CypherCreateDatabase( pos, replace, databaseName, ifNotExists, wait, options );
+    static CypherAdminCommand createDatabase( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither options, CypherSimpleEither<String, CypherParameter> store ) {
+        return new CypherCreateDatabase( pos, replace, databaseName, ifNotExists, wait, options, store );
     }
 
     static CypherAdminCommand dropDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifExists, boolean dumpData, CypherWaitClause wait ) {

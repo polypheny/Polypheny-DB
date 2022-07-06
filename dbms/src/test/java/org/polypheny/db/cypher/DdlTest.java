@@ -69,7 +69,7 @@ public class DdlTest extends CypherTestTemplate {
 
             addStore( "store1" );
 
-            execute( String.format( "USE PLACEMENT %s", "store1" ), graphName );
+            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
             graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
 
@@ -79,6 +79,33 @@ public class DdlTest extends CypherTestTemplate {
 
         } finally {
 
+            removeStore( "store1" );
+        }
+
+    }
+
+
+    @Test
+    public void initialPlacementTest() throws SQLException {
+        Catalog catalog = Catalog.getInstance();
+        try {
+            addStore( "store1" );
+
+            execute( String.format( "CREATE DATABASE %s ON STORE %s", graphName, "store1" ) );
+
+            CatalogGraphDatabase graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+
+            assertEquals( 1, graph.placements.size() );
+
+            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
+
+            graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
+
+            assertEquals( 2, graph.placements.size() );
+
+            execute( "DROP DATABASE " + graphName );
+
+        } finally {
             removeStore( "store1" );
         }
 
@@ -98,13 +125,13 @@ public class DdlTest extends CypherTestTemplate {
 
             addStore( "store1" );
 
-            execute( String.format( "USE PLACEMENT %s", "store1" ), graphName );
+            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
             graph = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) ).get( 0 );
 
             assertEquals( 2, graph.placements.size() );
 
-            execute( String.format( "DROP PLACEMENT %s", "store1" ), graphName );
+            execute( String.format( "DROP PLACEMENT OF %s ON STORE %S", graphName, "store1" ), graphName );
 
             execute( "DROP DATABASE " + graphName );
 

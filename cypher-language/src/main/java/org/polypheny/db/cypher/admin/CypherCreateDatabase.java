@@ -16,8 +16,11 @@
 
 package org.polypheny.db.cypher.admin;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -37,24 +40,23 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
     private final boolean ifNotExists;
     private final CypherWaitClause wait;
     private final CypherSimpleEither options;
+    private final String store;
 
 
-    public CypherCreateDatabase( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither options ) {
+    public CypherCreateDatabase( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither options, CypherSimpleEither<String, CypherParameter> store ) {
         super( pos );
         this.replace = replace;
-        if ( databaseName.getLeft() != null ) {
-            this.databaseName = databaseName.getLeft();
-        } else {
-            this.databaseName = databaseName.getRight().getName();
-        }
+        this.databaseName = getNameOrNull( databaseName );
         this.ifNotExists = ifNotExists;
         this.wait = wait;
         this.options = options;
+        this.store = getNameOrNull( store );
     }
 
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
+        AdapterManager manager = AdapterManager.getInstance();
         if ( wait != null && wait.isWait() ) {
             try {
                 Thread.sleep( TimeUnit.MILLISECONDS.convert( wait.getNanos(), TimeUnit.NANOSECONDS ) );
@@ -63,7 +65,22 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
             }
         }
 
-        DdlManager.getInstance().createGraphDatabase( Catalog.defaultDatabaseId, databaseName, true, null, ifNotExists, replace, statement );
+        List<DataStore> dataStore = null;
+        if ( store != null ) {
+            if ( manager.getStore( store ) == null ) {
+                throw new RuntimeException( "Error while retrieving placement of graph database." );
+            }
+            dataStore = List.of( manager.getStore( store ) );
+        }
+
+        DdlManager.getInstance().createGraphDatabase(
+                Catalog.defaultDatabaseId,
+                databaseName,
+                true,
+                dataStore,
+                ifNotExists,
+                replace,
+                statement );
 
     }
 

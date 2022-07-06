@@ -24,8 +24,9 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.cypher.CypherParameter;
+import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
-import org.polypheny.db.cypher.cypher2alg.CypherQueryParameters;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -35,11 +36,13 @@ import org.polypheny.db.transaction.Statement;
 public class CypherDropPlacement extends CypherAdminCommand implements ExecutableStatement {
 
     private final String storeName;
+    private final String databaseName;
 
 
-    public CypherDropPlacement( ParserPos pos, String storeName ) {
+    public CypherDropPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherSimpleEither<String, CypherParameter> storeName ) {
         super( pos );
-        this.storeName = storeName;
+        this.databaseName = getNameOrNull( databaseName );
+        this.storeName = getNameOrNull( storeName );
     }
 
 
@@ -48,7 +51,7 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( ((CypherQueryParameters) parameters).getDatabaseName() ) );
+        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( this.databaseName ) );
 
         DataStore dataStore = Stream.of( storeName )
                 .map( store -> (DataStore) adapterManager.getAdapter( storeName ) )

@@ -423,7 +423,8 @@ TOKEN [IGNORE_CASE] :
     | < SUM: "sum" >
     | < STARTS: "STARTS" >
     | < STATUS: "STATUS" >
-    | < STOP: "STOP">
+    | < STOP: "STOP" >
+    | < STORE: "STORE" >
     | < SUSPENDED: "SUSPENDED">
     | < TARGET: "TARGET" >
     | < TERMINATE: "TERMINATE">
@@ -1515,31 +1516,11 @@ CypherUseClause UseClause() :
 {
     Token t;
     CypherExpression e;
-    CypherUseClause u;
 }
 {
-    t=<USE> (
-        <PLACEMENT>  u=AddPlacement(t)
-        {
-            return u;
-        }
-        |
-        (LOOKAHEAD( 2 ) <GRAPH> )? e=Expression()
-        {
-            return CypherFactory.createUse( pos( t ), e );
-        }
-    )
-
-}
-
-CypherUseClause AddPlacement( Token t) :
-{
-     CypherSimpleEither<String, CypherParameter> store = null;
-}
-{
-    store=SymbolicDatabaseNameStringOrParameter()
+    t=<USE> ( LOOKAHEAD( 2 ) <GRAPH> )? e=Expression()
     {
-        return CypherFactory.addPlacement( pos( t ), store );
+        return CypherFactory.createUse( pos( t ), e );
     }
 }
 
@@ -2996,6 +2977,7 @@ CypherWithGraph CreateCommand( CypherUseClause useClause ) throws Exception:
         statement=CreateRole( start, replace )
         | statement=CreateUser( start, replace )
         | statement=CreateDatabase( start, replace )
+        | statement=CreatePlacement( start, replace )
         | statement=CreateConstraint( start, replace )
         | statement=CreateIndex( start, replace )
         | statement=CreateAlias( start, replace )
@@ -4908,14 +4890,28 @@ CypherAdminCommand CreateDatabase( Token start, boolean replace ):
     boolean ifNotExists = false;
     CypherWaitClause wait = CypherFactory.wait( false, -1 );
     CypherSimpleEither optionz = null;
+    CypherSimpleEither<String, CypherParameter> store = null;
 }
 {
     <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
+    ( <ON> <STORE> store=SymbolicDatabaseNameStringOrParameter() )?
     ( optionz = Options() )?
     ( wait = WaitClause() )?
     {
-       return CypherFactory.createDatabase( pos( start ), replace, databaseName, ifNotExists, wait, optionz );
+       return CypherFactory.createDatabase( pos( start ), replace, databaseName, ifNotExists, wait, optionz, store );
+    }
+}
+
+CypherAdminCommand CreatePlacement( Token start, boolean replace ):
+{
+    CypherSimpleEither<String, CypherParameter> databaseName = null;
+    CypherSimpleEither<String, CypherParameter> storeName = null;
+}
+{
+    <PLACEMENT> <OF> databaseName=SymbolicDatabaseNameStringOrParameter() <ON> <STORE> storeName=SymbolicDatabaseNameStringOrParameter()
+    {
+        return CypherFactory.addPlacement( pos(start), databaseName, storeName );
     }
 }
 
@@ -4932,12 +4928,13 @@ CypherSimpleEither<Map<String, CypherExpression>, CypherParameter> Options() :
 
 CypherAdminCommand DropPlacement( Token start ):
 {
-    CypherSimpleEither<String, CypherParameter> store = null;
+    CypherSimpleEither<String, CypherParameter> storeName = null;
+    CypherSimpleEither<String, CypherParameter> databaseName = null;
 }
 {
-    <PLACEMENT> store=SymbolicDatabaseNameStringOrParameter()
+    <PLACEMENT> <OF> databaseName=SymbolicDatabaseNameStringOrParameter() <ON> <STORE> storeName=SymbolicDatabaseNameStringOrParameter()
     {
-        return CypherFactory.dropPlacement( pos( start ), store );
+        return CypherFactory.dropPlacement( pos( start ), databaseName, storeName );
     }
 }
 

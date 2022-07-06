@@ -19,6 +19,7 @@ package org.polypheny.db.cypher;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -36,7 +37,7 @@ public abstract class CypherNode implements Node {
     @Getter
     public final ParserPos pos;
 
-    public static final List<CypherKind> DDL = ImmutableList.of( CypherKind.CREATE_DATABASE, CypherKind.DROP );
+    public static final List<CypherKind> DDL = ImmutableList.of( CypherKind.CREATE_DATABASE, CypherKind.DROP, CypherKind.ADMIN_COMMAND );
 
 
     protected CypherNode( ParserPos pos ) {
@@ -90,6 +91,19 @@ public abstract class CypherNode implements Node {
 
     public boolean isDDL() {
         return DDL.contains( getCypherKind() );
+    }
+
+
+    @Nullable
+    public static String getNameOrNull( CypherSimpleEither<String, CypherParameter> input ) {
+        if ( input == null ) {
+            return null;
+        }
+        if ( input.getLeft() != null ) {
+            return input.getLeft();
+        }
+        return input.getRight().getName();
+
     }
 
 

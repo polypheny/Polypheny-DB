@@ -319,7 +319,6 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalogAdapter.type == AdapterType.SOURCE ) {
             Set<Long> tablesToDrop = new HashSet<>();
             for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( catalogAdapter.id ) ) {
-
                 tablesToDrop.add( ccp.tableId );
             }
 
@@ -1886,7 +1885,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( DataStore store : stores ) {
             catalog.addGraphPlacement( store.getAdapterId(), graphId );
 
-            afterGraphLogistics( store, graphId );
+            afterGraphPlacementAddLogistics( store, graphId );
 
             store.createGraph( statement.getPrepareContext(), graph );
         }
@@ -1897,27 +1896,40 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void removeGraphDatabasePlacement( long graphId, DataStore store, Statement statement ) {
+        CatalogGraphPlacement placement = catalog.getGraphPlacement( graphId, store.getAdapterId() );
+
+        store.dropGraph( statement.getPrepareContext(), placement );
+
+        afterGraphDropLogistics( store, graphId );
+
         catalog.deleteGraphPlacement( store, graphId );
 
-        CatalogGraphDatabase graph = catalog.getGraph( graphId );
         PolySchemaBuilder.getInstance().getCurrent();
-
-        catalog.addGraphPlacement( store.getAdapterId(), graphId );
-
-        afterGraphLogistics( store, graphId );
-
-        store.createGraph( statement.getPrepareContext(), graph );
-
 
     }
 
 
-    private void afterGraphLogistics( DataStore store, long graphId ) {
+    private void afterGraphDropLogistics( DataStore store, long graphId ) {
+        CatalogGraphMapping mapping = catalog.getGraphMapping( graphId );
+
+        catalog.removeDataPlacement( store.getAdapterId(), mapping.nodesId );
+        catalog.removeDataPlacement( store.getAdapterId(), mapping.nodesPropertyId );
+        catalog.removeDataPlacement( store.getAdapterId(), mapping.edgesId );
+        catalog.removeDataPlacement( store.getAdapterId(), mapping.edgesPropertyId );
+    }
+
+
+    private void afterGraphPlacementAddLogistics( DataStore store, long graphId ) {
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphId );
         CatalogEntity nodes = catalog.getTable( mapping.nodesId );
         CatalogEntity nodeProperty = catalog.getTable( mapping.nodesPropertyId );
         CatalogEntity edges = catalog.getTable( mapping.edgesId );
         CatalogEntity edgeProperty = catalog.getTable( mapping.edgesPropertyId );
+
+        catalog.addDataPlacement( store.getAdapterId(), mapping.nodesId );
+        catalog.addDataPlacement( store.getAdapterId(), mapping.nodesPropertyId );
+        catalog.addDataPlacement( store.getAdapterId(), mapping.edgesId );
+        catalog.addDataPlacement( store.getAdapterId(), mapping.edgesPropertyId );
 
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
