@@ -18,9 +18,12 @@ package org.polypheny.db.languages.mql;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -50,13 +53,22 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
             throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
         }
 
+        List<CatalogCollection> collections = catalog.getCollections( namespaceId, new Pattern( getCollection() ) );
+
+        if ( collections.size() != 1 ) {
+            throw new RuntimeException( "Error while adding new collection placement, collection not found." );
+        }
+
         List<DataStore> dataStores = stores
                 .stream()
                 .map( store -> (DataStore) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
 
-        DdlManager.getInstance().addCollectionPlacement( namespaceId, getCollection(), dataStores, statement );
+        if ( collections.get( 0 ).placements.stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
+            throw new RuntimeException( "Error while adding a new collection placement, placement already present." );
+        }
 
+        DdlManager.getInstance().addCollectionPlacement( namespaceId, getCollection(), dataStores, statement );
     }
 
 

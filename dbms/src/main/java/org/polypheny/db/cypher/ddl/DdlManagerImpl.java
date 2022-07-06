@@ -2270,7 +2270,7 @@ public class DdlManagerImpl extends DdlManager {
         PolySchemaBuilder.getInstance().getCurrent();
 
         for ( DataStore store : stores ) {
-            long placementId = catalog.addDocumentPlacement(
+            catalog.addDocumentPlacement(
                     store.getAdapterId(),
                     catalogCollection.id,
                     PlacementType.AUTOMATIC );
@@ -2285,6 +2285,8 @@ public class DdlManagerImpl extends DdlManager {
     private void afterDocumentLogistics( DataStore store, long collectionId ) {
         CatalogDocumentMapping mapping = catalog.getDocumentMapping( collectionId );
         CatalogEntity table = catalog.getTable( mapping.collectionId );
+
+        catalog.addDataPlacement( store.getAdapterId(), collectionId );
 
         catalog.addPartitionPlacement(
                 store.getAdapterId(),
