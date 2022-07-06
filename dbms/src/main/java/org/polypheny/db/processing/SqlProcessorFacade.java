@@ -39,17 +39,22 @@ public class SqlProcessorFacade {
         this.sqlProcessor = sqlProcessor;
     }
 
-    PolyResult runSql(String sql, Transaction transaction) {
+    public PolyResult runSql(String sql, Transaction transaction) {
+        return getPolyResult(sql, transaction.createStatement());
+    }
+    public PolyResult runSql(String sql, Statement statement) {
+        return getPolyResult(sql, statement);
+    }
+
+    private PolyResult getPolyResult(String sql, Statement statement) {
         Node parsed = sqlProcessor.parse(sql);
-        Statement statement = transaction.createStatement();
         PolyResult result;
         QueryParameters parameters = new QueryParameters(sql, Catalog.SchemaType.RELATIONAL);
-        AlgRoot logicalRoot;
         if (parsed.isA(Kind.DDL)) {
             result = sqlProcessor.prepareDdl(statement, parsed, parameters);
         } else {
             Pair<Node, AlgDataType> validated = sqlProcessor.validate(statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean());
-            logicalRoot = sqlProcessor.translate(statement, validated.left, parameters);
+            AlgRoot logicalRoot = sqlProcessor.translate(statement, validated.left, parameters);
             result = statement.getQueryProcessor().prepareQuery(logicalRoot, true);
         }
         return result;
