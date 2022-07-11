@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.util.Pair;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -36,7 +37,7 @@ public final class CatalogProcedure implements CatalogEntity {
     private final ProcedureArguments arguments;
     private final String query;
 
-    public CatalogProcedure(Long schemaId, String name, Long databaseId, Long procedureId, String query, final String... arguments) {
+    public CatalogProcedure(Long schemaId, String name, Long databaseId, Long procedureId, String query, List<Pair<String, Object>> arguments) {
         this.name = name;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
@@ -80,9 +81,9 @@ public final class CatalogProcedure implements CatalogEntity {
     }
 
     static class ProcedureArguments implements CatalogEntity{
-        private final List<String> arguments; // TODO not used yet
+        private final List<Pair<String, Object>> arguments;
 
-        ProcedureArguments(List<String> arguments) {
+        ProcedureArguments(List<Pair<String, Object>> arguments) {
             this.arguments = arguments;
         }
 

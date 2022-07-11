@@ -18,12 +18,8 @@ package org.polypheny.db.sql.sql.ddl;
 
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogProcedure;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
@@ -39,8 +35,8 @@ import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -54,6 +50,9 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
 
     private final SqlIdentifier name;
     private final SqlNode query;
+    private final SqlNodeList arguments;
+
+    private final List<Pair<String, Object>> argumentPairs = new ArrayList<>();
 
     private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "CREATE PROCEDURE", Kind.CREATE_PROCEDURE );
 
@@ -61,10 +60,12 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
     /**
      * Creates a SqlCreateFunction.
      */
-    public SqlCreateProcedure(ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode query) {
+    public SqlCreateProcedure(ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode query, SqlNodeList arguments) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.query = Objects.requireNonNull( query );
+        this.arguments = Objects.requireNonNull(arguments);
+        Preconditions.checkArgument( arguments.size() % 2 == 0 );
     }
 
 
@@ -77,19 +78,24 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
         }
         name.unparse( writer, 0, 0 );
         // parse ParamList
-/*        if ( argumentList.size() > 0 ) {
+        if ( arguments.size() > 0 ) {
             final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE );
-            for ( SqlNode argument : argumentList.getSqlList() ) {
+            List<Pair<Node, Node>> pairs = pairs();
+            for ( Pair<Node, Node> argument : pairs) {
                 writer.sep( "," );
+                argumentPairs.add(new Pair<>(argument.left.toString(), argument.right.toString()));
                 writer.keyword("@");
-                argument.unparse( writer, 0, 0 );
+                writer.literal(argument.left.toString().trim());
+                writer.keyword("=");
+                writer.literal(argument.right.toString().trim());
             }
             writer.endList( frame );
-        }*/
+        }
         writer.keyword("$");
         query.unparse(writer, 0, 0);
         writer.keyword("$");
     }
+
 
     @Override
     public Operator getOperator() {
@@ -133,7 +139,12 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
+        instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, query.toString(), argumentPairs);
+    }
 
-        instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, query.toString());
+
+    @SuppressWarnings("unchecked")
+    private List<Pair<Node, Node>> pairs() {
+        return Util.pairs( arguments.getList() );
     }
 }

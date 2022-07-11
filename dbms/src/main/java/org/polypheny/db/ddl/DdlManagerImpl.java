@@ -96,6 +96,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -1711,7 +1712,7 @@ public class DdlManagerImpl extends DdlManager {
         materializedManager.addData(statement.getTransaction(), stores, addedColumns, algRoot, catalogMaterializedView);
     }
 
-    public void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments) {
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, String query, List<Pair<String, Object>> arguments) {
         try {
             if(replace) {
                 catalog.updateProcedure(schemaId, procedureName, databaseId, query, arguments);

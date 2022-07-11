@@ -37,6 +37,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 
 public abstract class Catalog {
@@ -1553,9 +1554,9 @@ public abstract class Catalog {
 
     public abstract void clear();
 
-    public abstract void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException;
+    public abstract void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException;
 
-    public abstract void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException;
+    public abstract void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException;
 
     public abstract List<CatalogProcedure> getProcedures(Long schemaId);
 

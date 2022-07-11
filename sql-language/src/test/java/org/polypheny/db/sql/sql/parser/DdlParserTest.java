@@ -216,8 +216,7 @@ public class DdlParserTest extends SqlParserTest {
     public void testCreatePolyScriptProcedureWithOneArgument() {
         final String sql = "create procedure \"myudf\" @id=1\n"
                 + " $ \'sql(select * from customers);\' $";
-        // TODO(nic): Update expected string
-        final String expected = "CREATE PROCEDURE `myudf`"
+        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1"
                 + " $ 'sql(select * from customers);' $";
         sql( sql ).ok( expected );
     }
@@ -226,8 +225,7 @@ public class DdlParserTest extends SqlParserTest {
     public void testCreatePolyScriptProcedureWithManyArguments() {
         final String sql = "create procedure \"myudf\" @id=1, @age=18\n"
                 + " $ \'sql(select * from customers);\' $";
-        // TODO(nic): Update expected string
-        final String expected = "CREATE PROCEDURE `myudf`"
+        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1, @ AGE = 18"
                 + " $ 'sql(select * from customers);' $";
         sql( sql ).ok( expected );
     }

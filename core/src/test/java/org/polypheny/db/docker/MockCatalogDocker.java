@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogTrigger;
 import org.polypheny.db.catalog.exceptions.ProcedureAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
+import org.polypheny.db.util.Pair;
 
 /**
  * This is a bare-bone catalog which allows to mock register adapters
@@ -50,12 +51,12 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
-    public void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
 
     }
 
     @Override
-    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
+    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
 
     }
 

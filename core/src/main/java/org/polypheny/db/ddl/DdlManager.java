@@ -56,6 +56,7 @@ import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 /**
  * Abstract class for the DDLManager, goal of this class is to expose a unified interface,
@@ -471,7 +472,7 @@ public abstract class DdlManager {
      * @param query the body of the procedure
      * @param arguments the arguments to the procedure (optional)
      */
-    public abstract void createProcedure( Long schemaId, String procedureName, Long databaseId, boolean replace, String query, String... arguments);
+    public abstract void createProcedure( Long schemaId, String procedureName, Long databaseId, boolean replace, String query, List<Pair<String, Object>> arguments);
 
     /**
      * Execute a procedure

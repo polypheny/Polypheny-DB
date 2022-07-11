@@ -17,5 +17,7 @@
 package org.polypheny.db.catalog;
 
 public enum Event {
+    // Create wird oft bei DDL verwendet (e.g. create schema), daher Verwechslung möglich
+    // Unterscheiden andere Sprachen nicht zwischen CREATE/Update?
     CREATE, UPDATE, DELETE
 }

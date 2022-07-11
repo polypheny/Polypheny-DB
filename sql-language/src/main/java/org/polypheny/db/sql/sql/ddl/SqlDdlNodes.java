@@ -90,8 +90,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE PROCEDURE.
      */
-    public static SqlCreateProcedure createProcedure(ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode query ) {
-        return new SqlCreateProcedure( pos, replace, ifNotExists, name, query);
+    public static SqlCreateProcedure createProcedure(ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode query, SqlNodeList arguments ) {
+        return new SqlCreateProcedure( pos, replace, ifNotExists, name, query, arguments);
     }
 
     /**
