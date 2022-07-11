@@ -6907,6 +6907,7 @@ void NonReservedKeyWord2of3() :
 |   < VERTICAL_BAR: "|" >
 |   < CARET: "^" >
 |   < DOLLAR: "$" >
+|   < AT_SIGN: "@" >
 }
 
 

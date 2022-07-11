@@ -493,10 +493,24 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
     final boolean ifNotExists;
     final SqlIdentifier id;
     final SqlNode query;
+    SqlNodeList arguments = new SqlNodeList(getPos());
+    SqlNode argument;
+    SqlNode variable;
 }
 {
     <PROCEDURE> ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
+    <AT_SIGN>
+    variable = SimpleIdentifier() { arguments.add(variable); }
+    <EQ>
+    argument = Literal() { arguments.add(argument); }
+    (
+        <COMMA>
+        <AT_SIGN>
+        variable = SimpleIdentifier() { arguments.add(variable); }
+        <EQ>
+        argument = Literal() { arguments.add(argument); }// TODO(nic): How to find out type - even necessary
+    )*
     <DOLLAR>
     query = StringLiteral()
     <DOLLAR>
@@ -504,6 +518,21 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
         return SqlDdlNodes.createProcedure(s.end(this), replace, ifNotExists, id, query);
     }
 }
+
+/*
+    (
+            <ARCHIVE> { fileType = SqlDdlNodes.FileType.ARCHIVE; }
+        |
+            <FILE> { fileType = SqlDdlNodes.FileType.FILE; }
+        |
+            <JAR> { fileType = SqlDdlNodes.FileType.JAR; }
+    ) {
+        usingList.add(SqlLiteral.createSymbol(fileType, getPos()));
+    }
+    uri = StringLiteral() {
+        usingList.add(uri);
+    }
+*/
 
 String parseEvent() :
 {

@@ -213,6 +213,26 @@ public class DdlParserTest extends SqlParserTest {
     }
 
     @Test
+    public void testCreatePolyScriptProcedureWithOneArgument() {
+        final String sql = "create procedure \"myudf\" @id=1\n"
+                + " $ \'sql(select * from customers);\' $";
+        // TODO(nic): Update expected string
+        final String expected = "CREATE PROCEDURE `myudf`"
+                + " $ 'sql(select * from customers);' $";
+        sql( sql ).ok( expected );
+    }
+
+    @Test
+    public void testCreatePolyScriptProcedureWithManyArguments() {
+        final String sql = "create procedure \"myudf\" @id=1, @age=18\n"
+                + " $ \'sql(select * from customers);\' $";
+        // TODO(nic): Update expected string
+        final String expected = "CREATE PROCEDURE `myudf`"
+                + " $ 'sql(select * from customers);' $";
+        sql( sql ).ok( expected );
+    }
+
+    @Test
     public void testCreateMultiLinePolyScriptProcedure() {
         final String sql = "create procedure \"myudf\""
                 + " $ \'sql(select * from customers);sql(select * from customers);\' $";
