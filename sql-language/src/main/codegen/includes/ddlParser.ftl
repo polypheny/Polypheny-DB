@@ -498,7 +498,7 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
 {
     <PROCEDURE> ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
-    Argument(arguments)
+    (Argument(arguments))*
     (
         <COMMA>
         Argument(arguments)
