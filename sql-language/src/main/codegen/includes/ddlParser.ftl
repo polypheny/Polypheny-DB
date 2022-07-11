@@ -493,23 +493,15 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
     final boolean ifNotExists;
     final SqlIdentifier id;
     final SqlNode query;
-    SqlNodeList arguments = new SqlNodeList(getPos());
-    SqlNode argument;
-    SqlNode variable;
+    final SqlNodeList arguments = new SqlNodeList(getPos());
 }
 {
     <PROCEDURE> ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
-    <AT_SIGN>
-    variable = SimpleIdentifier() { arguments.add(variable); }
-    <EQ>
-    argument = Literal() { arguments.add(argument); }
+    Argument(arguments)
     (
         <COMMA>
-        <AT_SIGN>
-        variable = SimpleIdentifier() { arguments.add(variable); }
-        <EQ>
-        argument = Literal() { arguments.add(argument); }// TODO(nic): How to find out type - even necessary
+        Argument(arguments)
     )*
     <DOLLAR>
     query = StringLiteral()
@@ -519,32 +511,17 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
     }
 }
 
-/*
-    (
-            <ARCHIVE> { fileType = SqlDdlNodes.FileType.ARCHIVE; }
-        |
-            <FILE> { fileType = SqlDdlNodes.FileType.FILE; }
-        |
-            <JAR> { fileType = SqlDdlNodes.FileType.JAR; }
-    ) {
-        usingList.add(SqlLiteral.createSymbol(fileType, getPos()));
-    }
-    uri = StringLiteral() {
-        usingList.add(uri);
-    }
-*/
+private void Argument(SqlNodeList argumentList) :
+{
+    final SqlNode argument, variable;
+}
+{
+    <AT_SIGN>
+    variable = SimpleIdentifier() { argumentList.add(variable); }
+    <EQ>
+    argument = Literal() { argumentList.add(argument); }// TODO(nic): How to find out type - even necessary
+}
 
-String parseEvent() :
-{
-    Token t1;
-}
-{
-    t1 = <INSERT> { return "INSERT"; }
-    |
-    t1 = <UPDATE> { return "UPDATE"; }
-    |
-    t1 = <DELETE> { return "DELETE"; }
-}
 
 SqlCreate SqlCreateTrigger(Span s, boolean replace) :
 {
@@ -570,6 +547,18 @@ SqlCreate SqlCreateTrigger(Span s, boolean replace) :
     {
         return SqlDdlNodes.createTrigger(s.end(this), replace, ifNotExists, schema, name, table, event, notForReplication, query);
     }
+}
+
+String parseEvent() :
+{
+    Token t1;
+}
+{
+    t1 = <INSERT> { return "INSERT"; }
+    |
+    t1 = <UPDATE> { return "UPDATE"; }
+    |
+    t1 = <DELETE> { return "DELETE"; }
 }
 
 SqlCall SqlExecuteProcedure(Span s, boolean replace) :
