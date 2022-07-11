@@ -807,14 +807,6 @@ public class SqlParserTest extends SqlLanguagelDependant {
         checkExp( "{? = call bar (?, ?)}", "foo" );
     }
 
-
-    @Test
-    public void testExecProcedure() {
-        final String sql = "exec procedure myProc";
-        final String expected = "EXEC PROCEDURE `MYPROC`";
-        sql( sql ).ok( expected );
-    }
-
     @Test
     public void testColumnAliasWithAs() {
         check( "select 1 as foo from emp", "SELECT 1 AS `FOO`\n" + "FROM `EMP`" );

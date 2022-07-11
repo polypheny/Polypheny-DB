@@ -1221,17 +1221,24 @@ SqlNode SqlProcedureCall() :
     }
 }
 
-SqlNode SqlExecProcedure() :
+SqlCall SqlExecProcedure() :
 {
-    SqlIdentifier id;
+    final SqlIdentifier id;
+    final SqlNodeList arguments = new SqlNodeList(getPos());
     final Span s;
 }
 {
-    <EXEC><PROCEDURE> id = CompoundIdentifier() {
+    <EXEC><PROCEDURE>
+    id = CompoundIdentifier() {
         s = span();
     }
+    (Argument(arguments))*
+    (
+        <COMMA>
+        Argument(arguments)
+    )*
     {
-        return SqlDdlNodes.executeProcedure(s.end(this), id);
+        return SqlDdlNodes.executeProcedure(s.end(this), id, arguments);
     }
 }
 

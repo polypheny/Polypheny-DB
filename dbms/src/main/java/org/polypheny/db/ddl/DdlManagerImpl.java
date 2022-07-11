@@ -1731,6 +1731,7 @@ public class DdlManagerImpl extends DdlManager {
                 throw new RuntimeException("Unknown procedure");
             }
             CatalogProcedure procedure = optionalProcedure.get();
+            // TODO(nic): Pass argument
             PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), statement.getTransaction());
             polyScriptInterpreter.interprete(procedure.getQuery());
         } catch (UnknownProcedureException e) {

@@ -223,9 +223,9 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreatePolyScriptProcedureWithManyArguments() {
-        final String sql = "create procedure \"myudf\" @id=1, @age=18\n"
+        final String sql = "create procedure \"myudf\" @id=1, @city=\'London\'\n"
                 + " $ \'sql(select * from customers);\' $";
-        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1, @ AGE = 18"
+        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1, @ CITY = \'London\'"
                 + " $ 'sql(select * from customers);' $";
         sql( sql ).ok( expected );
     }
@@ -236,6 +236,27 @@ public class DdlParserTest extends SqlParserTest {
                 + " $ \'sql(select * from customers);sql(select * from customers);\' $";
         final String expected = "CREATE PROCEDURE `myudf`"
                 + " $ 'sql(select * from customers);sql(select * from customers);' $";
+        sql( sql ).ok( expected );
+    }
+
+    @Test
+    public void testExecProcedure() {
+        final String sql = "exec procedure myProc";
+        final String expected = "EXEC PROCEDURE `MYPROC`";
+        sql( sql ).ok( expected );
+    }
+
+    @Test
+    public void testExecProcedureWithOneArgument() {
+        final String sql = "exec procedure myProc @id=1";
+        final String expected = "EXEC PROCEDURE `MYPROC` @ ID = 1";
+        sql( sql ).ok( expected );
+    }
+
+    @Test
+    public void testExecProcedureWithManyArguments() {
+        final String sql = "exec procedure myProc @id=1, @city=\'London\'";
+        final String expected = "EXEC PROCEDURE `MYPROC` @ ID = 1, @ CITY = 'London'";
         sql( sql ).ok( expected );
     }
 
