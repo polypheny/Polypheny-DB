@@ -2645,6 +2645,20 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
+    public void dropCollectionPlacement( long id, int adapterId ) {
+        CatalogCollection oldCollection = Objects.requireNonNull( collections.get( id ) );
+        CatalogCollection collection = oldCollection.removePlacement( adapterId );
+
+        synchronized ( this ) {
+            collectionPlacements.remove( new Object[]{ id, adapterId } );
+            collections.replace( id, collection );
+            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
+        }
+        listeners.firePropertyChange( "collectionPlacement", null, null );
+    }
+
+
+    @Override
     public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
         return collectionPlacements.values().stream().filter( p -> p.adapter == adapterId ).collect( Collectors.toList() );
     }

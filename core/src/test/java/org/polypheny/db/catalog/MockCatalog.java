@@ -78,6 +78,12 @@ import org.polypheny.db.type.PolyType;
 public abstract class MockCatalog extends Catalog {
 
     @Override
+    public void dropCollectionPlacement( long id, int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void removeDocumentLogistics( CatalogCollection catalogCollection ) {
         throw new NotImplementedException();
     }

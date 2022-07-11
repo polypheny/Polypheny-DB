@@ -69,7 +69,7 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
 
     @Override
     public String algCompareString() {
-        String compare = "$" + getClass().getSimpleName() + "$" + input.algCompareString();
+        String compare = "$" + getClass().getSimpleName() + "$" + operation + "$" + input.algCompareString();
         if ( keys != null ) {
             compare += "$" + keys.hashCode() + "$" + updates.hashCode();
         }

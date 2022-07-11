@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
@@ -61,6 +62,12 @@ public class CatalogCollection implements CatalogObject {
     }
 
 
+    public CatalogCollection removePlacement( int adapterId ) {
+        List<Integer> placements = this.placements.stream().filter( id -> id != adapterId ).collect( Collectors.toList() );
+        return new CatalogCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
+    }
+
+
     @SneakyThrows
     public String getNamespaceName() {
         return Catalog.getInstance().getNamespace( namespaceId ).name;
@@ -70,5 +77,6 @@ public class CatalogCollection implements CatalogObject {
     public CatalogCollection setPhysicalName( String physicalCollectionName ) {
         return new CatalogCollection( databaseId, namespaceId, id, name, placements, entityType, physicalCollectionName );
     }
+
 
 }

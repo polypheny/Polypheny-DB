@@ -21,6 +21,8 @@ import static org.junit.Assert.assertEquals;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -42,19 +44,21 @@ public class DdlTest extends MqlTestTemplate {
     public void addCollectionTest() throws UnknownNamespaceException {
         Catalog catalog = Catalog.getInstance();
 
-        execute( "db.createCollection(\"" + collectionName + "\")" );
-
         CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
 
-        assertEquals( 1, catalog.getCollections( namespace.id, null ).size() );
+        int size = catalog.getCollections( namespace.id, null ).size();
+
+        execute( "db.createCollection(\"" + collectionName + "\")" );
+
+        assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
 
         execute( String.format( "db.%s.drop()", collectionName ) );
 
-        assertEquals( 0, catalog.getCollections( namespace.id, null ).size() );
+        assertEquals( size, catalog.getCollections( namespace.id, null ).size() );
 
         execute( "db.createCollection(\"" + collectionName + "\")" );
 
-        assertEquals( 1, catalog.getCollections( namespace.id, null ).size() );
+        assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
     }
 
 
@@ -63,9 +67,12 @@ public class DdlTest extends MqlTestTemplate {
         Catalog catalog = Catalog.getInstance();
 
         try {
-            execute( "db.createCollection(\"" + collectionName + "\")" );
-
             CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+
+            List<String> collectionNames = catalog.getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
+            collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
+
+            execute( "db.createCollection(\"" + collectionName + "\")" );
 
             CatalogCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
@@ -91,6 +98,7 @@ public class DdlTest extends MqlTestTemplate {
         Catalog catalog = Catalog.getInstance();
 
         try {
+
             execute( "db.createCollection(\"" + collectionName + "\")" );
 
             CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );

@@ -232,10 +232,10 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      */
     public static PreparedStatementEnricher createEnricher( Integer[] indexes, DataContext context ) {
         // todo dl maybe change
-        List<Map<Long, Object>> savedValues = context.getParameterValues();
+        //List<Map<Long, Object>> savedValues = context.getParameterValues();
         return ( preparedStatement, connectionHandler ) -> {
-            boolean batch = savedValues.size() > 1;
-            for ( Map<Long, Object> values : savedValues ) {
+            boolean batch = context.getParameterValues().size() > 1;
+            for ( Map<Long, Object> values : context.getParameterValues() ) {
                 for ( int i = 0; i < indexes.length; i++ ) {
                     final long index = indexes[i];
                     setDynamicParam(

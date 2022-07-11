@@ -1677,6 +1677,9 @@ public abstract class Catalog {
     public abstract void deleteCollection( CatalogCollection catalogCollection );
 
 
+    public abstract void dropCollectionPlacement( long id, int adapterId );
+
+
     public enum EntityType {
         ENTITY( 1 ),
         SOURCE( 2 ),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ public class BsonDynamic extends BsonDocument {
     private final String polyTypeName;
     private boolean isRegex = false;
     private boolean isFunc = false;
+    private boolean isValue = false;
+    private String key = "";
 
 
     public BsonDynamic( RexDynamicParam rexNode ) {
@@ -54,6 +56,8 @@ public class BsonDynamic extends BsonDocument {
         append( "_type", new BsonString( polyTypeName ) );
         append( "_reg", new BsonBoolean( false ) );
         append( "_func", new BsonBoolean( false ) );
+        append( "_isVal", new BsonBoolean( false ) );
+        append( "_key", new BsonString( "" ) );
     }
 
 
@@ -67,6 +71,15 @@ public class BsonDynamic extends BsonDocument {
     public BsonDynamic setIsFunc( boolean isFunc ) {
         this.isFunc = isFunc;
         append( "_func", new BsonBoolean( isFunc ) );
+        return this;
+    }
+
+
+    public BsonDynamic setIsValue( boolean isValue, String key ) {
+        this.isValue = isValue;
+        this.key = key;
+        append( "_isVal", new BsonBoolean( isValue ) );
+        append( "_key", new BsonString( key ) );
         return this;
     }
 

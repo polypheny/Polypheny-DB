@@ -17,7 +17,9 @@
 package org.polypheny.db.adapter.enumerable.common;
 
 import java.util.List;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -27,7 +29,6 @@ import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ContextSwitcher;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.BuiltInMethod;
 
 public class EnumerableContextSwitcher extends ContextSwitcher implements EnumerableAlg {
 
@@ -44,14 +45,11 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final BlockBuilder lambdaBuilder = new BlockBuilder();
         final Result query = implementor.visitChild( this, 0, (EnumerableAlg) input, pref );
 
-        lambdaBuilder.add( Expressions.statement( Expressions.call( DataContext.ROOT, BuiltInMethod.SWITCH_CONTEXT.method ) ) );
-        Expression executor = lambdaBuilder.append( lambdaBuilder.newName( "executor" + System.nanoTime() ), query.block );
-        lambdaBuilder.add( Expressions.return_( null, builder.append( "ex" + System.nanoTime(), executor ) ) );
+        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), query.block );
 
-        builder.add( Expressions.return_( null, Expressions.convert_( Expressions.call( Expressions.lambda( lambdaBuilder.toBlock() ), BuiltInMethod.FUNCTION0_APPLY.method ), Enumerable.class ) ) );
+        builder.add( Expressions.return_( null, Expressions.new_( ContextSwitcherEnumerable.class, executor, DataContext.ROOT ) ) );
 
         return implementor.result( query.physType, builder.toBlock() );
     }
@@ -60,6 +58,28 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableContextSwitcher( inputs.get( 0 ) );
+    }
+
+
+    public static class ContextSwitcherEnumerable<T> extends AbstractEnumerable<T> {
+
+        private final Enumerable<T> enumerable;
+        private final DataContext context;
+
+
+        public ContextSwitcherEnumerable( Enumerable<T> enumerable, DataContext context ) {
+            super();
+            this.enumerable = enumerable;
+            this.context = context;
+        }
+
+
+        @Override
+        public Enumerator<T> enumerator() {
+            context.switchContext();
+            return enumerable.enumerator();
+        }
+
     }
 
 }

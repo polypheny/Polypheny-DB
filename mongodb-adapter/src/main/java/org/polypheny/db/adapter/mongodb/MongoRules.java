@@ -45,6 +45,7 @@ import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Scan;
@@ -221,6 +222,32 @@ public class MongoRules {
         return name.startsWith( "$" )
                 ? "_" + maybeFix( name.substring( 2 ) )
                 : maybeFix( name );
+    }
+
+
+    public static String translateDocValueAsKey( AlgDataType rowType, RexCall call, String prefix ) {
+        BsonValue value = translateDocValue( rowType, call, prefix );
+        return value.isString() ? value.asString().getValue() : value.asDocument().toJson();
+    }
+
+
+    public static BsonValue translateDocValue( AlgDataType rowType, RexCall call, String prefix ) {
+        RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
+
+        if ( call.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
+            return new BsonDynamic( (RexDynamicParam) call.operands.get( 1 ) ).setIsValue( true, prefix + rowType.getFieldNames().get( parent.getIndex() ) );
+        }
+        RexCall names = (RexCall) call.operands.get( 1 );
+        if ( names.operands.size() == 0 ) {
+            return new BsonString( prefix + rowType.getFieldNames().get( parent.getIndex() ) );
+        }
+
+        return new BsonString( prefix + rowType.getFieldNames().get( parent.getIndex() )
+                + "."
+                + names.operands
+                .stream()
+                .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
+                .collect( Collectors.joining( "." ) ) );
     }
 
 
@@ -431,8 +458,7 @@ public class MongoRules {
                 array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
             } else if ( call.isA( Kind.MQL_QUERY_VALUE ) ) {
-                return RexToMongoTranslator.translateDocValue( implementor.getStaticRowType(), call );
-
+                return translateDocValueAsKey( implementor.getStaticRowType(), call, "$" );
             } else if ( call.isA( Kind.MQL_ITEM ) ) {
                 RexNode leftPre = call.operands.get( 0 );
                 String left = leftPre.accept( this );
@@ -473,18 +499,6 @@ public class MongoRules {
                 return call.operands.get( 0 ).accept( this );
             }
             return null;
-        }
-
-
-        public static String translateDocValue( AlgDataType rowType, RexCall call ) {
-            RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
-            RexCall names = (RexCall) call.operands.get( 1 );
-            return "\"$" + rowType.getFieldNames().get( parent.getIndex() )
-                    + "."
-                    + names.operands
-                    .stream()
-                    .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
-                    .collect( Collectors.joining( "." ) ) + "\"";
         }
 
 
@@ -1407,8 +1421,13 @@ public class MongoRules {
 
 
         private MongoAggregateRule() {
-            super( LogicalAggregate.class, r -> true, Convention.NONE, MongoAlg.CONVENTION,
+            super( LogicalAggregate.class, MongoAggregateRule::supported, Convention.NONE, MongoAlg.CONVENTION,
                     "MongoAggregateRule" );
+        }
+
+
+        private static boolean supported( LogicalAggregate aggregate ) {
+            return aggregate.getAggCallList().stream().noneMatch( AggregateCall::isDistinct );
         }
 
 

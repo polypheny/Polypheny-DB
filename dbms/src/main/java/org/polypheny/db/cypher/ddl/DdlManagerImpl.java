@@ -64,6 +64,7 @@ import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -317,6 +318,25 @@ public class DdlManagerImpl extends DdlManager {
 
         CatalogAdapter catalogAdapter = catalog.getAdapter( name );
         if ( catalogAdapter.type == AdapterType.SOURCE ) {
+            // Remove collection
+            Set<Long> collectionsToDrop = new HashSet<>();
+            for ( CatalogCollectionPlacement collectionPlacement : catalog.getCollectionPlacements( catalogAdapter.id ) ) {
+                collectionsToDrop.add( collectionPlacement.collectionId );
+            }
+
+            for ( long id : collectionsToDrop ) {
+                CatalogCollection collection = catalog.getCollection( id );
+
+                // Make sure that there is only one adapter
+                if ( collection.placements.size() != 1 ) {
+                    throw new RuntimeException( "The data source contains collections with more than one placement. This should not happen!" );
+                }
+
+                dropCollection( collection, statement );
+
+            }
+
+            // Remove table
             Set<Long> tablesToDrop = new HashSet<>();
             for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( catalogAdapter.id ) ) {
                 tablesToDrop.add( ccp.tableId );
@@ -2250,7 +2270,18 @@ public class DdlManagerImpl extends DdlManager {
             store.dropCollection( statement.getPrepareContext(), catalogCollection );
         }
         catalog.deleteCollection( catalogCollection );
-        catalog.removeDocumentLogistics( catalogCollection );
+        removeDocumentLogistics( catalogCollection, statement );
+    }
+
+
+    public void removeDocumentLogistics( CatalogCollection catalogCollection, Statement statement ) {
+        CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
+        CatalogEntity table = catalog.getTable( mapping.collectionId );
+        try {
+            dropTable( table, statement );
+        } catch ( DdlOnSourceException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -2278,6 +2309,31 @@ public class DdlManagerImpl extends DdlManager {
             afterDocumentLogistics( store, collectionId );
 
             store.createCollection( statement.getPrepareContext(), catalogCollection, store.getAdapterId() );
+        }
+    }
+
+
+    @Override
+    public void dropCollectionPlacement( long namespaceId, CatalogCollection collection, List<DataStore> dataStores, Statement statement ) {
+        for ( DataStore store : dataStores ) {
+            store.dropCollection( statement.getPrepareContext(), collection );
+
+            catalog.dropCollectionPlacement( collection.id, store.getAdapterId() );
+
+            removeDocumentPlacementLogistics( collection, store, statement );
+        }
+
+    }
+
+
+    private void removeDocumentPlacementLogistics( CatalogCollection collection, DataStore store, Statement statement ) {
+
+        CatalogDocumentMapping mapping = catalog.getDocumentMapping( collection.id );
+        CatalogEntity table = catalog.getTable( mapping.collectionId );
+        try {
+            dropDataPlacement( table, store, statement );
+        } catch ( PlacementNotExistsException | LastPlacementException e ) {
+            throw new RuntimeException( e );
         }
     }
 
@@ -2338,18 +2394,7 @@ public class DdlManagerImpl extends DdlManager {
             if ( !names.contains( "_data" ) ) {
                 ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );//new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
                 columns.add( new FieldInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
-            }/*
-            columns.clear();
-
-            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.DOCUMENT, PolyType.DOCUMENT, null, null, null, null, false );//new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
-            columns.add( new FieldInformation( "_document", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
-
-            // Remove any primaries
-            List<ConstraintInformation> primaries = constraints.stream().filter( c -> c.type == ConstraintType.PRIMARY ).collect( Collectors.toList() );
-            if ( primaries.size() > 0 ) {
-                primaries.forEach( constraints::remove );
             }
-            */
         }
     }
 
@@ -2819,6 +2864,12 @@ public class DdlManagerImpl extends DdlManager {
             // Check if there is a schema with this name
             if ( catalog.checkIfExistsNamespace( databaseId, schemaName ) ) {
                 CatalogNamespace catalogNamespace = catalog.getNamespace( databaseId, schemaName );
+
+                // Drop all collections in this namespace
+                List<CatalogCollection> collections = catalog.getCollections( catalogNamespace.id, null );
+                for ( CatalogCollection collection : collections ) {
+                    dropCollection( collection, statement );
+                }
 
                 // Drop all tables in this schema
                 List<CatalogEntity> catalogEntities = catalog.getTables( catalogNamespace.id, null );

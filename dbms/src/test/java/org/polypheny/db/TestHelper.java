@@ -376,6 +376,9 @@ public class TestHelper {
 
 
         public static boolean checkUnorderedResultSet( Result result, List<String[]> expected, boolean excludeId ) {
+            if ( result.getData() == null ) {
+                fail( result.getError() );
+            }
             assertEquals( expected.size(), result.getData().length );
 
             List<List<String>> parsedResults = new ArrayList<>();

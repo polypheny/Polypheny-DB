@@ -254,7 +254,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         if ( list.isEmpty() ) {
             list.add( new BsonDocument( "$match", new BsonDocument() ) );
         }
-        // list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+        list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {

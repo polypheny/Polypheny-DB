@@ -582,6 +582,8 @@ public abstract class DdlManager {
 
     public abstract void dropCollection( CatalogCollection catalogCollection, Statement statement );
 
+    public abstract void dropCollectionPlacement( long namespaceId, CatalogCollection collection, List<DataStore> dataStores, Statement statement );
+
 
     /**
      * Helper class which holds all information required for creating a column,
