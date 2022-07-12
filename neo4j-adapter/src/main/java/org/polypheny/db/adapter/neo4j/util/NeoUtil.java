@@ -520,6 +520,10 @@ public interface NeoUtil {
         if ( type == null ) {
             return value;
         }
+
+        if ( value == null ) {
+            return null;
+        }
         switch ( type.left ) {
             case DATE:
                 if ( value instanceof Date ) {
