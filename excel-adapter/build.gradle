@@ -8,8 +8,9 @@ dependencies {
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
     implementation group: "org.apache.poi", name: "poi", version: poi_version
-    implementation group: "org.apache.poi", name: "poi-ooxml", version: "5.2.2"
-    implementation group: "org.apache.poi", name: "poi-scratchpad", version: "5.2.2"
+    implementation group: "org.apache.poi", name: "poi-ooxml", version: poi_ooxml_version
+    implementation group: "org.apache.poi", name: "poi-scratchpad", version: poi_scratchpad_version
+    implementation group: 'com.monitorjbl', name: 'xlsx-streamer', version: xlsx_streamer_version
 
 
     // --- Test Compile ---

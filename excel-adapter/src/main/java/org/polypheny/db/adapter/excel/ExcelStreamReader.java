@@ -17,5 +17,8 @@
 package org.polypheny.db.adapter.excel;
 
 public class ExcelStreamReader {
-
+    /**
+     * The default file monitor delay.
+     */
+    public static final long DEFAULT_MONITOR_DELAY = 2000;
 }

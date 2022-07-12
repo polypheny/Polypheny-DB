@@ -16,46 +16,54 @@
 
 package org.polypheny.db.adapter.excel;
 
-public class ExcelTable {
-//public class ExcelTable extends AbstractTable {
-//    protected final Source source;
-//    protected final AlgProtoDataType protoRowType;
-//    protected List<ExcelFieldType> fieldTypes;
-//    protected final int[] fields;
-//    protected final ExcelSource excelSource;
-//
-//
-//    /**
-//     * Creates a CsvTable.
-//     */
-//    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
-//        this.source = source;
-//        this.protoRowType = protoRowType;
-//        this.fieldTypes = fieldTypes;
-//        this.fields = fields;
-//        this.excelSource = excelSource;
-//        this.tableId = tableId;
-//    }
-//
-//
-//    @Override
-//    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-//        if ( protoRowType != null ) {
-//            return protoRowType.apply( typeFactory );
-//        }
-//        if ( fieldTypes == null ) {
-//            fieldTypes = new ArrayList<>();
-//            return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );
-//        } else {
-//            return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
-//        }
-//    }
-//
-//
-//    /**
-//     * Various degrees of table "intelligence".
-//     */
-//    public enum Flavor {
-//        SCANNABLE, FILTERABLE, TRANSLATABLE
-//    }
+import java.util.ArrayList;
+import java.util.List;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.util.Source;
+public class ExcelTable extends AbstractTable {
+
+    protected final Source source;
+    protected final AlgProtoDataType protoRowType;
+    protected List<ExcelFieldType> fieldTypes;
+    protected final int[] fields;
+    protected final ExcelSource excelSource;
+
+
+    /**
+     * Creates a ExcelTable.
+     */
+    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
+        this.source = source;
+        this.protoRowType = protoRowType;
+        this.fieldTypes = fieldTypes;
+        this.fields = fields;
+        this.excelSource = excelSource;
+        this.tableId = tableId;
+    }
+
+
+    @Override
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+        if ( protoRowType != null ) {
+            return protoRowType.apply( typeFactory );
+        }
+        if ( fieldTypes == null ) {
+            fieldTypes = new ArrayList<>();
+            return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );
+        } else {
+            return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
+        }
+    }
+
+
+    /**
+     * Various degrees of table "intelligence".
+     */
+    public enum Flavor {
+        SCANNABLE, FILTERABLE, TRANSLATABLE
+    }
 }
