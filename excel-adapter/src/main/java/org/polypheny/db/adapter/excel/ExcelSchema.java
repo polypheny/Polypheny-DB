@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -42,7 +43,7 @@ import org.polypheny.db.util.Util;
 
 public class ExcelSchema extends AbstractSchema{
     private final URL directoryUrl;
-    //private final ExcelTable.Flavor flavor;
+    private final ExcelTable.Flavor flavor;
     private Map<String, ExcelTable> tableMap = new HashMap<>();
 
     /**
@@ -50,10 +51,10 @@ public class ExcelSchema extends AbstractSchema{
      *
      * @param directoryUrl Directory that holds {@code .Excel} files
      */
-    public ExcelSchema( URL directoryUrl ) {
-        //super();
+    public ExcelSchema( URL directoryUrl, ExcelTable.Flavor flavor ) {
+        super();
         this.directoryUrl = directoryUrl;
-        //this.flavor = flavor;
+        this.flavor = flavor;
     }
 
 
@@ -97,18 +98,18 @@ public class ExcelSchema extends AbstractSchema{
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
-//    private ExcelTable createTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource csvSource, Long tableId ) {
-//        switch ( flavor ) {
-//            case TRANSLATABLE:
-//                //return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
-//            case SCANNABLE:
-//                //return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
-//            case FILTERABLE:
-//                //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
-//            default:
-//                throw new AssertionError( "Unknown flavor " + this.flavor );
-//        }
-//    }
+    private ExcelTable createTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource csvSource, Long tableId ) {
+        switch ( flavor ) {
+            case TRANSLATABLE:
+                //return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+            case SCANNABLE:
+                //return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+            case FILTERABLE:
+                //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+            default:
+                throw new AssertionError( "Unknown flavor " + this.flavor );
+        }
+    }
 
 
     private AlgDataType sqlType( AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {

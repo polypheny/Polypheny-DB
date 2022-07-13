@@ -30,11 +30,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.adapter.excel.ExcelTable.Flavor;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -46,14 +51,13 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 @Slf4j
-//@AdapterProperties(
-//        name = "Excel",
-//        description = "An adapter for querying Excel files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
-//        usedModes = DeployMode.EMBEDDED)
-//@AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 1)
-//@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
-//        description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-//public class ExcelSource extends DataSource{
+@AdapterProperties(
+        name = "Excel",
+        description = "An adapter for querying Excel files. The location of the directory containing the Excel files can be specified. Currently, this adapter only supports read operations.",
+        usedModes = DeployMode.EMBEDDED)
+@AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .xlsx.", position = 1)
+@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
+        description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class ExcelSource extends DataSource{
     private URL excelDir;
     private ExcelSchema currentSchema;
@@ -88,8 +92,8 @@ public class ExcelSource extends DataSource{
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        //currentSchema = new ExcelSchema( excelDir, Flavor.SCANNABLE );
-        currentSchema = new ExcelSchema( excelDir);
+        currentSchema = new ExcelSchema( excelDir, Flavor.SCANNABLE );
+        //currentSchema = new ExcelSchema( excelDir);
     }
 
 
