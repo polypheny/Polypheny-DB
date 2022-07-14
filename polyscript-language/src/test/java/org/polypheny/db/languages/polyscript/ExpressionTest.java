@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 public class ExpressionTest {
 
     @Test
-    void testExtractNamedArguments() {
+    public void testExtractNamedArguments() {
         String query = "sql(insert into students VALUES(:id, :name);";
 
         Expression sut = new SqlExpression(query);
