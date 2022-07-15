@@ -718,7 +718,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( modifies.size() == 1 ) {
                     return modifies.get( 0 );
                 } else {
-                    RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
+                    /*RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
                     for ( int i = 0; i < modifies.size(); i++ ) {
                         if ( i == 0 ) {
                             builder.push( modifies.get( i ) );
@@ -729,7 +729,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     true ) );
                         }
                     }
-                    return builder.build();
+                    return builder.build();*/
+                    return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), modifies, true );
                 }
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
