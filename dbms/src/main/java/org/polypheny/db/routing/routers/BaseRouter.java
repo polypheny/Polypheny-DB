@@ -413,7 +413,8 @@ public abstract class BaseRouter {
             String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             String collectionName = collection.name + "_" + placement.id;
             AlgOptTable collectionTable = reader.getDocument( List.of( namespaceName, collectionName ) );
-
+            // we might previously have pushed the non-native transformer
+            builder.clear();
             return builder.push( LogicalDocumentScan.create( alg.getCluster(), collectionTable ) );
         }
 
