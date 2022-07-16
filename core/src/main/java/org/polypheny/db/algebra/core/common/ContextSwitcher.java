@@ -33,7 +33,7 @@ public class ContextSwitcher extends SingleAlg {
 
     @Override
     public String algCompareString() {
-        return null;
+        return "$" + getClass().getSimpleName() + "$" + input.algCompareString();
     }
 
 }

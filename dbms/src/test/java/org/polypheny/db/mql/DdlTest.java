@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -38,6 +39,12 @@ import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 public class DdlTest extends MqlTestTemplate {
 
     final static String collectionName = "doc";
+
+
+    @After
+    public void removeCollection() {
+        execute( String.format( "db.%s.drop()", collectionName ) );
+    }
 
 
     @Test
@@ -66,6 +73,7 @@ public class DdlTest extends MqlTestTemplate {
     public void addPlacementTest() throws UnknownNamespaceException, SQLException {
         Catalog catalog = Catalog.getInstance();
 
+        String placement = "store1";
         try {
             CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
 
@@ -78,16 +86,17 @@ public class DdlTest extends MqlTestTemplate {
 
             assertEquals( collection.placements.size(), 1 );
 
-            addStore( "store1" );
+            addStore( placement );
 
-            execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, "store1" ) );
+            execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, placement ) );
 
             collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
             assertEquals( collection.placements.size(), 2 );
 
         } finally {
-            removeStore( "store1" );
+            execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, placement ) );
+            removeStore( placement );
         }
 
     }
@@ -97,6 +106,7 @@ public class DdlTest extends MqlTestTemplate {
     public void deletePlacementTest() throws UnknownNamespaceException, SQLException {
         Catalog catalog = Catalog.getInstance();
 
+        String placement = "store1";
         try {
 
             execute( "db.createCollection(\"" + collectionName + "\")" );
@@ -107,22 +117,22 @@ public class DdlTest extends MqlTestTemplate {
 
             assertEquals( collection.placements.size(), 1 );
 
-            addStore( "store1" );
+            addStore( placement );
 
-            execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, "store1" ) );
+            execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, placement ) );
 
             collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
             assertEquals( collection.placements.size(), 2 );
 
-            execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, "store1" ) );
+            execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, placement ) );
 
             collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
             assertEquals( collection.placements.size(), 1 );
 
         } finally {
-            removeStore( "store1" );
+            removeStore( placement );
         }
     }
 

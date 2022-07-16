@@ -179,6 +179,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 boolean operationWasRewritten = false;
                 List<Map<Long, Object>> tempParamValues = null;
 
+                Map<Long, AlgDataType> types = statement.getDataContext().getParameterTypes();
+                List<Map<Long, Object>> allValues = statement.getDataContext().getParameterValues();
+
                 Map<Long, Object> newParameterValues = new HashMap<>();
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
 
@@ -541,13 +544,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                             // Create as many independent TableModifies as there are entries in getParameterValues
 
                                             Map<Long, List<Map<Long, Object>>> tempValues = new HashMap<>();
-
-                                            Map<Long, AlgDataType> types = statement.getDataContext().getParameterTypes();
-                                            List<Map<Long, Object>> allValues = statement.getDataContext().getParameterValues();
                                             statement.getDataContext().resetContext();
-
                                             for ( Map<Long, Object> currentRow : allValues ) {
-                                                // first we sort the values to insert according to the partitionManager and their paritionId
+                                                // first we sort the values to insert according to the partitionManager and their partitionId
 
                                                 tempPartitionId = partitionManager.getTargetPartitionId( catalogEntity, currentRow.get( partitionValueIndex ).toString() );
 
