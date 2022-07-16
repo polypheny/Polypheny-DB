@@ -44,6 +44,8 @@ public interface DataContext {
 
     ParameterExpression ROOT = Expressions.parameter( Modifier.FINAL, DataContext.class, "root" );
 
+    ParameterExpression INITIAL_ROOT = Expressions.parameter( Modifier.FINAL, DataContext.class, "initialRoot" );
+
     /**
      * Returns a sub-schema with a given name, or null.
      */
@@ -76,14 +78,6 @@ public interface DataContext {
 
     void addParameterValues( long index, AlgDataType type, List<Object> data );
 
-    default void addSingleValue( long index, AlgDataType type, Object data ) {
-        throw new UnsupportedOperationException();
-    }
-
-    default long getMaxParameterIndex() {
-        throw new UnsupportedOperationException();
-    }
-
     AlgDataType getParameterType( long index );
 
     List<Map<Long, Object>> getParameterValues();
@@ -113,7 +107,7 @@ public interface DataContext {
         throw new UnsupportedOperationException();
     }
 
-    default void switchContext() {
+    default DataContext switchContext() {
         throw new UnsupportedOperationException();
     }
 

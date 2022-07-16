@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.adapter.enumerable;
@@ -53,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -97,6 +82,8 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
     protected final Function1<String, RexToLixTranslator.InputGetter> allCorrelateVariables = this::getCorrelVariableGetter;
 
+    private int contextCounter = -1;
+
 
     public EnumerableAlgImplementor( RexBuilder rexBuilder, Map<String, Object> internalParameters ) {
         super( rexBuilder );
@@ -109,6 +96,11 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
             assert child == parent.getInputs().get( ordinal );
         }
         return child.implement( this, prefer );
+    }
+
+
+    public int increaseContext() {
+        return ++contextCounter;
     }
 
 
@@ -147,7 +139,13 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                                         Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET.method, Expressions.constant( input.name ) ),
                                         input.type ) ) );
 
-        final BlockStatement block = Expressions.block( Iterables.concat( stashed, result.block.statements ) );
+        BlockStatement block = Expressions.block( Iterables.concat( stashed, result.block.statements ) );
+        if ( contextCounter < 0 ) {
+            // if the context was not set by ContextSwitcher we only need the initial one
+            Statement assign = Expressions.declare( Modifier.FINAL, DataContext.ROOT, DataContext.INITIAL_ROOT );
+            block = Expressions.block( Stream.concat( Stream.of( assign ), block.statements.stream() ).collect( Collectors.toList() ) );
+        }
+
         // add values
         for ( Entry<ParameterExpression, Object> entry : nodes.entrySet() ) {
             memberDeclarations.add( Expressions.fieldDecl( Modifier.PRIVATE, entry.getKey(), Expressions.constant( entry.getValue() ) ) );
@@ -158,7 +156,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                         Modifier.PUBLIC,
                         Enumerable.class,
                         BuiltInMethod.BINDABLE_BIND.method.getName(),
-                        Expressions.list( DataContext.ROOT ),
+                        Expressions.list( DataContext.INITIAL_ROOT ),
                         block ) );
         memberDeclarations.add(
                 Expressions.methodDecl(

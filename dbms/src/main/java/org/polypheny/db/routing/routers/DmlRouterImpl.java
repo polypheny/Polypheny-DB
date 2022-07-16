@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -539,7 +540,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                             // Get partitionValue per row/tuple to be inserted
                                             // Create as many independent TableModifies as there are entries in getParameterValues
 
-                                            for ( Map<Long, Object> currentRow : statement.getDataContext().getParameterValues() ) {
+                                            Map<Long, List<Map<Long, Object>>> tempValues = new HashMap<>();
+
+                                            Map<Long, AlgDataType> types = statement.getDataContext().getParameterTypes();
+                                            List<Map<Long, Object>> allValues = statement.getDataContext().getParameterValues();
+                                            statement.getDataContext().resetContext();
+
+                                            for ( Map<Long, Object> currentRow : allValues ) {
+                                                // first we sort the values to insert according to the partitionManager and their paritionId
 
                                                 tempPartitionId = partitionManager.getTargetPartitionId( catalogEntity, currentRow.get( partitionValueIndex ).toString() );
 
@@ -547,9 +555,22 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                     continue;
                                                 }
 
+                                                statement.getDataContext().setParameterTypes( statement.getDataContext().getParameterTypes() );
+                                                statement.getDataContext().setParameterValues( tempValues.get( tempPartitionId ) );
+
                                                 List<Map<Long, Object>> parameterValues = new ArrayList<>();
                                                 parameterValues.add( new HashMap<>( newParameterValues ) );
                                                 parameterValues.get( 0 ).putAll( currentRow );
+
+                                                if ( !tempValues.containsKey( tempPartitionId ) ) {
+                                                    tempValues.put( tempPartitionId, new ArrayList<>() );
+                                                }
+                                                tempValues.get( tempPartitionId ).add( currentRow );
+                                            }
+
+                                            for ( Entry<Long, List<Map<Long, Object>>> entry : tempValues.entrySet() ) {
+                                                // then we add a modification for each partition
+                                                statement.getDataContext().setParameterValues( entry.getValue() );
 
                                                 AlgNode input = buildDml(
                                                         super.recursiveCopy( modify.getInput( 0 ) ),
@@ -559,10 +580,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         catalog.getPartitionPlacement( pkPlacement.adapterId, tempPartitionId ),
                                                         statement,
                                                         cluster,
-                                                        true,
-                                                        parameterValues ).build();
-
-                                                newParameterValues.putAll( parameterValues.get( 0 ) );
+                                                        false,
+                                                        entry.getValue() ).build();
 
                                                 List<String> qualifiedTableName = ImmutableList.of(
                                                         PolySchemaBuilder.buildAdapterSchemaName(
@@ -570,7 +589,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                                 catalogEntity.getNamespaceName(),
                                                                 pkPlacement.physicalSchemaName
                                                         ),
-                                                        t.getLogicalTableName() + "_" + tempPartitionId );
+                                                        t.getLogicalTableName() + "_" + entry.getKey() );
                                                 AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                                 ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
@@ -585,7 +604,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         sourceExpressionList,
                                                         modify.isFlattened() );
 
-                                                modifies.add( adjustedModify );
+                                                statement.getDataContext().addContext();
+                                                modifies.add( new LogicalContextSwitcher( adjustedModify ) );
                                             }
 
                                             operationWasRewritten = true;
@@ -923,7 +943,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         CatalogDocumentMapping mapping = Catalog.getInstance().getDocumentMapping( alg.getCollection().getTable().getTableId() );
 
         PreparingTable collectionTable = getSubstitutionTable( statement, mapping.collectionId, mapping.idId, adapterId );
-
 
         switch ( alg.operation ) {
             case INSERT:
@@ -1454,7 +1473,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private RoutedAlgBuilder remapParameterizedDml( AlgNode node, RoutedAlgBuilder builder, Statement statement, List<Map<Long, Object>> parameterValues ) {
-        if ( parameterValues.size() != 1 ) {
+        if ( parameterValues.size() <= 1 ) {
+            // changed for now, this should not be a problem
             throw new RuntimeException( "The parameter values is expected to have a size of one in this case!" );
         }
 

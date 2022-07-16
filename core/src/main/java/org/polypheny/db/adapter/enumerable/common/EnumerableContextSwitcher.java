@@ -16,19 +16,21 @@
 
 package org.polypheny.db.adapter.enumerable.common;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg;
 import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ContextSwitcher;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.util.BuiltInMethod;
 
 public class EnumerableContextSwitcher extends ContextSwitcher implements EnumerableAlg {
 
@@ -46,10 +48,25 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final Result query = implementor.visitChild( this, 0, (EnumerableAlg) input, pref );
+        // tell the implementor that one or many ContextSwitchers are used
+        implementor.increaseContext();
 
-        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), query.block );
+        ParameterExpression enumerable = Expressions.parameter( Enumerable.class, "enum" + System.nanoTime() );
 
-        builder.add( Expressions.return_( null, Expressions.new_( ContextSwitcherEnumerable.class, executor, DataContext.ROOT ) ) );
+        builder.add( Expressions.return_( null, Expressions.new_(
+                AbstractEnumerable.class,
+                List.of(),
+                List.of(
+                        Expressions.fieldDecl( Modifier.FINAL, DataContext.ROOT, Expressions.call( DataContext.INITIAL_ROOT, BuiltInMethod.SWITCH_CONTEXT.method ) ),
+                        Expressions.fieldDecl( Modifier.FINAL, enumerable, Expressions.convert_( Expressions.call( Expressions.lambda( query.block ), BuiltInMethod.FUNCTION0_APPLY.method ), Enumerable.class ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERABLE_ENUMERATOR.method,
+                                List.of(),
+                                Expressions.block( Expressions.return_( null,
+                                        Expressions.call(
+                                                enumerable,
+                                                BuiltInMethod.ENUMERABLE_ENUMERATOR.method, List.of() ) ) ) ) ) )
+        ) );
 
         return implementor.result( query.physType, builder.toBlock() );
     }
@@ -60,26 +77,5 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
         return new EnumerableContextSwitcher( inputs.get( 0 ) );
     }
 
-
-    public static class ContextSwitcherEnumerable<T> extends AbstractEnumerable<T> {
-
-        private final Enumerable<T> enumerable;
-        private final DataContext context;
-
-
-        public ContextSwitcherEnumerable( Enumerable<T> enumerable, DataContext context ) {
-            super();
-            this.enumerable = enumerable;
-            this.context = context;
-        }
-
-
-        @Override
-        public Enumerator<T> enumerator() {
-            context.switchContext();
-            return enumerable.enumerator();
-        }
-
-    }
 
 }
