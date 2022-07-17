@@ -417,7 +417,7 @@ public interface NeoUtil {
             case ATAN:
                 return o -> String.format( "atan(toFloat(%s))", o.get( 0 ) );
             case ATAN2:
-                return o -> String.format( "atan2(toFloat(%s))", o.get( 0 ) );
+                return o -> String.format( "atan2(toFloat(%s), toFloat(%s))", o.get( 0 ), o.get( 1 ) );
             case COS:
                 return o -> String.format( "cos(toFloat(%s))", o.get( 0 ) );
             case COT:
@@ -425,7 +425,11 @@ public interface NeoUtil {
             case RADIANS:
                 return o -> String.format( "radians(toFloat(%s))", o.get( 0 ) );
             case ROUND:
-                return o -> String.format( "radians(toFloat(%s))", o.get( 0 ) );
+                if ( operands.size() == 1 ) {
+                    return o -> String.format( "round(toFloat(%s))", o.get( 0 ) );
+                } else {
+                    return o -> String.format( "round(toFloat(%s), toInteger(%s))", o.get( 0 ), o.get( 1 ) );
+                }
             case SIGN:
                 return o -> String.format( "sign(toFloat(%s))", o.get( 0 ) );
             case SIN:
@@ -443,7 +447,7 @@ public interface NeoUtil {
             case CYPHER_ADJUST_EDGE:
                 return o -> String.format( "%s%s%s", o.get( 1 ), o.get( 0 ), o.get( 2 ) );
             case CYPHER_REMOVE_LABELS:
-                return o -> o.toString();
+                return Object::toString;
             case CYPHER_SET_LABELS:
                 return o -> {
                     String name = o.get( 0 );
