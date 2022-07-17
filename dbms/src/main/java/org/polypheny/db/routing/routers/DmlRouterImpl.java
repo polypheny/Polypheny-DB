@@ -576,7 +576,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         RoutedAlgBuilder.create( statement, cluster ),
                                                         catalogEntity,
                                                         placementsOnAdapter,
-                                                        catalog.getPartitionPlacement( pkPlacement.adapterId, tempPartitionId ),
+                                                        catalog.getPartitionPlacement( pkPlacement.adapterId, entry.getKey() ),
                                                         statement,
                                                         cluster,
                                                         false,
