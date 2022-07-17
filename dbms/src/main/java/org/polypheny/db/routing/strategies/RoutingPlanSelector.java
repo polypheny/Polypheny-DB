@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.PhysicalPlan;
 import org.polypheny.db.routing.RouterPlanSelectionStrategy;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.routing.RoutingPlan;

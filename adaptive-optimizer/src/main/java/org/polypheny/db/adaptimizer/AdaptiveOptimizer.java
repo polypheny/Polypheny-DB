@@ -16,8 +16,20 @@
 
 package org.polypheny.db.adaptimizer;
 
+import java.util.HashMap;
+
 public interface AdaptiveOptimizer {
 
-    void run();
+    String createSession();
+
+    String createSession( HashMap<String, String> parameters );
+
+    void startSession( String sid );
+
+    @SuppressWarnings( "unused" )
+    void endSession( String sid );
+
+    @SuppressWarnings( "unused" )
+    boolean isActive( String sid );
 
 }

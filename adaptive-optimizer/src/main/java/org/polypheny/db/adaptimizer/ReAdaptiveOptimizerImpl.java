@@ -17,36 +17,141 @@
 package org.polypheny.db.adaptimizer;
 
 
-import org.polypheny.db.adaptimizer.randomschema.DefaultTestEnvironment;
+import java.util.HashMap;
+import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adaptimizer.rndqueries.QuerySupplier;
+import org.polypheny.db.adaptimizer.rndqueries.QueryTemplate;
+import org.polypheny.db.adaptimizer.rndqueries.QueryUtil;
+import org.polypheny.db.adaptimizer.rndqueries.RelQueryGenerator;
+import org.polypheny.db.adaptimizer.sessions.OptSession;
+import org.polypheny.db.adaptimizer.sessions.RelGenerationSession;
+import org.polypheny.db.adaptimizer.sessions.SessionData;
+import org.polypheny.db.adaptimizer.sessions.SessionMonitor;
+import org.polypheny.db.adaptimizer.sessions.SessionUtil;
+
 
 /**
  * The {@link ReAdaptiveOptimizerImpl} is the base class of the Adaptive Optimizer
  * and exposes functions for the UI.
  */
-public class ReAdaptiveOptimizerImpl extends ReAdaptiveOptimizer {
+@Slf4j
+public class ReAdaptiveOptimizerImpl extends AdaptiveOptimizerImpl {
+    private static final int DEFAULT_GEN_NR = 100;
+
+    @Getter(AccessLevel.PRIVATE)
+    private final HashMap<String, SessionData> sessions;
 
 
     public ReAdaptiveOptimizerImpl() {
+        this.sessions = new HashMap<>();
+        runSessionMonitor();
+    }
 
-        // Pass Transaction Manager
-        DefaultTestEnvironment.setTransactionManager( getTransactionManager() );
-        AdaptimizerInformation.setTransactionManager( getTransactionManager() );
+    private void runSessionMonitor() {
+        // Session Monitor Thread
+        Thread sessionMonitor = new Thread( new SessionMonitor(
+                this.sessions,
+                getInformationManager(),
+                getSessionTable(),
+                getInformationPages().get( "session" )
+        ) );
+        sessionMonitor.setUncaughtExceptionHandler( ( th, ex ) -> {
+            log.error( "Uncaught exception in session monitor thread: ", ex );
+        } );
+        sessionMonitor.setDaemon( true );
+        sessionMonitor.start();
+    }
 
-        // Add Information Page
-        AdaptimizerInformation.addInformationPage();
-        AdaptimizerInformation.addInformationGroupForTestDataGeneration();
-        AdaptimizerInformation.addInformationGroupForGeneratingTestEnvironment();
-        AdaptimizerInformation.addInformationGroupForRandomTreeGeneration();
+    @Override
+    public String createSession() {
+        final SessionData sessionData = prepareSession();
+        getSessions().put( sessionData.getSessionId(), sessionData );
+        return sessionData.getSessionId();
+    }
 
+    public String createSession( HashMap<String, String> parameters ) throws NumberFormatException, NullPointerException {
+        int nrOfQueries = Integer.parseInt( parameters.get( "Nr. of Queries" ) );
+
+        final QueryTemplate template = QueryUtil.createCustomTemplate( parameters );
+        final String sessionId = UUID.randomUUID().toString();
+        OptSession optSession = new RelGenerationSession( new QuerySupplier( new RelQueryGenerator( template ) ) );
+        final SessionData sessionData = new SessionData( sessionId, template, new Thread( optSession ), optSession, nrOfQueries );
+
+        optSession.setSessionData( sessionData );
+        configureSessionThread( sessionData );
+        getSessions().put( sessionData.getSessionId(), sessionData );
+        return sessionData.getSessionId();
+    }
+
+
+    private SessionData prepareSession() {
+        final String sessionId = UUID.randomUUID().toString();
+        final QueryTemplate template = SessionUtil.getDefaultRelTreeTemplate();
+        OptSession optSession =  new RelGenerationSession( SessionUtil.getQueryGenerator( template ) );
+
+        final SessionData sessionData = new SessionData( sessionId, template, new Thread( optSession ), optSession, DEFAULT_GEN_NR );
+
+        optSession.setSessionData( sessionData );
+        configureSessionThread( sessionData );
+        return sessionData;
+    }
+
+    private void configureSessionThread( final SessionData sessionData ) {
+        sessionData.getSessionThread().setName( sessionData.getSessionId() );
+        sessionData.getSessionThread().setDaemon( true );
+        sessionData.getSessionThread().setUncaughtExceptionHandler(
+                ( Thread sessionThread, Throwable throwable ) -> {
+            initiateSessionSeedChange( sessionData, throwable );
+        } );
     }
 
 
     /**
-     * Runs an optimization session.
+     * All errors and exceptions should be caught earlier {@link RelGenerationSession#run and seed changes are therefore not needed.
      */
-    @Override
-    public void run() {
+    @Deprecated
+    private synchronized void initiateSessionSeedChange(
+            final SessionData sessionData, Throwable ex ) {
+        // Quick Check ( Should not happen )
+        if ( sessionData.isFinished() ) {
+            log.warn( "Trying to change seed on finished session." );
+            return;
+        }
 
+        long uncaughtErrorSeed = sessionData.getOptSession().switchSeed();
+
+        if ( log.isDebugEnabled() ) {
+            log.debug( "[ Uncaught Error Seed: {} ]", uncaughtErrorSeed );
+            log.debug( "[ Error -> ", ex );
+        }
+
+        OptSession continuedSession =  new RelGenerationSession( sessionData.getOptSession().getSupplier() );
+        continuedSession.setSessionData( sessionData );
+        sessionData.incrementSeedSwitches();
+        sessionData.setOptSession( continuedSession );
+        sessionData.setSessionThread( new Thread( continuedSession ) );
+        configureSessionThread( sessionData );
+        sessionData.continueSession();
     }
+
+
+    public boolean isActive( String sid ) {
+        SessionData session = getSessions().get( sid );
+        return session.isStarted() && ! ( session.isFinished() || session.isMarkedForInterruption() );
+    }
+
+    public void startSession( String sid ) {
+        SessionData session = getSessions().get( sid );
+        session.start();
+    }
+
+    public void endSession( String sid ) {
+        SessionData session = getSessions().get( sid );
+        session.markForInterruption();
+    }
+
 
 }

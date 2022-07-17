@@ -204,6 +204,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             case REAL:
                 return "REAL";
             case DOUBLE:
+            case FLOAT:
                 return "FLOAT";
             case DECIMAL:
                 return "DECIMAL";

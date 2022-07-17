@@ -45,6 +45,17 @@ public class InformationAction extends Information {
         this.label = buttonLabel;
     }
 
+    /**
+     * Constructor
+     *
+     * @param group The InformationGroup to which this information belongs
+     */
+    public InformationAction( final InformationGroup group, String id, final String buttonLabel, final Action action ) {
+        super( id, group.getId() );
+        this.action = action;
+        this.label = buttonLabel;
+    }
+
 
     public InformationAction withParameters( final String... actions ) {
         for ( String a : actions ) {

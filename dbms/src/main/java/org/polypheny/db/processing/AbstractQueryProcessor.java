@@ -40,6 +40,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.Triple;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
@@ -50,6 +51,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.adaptimizer.models.Classifier;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
@@ -96,6 +98,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.PhysicalPlan;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
@@ -199,7 +202,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyResult prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
-
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
@@ -223,17 +225,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getOverviewDuration().start( "Plan Selection" );
         }
 
-        final Pair<PolyResult, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
+        final Triple<PolyResult, ProposedRoutingPlan, PhysicalPlan> selectedPlan = selectPlan( proposedImplementations );
 
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getOverviewDuration().stop( "Plan Selection" );
         }
 
         if ( withMonitoring ) {
-            this.monitorResult( selectedPlan.right );
+            this.monitorResult( selectedPlan.getMiddle(), selectedPlan.getRight() );
         }
 
-        return selectedPlan.left;
+        return selectedPlan.getLeft();
     }
 
 
@@ -470,7 +472,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( results.stream().allMatch( Objects::nonNull ) && optimalNodeList.stream().allMatch( Objects::nonNull ) ) {
             return new ProposedImplementations(
                     proposedRoutingPlans,
-                    optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                    optimalNodeList.stream().filter( Objects::nonNull ).map( PhysicalPlan::fromAlg ).collect( Collectors.toList()),
                     results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     logicalQueryInformation );
@@ -566,7 +568,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // Finally, all optionals should be of certain values.
         return new ProposedImplementations(
                 proposedRoutingPlans,
-                optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                optimalNodeList.stream().filter( Objects::nonNull ).map( PhysicalPlan::fromAlg ).collect( Collectors.toList()),
                 results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 logicalQueryInformation );
@@ -578,7 +580,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private static class ProposedImplementations {
 
         private final List<ProposedRoutingPlan> proposedRoutingPlans;
-        private final List<AlgNode> optimizedPlans;
+        private final List<PhysicalPlan> physicalPlans;
         private final List<PolyResult> results;
         private final List<String> generatedCodes;
         private final LogicalQueryInformation logicalQueryInformation;
@@ -1380,7 +1382,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void monitorResult( ProposedRoutingPlan selectedPlan ) {
+    private void monitorResult( ProposedRoutingPlan selectedPlan, PhysicalPlan physicalPlan ) {
         if ( statement.getMonitoringEvent() != null ) {
             StatementEvent eventData = statement.getMonitoringEvent();
             eventData.setAlgCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
@@ -1393,6 +1395,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 if ( eventData instanceof QueryEvent ) {
                     // aggregate post costs
                     ((QueryEvent) eventData).setUpdatePostCosts( true );
+                    // add physical plan for serialization
+                    ((QueryEvent) eventData).setPhysicalPlan( physicalPlan.getSerializable() );
                 }
             }
             finalizeAccessedPartitions( eventData );
@@ -1446,20 +1450,27 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private Pair<PolyResult, ProposedRoutingPlan> selectPlan( ProposedImplementations proposedImplementations ) {
+    private Triple<PolyResult, ProposedRoutingPlan, PhysicalPlan> selectPlan( ProposedImplementations proposedImplementations ) {
+
         // Lists should all be same size
         List<ProposedRoutingPlan> proposedRoutingPlans = proposedImplementations.getProposedRoutingPlans();
-        List<AlgNode> optimalAlgs = proposedImplementations.getOptimizedPlans();
+        List<PhysicalPlan> physicalPlans = proposedImplementations.getPhysicalPlans();
         List<PolyResult> results = proposedImplementations.getResults();
         List<String> generatedCodes = proposedImplementations.getGeneratedCodes();
         LogicalQueryInformation queryInformation = proposedImplementations.getLogicalQueryInformation();
 
+        // Todo remove debug >= replace with >
+        // analyze flag?
+        if ( results.size() >= 1 ) {
+            // Calculate Approximate Costs in advance and weigh with classifier with given weight...
+            // Weight 0f means estimates are not considered, 1f means only estimate is considered
+            physicalPlans.forEach( plan -> plan.calculateCosts( getPlanner(), Classifier::estimate, 1f ) );
+        }
+
         List<AlgOptCost> approximatedCosts;
         if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() ) {
             // Get approximated costs and cache routing plans
-            approximatedCosts = optimalAlgs.stream()
-                    .map( alg -> alg.computeSelfCost( getPlanner(), alg.getCluster().getMetadataQuery() ) )
-                    .collect( Collectors.toList() );
+            approximatedCosts = physicalPlans.stream().map( PhysicalPlan::getWeightedCost ).collect( Collectors.toList() );
             this.cacheRouterPlans(
                     proposedRoutingPlans,
                     approximatedCosts,
@@ -1472,16 +1483,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( statement.getTransaction().isAnalyze() ) {
                 UiRoutingPageUtil.outputSingleResult(
                         proposedRoutingPlans.get( 0 ),
-                        optimalAlgs.get( 0 ),
+                        physicalPlans.get( 0 ).getRoot(),
                         statement.getTransaction().getQueryAnalyzer() );
                 addGeneratedCodeToQueryAnalyzer( generatedCodes.get( 0 ) );
             }
-            return new Pair<>( results.get( 0 ), proposedRoutingPlans.get( 0 ) );
+            return Triple.of( results.get( 0 ), proposedRoutingPlans.get( 0 ), physicalPlans.get( 0 ) );
         } else {
             // Calculate costs and get selected plan from plan selector
-            approximatedCosts = optimalAlgs.stream()
-                    .map( alg -> alg.computeSelfCost( getPlanner(), alg.getCluster().getMetadataQuery() ) )
-                    .collect( Collectors.toList() );
+            approximatedCosts = physicalPlans.stream().map( PhysicalPlan::getWeightedCost ).collect( Collectors.toList() );
+
             RoutingPlan routingPlan = RoutingManager.getInstance().getRoutingPlanSelector().selectPlanBasedOnCosts(
                     proposedRoutingPlans,
                     approximatedCosts,
@@ -1489,11 +1499,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             int index = proposedRoutingPlans.indexOf( (ProposedRoutingPlan) routingPlan );
             if ( statement.getTransaction().isAnalyze() ) {
-                AlgNode optimalNode = optimalAlgs.get( index );
+                AlgNode optimalNode = physicalPlans.get( index ).getRoot();
                 UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
                 addGeneratedCodeToQueryAnalyzer( generatedCodes.get( index ) );
             }
-            return new Pair<>( proposedImplementations.getResults().get( index ), (ProposedRoutingPlan) routingPlan );
+            return Triple.of( results.get( index ), (ProposedRoutingPlan) routingPlan, physicalPlans.get( index ) );
         }
     }
 

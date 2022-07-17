@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.google.common.annotations.Beta;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -254,6 +255,15 @@ public class InformationGroup extends Refreshable {
         this.uiOrder = group.uiOrder;
         this.informationObjects.putAll( group.informationObjects );
         this.implicit = false;
+    }
+
+    /**
+     * Workaround for the function above, do not use casually. Used by Adaptive Optimizer Module.
+     * // Todo change workaround
+     */
+    @Beta
+    public void overrideGroup( final InformationGroup group ) {
+        this.informationObjects.putAll( group.informationObjects );
     }
 
 

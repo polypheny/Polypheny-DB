@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.plan.PhysicalPlan;
 
 
 @Getter
@@ -54,6 +55,8 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     private List<String> fieldNames;
     protected Integer indexSize;
     protected final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
+
+    private PhysicalPlan physicalPlan;
 
 
     @Override
