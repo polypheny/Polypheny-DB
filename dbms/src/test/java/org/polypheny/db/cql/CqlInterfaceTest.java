@@ -418,6 +418,11 @@ public class CqlInterfaceTest extends CqlTestHelper {
      */
     private static void assertJsonObjects( JSONObject expected, JSONObject actual ) {
         List<String> keys = new ArrayList<>();
+
+        if ( actual.has( "error" ) && actual.getString( "error" ) != null ) {
+            throw new RuntimeException( actual.getString( "error" ) );
+        }
+
         // save order of headers keys
         actual.getJSONArray( "header" ).iterator().forEachRemaining( el -> keys.add( ((JSONObject) el).getString( "name" ) ) );
         JSONArray expectedResults = expected.getJSONArray( "result" );

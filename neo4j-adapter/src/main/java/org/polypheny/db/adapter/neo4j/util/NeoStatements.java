@@ -18,10 +18,13 @@ package org.polypheny.db.adapter.neo4j.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.Getter;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement.ElementType;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
@@ -147,8 +150,18 @@ public interface NeoStatements {
 
     abstract class ElementStatement extends NeoStatement {
 
+
         protected ElementStatement() {
             super( null );
+        }
+
+
+        public abstract ElementType getType();
+
+
+        enum ElementType {
+            EDGE,
+            NODE
         }
 
     }
@@ -159,6 +172,9 @@ public interface NeoStatements {
         private final String identifier;
         private final LabelsStatement labels;
         private final ListStatement<?> properties;
+
+        @Getter
+        private final ElementType type = ElementType.NODE;
 
 
         protected NodeStatement( String identifier, LabelsStatement labels, ListStatement<?> properties ) {
@@ -210,6 +226,9 @@ public interface NeoStatements {
         private final ListStatement<PropertyStatement> properties;
         private final EdgeDirection direction;
         private final String range;
+
+        @Getter
+        private final ElementType type = ElementType.EDGE;
 
 
         protected EdgeStatement( @Nullable String identifier, String range, LabelsStatement labelsStatement, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
@@ -268,8 +287,31 @@ public interface NeoStatements {
 
         protected PathStatement( String identifier, List<ElementStatement> pathElements ) {
             super( null );
-            this.pathElements = pathElements;
+            this.pathElements = fixPath( pathElements );
             this.identifier = identifier;
+        }
+
+
+        private List<ElementStatement> fixPath( List<ElementStatement> initial ) {
+            List<ElementStatement> paths = new LinkedList<>();
+            ElementType lastType = ElementType.EDGE;
+            for ( ElementStatement element : initial ) {
+                switch ( element.getType() ) {
+                    case EDGE:
+                        if ( lastType != ElementType.NODE ) {
+                            paths.add( node_( null ) );
+                        }
+                        break;
+                    case NODE:
+                        if ( lastType != ElementType.EDGE ) {
+                            paths.add( edge_( null ) );
+                        }
+                        break;
+                }
+                paths.add( element );
+                lastType = element.getType();
+            }
+            return paths;
         }
 
 

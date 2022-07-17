@@ -81,7 +81,9 @@ public interface NeoUtil {
             case BOOLEAN:
                 return Value::asBoolean;
             case TINYINT:
+                return v -> (byte) v.asInt();
             case SMALLINT:
+                return v -> (short) v.asInt();
             case INTEGER:
             case DATE:
             case TIME:
@@ -229,6 +231,11 @@ public interface NeoUtil {
     static String fixParameter( String name ) {
         if ( name.charAt( 0 ) == '$' ) {
             return "_" + name;
+        }
+        if ( name.contains( "." ) ) {
+            // [namespace].[entity].[field] adjustment
+            String[] splits = name.split( "\\." );
+            return splits[splits.length - 1];
         }
         return name;
     }
@@ -517,6 +524,10 @@ public interface NeoUtil {
         if ( value instanceof BigDecimal ) {
             return ((BigDecimal) value).doubleValue();
         }
+        if ( value instanceof List ) {
+            return new PolyList<>( ((List<Object>) value).stream().map( v -> (Comparable<?>) fixParameterValue( v, Pair.of( type.right, type.right ) ) ).collect( Collectors.toList() ) );
+        }
+
         if ( type == null ) {
             return value;
         }
