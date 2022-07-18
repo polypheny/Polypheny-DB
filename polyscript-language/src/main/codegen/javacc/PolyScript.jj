@@ -36,7 +36,7 @@ TOKEN : { < SEMICOLON : ";" > }
 TOKEN : { < COMMIT : "commit" > }
 TOKEN : { < RETURN : "return" > }
 
-TOKEN : { < STRING : (["0"-"9", "a"-"z", "A"-"Z", "*", "'", " ", ".", "{", "}", "[", "]", ":"])+ > }
+TOKEN : { < STRING : (["0"-"9", "a"-"z", "A"-"Z", "*", "'", " ", ".", "{", "}", "[", "]", ":", ","])+ > }
 TOKEN : { < PAREN_STRING : (<LPAREN><STRING><RPAREN>) > }
 
 Script Start() : {
