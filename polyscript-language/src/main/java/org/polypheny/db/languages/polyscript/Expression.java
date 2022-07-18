@@ -3,6 +3,7 @@ package org.polypheny.db.languages.polyscript;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,6 +17,26 @@ public class Expression {
     public Expression(String value) {
         this.value = value;
         this.namedArguments = parseNamedArguments();
+    }
+
+    public Expression parameterize(Map<String, Object> arguments) {
+        String newValue = this.value;
+        for(String parameter : namedArguments) {
+            newValue = replaceParameter(arguments, newValue, parameter);
+        }
+        return new Expression(newValue);
+    }
+
+    private String replaceParameter(Map<String, Object> arguments, String newValue, String parameter) {
+        Object argumentValue = arguments.get(parameter);
+        if(argumentValue != null) {
+            newValue = newValue.replace(addColonPrefix(parameter), argumentValue.toString());
+        }
+        return newValue;
+    }
+
+    private String addColonPrefix(String parameter) {
+        return ":" + parameter;
     }
 
     private List<String> parseNamedArguments() {
