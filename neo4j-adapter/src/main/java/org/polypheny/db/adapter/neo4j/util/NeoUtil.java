@@ -437,7 +437,7 @@ public interface NeoUtil {
             case TAN:
                 return o -> String.format( "tan(toFloat(%s))", o.get( 0 ) );
             case CAST:
-                return o -> o.get( 0 );
+                return handleCast( operands );
             case ITEM:
                 return o -> String.format( "%s[%s]", o.get( 0 ), o.get( 1 ) );
             case ARRAY_VALUE_CONSTRUCTOR:
@@ -476,6 +476,13 @@ public interface NeoUtil {
                 return null;
         }
 
+    }
+
+    private static Function1<List<String>, String> handleCast( List<RexNode> operands ) {
+        if ( operands.get( 0 ).getType().getPolyType() == PolyType.DATE ) {
+            return null;
+        }
+        return o -> o.get( 0 );
     }
 
     static Function1<List<String>, String> handleDivide( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
