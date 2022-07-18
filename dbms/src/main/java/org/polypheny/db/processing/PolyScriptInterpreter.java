@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.StringReader;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PolyScriptInterpreter implements ScriptInterpreter {
@@ -43,21 +44,24 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
 
     private final Logger logger = LoggerFactory.getLogger(PolyScriptInterpreter.class);
 
+    // TODO(nic): Pass MqlProcessorFacade outside. Makes dependency visible, makes it testable (with mock)
     public PolyScriptInterpreter(SqlProcessorFacade sqlFacade, Transaction transaction) {
         this.sqlProcessorFacade = sqlFacade;
         this.transaction = transaction;
         this.mqlProcessorFacade = new MqlProcessorFacade();
     }
 
+    // TODO(nic): Pass arguments along with Script to parser
     @Override
-    public PolyResult interprete(String script) {
+    public PolyResult interprete(String script, Map<String, Object> arguments) {
         Script parsed;
         try {
             parsed = parseScript(script);
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
-        PolyResult result = runScript(parsed);
+        Script parameterizedScript = parsed.parameterize(arguments);
+        PolyResult result = runScript(parameterizedScript);
         closeTransaction();
         return result;
     }
@@ -125,6 +129,7 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
     }
 
     private PolyResult process(SqlExpression line) {
+
         return sqlProcessorFacade.runSql(line.getValue(), transaction);
     }
 

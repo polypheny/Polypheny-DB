@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.entity.CatalogProcedure;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.*;
@@ -477,10 +476,11 @@ public abstract class DdlManager {
     /**
      * Execute a procedure
      *
-     * @param statement the statement to execute
+     * @param statement     the statement to execute
      * @param procedureName the name of the procedure to execute
+     * @param argumentPairs the arguments (namme, value) for the procedure
      */
-    public abstract void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName);
+    public abstract void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName, List<Pair<String, Object>> argumentPairs);
 
     /**
      * Create a new trigger

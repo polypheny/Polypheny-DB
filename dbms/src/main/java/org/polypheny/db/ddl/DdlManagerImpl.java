@@ -1724,7 +1724,7 @@ public class DdlManagerImpl extends DdlManager {
         }
     }
 
-    public void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName) {
+    public void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName, List<Pair<String, Object>> argumentPairs) {
         try {
             Optional<CatalogProcedure> optionalProcedure = catalog.getProcedure(databaseId, schemaId, procedureName);
             if(optionalProcedure.isEmpty()) {
@@ -1733,7 +1733,7 @@ public class DdlManagerImpl extends DdlManager {
             CatalogProcedure procedure = optionalProcedure.get();
             // TODO(nic): Pass argument
             PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), statement.getTransaction());
-            polyScriptInterpreter.interprete(procedure.getQuery());
+            polyScriptInterpreter.interprete(procedure.getQuery(), Map.of());
         } catch (UnknownProcedureException e) {
             throw new RuntimeException(e);
         }

@@ -152,7 +152,7 @@ public class LanguageCrud {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Interpreting" );
             }
-            PolyResult polyResult = interpreter.interprete(query);
+            PolyResult polyResult = interpreter.interprete(query, Map.of());
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Interpreting" );
             }

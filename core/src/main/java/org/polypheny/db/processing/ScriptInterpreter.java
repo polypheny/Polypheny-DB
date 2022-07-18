@@ -18,7 +18,9 @@ package org.polypheny.db.processing;
 
 import org.polypheny.db.PolyResult;
 
+import java.util.Map;
+
 public interface ScriptInterpreter {
 
-    PolyResult interprete(String script);
+    PolyResult interprete(String script, Map<String, Object> arguments);
 }
