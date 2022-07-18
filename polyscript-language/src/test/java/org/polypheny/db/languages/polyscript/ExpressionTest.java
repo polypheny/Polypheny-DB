@@ -29,6 +29,6 @@ public class ExpressionTest {
         Expression parameterizedExpression = sut.parameterize(arguments);
         String parameterizedScript = parameterizedExpression.getValue();
 
-        assertEquals(parameterizedScript, "sql(insert into students VALUES(1, James);");
+        assertEquals(parameterizedScript, "sql(insert into students VALUES(1, 'James');");
     }
 }

@@ -30,9 +30,21 @@ public class Expression {
     private String replaceParameter(Map<String, Object> arguments, String newValue, String parameter) {
         Object argumentValue = arguments.get(parameter);
         if(argumentValue != null) {
-            newValue = newValue.replace(addColonPrefix(parameter), argumentValue.toString());
+            newValue = newValue.replace(addColonPrefix(parameter), stringify(argumentValue));
         }
         return newValue;
+    }
+
+    // TODO(nic): Maybe override in subclasses to handle language-specific string formats
+    private String stringify(Object argumentValue) {
+        if(argumentValue instanceof String) {
+            return wrapWithSingleQuotes(argumentValue);
+        }
+        return argumentValue.toString();
+    }
+
+    private String wrapWithSingleQuotes(Object argumentValue) {
+        return "'" + argumentValue + "'";
     }
 
     private String addColonPrefix(String parameter) {
