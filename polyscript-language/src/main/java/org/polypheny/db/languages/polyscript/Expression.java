@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Expression {
+public abstract class Expression {
     private final String value;
 
 
@@ -24,8 +24,10 @@ public class Expression {
         for(String parameter : namedArguments) {
             newValue = replaceParameter(arguments, newValue, parameter);
         }
-        return new Expression(newValue);
+        return newInstance(newValue);
     }
+
+    abstract Expression newInstance(String script);
 
     private String replaceParameter(Map<String, Object> arguments, String newValue, String parameter) {
         Object argumentValue = arguments.get(parameter);

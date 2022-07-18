@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ExpressionTest {
 
@@ -29,6 +30,7 @@ public class ExpressionTest {
         Expression parameterizedExpression = sut.parameterize(arguments);
         String parameterizedScript = parameterizedExpression.getValue();
 
+        assertTrue(parameterizedExpression instanceof SqlExpression);
         assertEquals(parameterizedScript, "sql(insert into students VALUES(1, 'James');");
     }
 }
