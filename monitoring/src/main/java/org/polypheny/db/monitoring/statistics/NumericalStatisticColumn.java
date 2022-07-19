@@ -79,6 +79,10 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
         } else {
             full = true;
         }
+        if ( val == null ) {
+            return;
+        }
+
         if ( min == null ) {
             min = val;
             max = val;
