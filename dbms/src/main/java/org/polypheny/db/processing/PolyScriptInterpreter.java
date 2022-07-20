@@ -61,9 +61,7 @@ public class PolyScriptInterpreter implements ScriptInterpreter {
             throw new RuntimeException(e);
         }
         Script parameterizedScript = parsed.parameterize(arguments);
-        PolyResult result = runScript(parameterizedScript);
-        closeTransaction();
-        return result;
+        return runScript(parameterizedScript);
     }
 
     private PolyResult runScript(Script parsed) {

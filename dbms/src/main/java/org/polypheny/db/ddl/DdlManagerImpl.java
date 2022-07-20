@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -1724,17 +1725,21 @@ public class DdlManagerImpl extends DdlManager {
         }
     }
 
-    public void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName, List<Pair<String, Object>> argumentPairs) {
+    public void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName, Map<String, Object> arguments) {
         try {
             Optional<CatalogProcedure> optionalProcedure = catalog.getProcedure(databaseId, schemaId, procedureName);
             if(optionalProcedure.isEmpty()) {
                 throw new RuntimeException("Unknown procedure");
             }
             CatalogProcedure procedure = optionalProcedure.get();
-            // TODO(nic): Pass argument
             PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), statement.getTransaction());
-            polyScriptInterpreter.interprete(procedure.getQuery(), Map.of());
+            PolyResult result = polyScriptInterpreter.interprete(procedure.getQuery(), arguments);
+            //TODO(nic): Don't call this right here
+            result.getRowsChanged(statement);
+
         } catch (UnknownProcedureException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

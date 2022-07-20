@@ -33,4 +33,16 @@ public class ExpressionTest {
         assertTrue(parameterizedExpression instanceof SqlExpression);
         assertEquals(parameterizedScript, "sql(insert into students VALUES(1, 'James');");
     }
+    @Test
+    public void testParameterizeNamedArguments2() {
+        String query = "sql(insert into students VALUES(:id, :name);";
+        Map<String, Object> arguments = Map.of("id", 1, "name", "James");
+        Expression sut = new SqlExpression(query);
+
+        Expression parameterizedExpression = sut.parameterize(arguments);
+        String parameterizedScript = parameterizedExpression.getValue();
+
+        assertTrue(parameterizedExpression instanceof SqlExpression);
+        assertEquals(parameterizedScript, "sql(insert into students VALUES(1, 'James');");
+    }
 }

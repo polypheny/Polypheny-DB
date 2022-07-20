@@ -480,7 +480,7 @@ public abstract class DdlManager {
      * @param procedureName the name of the procedure to execute
      * @param argumentPairs the arguments (namme, value) for the procedure
      */
-    public abstract void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName, List<Pair<String, Object>> argumentPairs);
+    public abstract void executeProcedure(Statement statement, long databaseId, long schemaId, String procedureName, Map<String, Object> argumentPairs);
 
     /**
      * Create a new trigger

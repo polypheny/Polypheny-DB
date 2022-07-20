@@ -39,9 +39,9 @@ public abstract class Expression {
 
     // TODO(nic): Maybe override in subclasses to handle language-specific string formats
     private String stringify(Object argumentValue) {
-        if(argumentValue instanceof String) {
-            return wrapWithSingleQuotes(argumentValue);
-        }
+//        if(argumentValue instanceof String) {
+//            return wrapWithSingleQuotes(argumentValue);
+//        }
         return argumentValue.toString();
     }
 
