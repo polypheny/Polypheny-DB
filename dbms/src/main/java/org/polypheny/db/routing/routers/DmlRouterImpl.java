@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.ModifyCollect;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
@@ -874,6 +875,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
         List<AlgNode> modifies = new ArrayList<>();
+        boolean usedSubstitution = false;
+
         for ( int adapterId : catalogGraph.placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
             CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
@@ -883,6 +886,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             if ( graph == null ) {
                 // move "slower" updates in front
                 modifies.add( 0, attachRelationalModify( alg, adapterId, statement ) );
+                usedSubstitution = true;
                 continue;
             }
 
@@ -904,6 +908,17 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         if ( modifies.size() == 1 ) {
             return modifies.get( 0 );
+        }
+
+        if ( usedSubstitution ) {
+            // we have substitution, which uses a ContextSwitcher, so we have to add it to the native algNode as well
+            modifies = modifies.stream().map( m -> {
+                if ( m instanceof ModifyCollect ) {
+                    return m;
+                }
+                return switchContext( m );
+
+            } ).collect( Collectors.toList() );
         }
 
         return new LogicalModifyCollect( modifies.get( 0 ).getCluster(), modifies.get( 0 ).getTraitSet(), modifies, true );
