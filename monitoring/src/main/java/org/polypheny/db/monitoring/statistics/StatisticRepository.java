@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
 import org.polypheny.db.monitoring.events.metrics.DdlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
@@ -42,15 +43,13 @@ public class StatisticRepository implements MonitoringRepository {
         StatisticsManager statisticsManager = StatisticsManager.getInstance();
         statisticsManager.updateCommitRollback( dataPoint.isCommitted() );
 
-        return;
-        /*
         if ( dataPoint.getDataPointType() == DataPointType.DML ) {
             updateDmlStatistics( (DmlDataPoint) dataPoint, statisticsManager );
         } else if ( dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl ) {
             updateQueryStatistics( (QueryDataPointImpl) dataPoint, statisticsManager );
         } else if ( dataPoint.getDataPointType() == DataPointType.DDL ) {
             updateDdlStatistics( (DdlDataPoint) dataPoint, statisticsManager );
-        }*/
+        }
     }
 
 
