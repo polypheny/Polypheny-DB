@@ -1402,8 +1402,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void prepareMonitoring( Statement statement, AlgRoot logicalRoot, boolean isAnalyze, boolean isSubquery, LogicalQueryInformation queryInformation ) {
+        
         // Initialize Monitoring
-        if ( statement.getMonitoringEvent() == null ) {
+        /*if ( statement.getMonitoringEvent() == null ) {
             StatementEvent event;
             if ( logicalRoot.kind.belongsTo( Kind.DML ) ) {
                 event = new DmlEvent();
@@ -1419,7 +1420,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             event.setLogicalQueryInformation( queryInformation );
             event.setMonitoringType( logicalRoot.kind.name() );
             statement.setMonitoringEvent( event );
-        }
+        }*/
     }
 
 
