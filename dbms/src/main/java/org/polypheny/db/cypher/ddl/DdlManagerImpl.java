@@ -2277,11 +2277,7 @@ public class DdlManagerImpl extends DdlManager {
     public void removeDocumentLogistics( CatalogCollection catalogCollection, Statement statement ) {
         CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
         CatalogEntity table = catalog.getTable( mapping.collectionId );
-        try {
-            dropTable( table, statement );
-        } catch ( DdlOnSourceException e ) {
-            throw new RuntimeException( e );
-        }
+        catalog.deleteTable( table.id );
     }
 
 

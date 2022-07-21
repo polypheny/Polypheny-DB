@@ -38,6 +38,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.excluded.MongodbExcluded;
 import org.polypheny.db.excluded.Neo4jExcluded;
 
@@ -45,7 +46,7 @@ import org.polypheny.db.excluded.Neo4jExcluded;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @RunWith(Parameterized.class)
-@Category({ AdapterTestSuite.class, CottontailExcluded.class, FileExcluded.class, CassandraExcluded.class, Neo4jExcluded.class })
+@Category({ AdapterTestSuite.class, CottontailExcluded.class, FileExcluded.class, CassandraExcluded.class, Neo4jExcluded.class, MonetdbExcluded.class })
 public class ForeignKeyConstraintTest {
 
     @Parameters(name = "Create Indexes: {0}")

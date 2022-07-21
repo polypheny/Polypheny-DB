@@ -28,6 +28,7 @@ import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.webui.models.Result;
 
 
@@ -153,6 +154,7 @@ public class AggregateTest extends MqlTestTemplate {
 
 
     @Test
+    @Category(MonetdbExcluded.class) // MonetClob instead of String
     public void countTest() {
         List<String[]> expected = ImmutableList.of(
                 new String[]{ "3" } );
