@@ -25,7 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Both of the files are the same, so not much to say here. Copy-paste
+ * Both of the files are the same, so not much to say here. Types for Google Sheet (not yet used since we're
+ * currently only dealing with strings)
  */
 
 public enum GoogleSheetFieldType {

@@ -44,12 +44,12 @@ import java.util.*;
  * - Main: set the sheetsURL
  *
  * - createSheetsTable: you're using CatalogTable, List of Catalog Column placements, and DataSource to return Table
- * No idea what all the functions are doing - but not needed. Copy-paste, build Table, put into map, done.
+ * No idea what all the functions are doing - but not needed. CP: build Table, put into map.
  * Refer to GoogleSheetsTable
  *
  * - getTableMap: map version of table
  *
- * - private sqlType, parseTypeString: same thing, don't understand, copy-paste.
+ * - private sqlType, parseTypeString: pretty similarly defined in the other directories.
  *
  *
  */
@@ -77,9 +77,14 @@ public class GoogleSheetSchema extends AbstractSchema {
             fieldIds.add( (int) placement.physicalPosition );
         }
 
+        String tableName = Catalog
+                .getInstance()
+                .getColumnPlacementsOnAdapterPerTable( googleSheetSource.getAdapterId(), catalogTable.id ).iterator().next()
+                .getLogicalTableName();
+
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         // build table and return later based on what you need for the table
-        GoogleSheetTable table = new GoogleSheetTable(sheetsURL, AlgDataTypeImpl.proto( fieldInfo.build() ), fields, googleSheetSource, fieldTypes);
+        GoogleSheetTable table = new GoogleSheetTable(sheetsURL, tableName, AlgDataTypeImpl.proto( fieldInfo.build() ), fields, googleSheetSource, fieldTypes);
         tableMap.put( catalogTable.name, table );
         return table;
     }

@@ -54,14 +54,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * - converter: depends on SingleColumnRowConverter and ArrayRowConverter (same everywhere), converter is the same too.
  *
- * - (optional) Identity list - copy paste for now
+ * - (optional) Identity list
  *
  * - public E current() - returns the current row type.
  *
  * - moveNext: moves onto the next row. If there is something, convert row. If not, return False.
  * all wrapped in try catch. Add filter if necessary.
  *
- * - Row converter: copy it
+ * - Row converter: self-explanatory
  *
  * - reset, close: the same thing
  *
@@ -86,16 +86,18 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
     }
 
     private final URL sheetsUrl;
+    private final String tableName;
     private final GoogleSheetReader reader;
     private final AtomicBoolean cancelFlag;
     private final RowConverter<E> rowConverter;
     private E current;
 
-    GoogleSheetEnumerator(URL sheetsUrl, AtomicBoolean cancelFlag, boolean stream, RowConverter<E> rowConverter) {
+    GoogleSheetEnumerator(URL sheetsUrl, String tableName, AtomicBoolean cancelFlag, boolean stream, RowConverter<E> rowConverter) {
         this.sheetsUrl = sheetsUrl;
+        this.tableName = tableName;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
-        this.reader = new GoogleSheetReader(sheetsUrl);
+        this.reader = new GoogleSheetReader(sheetsUrl, tableName);
         reader.readNext();
     }
 
@@ -121,7 +123,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
         return current;
     }
 
-    // TODO: implement MOVENEXT based on reader
+
     @Override
     public boolean moveNext() {
         outer:

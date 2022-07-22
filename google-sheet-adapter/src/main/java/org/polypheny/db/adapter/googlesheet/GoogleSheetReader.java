@@ -33,7 +33,7 @@ import java.util.List;
  */
 
 /**
- * How to optimize hen we've already read into the table?
+ * How to optimize when we've already read into the table?
  */
 
 public class GoogleSheetReader {
@@ -46,14 +46,20 @@ public class GoogleSheetReader {
 
 
     private HashMap<String, List<List<Object>>> tableData = new HashMap<>();
-    private String firstTableName;
-    private List<List<Object>> firstTableData;
+    private String targetTableName;
+    private List<List<Object>> targetTableData;
     private int currBlock;  // ptr to the current row to read from in the first table.
 
     public GoogleSheetReader(URL url) {
         readAllTables();
-        setFirstTable();
+    }
+
+    public GoogleSheetReader(URL url, String tableName) {
+        readAllTables();
+        setTargetTable(tableName);
         currBlock = 0;
+        System.out.println(targetTableName);
+        System.out.println(targetTableData.size());
     }
 
 
@@ -71,7 +77,7 @@ public class GoogleSheetReader {
                 .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
                 .setAccessType("offline")
                 .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8080).build();
+        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
 
@@ -105,20 +111,18 @@ public class GoogleSheetReader {
         }
     }
 
-    private void setFirstTable() {
-        ArrayList<String> tableNames = new ArrayList<String>(tableData.keySet());
-        Collections.sort(tableNames);
-        firstTableName = tableNames.get(0);
-        firstTableData = tableData.get(firstTableName);
+    private void setTargetTable(String tableName) {
+        targetTableName = tableName;
+        targetTableData = tableData.get(tableName);
     }
 
 
     public String[] readNext() {
-        if (currBlock >= firstTableData.size()) {
+        if (currBlock >= targetTableData.size()) {
             return null;
         }
 
-        List<Object> results = firstTableData.get(currBlock);
+        List<Object> results = targetTableData.get(currBlock);
         List<String> resultsStr = new ArrayList<>();
         currBlock += 1;
 

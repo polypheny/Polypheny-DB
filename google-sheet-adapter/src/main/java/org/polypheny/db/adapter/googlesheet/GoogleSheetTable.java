@@ -51,13 +51,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * - scan: optional, but not really - implement for Sheets.
  * (ETH): registerInvolvedAdapter for Context, then create a bunch of options to create the ETH Enumerator.
- * For Google Sheets, you need: cancelFlag, RowConverter (which is the CSV.RowConverter) - copy this
+ * For Google Sheets, you need: cancelFlag, RowConverter (which is the CSV.RowConverter) - CP
  *
  *
  */
 
 public class GoogleSheetTable extends AbstractTable implements FilterableTable {
     protected final URL sheetsUrl;
+    protected final String tableName;
     protected final AlgProtoDataType protoRowType;
     protected final int[] fields;
     protected final GoogleSheetSource googleSheetSource;
@@ -65,11 +66,13 @@ public class GoogleSheetTable extends AbstractTable implements FilterableTable {
 
     public GoogleSheetTable (
             URL sheetsUrl,
+            String tableName,
             AlgProtoDataType protoRowType,
             int[] fields,
             GoogleSheetSource googleSheetSource,
             List<GoogleSheetFieldType> fieldTypes ) {
         this.sheetsUrl = sheetsUrl;
+        this.tableName = tableName;
         this.protoRowType = protoRowType;
         this.fields = fields;
         this.googleSheetSource = googleSheetSource;
@@ -106,7 +109,7 @@ public class GoogleSheetTable extends AbstractTable implements FilterableTable {
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new GoogleSheetEnumerator<>(sheetsUrl, cancelFlag, false, new GoogleSheetEnumerator.ArrayRowConverter( fieldTypes, fields ));
+                return new GoogleSheetEnumerator<>(sheetsUrl, tableName, cancelFlag, false, new GoogleSheetEnumerator.ArrayRowConverter( fieldTypes, fields ));
             }
         };
     }
