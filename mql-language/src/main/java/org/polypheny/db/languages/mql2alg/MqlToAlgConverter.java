@@ -270,14 +270,6 @@ public class MqlToAlgConverter {
 
         AlgNode node;
 
-        /*if ( table instanceof AlgOptTableImpl && table.getTable() instanceof LogicalView ) {
-            node = LogicalViewScan.create( cluster, table );
-        } else if ( table instanceof AlgOptTableImpl && table.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
-            node = LogicalDocumentScan.create( cluster, table );
-            this.usesDocumentModel = true;
-        } else {
-            node = LogicalScan.create( cluster, table );
-        }*/
         if ( entity.getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
             _dataExists = false;
         }

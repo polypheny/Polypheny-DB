@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,8 @@ public class MockCatalogReaderDocument extends MockCatalogReaderSimple {
 
         // Register "EMP" table.
         final MockTable empTable = MockTable.create( this, salesSchema, "secrets", false, 14, null );
-        empTable.addColumn( "_id", typeFactory.createPolyType( PolyType.VARCHAR, 24 ) );
-        empTable.addColumn( "_data", typeFactory.createPolyType( PolyType.JSON ) );
+
+        empTable.addColumn( "d", typeFactory.createPolyType( PolyType.DOCUMENT ) );
         registerTable( empTable );
 
         registerTablesWithRollUp( salesSchema, fixture );
