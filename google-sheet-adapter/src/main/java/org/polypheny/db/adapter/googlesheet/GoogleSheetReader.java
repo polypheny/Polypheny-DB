@@ -45,16 +45,20 @@ public class GoogleSheetReader {
 
 
 
+    private final URL url;
     private HashMap<String, List<List<Object>>> tableData = new HashMap<>();
     private String targetTableName;
     private List<List<Object>> targetTableData;
     private int currBlock;  // ptr to the current row to read from in the first table.
 
     public GoogleSheetReader(URL url) {
+        this.url = url;
         readAllTables();
+
     }
 
     public GoogleSheetReader(URL url, String tableName) {
+        this.url = url;
         readAllTables();
         setTargetTable(tableName);
         currBlock = 0;
@@ -81,6 +85,12 @@ public class GoogleSheetReader {
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
 
+    private String parseUrlToString(URL url) {
+        String content = url.getPath();
+        String[] contentArr = content.split("/");
+        return contentArr[3];
+    }
+
 
     private void readAllTables() {
         if (!tableData.isEmpty()){
@@ -88,7 +98,7 @@ public class GoogleSheetReader {
         }
         try {
             final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-            final String spreadsheetId = "1-int7xwx0UyyigB4FLGMOxaCiuHXSNhi09fYSuAIX2Q";
+            final String spreadsheetId = parseUrlToString(url);
 
             Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
                     .setApplicationName(APPLICATION_NAME)
