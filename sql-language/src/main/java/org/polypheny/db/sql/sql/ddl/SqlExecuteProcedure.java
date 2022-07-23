@@ -33,7 +33,6 @@ import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +42,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement {
     private final SqlIdentifier identifier;
 
-    private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "EXEC PROCEDURE", Kind.PROCEDURE_EXEC );
+    private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator("EXEC PROCEDURE", Kind.PROCEDURE_EXEC);
     private final SqlNodeList argumentList;
     private final Map<String, Object> arguments = new HashMap<>();
 
@@ -51,27 +50,27 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
         super(pos);
         this.identifier = identifier;
         this.argumentList = argumentList;
-        for ( Pair<Node, Node> argument : pairs()) {
+        for (Pair<Node, Node> argument : pairs()) {
             arguments.put(argument.left.toString(), argument.right.toString());
         }
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword( "EXEC" );
-        writer.keyword( "PROCEDURE" );
-        identifier.unparse( writer, 0, 0 );
-        if ( argumentList.size() > 0 ) {
-            final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE );
+        writer.keyword("EXEC");
+        writer.keyword("PROCEDURE");
+        identifier.unparse(writer, 0, 0);
+        if (argumentList.size() > 0) {
+            final SqlWriter.Frame frame = writer.startList(SqlWriter.FrameTypeEnum.SIMPLE);
             List<Pair<Node, Node>> pairs = pairs();
-            for ( Pair<Node, Node> argument : pairs) {
-                writer.sep( "," );
+            for (Pair<Node, Node> argument : pairs) {
+                writer.sep(",");
                 writer.keyword("@");
                 writer.literal(argument.left.toString().trim());
                 writer.keyword("=");
                 writer.literal(argument.right.toString().trim());
             }
-            writer.endList( frame );
+            writer.endList(frame);
         }
     }
 
@@ -93,23 +92,23 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
         String procedureName;
         long databaseId = context.getDatabaseId();
         try {
-            if ( identifier.names.size() == 3 ) { // DatabaseName.SchemaName.ProcedureName
-                schemaId = catalog.getSchema( identifier.names.get( 0 ), identifier.names.get( 1 ) ).id;
-                procedureName = identifier.names.get( 2 );
+            if (identifier.names.size() == 3) { // DatabaseName.SchemaName.ProcedureName
+                schemaId = catalog.getSchema(identifier.names.get(0), identifier.names.get(1)).id;
+                procedureName = identifier.names.get(2);
                 databaseId = catalog.getDatabase(identifier.names.get(0)).id;
-            } else if ( identifier.names.size() == 2 ) { // SchemaName.ProcedureName
-                schemaId = catalog.getSchema( databaseId, identifier.names.get( 0 ) ).id;
-                procedureName = identifier.names.get( 1 );
+            } else if (identifier.names.size() == 2) { // SchemaName.ProcedureName
+                schemaId = catalog.getSchema(databaseId, identifier.names.get(0)).id;
+                procedureName = identifier.names.get(1);
             } else { // ProcedureName
-                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = catalog.getSchema(context.getDatabaseId(), context.getDefaultSchemaName()).id;
                 procedureName = identifier.names.get(0);
             }
-        } catch ( UnknownDatabaseException e ) {
-            throw CoreUtil.newContextException( identifier.getPos(), RESOURCE.databaseNotFound( identifier.toString() ) );
-        } catch ( UnknownSchemaException e ) {
-            throw CoreUtil.newContextException( identifier.getPos(), RESOURCE.schemaNotFound( identifier.toString() ) );
+        } catch (UnknownDatabaseException e) {
+            throw CoreUtil.newContextException(identifier.getPos(), RESOURCE.databaseNotFound(identifier.toString()));
+        } catch (UnknownSchemaException e) {
+            throw CoreUtil.newContextException(identifier.getPos(), RESOURCE.schemaNotFound(identifier.toString()));
         }
-        
+
         instance.executeProcedure(statement, databaseId, schemaId, identifier.getSimple(), arguments);
     }
 
@@ -120,6 +119,6 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
 
     @SuppressWarnings("unchecked")
     private List<Pair<Node, Node>> pairs() {
-        return Util.pairs( argumentList.getList() );
+        return Util.pairs(argumentList.getList());
     }
 }
