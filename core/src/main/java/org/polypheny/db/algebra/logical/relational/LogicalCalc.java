@@ -69,9 +69,9 @@ public final class LogicalCalc extends Calc {
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( Convention.NONE )
-                .replace( input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.calc( mq, input, program ) )
-                .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.calc( mq, input, program ) );
+                .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.calc( mq, input, program ) )
+                .replaceIf( ModelTraitDef.INSTANCE, () -> input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) );
         return new LogicalCalc( cluster, traitSet, input, program );
     }
 

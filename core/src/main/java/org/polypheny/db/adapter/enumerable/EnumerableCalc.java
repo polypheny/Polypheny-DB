@@ -78,10 +78,10 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         final AlgOptCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
-                .replace( input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) )
                 .replace( EnumerableConvention.INSTANCE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.calc( mq, input, program ) )
-                .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.calc( mq, input, program ) );
+                .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.calc( mq, input, program ) )
+                .replaceIf( ModelTraitDef.INSTANCE, () -> input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) );
         return new EnumerableCalc( cluster, traitSet, input, program );
     }
 
