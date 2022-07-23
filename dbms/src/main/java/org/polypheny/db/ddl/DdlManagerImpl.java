@@ -1734,6 +1734,7 @@ public class DdlManagerImpl extends DdlManager {
             CatalogProcedure procedure = optionalProcedure.get();
             PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), statement.getTransaction());
             PolyResult result = polyScriptInterpreter.interprete(procedure.getQuery(), arguments);
+            statement.setMonitoringEvent( new DdlEvent() );
             //TODO(nic): Don't call this right here
             result.getRowsChanged(statement);
 
