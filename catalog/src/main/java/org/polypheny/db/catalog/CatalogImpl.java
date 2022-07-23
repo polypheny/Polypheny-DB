@@ -62,6 +62,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -69,7 +70,6 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
@@ -160,7 +160,7 @@ public class CatalogImpl extends Catalog {
 
     private static BTreeMap<Object[], CatalogCollectionPlacement> collectionPlacements;
 
-    private static BTreeMap<Long, CatalogDocumentMapping> documentMappings;
+    private static BTreeMap<Long, CatalogCollectionMapping> documentMappings;
 
     private static BTreeMap<Long, CatalogColumn> columns;
     private static BTreeMap<Object[], CatalogColumn> columnNames;
@@ -2518,7 +2518,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addDocumentPlacement( int adapterId, long collectionId, PlacementType automatic ) {
+    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType automatic ) {
         long id = partitionIdBuilder.getAndIncrement();
         CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, null, null, id );
         CatalogCollection old = collections.get( collectionId );
@@ -2558,7 +2558,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogDocumentMapping getDocumentMapping( long id ) {
+    public CatalogCollectionMapping getCollectionMapping( long id ) {
         if ( !documentMappings.containsKey( id ) ) {
             throw new UnknownTableIdRuntimeException( id );
         }
@@ -2567,7 +2567,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addDocumentLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
+    public long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
         long tableId;
         if ( onlyPlacement ) {
             try {
@@ -2618,7 +2618,7 @@ public class CatalogImpl extends Catalog {
         addPrimaryKey( tableId, List.of( idId, dataId ) );
 
         if ( !onlyPlacement ) {
-            CatalogDocumentMapping mapping = new CatalogDocumentMapping( tableId, idId, dataId );
+            CatalogCollectionMapping mapping = new CatalogCollectionMapping( tableId, idId, dataId );
             documentMappings.put( tableId, mapping );
         }
 
@@ -2627,8 +2627,8 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void removeDocumentLogistics( CatalogCollection catalogCollection ) {
-        CatalogDocumentMapping mapping = documentMappings.get( catalogCollection.id );
+    public void removeCollectionLogistics( CatalogCollection catalogCollection ) {
+        CatalogCollectionMapping mapping = documentMappings.get( catalogCollection.id );
         deleteTable( Objects.requireNonNull( mapping ).collectionId );
     }
 

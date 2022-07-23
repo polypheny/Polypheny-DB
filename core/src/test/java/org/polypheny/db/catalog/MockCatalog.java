@@ -28,13 +28,13 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
@@ -84,7 +84,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void removeDocumentLogistics( CatalogCollection catalogCollection ) {
+    public void removeCollectionLogistics( CatalogCollection catalogCollection ) {
         throw new NotImplementedException();
     }
 
@@ -540,19 +540,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addDocumentPlacement( int adapterId, long collectionId, PlacementType automatic ) {
+    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType automatic ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogDocumentMapping getDocumentMapping( long id ) {
+    public CatalogCollectionMapping getCollectionMapping( long id ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addDocumentLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
+    public long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
 

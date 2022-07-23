@@ -21,8 +21,12 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -553,21 +557,37 @@ public interface NeoUtil {
             case DATE:
                 if ( value instanceof Date ) {
                     return ((Date) value).toLocalDate().toEpochDay();
+                } else if ( value instanceof Integer ) {
+                    return value;
                 }
                 return ((DateString) value).getDaysSinceEpoch();
             case TIME:
-                return ((TimeString) value).getMillisOfDay();
+                return handleFixTime( value );
             case TIMESTAMP:
-                if ( value instanceof java.sql.Timestamp ) {
-                    return ((java.sql.Timestamp) value).toInstant().getEpochSecond();
+                if ( value instanceof Long ) {
+                    return value;
+                } else if ( value instanceof java.sql.Timestamp ) {
+                    int offset = Calendar.getInstance().getTimeZone().getRawOffset();
+                    return ((Timestamp) value).getTime() + offset;
                 }
                 return ((TimestampString) value).getMillisSinceEpoch();
             case DOCUMENT:
                 return value.toString();
-            /*case ARRAY:
-                return ((List<?>) value).stream().map( v -> NeoUtil.fixParameterValue( v, Pair.of( type.right, type.right ) ) ).collect( Collectors.toList());*/
         }
         return value;
+    }
+
+    private static long handleFixTime( Object value ) {
+        if ( value instanceof Integer ) {
+            return Long.valueOf( (Integer) value );
+        } else if ( value instanceof TimeString ) {
+            return ((TimeString) value).getMillisOfDay();
+        } else if ( value instanceof Time ) {
+            return ((Time) value).toLocalTime().toNanoOfDay() / 1000000;
+        } else if ( value instanceof GregorianCalendar ) {
+            return ((GregorianCalendar) value).toZonedDateTime().toEpochSecond();
+        }
+        throw new UnsupportedOperationException( "Cannot handle Time format." );
     }
 
     @Getter

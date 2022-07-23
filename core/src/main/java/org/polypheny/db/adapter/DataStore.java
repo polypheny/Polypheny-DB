@@ -29,9 +29,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
@@ -136,7 +136,7 @@ public abstract class DataStore extends Adapter {
     public void createCollection( Context prepareContext, CatalogCollection catalogCollection, long adapterId ) {
         // overwrite this if the datastore supports document
         Catalog catalog = Catalog.getInstance();
-        CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
+        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
         CatalogEntity collectionEntity = catalog.getTable( mapping.collectionId );
         createTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
@@ -146,7 +146,7 @@ public abstract class DataStore extends Adapter {
     public void dropCollection( Context prepareContext, CatalogCollection catalogCollection ) {
         // overwrite this if the datastore supports document
         Catalog catalog = Catalog.getInstance();
-        CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
+        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
         CatalogEntity collectionEntity = catalog.getTable( mapping.collectionId );
         dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );

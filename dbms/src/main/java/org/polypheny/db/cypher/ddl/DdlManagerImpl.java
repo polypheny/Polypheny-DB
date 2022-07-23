@@ -64,12 +64,12 @@ import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogDocumentMapping;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
@@ -2213,7 +2213,7 @@ public class DdlManagerImpl extends DdlManager {
 
         long collectionId;
         try {
-            collectionId = catalog.addDocumentLogistics( schemaId, name, stores, false );
+            collectionId = catalog.addCollectionLogistics( schemaId, name, stores, false );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
@@ -2233,7 +2233,7 @@ public class DdlManagerImpl extends DdlManager {
         PolySchemaBuilder.getInstance().getCurrent();
 
         for ( DataStore store : stores ) {
-            catalog.addDocumentPlacement(
+            catalog.addCollectionPlacement(
                     store.getAdapterId(),
                     catalogCollection.id,
                     PlacementType.AUTOMATIC );
@@ -2275,7 +2275,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     public void removeDocumentLogistics( CatalogCollection catalogCollection, Statement statement ) {
-        CatalogDocumentMapping mapping = catalog.getDocumentMapping( catalogCollection.id );
+        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
         CatalogEntity table = catalog.getTable( mapping.collectionId );
         catalog.deleteTable( table.id );
     }
@@ -2285,7 +2285,7 @@ public class DdlManagerImpl extends DdlManager {
     public void addCollectionPlacement( long namespaceId, String name, List<DataStore> stores, Statement statement ) {
         long collectionId;
         try {
-            collectionId = catalog.addDocumentLogistics( namespaceId, name, stores, true );
+            collectionId = catalog.addCollectionLogistics( namespaceId, name, stores, true );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
@@ -2297,7 +2297,7 @@ public class DdlManagerImpl extends DdlManager {
         PolySchemaBuilder.getInstance().getCurrent();
 
         for ( DataStore store : stores ) {
-            catalog.addDocumentPlacement(
+            catalog.addCollectionPlacement(
                     store.getAdapterId(),
                     catalogCollection.id,
                     PlacementType.AUTOMATIC );
@@ -2324,7 +2324,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private void removeDocumentPlacementLogistics( CatalogCollection collection, DataStore store, Statement statement ) {
 
-        CatalogDocumentMapping mapping = catalog.getDocumentMapping( collection.id );
+        CatalogCollectionMapping mapping = catalog.getCollectionMapping( collection.id );
         CatalogEntity table = catalog.getTable( mapping.collectionId );
         try {
             dropDataPlacement( table, store, statement );
@@ -2335,7 +2335,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void afterDocumentLogistics( DataStore store, long collectionId ) {
-        CatalogDocumentMapping mapping = catalog.getDocumentMapping( collectionId );
+        CatalogCollectionMapping mapping = catalog.getCollectionMapping( collectionId );
         CatalogEntity table = catalog.getTable( mapping.collectionId );
 
         catalog.addDataPlacement( store.getAdapterId(), collectionId );

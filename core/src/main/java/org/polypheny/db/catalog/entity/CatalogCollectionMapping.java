@@ -18,14 +18,14 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 
-public class CatalogDocumentMapping implements CatalogObject {
+public class CatalogCollectionMapping implements CatalogObject {
 
     public final long collectionId;
     public final long idId;
     public final long dataId;
 
 
-    public CatalogDocumentMapping( long collectionId, long idId, long dataId ) {
+    public CatalogCollectionMapping( long collectionId, long idId, long dataId ) {
         this.collectionId = collectionId;
         this.idId = idId;
         this.dataId = dataId;
