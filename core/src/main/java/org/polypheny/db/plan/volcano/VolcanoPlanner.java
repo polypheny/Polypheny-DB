@@ -130,7 +130,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     final List<AlgSet> allSets = new ArrayList<>();
 
     /**
-     * Canonical map from {@link String digest} to the unique {@link AlgNode algational expression} with that digest.
+     * Canonical map from {@link String digest} to the unique {@link AlgNode algebra expression} with that digest.
      *
      * Row type is part of the key for the rare occasion that similar expressions have different types, e.g. variants
      * of {@code Project(child=rel#1, a=null)} where a is a null INTEGER or a null VARCHAR(10).
@@ -141,13 +141,13 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * Map each registered expression ({@link AlgNode}) to its equivalence set ({@link AlgSubset}).
      *
      * We use an {@link IdentityHashMap} to simplify the process of merging {@link AlgSet} objects. Most {@link AlgNode}
-     * objects are identified by their digest, which involves the set that their child algational expressions belong to.
+     * objects are identified by their digest, which involves the set that their child algebra expressions belong to.
      * If those children belong to the same set, we have to be careful, otherwise it gets incestuous.
      */
     private final IdentityHashMap<AlgNode, AlgSubset> mapRel2Subset = new IdentityHashMap<>();
 
     /**
-     * The importance of algational expressions.
+     * The importance of algebra expressions.
      *
      * The map contains only RelNodes whose importance has been overridden using
      * {@link AlgOptPlanner#setImportance(AlgNode, double)}. Other RelNodes are presumed to have 'normal' importance.
@@ -180,7 +180,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     private int nextSetId = 0;
 
     /**
-     * Incremented every time a algational expression is registered or two sets are merged.
+     * Incremented every time a algebra expression is registered or two sets are merged.
      * Tells us whether anything is going on.
      */
     private int registerCount;
@@ -191,7 +191,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     AlgOptListener listener;
 
     /**
-     * Dump of the root algational expression, as it was before any rules were applied. For debugging.
+     * Dump of the root algebra expression, as it was before any rules were applied. For debugging.
      */
     private String originalRootString;
 
@@ -574,7 +574,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Ensures that the subset that is the root algational expression contains converters to all other subsets
+     * Ensures that the subset that is the root algebra expression contains converters to all other subsets
      * in its equivalence set.
      *
      * Thus the planner tries to find cheap implementations of those other subsets, which can then be converted to the root.
@@ -600,14 +600,14 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Returns a multi-line string describing the provenance of a tree of algational expressions. For each node in the
-     * tree, prints the rule that created the node, if any. Recursively describes the provenance of the algational
+     * Returns a multi-line string describing the provenance of a tree of algebra expressions. For each node in the
+     * tree, prints the rule that created the node, if any. Recursively describes the provenance of the algebra
      * expressions that are the arguments to that rule.
      *
-     * Thus, every algational expression and rule invocation that affected the final outcome is described in the
+     * Thus, every algebra expression and rule invocation that affected the final outcome is described in the
      * provenance. This can be useful when finding the root cause of "mistakes" in a query plan.
      *
-     * @param root Root algational expression in a tree
+     * @param root Root algebra expression in a tree
      * @return Multi-line string describing the rules that created the tree
      */
     private String provenance( AlgNode root ) {
@@ -875,7 +875,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Returns the subset that a algational expression belongs to.
+     * Returns the subset that a algebra expression belongs to.
      *
      * @param alg Relational expression
      * @return Subset it belongs to, or null if it is not registered
@@ -973,7 +973,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * @param allowInfiniteCostConverters Whether to allow infinite converters
      * @param toTraits Target trait set
      * @param usedTraits Traits that have been locked in
-     * @return Converted algational expression
+     * @return Converted algebra expression
      */
     private AlgNode completeConversion(
             AlgNode alg,
@@ -1096,7 +1096,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Re-computes the digest of a {@link AlgNode}.
      *
-     * Since a algational expression's digest contains the identifiers of its children, this method needs to be called
+     * Since a algebra expression's digest contains the identifiers of its children, this method needs to be called
      * when the child has been renamed, for example if the child's set merges with another.
      *
      * @param alg Relational expression
@@ -1140,7 +1140,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                 assert existed : "alg was not known to its set";
                 final AlgSubset equivSubset = getSubset( equivRel );
                 if ( equivSubset != subset ) {
-                    // The equivalent algational expression is in a different subset, therefore the sets are equivalent.
+                    // The equivalent algebra expression is in a different subset, therefore the sets are equivalent.
                     assert equivSubset.getTraitSet().equals( subset.getTraitSet() );
                     assert equivSubset.set != subset.set;
                     merge( equivSubset.set, subset.set );
@@ -1157,7 +1157,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * @param alg Relational expression
      */
     void reregister( AlgSet set, AlgNode alg ) {
-        // Is there an equivalent algational expression? (This might have just occurred because the algational
+        // Is there an equivalent algebra expression? (This might have just occurred because the algebra
         // expression's child was just found to be equivalent to another set.)
         AlgNode equivRel = mapDigestToRel.get( alg.getDigest() );
         if ( equivRel != null && equivRel != alg ) {
@@ -1175,7 +1175,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             return;
         }
 
-        // Add the algational expression into the correct set and subset.
+        // Add the algebra expression into the correct set and subset.
         AlgSubset subset2 = addRelToSet( alg, set );
     }
 
@@ -1200,7 +1200,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Fires all rules matched by a algational expression.
+     * Fires all rules matched by a algebra expression.
      *
      * @param alg Relational expression which has just been created (or maybe from the queue)
      * @param deferred If true, each time a rule matches, just add an entry to the queue.
@@ -1314,7 +1314,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * the expression part of that equivalence set. If an identical expression is already registered, we don't need to
      * register this one and nor should we queue up rule matches.
      *
-     * @param alg algational expression to register. Must be either a {@link AlgSubset}, or an unregistered {@link AlgNode}
+     * @param alg algebra expression to register. Must be either a {@link AlgSubset}, or an unregistered {@link AlgNode}
      * @param set set that alg belongs to, or <code>null</code>
      * @return the equivalence-set
      */
@@ -1328,7 +1328,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             throw new AssertionError( "Relational expression " + alg + " belongs to a different planner than is currently being used." );
         }
 
-        // Now is a good time to ensure that the algational expression implements the interface required by its calling convention.
+        // Now is a good time to ensure that the algebra expression implements the interface required by its calling convention.
         final AlgTraitSet traits = alg.getTraitSet();
         final Convention convention = traits.getTrait( ConventionTraitDef.INSTANCE );
         assert convention != null;
@@ -1432,7 +1432,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
         LOGGER.trace( "Register {} in {}", alg.getDescription(), subset.getDescription() );
 
-        // This algational expression may have been registered while we recursively registered its children.
+        // This algebra expression may have been registered while we recursively registered its children.
         // If this is the case, we're done.
         if ( xx != null ) {
             return subset;

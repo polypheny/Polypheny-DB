@@ -94,8 +94,10 @@ public interface NeoUtil {
             case BIGINT:
                 return Value::asLong;
             case DECIMAL:
+                return e -> BigDecimal.valueOf( e.asDouble() );
             case FLOAT:
             case REAL:
+                return e -> (float) e.asDouble();
             case DOUBLE:
                 return Value::asDouble;
             case INTERVAL_YEAR:
@@ -132,7 +134,8 @@ public interface NeoUtil {
             case SYMBOL:
                 return Value::asObject;
             case ARRAY:
-                return Value::asList;
+                Function1<Value, Object> componentFunc = getTypeFunction( componentType, componentType );
+                return el -> el.asList( componentFunc::apply );
             case MAP:
             case DOCUMENT:
             case JSON:
@@ -439,7 +442,7 @@ public interface NeoUtil {
             case CAST:
                 return handleCast( operands );
             case ITEM:
-                return o -> String.format( "%s[%s]", o.get( 0 ), o.get( 1 ) );
+                return o -> String.format( "%s[%s - 1]", o.get( 0 ), o.get( 1 ) );
             case ARRAY_VALUE_CONSTRUCTOR:
                 return o -> "[" + String.join( ", ", o ) + "]";
             case CYPHER_EXTRACT_FROM_PATH:
