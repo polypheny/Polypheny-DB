@@ -224,6 +224,7 @@ public class Neo4jStore extends DataStore {
 
     @Override
     public void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn ) {
+        transactionProvider.commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         Catalog catalog = Catalog.getInstance();
         List<CatalogPartitionPlacement> partitionPlacements = catalogEntity

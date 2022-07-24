@@ -58,7 +58,7 @@ public class TransactionProvider {
 
 
     /**
-     * If the requested transaction exists it gets commited.
+     * If the requested transaction exists it gets committed.
      *
      * @param xid the identifier for the transaction
      */

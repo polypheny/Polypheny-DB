@@ -33,6 +33,7 @@ import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
@@ -162,6 +163,15 @@ public class Translator extends RexVisitorImpl<String> {
             return "(" + getter.apply( ops ) + ")";
         }
         return " " + getter.apply( ops ) + " ";
+    }
+
+
+    @Override
+    public String visitFieldAccess( RexFieldAccess fieldAccess ) {
+        if ( mapping != null ) {
+            return mapping.get( fieldAccess.getField().getName() );
+        }
+        return fieldAccess.getField().getName();
     }
 
 
