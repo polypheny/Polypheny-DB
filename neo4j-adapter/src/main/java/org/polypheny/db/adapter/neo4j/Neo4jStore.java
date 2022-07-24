@@ -19,6 +19,10 @@ package org.polypheny.db.adapter.neo4j;
 import com.google.common.collect.ImmutableList;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -43,6 +48,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
@@ -59,6 +65,7 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 @Slf4j
 @AdapterProperties(
@@ -229,10 +236,10 @@ public class Neo4jStore extends DataStore {
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             if ( catalogColumn.defaultValue != null ) {
                 executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format(
-                        "MATCH (n:%s) SET += {%s:'%s'}",
+                        "MATCH (n:%s) SET n += {%s:%s}",
                         getPhysicalEntityName( catalogColumn.schemaId, catalogColumn.tableId, partitionPlacement.partitionId ),
                         getPhysicalFieldName( catalogColumn.id ),
-                        catalogColumn.defaultValue ) );
+                        getDefaultAsNeo( catalogColumn.defaultValue, catalogColumn.type ) ) );
             }
 
             // Add physical name to placement
@@ -243,6 +250,42 @@ public class Neo4jStore extends DataStore {
                     getPhysicalFieldName( catalogColumn.id ),
                     false );
         }
+    }
+
+
+    private static Object getDefaultAsNeo( CatalogDefaultValue defaultValue, PolyType type ) {
+        if ( defaultValue != null ) {
+            Object value;
+            if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
+                value = defaultValue.value;
+            } else if ( PolyType.INT_TYPES.contains( type ) ) {
+                return Integer.parseInt( defaultValue.value );
+            } else if ( PolyType.FRACTIONAL_TYPES.contains( type ) ) {
+                return Double.parseDouble( defaultValue.value );
+            } else if ( type.getFamily() == PolyTypeFamily.BOOLEAN ) {
+                return Boolean.valueOf( defaultValue.value );
+            } else if ( type.getFamily() == PolyTypeFamily.DATE ) {
+                try {
+                    return new SimpleDateFormat( "yyyy-MM-dd" ).parse( defaultValue.value ).getTime();
+                } catch ( ParseException e ) {
+                    throw new RuntimeException( e );
+                }
+            } else if ( type.getFamily() == PolyTypeFamily.TIME ) {
+                return (int) Time.valueOf( defaultValue.value ).getTime();
+            } else if ( type.getFamily() == PolyTypeFamily.TIMESTAMP ) {
+                return Timestamp.valueOf( defaultValue.value ).getTime();
+            } else if ( type.getFamily() == PolyTypeFamily.BINARY ) {
+                return Arrays.toString( ByteString.parseBase64( defaultValue.value ) );
+            } else {
+                value = defaultValue.value;
+            }
+            if ( type == PolyType.ARRAY ) {
+                throw new RuntimeException( "Default values are not supported for array types" );
+            }
+
+            return String.format( "'%s'", value );
+        }
+        return null;
     }
 
 
@@ -371,11 +414,12 @@ public class Neo4jStore extends DataStore {
 
     @Override
     public void truncate( Context context, CatalogEntity table ) {
+        transactionProvider.commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    String.format( "MATCH (n:%s) DELETE n", partitionPlacement.physicalTableName ) );
+                    String.format( "MATCH (n:%s) DETACH DELETE n", partitionPlacement.physicalTableName ) );
         }
     }
 
@@ -391,7 +435,7 @@ public class Neo4jStore extends DataStore {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         executeDdlTrx(
                 context.getStatement().getTransaction().getXid(),
-                String.format( "MATCH (n:%s)\nDETACH DELETE n", getMappingLabel( graphPlacement.graphId ) ) );
+                String.format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( graphPlacement.graphId ) ) );
     }
 
 

@@ -65,7 +65,10 @@ public class TransactionProvider {
     synchronized void commit( PolyXid xid ) {
         if ( register.containsKey( xid ) ) {
             Pair<Session, Transaction> pair = register.get( xid );
-            pair.right.commit();
+            if ( pair.right.isOpen() ) {
+                pair.right.commit();
+            }
+
             pair.right.close();
             pair.left.close();
         }
@@ -113,14 +116,15 @@ public class TransactionProvider {
 
 
     public void commitDdlTransaction() {
-        if ( ddlSession == null || ddlTransaction == null ) {
+        commitAll();
+        /*if ( ddlSession == null || ddlTransaction == null ) {
             throw new RuntimeException( "There is no ongoing DDL transaction!" );
         }
         ddlTransaction.commit();
         ddlTransaction.close();
         ddlSession.close();
         ddlTransaction = null;
-        ddlSession = null;
+        ddlSession = null;*/
     }
 
 
@@ -133,6 +137,19 @@ public class TransactionProvider {
         ddlSession.close();
         ddlTransaction = null;
         ddlSession = null;
+    }
+
+
+    public void commitAll() {
+        if ( ddlSession != null && ddlTransaction != null ) {
+            ddlTransaction.commit();
+            ddlTransaction.close();
+            ddlSession.close();
+            ddlTransaction = null;
+            ddlSession = null;
+        }
+
+        register.keySet().forEach( this::commit );
     }
 
 }
