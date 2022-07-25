@@ -33,6 +33,7 @@ import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.type.PolyTypeFamily;
 
 /**
  * Helper classes, which are used to create cypher queries with a object representation.
@@ -473,7 +474,15 @@ public interface NeoStatements {
     }
 
     static LiteralStatement literal_( RexLiteral literal ) {
-        return literal_( NeoUtil.rexAsString( literal, null, false ) );
+        String prePostFix = "";
+        if ( PolyTypeFamily.CHARACTER.contains( literal.getType() ) ) {
+            prePostFix = "\"";
+        }
+        return literal_( String.format( "%s%s%s",
+                prePostFix,
+                NeoUtil.rexAsString( literal, null, false ),
+                prePostFix ) );
+
     }
 
     class DistinctStatement extends NeoStatement {
