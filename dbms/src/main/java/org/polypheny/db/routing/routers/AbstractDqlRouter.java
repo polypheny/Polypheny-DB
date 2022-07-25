@@ -33,10 +33,10 @@ import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentAlg.DocType;
 import org.polypheny.db.algebra.core.document.DocumentScan;
-import org.polypheny.db.algebra.core.graph.GraphAlg;
-import org.polypheny.db.algebra.core.graph.GraphAlg.NodeType;
+import org.polypheny.db.algebra.core.lpg.LpgAlg;
+import org.polypheny.db.algebra.core.lpg.LpgAlg.NodeType;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -137,16 +137,16 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     @Override
-    public <T extends AlgNode & GraphAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement ) {
+    public <T extends AlgNode & LpgAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement ) {
         if ( alg.getInputs().size() == 1 ) {
-            routeGraph( builder, (AlgNode & GraphAlg) alg.getInput( 0 ), statement );
+            routeGraph( builder, (AlgNode & LpgAlg) alg.getInput( 0 ), statement );
             if ( builder.stackSize() > 0 ) {
                 alg.replaceInput( 0, builder.build() );
             }
             return alg;
         } else if ( alg.getNodeType() == NodeType.SCAN ) {
             //attachMappingsIfNecessary( alg );
-            builder.push( handleGraphScan( (LogicalGraphScan) alg, statement, null ) );
+            builder.push( handleGraphScan( (LogicalLpgScan) alg, statement, null ) );
             return alg;
         } else if ( alg.getNodeType() == NodeType.VALUES ) {
             return alg;

@@ -20,7 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
-import org.polypheny.db.algebra.core.graph.GraphAlg;
+import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -40,7 +40,7 @@ public interface Router {
      */
     void resetCaches();
 
-    <T extends AlgNode & GraphAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement );
+    <T extends AlgNode & LpgAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement );
 
     <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement, LogicalQueryInformation queryInformation );
 

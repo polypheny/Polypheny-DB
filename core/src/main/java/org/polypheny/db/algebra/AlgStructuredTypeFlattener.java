@@ -50,16 +50,16 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
-import org.polypheny.db.algebra.logical.graph.LogicalGraph;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
@@ -381,7 +381,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphTransformer alg ) {
+    public void rewriteAlg( LogicalLpgTransformer alg ) {
         rewriteGeneric( alg );
     }
 
@@ -450,13 +450,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphModify alg ) {
+    public void rewriteAlg( LogicalLpgModify alg ) {
         rewriteGeneric( alg );
     }
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphScan scan ) {
+    public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
         if ( !(scan.getGraph() instanceof LogicalGraph) ) {
             alg = scan.getGraph().toAlg( toAlgContext, scan.getGraph() );
@@ -466,37 +466,37 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphProject project ) {
+    public void rewriteAlg( LogicalLpgProject project ) {
         rewriteGeneric( project );
     }
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphMatch match ) {
+    public void rewriteAlg( LogicalLpgMatch match ) {
         rewriteGeneric( match );
     }
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphFilter filter ) {
+    public void rewriteAlg( LogicalLpgFilter filter ) {
         rewriteGeneric( filter );
     }
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphSort sort ) {
+    public void rewriteAlg( LogicalLpgSort sort ) {
         rewriteGeneric( sort );
     }
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphAggregate aggregate ) {
+    public void rewriteAlg( LogicalLpgAggregate aggregate ) {
         rewriteGeneric( aggregate );
     }
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( LogicalGraphUnwind unwind ) {
+    public void rewriteAlg( LogicalLpgUnwind unwind ) {
         rewriteGeneric( unwind );
     }
 

@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
@@ -123,7 +123,7 @@ public class CypherExpression extends CypherNode {
             ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( (RexLiteral) namedNode.right ) );
 
             AlgRecordType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( name, 0, namedNode.right.getType() ) ) );
-            LogicalGraphValues node = LogicalGraphValues.create( context.cluster, context.cluster.traitSet(), rowType, values );
+            LogicalLpgValues node = LogicalLpgValues.create( context.cluster, context.cluster.traitSet(), rowType, values );
 
             context.add( node );
         } else {

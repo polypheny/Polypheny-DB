@@ -32,7 +32,7 @@ import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.graph.GraphUnwind;
+import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -40,7 +40,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
-public class EnumerableUnwind extends GraphUnwind implements EnumerableAlg {
+public class EnumerableUnwind extends LpgUnwind implements EnumerableAlg {
 
     /**
      * Creates a <code>SingleRel</code>.

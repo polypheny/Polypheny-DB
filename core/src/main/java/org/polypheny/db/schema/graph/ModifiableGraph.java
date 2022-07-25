@@ -20,7 +20,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.core.graph.GraphModify;
+import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -32,7 +32,7 @@ import org.polypheny.db.schema.Statistic;
 
 public interface ModifiableGraph extends Graph {
 
-    GraphModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations );
+    LpgModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations );
 
     Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz );
 

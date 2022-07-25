@@ -27,9 +27,9 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
@@ -89,7 +89,7 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    private LogicalGraphAggregate getAggregate( CypherContext context, AlgNode node ) {
+    private LogicalLpgAggregate getAggregate( CypherContext context, AlgNode node ) {
         List<Pair<String, AggregateCall>> aggIndexes = context.popAggNodes();
         List<AggregateCall> aggCalls = new ArrayList<>();
         for ( Pair<String, AggregateCall> namedAgg : aggIndexes ) {
@@ -111,7 +111,7 @@ public class CypherReturnClause extends CypherClause {
                 .map( AlgDataTypeField::getIndex )
                 .collect( Collectors.toList() );
 
-        return new LogicalGraphAggregate(
+        return new LogicalLpgAggregate(
                 node.getCluster(),
                 node.getTraitSet(),
                 node,
@@ -131,7 +131,7 @@ public class CypherReturnClause extends CypherClause {
             node = context.asValues( nameAndProject );
         }
 
-        AlgNode project = new LogicalGraphProject(
+        AlgNode project = new LogicalLpgProject(
                 context.cluster,
                 context.cluster.traitSet(),
                 node,
@@ -174,7 +174,7 @@ public class CypherReturnClause extends CypherClause {
 
         AlgTraitSet traitSet = node.getTraitSet().replace( collation );
 
-        return new LogicalGraphSort( node.getCluster(), traitSet, collation, context.pop(), skip, limit );
+        return new LogicalLpgSort( node.getCluster(), traitSet, collation, context.pop(), skip, limit );
     }
 
 

@@ -21,29 +21,29 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.graph.GraphTransformer;
+import org.polypheny.db.algebra.core.lpg.LpgTransformer;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 public class EnumerableGraphTransformerRule extends ConverterRule {
 
     public EnumerableGraphTransformerRule() {
-        super( GraphTransformer.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER, "EnumerableGraphTransformer" );
+        super( LpgTransformer.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER, "EnumerableGraphTransformer" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        GraphTransformer graphTransformer = (GraphTransformer) alg;
+        LpgTransformer lpgTransformer = (LpgTransformer) alg;
         AlgTraitSet out = alg.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        AlgTraitSet inputOut = out.replace( graphTransformer.inTrait );
-        return new EnumerableGraphTransformer(
+        AlgTraitSet inputOut = out.replace( lpgTransformer.inTrait );
+        return new EnumerableLpgTransformer(
                 alg.getCluster(),
                 out,
                 alg.getInputs().stream().map( i -> convert( i, inputOut ) ).collect( Collectors.toList() ),
                 alg.getRowType(),
-                graphTransformer.operationOrder,
-                graphTransformer.operation );
+                lpgTransformer.operationOrder,
+                lpgTransformer.operation );
     }
 
 }

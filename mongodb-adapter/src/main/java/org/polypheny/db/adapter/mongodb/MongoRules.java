@@ -126,7 +126,7 @@ public class MongoRules {
             MongoDocumentProjectRule.INSTANCE,
             MongoDocumentAggregateRule.INSTANCE,
             MongoDocumentsRule.INSTANCE,
-            MongoCollectionModificationRule.INSTANCE
+            MongoDocumentModificationRule.INSTANCE
     };
 
 
@@ -905,7 +905,7 @@ public class MongoRules {
             }
 
             final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
-            return new MongoTableModify(
+            return new MongoEntityModify(
                     modify.getCluster(),
                     traitSet,
                     modify.getTable(),
@@ -920,12 +920,12 @@ public class MongoRules {
     }
 
 
-    private static class MongoCollectionModificationRule extends MongoConverterRule {
+    private static class MongoDocumentModificationRule extends MongoConverterRule {
 
-        private static final MongoCollectionModificationRule INSTANCE = new MongoCollectionModificationRule();
+        private static final MongoDocumentModificationRule INSTANCE = new MongoDocumentModificationRule();
 
 
-        MongoCollectionModificationRule() {
+        MongoDocumentModificationRule() {
             super( DocumentModify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoCollectionModificationRule." + MongoAlg.CONVENTION );
         }
 
@@ -942,7 +942,7 @@ public class MongoRules {
             }
 
             final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
-            return new MongoTableModify(
+            return new MongoEntityModify(
                     modify.getCluster(),
                     traitSet,
                     modify.getCollection(),
@@ -957,14 +957,14 @@ public class MongoRules {
     }
 
 
-    private static class MongoTableModify extends Modify implements MongoAlg {
+    private static class MongoEntityModify extends Modify implements MongoAlg {
 
 
         private final GridFSBucket bucket;
         private Implementor implementor;
 
 
-        protected MongoTableModify(
+        protected MongoEntityModify(
                 AlgOptCluster cluster,
                 AlgTraitSet traitSet,
                 AlgOptTable table,
@@ -987,7 +987,7 @@ public class MongoRules {
 
         @Override
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new MongoTableModify(
+            return new MongoEntityModify(
                     getCluster(),
                     traitSet,
                     getTable(),

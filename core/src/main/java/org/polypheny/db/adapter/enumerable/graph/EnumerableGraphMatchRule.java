@@ -19,7 +19,7 @@ package org.polypheny.db.adapter.enumerable.graph;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -28,15 +28,15 @@ public class EnumerableGraphMatchRule extends ConverterRule {
 
 
     public EnumerableGraphMatchRule( AlgBuilderFactory builder ) {
-        super( LogicalGraphMatch.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, builder, "EnumerableGraphMatch" );
+        super( LogicalLpgMatch.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, builder, "EnumerableGraphMatch" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalGraphMatch match = (LogicalGraphMatch) alg;
+        LogicalLpgMatch match = (LogicalLpgMatch) alg;
         AlgNode input = AlgOptRule.convert( match.getInput(), EnumerableConvention.INSTANCE );
-        return new EnumerableGraphMatch( alg.getCluster(), alg.getTraitSet().replace( EnumerableConvention.INSTANCE ), input, match.getMatches(), match.getNames() );
+        return new EnumerableLpgMatch( alg.getCluster(), alg.getTraitSet().replace( EnumerableConvention.INSTANCE ), input, match.getMatches(), match.getNames() );
     }
 
 }

@@ -18,9 +18,9 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -32,13 +32,13 @@ public class GraphToRelRule extends AlgOptRule {
     public static final GraphToRelRule GRAPH_MODIFY_TO_REL =
             new GraphToRelRule(
                     true,
-                    operand( LogicalGraphModify.class, operand( LogicalGraphValues.class, none() ) ),
+                    operand( LogicalLpgModify.class, operand( LogicalLpgValues.class, none() ) ),
                     "GRAPH_MODIFY_TO_REL" );
 
     public static final GraphToRelRule GRAPH_SCAN_TO_REL =
             new GraphToRelRule(
                     false,
-                    operand( LogicalGraphScan.class, none() ),
+                    operand( LogicalLpgScan.class, none() ),
                     "GRAPH_SCAN_TO_REL" );
 
 

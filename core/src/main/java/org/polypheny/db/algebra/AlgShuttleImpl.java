@@ -34,16 +34,16 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalExchange;
@@ -200,61 +200,61 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( LogicalGraphModify modify ) {
+    public AlgNode visit( LogicalLpgModify modify ) {
         return visitChildren( modify );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphScan scan ) {
+    public AlgNode visit( LogicalLpgScan scan ) {
         return scan;
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphValues values ) {
+    public AlgNode visit( LogicalLpgValues values ) {
         return values;
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphFilter filter ) {
+    public AlgNode visit( LogicalLpgFilter filter ) {
         return visitChildren( filter );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphMatch match ) {
+    public AlgNode visit( LogicalLpgMatch match ) {
         return visitChildren( match );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphProject project ) {
+    public AlgNode visit( LogicalLpgProject project ) {
         return visitChildren( project );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphAggregate aggregate ) {
+    public AlgNode visit( LogicalLpgAggregate aggregate ) {
         return visitChildren( aggregate );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphSort sort ) {
+    public AlgNode visit( LogicalLpgSort sort ) {
         return visitChildren( sort );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphUnwind unwind ) {
+    public AlgNode visit( LogicalLpgUnwind unwind ) {
         return visitChildren( unwind );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphTransformer transformer ) {
+    public AlgNode visit( LogicalLpgTransformer transformer ) {
         return visitChildren( transformer );
     }
 

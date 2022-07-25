@@ -19,25 +19,25 @@ package org.polypheny.db.adapter.neo4j.rules;
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.neo4j.NeoConvention;
 import org.polypheny.db.adapter.neo4j.NeoToEnumerableConverterRule;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphAggregate;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphFilter;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphMatch;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphModify;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphProject;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphSort;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphUnwind;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphValues;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgAggregate;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgFilter;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgMatch;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgModify;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgProject;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgSort;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgUnwind;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgValues;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.graph.GraphAggregate;
-import org.polypheny.db.algebra.core.graph.GraphFilter;
-import org.polypheny.db.algebra.core.graph.GraphMatch;
-import org.polypheny.db.algebra.core.graph.GraphModify;
-import org.polypheny.db.algebra.core.graph.GraphProject;
-import org.polypheny.db.algebra.core.graph.GraphSort;
-import org.polypheny.db.algebra.core.graph.GraphUnwind;
-import org.polypheny.db.algebra.core.graph.GraphValues;
+import org.polypheny.db.algebra.core.lpg.LpgAggregate;
+import org.polypheny.db.algebra.core.lpg.LpgFilter;
+import org.polypheny.db.algebra.core.lpg.LpgMatch;
+import org.polypheny.db.algebra.core.lpg.LpgModify;
+import org.polypheny.db.algebra.core.lpg.LpgProject;
+import org.polypheny.db.algebra.core.lpg.LpgSort;
+import org.polypheny.db.algebra.core.lpg.LpgUnwind;
+import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
@@ -71,7 +71,7 @@ public interface NeoGraphRules {
 
     class NeoGraphModifyRule extends NeoConverterRule {
 
-        public static NeoGraphModifyRule INSTANCE = new NeoGraphModifyRule( GraphModify.class, r -> true, "NeoGraphModifyRule" );
+        public static NeoGraphModifyRule INSTANCE = new NeoGraphModifyRule( LpgModify.class, r -> true, "NeoGraphModifyRule" );
 
 
         private <R extends AlgNode> NeoGraphModifyRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -81,8 +81,8 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            GraphModify modify = (GraphModify) alg;
-            return new NeoGraphModify(
+            LpgModify modify = (LpgModify) alg;
+            return new NeoLpgModify(
                     modify.getCluster(),
                     modify.getTraitSet().replace( NeoConvention.INSTANCE ),
                     modify.getGraph(),
@@ -97,7 +97,7 @@ public interface NeoGraphRules {
 
     class NeoGraphProjectRule extends NeoConverterRule {
 
-        public static NeoGraphProjectRule INSTANCE = new NeoGraphProjectRule( GraphProject.class, r -> true, "NeoGraphProjectRule" );
+        public static NeoGraphProjectRule INSTANCE = new NeoGraphProjectRule( LpgProject.class, r -> true, "NeoGraphProjectRule" );
 
 
         private <R extends AlgNode> NeoGraphProjectRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -107,8 +107,8 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            GraphProject project = (GraphProject) alg;
-            return new NeoGraphProject(
+            LpgProject project = (LpgProject) alg;
+            return new NeoLpgProject(
                     alg.getCluster(),
                     alg.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( project.getInput(), NeoConvention.INSTANCE ),
@@ -121,7 +121,7 @@ public interface NeoGraphRules {
 
     class NeoGraphFilterRule extends NeoConverterRule {
 
-        public static NeoGraphFilterRule INSTANCE = new NeoGraphFilterRule( GraphFilter.class, r -> true, "NeoGraphFilterRule" );
+        public static NeoGraphFilterRule INSTANCE = new NeoGraphFilterRule( LpgFilter.class, r -> true, "NeoGraphFilterRule" );
 
 
         private <R extends AlgNode> NeoGraphFilterRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -130,9 +130,9 @@ public interface NeoGraphRules {
 
 
         @Override
-        public GraphFilter convert( AlgNode alg ) {
-            GraphFilter filter = (GraphFilter) alg;
-            return new NeoGraphFilter(
+        public LpgFilter convert( AlgNode alg ) {
+            LpgFilter filter = (LpgFilter) alg;
+            return new NeoLpgFilter(
                     filter.getCluster(),
                     filter.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( filter.getInput(), NeoConvention.INSTANCE ),
@@ -144,7 +144,7 @@ public interface NeoGraphRules {
 
     class NeoGraphValuesRule extends NeoConverterRule {
 
-        public static NeoGraphValuesRule INSTANCE = new NeoGraphValuesRule( GraphValues.class, r -> true, "NeoGraphValuesRule" );
+        public static NeoGraphValuesRule INSTANCE = new NeoGraphValuesRule( LpgValues.class, r -> true, "NeoGraphValuesRule" );
 
 
         private <R extends AlgNode> NeoGraphValuesRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -154,8 +154,8 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            GraphValues values = (GraphValues) alg;
-            return new NeoGraphValues(
+            LpgValues values = (LpgValues) alg;
+            return new NeoLpgValues(
                     values.getCluster(),
                     values.getTraitSet().replace( NeoConvention.INSTANCE ),
                     values.getNodes(),
@@ -169,7 +169,7 @@ public interface NeoGraphRules {
 
     class NeoGraphSortRule extends NeoConverterRule {
 
-        public static NeoGraphSortRule INSTANCE = new NeoGraphSortRule( GraphSort.class, r -> true, "NeoGraphSortRule" );
+        public static NeoGraphSortRule INSTANCE = new NeoGraphSortRule( LpgSort.class, r -> true, "NeoGraphSortRule" );
 
 
         private <R extends AlgNode> NeoGraphSortRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -179,8 +179,8 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            GraphSort sort = (GraphSort) alg;
-            return new NeoGraphSort(
+            LpgSort sort = (LpgSort) alg;
+            return new NeoLpgSort(
                     sort.getCluster(),
                     sort.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( sort.getInput(), NeoConvention.INSTANCE ),
@@ -194,7 +194,7 @@ public interface NeoGraphRules {
 
     class NeoGraphUnwindRule extends NeoConverterRule {
 
-        public static NeoGraphUnwindRule INSTANCE = new NeoGraphUnwindRule( GraphUnwind.class, r -> true, "NeoGraphUnwindRule" );
+        public static NeoGraphUnwindRule INSTANCE = new NeoGraphUnwindRule( LpgUnwind.class, r -> true, "NeoGraphUnwindRule" );
 
 
         private <R extends AlgNode> NeoGraphUnwindRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -204,8 +204,8 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            GraphUnwind sort = (GraphUnwind) alg;
-            return new NeoGraphUnwind(
+            LpgUnwind sort = (LpgUnwind) alg;
+            return new NeoLpgUnwind(
                     sort.getCluster(),
                     sort.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( sort.getInput(), NeoConvention.INSTANCE ),
@@ -218,7 +218,7 @@ public interface NeoGraphRules {
 
     class NeoGraphAggregateRule extends NeoConverterRule {
 
-        public static NeoGraphAggregateRule INSTANCE = new NeoGraphAggregateRule( GraphAggregate.class, r -> true, "NeoGraphAggregateRule" );
+        public static NeoGraphAggregateRule INSTANCE = new NeoGraphAggregateRule( LpgAggregate.class, r -> true, "NeoGraphAggregateRule" );
 
 
         private <R extends AlgNode> NeoGraphAggregateRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -228,8 +228,8 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            GraphAggregate aggregate = (GraphAggregate) alg;
-            return new NeoGraphAggregate(
+            LpgAggregate aggregate = (LpgAggregate) alg;
+            return new NeoLpgAggregate(
                     aggregate.getCluster(),
                     aggregate.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( aggregate.getInput(), NeoConvention.INSTANCE ),
@@ -244,7 +244,7 @@ public interface NeoGraphRules {
 
     class NeoGraphMatchRule extends NeoConverterRule {
 
-        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( GraphMatch.class, r -> true, "NeoGraphMatchRule" );
+        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LpgMatch.class, r -> true, "NeoGraphMatchRule" );
 
 
         private <R extends AlgNode> NeoGraphMatchRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -254,8 +254,8 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            GraphMatch match = (GraphMatch) alg;
-            return new NeoGraphMatch(
+            LpgMatch match = (LpgMatch) alg;
+            return new NeoLpgMatch(
                     match.getCluster(),
                     match.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( match.getInput(), NeoConvention.INSTANCE ),

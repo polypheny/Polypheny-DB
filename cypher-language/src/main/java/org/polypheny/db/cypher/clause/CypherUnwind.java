@@ -20,9 +20,9 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
@@ -71,7 +71,7 @@ public class CypherUnwind extends CypherClause {
             RexLiteral emptyList = (RexLiteral) context.rexBuilder.makeLiteral( new PolyList<>(), type, false );
 
             ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( emptyList ) );
-            context.add( LogicalGraphValues.create( context.cluster, context.cluster.traitSet(), rowType, values ) );
+            context.add( LogicalLpgValues.create( context.cluster, context.cluster.traitSet(), rowType, values ) );
 
             namedNode = Pair.of( variable.getName(), context.rexBuilder.makeInputRef( context.typeFactory.createPolyType( PolyType.ANY ), 0 ) );
 
@@ -88,17 +88,17 @@ public class CypherUnwind extends CypherClause {
             if ( !node.getRowType().getFieldNames().contains( namedNode.left ) ) {
                 throw new UnsupportedOperationException();
             }
-            node = new LogicalGraphProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) );
+            node = new LogicalLpgProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) );
 
             context.add( node );
         }
 
         if ( namedNode.left != null ) {
             // first project the expression out
-            context.add( new LogicalGraphProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) ) );
+            context.add( new LogicalLpgProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) ) );
         }
 
-        context.add( new LogicalGraphUnwind(
+        context.add( new LogicalLpgUnwind(
                 node.getCluster(),
                 node.getTraitSet(),
                 context.pop(),

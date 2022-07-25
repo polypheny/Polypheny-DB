@@ -37,12 +37,12 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphScan;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.core.graph.GraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
+import org.polypheny.db.algebra.core.lpg.LpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -99,9 +99,9 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
      * @param operations the operations to perform
      */
     @Override
-    public GraphModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+    public LpgModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
-        return new LogicalGraphModify(
+        return new LogicalLpgModify(
                 cluster,
                 cluster.traitSet().replace( Convention.NONE ),
                 graph,
@@ -139,7 +139,7 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
     @Override
     public AlgNode toAlg( ToAlgContext context, Graph graph ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new NeoGraphScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ), this );
+        return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ), this );
     }
 
 

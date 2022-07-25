@@ -29,16 +29,16 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalExchange;
@@ -91,25 +91,25 @@ public interface AlgShuttle {
 
     AlgNode visit( LogicalConditionalExecute lce );
 
-    AlgNode visit( LogicalGraphModify modify );
+    AlgNode visit( LogicalLpgModify modify );
 
-    AlgNode visit( LogicalGraphScan scan );
+    AlgNode visit( LogicalLpgScan scan );
 
-    AlgNode visit( LogicalGraphValues values );
+    AlgNode visit( LogicalLpgValues values );
 
-    AlgNode visit( LogicalGraphFilter filter );
+    AlgNode visit( LogicalLpgFilter filter );
 
-    AlgNode visit( LogicalGraphMatch match );
+    AlgNode visit( LogicalLpgMatch match );
 
-    AlgNode visit( LogicalGraphProject project );
+    AlgNode visit( LogicalLpgProject project );
 
-    AlgNode visit( LogicalGraphAggregate aggregate );
+    AlgNode visit( LogicalLpgAggregate aggregate );
 
-    AlgNode visit( LogicalGraphSort sort );
+    AlgNode visit( LogicalLpgSort sort );
 
-    AlgNode visit( LogicalGraphUnwind unwind );
+    AlgNode visit( LogicalLpgUnwind unwind );
 
-    AlgNode visit( LogicalGraphTransformer transformer );
+    AlgNode visit( LogicalLpgTransformer transformer );
 
     AlgNode visit( LogicalDocumentModify modify );
 

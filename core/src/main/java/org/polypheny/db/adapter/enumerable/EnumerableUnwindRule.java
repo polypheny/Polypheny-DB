@@ -18,7 +18,7 @@ package org.polypheny.db.adapter.enumerable;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -27,13 +27,13 @@ public class EnumerableUnwindRule extends ConverterRule {
 
 
     public EnumerableUnwindRule() {
-        super( LogicalGraphUnwind.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableUnwind" );
+        super( LogicalLpgUnwind.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableUnwind" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalGraphUnwind unwind = (LogicalGraphUnwind) alg;
+        LogicalLpgUnwind unwind = (LogicalLpgUnwind) alg;
         AlgTraitSet out = unwind.getTraitSet().replace( EnumerableConvention.INSTANCE );
 
         return new EnumerableUnwind( unwind.getCluster(), out, AlgOptRule.convert( unwind.getInput(), out ), unwind.index, unwind.alias );

@@ -44,9 +44,9 @@ import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
-import org.polypheny.db.algebra.core.graph.GraphProject;
-import org.polypheny.db.algebra.core.graph.GraphScan;
-import org.polypheny.db.algebra.core.graph.GraphValues;
+import org.polypheny.db.algebra.core.lpg.LpgProject;
+import org.polypheny.db.algebra.core.lpg.LpgScan;
+import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
@@ -60,11 +60,11 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
@@ -866,7 +866,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeGraphDml( LogicalGraphModify alg, Statement statement ) {
+    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement ) {
         if ( alg.getGraph() == null ) {
             throw new RuntimeException( "Error while routing graph" );
         }
@@ -940,8 +940,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgNode buildGraphDml( AlgNode node, Statement statement, int adapterId ) {
-        if ( node instanceof GraphScan ) {
-            return super.handleGraphScan( (LogicalGraphScan) node, statement, adapterId );
+        if ( node instanceof LpgScan ) {
+            return super.handleGraphScan( (LogicalLpgScan) node, statement, adapterId );
         }
         int i = 0;
         List<AlgNode> inputs = new ArrayList<>();
@@ -1068,7 +1068,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalModify( LogicalGraphModify alg, int adapterId, Statement statement ) {
+    private AlgNode attachRelationalModify( LogicalLpgModify alg, int adapterId, Statement statement ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
 
         PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );
@@ -1079,11 +1079,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<AlgNode> inputs = new ArrayList<>();
         switch ( alg.operation ) {
             case INSERT:
-                if ( alg.getInput() instanceof GraphValues ) {
+                if ( alg.getInput() instanceof LpgValues ) {
                     // simple value insert
-                    inputs.addAll( ((LogicalGraphValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), statement.getTransaction().getCatalogReader() ) );
+                    inputs.addAll( ((LogicalLpgValues) alg.getInput()).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), statement.getTransaction().getCatalogReader() ) );
                 }
-                if ( alg.getInput() instanceof GraphProject ) {
+                if ( alg.getInput() instanceof LpgProject ) {
                     return attachRelationalRelatedInsert( alg, statement, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, adapterId );
                 }
 
@@ -1120,8 +1120,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalGraphUpdate( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
-        AlgNode project = new LogicalGraphProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement, adapterId ), alg.operations, alg.ids );
+    private AlgNode attachRelationalGraphUpdate( LogicalLpgModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
+        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement, adapterId ), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
@@ -1138,14 +1138,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalGraphTransformer transformer = new LogicalGraphTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.UPDATE );
+        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.UPDATE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
 
     }
 
 
-    private AlgNode attachRelationalGraphDelete( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
-        AlgNode project = new LogicalGraphProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement, adapterId ), alg.operations, alg.ids );
+    private AlgNode attachRelationalGraphDelete( LogicalLpgModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
+        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), buildGraphDml( alg.getInput(), statement, adapterId ), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
@@ -1160,7 +1160,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalGraphTransformer transformer = new LogicalGraphTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.DELETE );
+        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.DELETE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
 
     }
@@ -1197,7 +1197,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode attachRelationalRelatedInsert( LogicalGraphModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
+    private AlgNode attachRelationalRelatedInsert( LogicalLpgModify alg, Statement statement, PreparingTable nodesTable, PreparingTable nodePropertiesTable, PreparingTable edgesTable, PreparingTable edgePropertiesTable, int adapterId ) {
         AlgNode project = buildGraphDml( alg.getInput(), statement, adapterId );
 
         List<AlgNode> inputs = new ArrayList<>();
@@ -1213,7 +1213,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalGraphTransformer transformer = new LogicalGraphTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.INSERT );
+        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Operation.INSERT );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
     }
 

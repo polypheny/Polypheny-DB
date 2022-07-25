@@ -36,8 +36,8 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentModify;
-import org.polypheny.db.algebra.core.graph.GraphAlg;
-import org.polypheny.db.algebra.core.graph.GraphModify;
+import org.polypheny.db.algebra.core.lpg.LpgAlg;
+import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptTable;
@@ -242,8 +242,8 @@ public class EntityAccessMap {
             super.visit( p, ordinal, parent );
             AlgOptTable table = p.getTable();
             if ( table == null ) {
-                if ( p instanceof GraphAlg ) {
-                    attachGraph( (AlgNode & GraphAlg) p );
+                if ( p instanceof LpgAlg ) {
+                    attachGraph( (AlgNode & LpgAlg) p );
                 }
                 if ( p instanceof DocumentAlg ) {
                     attachDocument( (AlgNode & DocumentAlg) p );
@@ -304,13 +304,13 @@ public class EntityAccessMap {
         }
 
 
-        private void attachGraph( GraphAlg p ) {
+        private void attachGraph( LpgAlg p ) {
             if ( p.getGraph() == null ) {
                 return;
             }
 
             Mode newAccess;
-            if ( p instanceof GraphModify ) {
+            if ( p instanceof LpgModify ) {
                 newAccess = Mode.WRITE_ACCESS;
             } else {
                 newAccess = Mode.READ_ACCESS;

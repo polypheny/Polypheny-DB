@@ -26,11 +26,11 @@ import org.polypheny.db.adapter.enumerable.EnumerableValues;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -38,13 +38,13 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 public class GraphToEnumerableRule extends AlgOptRule {
 
-    public static GraphToEnumerableRule PROJECT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.PROJECT, operand( LogicalGraphProject.class, any() ), "GRAPH_PROJECT_TO_ENUMERABLE" );
+    public static GraphToEnumerableRule PROJECT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.PROJECT, operand( LogicalLpgProject.class, any() ), "GRAPH_PROJECT_TO_ENUMERABLE" );
 
-    public static GraphToEnumerableRule FILTER_TO_ENUMERABLE = new GraphToEnumerableRule( Type.FILTER, operand( LogicalGraphFilter.class, any() ), "GRAPH_FILTER_TO_ENUMERABLE" );
+    public static GraphToEnumerableRule FILTER_TO_ENUMERABLE = new GraphToEnumerableRule( Type.FILTER, operand( LogicalLpgFilter.class, any() ), "GRAPH_FILTER_TO_ENUMERABLE" );
 
-    public static GraphToEnumerableRule AGGREGATE_TO_ENUMERABLE = new GraphToEnumerableRule( Type.AGGREGATE, operand( LogicalGraphAggregate.class, any() ), "GRAPH_AGGREGATE_TO_ENUMERABLE" );
+    public static GraphToEnumerableRule AGGREGATE_TO_ENUMERABLE = new GraphToEnumerableRule( Type.AGGREGATE, operand( LogicalLpgAggregate.class, any() ), "GRAPH_AGGREGATE_TO_ENUMERABLE" );
 
-    public static GraphToEnumerableRule VALUES_TO_ENUMERABLE = new GraphToEnumerableRule( Type.VALUES, operand( LogicalGraphValues.class, none() ), "GRAPH_VALUES_TO_ENUMERABLE" );
+    public static GraphToEnumerableRule VALUES_TO_ENUMERABLE = new GraphToEnumerableRule( Type.VALUES, operand( LogicalLpgValues.class, none() ), "GRAPH_VALUES_TO_ENUMERABLE" );
     //public static GraphToEnumerableRule SORT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.SORT, operand( LogicalGraphSort.class, any() ), "GRAPH_SORT_TO_ENUMERABLE" );
 
     private final Type type;
@@ -71,7 +71,7 @@ public class GraphToEnumerableRule extends AlgOptRule {
 
 
     private void convertValues( AlgOptRuleCall call ) {
-        LogicalGraphValues values = call.alg( 0 );
+        LogicalLpgValues values = call.alg( 0 );
         if ( !values.isEmptyGraphValues() ) {
             return;
         }
@@ -82,7 +82,7 @@ public class GraphToEnumerableRule extends AlgOptRule {
 
 
     private void convertAggregate( AlgOptRuleCall call ) {
-        LogicalGraphAggregate aggregate = call.alg( 0 );
+        LogicalLpgAggregate aggregate = call.alg( 0 );
         AlgTraitSet out = aggregate.getTraitSet().replace( EnumerableConvention.INSTANCE );
 
         try {
@@ -96,7 +96,7 @@ public class GraphToEnumerableRule extends AlgOptRule {
 
 
     private void convertSort( AlgOptRuleCall call ) {
-        LogicalGraphSort sort = call.alg( 0 );
+        LogicalLpgSort sort = call.alg( 0 );
         //AlgTraitSet out = sort.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode input = AlgOptRule.convert( sort.getInput(), EnumerableConvention.INSTANCE );
 
@@ -112,7 +112,7 @@ public class GraphToEnumerableRule extends AlgOptRule {
 
 
     private void convertFilter( AlgOptRuleCall call ) {
-        LogicalGraphFilter filter = call.alg( 0 );
+        LogicalLpgFilter filter = call.alg( 0 );
         AlgTraitSet out = filter.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode input = AlgOptRule.convert( filter.getInput(), EnumerableConvention.INSTANCE );
 
@@ -122,7 +122,7 @@ public class GraphToEnumerableRule extends AlgOptRule {
 
 
     private void convertProject( AlgOptRuleCall call ) {
-        LogicalGraphProject project = call.alg( 0 );
+        LogicalLpgProject project = call.alg( 0 );
         AlgTraitSet out = project.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode input = AlgOptRule.convert( project.getInput(), EnumerableConvention.INSTANCE );
 

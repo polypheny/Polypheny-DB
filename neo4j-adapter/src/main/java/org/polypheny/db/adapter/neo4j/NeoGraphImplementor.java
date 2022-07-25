@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphModify;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoGraphProject;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgModify;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgProject;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
@@ -42,7 +42,7 @@ import org.polypheny.db.adapter.neo4j.util.NeoStatements.ReturnStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.StatementType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.graph.GraphProject;
+import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
@@ -130,8 +130,8 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
             } else if ( statement.type == StatementType.WITH ) {
                 // can replace
                 statements.remove( statements.size() - 1 );
-                if ( getLast() instanceof NeoGraphProject ) {
-                    statements.add( return_( NeoGraphModify.buildReturnProject( (GraphProject) getLast(), getGraph().mappingLabel ) ) );
+                if ( getLast() instanceof NeoLpgProject ) {
+                    statements.add( return_( NeoLpgModify.buildReturnProject( (LpgProject) getLast(), getGraph().mappingLabel ) ) );
                 } else {
                     statements.add( return_( statement.statements ) );
                 }

@@ -36,8 +36,8 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
@@ -107,10 +107,10 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public AlgNode visit( LogicalGraphFilter oFilter ) {
-        LogicalGraphFilter filter = (LogicalGraphFilter) super.visit( oFilter );
+    public AlgNode visit( LogicalLpgFilter oFilter ) {
+        LogicalLpgFilter filter = (LogicalLpgFilter) super.visit( oFilter );
         RexNode condition = filter.getCondition();
-        return new LogicalGraphFilter(
+        return new LogicalLpgFilter(
                 filter.getCluster(),
                 filter.getTraitSet(),
                 filter.getInput(),
@@ -150,13 +150,13 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public AlgNode visit( LogicalGraphProject oProject ) {
-        LogicalGraphProject project = (LogicalGraphProject) super.visit( oProject );
+    public AlgNode visit( LogicalLpgProject oProject ) {
+        LogicalLpgProject project = (LogicalLpgProject) super.visit( oProject );
         /*List<RexNode> newProjects = new ArrayList<>();
         for ( RexNode node : oProject.getProjects() ) {
             newProjects.add( node.accept( this ) );
         }*/ //todo support parameterization for graph
-        return new LogicalGraphProject(
+        return new LogicalLpgProject(
                 project.getCluster(),
                 project.getTraitSet(),
                 project.getInput(),

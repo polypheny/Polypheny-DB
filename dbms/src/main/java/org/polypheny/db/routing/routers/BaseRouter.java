@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
@@ -296,7 +296,7 @@ public abstract class BaseRouter {
     }
 
 
-    public AlgNode handleGraphScan( LogicalGraphScan alg, Statement statement, @Nullable Integer placementId ) {
+    public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Integer placementId ) {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         Catalog catalog = Catalog.getInstance();
@@ -323,7 +323,7 @@ public abstract class BaseRouter {
             }
 
             // a native placement was used, we go with that
-            return new LogicalGraphScan( alg.getCluster(), alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
+            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), (TranslatableGraph) graph, alg.getRowType() );
         }
         if ( scans.size() < 1 ) {
             throw new RuntimeException( "Error while routing graph query." );
@@ -334,7 +334,7 @@ public abstract class BaseRouter {
     }
 
 
-    public AlgNode getRelationalScan( LogicalGraphScan alg, int adapterId, Statement statement ) {
+    public AlgNode getRelationalScan( LogicalLpgScan alg, int adapterId, Statement statement ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( alg.getGraph().getId() );
 
         PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );

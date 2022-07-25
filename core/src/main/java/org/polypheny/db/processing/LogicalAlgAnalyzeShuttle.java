@@ -29,7 +29,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.core.graph.GraphAlg;
+import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -38,16 +38,16 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
-import org.polypheny.db.algebra.logical.graph.LogicalGraph;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphAggregate;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphFilter;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphMatch;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphModify;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphProject;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphScan;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphSort;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphTransformer;
-import org.polypheny.db.algebra.logical.graph.LogicalGraphUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalExchange;
@@ -148,14 +148,14 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalGraphModify modify ) {
+    public AlgNode visit( LogicalLpgModify modify ) {
         hashBasis.add( "LogicalGraphModify" );
         return super.visit( modify );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphScan scan ) {
+    public AlgNode visit( LogicalLpgScan scan ) {
         hashBasis.add( "GraphScan#" + scan.getGraph().getId() );
 
         return super.visit( scan );
@@ -163,7 +163,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalGraphFilter filter ) {
+    public AlgNode visit( LogicalLpgFilter filter ) {
         hashBasis.add( "LogicalGraphFilter" );
         super.visit( filter );
         filter.accept( this.rexShuttle );
@@ -175,7 +175,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalGraphMatch match ) {
+    public AlgNode visit( LogicalLpgMatch match ) {
         hashBasis.add( "LogicalGraphMatch" );
         match.accept( this.rexShuttle );
         return visitChildren( match );
@@ -183,7 +183,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalGraphProject project ) {
+    public AlgNode visit( LogicalLpgProject project ) {
         hashBasis.add( "LogicalGraphProject#" + project.getProjects().size() );
         super.visit( project );
         project.accept( this.rexShuttle );
@@ -192,28 +192,28 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalGraphAggregate aggregate ) {
+    public AlgNode visit( LogicalLpgAggregate aggregate ) {
         hashBasis.add( "LogicalGraphAggregate#" + aggregate.getAggCallList() );
         return visitChild( aggregate, 0, aggregate.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphSort sort ) {
+    public AlgNode visit( LogicalLpgSort sort ) {
         hashBasis.add( "LogicalGraphSort" );
         return visitChild( sort, 0, sort.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphUnwind unwind ) {
+    public AlgNode visit( LogicalLpgUnwind unwind ) {
         hashBasis.add( "LogicalGraphUnion#" + unwind.index + "#" + unwind.alias );
         return visitChild( unwind, 0, unwind.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalGraphTransformer transformer ) {
+    public AlgNode visit( LogicalLpgTransformer transformer ) {
         hashBasis.add( "LogicalGraphTransformer" );
         return visitChildren( transformer );
     }
@@ -484,8 +484,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void getPartitioningInfo( LogicalGraphFilter filter ) {
-        Graph graph = ((GraphAlg) filter.getInput()).getGraph();
+    private void getPartitioningInfo( LogicalLpgFilter filter ) {
+        Graph graph = ((LpgAlg) filter.getInput()).getGraph();
         if ( graph == null ) {
             return;
         }
