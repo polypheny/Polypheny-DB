@@ -111,49 +111,18 @@ class ExcelEnumerator<E> implements Enumerator<E>{
 
 
     /**
-     * Deduces the names and types of a table's columns by reading the first line of a CSV file.
+     * Deduces the names and types of a table's columns by reading the first line of a Excel file.
      */
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<ExcelFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
-        Iterator<Row> rows = null;
+        //Iterator<Row> rows = null;
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
         }
         try {
-            Iterator<Row> reader = openExcel( source );
-            //Row rows = reader.next();
-//            if ( strings == null ) {
-//                strings = new Row[]{ "EmptyFileHasNoColumns:boolean" };
-//            }
-//            for ( String string : strings ) {
-//                final String name;
-//                final ExcelFieldType fieldType;
-//                final int colon = string.indexOf( ':' );
-//                if ( colon >= 0 ) {
-//                    name = string.substring( 0, colon );
-//                    String typeString = string.substring( colon + 1 );
-//                    fieldType = ExcelFieldType.of( typeString );
-//                    if ( fieldType == null ) {
-//                        System.out.println( "WARNING: Found unknown type: " + typeString + " in file: " + source.path() + " for column: " + name + ". Will assume the type of column is string" );
-//                    }
-//                } else {
-//                    name = string;
-//                    fieldType = null;
-//                }
-//                final AlgDataType type;
-//                if ( fieldType == null ) {
-//                    type = typeFactory.createPolyType( PolyType.VARCHAR );
-//                } else {
-//                    type = fieldType.toType( typeFactory );
-//                }
-//                names.add( name );
-//                types.add( type );
-//                if ( fieldTypes != null ) {
-//                    fieldTypes.add( fieldType );
-//                }
-//            }
+            Iterator<Row> rows = openExcel( source );
             while (rows.hasNext()) {
                 Row row = rows.next();
                 Iterator<Cell> cellIterator = row.cellIterator();
@@ -164,7 +133,7 @@ class ExcelEnumerator<E> implements Enumerator<E>{
                 break;
             }
             //types = new AlgDataType[names.size()];
-            int rowCount = 1;
+            //int rowCount = 1;
             while (rows.hasNext()) {
                 Row row = rows.next();
                 Iterator<Cell> cellIterator = row.cellIterator();

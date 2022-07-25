@@ -16,8 +16,9 @@
 
 package org.polypheny.db.adapter.excel;
 
-import com.monitorjbl.xlsx.StreamingReader;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -34,8 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
@@ -156,8 +157,8 @@ public class ExcelSource extends DataSource{
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        final List<PolyType> types = new ArrayList<>();
-        final List<String> names = new ArrayList<>();
+        final List<PolyType> types = new ArrayList<PolyType>();
+        final List<String> names = new ArrayList<String>();
         if ( exportedColumnCache != null ) {
             return exportedColumnCache;
         }
@@ -195,19 +196,23 @@ public class ExcelSource extends DataSource{
             int position = 1;
             try {
                 Source source = Sources.of( new URL( excelDir, fileName ) );
-                //BufferedReader reader = new BufferedReader( source.reader() );
-                //String firstLine = reader.readLine();
-                Workbook workbook =  StreamingReader.builder()
-                        .rowCacheSize(10)
-                        .bufferSize(4096)
-                        .open(source.openStream());
-                Sheet  sheet = workbook.getSheetAt(0);
+                BufferedReader reader = new BufferedReader( source.reader() );
+                //Stream<String> firstLine = reader.lines();
+                File file = new File(source.path());   //creating a new file instance
+                FileInputStream fs = new FileInputStream(file);
+//                Workbook workbook =  StreamingReader.builder()
+//                        .rowCacheSize(10)
+//                        .bufferSize(4096)
+//                        .open(fs);
+                XSSFWorkbook workbook = new XSSFWorkbook(fs);
+                XSSFSheet sheet = workbook.getSheetAt(0);
+                //Sheet  sheet = fs.getSheetAt(0);
 
                 Iterator<Row> rowIterator = sheet.iterator();
                 int columnCount=0;
                 while (rowIterator.hasNext())
                 {
-                    System.out.println(columnCount++);
+                    columnCount++;
                     Row row = rowIterator.next();
                     //For each row, iterate through all the columns
                     Iterator<Cell> cellIterator = row.cellIterator();
@@ -215,11 +220,9 @@ public class ExcelSource extends DataSource{
                     while (cellIterator.hasNext())
                     {
                         Cell cell = cellIterator.next();
-                        // System.out.println(Cell.CELL_TYPE_STRING);
-                        System.out.println(cell.getCellType());
                         try{
-                            System.out.println(cell.getDateCellValue());
                             names.add(cell.getStringCellValue());
+
                         }catch(Exception e){
 
                         }
@@ -247,9 +250,6 @@ public class ExcelSource extends DataSource{
                         }
 
                         types.add( type );
-//                        if ( fieldTypes != null ) {
-//                            fieldTypes.add( fieldType );
-//                        }
 
                     }
                     break;
@@ -292,7 +292,7 @@ public class ExcelSource extends DataSource{
 //                }
 
 
-                for ( var i = 0; i < columnCount; i++ ) {
+                for ( int i = 0; i < columnCount; i++ ) {
                     PolyType collectionsType = null;
                     Integer length = null;
                     Integer scale = null;
@@ -300,6 +300,22 @@ public class ExcelSource extends DataSource{
                     Integer cardinality = null;
                     String name = names.get( i );
                     PolyType type = types.get( i );
+                    list.add( new ExportedColumn(
+                            name,
+                            type,
+                            collectionsType,
+                            length,
+                            scale,
+                            dimension,
+                            cardinality,
+                            false,
+                            fileName,
+                            physicalTableName,
+                            name,
+                            position,
+                            position == 1 ) ); // TODO
+
+                    position++;
 //                    switch ( typeStr.toLowerCase() ) {
 //                        case "int":
 //                            type = PolyType.INTEGER;
@@ -334,21 +350,7 @@ public class ExcelSource extends DataSource{
 //                        default:
 //                            throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
 //                    }
-                    list.add( new ExportedColumn(
-                            name,
-                            type,
-                            collectionsType,
-                            length,
-                            scale,
-                            dimension,
-                            cardinality,
-                            false,
-                            fileName,
-                            physicalTableName,
-                            name,
-                            position,
-                            position == 1 ) ); // TODO
-                    position++;
+
                 }
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
