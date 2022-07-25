@@ -130,18 +130,40 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
         @Getter
         private final NeoEntity entity;
         private final NeoNamespace namespace;
+        private final AlgDataType rowType;
 
 
         public NeoQueryable( DataContext dataContext, SchemaPlus schema, QueryableTable table, String tableName ) {
             super( dataContext, schema, table, tableName );
             this.entity = (NeoEntity) table;
             this.namespace = schema.unwrap( NeoNamespace.class );
+            this.rowType = entity.rowType.apply( entity.getTypeFactory() );
         }
 
 
         @Override
         public Enumerator<T> enumerator() {
-            return execute( String.format( "MATCH (n:%s) RETURN n", entity.physicalEntityName ), List.of(), List.of(), Map.of() ).enumerator();
+            return execute( String.format( "MATCH (n:%s) RETURN %s", entity.physicalEntityName, buildAllQuery() ), getTypes(), getComponentType(), Map.of() ).enumerator();
+        }
+
+
+        private List<PolyType> getComponentType() {
+            return rowType.getFieldList().stream().map( t -> {
+                if ( t.getType().getComponentType() != null ) {
+                    return t.getType().getComponentType().getPolyType();
+                }
+                return null;
+            } ).collect( Collectors.toList() );
+        }
+
+
+        private List<PolyType> getTypes() {
+            return rowType.getFieldList().stream().map( t -> t.getType().getPolyType() ).collect( Collectors.toList() );
+        }
+
+
+        private String buildAllQuery() {
+            return rowType.getFieldList().stream().map( f -> "n." + f.getPhysicalName() ).collect( Collectors.joining( ", " ) );
         }
 
 

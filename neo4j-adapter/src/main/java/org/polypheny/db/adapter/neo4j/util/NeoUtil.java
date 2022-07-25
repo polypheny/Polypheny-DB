@@ -408,9 +408,9 @@ public interface NeoUtil {
             case COALESCE:
                 return o -> "coalesce(" + String.join( ", ", o ) + ")";
             case NOT_LIKE:
-                return o -> String.format( "NOT ( %s =~ '%s' )", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+                return handleLike( operands, true );
             case LIKE:
-                return handleLike( operands );
+                return handleLike( operands, false );
             case POWER:
                 return o -> String.format( "%s^%s", o.get( 0 ), o.get( 1 ) );
             case SQRT:
@@ -503,11 +503,20 @@ public interface NeoUtil {
         return o -> String.format( "toInteger(toFloat(%s) / %s)", o.get( 0 ), o.get( 1 ) );
     }
 
-    static Function1<List<String>, String> handleLike( List<RexNode> operands ) {
-        if ( operands.get( 1 ).isA( Kind.INPUT_REF ) ) {
-            return o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
+    static Function1<List<String>, String> handleLike( List<RexNode> operands, boolean negate ) {
+        if ( operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
+            return null;
         }
-        return o -> String.format( "%s =~ '%s'", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+
+        Function1<List<String>, String> func = o -> String.format( "%s =~ '%s'", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+        if ( operands.get( 1 ).isA( Kind.INPUT_REF ) ) {
+            func = o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
+        }
+        if ( negate ) {
+            Function1<List<String>, String> finalFunc = func;
+            func = o -> String.format( " NOT (%s)", finalFunc.apply( o ) );
+        }
+        return func;
     }
 
     static String getAsRegex( String like ) {
