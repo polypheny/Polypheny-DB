@@ -175,13 +175,18 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         AlgDataType rowType = entity.getRowType( entity.getTypeFactory() );
 
         for ( ImmutableList<RexLiteral> row : values ) {
-            int i = 0;
+            int pos = 0;
             List<PropertyStatement> props = new ArrayList<>();
             for ( RexLiteral value : row ) {
-                props.add( property_( rowType.getFieldList().get( i ).getPhysicalName(), literal_( NeoUtil.rexAsString( value, null, false ) ) ) );
-                i++;
+                if ( pos >= rowType.getFieldCount() ) {
+                    continue;
+                }
+                props.add( property_( rowType.getFieldList().get( pos ).getPhysicalName(), literal_( NeoUtil.rexAsString( value, null, false ) ) ) );
+                pos++;
             }
-            nodes.add( NeoStatements.node_( String.valueOf( nodeI ), NeoStatements.labels_( entity.physicalEntityName ), props ) );
+            String name = entity.physicalEntityName;
+
+            nodes.add( NeoStatements.node_( name + nodeI, NeoStatements.labels_( name ), props ) );
             nodeI++;
         }
 

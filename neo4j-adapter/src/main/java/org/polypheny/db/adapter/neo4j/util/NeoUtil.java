@@ -294,6 +294,10 @@ public interface NeoUtil {
                 return literal.getValueAs( Double.class ).toString();
             case CHAR:
             case VARCHAR:
+                if ( isLiteral ) {
+                    return "'" + literal.getValueAs( String.class ) + "'";
+                }
+                return literal.getValueAs( String.class );
             case MAP:
             case DOCUMENT:
             case ARRAY:
