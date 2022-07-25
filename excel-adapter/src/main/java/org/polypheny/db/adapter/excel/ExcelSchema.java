@@ -83,7 +83,7 @@ public class ExcelSchema extends AbstractSchema{
             throw new RuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        ExcelTable table = new ExcelTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, excelSource, catalogTable.id );
+        ExcelTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, excelSource, catalogTable.id );
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
@@ -98,14 +98,14 @@ public class ExcelSchema extends AbstractSchema{
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
-    private ExcelTable createTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource csvSource, Long tableId ) {
+    private ExcelTable createTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
         switch ( flavor ) {
             case TRANSLATABLE:
-                //return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+                return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
             case SCANNABLE:
-                //return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+                return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
             case FILTERABLE:
-                //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+                //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
             default:
                 throw new AssertionError( "Unknown flavor " + this.flavor );
         }

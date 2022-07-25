@@ -212,13 +212,14 @@ public class ExcelSource extends DataSource{
                 int columnCount=0;
                 while (rowIterator.hasNext())
                 {
-                    columnCount++;
+
                     Row row = rowIterator.next();
                     //For each row, iterate through all the columns
                     Iterator<Cell> cellIterator = row.cellIterator();
 
                     while (cellIterator.hasNext())
                     {
+                        columnCount++;
                         Cell cell = cellIterator.next();
                         try{
                             names.add(cell.getStringCellValue());
