@@ -84,6 +84,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public List<CatalogGraphPlacement> getGraphPlacements( int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void removeCollectionLogistics( CatalogCollection catalogCollection ) {
         throw new NotImplementedException();
     }

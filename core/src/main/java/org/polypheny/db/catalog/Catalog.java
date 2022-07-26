@@ -1680,6 +1680,9 @@ public abstract class Catalog {
     public abstract void dropCollectionPlacement( long id, int adapterId );
 
 
+    public abstract List<CatalogGraphPlacement> getGraphPlacements( int adapterId );
+
+
     public enum EntityType {
         ENTITY( 1 ),
         SOURCE( 2 ),

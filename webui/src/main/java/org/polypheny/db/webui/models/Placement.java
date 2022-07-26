@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 
 
 /**
@@ -50,7 +51,7 @@ public class Placement {
     }
 
 
-    public Placement addAdapter( final Store s ) {
+    public Placement addAdapter( final RelationalStore s ) {
         if ( s.columnPlacements.size() > 0 ) {
             this.stores.add( s );
         }
@@ -58,30 +59,79 @@ public class Placement {
     }
 
 
-    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
-    public static class Store {
+    public Placement addAdapter( final GraphStore s ) {
+        this.stores.add( s );
+
+        return this;
+    }
+
+
+    public static abstract class Store {
 
         public final String uniqueName;
         private final String adapterName;
+
+
+        protected Store( String uniqueName, String adapterName ) {
+            this.uniqueName = uniqueName;
+            this.adapterName = adapterName;
+        }
+
+    }
+
+
+    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
+    public static class RelationalStore extends Store {
+
         private final List<ColumnPlacement> columnPlacements;
         private final List<Long> partitionKeys;
         private final long numPartitions;
         private final PartitionType partitionType;
 
 
-        public Store(
+        public RelationalStore(
                 String uniqueName,
                 String adapterName,
                 List<CatalogColumnPlacement> columnPlacements,
                 final List<Long> partitionKeys,
                 final long numPartitions,
                 final PartitionType partitionType ) {
-            this.uniqueName = uniqueName;
-            this.adapterName = adapterName;
+            super( uniqueName, adapterName );
             this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).collect( Collectors.toList() );
             this.partitionKeys = partitionKeys;
             this.numPartitions = numPartitions;
             this.partitionType = partitionType;
+        }
+
+    }
+
+
+    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
+    public static class GraphStore extends Store {
+
+
+        private final List<GraphPlacement> placements;
+        private final boolean isNative;
+
+
+        public GraphStore( String uniqueName, String adapterName, List<CatalogGraphPlacement> graphPlacements, boolean isNative ) {
+            super( uniqueName, adapterName );
+            this.placements = graphPlacements.stream().map( p -> new GraphPlacement( p.graphId, p.adapterId ) ).collect( Collectors.toList() );
+            this.isNative = isNative;
+        }
+
+    }
+
+
+    private static class GraphPlacement {
+
+        private final long graphId;
+        private final int adapterId;
+
+
+        public GraphPlacement( long graphId, int adapterId ) {
+            this.graphId = graphId;
+            this.adapterId = adapterId;
         }
 
     }

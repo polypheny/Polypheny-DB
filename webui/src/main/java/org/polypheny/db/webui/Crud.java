@@ -197,6 +197,7 @@ import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.Placement;
+import org.polypheny.db.webui.models.Placement.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.ResultType;
@@ -2125,7 +2126,7 @@ public class Crud implements InformationObserver {
                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
                 for ( CatalogColumnPlacement placement : pkPlacements ) {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                    p.addAdapter( new Placement.Store(
+                    p.addAdapter( new RelationalStore(
                             adapter.getUniqueName(),
                             adapter.getAdapterName(),
                             catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),

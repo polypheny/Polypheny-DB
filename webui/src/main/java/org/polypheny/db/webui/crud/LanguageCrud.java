@@ -29,14 +29,20 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyResult;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -68,6 +74,8 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.requests.EditCollectionRequest;
@@ -654,4 +662,41 @@ public class LanguageCrud {
         ctx.json( new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data ) );
     }
 
+
+    public void getGraphPlacements( final Context ctx ) {
+        Index index = ctx.bodyAsClass( Index.class );
+        ctx.json( getPlacements( index ) );
+    }
+
+
+    private Placement getPlacements( final Index index ) {
+        Catalog catalog = Catalog.getInstance();
+        String graphName = index.getSchema();
+        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) );
+        if ( graphs.size() != 1 ) {
+            log.error( "The requested graph does not exist." );
+            return new Placement( new RuntimeException( "The requested graph does not exist." ) );
+        }
+        CatalogGraphDatabase graph = graphs.get( 0 );
+        EntityType type = EntityType.ENTITY;
+        Placement p = new Placement( false, List.of(), EntityType.ENTITY );
+        if ( type == EntityType.VIEW ) {
+
+            return p;
+        } else {
+            for ( int adapterId : graph.placements ) {
+                CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
+                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                p.addAdapter( new Placement.GraphStore(
+                        adapter.getUniqueName(),
+                        adapter.getAdapterName(),
+                        catalog.getGraphPlacements( adapterId ),
+                        adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) );
+            }
+            return p;
+        }
+
+    }
+
 }
+

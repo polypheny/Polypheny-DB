@@ -2658,6 +2658,11 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    public List<CatalogGraphPlacement> getGraphPlacements( int adapterId ) {
+        return graphPlacements.entrySet().stream().filter( e -> e.getKey()[1].equals( adapterId ) ).map( Entry::getValue ).collect( Collectors.toList() );
+    }
+
+
     @Override
     public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
         return collectionPlacements.values().stream().filter( p -> p.adapter == adapterId ).collect( Collectors.toList() );
