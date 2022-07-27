@@ -2664,7 +2664,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
+    public List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( int adapterId ) {
         return collectionPlacements.values().stream().filter( p -> p.adapter == adapterId ).collect( Collectors.toList() );
     }
 

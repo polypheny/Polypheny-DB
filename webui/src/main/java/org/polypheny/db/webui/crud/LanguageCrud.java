@@ -39,11 +39,15 @@ import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -76,10 +80,13 @@ import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Placement;
+import org.polypheny.db.webui.models.Placement.DocumentStore;
 import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.requests.EditCollectionRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.requests.UIRequest;
 
 @Slf4j
 public class LanguageCrud {
@@ -696,6 +703,87 @@ public class LanguageCrud {
             return p;
         }
 
+    }
+
+
+    public void getFixedFields( Context context ) {
+        Catalog catalog = Catalog.getInstance();
+        UIRequest request = context.bodyAsClass( UIRequest.class );
+        Result result;
+
+        String[] t = request.tableId.split( "\\." );
+        ArrayList<DbColumn> cols = new ArrayList<>();
+
+        try {
+            CatalogEntity catalogEntity = catalog.getTable( Catalog.defaultDatabaseId, t[0], t[1] );
+            ArrayList<String> primaryColumns;
+            if ( catalogEntity.primaryKey != null ) {
+                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
+                primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
+            } else {
+                primaryColumns = new ArrayList<>();
+            }
+            for ( CatalogColumn catalogColumn : catalog.getColumns( catalogEntity.id ) ) {
+                String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
+                String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
+                /*cols.add(
+                        new DbColumn(
+                                catalogColumn.name,
+                                catalogColumn.type.getName(),
+                                collectionsType,
+                                catalogColumn.nullable,
+                                catalogColumn.length,
+                                catalogColumn.scale,
+                                catalogColumn.dimension,
+                                catalogColumn.cardinality,
+                                primaryColumns.contains( catalogColumn.name ),
+                                defaultValue ) );*/
+            }
+            result = new Result( cols.toArray( new DbColumn[0] ), null );
+            if ( catalogEntity.entityType == EntityType.ENTITY ) {
+                result.setType( ResultType.TABLE );
+            } else if ( catalogEntity.entityType == EntityType.MATERIALIZED_VIEW ) {
+                result.setType( ResultType.MATERIALIZED );
+            } else {
+                result.setType( ResultType.VIEW );
+            }
+        } catch ( UnknownTableException e ) {
+            log.error( "Caught exception while getting a column", e );
+            context.status( 400 ).json( new Result( e ) );
+        }
+    }
+
+
+    public void getCollectionPlacements( Context context ) {
+        Index index = context.bodyAsClass( Index.class );
+        String namespace = index.getSchema();
+        String collectionName = index.getTable();
+        Catalog catalog = Catalog.getInstance();
+        long namespaceId;
+        try {
+            namespaceId = catalog.getNamespace( Catalog.defaultDatabaseId, namespace ).id;
+        } catch ( UnknownNamespaceException e ) {
+            context.json( new Placement( e ) );
+            return;
+        }
+        List<CatalogCollection> collections = catalog.getCollections( namespaceId, new Pattern( collectionName ) );
+
+        if ( collections.size() != 1 ) {
+            context.json( new Placement( new UnknownCollectionException( 0 ) ) );
+            return;
+        }
+
+        CatalogCollection collection = catalog.getCollection( collections.get( 0 ).id );
+
+        Placement placement = new Placement( false, List.of(), EntityType.ENTITY );
+
+        for ( Integer adapterId : collection.placements ) {
+            Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
+            List<CatalogCollectionPlacement> placements = catalog.getCollectionPlacementsByAdapter( adapterId );
+            placement.addAdapter( new DocumentStore( adapter.getUniqueName(), adapter.getAdapterName(), placements, adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
+        }
+
+        context.json( placement );
     }
 
 }

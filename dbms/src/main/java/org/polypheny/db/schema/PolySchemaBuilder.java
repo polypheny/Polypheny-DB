@@ -270,7 +270,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
                 // Get list of documents on this adapter
                 Map<String, Set<Long>> documentIdsPerSchema = new HashMap<>();
-                for ( CatalogCollectionPlacement placement : Catalog.getInstance().getCollectionPlacements( catalogAdapter.id ) ) {
+                for ( CatalogCollectionPlacement placement : Catalog.getInstance().getCollectionPlacementsByAdapter( catalogAdapter.id ) ) {
                     documentIdsPerSchema.putIfAbsent( placement.physicalNamespaceName, new HashSet<>() );
                     documentIdsPerSchema.get( placement.physicalNamespaceName ).add( placement.collectionId );
                 }

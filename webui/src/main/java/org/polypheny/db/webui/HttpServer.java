@@ -277,6 +277,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getGraphPlacements", crud.languageCrud::getGraphPlacements );
 
+        webuiServer.post( "/getFixedFields", crud.languageCrud::getFixedFields );
+
+        webuiServer.post( "/getCollectionPlacements", crud.languageCrud::getCollectionPlacements );
+
         webuiServer.post( "/addDropPlacement", crud::addDropPlacement );
 
         webuiServer.get( "/getPartitionTypes", crud::getPartitionTypes );

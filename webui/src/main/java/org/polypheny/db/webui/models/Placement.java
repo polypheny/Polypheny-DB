@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 
@@ -60,6 +61,13 @@ public class Placement {
 
 
     public Placement addAdapter( final GraphStore s ) {
+        this.stores.add( s );
+
+        return this;
+    }
+
+
+    public Placement addAdapter( final DocumentStore s ) {
         this.stores.add( s );
 
         return this;
@@ -118,6 +126,37 @@ public class Placement {
             super( uniqueName, adapterName );
             this.placements = graphPlacements.stream().map( p -> new GraphPlacement( p.graphId, p.adapterId ) ).collect( Collectors.toList() );
             this.isNative = isNative;
+        }
+
+    }
+
+
+    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
+    public static class DocumentStore extends Store {
+
+
+        private final List<CollectionPlacement> placements;
+        private final boolean isNative;
+
+
+        public DocumentStore( String uniqueName, String adapterName, List<CatalogCollectionPlacement> collectionPlacements, boolean isNative ) {
+            super( uniqueName, adapterName );
+            this.placements = collectionPlacements.stream().map( p -> new CollectionPlacement( p.collectionId, p.adapter ) ).collect( Collectors.toList() );
+            this.isNative = isNative;
+        }
+
+    }
+
+
+    private static class CollectionPlacement {
+
+        private final long collectionId;
+        private final int adapterId;
+
+
+        public CollectionPlacement( long collectionId, int adapterId ) {
+            this.collectionId = collectionId;
+            this.adapterId = adapterId;
         }
 
     }

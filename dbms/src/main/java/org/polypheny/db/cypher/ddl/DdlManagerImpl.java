@@ -320,7 +320,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalogAdapter.type == AdapterType.SOURCE ) {
             // Remove collection
             Set<Long> collectionsToDrop = new HashSet<>();
-            for ( CatalogCollectionPlacement collectionPlacement : catalog.getCollectionPlacements( catalogAdapter.id ) ) {
+            for ( CatalogCollectionPlacement collectionPlacement : catalog.getCollectionPlacementsByAdapter( catalogAdapter.id ) ) {
                 collectionsToDrop.add( collectionPlacement.collectionId );
             }
 

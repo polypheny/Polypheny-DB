@@ -1660,7 +1660,7 @@ public abstract class Catalog {
 
     public abstract long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException;
 
-    public abstract List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId );
+    public abstract List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( int adapterId );
 
     public abstract CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId );
 

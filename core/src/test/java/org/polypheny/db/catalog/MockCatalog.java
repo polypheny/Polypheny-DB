@@ -564,7 +564,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogCollectionPlacement> getCollectionPlacements( int adapterId ) {
+    public List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( int adapterId ) {
         throw new NotImplementedException();
     }
 
