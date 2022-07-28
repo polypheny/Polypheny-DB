@@ -46,7 +46,6 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -82,7 +81,6 @@ import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.DocumentStore;
 import org.polypheny.db.webui.models.Result;
-import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.requests.EditCollectionRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -710,47 +708,11 @@ public class LanguageCrud {
         Catalog catalog = Catalog.getInstance();
         UIRequest request = context.bodyAsClass( UIRequest.class );
         Result result;
+        List<DbColumn> cols = new ArrayList<>();
 
-        String[] t = request.tableId.split( "\\." );
-        ArrayList<DbColumn> cols = new ArrayList<>();
+        result = new Result( cols.toArray( new DbColumn[0] ), null );
+        context.json( result );
 
-        try {
-            CatalogEntity catalogEntity = catalog.getTable( Catalog.defaultDatabaseId, t[0], t[1] );
-            ArrayList<String> primaryColumns;
-            if ( catalogEntity.primaryKey != null ) {
-                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
-                primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
-            } else {
-                primaryColumns = new ArrayList<>();
-            }
-            for ( CatalogColumn catalogColumn : catalog.getColumns( catalogEntity.id ) ) {
-                String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
-                String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
-                /*cols.add(
-                        new DbColumn(
-                                catalogColumn.name,
-                                catalogColumn.type.getName(),
-                                collectionsType,
-                                catalogColumn.nullable,
-                                catalogColumn.length,
-                                catalogColumn.scale,
-                                catalogColumn.dimension,
-                                catalogColumn.cardinality,
-                                primaryColumns.contains( catalogColumn.name ),
-                                defaultValue ) );*/
-            }
-            result = new Result( cols.toArray( new DbColumn[0] ), null );
-            if ( catalogEntity.entityType == EntityType.ENTITY ) {
-                result.setType( ResultType.TABLE );
-            } else if ( catalogEntity.entityType == EntityType.MATERIALIZED_VIEW ) {
-                result.setType( ResultType.MATERIALIZED );
-            } else {
-                result.setType( ResultType.VIEW );
-            }
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception while getting a column", e );
-            context.status( 400 ).json( new Result( e ) );
-        }
     }
 
 
