@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.excel;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -33,7 +32,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -101,7 +99,6 @@ public class ExcelSource extends DataSource{
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
         currentSchema = new ExcelSchema( excelDir, Flavor.SCANNABLE );
-        //currentSchema = new ExcelSchema( excelDir);
     }
 
 
@@ -158,8 +155,6 @@ public class ExcelSource extends DataSource{
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        final List<PolyType> types = new ArrayList<PolyType>();
-        final List<String> names = new ArrayList<String>();
         if ( exportedColumnCache != null ) {
             return exportedColumnCache;
         }
@@ -205,14 +200,14 @@ public class ExcelSource extends DataSource{
             int position = 1;
             try {
                 Source source = Sources.of( new URL( excelDir, fileName ) );
-                BufferedReader reader = new BufferedReader( source.reader() );
                 File file = new File(source.path());   //creating a new file instance
                 FileInputStream fs = new FileInputStream(file);
 
                 Workbook workbook = WorkbookFactory.create(fs);
                 Sheet sheet = workbook.getSheetAt(0);
                 Iterator<Row> rowIterator = sheet.iterator();
-                int columnCount=0;
+
+                // read first row to extract column attribute name and datatype
                 while (rowIterator.hasNext())
                 {
 
@@ -222,140 +217,105 @@ public class ExcelSource extends DataSource{
 
                     while (cellIterator.hasNext())
                     {
-                        columnCount++;
+
                         Cell cell = cellIterator.next();
                         try{
-                            names.add(cell.getStringCellValue());
+                            String[] colSplit = cell.getStringCellValue().split( ":" );
+                            String name = colSplit[0]
+                                    .toLowerCase()
+                                    .trim()
+                                    .replaceAll( "[^a-z0-9_]+", "" );
+                            String typeStr = colSplit[1].toLowerCase().trim();
+                            PolyType collectionsType = null;
+                            PolyType type;
+                            Integer length = null;
+                            Integer scale = null;
+                            Integer dimension = null;
+                            Integer cardinality = null;
+                            switch ( typeStr.toLowerCase() ) {
+                                case "int":
+                                    type = PolyType.INTEGER;
+                                    break;
+                                case "string":
+                                    type = PolyType.VARCHAR;
+                                    length = maxStringLength;
+                                    break;
+                                case "boolean":
+                                    type = PolyType.BOOLEAN;
+                                    break;
+                                case "long":
+                                    type = PolyType.BIGINT;
+                                    break;
+                                case "float":
+                                    type = PolyType.REAL;
+                                    break;
+                                case "double":
+                                    type = PolyType.DOUBLE;
+                                    break;
+                                case "date":
+                                    type = PolyType.DATE;
+                                    break;
+                                case "time":
+                                    type = PolyType.TIME;
+                                    length = 0;
+                                    break;
+                                case "timestamp":
+                                    type = PolyType.TIMESTAMP;
+                                    length = 0;
+                                    break;
+                                default:
+                                    throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
+                            }
+
+                                list.add( new ExportedColumn(
+                                        name,
+                                        type,
+                                        collectionsType,
+                                        length,
+                                        scale,
+                                        dimension,
+                                        cardinality,
+                                        false,
+                                        fileName,
+                                        physicalTableName,
+                                        name,
+                                        position,
+                                        position == 1 ) ); // TODO
+
+                                position++;
+
 
                         }catch(Exception e){
 
                         }
-                    }
-                    break;
-
-                }
-
-                while (rowIterator.hasNext()) {
-                    Row row = rowIterator.next();
-                    Iterator<Cell> cellIterator = row.cellIterator();
-                    while (cellIterator.hasNext()) {
-                        Cell cell = cellIterator.next();
-                        //ExcelFieldType fieldType = ExcelFieldType.of(cell);
-                        PolyType type = PolyType.VARCHAR;
-                        CellType cellType = cell.getCellType();
-                        if (cellType == CellType.STRING) {
-                            type = PolyType.VARCHAR;
-                        } else if (cellType == CellType.NUMERIC) {
-                            type = PolyType.DOUBLE;
-                        } else if (cellType == CellType.BOOLEAN) {
-                            type = PolyType.BOOLEAN;
-                        } else if (cellType == CellType.BLANK) {
-                            type = PolyType.VARCHAR;
-                        }
-
-                        types.add( type );
 
                     }
                     break;
                 }
-
-//                while (rows.hasNext()) {
-//                    Row row = rows.next();
+//                while (rowIterator.hasNext()) {
+//                    Row row = rowIterator.next();
 //                    Iterator<Cell> cellIterator = row.cellIterator();
 //                    while (cellIterator.hasNext()) {
 //                        Cell cell = cellIterator.next();
-//                        names.add(cell.getStringCellValue());
+//                        //ExcelFieldType fieldType = ExcelFieldType.of(cell);
+//                        PolyType type = PolyType.VARCHAR;
+//                        CellType cellType = cell.getCellType();
+//                        if (cellType == CellType.STRING) {
+//                            type = PolyType.VARCHAR;
+//                        } else if (cellType == CellType.NUMERIC) {
+//                            type = PolyType.DOUBLE;
+//                        } else if (cellType == CellType.BOOLEAN) {
+//                            type = PolyType.BOOLEAN;
+//                        } else if (cellType == CellType.BLANK) {
+//                            type = PolyType.VARCHAR;
+//                        }
+//
+//                        types.add( type );
+//
 //                    }
 //                    break;
 //                }
-//                //types = new AlgDataType[names.size()];
-//                //int rowCount = 1;
-//                while (rows.hasNext()) {
-//                    Row row = rows.next();
-//                    Iterator<Cell> cellIterator = row.cellIterator();
-//                    while (cellIterator.hasNext()) {
-//                        Cell cell = cellIterator.next();
-//                        ExcelFieldType fieldType = ExcelFieldType.of(cell);
-//                        AlgDataType type;
-//                        if (fieldType == null) {
-//                            type = typeFactory.createJavaType(String.class);
-//                        } else {
-//                            type = fieldType.toType(typeFactory);
-//                        }
-//                        //names.add( name );
-//                        types.add( type );
-//                        if ( fieldTypes != null ) {
-//                            fieldTypes.add( fieldType );
-//                        }
-////                    if (types[cell.getColumnIndex()] == null) {
-////                        types[cell.getColumnIndex()] = type;
-////                        // ExcelFieldTypes.add(fieldType);
-////                    }
-//                    }
-//                    //rowCount++;
-//                }
 
-
-                for ( int i = 0; i < columnCount; i++ ) {
-                    PolyType collectionsType = null;
-                    Integer length = null;
-                    Integer scale = null;
-                    Integer dimension = null;
-                    Integer cardinality = null;
-                    String name = names.get( i );
-                    PolyType type = types.get( i );
-                    list.add( new ExportedColumn(
-                            name,
-                            type,
-                            collectionsType,
-                            length,
-                            scale,
-                            dimension,
-                            cardinality,
-                            false,
-                            fileName,
-                            physicalTableName,
-                            name,
-                            position,
-                            position == 1 ) ); // TODO
-
-                    position++;
-//                    switch ( typeStr.toLowerCase() ) {
-//                        case "int":
-//                            type = PolyType.INTEGER;
-//                            break;
-//                        case "string":
-//                            type = PolyType.VARCHAR;
-//                            length = maxStringLength;
-//                            break;
-//                        case "boolean":
-//                            type = PolyType.BOOLEAN;
-//                            break;
-//                        case "long":
-//                            type = PolyType.BIGINT;
-//                            break;
-//                        case "float":
-//                            type = PolyType.REAL;
-//                            break;
-//                        case "double":
-//                            type = PolyType.DOUBLE;
-//                            break;
-//                        case "date":
-//                            type = PolyType.DATE;
-//                            break;
-//                        case "time":
-//                            type = PolyType.TIME;
-//                            length = 0;
-//                            break;
-//                        case "timestamp":
-//                            type = PolyType.TIMESTAMP;
-//                            length = 0;
-//                            break;
-//                        default:
-//                            throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
-//                    }
-
-                }
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }
