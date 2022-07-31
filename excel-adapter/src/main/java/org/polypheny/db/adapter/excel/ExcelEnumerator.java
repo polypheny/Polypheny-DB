@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.excel;
 
-import com.monitorjbl.xlsx.StreamingReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Reader;
@@ -34,6 +33,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
@@ -171,13 +171,13 @@ class ExcelEnumerator<E> implements Enumerator<E>{
 
     public static Iterator<Row> openExcel( Source source ) throws IOException {
         final Reader fileReader;
-        Sheet sheet = null;
+
         Iterator<Row> rowIterator = null;
         FileInputStream fileIn = new FileInputStream(source.file());
-        Workbook workbook = StreamingReader.builder().rowCacheSize(1000)
-                .bufferSize(4096).open(fileIn);
+
+        Workbook workbook = WorkbookFactory.create(fileIn);
         workbook.getNumberOfSheets();
-        sheet = workbook.getSheetAt(0);
+        Sheet sheet = workbook.getSheetAt(0);
         rowIterator = sheet.iterator();
         return rowIterator;
     }
@@ -379,13 +379,12 @@ class ExcelEnumerator<E> implements Enumerator<E>{
         }
 
 
-        public Object[] convertNormalRow( Row row  ) {
+        public Object[] convertNormalRow( Row row ) {
             Iterator<Cell> cells = row.cellIterator();
             final Object[] objects = new Object[fields.length];
             while (cells.hasNext()){
                 Cell cell = cells.next();
-
-                int field = fields[cell.getColumnIndex()];
+                int field = fields[cell.getColumnIndex()] - 1;
                 objects[field] = convert( fieldTypes[field], cell );
             }
             return objects;

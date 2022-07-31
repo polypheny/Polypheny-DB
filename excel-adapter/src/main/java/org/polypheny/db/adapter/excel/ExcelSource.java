@@ -35,8 +35,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
@@ -175,7 +176,7 @@ public class ExcelSource extends DataSource{
         } else {
             File[] files = Sources.of( excelDir )
                     .file()
-                    .listFiles( ( d, name ) -> name.endsWith( ".xlsx" ) || name.endsWith( ".xlsx.gz" ) );
+                    .listFiles( ( d, name ) -> name.endsWith( ".xlsx" ) || name.endsWith( ".xlsx.gz" ) ||name.endsWith( ".xls" ) || name.endsWith( ".xls.gz" ) );
             fileNames = Arrays.stream( files )
                     .sequential()
                     .map( File::getName )
@@ -187,27 +188,29 @@ public class ExcelSource extends DataSource{
             if ( physicalTableName.endsWith( ".gz" ) ) {
                 physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
             }
-            physicalTableName = physicalTableName
-                    .substring( 0, physicalTableName.length() - ".xlsx".length() )
-                    .trim()
-                    .replaceAll( "[^a-z0-9_]+", "" );
+            if ( physicalTableName.endsWith( ".xlsx" )){
+                physicalTableName = physicalTableName
+                        .substring( 0, physicalTableName.length() - ".xlsx".length() )
+                        .trim()
+                        .replaceAll( "[^a-z0-9_]+", "" );
+            } else if (physicalTableName.endsWith( ".xls" ) ){
+                physicalTableName = physicalTableName
+                        .substring( 0, physicalTableName.length() - ".xls".length() )
+                        .trim()
+                        .replaceAll( "[^a-z0-9_]+", "" );
+            }
+
 
             List<ExportedColumn> list = new ArrayList<>();
             int position = 1;
             try {
                 Source source = Sources.of( new URL( excelDir, fileName ) );
                 BufferedReader reader = new BufferedReader( source.reader() );
-                //Stream<String> firstLine = reader.lines();
                 File file = new File(source.path());   //creating a new file instance
                 FileInputStream fs = new FileInputStream(file);
-//                Workbook workbook =  StreamingReader.builder()
-//                        .rowCacheSize(10)
-//                        .bufferSize(4096)
-//                        .open(fs);
-                XSSFWorkbook workbook = new XSSFWorkbook(fs);
-                XSSFSheet sheet = workbook.getSheetAt(0);
-                //Sheet  sheet = fs.getSheetAt(0);
 
+                Workbook workbook = WorkbookFactory.create(fs);
+                Sheet sheet = workbook.getSheetAt(0);
                 Iterator<Row> rowIterator = sheet.iterator();
                 int columnCount=0;
                 while (rowIterator.hasNext())
