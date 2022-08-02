@@ -238,30 +238,39 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateReplace( Object input, List names, List values ) {
-        // TODO enable as soon as pushing down of Modify is possible
         Map<String, Object> initial = (Map) deserializeBsonIfNecessary( input );
-        Map<String, Object> doc = initial;
+        int i = 0;
+        for ( String name : (List<String>) names ) {
+            updateValue( values.get( i ), initial, List.of( name.split( "\\." ) ) );
+            i++;
+        }
+
+        return docJsonify( initial );
+    }
+
+
+    private static void updateValue( Object value, Map<String, Object> doc, List<String> splitName ) {
         String name;
-        int count = -1;
-        Iterator<String> iter = names.iterator();
-        while ( iter.hasNext() ) {
+        Iterator<String> iter = splitName.iterator();
+        boolean isNew = false;
+        while ( iter.hasNext() && !isNew ) {
             name = iter.next();
-            count++;
             if ( doc.containsKey( name ) ) {
                 if ( !iter.hasNext() ) {
-                    doc.put( name, values.get( count ) );
+                    doc.put( name, value );
                 } else {
                     if ( doc.get( name ) instanceof Map ) {
                         doc = (Map<String, Object>) doc.get( name );
                     } else {
-                        return docJsonify( initial );
+                        return;
                     }
 
                 }
+            } else {
+                doc.put( name, value );
+                isNew = true;
             }
         }
-
-        return docJsonify( initial );
     }
 
 

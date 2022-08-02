@@ -231,8 +231,6 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * Called from generated code that proposes to create a {@code ResultSetEnumerable} over a prepared statement.
      */
     public static PreparedStatementEnricher createEnricher( Integer[] indexes, DataContext context ) {
-        // todo dl maybe change
-        //List<Map<Long, Object>> savedValues = context.getParameterValues();
         return ( preparedStatement, connectionHandler ) -> {
             boolean batch = context.getParameterValues().size() > 1;
             for ( Map<Long, Object> values : context.getParameterValues() ) {

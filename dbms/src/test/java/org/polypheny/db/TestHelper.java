@@ -448,6 +448,11 @@ public class TestHelper {
             return doc;
         }
 
+
+        public static String toDoc( String key, Object value ) {
+            return String.format( "{\"%s\": %s}", key, value );
+        }
+
     }
 
 

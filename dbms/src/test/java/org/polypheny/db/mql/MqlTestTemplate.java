@@ -159,6 +159,16 @@ public class MqlTestTemplate {
     }
 
 
+    public static void update( String query, String update ) {
+        update( query, update, database );
+    }
+
+
+    public static void update( String query, String update, String db ) {
+        MongoConnection.executeGetResponse( "db." + db + ".update(" + query + ", " + update + ")" );
+    }
+
+
     protected Result find( String query, String project ) {
         return find( query, project, database );
     }

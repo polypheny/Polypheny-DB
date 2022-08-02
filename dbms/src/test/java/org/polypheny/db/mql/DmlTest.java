@@ -17,11 +17,14 @@
 package org.polypheny.db.mql;
 
 import static org.junit.Assert.assertTrue;
+import static org.polypheny.db.TestHelper.MongoConnection.toDoc;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -67,6 +70,60 @@ public class DmlTest extends MqlTestTemplate {
                         result,
                         data.stream()
                                 .map( d -> new Object[]{ d } )
+                                .collect( Collectors.toList() ), true ) );
+    }
+
+
+    @Test
+    @Category(FileExcluded.class)
+    public void updateTest() {
+        List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
+        insertMany( data );
+
+        update( "{\"test\": 3}", "{\"$set\":{\"test\": 5}}" );
+
+        Result result = find( "{}", "{}" );
+
+        List<String> updated = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":5}" );
+
+        assertTrue(
+                MongoConnection.checkResultSet(
+                        result,
+                        updated.stream()
+                                .map( d -> new Object[]{ d } )
+                                .collect( Collectors.toList() ), true ) );
+    }
+
+
+    @Test
+    @Category(FileExcluded.class)
+    public void updateIdTest() {
+        List<Object> data = Arrays.asList( 1, 2, 3 );
+        insertMany( data.stream().map( d -> toDoc( "test", d ) ).collect( Collectors.toList() ) );
+
+        Result result = find( "{}", "{}" );
+
+        BsonDocument doc = BsonDocument.parse( result.getData()[0][0] );
+
+        BsonString id = doc.getString( "_id" );
+        int content = doc.get( "test" ).asInt32().getValue();
+
+        update( String.format( "{\"_id\": \"%s\"}", id.getValue() ), "{\"$set\":{\"test\": 5}}" );
+
+        result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkUnorderedResultSet(
+                        result,
+                        data.stream()
+                                .map( d -> {
+                                    if ( d.equals( content ) ) {
+                                        return 5;
+                                    }
+                                    return d;
+                                } )
+                                .map( d -> toDoc( "test", d ) )
+                                .map( d -> new String[]{ d } )
                                 .collect( Collectors.toList() ), true ) );
     }
 
