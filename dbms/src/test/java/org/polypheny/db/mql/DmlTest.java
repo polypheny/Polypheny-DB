@@ -66,10 +66,10 @@ public class DmlTest extends MqlTestTemplate {
         Result result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         data.stream()
-                                .map( d -> new Object[]{ d } )
+                                .map( d -> new String[]{ d } )
                                 .collect( Collectors.toList() ), true ) );
     }
 
@@ -87,10 +87,10 @@ public class DmlTest extends MqlTestTemplate {
         List<String> updated = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":5}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         updated.stream()
-                                .map( d -> new Object[]{ d } )
+                                .map( d -> new String[]{ d } )
                                 .collect( Collectors.toList() ), true ) );
     }
 
