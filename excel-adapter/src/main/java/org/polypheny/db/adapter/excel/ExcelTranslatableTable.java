@@ -16,20 +16,26 @@
 
 package org.polypheny.db.adapter.excel;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.util.Source;
 
-public class ExcelTranslatableTable extends ExcelTable implements TranslatableTable {
+public class ExcelTranslatableTable extends ExcelTable implements QueryableTable,TranslatableTable {
     /**
      * Creates a ExcelTable.
      */
@@ -60,22 +66,22 @@ public class ExcelTranslatableTable extends ExcelTable implements TranslatableTa
     }
 
 
-//    @Override
-//    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
-//        return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
-//    }
-//
-//
-//    @Override
-//    public Type getElementType() {
-//        return Object[].class;
-//    }
-//
-//
-//    @Override
-//    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-//        throw new UnsupportedOperationException();
-//    }
+    @Override
+    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+        return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
+    }
+
+
+    @Override
+    public Type getElementType() {
+        return Object[].class;
+    }
+
+
+    @Override
+    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        throw new UnsupportedOperationException();
+    }
 
 
     @Override
