@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.AlgBuilder;
@@ -49,7 +49,7 @@ public class CowMultiHashIndex extends Index {
     private Map<PolyXid, List<Triple<List<Object>, List<Object>, Boolean>>> barrierIndex = new HashMap<>();
 
 
-    public CowMultiHashIndex( long id, String name, CatalogNamespace schema, CatalogEntity table, List<String> columns, List<String> targetColumns ) {
+    public CowMultiHashIndex( long id, String name, CatalogNamespace schema, CatalogTable table, List<String> columns, List<String> targetColumns ) {
         this.id = id;
         this.name = name;
         this.schema = schema;
@@ -59,7 +59,7 @@ public class CowMultiHashIndex extends Index {
     }
 
 
-    public CowMultiHashIndex( long id, String name, CatalogNamespace schema, CatalogEntity table, String[] columns, String[] targetColumns ) {
+    public CowMultiHashIndex( long id, String name, CatalogNamespace schema, CatalogTable table, String[] columns, String[] targetColumns ) {
         this( id, name, schema, table, Arrays.asList( columns ), Arrays.asList( targetColumns ) );
     }
 
@@ -370,7 +370,7 @@ public class CowMultiHashIndex extends Index {
                 Boolean unique,
                 Boolean persistent,
                 CatalogNamespace schema,
-                CatalogEntity table,
+                CatalogTable table,
                 List<String> columns,
                 List<String> targetColumns ) {
             return new CowMultiHashIndex( id, name, schema, table, columns, targetColumns );

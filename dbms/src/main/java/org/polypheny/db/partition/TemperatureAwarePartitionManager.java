@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
@@ -38,38 +38,38 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogEntity catalogEntity, String columnValue ) {
+    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
-                ((TemperaturePartitionProperty) catalogEntity.partitionProperty).getInternalPartitionFunction()
+                ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
         );
 
-        return partitionManager.getTargetPartitionId( catalogEntity, columnValue );
+        return partitionManager.getTargetPartitionId( catalogTable, columnValue );
     }
 
 
     @Override
-    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogEntity catalogEntity, List<Long> partitionIds, List<Integer> excludedAdapters ) {
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
-                ((TemperaturePartitionProperty) catalogEntity.partitionProperty).getInternalPartitionFunction()
+                ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
         );
 
-        return partitionManager.getRelevantPlacements( catalogEntity, partitionIds, excludedAdapters );
+        return partitionManager.getRelevantPlacements( catalogTable, partitionIds, excludedAdapters );
     }
 
 
     @Override
-    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogEntity catalogEntity, List<Long> partitionIds ) {
+    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
-                ((TemperaturePartitionProperty) catalogEntity.partitionProperty).getInternalPartitionFunction()
+                ((TemperaturePartitionProperty) catalogTable.partitionProperty).getInternalPartitionFunction()
         );
 
-        return partitionManager.getAllPlacements( catalogEntity, partitionIds );
+        return partitionManager.getAllPlacements( catalogTable, partitionIds );
     }
 
 

@@ -28,7 +28,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.excluded.CassandraExcluded;
 
 import java.sql.Connection;
@@ -168,7 +168,7 @@ public class VerticalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
 
                     // Check if initially as many DataPlacements are created as requested (one for each store)
                     Assert.assertEquals( 1, table.dataPlacements.size() );
@@ -311,7 +311,7 @@ public class VerticalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
 
                     CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
 

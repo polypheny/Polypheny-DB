@@ -24,6 +24,9 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.ModifiableTable;
 
+/**
+ * This interface marks classes, which can be transformed to relational ones.
+ */
 public interface RelationalTransformable {
 
     default CatalogReader getCatalogReader() {

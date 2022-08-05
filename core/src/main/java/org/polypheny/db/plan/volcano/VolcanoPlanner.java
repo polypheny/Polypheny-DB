@@ -57,8 +57,7 @@ import org.polypheny.db.algebra.rules.AggregateRemoveRule;
 import org.polypheny.db.algebra.rules.CalcRemoveRule;
 import org.polypheny.db.algebra.rules.DocumentToEnumerableRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
-import org.polypheny.db.algebra.rules.GraphToEnumerableRule;
-import org.polypheny.db.algebra.rules.GraphToRelRule;
+import org.polypheny.db.algebra.rules.LpgToEnumerableRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
 import org.polypheny.db.algebra.rules.SemiJoinRule;
@@ -804,12 +803,10 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     public void registerModelRules() {
         //graph
-        addRule( GraphToRelRule.GRAPH_MODIFY_TO_REL );
-        addRule( GraphToRelRule.GRAPH_SCAN_TO_REL );
-        addRule( GraphToEnumerableRule.PROJECT_TO_ENUMERABLE );
-        addRule( GraphToEnumerableRule.FILTER_TO_ENUMERABLE );
-        addRule( GraphToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
-        addRule( GraphToEnumerableRule.VALUES_TO_ENUMERABLE );
+        addRule( LpgToEnumerableRule.PROJECT_TO_ENUMERABLE );
+        addRule( LpgToEnumerableRule.FILTER_TO_ENUMERABLE );
+        addRule( LpgToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
+        addRule( LpgToEnumerableRule.VALUES_TO_ENUMERABLE );
 
         //document
         addRule( DocumentToEnumerableRule.PROJECT_TO_ENUMERABLE );

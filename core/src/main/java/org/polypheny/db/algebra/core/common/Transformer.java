@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.adapter.enumerable.EnumerableTransformer;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -39,12 +41,11 @@ public class Transformer extends AbstractAlgNode {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates an {@link Transformer}, which is able to switch {@link org.polypheny.db.schema.ModelTraitDef} for
+     * non-native underlying adapters if needed.
+     * For example, it will transform the {@link org.polypheny.db.algebra.core.lpg.LpgScan}, which can be handled directly by
+     * a native adapter, to a combination of {@link Scan} and {@link org.polypheny.db.algebra.core.Union}.
      *
-     * @param inTraitSet from node under this one
-     * @param outTraitSet target modeltrait
-     * @param cluster
-     * @param rowType
      */
     public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
         super( cluster, traitSet.replace( outTraitSet ) );

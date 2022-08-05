@@ -42,10 +42,10 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -563,11 +563,11 @@ public class LanguageCrud {
         List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         boolean hasMoreRows = result.hasMoreRows();
 
-        CatalogEntity catalogEntity = null;
+        CatalogTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogEntity = Catalog.getInstance().getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
+                catalogTable = Catalog.getInstance().getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
             } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
                 log.error( "Caught exception", e );
             }
@@ -598,10 +598,10 @@ public class LanguageCrud {
                     filter );
 
             // Get column default values
-            if ( catalogEntity != null ) {
+            if ( catalogTable != null ) {
                 try {
-                    if ( catalog.checkIfExistsColumn( catalogEntity.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getField( catalogEntity.id, columnName );
+                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                        CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
                         if ( catalogColumn.defaultValue != null ) {
                             dbCol.defaultValue = catalogColumn.defaultValue.value;
                         }

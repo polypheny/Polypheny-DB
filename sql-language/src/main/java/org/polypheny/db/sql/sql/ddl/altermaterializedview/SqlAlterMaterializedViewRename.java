@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -78,17 +78,17 @@ public class SqlAlterMaterializedViewRename extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogEntity catalogEntity = getCatalogTable( context, oldName );
+        CatalogTable catalogTable = getCatalogTable( context, oldName );
 
-        if ( catalogEntity.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogEntity.name + " is not a Materialized View." );
+        if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }
 
         if ( newName.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
         }
         try {
-            DdlManager.getInstance().renameTable( catalogEntity, newName.getSimple(), statement );
+            DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );
         } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( oldName.getPos(), RESOURCE.schemaExists( newName.getSimple() ) );
         }

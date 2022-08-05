@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.type.PolyType;
@@ -42,12 +42,12 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogEntity catalogEntity, String columnValue ) {
+    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
         // Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : Catalog.getInstance().getPartitionsByTable( catalogEntity.id ) ) {
+        for ( CatalogPartition catalogPartition : Catalog.getInstance().getPartitionsByTable( catalogTable.id ) ) {
             if ( unboundPartitionId == -1 && catalogPartition.isUnbound ) {
                 unboundPartitionId = catalogPartition.id;
                 break;

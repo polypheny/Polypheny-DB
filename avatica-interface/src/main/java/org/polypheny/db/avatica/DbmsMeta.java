@@ -76,8 +76,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogEntity.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
@@ -90,6 +88,8 @@ import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -269,7 +269,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
             }
 
-            final List<CatalogEntity> tables = catalog.getTables(
+            final List<CatalogTable> tables = catalog.getTables(
                     database == null ? null : new Pattern( database ),
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
@@ -517,11 +517,11 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogEntity> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
-            for ( CatalogEntity catalogEntity : catalogEntities ) {
-                if ( catalogEntity.primaryKey != null ) {
-                    final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
+            for ( CatalogTable catalogTable : catalogEntities ) {
+                if ( catalogTable.primaryKey != null ) {
+                    final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }
@@ -554,10 +554,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogEntity> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            for ( CatalogEntity catalogEntity : catalogEntities ) {
-                List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogEntity.id );
+            for ( CatalogTable catalogTable : catalogEntities ) {
+                List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -597,10 +597,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogEntity> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            for ( CatalogEntity catalogEntity : catalogEntities ) {
-                List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogEntity.id );
+            for ( CatalogTable catalogTable : catalogEntities ) {
+                List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -714,10 +714,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogEntity> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
-            for ( CatalogEntity catalogEntity : catalogEntities ) {
-                List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogEntity.id, unique );
+            for ( CatalogTable catalogTable : catalogEntities ) {
+                List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
                 catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );

@@ -29,11 +29,8 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Creates a {@link DocumentFilter}.
+     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of a filter.
      */
     protected DocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input );

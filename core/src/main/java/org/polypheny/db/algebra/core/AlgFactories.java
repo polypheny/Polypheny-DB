@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
@@ -553,8 +553,8 @@ public class AlgFactories {
             if ( (table.getTable()) instanceof LogicalTable ) {
                 Catalog catalog = Catalog.getInstance();
                 long idLogical = table.getTable().getTableId();
-                CatalogEntity catalogEntity = catalog.getTable( idLogical );
-                if ( catalogEntity.entityType == EntityType.VIEW ) {
+                CatalogTable catalogTable = catalog.getTable( idLogical );
+                if ( catalogTable.entityType == EntityType.VIEW ) {
                     return LogicalViewScan.create( cluster, table );
                 } else {
                     return LogicalScan.create( cluster, table );

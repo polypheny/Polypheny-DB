@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.polypheny.db.cql;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -31,14 +31,14 @@ import org.polypheny.db.cql.exception.UnknownIndexException;
 @Slf4j
 public class TableIndex {
 
-    public final CatalogEntity catalogEntity;
+    public final CatalogTable catalogTable;
     public final String fullyQualifiedName;
     public final String schemaName;
     public final String tableName;
 
 
-    public TableIndex( final CatalogEntity catalogEntity, final String schemaName, final String tableName ) {
-        this.catalogEntity = catalogEntity;
+    public TableIndex( final CatalogTable catalogTable, final String schemaName, final String tableName ) {
+        this.catalogTable = catalogTable;
         this.fullyQualifiedName = schemaName + "." + tableName;
         this.schemaName = schemaName;
         this.tableName = tableName;
@@ -49,7 +49,7 @@ public class TableIndex {
         try {
             log.debug( "Creating TableIndex." );
             Catalog catalog = Catalog.getInstance();
-            CatalogEntity table = catalog.getTable( inDatabase, schemaName, tableName );
+            CatalogTable table = catalog.getTable( inDatabase, schemaName, tableName );
             return new TableIndex( table, schemaName, tableName );
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new UnknownIndexException( "Cannot find a underlying table for the specified table name: " + schemaName + "." + tableName + "." );

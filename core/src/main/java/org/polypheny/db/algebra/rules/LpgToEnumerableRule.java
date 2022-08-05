@@ -36,21 +36,21 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class GraphToEnumerableRule extends AlgOptRule {
+public class LpgToEnumerableRule extends AlgOptRule {
 
-    public static GraphToEnumerableRule PROJECT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.PROJECT, operand( LogicalLpgProject.class, any() ), "GRAPH_PROJECT_TO_ENUMERABLE" );
+    public static LpgToEnumerableRule PROJECT_TO_ENUMERABLE = new LpgToEnumerableRule( Type.PROJECT, operand( LogicalLpgProject.class, any() ), "GRAPH_PROJECT_TO_ENUMERABLE" );
 
-    public static GraphToEnumerableRule FILTER_TO_ENUMERABLE = new GraphToEnumerableRule( Type.FILTER, operand( LogicalLpgFilter.class, any() ), "GRAPH_FILTER_TO_ENUMERABLE" );
+    public static LpgToEnumerableRule FILTER_TO_ENUMERABLE = new LpgToEnumerableRule( Type.FILTER, operand( LogicalLpgFilter.class, any() ), "GRAPH_FILTER_TO_ENUMERABLE" );
 
-    public static GraphToEnumerableRule AGGREGATE_TO_ENUMERABLE = new GraphToEnumerableRule( Type.AGGREGATE, operand( LogicalLpgAggregate.class, any() ), "GRAPH_AGGREGATE_TO_ENUMERABLE" );
+    public static LpgToEnumerableRule AGGREGATE_TO_ENUMERABLE = new LpgToEnumerableRule( Type.AGGREGATE, operand( LogicalLpgAggregate.class, any() ), "GRAPH_AGGREGATE_TO_ENUMERABLE" );
 
-    public static GraphToEnumerableRule VALUES_TO_ENUMERABLE = new GraphToEnumerableRule( Type.VALUES, operand( LogicalLpgValues.class, none() ), "GRAPH_VALUES_TO_ENUMERABLE" );
+    public static LpgToEnumerableRule VALUES_TO_ENUMERABLE = new LpgToEnumerableRule( Type.VALUES, operand( LogicalLpgValues.class, none() ), "GRAPH_VALUES_TO_ENUMERABLE" );
     //public static GraphToEnumerableRule SORT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.SORT, operand( LogicalGraphSort.class, any() ), "GRAPH_SORT_TO_ENUMERABLE" );
 
     private final Type type;
 
 
-    public GraphToEnumerableRule( Type type, AlgOptRuleOperand operand, String description ) {
+    public LpgToEnumerableRule( Type type, AlgOptRuleOperand operand, String description ) {
         super( operand, AlgFactories.LOGICAL_BUILDER, description );
         this.type = type;
     }

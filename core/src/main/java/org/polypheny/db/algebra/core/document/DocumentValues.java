@@ -47,7 +47,10 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
     @Getter
     public final ImmutableList<BsonValue> documentTuples;
 
-
+    /**
+     * Creates a {@link DocumentValues}.
+     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which contains values.
+     */
     public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, AlgDataType rowType, ImmutableList<BsonValue> documentTuples ) {
         super( cluster, traitSet );
         this.rowType = rowType;

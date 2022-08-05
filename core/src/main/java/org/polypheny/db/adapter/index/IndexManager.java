@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -174,7 +174,7 @@ public class IndexManager {
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final CatalogEntity table = Catalog.getInstance().getTable( key.tableId );
+        final CatalogTable table = Catalog.getInstance().getTable( key.tableId );
         final CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
                 id,
@@ -214,7 +214,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogNamespace schema, CatalogEntity table, List<String> columns ) {
+    public Index getIndex( CatalogNamespace schema, CatalogTable table, List<String> columns ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -224,7 +224,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogNamespace schema, CatalogEntity table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
+    public Index getIndex( CatalogNamespace schema, CatalogTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -236,7 +236,7 @@ public class IndexManager {
     }
 
 
-    public List<Index> getIndices( CatalogNamespace schema, CatalogEntity table ) {
+    public List<Index> getIndices( CatalogNamespace schema, CatalogTable table ) {
         return this.indexById.values().stream()
                 .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
                 .collect( Collectors.toList() );

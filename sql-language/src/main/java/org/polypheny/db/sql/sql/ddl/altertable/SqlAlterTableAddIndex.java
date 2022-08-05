@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -122,10 +122,10 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogEntity catalogEntity = getCatalogTable( context, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogEntity.entityType != EntityType.ENTITY && catalogEntity.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + catalogEntity.name + " is not a table or materialized view." );
+        if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + catalogTable.name + " is not a table or materialized view." );
         }
 
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
@@ -133,7 +133,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         try {
             if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
                 DdlManager.getInstance().addPolyphenyIndex(
-                        catalogEntity,
+                        catalogTable,
                         indexMethodName,
                         columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                         indexName.getSimple(),
@@ -150,7 +150,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                     }
                 }
                 DdlManager.getInstance().addIndex(
-                        catalogEntity,
+                        catalogTable,
                         indexMethodName,
                         columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                         indexName.getSimple(),

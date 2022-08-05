@@ -18,6 +18,13 @@ package org.polypheny.db.misc;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -30,9 +37,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
@@ -42,14 +49,6 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 @SuppressWarnings({"SqlNoDataSourceInspection", "SqlDialectInspection"})
@@ -533,7 +532,7 @@ public class HorizontalPartitioningTest {
                             + "( PARTITION parta VALUES(5,4), "
                             + "PARTITION partb VALUES(10,6))" );
 
-                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "rangepartitioning3" ) ).get( 0 );
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "rangepartitioning3" ) ).get( 0 );
 
                     List<CatalogPartition> catalogPartitions = Catalog.getInstance().getPartitionsByTable( table.id );
 
@@ -643,7 +642,7 @@ public class HorizontalPartitioningTest {
                         + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
-                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "physicalpartitiontest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many partitionPlacements are created as requested
@@ -704,7 +703,7 @@ public class HorizontalPartitioningTest {
                         + " USING FREQUENCY write  INTERVAL 10 minutes WITH  20 HASH PARTITIONS" );
 
                 try {
-                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Check if partition properties are correctly set and parsed
                     Assert.assertEquals( 600, ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() );
@@ -762,7 +761,7 @@ public class HorizontalPartitioningTest {
                     // This should execute two DML INSERTS on the target PartitionId and therefore redistribute the data
 
                     // Verify that the partition is now in HOT and was not before
-                    CatalogEntity updatedTable = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
+                    CatalogTable updatedTable = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -1177,7 +1176,7 @@ public class HorizontalPartitioningTest {
                         + "WITH (foo, bar, foobar, barfoo) " );
 
                 try {
-                    CatalogEntity table = Catalog.getInstance().getTables( null, null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many DataPlacements are created as requested

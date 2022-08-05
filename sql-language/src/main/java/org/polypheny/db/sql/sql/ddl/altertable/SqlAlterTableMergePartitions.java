@@ -22,7 +22,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -82,30 +82,30 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogEntity catalogEntity = getCatalogTable( context, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogEntity.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
+        if ( catalogTable.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
         // Check if table is even partitioned
-        if ( catalogEntity.partitionProperty.partitionType != Catalog.PartitionType.NONE ) {
+        if ( catalogTable.partitionProperty.partitionType != Catalog.PartitionType.NONE ) {
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogEntity.name, catalogEntity.id, catalogEntity.getNamespaceName() );
+                log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getNamespaceName() );
             }
 
             try {
-                DdlManager.getInstance().removePartitioning( catalogEntity, statement );
+                DdlManager.getInstance().removePartitioning( catalogTable, statement );
             } catch ( UnknownDatabaseException | GenericCatalogException | UnknownTableException | TransactionException | UnknownNamespaceException | UnknownUserException | UnknownKeyException e ) {
                 throw new RuntimeException( "Error while merging partitions", e );
             }
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Table: '{}' has been merged", catalogEntity.name );
+                log.debug( "Table: '{}' has been merged", catalogTable.name );
             }
         } else {
-            throw new RuntimeException( "Table '" + catalogEntity.name + "' is not partitioned!" );
+            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned!" );
         }
     }
 

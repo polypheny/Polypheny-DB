@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogTable;
 
 
 @Slf4j
@@ -37,14 +37,14 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     // Returns the Index of the partition where to place the object
     @Override
-    public abstract long getTargetPartitionId( CatalogEntity catalogEntity, String columnValue );
+    public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
 
     @Override
-    public boolean probePartitionGroupDistributionChange( CatalogEntity catalogEntity, int storeId, long columnId, int threshold ) {
+    public boolean probePartitionGroupDistributionChange( CatalogTable catalogTable, int storeId, long columnId, int threshold ) {
         // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
-        for ( Long partitionGroupId : catalogEntity.partitionProperty.partitionGroupIds ) {
-            List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogEntity.id, partitionGroupId, columnId );
+        for ( Long partitionGroupId : catalogTable.partitionProperty.partitionGroupIds ) {
+            List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, partitionGroupId, columnId );
             if ( ccps.size() <= threshold ) {
                 for ( CatalogColumnPlacement placement : ccps ) {
                     if ( placement.adapterId == storeId ) {
@@ -58,7 +58,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogEntity catalogEntity, List<Long> partitionIds, List<Integer> excludedAdapters ) {
+    public Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters ) {
         Catalog catalog = Catalog.getInstance();
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
@@ -68,8 +68,8 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 CatalogPartition catalogPartition = catalog.getPartition( partitionId );
                 List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
-                for ( long columnId : catalogEntity.fieldIds ) {
-                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogEntity.id, catalogPartition.partitionGroupId, columnId );
+                for ( long columnId : catalogTable.fieldIds ) {
+                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
                     ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
                     if ( !ccps.isEmpty() ) {
                         // Get first column placement which contains partition
@@ -126,17 +126,17 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogEntity catalogEntity, List<Long> partitionIds ) {
+    public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Map<Integer, Map<Long, List<CatalogColumnPlacement>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
-                List<CatalogAdapter> adapters = catalog.getAdaptersByPartitionGroup( catalogEntity.id, partitionId );
+                List<CatalogAdapter> adapters = catalog.getAdaptersByPartitionGroup( catalogTable.id, partitionId );
 
                 for ( CatalogAdapter adapter : adapters ) {
                     if ( !adapterPlacements.containsKey( adapter.id ) ) {
                         adapterPlacements.put( adapter.id, new HashMap<>() );
                     }
-                    List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( adapter.id, catalogEntity.id );
+                    List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
                     adapterPlacements.get( adapter.id ).put( partitionId, placements );
                 }
             }

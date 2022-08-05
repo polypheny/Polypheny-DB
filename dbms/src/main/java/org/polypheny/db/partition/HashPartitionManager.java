@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.type.PolyType;
@@ -35,7 +35,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogEntity catalogEntity, String columnValue ) {
+    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
         long hashValue = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now
@@ -44,10 +44,10 @@ public class HashPartitionManager extends AbstractPartitionManager {
         }
 
         // Get designated HASH partition based on number of internal partitions
-        int partitionIndex = (int) (hashValue % catalogEntity.partitionProperty.partitionIds.size());
+        int partitionIndex = (int) (hashValue % catalogTable.partitionProperty.partitionIds.size());
 
         // Finally decide on which partition to put it
-        return catalogEntity.partitionProperty.partitionIds.get( partitionIndex );
+        return catalogTable.partitionProperty.partitionIds.get( partitionIndex );
     }
 
 

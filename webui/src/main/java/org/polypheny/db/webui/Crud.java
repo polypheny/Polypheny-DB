@@ -121,12 +121,12 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -304,11 +304,11 @@ public class Crud implements InformationObserver {
         }
 
         // determine if it is a view or a table
-        CatalogEntity catalogEntity;
+        CatalogTable catalogTable;
         try {
-            catalogEntity = catalog.getTable( this.databaseId, t[0], t[1] );
-            result.setNamespaceType( catalogEntity.getNamespaceType() );
-            if ( catalogEntity.modifiable ) {
+            catalogTable = catalog.getTable( this.databaseId, t[0], t[1] );
+            result.setNamespaceType( catalogTable.getNamespaceType() );
+            if ( catalogTable.modifiable ) {
                 result.setType( ResultType.TABLE );
             } else {
                 result.setType( ResultType.VIEW );
@@ -321,13 +321,13 @@ public class Crud implements InformationObserver {
         //get headers with default values
         ArrayList<DbColumn> cols = new ArrayList<>();
         ArrayList<String> primaryColumns;
-        if ( catalogEntity.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
+        if ( catalogTable.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
             primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
         } else {
             primaryColumns = new ArrayList<>();
         }
-        for ( CatalogColumn catalogColumn : catalog.getColumns( catalogEntity.id ) ) {
+        for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
             String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
             String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
             cols.add(
@@ -386,8 +386,8 @@ public class Crud implements InformationObserver {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
                 ArrayList<SidebarElement> viewTree = new ArrayList<>();
                 ArrayList<SidebarElement> collectionTree = new ArrayList<>();
-                List<CatalogEntity> tables = catalog.getTables( schema.id, null );
-                for ( CatalogEntity table : tables ) {
+                List<CatalogTable> tables = catalog.getTables( schema.id, null );
+                for ( CatalogTable table : tables ) {
                     String icon = "fa fa-table";
                     if ( table.entityType == EntityType.SOURCE ) {
                         icon = "fa fa-plug";
@@ -473,9 +473,9 @@ public class Crud implements InformationObserver {
             }
         }
 
-        List<CatalogEntity> tables = catalog.getTables( databaseId, new Catalog.Pattern( requestedSchema ), null );
+        List<CatalogTable> tables = catalog.getTables( databaseId, new Catalog.Pattern( requestedSchema ), null );
         ArrayList<DbTable> result = new ArrayList<>();
-        for ( CatalogEntity t : tables ) {
+        for ( CatalogTable t : tables ) {
             result.add( new DbTable( t.name, t.getNamespaceName(), t.modifiable, t.entityType ) );
         }
         ctx.json( result );
@@ -1151,10 +1151,10 @@ public class Crud implements InformationObserver {
     private String computeWherePK( final String tableName, final String columnName, final Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         Map<String, CatalogColumn> catalogColumns = getCatalogColumns( tableName, columnName );
-        CatalogEntity catalogEntity;
+        CatalogTable catalogTable;
         try {
-            catalogEntity = catalog.getTable( databaseId, tableName, columnName );
-            CatalogPrimaryKey pk = catalog.getPrimaryKey( catalogEntity.primaryKey );
+            catalogTable = catalog.getTable( databaseId, tableName, columnName );
+            CatalogPrimaryKey pk = catalog.getPrimaryKey( catalogTable.primaryKey );
             for ( long colId : pk.columnIds ) {
                 String colName = catalog.getField( colId ).name;
                 String condition;
@@ -1326,15 +1326,15 @@ public class Crud implements InformationObserver {
         ArrayList<DbColumn> cols = new ArrayList<>();
 
         try {
-            CatalogEntity catalogEntity = catalog.getTable( databaseId, t[0], t[1] );
+            CatalogTable catalogTable = catalog.getTable( databaseId, t[0], t[1] );
             ArrayList<String> primaryColumns;
-            if ( catalogEntity.primaryKey != null ) {
-                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
+            if ( catalogTable.primaryKey != null ) {
+                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                 primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
             } else {
                 primaryColumns = new ArrayList<>();
             }
-            for ( CatalogColumn catalogColumn : catalog.getColumns( catalogEntity.id ) ) {
+            for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
                 String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
                 String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
                 cols.add(
@@ -1351,9 +1351,9 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-            if ( catalogEntity.entityType == EntityType.ENTITY ) {
+            if ( catalogTable.entityType == EntityType.ENTITY ) {
                 result.setType( ResultType.TABLE );
-            } else if ( catalogEntity.entityType == EntityType.MATERIALIZED_VIEW ) {
+            } else if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
                 result.setType( ResultType.MATERIALIZED );
             } else {
                 result.setType( ResultType.VIEW );
@@ -1371,13 +1371,13 @@ public class Crud implements InformationObserver {
     void getDataSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownNamespaceException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        CatalogEntity catalogEntity = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+        CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
-        if ( catalogEntity.entityType == EntityType.VIEW ) {
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTable = ((CatalogView) catalogEntity).getUnderlyingTables();
+        if ( catalogTable.entityType == EntityType.VIEW ) {
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
 
             List<DbColumn> columns = new ArrayList<>();
-            for ( Long columnIds : catalogEntity.fieldIds ) {
+            for ( Long columnIds : catalogTable.fieldIds ) {
                 CatalogColumn col = catalog.getField( columnIds );
                 columns.add( new DbColumn(
                         col.name,
@@ -1395,15 +1395,15 @@ public class Crud implements InformationObserver {
             }
             ctx.json( new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW ) );
         } else {
-            if ( catalog.getColumnPlacement( catalogEntity.fieldIds.get( 0 ) ).size() != 1 ) {
+            if ( catalog.getColumnPlacement( catalogTable.fieldIds.get( 0 ) ).size() != 1 ) {
                 throw new RuntimeException( "The table has an unexpected number of placements!" );
             }
 
-            int adapterId = catalog.getColumnPlacement( catalogEntity.fieldIds.get( 0 ) ).get( 0 ).adapterId;
-            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
+            int adapterId = catalog.getColumnPlacement( catalogTable.fieldIds.get( 0 ) ).get( 0 ).adapterId;
+            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
             List<String> pkColumnNames = primaryKey.getColumnNames();
             List<DbColumn> columns = new ArrayList<>();
-            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogEntity.id ) ) {
+            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
                 CatalogColumn col = catalog.getField( ccp.columnId );
                 columns.add( new DbColumn(
                         col.name,
@@ -1429,7 +1429,7 @@ public class Crud implements InformationObserver {
     void getAvailableSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownNamespaceException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        CatalogEntity table = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+        CatalogTable table = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
         ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getColumnPlacementsByAdapter( table.id );
         Set<Integer> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
@@ -1472,10 +1472,10 @@ public class Crud implements InformationObserver {
     void getMaterializedInfo( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownNamespaceException {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
 
-        CatalogEntity catalogEntity = catalog.getTable( databaseId, request.schema, request.table );
+        CatalogTable catalogTable = catalog.getTable( databaseId, request.schema, request.table );
 
-        if ( catalogEntity.entityType == EntityType.MATERIALIZED_VIEW ) {
-            CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogEntity;
+        if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
+            CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogTable;
 
             MaterializedCriteria materializedCriteria = catalogMaterializedView.getMaterializedCriteria();
 
@@ -1796,11 +1796,11 @@ public class Crud implements InformationObserver {
         Map<String, ArrayList<String>> temp = new HashMap<>();
 
         try {
-            CatalogEntity catalogEntity = catalog.getTable( databaseId, t[0], t[1] );
+            CatalogTable catalogTable = catalog.getTable( databaseId, t[0], t[1] );
 
             // get primary key
-            if ( catalogEntity.primaryKey != null ) {
-                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
+            if ( catalogTable.primaryKey != null ) {
+                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                 for ( String columnName : primaryKey.getColumnNames() ) {
                     if ( !temp.containsKey( "" ) ) {
                         temp.put( "", new ArrayList<>() );
@@ -1814,7 +1814,7 @@ public class Crud implements InformationObserver {
 
             // get unique constraints.
             temp.clear();
-            List<CatalogConstraint> constraints = catalog.getConstraints( catalogEntity.id );
+            List<CatalogConstraint> constraints = catalog.getConstraints( catalogTable.id );
             for ( CatalogConstraint catalogConstraint : constraints ) {
                 if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
                     temp.put( catalogConstraint.name, new ArrayList<>( catalogConstraint.key.getColumnNames() ) );
@@ -1954,8 +1954,8 @@ public class Crud implements InformationObserver {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         Result result;
         try {
-            CatalogEntity catalogEntity = catalog.getTable( databaseId, request.schema, request.table );
-            List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogEntity.id, false );
+            CatalogTable catalogTable = catalog.getTable( databaseId, request.schema, request.table );
+            List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, false );
 
             DbColumn[] header = {
                     new DbColumn( "Name" ),
@@ -1985,7 +1985,7 @@ public class Crud implements InformationObserver {
             }
 
             // Get functional indexes
-            for ( Integer storeId : catalogEntity.dataPlacements ) {
+            for ( Integer storeId : catalogTable.dataPlacements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( storeId );
                 DataStore store;
                 if ( adapter instanceof DataStore ) {
@@ -1993,7 +1993,7 @@ public class Crud implements InformationObserver {
                 } else {
                     break;
                 }
-                for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogEntity ) ) {
+                for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
                     String[] arr = new String[5];
                     arr[0] = "";
                     arr[1] = String.join( ", ", fif.getColumnNames() );
@@ -2082,10 +2082,10 @@ public class Crud implements InformationObserver {
 
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        CatalogEntity catalogEntity = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+        CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
-        if ( catalogEntity.entityType == EntityType.VIEW ) {
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTableOriginal = ((CatalogView) catalogEntity).getUnderlyingTables();
+        if ( catalogTable.entityType == EntityType.VIEW ) {
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
             Map<String, List<String>> underlyingTable = new HashMap<>();
             for ( Entry<Long, ImmutableList<Long>> entry : underlyingTableOriginal.entrySet() ) {
                 List<String> columns = new ArrayList<>();
@@ -2114,7 +2114,7 @@ public class Crud implements InformationObserver {
         String schemaName = index.getSchema();
         String tableName = index.getTable();
         try {
-            CatalogEntity table = catalog.getTable( databaseId, schemaName, tableName );
+            CatalogTable table = catalog.getTable( databaseId, schemaName, tableName );
             Placement p = new Placement( table.partitionProperty.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.entityType );
             if ( table.entityType == EntityType.VIEW ) {
 
@@ -2663,11 +2663,11 @@ public class Crud implements InformationObserver {
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
-        List<CatalogEntity> catalogEntities = catalog.getTables( databaseId, new Catalog.Pattern( request.schema ), null );
-        for ( CatalogEntity catalogEntity : catalogEntities ) {
-            if ( catalogEntity.entityType == EntityType.ENTITY || catalogEntity.entityType == EntityType.SOURCE ) {
+        List<CatalogTable> catalogEntities = catalog.getTables( databaseId, new Catalog.Pattern( request.schema ), null );
+        for ( CatalogTable catalogTable : catalogEntities ) {
+            if ( catalogTable.entityType == EntityType.ENTITY || catalogTable.entityType == EntityType.SOURCE ) {
                 // get foreign keys
-                List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogEntity.id );
+                List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
                 for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
                     for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
                         fKeys.add( ForeignKey.builder()
@@ -2685,21 +2685,21 @@ public class Crud implements InformationObserver {
                 }
 
                 // get tables with its columns
-                DbTable table = new DbTable( catalogEntity.name, catalogEntity.getNamespaceName(), catalogEntity.modifiable, catalogEntity.entityType );
-                for ( String columnName : catalogEntity.getColumnNames() ) {
+                DbTable table = new DbTable( catalogTable.name, catalogTable.getNamespaceName(), catalogTable.modifiable, catalogTable.entityType );
+                for ( String columnName : catalogTable.getColumnNames() ) {
                     table.addColumn( new DbColumn( columnName ) );
                 }
 
                 // get primary key with its columns
-                if ( catalogEntity.primaryKey != null ) {
-                    CatalogPrimaryKey catalogPrimaryKey = catalog.getPrimaryKey( catalogEntity.primaryKey );
+                if ( catalogTable.primaryKey != null ) {
+                    CatalogPrimaryKey catalogPrimaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                     for ( String columnName : catalogPrimaryKey.getColumnNames() ) {
                         table.addPrimaryKeyField( columnName );
                     }
                 }
 
                 // get unique constraints
-                List<CatalogConstraint> catalogConstraints = catalog.getConstraints( catalogEntity.id );
+                List<CatalogConstraint> catalogConstraints = catalog.getConstraints( catalogTable.id );
                 for ( CatalogConstraint catalogConstraint : catalogConstraints ) {
                     if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
                         // TODO: unique constraints can be over multiple columns.
@@ -2713,7 +2713,7 @@ public class Crud implements InformationObserver {
                 }
 
                 // get unique indexes
-                List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogEntity.id, true );
+                List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, true );
                 for ( CatalogIndex catalogIndex : catalogIndexes ) {
                     // TODO: unique indexes can be over multiple columns.
                     if ( catalogIndex.key.getColumnNames().size() == 1 &&
@@ -3302,7 +3302,7 @@ public class Crud implements InformationObserver {
 
     private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws QueryExecutionException {
         // create table from .json file
-        List<CatalogEntity> tablesInSchema = catalog.getTables( this.databaseId, new Catalog.Pattern( request.schema ), null );
+        List<CatalogTable> tablesInSchema = catalog.getTables( this.databaseId, new Catalog.Pattern( request.schema ), null );
         int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
         if ( tableAlreadyExists > 0 ) {
             return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a entity with the name '%s'", request.schema, newName ) );
@@ -3402,9 +3402,9 @@ public class Crud implements InformationObserver {
                 OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
                 FileOutputStream tableStream = new FileOutputStream( tableFile );
                 log.info( String.format( "Exporting %s.%s", request.schema, table.initialName ) );
-                CatalogEntity catalogEntity = catalog.getTable( this.databaseId, request.schema, table.initialName );
+                CatalogTable catalogTable = catalog.getTable( this.databaseId, request.schema, table.initialName );
 
-                catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogEntity, request.createPks, request.defaultValues ) );
+                catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
                 catalogWriter.flush();
                 catalogWriter.close();
 
@@ -3667,12 +3667,12 @@ public class Crud implements InformationObserver {
         }
 
         EntityType entityType = null;
-        CatalogEntity catalogEntity = null;
+        CatalogTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogEntity = catalog.getTable( this.databaseId, t[0], t[1] );
-                entityType = catalogEntity.entityType;
+                catalogTable = catalog.getTable( this.databaseId, t[0], t[1] );
+                entityType = catalogTable.entityType;
             } catch ( UnknownTableException e ) {
                 log.error( "Caught exception", e );
             }
@@ -3703,10 +3703,10 @@ public class Crud implements InformationObserver {
                     filter );
 
             // Get column default values
-            if ( catalogEntity != null ) {
+            if ( catalogTable != null ) {
                 try {
-                    if ( catalog.checkIfExistsColumn( catalogEntity.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getField( catalogEntity.id, columnName );
+                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                        CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
                         if ( catalogColumn.defaultValue != null ) {
                             dbCol.defaultValue = catalogColumn.defaultValue.value;
                         }
@@ -4083,7 +4083,7 @@ public class Crud implements InformationObserver {
     private Map<String, CatalogColumn> getCatalogColumns( String schemaName, String tableName ) {
         Map<String, CatalogColumn> dataTypes = new HashMap<>();
         try {
-            CatalogEntity table = catalog.getTable( this.databaseId, schemaName, tableName );
+            CatalogTable table = catalog.getTable( this.databaseId, schemaName, tableName );
             List<CatalogColumn> catalogColumns = catalog.getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
                 dataTypes.put( catalogColumn.name, catalogColumn );

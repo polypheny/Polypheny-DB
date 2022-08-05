@@ -40,11 +40,8 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Creates a {@link LpgProject}.
+     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node of a project.
      */
     protected LpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
         super( cluster, traits, input );

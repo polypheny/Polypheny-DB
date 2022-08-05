@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.AlgBuilder;
@@ -53,7 +53,7 @@ class CoWHashIndex extends Index {
             final long id,
             final String name,
             final CatalogNamespace schema,
-            final CatalogEntity table,
+            final CatalogTable table,
             final List<String> columns,
             final List<String> targetColumns ) {
         this.id = id;
@@ -69,7 +69,7 @@ class CoWHashIndex extends Index {
             final long id,
             final String name,
             final CatalogNamespace schema,
-            final CatalogEntity table,
+            final CatalogTable table,
             final String[] columns,
             final String[] targetColumns ) {
         this( id, name, schema, table, Arrays.asList( columns ), Arrays.asList( targetColumns ) );
@@ -376,7 +376,7 @@ class CoWHashIndex extends Index {
                 Boolean unique,
                 Boolean persistent,
                 CatalogNamespace schema,
-                CatalogEntity table,
+                CatalogTable table,
                 List<String> columns,
                 List<String> targetColumns ) {
             return new CoWHashIndex( id, name, schema, table, columns, targetColumns );

@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.Enforce
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -104,7 +104,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private final Set<CatalogEntity> catalogTables = new TreeSet<>();
+    private final Set<CatalogTable> catalogTables = new TreeSet<>();
 
     @Getter
     private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();

@@ -1318,11 +1318,13 @@ public enum Kind {
     MQL_EXISTS,
 
     /*
-     * CYPHER
+     * Deserialize operator
      */
-    CYPHER_CREATE,
-
-    DESERIALIZE;
+    DESERIALIZE,
+    /*
+     * CYPHER function
+     */
+    CYPHER_FUNCTION;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 

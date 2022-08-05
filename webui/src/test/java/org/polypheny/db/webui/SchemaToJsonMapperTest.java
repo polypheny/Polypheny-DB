@@ -29,10 +29,10 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.sql.core.SqlLanguagelDependant;
@@ -49,7 +49,7 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
     @Ignore
     @Test
     public void exportTest() {
-        CatalogEntity catalogEntity = new CatalogEntity(
+        CatalogTable catalogTable = new CatalogTable(
                 4,
                 "stores",
                 ImmutableList.of(),
@@ -79,7 +79,7 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
                 new CatalogKey( 23L, 4, 1, 1, Arrays.asList( 5L, 6L ), EnforcementTime.ON_COMMIT ),
                 new CatalogKey( 24L, 4, 1, 1, Arrays.asList( 6L ), EnforcementTime.ON_COMMIT )
         );
-        String json = SchemaToJsonMapper.exportTableDefinitionAsJson( catalogEntity, true, true );
+        String json = SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, true, true );
         Assert.assertEquals( json, mockJson );
     }
 

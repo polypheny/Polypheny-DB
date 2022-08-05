@@ -40,7 +40,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -248,21 +248,21 @@ public class SqlProcessorImpl extends Processor {
         SqlNodeList oldColumnList = insert.getTargetColumnList();
 
         if ( oldColumnList != null ) {
-            CatalogEntity catalogEntity = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            NamespaceType namespaceType = Catalog.getInstance().getNamespace( catalogEntity.namespaceId ).namespaceType;
+            CatalogTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+            NamespaceType namespaceType = Catalog.getInstance().getNamespace( catalogTable.namespaceId ).namespaceType;
 
-            catalogEntity = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+            catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
-            int size = (int) catalogEntity.fieldIds.size();
+            int size = (int) catalogTable.fieldIds.size();
             if ( namespaceType == NamespaceType.DOCUMENT ) {
-                List<String> columnNames = catalogEntity.getColumnNames();
+                List<String> columnNames = catalogTable.getColumnNames();
                 size += oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
             }
 
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][size];
             int pos = 0;
-            List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogEntity.id );
+            List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
             for ( CatalogColumn column : columns ) {
 
                 // Add column
@@ -358,8 +358,8 @@ public class SqlProcessorImpl extends Processor {
     }
 
 
-    private CatalogEntity getCatalogTable( Transaction transaction, SqlIdentifier tableName ) {
-        CatalogEntity catalogEntity;
+    private CatalogTable getCatalogTable( Transaction transaction, SqlIdentifier tableName ) {
+        CatalogTable catalogTable;
         try {
             long schemaId;
             String tableOldName;
@@ -373,7 +373,7 @@ public class SqlProcessorImpl extends Processor {
                 schemaId = Catalog.getInstance().getNamespace( transaction.getDefaultSchema().databaseId, transaction.getDefaultSchema().name ).id;
                 tableOldName = tableName.names.get( 0 );
             }
-            catalogEntity = Catalog.getInstance().getTable( schemaId, tableOldName );
+            catalogTable = Catalog.getInstance().getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownNamespaceException e ) {
@@ -381,7 +381,7 @@ public class SqlProcessorImpl extends Processor {
         } catch ( UnknownTableException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
         }
-        return catalogEntity;
+        return catalogTable;
     }
 
 

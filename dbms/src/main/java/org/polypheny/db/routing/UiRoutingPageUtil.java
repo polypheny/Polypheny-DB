@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -93,13 +93,13 @@ public class UiRoutingPageUtil {
             proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
                 CatalogPartition catalogPartition = Catalog.getInstance().getPartition( k );
                 CatalogPartitionGroup catalogPartitionGroup = Catalog.getInstance().getPartitionGroup( catalogPartition.partitionGroupId );
-                CatalogEntity catalogEntity = Catalog.getInstance().getTable( catalogPartition.tableId );
+                CatalogTable catalogTable = Catalog.getInstance().getTable( catalogPartition.tableId );
                 v.forEach( p -> {
                     CatalogColumnPlacement catalogColumnPlacement = Catalog.getInstance().getColumnPlacement( p.left, p.right );
                     CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getPartitionPlacement( p.left, k );
                     CatalogColumn catalogColumn = Catalog.getInstance().getField( catalogColumnPlacement.columnId );
                     table.addRow(
-                            catalogEntity.getNamespaceName() + "." + catalogEntity.name,
+                            catalogTable.getNamespaceName() + "." + catalogTable.name,
                             catalogColumn.name,
                             catalogPartitionGroup.partitionGroupName + " --> " + catalogPartition.id,
                             catalogPartitionPlacement.adapterUniqueName,

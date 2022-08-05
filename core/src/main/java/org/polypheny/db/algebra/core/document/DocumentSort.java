@@ -36,12 +36,8 @@ public abstract class DocumentSort extends SingleAlg {
 
 
     /**
-     * Creates a Sort.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits Traits
-     * @param child input relational expression
-     * @param collation array of sort specifications
+     * Creates a {@link DocumentSort}.
+     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of a sort.
      */
     public DocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation ) {
         this( cluster, traits, child, collation, null, null );

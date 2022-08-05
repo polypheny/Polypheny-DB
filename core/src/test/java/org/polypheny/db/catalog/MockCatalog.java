@@ -35,7 +35,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
@@ -48,6 +47,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -318,49 +318,49 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogEntity> getTables( long schemaId, Pattern tableNamePattern ) {
+    public List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogEntity> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogEntity getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException {
+    public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogEntity getTableFromPartition( long partitionId ) {
+    public CatalogTable getTableFromPartition( long partitionId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogEntity> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+    public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogEntity getTable( long tableId ) {
+    public CatalogTable getTable( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogEntity getTable( long schemaId, String tableName ) throws UnknownTableException {
+    public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogEntity getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
+    public CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
         throw new NotImplementedException();
     }
 
@@ -1186,7 +1186,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogEntity> getTablesForPeriodicProcessing() {
+    public List<CatalogTable> getTablesForPeriodicProcessing() {
         throw new NotImplementedException();
     }
 

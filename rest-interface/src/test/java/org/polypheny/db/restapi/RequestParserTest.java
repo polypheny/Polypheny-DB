@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -72,7 +72,7 @@ public class RequestParserTest {
                 null,
                 "username",
                 "testdb" );
-        CatalogEntity table = requestParser.parseCatalogTableName( "schema1.table1." );
+        CatalogTable table = requestParser.parseCatalogTableName( "schema1.table1." );
         verify( mockedCatalog ).getTable( "testdb", "schema1", "table1" );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.cypher.ddl.DdlManager;
@@ -145,25 +145,25 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogEntity catalogEntity = getCatalogTable( context, tableName );
+        CatalogTable catalogTable = getCatalogTable( context, tableName );
 
-        if ( catalogEntity.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a table." );
+        if ( catalogTable.entityType != EntityType.ENTITY ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
         try {
             if ( type != null ) {
-                DdlManager.getInstance().setColumnType( catalogEntity, columnName.getSimple(), ColumnTypeInformation.fromDataTypeSpec( type ), statement );
+                DdlManager.getInstance().setColumnType( catalogTable, columnName.getSimple(), ColumnTypeInformation.fromDataTypeSpec( type ), statement );
             } else if ( nullable != null ) {
-                DdlManager.getInstance().setColumnNullable( catalogEntity, columnName.getSimple(), nullable, statement );
+                DdlManager.getInstance().setColumnNullable( catalogTable, columnName.getSimple(), nullable, statement );
             } else if ( beforeColumn != null || afterColumn != null ) {
-                DdlManager.getInstance().setColumnPosition( catalogEntity, columnName.getSimple(), beforeColumn == null ? null : beforeColumn.getSimple(), afterColumn == null ? null : afterColumn.getSimple(), statement );
+                DdlManager.getInstance().setColumnPosition( catalogTable, columnName.getSimple(), beforeColumn == null ? null : beforeColumn.getSimple(), afterColumn == null ? null : afterColumn.getSimple(), statement );
             } else if ( collation != null ) {
-                DdlManager.getInstance().setColumnCollation( catalogEntity, columnName.getSimple(), Collation.parse( collation ), statement );
+                DdlManager.getInstance().setColumnCollation( catalogTable, columnName.getSimple(), Collation.parse( collation ), statement );
             } else if ( defaultValue != null ) {
-                DdlManager.getInstance().setDefaultValue( catalogEntity, columnName.getSimple(), defaultValue.toString(), statement );
+                DdlManager.getInstance().setDefaultValue( catalogTable, columnName.getSimple(), defaultValue.toString(), statement );
             } else if ( dropDefault != null && dropDefault ) {
-                DdlManager.getInstance().dropDefaultValue( catalogEntity, columnName.getSimple(), statement );
+                DdlManager.getInstance().dropDefaultValue( catalogTable, columnName.getSimple(), statement );
             } else {
                 throw new RuntimeException( "Unknown option" );
             }

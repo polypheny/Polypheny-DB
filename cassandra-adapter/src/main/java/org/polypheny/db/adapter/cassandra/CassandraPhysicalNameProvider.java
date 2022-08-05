@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import java.util.regex.Pattern;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -100,13 +100,13 @@ public class CassandraPhysicalNameProvider {
 
 
     private long tableId( String schemaName, String tableName ) {
-        CatalogEntity catalogEntity;
+        CatalogTable catalogTable;
         try {
-            catalogEntity = catalog.getTable( "APP", schemaName, tableName );
+            catalogTable = catalog.getTable( "APP", schemaName, tableName );
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
             throw new RuntimeException( e );
         }
-        return catalogEntity.id;
+        return catalogTable.id;
     }
 
 

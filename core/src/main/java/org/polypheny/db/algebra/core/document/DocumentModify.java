@@ -43,12 +43,8 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param traits
-     * @param catalogReader
-     * @param input Input relational expression
-     * @param operation
+     * Creates a {@link DocumentModify}.
+     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which modifies a collection.
      */
     protected DocumentModify( AlgTraitSet traits, AlgOptTable collection, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
         super( input.getCluster(), input.getTraitSet(), input );

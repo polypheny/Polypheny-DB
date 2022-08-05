@@ -57,11 +57,11 @@ import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -141,7 +141,7 @@ public class ConstraintEnforceAttacher {
     }
 
 
-    public static List<EnforcementInformation> getConstraintAlg( Set<CatalogEntity> catalogTables, Statement statement, EnforcementTime enforcementTime ) {
+    public static List<EnforcementInformation> getConstraintAlg( Set<CatalogTable> catalogTables, Statement statement, EnforcementTime enforcementTime ) {
         return catalogTables
                 .stream()
                 .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
@@ -204,7 +204,7 @@ public class ConstraintEnforceAttacher {
 
         final Catalog catalog = Catalog.getInstance();
         final CatalogNamespace schema = statement.getTransaction().getDefaultSchema();
-        final CatalogEntity table;
+        final CatalogTable table;
         final CatalogPrimaryKey primaryKey;
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
@@ -494,7 +494,7 @@ public class ConstraintEnforceAttacher {
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogEntity foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
+                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
                 builder.push( input );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
@@ -570,7 +570,7 @@ public class ConstraintEnforceAttacher {
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogEntity foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
+                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
@@ -665,7 +665,7 @@ public class ConstraintEnforceAttacher {
         private boolean testConstraintsValid() {
             if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() || RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
                 try {
-                    List<CatalogEntity> tables = Catalog
+                    List<CatalogTable> tables = Catalog
                             .getInstance()
                             .getTables( null, null, null )
                             .stream()

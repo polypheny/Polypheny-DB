@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -66,8 +66,8 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected CatalogEntity getCatalogTable( Context context, SqlIdentifier tableName ) {
-        CatalogEntity catalogEntity;
+    protected CatalogTable getCatalogTable( Context context, SqlIdentifier tableName ) {
+        CatalogTable catalogTable;
         try {
             long schemaId;
             String tableOldName;
@@ -82,7 +82,7 @@ public abstract class SqlDdl extends SqlCall {
                 schemaId = catalog.getNamespace( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableOldName = tableName.names.get( 0 );
             }
-            catalogEntity = catalog.getTable( schemaId, tableOldName );
+            catalogTable = catalog.getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownNamespaceException e ) {
@@ -90,7 +90,7 @@ public abstract class SqlDdl extends SqlCall {
         } catch ( UnknownTableException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
         }
-        return catalogEntity;
+        return catalogTable;
     }
 
 

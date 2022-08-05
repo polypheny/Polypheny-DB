@@ -62,8 +62,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
@@ -422,13 +422,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         if ( !(logicalTable instanceof LogicalTable) ) {
             return;
         }
-        CatalogEntity catalogEntity = Catalog.getInstance().getTable( logicalTable.getTableId() );
+        CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
         // Only if table is partitioned
-        if ( catalogEntity.partitionProperty.isPartitioned ) {
+        if ( catalogTable.partitionProperty.isPartitioned ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,
-                    catalogEntity.fieldIds.indexOf( catalogEntity.partitionProperty.partitionColumnId ) );
+                    catalogTable.fieldIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
             filter.accept( whereClauseVisitor );
 
             int scanId = filter.getInput().getId();
@@ -458,13 +458,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         if ( !(logicalTable instanceof LogicalTable) ) {
             return;
         }
-        CatalogEntity catalogEntity = Catalog.getInstance().getTable( logicalTable.getTableId() );
+        CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
         // Only if table is partitioned
-        if ( catalogEntity.partitionProperty.isPartitioned ) {
+        if ( catalogTable.partitionProperty.isPartitioned ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,
-                    catalogEntity.fieldIds.indexOf( catalogEntity.partitionProperty.partitionColumnId ) );
+                    catalogTable.fieldIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
             filter.accept( whereClauseVisitor );
 
             int scanId = filter.getInput().getId();

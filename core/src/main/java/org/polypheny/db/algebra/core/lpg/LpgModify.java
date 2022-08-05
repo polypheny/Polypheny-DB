@@ -37,12 +37,8 @@ public abstract class LpgModify extends SingleAlg implements LpgAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
-     * @param dmlRowType
+     * Creates a {@link LpgModify}.
+     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} node, which is able to modify an LPG graph.
      */
     protected LpgModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
         super( cluster, traits, input );

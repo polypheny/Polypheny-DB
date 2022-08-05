@@ -94,7 +94,7 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogEntity getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
         return new CatalogMaterializedView(
                 id,
                 name,
@@ -118,7 +118,7 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogEntity getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
         return new CatalogMaterializedView(
                 id,
                 name,
@@ -142,7 +142,7 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public CatalogEntity getRenamed( String newName ) {
+    public CatalogTable getRenamed( String newName ) {
         return new CatalogMaterializedView(
                 id,
                 newName,

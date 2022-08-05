@@ -79,8 +79,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -620,7 +620,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalModify ) {
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalModify ltm = (LogicalModify) node;
-                        final CatalogEntity table;
+                        final CatalogTable table;
                         final CatalogNamespace schema;
                         try {
                             String tableName;
@@ -882,7 +882,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
                         final Index index = IndexManager.getInstance().getIndex(
                                 lce.getCatalogNamespace(),
-                                lce.getCatalogEntity(),
+                                lce.getCatalogTable(),
                                 lce.getCatalogColumns()
                         );
                         if ( index != null ) {
@@ -934,7 +934,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
                     final CatalogNamespace schema = statement.getTransaction().getDefaultSchema();
-                    final CatalogEntity ctable;
+                    final CatalogTable ctable;
                     try {
                         ctable = Catalog.getInstance().getTable( schema.id, table );
                     } catch ( UnknownTableException e ) {
@@ -1342,7 +1342,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     int scanId = alg.getId();
 
                     // Get placements of this table
-                    CatalogEntity catalogEntity = Catalog.getInstance().getTable( logicalTable.getTableId() );
+                    CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
                     if ( aggregatedPartitionValues.containsKey( scanId ) ) {
                         if ( aggregatedPartitionValues.get( scanId ) != null ) {
@@ -1353,8 +1353,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     log.debug(
                                             "TableID: {} is partitioned on column: {} - {}",
                                             logicalTable.getTableId(),
-                                            catalogEntity.partitionProperty.partitionColumnId,
-                                            Catalog.getInstance().getField( catalogEntity.partitionProperty.partitionColumnId ).name );
+                                            catalogTable.partitionProperty.partitionColumnId,
+                                            Catalog.getInstance().getField( catalogTable.partitionProperty.partitionColumnId ).name );
                                 }
                                 List<Long> identifiedPartitions = new ArrayList<>();
                                 for ( String partitionValue : partitionValues ) {
@@ -1362,8 +1362,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         log.debug( "Extracted PartitionValue: {}", partitionValue );
                                     }
                                     long identifiedPartition = PartitionManagerFactory.getInstance()
-                                            .getPartitionManager( catalogEntity.partitionProperty.partitionType )
-                                            .getTargetPartitionId( catalogEntity, partitionValue );
+                                            .getPartitionManager( catalogTable.partitionProperty.partitionType )
+                                            .getTargetPartitionId( catalogTable, partitionValue );
 
                                     identifiedPartitions.add( identifiedPartition );
                                     if ( log.isDebugEnabled() ) {
@@ -1375,7 +1375,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         scanId,
                                         identifiedPartitions,
                                         ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                                scanPerTable.putIfAbsent( scanId, catalogEntity.id );
+                                scanPerTable.putIfAbsent( scanId, catalogTable.id );
                                 // Fallback all partitionIds are needed
                             } else {
                                 fallback = true;
@@ -1390,9 +1390,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( fallback ) {
                         accessedPartitionList.merge(
                                 scanId,
-                                catalogEntity.partitionProperty.partitionIds,
+                                catalogTable.partitionProperty.partitionIds,
                                 ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                        scanPerTable.putIfAbsent( scanId, catalogEntity.id );
+                        scanPerTable.putIfAbsent( scanId, catalogTable.id );
                     }
                 }
             }

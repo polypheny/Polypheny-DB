@@ -65,8 +65,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
@@ -98,7 +98,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
     @Getter
     private final MongoCollection<Document> collection;
     @Getter
-    private final CatalogEntity catalogEntity;
+    private final CatalogTable catalogTable;
 
     @Getter
     private final CatalogCollection catalogCollection;
@@ -111,17 +111,17 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
     /**
      * Creates a MongoTable.
      */
-    MongoEntity( CatalogEntity catalogEntity, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, int storeId, CatalogPartitionPlacement partitionPlacement ) {
+    MongoEntity( CatalogTable catalogTable, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         super( Object[].class );
-        this.collectionName = MongoStore.getPhysicalTableName( catalogEntity.id, partitionPlacement.partitionId );
+        this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
         this.transactionProvider = transactionProvider;
-        this.catalogEntity = catalogEntity;
+        this.catalogTable = catalogTable;
         this.catalogCollection = null;
         this.protoRowType = proto;
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = storeId;
-        this.tableId = catalogEntity.id;
+        this.tableId = catalogTable.id;
     }
 
 
@@ -129,7 +129,7 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
         super( Object[].class );
         this.collectionName = MongoStore.getPhysicalTableName( catalogEntity.id, partitionPlacement.id );
         this.transactionProvider = transactionProvider;
-        this.catalogEntity = null;
+        this.catalogTable = null;
         this.catalogCollection = catalogEntity;
         this.protoRowType = proto;
         this.mongoSchema = schema;
@@ -240,8 +240,8 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
             }
         }
 
-        if ( logicalCols.size() != 0 && catalogEntity != null ) {
-            list.add( 0, getPhysicalProjections( logicalCols, catalogEntity.getColumnNames(), catalogEntity.fieldIds ) );
+        if ( logicalCols.size() != 0 && catalogTable != null ) {
+            list.add( 0, getPhysicalProjections( logicalCols, catalogTable.getColumnNames(), catalogTable.fieldIds ) );
         }
 
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );

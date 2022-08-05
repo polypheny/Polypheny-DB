@@ -36,10 +36,8 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
+     * Creates a {@link DocumentAggregate}.
+     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of an aggregate.
      */
     protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child );

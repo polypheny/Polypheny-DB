@@ -98,7 +98,7 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
                 exceptionMessage );
         ece.setCheckDescription( checkDescription );
         ece.setCatalogNamespace( catalogNamespace );
-        ece.setCatalogEntity( catalogEntity );
+        ece.setCatalogTable( catalogTable );
         ece.setCatalogColumns( catalogColumns );
         ece.setValues( values );
         return ece;

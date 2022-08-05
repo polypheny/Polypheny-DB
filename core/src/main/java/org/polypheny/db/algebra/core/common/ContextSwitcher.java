@@ -22,9 +22,12 @@ import org.polypheny.db.algebra.SingleAlg;
 public class ContextSwitcher extends SingleAlg {
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates a {@link ContextSwitcher}.
+     * The default {@link org.polypheny.db.adapter.DataContext} only handles symmetric tuples of values.
+     * This poses a problem if multiple nodes of an algebra tree are replaced during execution, which hold uneven amounts of values.
+     * The {@link ContextSwitcher} separates the underlying algebra branch into its own capsuled instance, with its own {@link org.polypheny.db.adapter.DataContext}.
      *
-     * @param input Input relational expression
+     * @param input Input relational expression, which requires its own {@link org.polypheny.db.adapter.DataContext}
      */
     protected ContextSwitcher( AlgNode input ) {
         super( input.getCluster(), input.getTraitSet(), input );

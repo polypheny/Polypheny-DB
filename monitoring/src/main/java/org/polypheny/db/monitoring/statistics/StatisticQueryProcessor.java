@@ -28,8 +28,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -91,8 +91,8 @@ public class StatisticQueryProcessor {
         List<CatalogNamespace> schemas = catalog.getSchemas( databaseId, null );
         for ( CatalogNamespace schema : schemas ) {
             List<String> tables = new ArrayList<>();
-            List<CatalogEntity> childTables = catalog.getTables( schema.id, null );
-            for ( CatalogEntity childTable : childTables ) {
+            List<CatalogTable> childTables = catalog.getTables( schema.id, null );
+            for ( CatalogTable childTable : childTables ) {
                 List<String> table = new ArrayList<>();
                 List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
                 for ( CatalogColumn catalogColumn : childColumns ) {
@@ -137,17 +137,17 @@ public class StatisticQueryProcessor {
      *
      * @return all the tables ids
      */
-    public List<CatalogEntity> getAllTable() {
+    public List<CatalogTable> getAllTable() {
         Catalog catalog = Catalog.getInstance();
-        List<CatalogEntity> catalogEntities = catalog.getTables(
+        List<CatalogTable> catalogEntities = catalog.getTables(
                 null,
                 null,
                 null );
-        List<CatalogEntity> allTables = new ArrayList<>();
+        List<CatalogTable> allTables = new ArrayList<>();
 
-        for ( CatalogEntity catalogEntity : catalogEntities ) {
-            if ( catalogEntity.entityType != EntityType.VIEW ) {
-                allTables.add( catalogEntity );
+        for ( CatalogTable catalogTable : catalogEntities ) {
+            if ( catalogTable.entityType != EntityType.VIEW ) {
+                allTables.add( catalogTable );
             }
         }
         return allTables;

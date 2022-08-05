@@ -44,8 +44,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -178,9 +178,9 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public void addTables( Transaction transaction, List<String> tableNames ) {
         if ( tableNames.size() > 1 ) {
             try {
-                CatalogEntity catalogEntity = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
-                long id = catalogEntity.id;
-                if ( !catalogEntity.getConnectedViews().isEmpty() ) {
+                CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
+                long id = catalogTable.id;
+                if ( !catalogTable.getConnectedViews().isEmpty() ) {
                     updateCandidates.put(transaction.getXid(), id);
                 }
             } catch ( UnknownTableException e ) {
@@ -211,11 +211,11 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void materializedUpdate( Long potentialInteresting ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogEntity catalogEntity = catalog.getTable( potentialInteresting );
-        List<Long> connectedViews = catalogEntity.getConnectedViews();
+        CatalogTable catalogTable = catalog.getTable( potentialInteresting );
+        List<Long> connectedViews = catalogTable.getConnectedViews();
 
         for ( Long id : connectedViews ) {
-            CatalogEntity view = catalog.getTable( id );
+            CatalogTable view = catalog.getTable( id );
             if ( view.entityType == EntityType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
@@ -272,12 +272,12 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( Long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogEntity catalogEntity = catalog.getTable( materializedId );
+        CatalogTable catalogTable = catalog.getTable( materializedId );
 
         try {
             Transaction transaction = getTransactionManager().startTransaction(
-                    catalogEntity.ownerId,
-                    catalogEntity.databaseId,
+                    catalogTable.ownerId,
+                    catalogTable.databaseId,
                     false,
                     "Materialized View" );
 
@@ -287,7 +287,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
                 idAccessMap.add(Pair.of(LockManager.GLOBAL_LOCK, LockMode.SHARED));
                 // Get locks for individual tables
-                EntityAccessMap accessMap = new EntityAccessMap(((CatalogMaterializedView) catalogEntity).getDefinition(), new HashMap<>());
+                EntityAccessMap accessMap = new EntityAccessMap(((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>());
                 idAccessMap.addAll(accessMap.getAccessedEntityPair());
                 LockManager.INSTANCE.lock(idAccessMap, (TransactionImpl) statement.getTransaction());
             } catch ( DeadlockException e ) {

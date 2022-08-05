@@ -16,6 +16,16 @@
 
 package org.polypheny.db.partition;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -26,8 +36,8 @@ import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
@@ -38,16 +48,14 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.transaction.*;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
-
-import java.sql.Timestamp;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 /**
@@ -115,9 +123,9 @@ public class FrequencyMapImpl extends FrequencyMap {
         Catalog catalog = Catalog.getInstance();
 
         long invocationTimestamp = System.currentTimeMillis();
-        List<CatalogEntity> periodicTables = catalog.getTablesForPeriodicProcessing();
+        List<CatalogTable> periodicTables = catalog.getTablesForPeriodicProcessing();
         // Retrieve all Tables which rely on periodic processing
-        for ( CatalogEntity table : periodicTables ) {
+        for ( CatalogTable table : periodicTables ) {
             if ( table.partitionProperty.partitionType == PartitionType.TEMPERATURE ) {
                 determinePartitionFrequency( table, invocationTimestamp );
             }
@@ -145,7 +153,7 @@ public class FrequencyMapImpl extends FrequencyMap {
      *
      * @param table Temperature partitioned Table
      */
-    private void determinePartitionDistribution( CatalogEntity table ) {
+    private void determinePartitionDistribution( CatalogTable table ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "Determine access frequency of partitions of table: {}", table.name );
         }
@@ -242,7 +250,7 @@ public class FrequencyMapImpl extends FrequencyMap {
      * @param partitionsFromColdToHot Partitions which should be moved from COLD to HOT PartitionGroup
      * @param partitionsFromHotToCold Partitions which should be moved from HOT to COLD PartitionGroup
      */
-    private void redistributePartitions( CatalogEntity table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold ) {
+    private void redistributePartitions( CatalogTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "Execute physical redistribution of partitions for table: {}", table.name );
             log.debug( "Partitions to move from HOT to COLD: {}", partitionsFromHotToCold );
@@ -417,7 +425,7 @@ public class FrequencyMapImpl extends FrequencyMap {
      * @param invocationTimestamp Timestamp do determine the interval for which monitoring metrics should be collected.
      */
     @Override
-    public void determinePartitionFrequency( CatalogEntity table, long invocationTimestamp ) {
+    public void determinePartitionFrequency( CatalogTable table, long invocationTimestamp ) {
         Timestamp queryStart = new Timestamp( invocationTimestamp - ((TemperaturePartitionProperty) table.partitionProperty).getFrequencyInterval() * 1000 );
 
         accessCounter = new HashMap<>();

@@ -43,7 +43,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
@@ -56,6 +55,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -347,7 +347,7 @@ public abstract class Catalog {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogEntity> getTables( long schemaId, Pattern tableNamePattern );
+    public abstract List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern );
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -358,7 +358,7 @@ public abstract class Catalog {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogEntity> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Returns the table with the given name in the specified database and schema.
@@ -368,7 +368,7 @@ public abstract class Catalog {
      * @param tableName The name of the table
      * @return The table
      */
-    public abstract CatalogEntity getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException;
+    public abstract CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException;
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -379,7 +379,7 @@ public abstract class Catalog {
      * @param tableNamePattern Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogEntity> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+    public abstract List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
      * Returns the table with the given id
@@ -387,7 +387,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return The table
      */
-    public abstract CatalogEntity getTable( long tableId );
+    public abstract CatalogTable getTable( long tableId );
 
     /**
      * Returns the table with the given name in the specified schema.
@@ -397,7 +397,7 @@ public abstract class Catalog {
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    public abstract CatalogEntity getTable( long schemaId, String tableName ) throws UnknownTableException;
+    public abstract CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException;
 
     /**
      * Returns the table with the given name in the specified database and schema.
@@ -408,7 +408,7 @@ public abstract class Catalog {
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
-    public abstract CatalogEntity getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException;
+    public abstract CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException;
 
     /**
      * Returns the table which is associated with a given partitionId
@@ -416,7 +416,7 @@ public abstract class Catalog {
      * @param partitionId to use for lookup
      * @return CatalogEntity that contains partitionId
      */
-    public abstract CatalogEntity getTableFromPartition( long partitionId );
+    public abstract CatalogTable getTableFromPartition( long partitionId );
 
     /**
      * Adds a table to a specified schema.
@@ -1608,7 +1608,7 @@ public abstract class Catalog {
      *
      * @return List of tables which need to be periodically processed
      */
-    public abstract List<CatalogEntity> getTablesForPeriodicProcessing();
+    public abstract List<CatalogTable> getTablesForPeriodicProcessing();
 
     /**
      * Registers a table to be considered for periodic processing

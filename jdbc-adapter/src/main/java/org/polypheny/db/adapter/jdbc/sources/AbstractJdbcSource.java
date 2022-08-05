@@ -36,7 +36,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.sql.SqlDialect;
@@ -116,12 +116,12 @@ public abstract class AbstractJdbcSource extends DataSource {
 
 
     @Override
-    public void truncate( Context context, CatalogEntity catalogEntity ) {
+    public void truncate( Context context, CatalogTable catalogTable ) {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        String physicalTableName = Catalog.getInstance().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogEntity.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogEntity.id ).get( 0 ).physicalSchemaName;
+        String physicalTableName = Catalog.getInstance().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )

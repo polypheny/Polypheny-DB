@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.polypheny.db.restapi.models.requests;
 
 import java.util.List;
 import lombok.AllArgsConstructor;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.restapi.RequestColumn;
 import org.polypheny.db.util.Pair;
 
@@ -27,7 +27,7 @@ import org.polypheny.db.util.Pair;
 @AllArgsConstructor
 public abstract class ResourceValuesRequest {
 
-    public final List<CatalogEntity> tables;
+    public final List<CatalogTable> tables;
     public final List<RequestColumn> requestColumns;
     public final List<List<Pair<RequestColumn, Object>>> values;
     public boolean useDynamicParams;

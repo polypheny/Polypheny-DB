@@ -17,20 +17,19 @@
 package org.polypheny.db.transaction;
 
 
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public interface Transaction {
@@ -83,7 +82,7 @@ public interface Transaction {
 
     boolean getUseCache();
 
-    Set<CatalogEntity> getCatalogTables();
+    Set<CatalogTable> getCatalogTables();
 
     void setAcceptsOutdated(boolean acceptsOutdated);
 

@@ -43,11 +43,7 @@ import org.polypheny.db.util.BuiltInMethod;
 public class EnumerableUnwind extends LpgUnwind implements EnumerableAlg {
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Creates a {@link EnumerableUnwind}.
      */
     protected EnumerableUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
         super( cluster, traits, input, index, alias );
@@ -78,7 +74,6 @@ public class EnumerableUnwind extends LpgUnwind implements EnumerableAlg {
         Type inputJavaType = res.physType.getJavaRowType();
 
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
-        //Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
 
         Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block, false );
 

@@ -22,7 +22,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 
 
 /**
@@ -32,8 +32,8 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
-        CatalogEntity catalogEntity = Catalog.getInstance().getTable( addedColumn.tableId );
-        return catalogEntity.dataPlacements.stream()
+        CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
+        return catalogTable.dataPlacements.stream()
                 .map( elem -> AdapterManager.getInstance().getStore( elem ) )
                 .collect( Collectors.toList() );
     }

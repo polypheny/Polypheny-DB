@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
@@ -111,10 +111,10 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogEntity catalogEntity = getCatalogTable( context, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogEntity.entityType != EntityType.SOURCE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogEntity.name + " is not a source table." );
+        if ( catalogTable.entityType != EntityType.SOURCE ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a source table." );
         }
 
         if ( columnLogical.names.size() != 1 ) {
@@ -125,7 +125,7 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
 
         try {
             DdlManager.getInstance().addColumnToSourceTable(
-                    catalogEntity,
+                    catalogTable,
                     columnPhysical.getSimple(),
                     columnLogical.getSimple(),
                     beforeColumnName == null ? null : beforeColumnName.getSimple(),

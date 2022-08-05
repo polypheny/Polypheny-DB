@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.routing.LogicalQueryInformation;
@@ -84,7 +84,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
      */
     protected abstract List<RoutedAlgBuilder> handleHorizontalPartitioning(
             AlgNode node,
-            CatalogEntity catalogEntity,
+            CatalogTable catalogTable,
             Statement statement,
             LogicalTable logicalTable,
             List<RoutedAlgBuilder> builders,
@@ -93,7 +93,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     protected abstract List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
             AlgNode node,
-            CatalogEntity catalogEntity,
+            CatalogTable catalogTable,
             Statement statement,
             LogicalTable logicalTable,
             List<RoutedAlgBuilder> builders,
@@ -102,7 +102,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     protected abstract List<RoutedAlgBuilder> handleNonePartitioning(
             AlgNode node,
-            CatalogEntity catalogEntity,
+            CatalogTable catalogTable,
             Statement statement,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
@@ -214,18 +214,18 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
 
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
-            CatalogEntity catalogEntity = catalog.getTable( logicalTable.getTableId() );
+            CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
             // Check if table is even horizontal partitioned
-            if ( catalogEntity.partitionProperty.isPartitioned ) {
-                return handleHorizontalPartitioning( node, catalogEntity, statement, logicalTable, builders, cluster, queryInformation );
+            if ( catalogTable.partitionProperty.isPartitioned ) {
+                return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
 
             } else {
                 // At the moment multiple strategies
-                if ( catalogEntity.dataPlacements.size() > 1 ) {
-                    return handleVerticalPartitioningOrReplication( node, catalogEntity, statement, logicalTable, builders, cluster, queryInformation );
+                if ( catalogTable.dataPlacements.size() > 1 ) {
+                    return handleVerticalPartitioningOrReplication( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
                 }
-                return handleNonePartitioning( node, catalogEntity, statement, builders, cluster, queryInformation );
+                return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
             }
 
         } else if ( node instanceof LogicalValues ) {

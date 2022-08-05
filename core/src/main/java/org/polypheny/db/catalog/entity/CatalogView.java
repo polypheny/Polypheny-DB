@@ -33,7 +33,7 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
-public class CatalogView extends CatalogEntity {
+public class CatalogView extends CatalogTable {
 
     private static final long serialVersionUID = -4453089531698670528L;
 
@@ -74,7 +74,7 @@ public class CatalogView extends CatalogEntity {
 
 
     @Override
-    public CatalogEntity getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
         return new CatalogView(
                 id,
                 name,
@@ -96,7 +96,7 @@ public class CatalogView extends CatalogEntity {
 
 
     @Override
-    public CatalogEntity getRenamed( String newName ) {
+    public CatalogTable getRenamed( String newName ) {
         return new CatalogView(
                 id,
                 newName,
@@ -118,7 +118,7 @@ public class CatalogView extends CatalogEntity {
 
 
     @Override
-    public CatalogEntity getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
         return new CatalogView(
                 id,
                 name,

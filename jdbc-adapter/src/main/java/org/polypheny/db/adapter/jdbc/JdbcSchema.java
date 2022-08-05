@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.adapter.jdbc;
@@ -62,8 +45,8 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -138,7 +121,7 @@ public class JdbcSchema implements Schema {
 
 
     public JdbcTable createJdbcTable(
-            CatalogEntity catalogEntity,
+            CatalogTable catalogTable,
             List<CatalogColumnPlacement> columnPlacementsOnStore,
             CatalogPartitionPlacement partitionPlacement ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
@@ -163,18 +146,18 @@ public class JdbcSchema implements Schema {
 
         JdbcTable table = new JdbcTable(
                 this,
-                catalogEntity.getNamespaceName(),
-                catalogEntity.name,
+                catalogTable.getNamespaceName(),
+                catalogTable.name,
                 logicalColumnNames,
                 TableType.TABLE,
                 AlgDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
                 partitionPlacement.physicalTableName,
                 physicalColumnNames,
-                catalogEntity.id
+                catalogTable.id
         );
-        tableMap.put( catalogEntity.name + "_" + partitionPlacement.partitionId, table );
-        physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogEntity.name );
+        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
+        physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogTable.name );
         return table;
     }
 

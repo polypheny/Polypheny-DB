@@ -51,10 +51,8 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
@@ -91,7 +89,7 @@ public abstract class Adapter {
 
         DeployMode[] usedModes();
 
-        NamespaceType[] supportedSchemaTypes() default { NamespaceType.RELATIONAL };
+        NamespaceType[] supportedNamespaceTypes() default { NamespaceType.RELATIONAL };
 
     }
 
@@ -286,7 +284,7 @@ public abstract class Adapter {
             throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
-        this.supportedNamespaceTypes = Arrays.asList( properties.supportedSchemaTypes() );
+        this.supportedNamespaceTypes = Arrays.asList( properties.supportedNamespaceTypes() );
 
         this.deployMode = DeployMode.fromString( settings.get( "mode" ) );
 
@@ -314,19 +312,9 @@ public abstract class Adapter {
 
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
-    public abstract Table createTableSchema( CatalogEntity combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement );
+    public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement );
 
     public abstract Schema getCurrentSchema();
-
-
-    public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
-        throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
-    }
-
-
-    public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
-        throw new UnsupportedOperationException( "It is not supported to drop a graph with this adapter." );
-    }
 
 
     public void createGraphNamespace( SchemaPlus rootSchema, String name, long id ) {
@@ -344,7 +332,7 @@ public abstract class Adapter {
     }
 
 
-    public abstract void truncate( Context context, CatalogEntity table );
+    public abstract void truncate( Context context, CatalogTable table );
 
     public abstract boolean prepare( PolyXid xid );
 

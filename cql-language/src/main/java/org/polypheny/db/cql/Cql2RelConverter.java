@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
@@ -119,7 +119,7 @@ public class Cql2RelConverter {
         cqlQuery.queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
                 TableIndex tableIndex = treeNode.getExternalNode();
-                for ( Long columnId : tableIndex.catalogEntity.fieldIds ) {
+                for ( Long columnId : tableIndex.catalogTable.fieldIds ) {
                     tableScanColumnOrdinalities.put( columnId, tableScanColumnOrdinalities.size() );
                 }
             }
@@ -145,9 +145,9 @@ public class Cql2RelConverter {
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 try {
                     if ( treeNode.isLeaf() ) {
-                        CatalogEntity catalogEntity = treeNode.getExternalNode().catalogEntity;
+                        CatalogTable catalogTable = treeNode.getExternalNode().catalogTable;
                         algBuilderAtomicReference.set(
-                                algBuilderAtomicReference.get().scan( catalogEntity.getNamespaceName(), catalogEntity.name )
+                                algBuilderAtomicReference.get().scan( catalogTable.getNamespaceName(), catalogTable.name )
                         );
                     } else {
                         Combiner combiner = treeNode.getInternalNode();
@@ -194,8 +194,8 @@ public class Cql2RelConverter {
                 try {
                     TableIndex tableIndex = treeNode.getExternalNode();
                     String columnNamePrefix = tableIndex.fullyQualifiedName + ".";
-                    CatalogEntity catalogEntity = tableIndex.catalogEntity;
-                    for ( Long columnId : catalogEntity.fieldIds ) {
+                    CatalogTable catalogTable = tableIndex.catalogTable;
+                    for ( Long columnId : catalogTable.fieldIds ) {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );

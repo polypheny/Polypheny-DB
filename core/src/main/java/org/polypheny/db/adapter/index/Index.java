@@ -28,8 +28,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -55,7 +55,7 @@ public abstract class Index {
 
     // The logical table this index is for
     @Getter
-    protected CatalogEntity table;
+    protected CatalogTable table;
 
     // The list of columns over which the index was created
     protected List<String> columns;
@@ -240,7 +240,7 @@ public abstract class Index {
                 final Boolean unique,
                 final Boolean persitent,
                 final CatalogNamespace schema,
-                final CatalogEntity table,
+                final CatalogTable table,
                 final List<String> columns,
                 final List<String> targetColumns );
 

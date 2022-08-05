@@ -62,7 +62,7 @@ public class CatalogAdapter implements CatalogObject {
             // general settings are provided by the annotations of the adapter class
             try {
                 AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
-                this.supportedNamespaces = List.of( annotations.supportedSchemaTypes() );
+                this.supportedNamespaces = List.of( annotations.supportedNamespaceTypes() );
             } catch ( ClassNotFoundException e ) {
                 throw new RuntimeException( "The provided adapter is not correctly annotated." );
             }

@@ -36,9 +36,9 @@ import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -57,7 +57,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         name = "HSQLDB",
         description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
         usedModes = DeployMode.EMBEDDED,
-        supportedSchemaTypes = { NamespaceType.RELATIONAL })
+        supportedNamespaceTypes = { NamespaceType.RELATIONAL })
 @AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
 @AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" })
@@ -101,8 +101,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentJdbcSchema.createJdbcTable( catalogEntity, columnPlacementsOnStore, partitionPlacement );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
     }
 
 
@@ -180,7 +180,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity ) {
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
         return ImmutableList.of();
     }
 

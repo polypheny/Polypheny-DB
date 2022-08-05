@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -49,7 +50,10 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates an {@link EnumerableTransformer}, which is able to switch {@link org.polypheny.db.schema.ModelTraitDef} for
+     * non-native underlying adapters if needed.
+     * For example, it will transform the {@link org.polypheny.db.algebra.core.lpg.LpgScan}, which can be handled directly by
+     * a native adapter, to a combination of {@link Scan} and {@link org.polypheny.db.algebra.core.Union}.
      *
      * @param cluster
      * @param inputs

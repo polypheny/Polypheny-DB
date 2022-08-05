@@ -26,6 +26,10 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 public abstract class LpgAggregate extends Aggregate implements LpgAlg {
 
+    /**
+     * Creates a {@link LpgAggregate}.
+     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node of a aggregate.
+     */
     protected LpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
     }

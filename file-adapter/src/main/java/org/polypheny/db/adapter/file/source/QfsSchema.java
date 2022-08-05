@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
@@ -92,7 +92,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
     }
 
 
-    public Table createFileTable( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         ArrayList<Long> columnIds = new ArrayList<>();
@@ -125,23 +125,23 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
         }
         AlgProtoDataType protoRowType = AlgDataTypeImpl.proto( fieldInfo.build() );
         List<Long> pkIds;
-        if ( catalogEntity.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogEntity.primaryKey );
+        if ( catalogTable.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
             pkIds = primaryKey.columnIds;
         } else {
             pkIds = new ArrayList<>();
         }
         FileTranslatableTable table = new FileTranslatableTable(
                 this,
-                catalogEntity.name + "_" + partitionPlacement.partitionId,
-                catalogEntity.id,
+                catalogTable.name + "_" + partitionPlacement.partitionId,
+                catalogTable.id,
                 partitionPlacement.partitionId,
                 columnIds,
                 columnTypes,
                 columnNames,
                 pkIds,
                 protoRowType );
-        tableMap.put( catalogEntity.name + "_" + partitionPlacement.partitionId, table );
+        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
 

@@ -40,11 +40,11 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -94,7 +94,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        final CatalogEntity table = getCatalogTable( modify );
+        final CatalogTable table = getCatalogTable( modify );
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();
@@ -223,7 +223,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public static EnforcementInformation getControl( CatalogEntity table, Statement statement, EnforcementTime enforcementTime ) {
+    public static EnforcementInformation getControl( CatalogTable table, Statement statement, EnforcementTime enforcementTime ) {
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = builder.getRexBuilder();
@@ -417,7 +417,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public static CatalogEntity getCatalogTable( Modify modify ) {
+    public static CatalogTable getCatalogTable( Modify modify ) {
         Catalog catalog = Catalog.getInstance();
         String schemaName;
         if ( modify.getTable().getTable() instanceof LogicalTable ) {

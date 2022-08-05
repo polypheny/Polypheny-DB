@@ -42,11 +42,8 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Creates a {@link LpgMatch}.
+     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} node, which represents a <code>MATCH</code> operator.
      */
     protected LpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
         super( cluster, traits, input );

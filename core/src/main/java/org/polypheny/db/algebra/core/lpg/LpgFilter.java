@@ -31,12 +31,8 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
-     * @param condition
+     * Creates a {@link LpgFilter}.
+     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node of a filter.
      */
     protected LpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input );

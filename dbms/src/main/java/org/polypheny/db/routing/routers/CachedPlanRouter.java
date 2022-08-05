@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.routing.LogicalQueryInformation;
@@ -68,9 +68,9 @@ public class CachedPlanRouter extends BaseRouter {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
-            CatalogEntity catalogEntity = catalog.getTable( logicalTable.getTableId() );
+            CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
-            List<Long> partitionIds = catalogEntity.partitionProperty.partitionIds;
+            List<Long> partitionIds = catalogTable.partitionProperty.partitionIds;
             Map<Long, List<CatalogColumnPlacement>> placement = new HashMap<>();
             for ( long partition : partitionIds ) {
                 if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {

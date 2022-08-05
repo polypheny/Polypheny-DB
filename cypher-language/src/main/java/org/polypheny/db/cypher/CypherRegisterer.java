@@ -37,35 +37,35 @@ public class CypherRegisterer {
             throw new RuntimeException( "Cypher operators were already registered." );
         }
 
-        register( OperatorName.CYPHER_HAS_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_HAS_PROPERTY.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_HAS_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_HAS_PROPERTY.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_PATH_MATCH.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_PATH_MATCH.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( OperatorName.CYPHER_NODE_EXTRACT.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( OperatorName.CYPHER_NODE_EXTRACT.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_EXTRACT_FROM_PATH, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_FROM_PATH.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_EXTRACT_FROM_PATH, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_FROM_PATH.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_NODE_MATCH, new LangFunctionOperator( OperatorName.CYPHER_NODE_MATCH.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_NODE_MATCH, new LangFunctionOperator( OperatorName.CYPHER_NODE_MATCH.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_EXTRACT_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_PROPERTY.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_EXTRACT_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_PROPERTY.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_TO_LIST, new LangFunctionOperator( OperatorName.CYPHER_TO_LIST.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_TO_LIST, new LangFunctionOperator( OperatorName.CYPHER_TO_LIST.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_ADJUST_EDGE, new LangFunctionOperator( OperatorName.CYPHER_ADJUST_EDGE.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_ADJUST_EDGE, new LangFunctionOperator( OperatorName.CYPHER_ADJUST_EDGE.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_SET_LABELS, new LangFunctionOperator( OperatorName.CYPHER_SET_LABELS.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_SET_LABELS, new LangFunctionOperator( OperatorName.CYPHER_SET_LABELS.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_SET_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_SET_PROPERTY.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_SET_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_SET_PROPERTY.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_SET_PROPERTIES, new LangFunctionOperator( OperatorName.CYPHER_SET_PROPERTIES.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_SET_PROPERTIES, new LangFunctionOperator( OperatorName.CYPHER_SET_PROPERTIES.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_REMOVE_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_PROPERTY.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_REMOVE_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_PROPERTY.name(), Kind.CYPHER_FUNCTION ) );
 
-        register( OperatorName.CYPHER_REMOVE_LABELS, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_LABELS.name(), Kind.DESERIALIZE ) );
+        register( OperatorName.CYPHER_REMOVE_LABELS, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_LABELS.name(), Kind.CYPHER_FUNCTION ) );
 
         isInit = true;
     }

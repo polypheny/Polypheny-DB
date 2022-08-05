@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.sql.pretty.SqlPrettyWriter;
@@ -39,9 +39,9 @@ public class SchemaToJsonMapper {
     private final static Gson gson = new Gson();
 
 
-    public static String exportTableDefinitionAsJson( @NonNull CatalogEntity catalogEntity, boolean exportPrimaryKey, boolean exportDefaultValues ) {
+    public static String exportTableDefinitionAsJson( @NonNull CatalogTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
         List<JsonColumn> columns = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : Catalog.getInstance().getColumns( catalogEntity.id ) ) {
+        for ( CatalogColumn catalogColumn : Catalog.getInstance().getColumns( catalogTable.id ) ) {
             String defaultValue = null;
             String defaultFunctionName = null;
             if ( exportDefaultValues ) {
@@ -61,14 +61,14 @@ public class SchemaToJsonMapper {
         }
         List<String> primaryKeyColumnNames = null;
         if ( exportPrimaryKey ) {
-            for ( CatalogKey catalogKey : Catalog.getInstance().getTableKeys( catalogEntity.id ) ) {
-                if ( catalogKey.id == catalogEntity.primaryKey ) {
+            for ( CatalogKey catalogKey : Catalog.getInstance().getTableKeys( catalogTable.id ) ) {
+                if ( catalogKey.id == catalogTable.primaryKey ) {
                     primaryKeyColumnNames = catalogKey.getColumnNames();
                     break;
                 }
             }
         }
-        JsonTable table = new JsonTable( catalogEntity.name, columns, primaryKeyColumnNames );
+        JsonTable table = new JsonTable( catalogTable.name, columns, primaryKeyColumnNames );
         return gson.toJson( table );
     }
 

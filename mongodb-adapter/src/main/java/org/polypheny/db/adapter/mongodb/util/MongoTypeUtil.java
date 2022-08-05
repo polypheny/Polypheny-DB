@@ -21,7 +21,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.polypheny.db.adapter.mongodb.MongoStore;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 
 
 /**
@@ -30,13 +30,13 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 public class MongoTypeUtil {
 
 
-    public static BsonDocument getPhysicalProjections( List<String> logicalCols, CatalogEntity catalogEntity ) {
+    public static BsonDocument getPhysicalProjections( List<String> logicalCols, CatalogTable catalogTable ) {
         BsonDocument projections = new BsonDocument();
-        List<String> names = catalogEntity.getColumnNames();
+        List<String> names = catalogTable.getColumnNames();
         for ( String logicalCol : logicalCols ) {
             int index = names.indexOf( logicalCol );
             if ( index != -1 ) {
-                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, catalogEntity.fieldIds.get( index ) ) ) );
+                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, catalogTable.fieldIds.get( index ) ) ) );
             } else {
                 projections.append( logicalCol, new BsonInt32( 1 ) );
             }

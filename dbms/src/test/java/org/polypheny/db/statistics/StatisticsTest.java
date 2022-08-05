@@ -32,7 +32,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -233,11 +233,11 @@ public class StatisticsTest {
                     );
                     waiter.await( 20, TimeUnit.SECONDS );
                     try {
-                        CatalogEntity catalogEntityNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nation" );
-                        CatalogEntity catalogEntityRegion = Catalog.getInstance().getTable( "APP", "statisticschema", "region" );
+                        CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nation" );
+                        CatalogTable catalogTableRegion = Catalog.getInstance().getTable( "APP", "statisticschema", "region" );
 
-                        Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogEntityNation.id );
-                        Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogEntityRegion.id );
+                        Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                        Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
 
                         Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
                         Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
@@ -293,7 +293,7 @@ public class StatisticsTest {
                     continue;
                 }
                 inCatalog = true;
-                CatalogEntity catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
+                CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
                 Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {

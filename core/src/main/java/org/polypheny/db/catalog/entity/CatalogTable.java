@@ -33,7 +33,7 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 
 
 @EqualsAndHashCode
-public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
+public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
 
     private static final long serialVersionUID = 1781666800808312001L;
 
@@ -55,7 +55,7 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
     public final ImmutableList<Long> connectedViews;
 
 
-    public CatalogEntity(
+    public CatalogTable(
             final long id,
             @NonNull final String name,
             final ImmutableList<Long> fieldIds,
@@ -88,7 +88,7 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
     }
 
 
-    public CatalogEntity(
+    public CatalogTable(
             final long id,
             @NonNull final String name,
             final ImmutableList<Long> fieldIds,
@@ -179,7 +179,7 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
 
 
     @Override
-    public int compareTo( CatalogEntity o ) {
+    public int compareTo( CatalogTable o ) {
         if ( o != null ) {
             int comp = (int) (this.databaseId - o.databaseId);
             if ( comp == 0 ) {
@@ -207,8 +207,8 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
     }
 
 
-    public CatalogEntity getRenamed( String newName ) {
-        return new CatalogEntity(
+    public CatalogTable getRenamed( String newName ) {
+        return new CatalogTable(
                 id,
                 newName,
                 fieldIds,
@@ -224,8 +224,8 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
     }
 
 
-    public CatalogEntity getConnectedViews( ImmutableList<Long> newConnectedViews ) {
-        return new CatalogEntity(
+    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+        return new CatalogTable(
                 id,
                 name,
                 fieldIds,
@@ -241,8 +241,8 @@ public class CatalogEntity implements CatalogObject, Comparable<CatalogEntity> {
     }
 
 
-    public CatalogEntity getTableWithColumns( ImmutableList<Long> newColumnIds ) {
-        return new CatalogEntity(
+    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+        return new CatalogTable(
                 id,
                 name,
                 newColumnIds,

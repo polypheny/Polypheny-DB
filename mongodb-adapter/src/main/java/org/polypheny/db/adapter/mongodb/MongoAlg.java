@@ -125,9 +125,9 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = mongoEntity.getCatalogEntity().getColumnNames().indexOf( name );
+            int index = mongoEntity.getCatalogTable().getColumnNames().indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( name, mongoEntity.getCatalogEntity().fieldIds.get( index ) );
+                return MongoStore.getPhysicalColumnName( name, mongoEntity.getCatalogTable().fieldIds.get( index ) );
             }
             throw new RuntimeException( "This column is not part of the table." );
         }

@@ -54,10 +54,10 @@ import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
@@ -214,9 +214,9 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogEntity catalogEntity, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        String cassandraphysicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( catalogEntity.id );
-        return new CassandraTable( this.currentSchema, catalogEntity.name, cassandraphysicalTableName, false, catalogEntity.id );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        String cassandraphysicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( catalogTable.id );
+        return new CassandraTable( this.currentSchema, catalogTable.name, cassandraphysicalTableName, false, catalogTable.id );
     }
 
 
@@ -227,16 +227,16 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogEntity catalogEntity, List<Long> partitionIds ) {
+    public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         // This check is probably not required due to the check below it.
-        if ( catalogEntity.primaryKey == null ) {
+        if ( catalogTable.primaryKey == null ) {
             throw new UnsupportedOperationException( "Cannot create Cassandra Table without a primary key!" );
         }
 
         long primaryKeyColumn = -1;
         List<Long> keyColumns = new ArrayList<>();
 
-        for ( CatalogKey catalogKey : catalog.getTableKeys( catalogEntity.id ) ) {
+        for ( CatalogKey catalogKey : catalog.getTableKeys( catalogTable.id ) ) {
             keyColumns.addAll( catalogKey.columnIds );
             // TODO JS: make sure there's only one primary key!
             if ( primaryKeyColumn == -1 ) {
@@ -251,9 +251,9 @@ public class CassandraStore extends DataStore {
         final long primaryKeyColumnLambda = primaryKeyColumn;
 
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getAdapterId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogEntity.id );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.id );
         // List<CatalogColumn> columns = combinedTable.getColumns();
-        List<CatalogColumnPlacement> columns = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogEntity.id );
+        List<CatalogColumnPlacement> columns = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
         CatalogColumnPlacement primaryColumnPlacement = columns.stream().filter( c -> c.columnId == primaryKeyColumnLambda ).findFirst().get();
         CatalogColumn catalogColumn = catalog.getField( primaryColumnPlacement.columnId );
 
@@ -281,7 +281,7 @@ public class CassandraStore extends DataStore {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         this.session.execute( createTable.build() );
 
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogEntity.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
                     placement.columnId,
@@ -293,9 +293,9 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogEntity catalogEntity, List<Long> partitionIds ) {
+    public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getAdapterId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogEntity.id );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.id );
         partitionIds.forEach( partitionId -> catalog.deletePartitionPlacement( getAdapterId(), partitionId ) );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
 
@@ -305,9 +305,9 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getAdapterId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogEntity.id );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.id );
         String physicalColumnName = physicalNameProvider.generatePhysicalColumnName( catalogColumn.id );
 
         SimpleStatement addColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
@@ -385,7 +385,7 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public void truncate( Context context, CatalogEntity table ) {
+    public void truncate( Context context, CatalogTable table ) {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getAdapterId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( table.id );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
@@ -477,8 +477,8 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity ) {
-        List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogEntity.primaryKey ).columnIds;
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey ).columnIds;
         return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );
     }
 

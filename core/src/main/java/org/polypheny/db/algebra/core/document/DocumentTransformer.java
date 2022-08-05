@@ -28,12 +28,8 @@ import org.polypheny.db.schema.ModelTrait;
 public class DocumentTransformer extends Transformer {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param inputs
-     * @param traitSet
-     * @param rowType
+     * Creates a {@link DocumentTransformer}.
+     * Transforms the underlying {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node to a {@link org.polypheny.db.schema.ModelTrait#RELATIONAL} node.
      */
     public DocumentTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, AlgDataType rowType ) {
         super( cluster, inputs, traitSet.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, rowType );

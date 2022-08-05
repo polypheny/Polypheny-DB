@@ -18,6 +18,9 @@ package org.polypheny.db.algebra.core.lpg;
 
 import org.polypheny.db.schema.graph.Graph;
 
+/**
+ * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node.
+ */
 public interface LpgAlg {
 
     NodeType getNodeType();

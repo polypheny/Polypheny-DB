@@ -33,10 +33,8 @@ public abstract class DocumentScan extends AbstractAlgNode implements DocumentAl
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param traitSet
+     * Creates a {@link DocumentScan}.
+     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which scans the content of a collection.
      */
     public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable collection ) {
         super( cluster, traitSet );

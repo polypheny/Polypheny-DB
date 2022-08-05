@@ -32,11 +32,11 @@ import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
@@ -63,11 +63,11 @@ public abstract class DataStore extends Adapter {
     }
 
 
-    public abstract void createTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds );
+    public abstract void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
 
-    public abstract void dropTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds );
+    public abstract void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds );
 
-    public abstract void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn );
+    public abstract void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn );
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
@@ -81,74 +81,114 @@ public abstract class DataStore extends Adapter {
 
     public abstract AvailableIndexMethod getDefaultIndexMethod();
 
-    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity );
+    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable );
 
 
-    @Override
+    /**
+     * Default method for creating a new graph on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the LPG data model natively.
+     *
+     */
     public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
         // overwrite this if the datastore supports graph
         createGraphSubstitution( context, graphDatabase );
     }
 
 
-    @Override
+    /**
+     * Default method for dropping an existing graph on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the LPG data model natively.
+     */
     public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
         // overwrite this if the datastore supports graph
         dropGraphSubstitution( context, graphPlacement );
     }
 
-
+    /**
+     * Substitution method, which is used to handle the {@link DataStore} required operations
+     * as if the data model would be {@link NamespaceType#RELATIONAL}.
+     */
     private void createGraphSubstitution( Context context, CatalogGraphDatabase graphDatabase ) {
         CatalogGraphMapping mapping = Catalog.getInstance().getGraphMapping( graphDatabase.id );
 
-        CatalogEntity nodes = Catalog.getInstance().getTable( mapping.nodesId );
+        CatalogTable nodes = Catalog.getInstance().getTable( mapping.nodesId );
         createTable( context, nodes, nodes.partitionProperty.partitionIds );
 
-        CatalogEntity nodeProperty = Catalog.getInstance().getTable( mapping.nodesPropertyId );
+        CatalogTable nodeProperty = Catalog.getInstance().getTable( mapping.nodesPropertyId );
         createTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
 
-        CatalogEntity edges = Catalog.getInstance().getTable( mapping.edgesId );
+        CatalogTable edges = Catalog.getInstance().getTable( mapping.edgesId );
         createTable( context, edges, edges.partitionProperty.partitionIds );
 
-        CatalogEntity edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
+        CatalogTable edgeProperty = Catalog.getInstance().getTable( mapping.edgesPropertyId );
         createTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
     }
 
-
+    /**
+     * Substitution method, which is used to handle the {@link DataStore} required operations
+     * as if the data model would be {@link NamespaceType#RELATIONAL}.
+     */
     private void dropGraphSubstitution( Context context, CatalogGraphPlacement graphPlacement ) {
         Catalog catalog = Catalog.getInstance();
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
 
-        CatalogEntity nodes = catalog.getTable( mapping.nodesId );
+        CatalogTable nodes = catalog.getTable( mapping.nodesId );
         dropTable( context, nodes, nodes.partitionProperty.partitionIds );
 
-        CatalogEntity nodeProperty = catalog.getTable( mapping.nodesPropertyId );
+        CatalogTable nodeProperty = catalog.getTable( mapping.nodesPropertyId );
         dropTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
 
-        CatalogEntity edges = catalog.getTable( mapping.edgesId );
+        CatalogTable edges = catalog.getTable( mapping.edgesId );
         dropTable( context, edges, edges.partitionProperty.partitionIds );
 
-        CatalogEntity edgeProperty = catalog.getTable( mapping.edgesPropertyId );
+        CatalogTable edgeProperty = catalog.getTable( mapping.edgesPropertyId );
         dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
     }
 
-
+    /**
+     * Default method for creating a new collection on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the document data model natively.
+     */
     public void createCollection( Context prepareContext, CatalogCollection catalogCollection, long adapterId ) {
         // overwrite this if the datastore supports document
-        Catalog catalog = Catalog.getInstance();
-        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
-
-        CatalogEntity collectionEntity = catalog.getTable( mapping.collectionId );
-        createTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
+        createCollectionSubstitution( prepareContext, catalogCollection );
     }
 
 
-    public void dropCollection( Context prepareContext, CatalogCollection catalogCollection ) {
-        // overwrite this if the datastore supports document
+    /**
+     * Substitution method, which is used to handle the {@link DataStore} required operations
+     * as if the data model would be {@link NamespaceType#RELATIONAL}.
+     */
+    private void createCollectionSubstitution( Context prepareContext, CatalogCollection catalogCollection ) {
         Catalog catalog = Catalog.getInstance();
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
-        CatalogEntity collectionEntity = catalog.getTable( mapping.collectionId );
+        CatalogTable collectionEntity = catalog.getTable( mapping.collectionId );
+        createTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
+    }
+
+    /**
+     * Default method for dropping an existing collection on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the document data model natively.
+     */
+    public void dropCollection( Context prepareContext, CatalogCollection catalogCollection ) {
+        // overwrite this if the datastore supports document
+        dropCollectionSubstitution( prepareContext, catalogCollection );
+    }
+
+    /**
+     * Substitution method, which is used to handle the {@link DataStore} required operations
+     * as if the data model would be {@link NamespaceType#RELATIONAL}.
+     */
+    private void dropCollectionSubstitution( Context prepareContext, CatalogCollection catalogCollection ) {
+        Catalog catalog = Catalog.getInstance();
+        CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
+
+        CatalogTable collectionEntity = catalog.getTable( mapping.collectionId );
         dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
     }
 

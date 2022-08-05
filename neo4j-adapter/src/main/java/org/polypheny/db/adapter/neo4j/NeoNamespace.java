@@ -27,8 +27,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -62,14 +62,14 @@ public class NeoNamespace extends AbstractSchema {
 
 
     /**
-     * Creates a new table according to the given {@link CatalogEntity}
+     * Creates a new table according to the given {@link CatalogTable}
      *
      * @param combinedTable the table according to which the table is created
      * @param columnPlacementsOnStore the placements ofr the table on the store
      * @param partitionPlacement reference to the partition
      * @return the created table
      */
-    public Table createTable( CatalogEntity combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createTable( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 

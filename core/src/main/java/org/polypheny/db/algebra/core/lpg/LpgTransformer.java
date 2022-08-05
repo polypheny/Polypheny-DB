@@ -35,12 +35,8 @@ public class LpgTransformer extends Transformer {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param inputs
-     * @param rowType
-     * @param operation
+     * Creates a {@link LpgTransformer}.
+     * Transforms the underlying {@link org.polypheny.db.schema.ModelTrait#GRAPH} node to a {@link org.polypheny.db.schema.ModelTrait#RELATIONAL} node.
      */
     public LpgTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, inputs, traitSet.replace( ModelTrait.GRAPH ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, rowType );

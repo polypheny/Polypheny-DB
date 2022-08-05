@@ -33,10 +33,8 @@ public abstract class LpgScan extends AbstractAlgNode implements LpgAlg {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param traitSet
+     * Creates a {@link LpgScan}.
+     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node, which is able to scan a LPG graph.
      */
     public LpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
         super( cluster, traitSet );

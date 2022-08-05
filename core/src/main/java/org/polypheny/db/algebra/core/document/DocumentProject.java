@@ -32,11 +32,8 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Creates a {@link DocumentProject}.
+     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of a project.
      */
     protected DocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input );

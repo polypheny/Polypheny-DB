@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -313,15 +313,15 @@ public class Rest {
 
 
     @VisibleForTesting
-    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<CatalogEntity> tables ) {
+    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<CatalogTable> tables ) {
         boolean firstTable = true;
-        for ( CatalogEntity catalogEntity : tables ) {
+        for ( CatalogTable catalogTable : tables ) {
             if ( firstTable ) {
-                algBuilder = algBuilder.scan( catalogEntity.getNamespaceName(), catalogEntity.name );
+                algBuilder = algBuilder.scan( catalogTable.getNamespaceName(), catalogTable.name );
                 firstTable = false;
             } else {
                 algBuilder = algBuilder
-                        .scan( catalogEntity.getNamespaceName(), catalogEntity.name )
+                        .scan( catalogTable.getNamespaceName(), catalogTable.name )
                         .join( JoinAlgType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }

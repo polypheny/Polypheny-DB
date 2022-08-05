@@ -49,11 +49,11 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -72,7 +72,7 @@ import org.polypheny.db.type.PolyTypeFamily;
         name = "Neo4j",
         description = "Neo4j is a graph-model based database system. If stores data in a graph structure which consists of nodes and edges.",
         usedModes = { DeployMode.DOCKER },
-        supportedSchemaTypes = { NamespaceType.GRAPH, NamespaceType.RELATIONAL })
+        supportedNamespaceTypes = { NamespaceType.GRAPH, NamespaceType.RELATIONAL })
 @AdapterSettingInteger(name = "port", defaultValue = 7687)
 public class Neo4jStore extends DataStore {
 
@@ -156,7 +156,7 @@ public class Neo4jStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds ) {
+    public void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
         Catalog catalog = Catalog.getInstance();
 
         if ( this.currentSchema == null ) {
@@ -206,7 +206,7 @@ public class Neo4jStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogEntity combinedTable, List<Long> partitionIds ) {
+    public void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
         Catalog catalog = Catalog.getInstance();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         List<CatalogPartitionPlacement> partitionPlacements = partitionIds.stream()
@@ -223,11 +223,11 @@ public class Neo4jStore extends DataStore {
 
 
     @Override
-    public void addColumn( Context context, CatalogEntity catalogEntity, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         transactionProvider.commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         Catalog catalog = Catalog.getInstance();
-        List<CatalogPartitionPlacement> partitionPlacements = catalogEntity
+        List<CatalogPartitionPlacement> partitionPlacements = catalogTable
                 .partitionProperty
                 .partitionIds
                 .stream()
@@ -378,7 +378,7 @@ public class Neo4jStore extends DataStore {
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogEntity catalogEntity ) {
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
         return ImmutableList.of();
     }
 
@@ -408,13 +408,13 @@ public class Neo4jStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogEntity combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         return this.currentSchema.createTable( combinedTable, columnPlacementsOnStore, partitionPlacement );
     }
 
 
     @Override
-    public void truncate( Context context, CatalogEntity table ) {
+    public void truncate( Context context, CatalogTable table ) {
         transactionProvider.commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
