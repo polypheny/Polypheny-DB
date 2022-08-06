@@ -31,15 +31,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 public class LogicalDocumentAggregate extends DocumentAggregate {
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param child
-     * @param indicator
-     * @param groupSet
-     * @param groupSets
-     * @param aggCalls
+     * Subclass of {@link DocumentAggregate} not targeted at any particular engine or calling convention.
      */
     protected LogicalDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );

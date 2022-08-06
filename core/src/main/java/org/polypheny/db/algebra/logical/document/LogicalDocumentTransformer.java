@@ -27,12 +27,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 public class LogicalDocumentTransformer extends DocumentTransformer {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param inputs
-     * @param traitSet
-     * @param rowType
+     * Subclass of {@link DocumentTransformer} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, AlgDataType rowType ) {
         super( cluster, inputs, traitSet, rowType );

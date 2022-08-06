@@ -40,8 +40,15 @@ import org.polypheny.db.rex.RexNode;
 
 public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
 
-    public NeoLpgSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        super( cluster, traits, child, collation, offset, fetch );
+    /**
+     * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgSort}.
+     *
+     * @param cluster Cluster this expression belongs to
+     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param input Input algebraic expression
+     */
+    public NeoLpgSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
+        super( cluster, traits, input, collation, offset, fetch );
     }
 
 

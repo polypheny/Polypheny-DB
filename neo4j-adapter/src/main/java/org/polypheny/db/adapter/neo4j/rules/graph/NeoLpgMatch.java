@@ -40,13 +40,11 @@ import org.polypheny.db.util.Pair;
 public class NeoLpgMatch extends LpgMatch implements NeoGraphAlg {
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgMatch}.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
-     * @param matches
-     * @param names
+     * @param cluster Cluster this expression belongs to
+     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param input Input algebraic expression
      */
     public NeoLpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
         super( cluster, traits, input, matches, names );

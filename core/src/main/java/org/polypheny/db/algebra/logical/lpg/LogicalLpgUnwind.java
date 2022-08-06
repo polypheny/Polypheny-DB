@@ -30,11 +30,7 @@ public class LogicalLpgUnwind extends LpgUnwind {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Subclass of {@link LpgUnwind} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, input, index, alias );

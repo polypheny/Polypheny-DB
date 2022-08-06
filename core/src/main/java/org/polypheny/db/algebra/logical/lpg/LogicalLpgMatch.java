@@ -28,11 +28,7 @@ public class LogicalLpgMatch extends LpgMatch {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Subclass of {@link LpgMatch} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
         super( cluster, traits, input, matches, names );

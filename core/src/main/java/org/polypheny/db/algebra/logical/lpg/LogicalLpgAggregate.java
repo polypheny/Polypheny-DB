@@ -31,7 +31,7 @@ public class LogicalLpgAggregate extends LpgAggregate {
 
 
     /**
-     * Creates a LogicalAggregate.
+     * Subclass of {@link LpgAggregate} not targeted at any particular engine or calling convention.
      */
     public static LogicalLpgAggregate create( final AlgNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         return create_( input, false, groupSet, groupSets, aggCalls );

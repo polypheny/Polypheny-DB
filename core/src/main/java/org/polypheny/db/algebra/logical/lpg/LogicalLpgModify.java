@@ -37,12 +37,7 @@ public class LogicalLpgModify extends LpgModify implements RelationalTransformab
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param graph
-     * @param input Input relational expression
+     * Subclass of {@link LpgModify} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );

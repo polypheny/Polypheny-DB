@@ -30,11 +30,10 @@ public class NeoLpgScan extends LpgScan implements NeoGraphAlg {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgScan}.
      *
-     * @param cluster
-     * @param traitSet
-     * @param graph
+     * @param cluster Cluster this expression belongs to
+     * @param traitSet Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
      */
     public NeoLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph ) {
         super( cluster, traitSet, graph );

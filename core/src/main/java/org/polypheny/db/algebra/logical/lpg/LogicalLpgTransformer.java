@@ -29,12 +29,7 @@ import org.polypheny.db.type.PolyType;
 public class LogicalLpgTransformer extends LpgTransformer {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param inputs
-     * @param rowType
-     * @param operationOrder
+     * Subclass of {@link LpgTransformer} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, traitSet, inputs, rowType, operationOrder, operation );

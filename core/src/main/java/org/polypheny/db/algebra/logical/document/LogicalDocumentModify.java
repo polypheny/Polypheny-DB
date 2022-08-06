@@ -30,12 +30,7 @@ import org.polypheny.db.rex.RexNode;
 public class LogicalDocumentModify extends DocumentModify implements RelationalTransformable {
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param traits
-     * @param table
-     * @param catalogReader
-     * @param input Input relational expression
+     * Subclass of {@link DocumentModify} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentModify( AlgTraitSet traits, AlgOptTable table, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
         super( traits, table, catalogReader, input, operation, keys, updates );

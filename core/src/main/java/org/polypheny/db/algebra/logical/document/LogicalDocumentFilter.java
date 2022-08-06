@@ -27,12 +27,7 @@ import org.polypheny.db.rex.RexNode;
 public class LogicalDocumentFilter extends DocumentFilter {
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
-     * @param condition
+     * Subclass of {@link DocumentFilter} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );

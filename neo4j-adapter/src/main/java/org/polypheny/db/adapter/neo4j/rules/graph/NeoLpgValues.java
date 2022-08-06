@@ -32,12 +32,10 @@ public class NeoLpgValues extends LpgValues implements NeoGraphAlg {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgValues}.
      *
-     * @param cluster
-     * @param traitSet
-     * @param nodes
-     * @param edges
+     * @param cluster Cluster this expression belongs to
+     * @param traitSet Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
      */
     public NeoLpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet, nodes, edges, values, rowType );

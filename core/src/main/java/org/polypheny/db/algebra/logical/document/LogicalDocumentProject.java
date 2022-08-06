@@ -34,13 +34,7 @@ import org.polypheny.db.util.ValidatorUtil;
 public class LogicalDocumentProject extends DocumentProject {
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
-     * @param projects
-     * @param rowType
+     * Subclass of {@link DocumentProject} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input, new ArrayList<>( projects ), rowType );

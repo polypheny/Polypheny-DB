@@ -44,7 +44,9 @@ public class LogicalGraph implements RelationalTransformable, Schema, Graph, Tra
 
     private final long id;
 
-
+    /**
+     * {@link org.polypheny.db.catalog.Catalog.NamespaceType#GRAPH} implementation of an entity, called graph
+     */
     public LogicalGraph( long id ) {
         this.id = id;
     }

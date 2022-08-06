@@ -31,7 +31,9 @@ import org.polypheny.db.rex.RexNode;
 @Getter
 public class LogicalLpgSort extends LpgSort {
 
-
+    /**
+     * Subclass of {@link LpgSort} not targeted at any particular engine or calling convention.
+     */
     public LogicalLpgSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgCollation collation, AlgNode input, Integer skip, Integer limit ) {
         super( cluster, traitSet, input, collation,
                 skip != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( skip ) ) : null,
@@ -43,12 +45,6 @@ public class LogicalLpgSort extends LpgSort {
     public String algCompareString() {
         return "$" + getClass().getSimpleName() + "$" + collation.hashCode() + "$" + input.algCompareString();
     }
-
-
-    /*@Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalGraphSort( inputs.get( 0 ).getCluster(), traitSet, collation, inputs.get( 0 ), skip, limit );
-    }*/
 
 
     @Override

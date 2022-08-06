@@ -41,7 +41,9 @@ import org.polypheny.db.schema.TranslatableGraph;
 
 public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
 
-
+    /**
+     * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
+     */
     public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph, AlgDataType rowType ) {
         super( cluster, traitSet, graph );
         this.rowType = rowType;

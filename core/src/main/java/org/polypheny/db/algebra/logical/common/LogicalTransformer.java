@@ -34,10 +34,7 @@ public class LogicalTransformer extends Transformer {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param rowType
+     * Subclass of {@link Transformer} not targeted at any particular engine or calling convention.
      */
     public LogicalTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
         super( cluster, inputs, traitSet, inTraitSet, outTraitSet, rowType );

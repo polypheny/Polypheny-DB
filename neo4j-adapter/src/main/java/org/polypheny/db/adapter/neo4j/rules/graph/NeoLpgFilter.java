@@ -35,11 +35,11 @@ public class NeoLpgFilter extends LpgFilter implements NeoGraphAlg {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgFilter}.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * @param cluster Cluster this expression belongs to
+     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param input Input algebraic expression
      */
     public NeoLpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );

@@ -38,13 +38,11 @@ import org.polypheny.db.rex.RexNode;
 public class NeoLpgProject extends LpgProject implements NeoGraphAlg {
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgProject}.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
-     * @param names
-     * @param projects
+     * @param cluster Cluster this expression belongs to
+     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param input Input algebraic expression
      */
     public NeoLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<String> names, List<? extends RexNode> projects ) {
         super( cluster, traits, input, projects, names );

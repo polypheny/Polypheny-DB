@@ -62,10 +62,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param traitSet
+     * Subclass of {@link LpgValues} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet, nodes, edges, values, rowType );

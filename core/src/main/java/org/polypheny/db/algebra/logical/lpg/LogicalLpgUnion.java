@@ -24,16 +24,19 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class LogicalGraphUnion extends Union {
+public class LogicalLpgUnion extends Union {
 
-    protected LogicalGraphUnion( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
+    /**
+     * Subclass of {@link Union} not targeted at any particular engine or calling convention.
+     */
+    protected LogicalLpgUnion( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
         super( cluster, traits, inputs, all );
     }
 
 
     @Override
     public SetOp copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
-        return new LogicalGraphUnion( inputs.get( 0 ).getCluster(), traitSet, inputs, all );
+        return new LogicalLpgUnion( inputs.get( 0 ).getCluster(), traitSet, inputs, all );
     }
 
 

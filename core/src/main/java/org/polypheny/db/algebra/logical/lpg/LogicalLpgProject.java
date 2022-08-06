@@ -32,11 +32,7 @@ public class LogicalLpgProject extends LpgProject {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Subclass of {@link LpgProject} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
         super( cluster, traits.replace( Convention.NONE ), input, projects, names );

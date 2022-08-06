@@ -32,11 +32,7 @@ import org.polypheny.db.schema.ModelTrait;
 public class LogicalDocumentScan extends DocumentScan implements RelationalTransformable {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param traitSet
-     * @param document
+     * Subclass of {@link DocumentScan} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable document ) {
         super( cluster, traitSet, document );

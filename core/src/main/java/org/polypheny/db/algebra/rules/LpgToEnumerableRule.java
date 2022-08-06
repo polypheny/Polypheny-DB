@@ -45,6 +45,7 @@ public class LpgToEnumerableRule extends AlgOptRule {
     public static LpgToEnumerableRule AGGREGATE_TO_ENUMERABLE = new LpgToEnumerableRule( Type.AGGREGATE, operand( LogicalLpgAggregate.class, any() ), "GRAPH_AGGREGATE_TO_ENUMERABLE" );
 
     public static LpgToEnumerableRule VALUES_TO_ENUMERABLE = new LpgToEnumerableRule( Type.VALUES, operand( LogicalLpgValues.class, none() ), "GRAPH_VALUES_TO_ENUMERABLE" );
+
     //public static GraphToEnumerableRule SORT_TO_ENUMERABLE = new GraphToEnumerableRule( Type.SORT, operand( LogicalGraphSort.class, any() ), "GRAPH_SORT_TO_ENUMERABLE" );
 
     private final Type type;

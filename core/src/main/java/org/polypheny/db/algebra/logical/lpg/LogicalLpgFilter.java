@@ -29,11 +29,7 @@ public class LogicalLpgFilter extends LpgFilter {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * Subclass of {@link LpgFilter} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );

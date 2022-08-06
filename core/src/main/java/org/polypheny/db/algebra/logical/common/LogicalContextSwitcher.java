@@ -24,9 +24,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 public class LogicalContextSwitcher extends ContextSwitcher {
 
     /**
-     * Creates a <code>SingleRel</code>.
-     *
-     * @param input Input relational expression
+     * Subclass of {@link ContextSwitcher} not targeted at any particular engine or calling convention.
      */
     public LogicalContextSwitcher( AlgNode input ) {
         super( input );

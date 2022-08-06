@@ -43,6 +43,12 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
 
+    /**
+     * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgAggregate}.
+     *
+     * @param cluster Cluster this expression belongs to
+     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     */
     public NeoLpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
     }
