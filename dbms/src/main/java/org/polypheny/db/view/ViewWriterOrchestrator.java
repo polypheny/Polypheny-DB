@@ -26,15 +26,16 @@ import org.polypheny.db.processing.SqlProcessorFacade;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
 import org.polypheny.db.transaction.Statement;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ViewWriterOrchestrator {
+    private static final Pattern NAMED_ARGUMENTS_PATTERN = Pattern.compile("@(\\w+)=");
     private final SqlProcessorFacade sqlProcessor = new SqlProcessorFacade(new SqlProcessorImpl());
 
     public void writeView(AlgNode node, Statement statement, CatalogTable catalogTable) {
@@ -46,8 +47,41 @@ public class ViewWriterOrchestrator {
         populateDatacontext(statement, queryParameterizer);
         for (CatalogTrigger trigger : triggers) {
             String unquoted = trigger.getQuery().substring(1, trigger.getQuery().length() - 2); // remove quotes and ;
-            sqlProcessor.runSql(unquoted, statement);
+            String replaced = insertParameters(statement.getDataContext(), unquoted);
+            // TODO(nic): Run query processor based on query type
+            sqlProcessor.runSql(replaced, statement);
         }
+    }
+
+    private String insertParameters(DataContext dataContext, String query) {
+        List<String> namedArguments = parseNamedArguments(query);
+        return parameterize(namedArguments, query, dataContext);
+    }
+
+    private List<String> parseNamedArguments(String query) {
+        List<String> namedArguments = new ArrayList<>();
+        final Matcher matcher = NAMED_ARGUMENTS_PATTERN.matcher(query);
+        while (matcher.find()) {
+            String argument = matcher.group(0);
+            namedArguments.add(argument);
+        }
+        return namedArguments;
+    }
+
+    public String parameterize(List<String> arguments, String query, DataContext dataContext) {
+        String parameterizedQuery = query;
+        Map<Long, Object> dataContextValues = dataContext.getParameterValues().get(0);
+        for(int index = 1; index <= arguments.size(); index++) {
+            Object parameterValue = dataContextValues.get(Long.valueOf(index)); // boxing for map keys access
+            String parameter = arguments.get(index - 1); // dataContext is 1-based
+            parameterizedQuery = replaceParameter(parameterizedQuery, parameter, parameterValue);
+        }
+        return parameterizedQuery;
+    }
+
+    private String replaceParameter(String query, String parameter, Object parameterValue) {
+        String replacedParameter = parameter + parameterValue.toString();
+        return query.replace(parameter, replacedParameter);
     }
 
     private QueryParameterizer extractParameters(AlgNode node) {
