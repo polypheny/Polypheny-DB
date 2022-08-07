@@ -1734,7 +1734,7 @@ public class DdlManagerImpl extends DdlManager {
             CatalogProcedure procedure = optionalProcedure.get();
             PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), statement.getTransaction());
             PolyResult result = polyScriptInterpreter.interprete(procedure.getQuery(), arguments);
-            statement.setMonitoringEvent( new DdlEvent() );
+            prepareMonitoring(statement, Kind.PROCEDURE_EXEC);
             //TODO(nic): Don't call this right here
             result.getRowsChanged(statement);
 
@@ -2631,6 +2631,15 @@ public class DdlManagerImpl extends DdlManager {
             if (kind == Kind.DROP_COLUMN) {
                 event.setColumnId(catalogColumn.id);
             }
+            statement.setMonitoringEvent(event);
+        }
+    }
+
+    private void prepareMonitoring(Statement statement, Kind kind) {
+        // Initialize Monitoring
+        if (statement.getMonitoringEvent() == null) {
+            StatementEvent event = new DdlEvent();
+            event.setMonitoringType(kind.name());
             statement.setMonitoringEvent(event);
         }
     }
