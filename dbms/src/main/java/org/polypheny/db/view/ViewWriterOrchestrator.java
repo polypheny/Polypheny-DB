@@ -68,7 +68,7 @@ public class ViewWriterOrchestrator {
         return namedArguments;
     }
 
-    public String parameterize(List<String> arguments, String query, DataContext dataContext) {
+    private String parameterize(List<String> arguments, String query, DataContext dataContext) {
         String parameterizedQuery = query;
         Map<Long, Object> dataContextValues = dataContext.getParameterValues().get(0);
         for(int index = 1; index <= arguments.size(); index++) {
@@ -103,4 +103,5 @@ public class ViewWriterOrchestrator {
             statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
         }
     }
+
 }
