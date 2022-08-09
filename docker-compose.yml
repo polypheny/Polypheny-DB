@@ -1,15 +1,15 @@
 version: "3.4"
 services:
-    remote-api:
-        image: polypheny/polypheny-connector
-        restart: unless-stopped
-        container_name: polypheny-connector
-        ports:
-            - "2376:443"
-        environment:
-            - CREATE_CERTS_WITH_PW=supersecret
-            - CERT_HOSTNAME=localhost
+  remote-api:
+    image: polypheny/polypheny-connector
+    restart: unless-stopped
+    container_name: polypheny-connector
+    ports:
+      - "2376:443"
+    environment:
+      - CREATE_CERTS_WITH_PW=supersecret
+      - CERT_HOSTNAME=localhost
             - CERT_EXPIRATION_DAYS=3650
-        volumes:
-            - ${POLYPHENY_HOME:-~}/.polypheny/certs/localhost:/data/certs
-            - /var/run/docker.sock:/var/run/docker.sock:ro
+    volumes:
+      - ${POLYPHENY_HOME:-~}/.polypheny/certs/localhost:/data/certs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
