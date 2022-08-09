@@ -120,7 +120,7 @@ public class MongoStore extends DataStore {
 
         addInformationPhysicalNames();
         enableInformationPage();
-        ConfigDocker c = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId )
+        ConfigDocker c = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId );
         if ( c != null) {
             resetDockerConnection( c );
         }
