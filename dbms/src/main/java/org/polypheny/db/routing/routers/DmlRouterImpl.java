@@ -94,17 +94,19 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 // Make sure that this table can be modified
                 if ( !catalogTable.modifiable ) {
-                    if ( catalogTable.tableType == TableType.TABLE ) {
-                        throw new RuntimeException( "Unable to modify a table marked as read-only!" );
-                    } else if ( catalogTable.tableType == TableType.SOURCE ) {
-                        throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
-                    } else if ( catalogTable.tableType == TableType.VIEW ) {
-                        ViewWriterOrchestrator viewWriterOrchestrator = new ViewWriterOrchestrator();
-
-                        viewWriterOrchestrator.writeView(node, statement, catalogTable);
-
+                    switch (catalogTable.tableType) {
+                        case TABLE:
+                            throw new RuntimeException( "Unable to modify a table marked as read-only!" );
+                        case SOURCE:
+                            throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
+                        case MATERIALIZED_VIEW:
+                        case VIEW:
+                            ViewWriterOrchestrator viewWriterOrchestrator = new ViewWriterOrchestrator();
+                            viewWriterOrchestrator.writeView(node, statement, catalogTable);
+                            return node;
+                        default:
+                            throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                     }
-                    throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                 }
 
                 long pkid = catalogTable.primaryKey;
