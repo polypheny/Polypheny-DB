@@ -34,11 +34,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class ViewWriterOrchestrator {
+public class TriggerResolver {
     private static final Pattern NAMED_ARGUMENTS_PATTERN = Pattern.compile("@(\\w+)=");
     private final SqlProcessorFacade sqlProcessor = new SqlProcessorFacade(new SqlProcessorImpl());
 
-    public void writeView(AlgNode node, Statement statement, CatalogTable catalogTable) {
+    public void runTriggers(AlgNode node, Statement statement, CatalogTable catalogTable) {
         List<CatalogTrigger> triggers = Catalog.getInstance()
                 .getTriggers(catalogTable.schemaId)
                 // TODO(nic): Filter for event (insert, update, delete)

@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.processing.SqlProcessorImpl;
 
-class ViewWriterOrchestratorTest {
+class TriggerResolverTest {
 
     @Test
     void name() {
@@ -30,9 +30,9 @@ class ViewWriterOrchestratorTest {
 
     @Test
     void writeView() {
-        ViewWriterOrchestrator sut = new ViewWriterOrchestrator();
+        TriggerResolver sut = new TriggerResolver();
         try {
-            sut.writeView(null, null, null);
+            sut.runTriggers(null, null, null);
             Assertions.fail();
         } catch (RuntimeException e) {
             // expected

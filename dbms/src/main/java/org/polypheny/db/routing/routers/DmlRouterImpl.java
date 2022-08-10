@@ -45,7 +45,6 @@ import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -73,7 +72,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.view.ViewWriterOrchestrator;
+import org.polypheny.db.view.TriggerResolver;
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
@@ -101,8 +100,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
                         case MATERIALIZED_VIEW:
                         case VIEW:
-                            ViewWriterOrchestrator viewWriterOrchestrator = new ViewWriterOrchestrator();
-                            viewWriterOrchestrator.writeView(node, statement, catalogTable);
+                            TriggerResolver triggerResolver = new TriggerResolver();
+                            triggerResolver.runTriggers(node, statement, catalogTable);
                             return node;
                         default:
                             throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
