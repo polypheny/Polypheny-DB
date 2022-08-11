@@ -165,6 +165,7 @@ public class HttpInterface extends QueryInterface {
     @Override
     public void shutdown() {
         server.stop();
+        monitoringPage.remove();
     }
 
 

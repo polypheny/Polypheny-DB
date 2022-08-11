@@ -130,10 +130,10 @@ public class HttpRestServer extends QueryInterface {
                 return gson.fromJson( json, targetClass );
             }
         };
-        Javalin restServer = Javalin.create( config -> {
-            config.jsonMapper( gsonMapper );
-            config.enableCorsForAllOrigins();
-        } ).start( port );
+         restServer = Javalin.create( config -> {
+             config.jsonMapper( gsonMapper );
+             config.enableCorsForAllOrigins();
+         } ).start( port );
 
         Rest rest = new Rest( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
         restRoutes( restServer, rest );
