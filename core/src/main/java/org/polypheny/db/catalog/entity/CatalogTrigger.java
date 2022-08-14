@@ -85,5 +85,7 @@ public final class CatalogTrigger implements CatalogEntity {
         return tableId;
     }
 
-
+    public Event getEvent() {
+        return event;
+    }
 }

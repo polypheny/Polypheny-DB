@@ -907,6 +907,15 @@ public class CatalogImpl extends Catalog {
         return List.copyOf(triggers.getValues());
     }
 
+    @Override
+    public List<CatalogTrigger> getTriggers(String schemaName, String tableName) {
+        return List.copyOf(triggers.values()
+                .stream()
+                .filter(trigger -> trigger.getSchemaName().equals(schemaName))
+                .collect(Collectors.toList())
+        );
+    }
+
     /**
      * Deletes the procedure with the given name in the specified schema.
      *

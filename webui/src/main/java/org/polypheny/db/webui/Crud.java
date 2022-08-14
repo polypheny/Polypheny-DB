@@ -55,6 +55,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.*;
+import org.polypheny.db.catalog.Event;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.*;
@@ -174,7 +175,7 @@ public class Crud implements InformationObserver {
         if ( request.sortState != null ) {
             orderBy = sortTable( request.sortState );
         }
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
         query.append( "SELECT * FROM " )
                 .append( tableId )
@@ -192,9 +193,9 @@ public class Crud implements InformationObserver {
             result.setXid( transaction.getXid().toString() );
         } catch ( Exception e ) {
             if ( request.filter != null ) {
-                result = new Result( "Error while filtering table " + request.tableId );
+                result = new Result( "Error while filtering table " + request.tableName);
             } else {
-                result = new Result( "Could not fetch table " + request.tableId );
+                result = new Result( "Could not fetch table " + request.tableName);
                 log.error( "Caught exception while fetching a table", e );
             }
             try {
@@ -249,7 +250,7 @@ public class Crud implements InformationObserver {
         }
         result.setHeader( cols.toArray( new DbColumn[0] ) );
 
-        result.setCurrentPage( request.currentPage ).setTable( request.tableId );
+        result.setCurrentPage( request.currentPage ).setTable( request.tableName);
         int tableSize = 0;
         try {
             tableSize = getTableSize( transaction, request );
@@ -359,11 +360,45 @@ public class Crud implements InformationObserver {
         }
 
         List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( requestedSchema ), null );
+        List<CatalogTrigger> triggers = catalog.getTriggers(schemaId);
         ArrayList<DbTable> result = new ArrayList<>();
         for ( CatalogTable t : tables ) {
-            result.add( new DbTable( t.name, t.getSchemaName(), t.modifiable, t.tableType ) );
+            DbTable dbTable = new DbTable(t.name, t.getSchemaName(), t.modifiable, t.tableType);
+            List<CatalogTrigger> tableTriggers = triggers.stream()
+                    .filter(trigger -> trigger.getTableId() == t.id)
+                    .collect(Collectors.toList());
+            dbTable.addTriggers(tableTriggers);
+            result.add(dbTable);
         }
         ctx.json( result );
+    }
+
+    void getTriggers(final Context ctx) {
+        Transaction transaction = getTransaction();
+        TriggerRequest request = ctx.bodyAsClass( TriggerRequest.class );
+        try {
+            CatalogTable table = catalog.getTable(databaseName, request.schema, request.tableName);
+            List<String> triggers = catalog.getTriggers(request.schema, request.tableName)
+                    .stream()
+                    .filter(trigger -> trigger.getTableId() == table.id)
+                    .map(CatalogTrigger::getEvent)
+                    .map(Event::name)
+                    .collect(Collectors.toList());
+            ctx.json( triggers );
+        } catch (UnknownTableException | UnknownDatabaseException | UnknownSchemaException e) {
+            log.error("Error searching for table", e);
+            throw new RuntimeException(e);
+        }
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
     }
 
     void getProcedures(final Context ctx) {
@@ -851,7 +886,7 @@ public class Crud implements InformationObserver {
             }
 
             result.setExplorerId( explore.getId() );
-            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
+            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableName);
 
             result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
             result.setClassificationInfo( "NoClassificationPossible" );
@@ -864,7 +899,7 @@ public class Crud implements InformationObserver {
             result.setClassificationInfo( "NoClassificationPossible" );
             result.setExplorerId( explore.getId() );
 
-            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
+            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableName);
             result.setHighestPage( (int) Math.ceil( (double) explore.getData().length / getPageSize() ) );
             result.setConvertedToSql( isConvertedToSql );
             ctx.json( result );
@@ -900,7 +935,7 @@ public class Crud implements InformationObserver {
             result.setClassificationInfo( "NoClassificationPossible" );
             result.setExplorerId( explore.getId() );
 
-            result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
+            result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableName);
             result.setHighestPage( (int) Math.ceil( (double) tablesize / getPageSize() ) );
 
             ctx.json( result );
@@ -910,7 +945,7 @@ public class Crud implements InformationObserver {
             result = executeSqlSelect( statement, exploreTables, query );
         } catch ( QueryExecutionException e ) {
             log.error( "Caught exception while fetching a table", e );
-            result = new Result( "Could not fetch table " + exploreTables.tableId );
+            result = new Result( "Could not fetch table " + exploreTables.tableName);
             try {
                 transaction.rollback();
                 ctx.status( 500 ).json( result );
@@ -925,7 +960,7 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception while committing transaction", e );
         }
         result.setExplorerId( explore.getId() );
-        result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
+        result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableName);
         int tableSize = explore.getTableSize();
 
         result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
@@ -996,7 +1031,7 @@ public class Crud implements InformationObserver {
         } else {
             result.setClassificationInfo( "ClassificationPossible" );
         }
-        result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
+        result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableName);
         result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
 
         ctx.json( result );
@@ -1088,7 +1123,7 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder builder = new StringBuilder();
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         builder.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( t[0], t[1], request.data ) );
@@ -1229,7 +1264,7 @@ public class Crud implements InformationObserver {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Result result;
 
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         ArrayList<DbColumn> cols = new ArrayList<>();
 
         try {
@@ -1414,7 +1449,7 @@ public class Crud implements InformationObserver {
         ArrayList<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         String query = String.format( "ALTER MATERIALIZED VIEW %s FRESHNESS MANUAL", tableId );
@@ -1452,7 +1487,7 @@ public class Crud implements InformationObserver {
         ArrayList<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         // rename column if needed
@@ -1573,7 +1608,7 @@ public class Crud implements InformationObserver {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
         Transaction transaction = getTransaction();
 
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         String as = "";
@@ -1657,7 +1692,7 @@ public class Crud implements InformationObserver {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
         Transaction transaction = getTransaction();
 
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         Result result;
@@ -1698,7 +1733,7 @@ public class Crud implements InformationObserver {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Result result;
 
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         ArrayList<TableConstraint> resultList = new ArrayList<>();
         Map<String, ArrayList<String>> temp = new HashMap<>();
 
@@ -3504,8 +3539,8 @@ public class Crud implements InformationObserver {
 
         TableType tableType = null;
         CatalogTable catalogTable = null;
-        if ( request.tableId != null ) {
-            String[] t = request.tableId.split( "\\." );
+        if ( request.tableName != null ) {
+            String[] t = request.tableName.split( "\\." );
             try {
                 catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
                 tableType = catalogTable.tableType;
@@ -3798,7 +3833,7 @@ public class Crud implements InformationObserver {
      * Get the Number of rows in a table
      */
     private int getTableSize( Transaction transaction, final UIRequest request ) throws QueryExecutionException {
-        String[] t = request.tableId.split( "\\." );
+        String[] t = request.tableName.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
         String query = "SELECT count(*) FROM " + tableId;
         if ( request.filter != null ) {
