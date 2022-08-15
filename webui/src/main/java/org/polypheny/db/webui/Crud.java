@@ -378,11 +378,9 @@ public class Crud implements InformationObserver {
         TriggerRequest request = ctx.bodyAsClass( TriggerRequest.class );
         try {
             CatalogTable table = catalog.getTable(databaseName, request.schema, request.tableName);
-            List<String> triggers = catalog.getTriggers(request.schema, request.tableName)
+            List<CatalogTrigger> triggers = catalog.getTriggers(request.schema, request.tableName)
                     .stream()
                     .filter(trigger -> trigger.getTableId() == table.id)
-                    .map(CatalogTrigger::getEvent)
-                    .map(Event::name)
                     .collect(Collectors.toList());
             ctx.json( triggers );
         } catch (UnknownTableException | UnknownDatabaseException | UnknownSchemaException e) {
@@ -399,6 +397,14 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
+    }
+
+    public void dropTrigger(Context context) {
+        DropTriggerRequest request = context.bodyAsClass( DropTriggerRequest.class );
+        Transaction transaction = getTransaction();
+        String query = "DROP TRIGGER " + request.schema + "." + request.triggerName;
+        Result result = runWithTransaction(transaction, query);
+        context.json( result );
     }
 
     void getProcedures(final Context ctx) {
