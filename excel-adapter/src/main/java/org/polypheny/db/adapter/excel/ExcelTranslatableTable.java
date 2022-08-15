@@ -35,12 +35,18 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.util.Source;
 
-public class ExcelTranslatableTable extends ExcelTable implements QueryableTable,TranslatableTable {
+public class ExcelTranslatableTable extends ExcelTable implements QueryableTable, TranslatableTable {
+
     /**
      * Creates a ExcelTable.
      */
     ExcelTranslatableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
         super( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+    }
+
+
+    ExcelTranslatableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
+        super( source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet );
     }
 
 
@@ -60,7 +66,7 @@ public class ExcelTranslatableTable extends ExcelTable implements QueryableTable
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
-                return new ExcelEnumerator<>( source, cancelFlag, fieldTypes, fields );
+                return new ExcelEnumerator<>( source, cancelFlag, fieldTypes, fields, sheet );
             }
         };
     }
@@ -89,4 +95,5 @@ public class ExcelTranslatableTable extends ExcelTable implements QueryableTable
         // Request all fields.
         return new ExcelTableScan( context.getCluster(), algOptTable, this, fields );
     }
+
 }

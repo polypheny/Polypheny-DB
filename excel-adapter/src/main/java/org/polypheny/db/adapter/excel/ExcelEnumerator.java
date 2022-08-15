@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.excel;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.Reader;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -40,7 +39,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Source;
 
-class ExcelEnumerator<E> implements Enumerator<E>{
+class ExcelEnumerator<E> implements Enumerator<E> {
 
     Iterator<Row> reader;
     private final AtomicBoolean cancelFlag;
@@ -52,9 +51,10 @@ class ExcelEnumerator<E> implements Enumerator<E>{
     private static final FastDateFormat TIME_FORMAT_TIMESTAMP;
 
     /**
-     * Name of the column that is implicitly created in a CSV stream table to hold the data arrival time.
+     * Name of the column that is implicitly created in an Excel stream table to hold the data arrival time.
      */
     private static final String ROWTIME_COLUMN_NAME = "ROWTIME";
+    private static String sheet;
 
 
     static {
@@ -65,25 +65,25 @@ class ExcelEnumerator<E> implements Enumerator<E>{
     }
 
 
-    ExcelEnumerator( Source source, AtomicBoolean cancelFlag, List<ExcelFieldType> fieldTypes ) {
-        this( source, cancelFlag, fieldTypes, identityList( fieldTypes.size() ) );
+    ExcelEnumerator( Source source, AtomicBoolean cancelFlag, List<ExcelFieldType> fieldTypes, String sheet ) {
+        this( source, cancelFlag, fieldTypes, identityList( fieldTypes.size() ), sheet );
     }
 
 
-    ExcelEnumerator( Source source, AtomicBoolean cancelFlag, List<ExcelFieldType> fieldTypes, int[] fields ) {
+    ExcelEnumerator( Source source, AtomicBoolean cancelFlag, List<ExcelFieldType> fieldTypes, int[] fields, String sheet ) {
         //noinspection unchecked
-        this( source, cancelFlag, false, null, (RowConverter<E>) converter( fieldTypes, fields ) );
+        this( source, cancelFlag, false, null, (RowConverter<E>) converter( fieldTypes, fields ), sheet );
     }
 
 
-    ExcelEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<E> rowConverter ) {
+    ExcelEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<E> rowConverter, String sheet ) {
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         try {
             if ( stream ) {
                 //this.reader = new ExcelStreamReader( source );
             } else {
-                this.reader = openExcel( source );
+                this.reader = openExcel( source, sheet );
             }
             this.reader.next(); // skip header row
         } catch ( IOException e ) {
@@ -103,7 +103,7 @@ class ExcelEnumerator<E> implements Enumerator<E>{
 
 
     /**
-     * Deduces the names and types of a table's columns by reading the first line of a CSV file.
+     * Deduces the names and types of a table's columns by reading the first line of an Excel file.
      */
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<ExcelFieldType> fieldTypes ) {
         return deduceRowType( typeFactory, source, fieldTypes, false );
@@ -111,7 +111,15 @@ class ExcelEnumerator<E> implements Enumerator<E>{
 
 
     /**
-     * Deduces the names and types of a table's columns by reading the first line of a Excel file.
+     * Deduces the names and types of a table's columns by reading the first line of an Excel file.
+     */
+    static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, String sheetName, List<ExcelFieldType> fieldTypes ) {
+        return deduceRowType( typeFactory, source, sheetName, fieldTypes, false );
+    }
+
+
+    /**
+     * Deduces the names and types of a table's columns by reading the first line of an Excel file.
      */
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<ExcelFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
@@ -122,39 +130,33 @@ class ExcelEnumerator<E> implements Enumerator<E>{
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
         }
         try {
-            Iterator<Row> rows = openExcel( source );
-            while (rows.hasNext()) {
+            Iterator<Row> rows = openExcel( source, "" );
+            while ( rows.hasNext() ) {
                 Row row = rows.next();
                 Iterator<Cell> cellIterator = row.cellIterator();
-                while (cellIterator.hasNext()) {
+                while ( cellIterator.hasNext() ) {
                     Cell cell = cellIterator.next();
-                    names.add(cell.getStringCellValue());
+                    names.add( cell.getStringCellValue() );
                 }
                 break;
             }
-            //types = new AlgDataType[names.size()];
-            //int rowCount = 1;
-            while (rows.hasNext()) {
+
+            while ( rows.hasNext() ) {
                 Row row = rows.next();
                 Iterator<Cell> cellIterator = row.cellIterator();
-                while (cellIterator.hasNext()) {
+                while ( cellIterator.hasNext() ) {
                     Cell cell = cellIterator.next();
-                    ExcelFieldType fieldType = ExcelFieldType.of(cell);
+                    ExcelFieldType fieldType = ExcelFieldType.of( cell );
                     AlgDataType type;
-                    if (fieldType == null) {
-                        type = typeFactory.createJavaType(String.class);
+                    if ( fieldType == null ) {
+                        type = typeFactory.createJavaType( String.class );
                     } else {
-                        type = fieldType.toType(typeFactory);
+                        type = fieldType.toType( typeFactory );
                     }
-                    //names.add( name );
                     types.add( type );
                     if ( fieldTypes != null ) {
                         fieldTypes.add( fieldType );
                     }
-//                    if (types[cell.getColumnIndex()] == null) {
-//                        types[cell.getColumnIndex()] = type;
-//                        // ExcelFieldTypes.add(fieldType);
-//                    }
                 }
                 //rowCount++;
             }
@@ -169,17 +171,91 @@ class ExcelEnumerator<E> implements Enumerator<E>{
     }
 
 
-    public static Iterator<Row> openExcel( Source source ) throws IOException {
-        final Reader fileReader;
+    /**
+     * Deduces the names and types of a table's columns by reading the first line of a Excel file.
+     */
+    static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, String sheetname, List<ExcelFieldType> fieldTypes, Boolean stream ) {
+        final List<AlgDataType> types = new ArrayList<>();
+        final List<String> names = new ArrayList<>();
 
+        if ( stream ) {
+            names.add( ROWTIME_COLUMN_NAME );
+            types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
+        }
+        try {
+            Iterator<Row> rows = openExcel( source, sheetname );
+            while ( rows.hasNext() ) {
+                Row row = rows.next();
+                Iterator<Cell> cellIterator = row.cellIterator();
+                while ( cellIterator.hasNext() ) {
+                    Cell cell = cellIterator.next();
+                    names.add( cell.getStringCellValue() );
+                }
+                break;
+            }
+
+            while ( rows.hasNext() ) {
+                Row row = rows.next();
+                Iterator<Cell> cellIterator = row.cellIterator();
+                while ( cellIterator.hasNext() ) {
+                    Cell cell = cellIterator.next();
+                    ExcelFieldType fieldType = ExcelFieldType.of( cell );
+                    AlgDataType type;
+                    if ( fieldType == null ) {
+                        type = typeFactory.createJavaType( String.class );
+                    } else {
+                        type = fieldType.toType( typeFactory );
+                    }
+                    types.add( type );
+                    if ( fieldTypes != null ) {
+                        fieldTypes.add( fieldType );
+                    }
+                }
+                //rowCount++;
+            }
+        } catch ( IOException e ) {
+            // ignore
+        }
+        if ( names.isEmpty() ) {
+            names.add( "line" );
+            types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
+        }
+        return typeFactory.createStructType( Pair.zip( names, types ) );
+    }
+
+//    public static Iterator<Row> openExcel( Source source ) throws IOException {
+//
+//        Iterator<Row> rowIterator = null;
+//        FileInputStream fileIn = new FileInputStream(source.file());
+//
+//        Workbook workbook = WorkbookFactory.create(fileIn);
+//        workbook.getNumberOfSheets();
+//        Sheet sheet = workbook.getSheetAt(0);
+//        rowIterator = sheet.iterator();
+//        return rowIterator;
+//    }
+
+
+    public static Iterator<Row> openExcel( Source source, String sheetname ) throws IOException {
+        Sheet sheet;
         Iterator<Row> rowIterator = null;
-        FileInputStream fileIn = new FileInputStream(source.file());
+        FileInputStream fileIn = new FileInputStream( source.file() );
 
-        Workbook workbook = WorkbookFactory.create(fileIn);
+        Workbook workbook = WorkbookFactory.create( fileIn );
         workbook.getNumberOfSheets();
-        Sheet sheet = workbook.getSheetAt(0);
+        if ( sheetname.equals( "" ) ) {
+            sheet = workbook.getSheetAt( 0 );
+        } else {
+            sheet = workbook.getSheet( sheetname );
+        }
+
         rowIterator = sheet.iterator();
         return rowIterator;
+    }
+
+
+    public static void setSheet( String sheetName ) {
+        sheet = sheetName;
     }
 
 
@@ -192,40 +268,43 @@ class ExcelEnumerator<E> implements Enumerator<E>{
     @Override
     public boolean moveNext() {
         try {
-            outer: for (;;) {
-                if (cancelFlag.get()) {
+            outer:
+            for ( ; ; ) {
+                if ( cancelFlag.get() ) {
                     return false;
                 }
                 // final String[] strings = reader.readNext();
                 Row columnValues = null;
                 try {
-                    if (reader.hasNext())
+                    if ( reader.hasNext() ) {
                         columnValues = reader.next();
-                } catch (Exception e) {
+                    }
+                } catch ( Exception e ) {
                     columnValues = null;
                 }
 
-                if (columnValues == null) {
-                    if (reader instanceof ExcelStreamReader) {
+                if ( columnValues == null ) {
+                    if ( reader instanceof ExcelStreamReader ) {
                         try {
-                            Thread.sleep(ExcelStreamReader.DEFAULT_MONITOR_DELAY);
-                        } catch (InterruptedException e) {
+                            Thread.sleep( ExcelStreamReader.DEFAULT_MONITOR_DELAY );
+                        } catch ( InterruptedException e ) {
                             throw new RuntimeException( e );
                         }
-                        System.out.println("Stream");
+                        System.out.println( "Stream" );
                         continue;
                     }
                     current = null;
                     return false;
                 }
-                current = rowConverter.convertRow(columnValues);
+                current = rowConverter.convertRow( columnValues );
                 return true;
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
         }
         // return true;
     }
+
 
     @Override
     public void reset() {
@@ -279,27 +358,27 @@ class ExcelEnumerator<E> implements Enumerator<E>{
                     if ( cell == null ) {
                         return null;
                     }
-                    return Byte.parseByte(cell.getStringCellValue());
+                    return Byte.parseByte( cell.getStringCellValue() );
                 case SHORT:
                     if ( cell == null ) {
                         return null;
                     }
-                    return Short.parseShort(cell.getStringCellValue());
+                    return Short.parseShort( cell.getStringCellValue() );
                 case INT:
                     if ( cell == null ) {
                         return null;
                     }
-                    return (Double.valueOf(cell.getNumericCellValue()).intValue());
+                    return (Double.valueOf( cell.getNumericCellValue() ).intValue());
                 case LONG:
                     if ( cell == null ) {
                         return null;
                     }
-                    return Long.parseLong(cell.getStringCellValue());
+                    return Long.parseLong( cell.getStringCellValue() );
                 case FLOAT:
                     if ( cell == null ) {
                         return null;
                     }
-                    return Float.parseFloat(cell.getStringCellValue());
+                    return Float.parseFloat( cell.getStringCellValue() );
                 case DOUBLE:
                     if ( cell == null ) {
                         return null;
@@ -316,7 +395,7 @@ class ExcelEnumerator<E> implements Enumerator<E>{
                         return null;
                     }
                 case TIME:
-                    if (cell == null) {
+                    if ( cell == null ) {
                         return null;
                     }
                     try {
@@ -326,7 +405,7 @@ class ExcelEnumerator<E> implements Enumerator<E>{
                         return null;
                     }
                 case TIMESTAMP:
-                    if (cell == null) {
+                    if ( cell == null ) {
                         return null;
                     }
                     try {
@@ -382,7 +461,7 @@ class ExcelEnumerator<E> implements Enumerator<E>{
         public Object[] convertNormalRow( Row row ) {
             Iterator<Cell> cells = row.cellIterator();
             final Object[] objects = new Object[fields.length];
-            while (cells.hasNext()){
+            while ( cells.hasNext() ) {
                 Cell cell = cells.next();
                 int field = fields[cell.getColumnIndex()] - 1;
                 objects[field] = convert( fieldTypes[field], cell );
@@ -419,8 +498,8 @@ class ExcelEnumerator<E> implements Enumerator<E>{
 
 
         @Override
-        public Object convertRow( Row row) {
-            return convert( fieldType, row.getCell(fieldIndex ));
+        public Object convertRow( Row row ) {
+            return convert( fieldType, row.getCell( fieldIndex ) );
         }
 
     }

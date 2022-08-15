@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Source;
+
 public class ExcelTable extends AbstractTable {
 
     protected final Source source;
@@ -31,6 +32,7 @@ public class ExcelTable extends AbstractTable {
     protected List<ExcelFieldType> fieldTypes;
     protected final int[] fields;
     protected final ExcelSource excelSource;
+    protected final String sheet;
 
 
     /**
@@ -43,6 +45,18 @@ public class ExcelTable extends AbstractTable {
         this.fields = fields;
         this.excelSource = excelSource;
         this.tableId = tableId;
+        this.sheet = "";
+    }
+
+
+    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
+        this.source = source;
+        this.protoRowType = protoRowType;
+        this.fieldTypes = fieldTypes;
+        this.fields = fields;
+        this.excelSource = excelSource;
+        this.tableId = tableId;
+        this.sheet = sheet;
     }
 
 
@@ -51,12 +65,23 @@ public class ExcelTable extends AbstractTable {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
         }
-        if ( fieldTypes == null ) {
-            fieldTypes = new ArrayList<>();
-            return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );
+        if ( this.sheet.equals( "" ) ) {
+            if ( fieldTypes == null ) {
+                fieldTypes = new ArrayList<>();
+                return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );
+            } else {
+                return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
+            }
         } else {
-            return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
+            if ( fieldTypes == null ) {
+                fieldTypes = new ArrayList<>();
+                ExcelEnumerator.setSheet( sheet );
+                return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, sheet, fieldTypes );
+            } else {
+                return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, sheet, null );
+            }
         }
+
     }
 
 
@@ -66,4 +91,5 @@ public class ExcelTable extends AbstractTable {
     public enum Flavor {
         SCANNABLE, FILTERABLE, TRANSLATABLE
     }
+
 }

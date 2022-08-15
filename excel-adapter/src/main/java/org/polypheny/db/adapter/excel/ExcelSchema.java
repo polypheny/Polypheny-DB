@@ -41,10 +41,13 @@ import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
-public class ExcelSchema extends AbstractSchema{
+public class ExcelSchema extends AbstractSchema {
+
     private final URL directoryUrl;
     private final ExcelTable.Flavor flavor;
-    private Map<String, ExcelTable> tableMap = new HashMap<>();
+    private final Map<String, ExcelTable> tableMap = new HashMap<>();
+    private final String sheet;
+
 
     /**
      * Creates an Excel schema.
@@ -55,6 +58,15 @@ public class ExcelSchema extends AbstractSchema{
         super();
         this.directoryUrl = directoryUrl;
         this.flavor = flavor;
+        this.sheet = "";
+    }
+
+
+    public ExcelSchema( URL directoryUrl, ExcelTable.Flavor flavor, String sheet ) {
+        super();
+        this.directoryUrl = directoryUrl;
+        this.flavor = flavor;
+        this.sheet = sheet;
     }
 
 
@@ -86,6 +98,7 @@ public class ExcelSchema extends AbstractSchema{
         ExcelTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, excelSource, catalogTable.id );
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
+
     }
 
 
@@ -99,16 +112,30 @@ public class ExcelSchema extends AbstractSchema{
      * Creates different sub-type of table based on the "flavor" attribute.
      */
     private ExcelTable createTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
-        switch ( flavor ) {
-            case TRANSLATABLE:
-                return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
-            case SCANNABLE:
-                return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
-            case FILTERABLE:
-                //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
-            default:
-                throw new AssertionError( "Unknown flavor " + this.flavor );
+        if ( this.sheet.equals( "" ) ) {
+            switch ( flavor ) {
+                case TRANSLATABLE:
+                    return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                case SCANNABLE:
+                    return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                case FILTERABLE:
+                    //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                default:
+                    throw new AssertionError( "Unknown flavor " + this.flavor );
+            }
+        } else {
+            switch ( flavor ) {
+                case TRANSLATABLE:
+                    return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId, this.sheet );
+                case SCANNABLE:
+                    return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId, this.sheet );
+                case FILTERABLE:
+                    //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                default:
+                    throw new AssertionError( "Unknown flavor " + this.flavor );
+            }
         }
+
     }
 
 
@@ -173,4 +200,5 @@ public class ExcelSchema extends AbstractSchema{
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
     }
+
 }

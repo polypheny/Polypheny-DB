@@ -27,11 +27,22 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.util.Source;
 
 public class ExcelScannableTable extends ExcelTable implements ScannableTable {
+
+    private final String sheet;
+
+
     /**
      * Creates a ExcelScannableTable.
      */
     protected ExcelScannableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
         super( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+        this.sheet = "";
+    }
+
+
+    protected ExcelScannableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
+        super( source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet );
+        this.sheet = sheet;
     }
 
 
@@ -47,7 +58,7 @@ public class ExcelScannableTable extends ExcelTable implements ScannableTable {
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new ExcelEnumerator<>( source, cancelFlag, false, null, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ) );
+                return new ExcelEnumerator<>( source, cancelFlag, false, null, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );
             }
         };
     }

@@ -39,6 +39,7 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.excel.ExcelTable.Flavor;
@@ -56,34 +57,45 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
+
 @Slf4j
 @AdapterProperties(
         name = "Excel",
         description = "An adapter for querying Excel files. The location of the directory containing the Excel files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED)
 @AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .xlsx.", position = 1)
+@AdapterSettingString(name = "sheetName", description = "default to read the first sheet", defaultValue = "", required = false)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class ExcelSource extends DataSource{
+public class ExcelSource extends DataSource {
+
     private URL excelDir;
     private ExcelSchema currentSchema;
     private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
+    public String sheetName;
+
+
     public ExcelSource( int storeId, String uniqueName, Map<String, String> settings ) {
 
         super( storeId, uniqueName, settings, true );
 
         // Validate maxStringLength setting
         maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
+
         if ( maxStringLength < 1 ) {
             throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
         }
+        this.sheetName = settings.get( "sheetName" );
 
         setExcelDir( settings );
         addInformationExportedColumns();
         enableInformationPage();
     }
+
+
     private void setExcelDir( Map<String, String> settings ) {
+
         String dir = settings.get( "directory" );
         if ( dir.startsWith( "classpath://" ) ) {
             excelDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
@@ -96,9 +108,10 @@ public class ExcelSource extends DataSource{
         }
     }
 
+
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new ExcelSchema( excelDir, Flavor.SCANNABLE );
+        currentSchema = new ExcelSchema( excelDir, Flavor.SCANNABLE, this.sheetName );
     }
 
 
@@ -171,7 +184,7 @@ public class ExcelSource extends DataSource{
         } else {
             File[] files = Sources.of( excelDir )
                     .file()
-                    .listFiles( ( d, name ) -> name.endsWith( ".xlsx" ) || name.endsWith( ".xlsx.gz" ) ||name.endsWith( ".xls" ) || name.endsWith( ".xls.gz" ) );
+                    .listFiles( ( d, name ) -> name.endsWith( ".xlsx" ) || name.endsWith( ".xlsx.gz" ) || name.endsWith( ".xls" ) || name.endsWith( ".xls.gz" ) );
             fileNames = Arrays.stream( files )
                     .sequential()
                     .map( File::getName )
@@ -183,43 +196,46 @@ public class ExcelSource extends DataSource{
             if ( physicalTableName.endsWith( ".gz" ) ) {
                 physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
             }
-            if ( physicalTableName.endsWith( ".xlsx" )){
+            if ( physicalTableName.endsWith( ".xlsx" ) ) {
                 physicalTableName = physicalTableName
                         .substring( 0, physicalTableName.length() - ".xlsx".length() )
                         .trim()
                         .replaceAll( "[^a-z0-9_]+", "" );
-            } else if (physicalTableName.endsWith( ".xls" ) ){
+            } else if ( physicalTableName.endsWith( ".xls" ) ) {
                 physicalTableName = physicalTableName
                         .substring( 0, physicalTableName.length() - ".xls".length() )
                         .trim()
                         .replaceAll( "[^a-z0-9_]+", "" );
             }
 
-
             List<ExportedColumn> list = new ArrayList<>();
             int position = 1;
             try {
                 Source source = Sources.of( new URL( excelDir, fileName ) );
-                File file = new File(source.path());   //creating a new file instance
-                FileInputStream fs = new FileInputStream(file);
+                File file = new File( source.path() );   //creating a new file instance
+                FileInputStream fs = new FileInputStream( file );
 
-                Workbook workbook = WorkbookFactory.create(fs);
-                Sheet sheet = workbook.getSheetAt(0);
+                Workbook workbook = WorkbookFactory.create( fs );
+                Sheet sheet;
+                if ( this.sheetName.equals( "" ) ) {
+                    sheet = workbook.getSheetAt( 0 );
+
+                } else {
+                    sheet = workbook.getSheet( this.sheetName );
+                }
                 Iterator<Row> rowIterator = sheet.iterator();
 
                 // read first row to extract column attribute name and datatype
-                while (rowIterator.hasNext())
-                {
+                while ( rowIterator.hasNext() ) {
 
                     Row row = rowIterator.next();
                     //For each row, iterate through all the columns
                     Iterator<Cell> cellIterator = row.cellIterator();
 
-                    while (cellIterator.hasNext())
-                    {
+                    while ( cellIterator.hasNext() ) {
 
                         Cell cell = cellIterator.next();
-                        try{
+                        try {
                             String[] colSplit = cell.getStringCellValue().split( ":" );
                             String name = colSplit[0]
                                     .toLowerCase()
@@ -267,54 +283,31 @@ public class ExcelSource extends DataSource{
                                     throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
                             }
 
-                                list.add( new ExportedColumn(
-                                        name,
-                                        type,
-                                        collectionsType,
-                                        length,
-                                        scale,
-                                        dimension,
-                                        cardinality,
-                                        false,
-                                        fileName,
-                                        physicalTableName,
-                                        name,
-                                        position,
-                                        position == 1 ) ); // TODO
+                            list.add( new ExportedColumn(
+                                    name,
+                                    type,
+                                    collectionsType,
+                                    length,
+                                    scale,
+                                    dimension,
+                                    cardinality,
+                                    false,
+                                    fileName,
+                                    physicalTableName,
+                                    name,
+                                    position,
+                                    position == 1 ) ); // TODO
 
-                                position++;
+                            position++;
 
 
-                        }catch(Exception e){
+                        } catch ( Exception e ) {
 
                         }
 
                     }
                     break;
                 }
-//                while (rowIterator.hasNext()) {
-//                    Row row = rowIterator.next();
-//                    Iterator<Cell> cellIterator = row.cellIterator();
-//                    while (cellIterator.hasNext()) {
-//                        Cell cell = cellIterator.next();
-//                        //ExcelFieldType fieldType = ExcelFieldType.of(cell);
-//                        PolyType type = PolyType.VARCHAR;
-//                        CellType cellType = cell.getCellType();
-//                        if (cellType == CellType.STRING) {
-//                            type = PolyType.VARCHAR;
-//                        } else if (cellType == CellType.NUMERIC) {
-//                            type = PolyType.DOUBLE;
-//                        } else if (cellType == CellType.BOOLEAN) {
-//                            type = PolyType.BOOLEAN;
-//                        } else if (cellType == CellType.BLANK) {
-//                            type = PolyType.VARCHAR;
-//                        }
-//
-//                        types.add( type );
-//
-//                    }
-//                    break;
-//                }
 
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
@@ -324,6 +317,8 @@ public class ExcelSource extends DataSource{
         }
         return exportedColumnCache;
     }
+
+
     private void addInformationExportedColumns() {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
             InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
@@ -345,4 +340,5 @@ public class ExcelSource extends DataSource{
             informationElements.add( table );
         }
     }
+
 }
