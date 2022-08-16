@@ -16,11 +16,26 @@
 
 package org.polypheny.db.adaptimizer.sessions;
 
-/**
- * An {@link OptSession} is a session of optimization via an {@link org.polypheny.db.adaptimizer.AdaptiveOptimizer}.
- */
-public interface OptSession extends Runnable {
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import org.polypheny.db.adaptimizer.rndqueries.AbstractQuerySupplier;
+import org.polypheny.db.adaptimizer.rndqueries.QueryService;
 
-    void setSessionData( SessionData sessionData );
+@Getter(AccessLevel.PUBLIC)
+public abstract class QuerySession implements OptSession {
+
+    protected final AbstractQuerySupplier querySupplier;
+    protected final QueryService queryService;
+
+    @Setter(AccessLevel.PUBLIC)
+    protected SessionData sessionData;
+
+    public QuerySession(
+            AbstractQuerySupplier querySupplier
+    ) {
+        this.querySupplier = querySupplier;
+        this.queryService = new QueryService();
+    }
 
 }

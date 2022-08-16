@@ -23,8 +23,13 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adaptimizer.AdaptiveOptimizerImpl;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.monitoring.core.MonitoringService;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.PhysicalPlan;
 
 /**
@@ -32,39 +37,43 @@ import org.polypheny.db.plan.PhysicalPlan;
  */
 @Slf4j
 public abstract class Classifier {
-    @Getter(AccessLevel.PRIVATE)
-    private static final HashSet<UUID> processed;
+    private static int hi = 30;
+    private static int lo = 0;
 
     @Getter(AccessLevel.PRIVATE)
     private static final Model model;
 
-    @Setter(AccessLevel.PUBLIC)
-    @Getter(AccessLevel.PRIVATE)
-    private static MonitoringService monitoringService;
-
     public static long estimate( PhysicalPlan physicalPlan ) {
+        return estimateOrProcess( physicalPlan );
+    }
+
+    private static long estimateOrProcess( PhysicalPlan physicalPlan ) {
+        try {
+            lo++;
+            if ( lo <= hi ) {
+                InformationQueryPlan queryPlan = new InformationQueryPlan("g", AlgOptUtil.dumpPlan( "Physical Plan", physicalPlan.getRoot(), ExplainFormat.TEXT, ExplainLevel.NON_COST_ATTRIBUTES ) );
+                InformationManager.getInstance().getGroup( "g" ).addInformation( queryPlan );
+                InformationManager.getInstance().registerInformation( queryPlan );
+            }
+        } catch ( Exception exception ) {
+            lo--;
+        }
+
+        if ( physicalPlan.isEstimated() && physicalPlan.isMeasured() ) {
+            getModel().process( physicalPlan );
+            return physicalPlan.getEstimatedExecutionTime();
+        }
+
         return getModel().estimate( physicalPlan );
     }
 
     public static void update() {
-        UUID dataPointId;
-        PhysicalPlan physicalPlan;
-        for ( QueryDataPointImpl dataPoint : getMonitoringService().getAllDataPoints( QueryDataPointImpl.class ) ) {
-            dataPointId = dataPoint.id();
-            if ( ! getProcessed().contains( dataPointId ) ) {
-                physicalPlan = dataPoint.getPhysicalPlan();
-                physicalPlan.setActualExecutionTime( dataPoint.getExecutionTime() );
-                getModel().process( physicalPlan );
-                getProcessed().add( dataPoint.getId() );
-            }
-        }
+        getModel().update();
     }
 
-    // ----- Initializing Classifier ----
+    // ----- Initializing Model ----
     static {
-        monitoringService = AdaptiveOptimizerImpl.getMonitoringService();
-        model = new StatsModel();
-        processed = new HashSet<>();
+        model = new MachineLearningModel();
     }
 
 }

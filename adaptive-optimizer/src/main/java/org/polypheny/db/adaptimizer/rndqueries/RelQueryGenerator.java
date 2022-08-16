@@ -51,7 +51,12 @@ public class RelQueryGenerator extends AbstractQueryGenerator {
     /**
      * Stack to keep track of generated nodes and dump debug strings.
      */
-    private Stack<AdaptiveNode> traceStack;
+    private final Stack<AdaptiveNode> traceStack;
+
+    /**
+     * Activates all debugging measures.
+     */
+    private final boolean withTraces;
 
     /**
      * Debug appendix.
@@ -62,11 +67,6 @@ public class RelQueryGenerator extends AbstractQueryGenerator {
      * Counts how many trees are generated.
      */
     private int treeCounter;
-
-    /**
-     * Activates all debugging measures.
-     */
-    private boolean withTraces;
 
     /**
      * Activates all debugging measures.
@@ -91,31 +91,21 @@ public class RelQueryGenerator extends AbstractQueryGenerator {
     @Getter
     private long treeSeed;
 
-    @SuppressWarnings( "unused" )
-    public RelQueryGenerator( QueryTemplate template ) {
+    private RelQueryGenerator( QueryTemplate template, boolean withTraces, boolean withSeed ) {
         super( template );
-
+        this.treeSeed = ( withSeed ) ? template.getSeed() : 1337L;
         this.traceStack = new Stack<>();
         this.treeCounter = 0;
-        this.treeSeed = template.getSeed();
-        this.withTraces = true;
-    }
-
-
-    public RelQueryGenerator( QueryTemplate template, boolean withTraces, boolean withSeed ) {
-        super( template );
-
-        if ( withTraces ) {
-            this.traceStack = new Stack<>();
-            this.treeCounter = 0;
-        }
-
-        this.treeSeed = ( withSeed ) ? template.getSeed() : 1337L;
-
         this.withTraces = withTraces;
-        this.withSeed = withSeed;
     }
 
+    public static RelQueryGenerator from( QueryTemplate template ) {
+        return new RelQueryGenerator( template, false, true );
+    }
+
+    public static RelQueryGenerator withTraces( QueryTemplate template ) {
+        return new RelQueryGenerator( template, true, true );
+    }
 
     /**
      * Generates a random Logical Operator Tree given the constraints set in the {@link QueryTemplate}.
@@ -124,8 +114,10 @@ public class RelQueryGenerator extends AbstractQueryGenerator {
      * @return                  {@link AlgNode } tree root of the logical operator tree.
      */
     public Pair<AlgNode, Long> generate( Statement statement ) {
+
         StopWatch stopWatch = null;
         if ( withTraces ) {
+            // If traces are on, log the generation process of the tree...
             this.traceAppendix = null;
             this.traceStack.clear();
             this.treeCounter++;
@@ -134,6 +126,7 @@ public class RelQueryGenerator extends AbstractQueryGenerator {
             stopWatch.start();
         }
         if ( withSeed ) {
+            // Retrieve seed before generation for reproduction...
             this.treeSeed = template.getSeed();
         }
 
@@ -147,6 +140,9 @@ public class RelQueryGenerator extends AbstractQueryGenerator {
         if ( withTraces ) {
             stopWatch.stop();
             this.treeGenTime = stopWatch.getTime();
+            if ( log.isDebugEnabled() && algNode != null ) {
+                log.debug( this.dumpTreeGenerationTrace() );
+            }
         }
 
         return new Pair<>( algNode, this.treeSeed );
@@ -209,7 +205,6 @@ public class RelQueryGenerator extends AbstractQueryGenerator {
         }
 
         return this.convertNode( algBuilder, node );
-
     }
 
 

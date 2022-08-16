@@ -14,20 +14,30 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer;
+package org.polypheny.db.adaptimizer.models;
 
-import java.util.Random;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.polypheny.db.plan.PhysicalPlan;
 
-public interface SeededClass {
+@NoArgsConstructor(access=AccessLevel.MODULE)
+public class MachineLearningModel implements Model {
 
-    default long getSeed() {
-        return SeedUtil.parseSeed( this.getRnd() );
+    @Override
+    public long estimate( PhysicalPlan physicalPlan ) {
+        return 0L;
     }
 
-    default void setSeed( long seed ) {
-        this.getRnd().setSeed( seed );
+
+    @Override
+    public void process( PhysicalPlan physicalPlan ) {
+        // do nothing
     }
 
-    Random getRnd();
+
+    @Override
+    public void update() {
+        // do nothing
+    }
 
 }

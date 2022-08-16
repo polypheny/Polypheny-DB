@@ -34,19 +34,18 @@ public class ForeignKeyPath {
     private final Long[] columns;
 
     public ForeignKeyPath( final Map<Long, Long> seed, final Map<Long, ColumnOption> options, final Map<Long, Integer> cSize, final ColumnOption option ) {
-        this.seed = seed;
-        this.options = options;
-        this.cSize = cSize;
-
         final ArrayList<Integer> counters = new ArrayList<>();
         final ArrayList<Random> randoms = new ArrayList<>();
         final ArrayList<Long> columns = new ArrayList<>();
+
+        this.seed = seed;
+        this.options = options;
+        this.cSize = cSize;
         this.add( seed, options, option.getCatalogColumn(), counters, randoms, columns );
         this.init( options.get( option.getReferencedColumn() ), counters, randoms, columns );
         this.counters = counters.toArray( Integer[]::new );
         this.randoms = randoms.toArray( Random[]::new );
         this.columns = columns.toArray( Long[]::new );
-
         this.length = this.columns.length;
     }
 
@@ -56,7 +55,7 @@ public class ForeignKeyPath {
         }
         this.add( seed, options, option.getCatalogColumn(), counters, randoms, columns );
         if ( option.getReferencedColumn() != null ) {
-            this.init( options.get( option.getReferencedColumn() ), counters, randoms, columns );
+            init( options.get( option.getReferencedColumn() ), counters, randoms, columns );
         }
     }
 
@@ -67,17 +66,21 @@ public class ForeignKeyPath {
         columns.add( options.get( column ).getCatalogColumn() );
     }
 
+    private boolean nextColumnOutOfBounds( int i ) {
+        return counters[ i ] > cSize.get( columns[ i + 1 ] );
+    }
+
     private void update() {
         for ( int i = 0; i < length - 1; i++ ) {
-            if ( counters[ i ] > cSize.get( columns[ i + 1 ] ) ) {
-                this.reset( 0, length );
+            if ( nextColumnOutOfBounds( i ) ) {
+                reset( 0, length );
                 break;
             }
         }
     }
 
     public void reset() {
-        this.reset( 0, length );
+        reset( 0, length );
     }
 
     private void increment() {
@@ -109,8 +112,8 @@ public class ForeignKeyPath {
     }
 
     public Triple<Long, Random, Integer> getGoalColumn() {
-        this.increment();
-        this.update();
+        increment();
+        update();
         return getTriple( length - 1 );
     }
 

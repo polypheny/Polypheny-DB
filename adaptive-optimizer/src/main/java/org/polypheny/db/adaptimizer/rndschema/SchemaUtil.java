@@ -28,13 +28,15 @@ public class SchemaUtil {
     public static final String HSQLDB_ADAPTER_NAME = "adapt_hsqldb_adapter";
     public static final String POSTGRE_ADAPTER_NAME = "adapt_postgre_adapter";
 
-    private static AdapterManager adapterManager;
+    private static final AdapterManager adapterManager;
     private static List<DataStore> dataStores;
 
-    public static String addRndSchemaTestDataStores() {
+    static {
         adapterManager = AdapterManager.getInstance();
+    }
+
+    public static String addRndSchemaTestDataStores() {
         dataStores = List.of( addHsqldbAdapter() );
-        // dataStores.add( addPostgreSQLAdapter() );
         return "Success.";
     }
 

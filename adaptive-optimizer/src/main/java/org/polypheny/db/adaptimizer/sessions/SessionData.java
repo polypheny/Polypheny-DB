@@ -81,11 +81,15 @@ public class SessionData {
     private final ArrayList<Long> errorTimes;
     private final ArrayList<Long> successTimes;
 
+    public int earlyFaults;
+
     public int xMax;
     public int xMin;
     public int xAddCalls;
 
     ArrayList<Integer> xAxis;
+
+    ArrayList<String> informationPlans;
 
     ArrayList<Long> successTimeMonitor;
     ArrayList<Long> errorTimeMonitor;
@@ -139,6 +143,8 @@ public class SessionData {
         this.errorTimeMonitor = new ArrayList<>();
         this.exceptionTimeMonitor = new ArrayList<>();
         this.totalTimeMonitor = new ArrayList<>();
+
+        informationPlans = new ArrayList<>();
     }
 
     public synchronized void addQueryExecutionTime(

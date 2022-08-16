@@ -49,19 +49,29 @@ public class PhysicalPlan implements Serializable, Comparable<PhysicalPlan> {
     private long actualExecutionTime;
 
     @Getter
+    private boolean estimated;
+
+    @Getter
+    private boolean measured;
+
+    @Getter
     private String jsonAlg;
 
     public PhysicalPlan setEstimatedExecutionTime( long estimatedExecutionTime ) {
         this.estimatedExecutionTime = estimatedExecutionTime;
+        this.estimated = true;
         return this;
     }
 
     public PhysicalPlan setActualExecutionTime( long actualExecutionTime ) {
         this.actualExecutionTime = actualExecutionTime;
+        this.measured = true;
         return this;
     }
 
     private PhysicalPlan( AlgNode root ) {
+        this.estimated = false;
+        this.measured = false;
         this.root = root;
     }
 

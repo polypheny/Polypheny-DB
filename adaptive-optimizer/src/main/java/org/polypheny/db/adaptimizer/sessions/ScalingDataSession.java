@@ -16,26 +16,16 @@
 
 package org.polypheny.db.adaptimizer.sessions;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
-import org.polypheny.db.adaptimizer.rndqueries.AbstractQuerySupplier;
-import org.polypheny.db.adaptimizer.rndqueries.QueryService;
+public class ScalingDataSession extends DataSession {
 
-@Getter(AccessLevel.PROTECTED)
-public abstract class GenerationSession implements OptSession {
+    @Override
+    public void run() {
 
-    protected final AbstractQuerySupplier querySupplier;
-    protected final QueryService queryService;
 
-    @Setter(AccessLevel.PUBLIC)
-    protected SessionData sessionData;
 
-    public GenerationSession(
-            AbstractQuerySupplier querySupplier
-    ) {
-        this.querySupplier = querySupplier;
-        this.queryService = new QueryService();
+
+
+
     }
 
 }

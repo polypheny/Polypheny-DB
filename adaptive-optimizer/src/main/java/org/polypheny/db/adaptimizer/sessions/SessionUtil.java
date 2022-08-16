@@ -60,8 +60,37 @@ public abstract class SessionUtil {
                 .build();
     }
 
+    public static QueryTemplate getCoverageMeasureTemplate() {
+        return RelQueryTemplate.builder( AdaptiveOptimizerImpl.getCatalog(), List.of(
+                        DefaultTestEnvironment.customers,
+                        DefaultTestEnvironment.orders,
+                        DefaultTestEnvironment.products,
+                        DefaultTestEnvironment.shipments,
+                        DefaultTestEnvironment.purchases
+                ) )
+                .schemaName( DefaultTestEnvironment.SCHEMA_NAME )
+                .addBinaryOperator( "Join", 1 )
+                .addBinaryOperator( "Union", 1 )
+                .addBinaryOperator( "Intersect", 1 )
+                .addBinaryOperator( "Minus", 1 )
+                .addUnaryOperator( "Sort", 1 )
+                .addUnaryOperator( "Project", 1 )
+                .addUnaryOperator( "Filter", 1 )
+                .addFilterOperator( "<>" )
+                .addJoinOperator( "=" )
+                .addJoinType( JoinAlgType.FULL )
+                .addJoinType( JoinAlgType.INNER )
+                .addJoinType( JoinAlgType.LEFT )
+                .addJoinType( JoinAlgType.RIGHT )
+                .unaryProbability( 0.5f )
+                .seed( 1337 )
+                .random( new Random( 1337 ) ) // Todo fix
+                .height( 4 )
+                .build();
+    }
+
     public static AbstractQuerySupplier getQueryGenerator( QueryTemplate template ) {
-        return new QuerySupplier( new RelQueryGenerator( template, false, true ) );
+        return new QuerySupplier( RelQueryGenerator.from( template ) );
     }
 
 }

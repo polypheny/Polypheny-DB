@@ -22,32 +22,23 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adaptimizer.rndqueries.AbstractQuerySupplier;
+import org.polypheny.db.adaptimizer.rndqueries.QuerySupplier;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationQueryPlan;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 
 @Slf4j
-public class RelGenerationSession extends GenerationSession {
+public class RelQuerySession extends QuerySession {
+    private static final int SHOW_LIM = 15;
+    private static int SHOW = 0;
 
-    public RelGenerationSession( AbstractQuerySupplier querySupplier ) {
+    public RelQuerySession( AbstractQuerySupplier querySupplier ) {
         super( querySupplier );
     }
-
-    @Override
-    public void setSessionData( SessionData sessionData ) {
-        this.sessionData = sessionData;
-    }
-
-    @Override
-    public long switchSeed() {
-        long uncaughtErrorSeed = this.querySupplier.getTreeGenerator().getLastSeed();
-        this.querySupplier.getTreeGenerator().getTemplate().switchSeed();
-        return uncaughtErrorSeed;
-    }
-
-    public AbstractQuerySupplier getSupplier() {
-        return this.querySupplier;
-    }
-
 
     @Override
     public void run() {
@@ -103,6 +94,8 @@ public class RelGenerationSession extends GenerationSession {
                 }
             } );
         }
+
+        getSessionData().earlyFaults = ((QuerySupplier)getQuerySupplier()).earlyFaults;
         getSessionData().finish();
     }
 
@@ -134,7 +127,7 @@ public class RelGenerationSession extends GenerationSession {
         }
 
         if ( log.isDebugEnabled() ) {
-            log.debug( message );
+            // log.debug( message );
         }
 
         getSessionData().addQueryExecutionTime( result, seed, executionTime, ex );

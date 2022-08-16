@@ -41,15 +41,19 @@ public abstract class AbstractQuerySupplier implements Supplier<Triple<Statement
     @Getter(AccessLevel.PRIVATE)
     protected final Catalog catalog;
 
+    Transaction transaction;
+
     protected AbstractQuerySupplier( AbstractQueryGenerator treeGenerator ) {
         this.treeGenerator = treeGenerator;
         this.transactionManager = AdaptiveOptimizerImpl.getTransactionManager();
         this.catalog = AdaptiveOptimizerImpl.getCatalog();
+        transaction = getTransaction( catalog );
     }
 
     protected Statement nextStatement() {
         // Currently, one statement per transaction...
-        return getTransaction( catalog ).createStatement();
+        return this.transaction.createStatement();
+        // return getTransaction( catalog ).createStatement();
     }
 
     private Transaction getTransaction( Catalog catalog ) {

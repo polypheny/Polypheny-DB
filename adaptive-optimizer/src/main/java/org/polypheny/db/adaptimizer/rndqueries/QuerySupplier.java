@@ -25,6 +25,8 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class QuerySupplier extends AbstractQuerySupplier {
 
+    public int earlyFaults = 0;
+
     public QuerySupplier( AbstractQueryGenerator treeGenerator ) {
         super( treeGenerator );
     }
@@ -34,15 +36,22 @@ public class QuerySupplier extends AbstractQuerySupplier {
         Statement statement = nextStatement();
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "[ Transact. {} - Opened ]", statement.getTransaction().getId() );
+            // log.debug( "[ Transact. {} - Opened ]", statement.getTransaction().getId() );
         }
 
         Pair<AlgNode, Long> result = Pair.of( null, null );
 
+        int earlyNull = -1;
         while ( result.left == null ) {
+            earlyNull++;
             result = getTreeGenerator().generate( statement );
         }
 
+        earlyFaults += earlyNull;
+        if ( earlyFaults % 1000 == 0 ) {
+            // Check Performance when randomly changing seeds based on early faults
+            getTreeGenerator().setSeed( getTreeGenerator().getTemplate().nextLong() );
+        }
         return Triple.of( statement, result.left, result.right );
     }
 

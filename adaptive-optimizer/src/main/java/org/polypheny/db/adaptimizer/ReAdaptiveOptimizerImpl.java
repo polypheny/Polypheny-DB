@@ -27,7 +27,7 @@ import org.polypheny.db.adaptimizer.rndqueries.QueryTemplate;
 import org.polypheny.db.adaptimizer.rndqueries.QueryUtil;
 import org.polypheny.db.adaptimizer.rndqueries.RelQueryGenerator;
 import org.polypheny.db.adaptimizer.sessions.OptSession;
-import org.polypheny.db.adaptimizer.sessions.RelGenerationSession;
+import org.polypheny.db.adaptimizer.sessions.RelQuerySession;
 import org.polypheny.db.adaptimizer.sessions.SessionData;
 import org.polypheny.db.adaptimizer.sessions.SessionMonitor;
 import org.polypheny.db.adaptimizer.sessions.SessionUtil;
@@ -39,7 +39,7 @@ import org.polypheny.db.adaptimizer.sessions.SessionUtil;
  */
 @Slf4j
 public class ReAdaptiveOptimizerImpl extends AdaptiveOptimizerImpl {
-    private static final int DEFAULT_GEN_NR = 100;
+    private static final int DEFAULT_GEN_NR = 1000;
 
     @Getter(AccessLevel.PRIVATE)
     private final HashMap<String, SessionData> sessions;
@@ -77,7 +77,7 @@ public class ReAdaptiveOptimizerImpl extends AdaptiveOptimizerImpl {
 
         final QueryTemplate template = QueryUtil.createCustomTemplate( parameters );
         final String sessionId = UUID.randomUUID().toString();
-        OptSession optSession = new RelGenerationSession( new QuerySupplier( new RelQueryGenerator( template ) ) );
+        OptSession optSession = new RelQuerySession( new QuerySupplier( RelQueryGenerator.from( template ) ) );
         final SessionData sessionData = new SessionData( sessionId, template, new Thread( optSession ), optSession, nrOfQueries );
 
         optSession.setSessionData( sessionData );
@@ -90,7 +90,7 @@ public class ReAdaptiveOptimizerImpl extends AdaptiveOptimizerImpl {
     private SessionData prepareSession() {
         final String sessionId = UUID.randomUUID().toString();
         final QueryTemplate template = SessionUtil.getDefaultRelTreeTemplate();
-        OptSession optSession =  new RelGenerationSession( SessionUtil.getQueryGenerator( template ) );
+        OptSession optSession =  new RelQuerySession( SessionUtil.getQueryGenerator( template ) );
 
         final SessionData sessionData = new SessionData( sessionId, template, new Thread( optSession ), optSession, DEFAULT_GEN_NR );
 
@@ -104,39 +104,10 @@ public class ReAdaptiveOptimizerImpl extends AdaptiveOptimizerImpl {
         sessionData.getSessionThread().setDaemon( true );
         sessionData.getSessionThread().setUncaughtExceptionHandler(
                 ( Thread sessionThread, Throwable throwable ) -> {
-            initiateSessionSeedChange( sessionData, throwable );
+            //initiateSessionSeedChange( sessionData, throwable )
+                    log.error( "Unresolvable Session Error:", throwable );
         } );
     }
-
-
-    /**
-     * All errors and exceptions should be caught earlier {@link RelGenerationSession#run and seed changes are therefore not needed.
-     */
-    @Deprecated
-    private synchronized void initiateSessionSeedChange(
-            final SessionData sessionData, Throwable ex ) {
-        // Quick Check ( Should not happen )
-        if ( sessionData.isFinished() ) {
-            log.warn( "Trying to change seed on finished session." );
-            return;
-        }
-
-        long uncaughtErrorSeed = sessionData.getOptSession().switchSeed();
-
-        if ( log.isDebugEnabled() ) {
-            log.debug( "[ Uncaught Error Seed: {} ]", uncaughtErrorSeed );
-            log.debug( "[ Error -> ", ex );
-        }
-
-        OptSession continuedSession =  new RelGenerationSession( sessionData.getOptSession().getSupplier() );
-        continuedSession.setSessionData( sessionData );
-        sessionData.incrementSeedSwitches();
-        sessionData.setOptSession( continuedSession );
-        sessionData.setSessionThread( new Thread( continuedSession ) );
-        configureSessionThread( sessionData );
-        sessionData.continueSession();
-    }
-
 
     public boolean isActive( String sid ) {
         SessionData session = getSessions().get( sid );

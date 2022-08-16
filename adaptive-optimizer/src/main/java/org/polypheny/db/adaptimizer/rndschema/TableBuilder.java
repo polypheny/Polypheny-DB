@@ -98,7 +98,6 @@ public class TableBuilder {
         return this;
     }
 
-
     public void build( DdlManager ddlManager ) {
         try {
             ddlManager.createTable( this.schemaId, this.tableName, this.columns.left, this.columns.right, true, this.stores, this.placementType, this.statement );

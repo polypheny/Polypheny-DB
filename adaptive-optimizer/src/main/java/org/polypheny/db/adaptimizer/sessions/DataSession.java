@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adaptimizer;
+package org.polypheny.db.adaptimizer.sessions;
 
-import java.util.Random;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface SeededClass {
+@Getter(AccessLevel.PROTECTED)
+public abstract class DataSession implements OptSession {
 
-    default long getSeed() {
-        return SeedUtil.parseSeed( this.getRnd() );
-    }
+    @Setter(AccessLevel.PUBLIC)
+    protected SessionData sessionData;
 
-    default void setSeed( long seed ) {
-        this.getRnd().setSeed( seed );
-    }
-
-    Random getRnd();
+    protected DataSession() {}
 
 }

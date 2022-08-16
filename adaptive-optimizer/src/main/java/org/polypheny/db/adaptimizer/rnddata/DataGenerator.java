@@ -84,7 +84,6 @@ public class DataGenerator {
             String query = getInsertQuery( table, data );
             executeSqlInsert( transaction.createStatement(), query );
         }
-
         commitTransaction( transaction );
         getRecords().resetRnd();
     }

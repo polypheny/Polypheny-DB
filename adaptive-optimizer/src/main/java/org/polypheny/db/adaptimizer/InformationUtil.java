@@ -19,9 +19,15 @@ package org.polypheny.db.adaptimizer;
 import java.util.HashMap;
 import java.util.List;
 import org.polypheny.db.adaptimizer.models.Classifier;
+import org.polypheny.db.adaptimizer.rndqueries.QuerySupplier;
+import org.polypheny.db.adaptimizer.rndqueries.QueryUtil;
+import org.polypheny.db.adaptimizer.rndqueries.RelQueryGenerator;
 import org.polypheny.db.adaptimizer.rndschema.DefaultTestEnvironment;
 import org.polypheny.db.adaptimizer.rnddata.DataUtil;
 import org.polypheny.db.adaptimizer.rndschema.SchemaUtil;
+import org.polypheny.db.adaptimizer.sessions.CoverageSession;
+import org.polypheny.db.adaptimizer.sessions.SessionUtil;
+import org.polypheny.db.adaptimizer.sessions.TreeMeasureSession;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationAction;
@@ -77,7 +83,9 @@ public abstract class InformationUtil {
         group = addInformationGroup( informationManager, informationPages, "query", "Actions");
         addInformationElements( informationManager, group, List.of(
                 new InformationText( group, "Generate Queries" ),
-                new InformationAction( group, "Default", parameters -> "?" )
+                new InformationAction( group, "Default", parameters -> "?" ),
+                new InformationAction( group, "CoverageTest", parameters -> testCoverage() ),
+                new InformationAction( group, "ComplexityTest", parameters -> testComplexity() )
         ) );
 
         // Optimization Sessions
@@ -175,6 +183,18 @@ public abstract class InformationUtil {
             e.printStackTrace();
             return "Failed";
         }
+        return "Success";
+    }
+
+    private static String testCoverage() {
+        CoverageSession coverageSession = new CoverageSession( new QuerySupplier( RelQueryGenerator.from( SessionUtil.getCoverageMeasureTemplate() ) ) );
+        coverageSession.run();
+        return "Success";
+    }
+
+    private static String testComplexity() {
+        TreeMeasureSession coverageSession = new TreeMeasureSession( new QuerySupplier( RelQueryGenerator.from( SessionUtil.getCoverageMeasureTemplate() ) ) );
+        coverageSession.run();
         return "Success";
     }
 

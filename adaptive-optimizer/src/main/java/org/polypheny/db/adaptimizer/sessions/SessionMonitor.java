@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adaptimizer.sessions;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -23,6 +24,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
@@ -32,11 +34,12 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationProgress;
 import org.polypheny.db.information.InformationProgress.ProgressColor;
+import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.information.InformationTable;
 
 @Slf4j
 public class SessionMonitor implements Runnable {
-    private static final int UI_SESSION_MONITOR_UPDATE_FREQ = 5000; // ms
+    private static final int UI_SESSION_MONITOR_UPDATE_FREQ = 1000; // ms
     private static final int SESSION_TIME_LIMIT = Integer.MAX_VALUE;
 
     @Getter(AccessLevel.PRIVATE)
@@ -50,6 +53,10 @@ public class SessionMonitor implements Runnable {
     @Getter(AccessLevel.PRIVATE)
     private final InformationTable informationTable;
 
+    // Demo Purposes
+    private final InformationGroup group;
+    //
+
     public SessionMonitor( final HashMap<String, SessionData> sessions,
             final InformationManager informationManager,
             final InformationTable informationTable,
@@ -60,6 +67,9 @@ public class SessionMonitor implements Runnable {
         this.informationManager = informationManager;
         this.informationPage = informationPage;
         this.informationTable = informationTable;
+
+        group = new InformationGroup( "g", informationPage.getId(), "display-group" );
+        informationManager.addGroup( group );
     }
 
 
@@ -78,7 +88,17 @@ public class SessionMonitor implements Runnable {
             SessionData session;
             for ( String sid : getSessions().keySet() ) {
                 session = getSessions().get( sid );
-
+                // Demo Purposes
+//                if ( ! session.informationPlans.isEmpty() ) {
+//                    session.informationPlans.forEach( s -> {
+//                        log.debug( s );
+//                        InformationQueryPlan information = new InformationQueryPlan( group, s );
+//                        informationManager.registerInformation( information );
+//                        informationManager.getGroup( "g" ).addInformation( information );
+//                    } );
+//                    session.informationPlans.clear();
+//                }
+                //
                 if ( session.isFinished() ) {
                     // Finish Session
                     if ( log.isDebugEnabled() ) {

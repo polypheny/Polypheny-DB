@@ -47,6 +47,10 @@ public class DashboardInformation {
     @Getter
     private int numberOfWorkloads;
 
+    @Setter
+    @Getter
+    private long numberOfPendingEvents;
+
     @Getter
     private final Map<String, AdapterType> availableAdapter = new HashMap<>();
 
@@ -62,7 +66,7 @@ public class DashboardInformation {
         this.numberOfRollbacks = 0;
         this.numberOfQueries = 0;
         this.numberOfWorkloads = 0;
-
+        this.numberOfPendingEvents = 0;
         updatePolyphenyStatistic();
     }
 
@@ -73,7 +77,7 @@ public class DashboardInformation {
 
         this.numberOfQueries = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class ).size();
         this.numberOfWorkloads = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size();
-
+        this.numberOfPendingEvents = MonitoringServiceProvider.getInstance().getNumberOfElementsInQueue();
         catalog.getAdapters().forEach( v -> {
             this.availableAdapter.put( v.uniqueName, v.type );
         } );

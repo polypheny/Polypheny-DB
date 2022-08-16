@@ -17,10 +17,14 @@
 package org.polypheny.db.adaptimizer.rnddata;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.time.StopWatch;
 import org.polypheny.db.adaptimizer.AdaptiveOptimizerImpl;
 import org.polypheny.db.adaptimizer.rndschema.DefaultTestEnvironment;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 
+@Slf4j
 public abstract class DataUtil {
 
     public static void generateDataForDefaultEnvironment() throws UnknownColumnException {
@@ -38,6 +42,25 @@ public abstract class DataUtil {
                 .addCatalogTable( DefaultTestEnvironment.shipments, 500 )
                 .addDateRangeOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.shipments.id, "shipment_date" ), "2022-05-15", "2023-05-15" )
                 .addCatalogTable( DefaultTestEnvironment.purchases, 20000 )
+                .addIntRangeOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.purchases.id, "quantity" ), 1, 10 )
+                .build().generateData();
+    }
+
+    public static void generateModulatedDataForDefaultEnvironment( int cu, int or, int pr, int sh, int pu ) throws UnknownColumnException {
+        new DataGeneratorBuilder( 43268289064L, 100 )
+                .addCatalogTable( DefaultTestEnvironment.customers, cu )
+                .addLengthOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.customers.id, "customer_name" ), 8 )
+                .addLengthOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.customers.id, "customer_phone" ), 10 )
+                .addLengthOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.customers.id, "customer_address" ), 20 )
+                .addCatalogTable( DefaultTestEnvironment.orders, or )
+                .addTimestampRangeOption(  AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.orders.id, "order_date" ), "2022-05-15 06:00:00", "2023-05-15 06:00:00")
+                .addCatalogTable( DefaultTestEnvironment.products, pr )
+                .addUniformValues( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.products.id, "product_name" ), List.of( "Chevrolet", "Hummer", "Fiat", "Peugot", "Farrari", "Nissan", "Porsche") )
+                .addIntRangeOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.products.id, "product_stock" ), 0, 100 )
+                .addDoubleRangeOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.products.id, "product_price" ), 5000, 1000000 )
+                .addCatalogTable( DefaultTestEnvironment.shipments, sh )
+                .addDateRangeOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.shipments.id, "shipment_date" ), "2022-05-15", "2023-05-15" )
+                .addCatalogTable( DefaultTestEnvironment.purchases, pu )
                 .addIntRangeOption( AdaptiveOptimizerImpl.getCatalog().getColumn( DefaultTestEnvironment.purchases.id, "quantity" ), 1, 10 )
                 .build().generateData();
     }
