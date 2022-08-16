@@ -18,7 +18,18 @@ package org.polypheny.db.postgresql;
 
 
 import com.google.common.collect.ImmutableList;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -29,6 +40,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
+import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -45,13 +57,14 @@ public class PostgresqlInterface extends QueryInterface {
     @SuppressWarnings("WeakerAccess")
     public static final String INTERFACE_NAME = "Postgresql Interface";
     @SuppressWarnings("WeakerAccess")
-    //TODO: Text abändern
-    public static final String INTERFACE_DESCRIPTION = "HTTP-based query interface, which supports all available languages via specific routes.";
+    // TODO: Update description text
+    public static final String INTERFACE_DESCRIPTION = "PostgreSQL-based query interface - in development";
     @SuppressWarnings("WeakerAccess")
     public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new QueryInterfaceSettingInteger( "port", false, true, false, 13137 )
-            //new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 )
-            //kann mehr selber hinzufügen
+            new QueryInterfaceSettingInteger( "port", false, true, false, 5432 )
+            // new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 ),
+            // new QueryInterfaceSettingList( "serialization", false, true, false, ImmutableList.of( "PROTOBUF", "JSON" ) )
+            // Possible to add more myself
     );
 
 
@@ -62,6 +75,11 @@ public class PostgresqlInterface extends QueryInterface {
     private final Map<QueryLanguage, AtomicLong> statementCounters = new HashMap<>();
 
     private final MonitoringPage monitoringPage;
+
+    // Server things
+    private final EventLoopGroup bossGroup = new NioEventLoopGroup();
+    private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+
 
 
     public PostgresqlInterface(TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
@@ -81,6 +99,47 @@ public class PostgresqlInterface extends QueryInterface {
     public void run() {
         //ToDo: Instantiate Server (open port...)
 
+        try {
+            ServerBootstrap serverBootstrap = new ServerBootstrap();
+            serverBootstrap.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        public void initChannel(SocketChannel socketChannel) throws Exception {
+                            ChannelPipeline channelPipeline = socketChannel.pipeline();
+
+                            //Inbound
+                            //channelPipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, Integer.MAX_VALUE, 1, 4, -4, 0, true));
+                            //channelPipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 1, 4, -4, 0));
+                            //channelPipeline.addLast("DecoderText", new Decoder(Integer.MAX_VALUE, 1, 4, -4, 0));
+                            //channelPipeline.addLast("headerdecoder", new StringDecoder());
+                            channelPipeline.addLast("decoder", new StringDecoder());
+
+
+                            //Outbound
+                            channelPipeline.addLast("frameEncoder", new LengthFieldPrepender(4));
+                            channelPipeline.addLast("encoder", new StringEncoder());
+
+                            //Handler
+                            channelPipeline.addLast("handler", new ServerHandler());
+
+                        }
+                    }).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true);
+
+            // Start accepting incoming connections
+            ChannelFuture channelFuture = serverBootstrap.bind(port).sync();
+
+            // Waits until server socket is closed --> introduces bugs --> polypheny not starting (without reset) and not displaying interface correctly
+            //channelFuture.channel().closeFuture().sync();
+
+
+        } catch (Exception e) {
+            log.error("Exception while starting" + INTERFACE_NAME, e);
+
+        }
+
+
+        StatusService.printInfo(String.format("%s started and is listening on port %d.", INTERFACE_NAME, port ));
     }
 
 
@@ -94,6 +153,9 @@ public class PostgresqlInterface extends QueryInterface {
     @Override
     public void shutdown() {
         //todo: end things from run()
+        workerGroup.shutdownGracefully();
+        bossGroup.shutdownGracefully();
+        monitoringPage.remove();
     }
 
 
@@ -106,6 +168,7 @@ public class PostgresqlInterface extends QueryInterface {
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         //Todo: if settings are mutable, change it here (can make them mutable)
+        //nothing in avatica/http interface
     }
 
 
