@@ -84,6 +84,8 @@ public class EnumerableRules {
 
     public static final EnumerableModifyCollectRule ENUMERABLE_MODIFY_COLLECT_RULE = new EnumerableModifyCollectRule();
 
+    public static final EnumerableTriggerExecutionRule ENUMERABLE_TRIGGER_EXECUTION_RULE = new EnumerableTriggerExecutionRule();
+
     public static final EnumerableIntersectRule ENUMERABLE_INTERSECT_RULE = new EnumerableIntersectRule();
 
     public static final EnumerableMinusRule ENUMERABLE_MINUS_RULE = new EnumerableMinusRule();

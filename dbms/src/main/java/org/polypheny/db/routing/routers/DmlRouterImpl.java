@@ -34,14 +34,7 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalDocuments;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.*;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.SchemaType;
@@ -102,7 +95,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         case VIEW:
                             TriggerResolver triggerResolver = new TriggerResolver();
                             triggerResolver.runTriggers(node, statement, catalogTable);
-                            return node;
+                            return LogicalTriggerExecution.create(Collections.emptyList(), true);
                         default:
                             throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                     }
