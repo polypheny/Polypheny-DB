@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.ddl;
+package org.polypheny.db.ddl;
 
 
 import com.google.common.collect.ImmutableList;
@@ -103,6 +103,7 @@ import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.AlterSourceException;
 import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;

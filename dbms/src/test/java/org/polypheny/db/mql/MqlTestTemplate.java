@@ -48,6 +48,11 @@ public class MqlTestTemplate {
     }
 
 
+    public static void createCollection( String collection ) {
+        MongoConnection.executeGetResponse( String.format( "db.createCollection( %s )", collection ) );
+    }
+
+
     @After
     public void cleanDocuments() {
         deleteMany( "{}" );
@@ -64,7 +69,7 @@ public class MqlTestTemplate {
     }
 
 
-    protected static void initDatabase() {
+    public static void initDatabase() {
         MongoConnection.executeGetResponse( "use " + database );
     }
 
