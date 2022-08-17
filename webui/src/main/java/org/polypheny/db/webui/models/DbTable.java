@@ -18,8 +18,13 @@ package org.polypheny.db.webui.models;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.entity.CatalogTrigger;
 
 
 /**
@@ -34,6 +39,7 @@ public class DbTable {
     private final ArrayList<DbColumn> columns = new ArrayList<>();
     private final ArrayList<String> primaryKeyFields = new ArrayList<>();
     private final ArrayList<String> uniqueColumns = new ArrayList<>();
+    private final ArrayList<String> triggers = new ArrayList<>();
     private final boolean modifiable;
     private final String tableType;
 
@@ -77,6 +83,17 @@ public class DbTable {
      */
     public void addUniqueColumn( final String uniqueColumn ) {
         this.uniqueColumns.add( uniqueColumn );
+    }
+
+    /**
+     * Add a trigger to the trigger list
+     */
+    public void addTriggers(final Collection<CatalogTrigger> triggers) {
+        List<String> eventNames = triggers.stream()
+                .map(CatalogTrigger::getEvent)
+                .map(Enum::name)
+                .collect(Collectors.toList());
+        this.triggers.addAll(eventNames);
     }
 
 }
