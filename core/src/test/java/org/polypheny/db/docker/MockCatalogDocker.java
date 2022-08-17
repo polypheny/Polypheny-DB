@@ -71,6 +71,11 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
+    public List<CatalogTrigger> getTriggers(String schemaName, String tableName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException {
         throw new UnsupportedOperationException();
     }
