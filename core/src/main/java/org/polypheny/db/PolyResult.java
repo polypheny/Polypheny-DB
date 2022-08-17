@@ -342,7 +342,7 @@ public class PolyResult {
 
             List<Map<Long, Object>> values = statement.getDataContext().getParameterValues();
             if ( values.size() > 0 ) {
-                for ( long i = 0; i < statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
+                for ( long i = 1; i <= statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
                     ordered.put( i, new ArrayList<>() );
                 }
             }

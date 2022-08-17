@@ -23,6 +23,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.ModifyCollect;
+import org.polypheny.db.algebra.core.TriggerExecution;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
@@ -33,7 +34,7 @@ import java.util.List;
 /**
  * Implementation of {@link ModifyCollect} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableTriggerExecution extends ModifyCollect implements EnumerableAlg {
+public class EnumerableTriggerExecution extends TriggerExecution implements EnumerableAlg {
 
     public EnumerableTriggerExecution(AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
