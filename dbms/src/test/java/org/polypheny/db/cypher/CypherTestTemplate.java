@@ -54,7 +54,7 @@ import org.polypheny.db.webui.models.Result;
 
 public class CypherTestTemplate {
 
-
+    private static final String GRAPH_NAME = "test";
     public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().registerTypeAdapter( GraphPropertyHolder.class, new GraphObjectAdapter() ).create();
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
@@ -82,8 +82,13 @@ public class CypherTestTemplate {
 
 
     public static void createSchema() {
-        execute( "CREATE DATABASE test" );
-        execute( "USE GRAPH test" );
+        createSchema( GRAPH_NAME );
+    }
+
+
+    public static void createSchema( String name ) {
+        execute( String.format( "CREATE DATABASE %s", name ) );
+        execute( String.format( "USE GRAPH %s", name ) );
     }
 
 

@@ -16,6 +16,43 @@
 
 package org.polypheny.db.crossmodel;
 
+import java.sql.ResultSet;
+import java.util.List;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.polypheny.db.TestHelper;
+import org.polypheny.db.cypher.CypherTestTemplate;
+
+@Ignore
 public class RelationalOnLpgTest extends CrossModelTestTemplate {
+
+    private static final String GRAPH_NAME = "crossGraph";
+
+
+    @BeforeClass
+    public static void init() {
+        //noinspection ResultOfMethodCallIgnored
+        TestHelper.getInstance();
+        CypherTestTemplate.createSchema( GRAPH_NAME );
+    }
+
+
+    @Test
+    public void simpleSelectTest() {
+        executeStatements( s -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, "_nodes_" ) );
+            TestHelper.checkResultSet( result, List.of() );
+
+            result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, "_nodesProperties_" ) );
+            TestHelper.checkResultSet( result, List.of() );
+
+            result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, "_edges_" ) );
+            TestHelper.checkResultSet( result, List.of() );
+
+            result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, "_edgeProperties_" ) );
+            TestHelper.checkResultSet( result, List.of() );
+        } );
+    }
 
 }

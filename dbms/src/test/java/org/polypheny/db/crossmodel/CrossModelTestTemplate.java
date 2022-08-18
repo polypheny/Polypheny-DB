@@ -25,18 +25,21 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 public class CrossModelTestTemplate {
 
-    public static void executeConnection( SqlConsumer<Statement>... statementConsumers ) throws SQLException {
-        executeConnection( List.of( statementConsumers ) );
+    @SafeVarargs
+    public static void executeStatements( SqlConsumer<Statement>... statementConsumers ) {
+        executeStatements( List.of( statementConsumers ) );
     }
 
 
-    public static void executeConnection( List<SqlConsumer<Statement>> statementConsumers ) throws SQLException {
+    public static void executeStatements( List<SqlConsumer<Statement>> statementConsumers ) {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             for ( SqlConsumer<Statement> consumer : statementConsumers ) {
                 executeStatement( connection, consumer );
             }
 
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
         }
     }
 
