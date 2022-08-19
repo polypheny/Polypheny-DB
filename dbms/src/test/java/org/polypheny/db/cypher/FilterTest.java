@@ -25,7 +25,7 @@ public class FilterTest extends CypherTestTemplate {
     @Before
     public void reset() {
         tearDown();
-        createSchema();
+        createGraph();
     }
 
     ///////////////////////////////////////////////

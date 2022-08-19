@@ -352,7 +352,12 @@ public class TestHelper {
 
 
         public static Result executeGetResponse( String mongoQl ) {
-            return getBody( execute( MONGO_PREFIX, mongoQl, MONGO_DB ) );
+            return executeGetResponse( mongoQl, MONGO_DB );
+        }
+
+
+        public static Result executeGetResponse( String mongoQl, String database ) {
+            return getBody( execute( MONGO_PREFIX, mongoQl, database ) );
         }
 
 

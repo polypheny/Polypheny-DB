@@ -16,6 +16,49 @@
 
 package org.polypheny.db.crossmodel;
 
+import java.util.List;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.polypheny.db.TestHelper;
+import org.polypheny.db.cypher.CypherTestTemplate;
+import org.polypheny.db.cypher.CypherTestTemplate.Row;
+import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.mql.MqlTestTemplate;
+import org.polypheny.db.util.Pair;
+
+@Ignore
 public class LpgOnDocumentTest extends CrossModelTestTemplate {
+
+    private static final String DATABASE_NAME = "crossDocumentSchema";
+
+    private static final String COLLECTION_NAME = "crossCollection";
+
+
+    @BeforeClass
+    public static void init() {
+        //noinspection ResultOfMethodCallIgnored
+        TestHelper.getInstance();
+        MqlTestTemplate.initDatabase( DATABASE_NAME );
+        MqlTestTemplate.createCollection( COLLECTION_NAME );
+    }
+
+
+    @AfterClass
+    public static void tearDown() {
+        MqlTestTemplate.dropDatabase( DATABASE_NAME );
+    }
+
+
+    @Test
+    public void simpleMatchTest() {
+        CypherTestTemplate.containsRows(
+                CypherTestTemplate.execute( "MATCH (n) RETURN n", DATABASE_NAME ),
+                true,
+                false,
+                Row.of(
+                        TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
+    }
 
 }

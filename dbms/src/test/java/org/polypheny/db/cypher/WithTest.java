@@ -27,7 +27,7 @@ public class WithTest extends CypherTestTemplate {
     @Before
     public void reset() {
         tearDown();
-        createSchema();
+        createGraph();
     }
 
 

@@ -77,16 +77,16 @@ public class CypherTestTemplate {
     public static void start() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
-        createSchema();
+        createGraph();
     }
 
 
-    public static void createSchema() {
-        createSchema( GRAPH_NAME );
+    public static void createGraph() {
+        createGraph( GRAPH_NAME );
     }
 
 
-    public static void createSchema( String name ) {
+    public static void createGraph( String name ) {
         execute( String.format( "CREATE DATABASE %s", name ) );
         execute( String.format( "USE GRAPH %s", name ) );
     }
@@ -177,7 +177,7 @@ public class CypherTestTemplate {
     }
 
 
-    protected boolean containsRows( Result actual, boolean exclusive, boolean ordered, Row... rows ) {
+    public static boolean containsRows( Result actual, boolean exclusive, boolean ordered, Row... rows ) {
         try {
             List<List<Object>> parsed = new ArrayList<>();
 
@@ -201,7 +201,7 @@ public class CypherTestTemplate {
     }
 
 
-    private boolean matchesUnorderedRows( List<List<Object>> parsed, Row[] rows ) {
+    private static boolean matchesUnorderedRows( List<List<Object>> parsed, Row[] rows ) {
 
         List<Integer> used = new ArrayList<>();
         for ( Row row : rows ) {
@@ -228,7 +228,7 @@ public class CypherTestTemplate {
     }
 
 
-    private boolean matchesExactRows( List<List<Object>> parsed, Row[] rows ) {
+    private static boolean matchesExactRows( List<List<Object>> parsed, Row[] rows ) {
         boolean matches = true;
         int j = 0;
         for ( Row row : rows ) {
@@ -329,7 +329,7 @@ public class CypherTestTemplate {
         }
 
 
-        static Row of( TestObject... values ) {
+        public static Row of( TestObject... values ) {
             return new Row( values );
         }
 

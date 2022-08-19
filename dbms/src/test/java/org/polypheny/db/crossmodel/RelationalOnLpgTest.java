@@ -18,6 +18,7 @@ package org.polypheny.db.crossmodel;
 
 import java.sql.ResultSet;
 import java.util.List;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -34,13 +35,19 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
-        CypherTestTemplate.createSchema( GRAPH_NAME );
+        CypherTestTemplate.createGraph( GRAPH_NAME );
+    }
+
+
+    @AfterClass
+    public static void tearDown() {
+        CypherTestTemplate.tearDown();
     }
 
 
     @Test
     public void simpleSelectTest() {
-        executeStatements( s -> {
+        executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, "_nodes_" ) );
             TestHelper.checkResultSet( result, List.of() );
 

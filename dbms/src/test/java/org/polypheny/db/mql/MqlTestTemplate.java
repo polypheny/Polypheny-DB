@@ -43,7 +43,7 @@ public class MqlTestTemplate {
 
 
     @AfterClass
-    public static void clean() {
+    public static void tearDown() {
         dropDatabase();
     }
 
@@ -64,12 +64,22 @@ public class MqlTestTemplate {
     }
 
 
-    public Result execute( String doc ) {
+    public static Result execute( String doc ) {
         return MongoConnection.executeGetResponse( doc );
     }
 
 
+    public static Result execute( String doc, String database ) {
+        return MongoConnection.executeGetResponse( doc, database );
+    }
+
+
     public static void initDatabase() {
+        initDatabase( database );
+    }
+
+
+    public static void initDatabase( String database ) {
         MongoConnection.executeGetResponse( "use " + database );
     }
 
@@ -204,7 +214,7 @@ public class MqlTestTemplate {
     }
 
 
-    protected static void dropDatabase( String database ) {
+    public static void dropDatabase( String database ) {
         MongoConnection.executeGetResponse( "use " + database );
         MongoConnection.executeGetResponse( "db.dropDatabase()" );
     }

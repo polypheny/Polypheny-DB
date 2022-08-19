@@ -34,7 +34,7 @@ public class MatchTest extends CypherTestTemplate {
     @Before
     public void reset() {
         tearDown();
-        createSchema();
+        createGraph();
     }
 
 

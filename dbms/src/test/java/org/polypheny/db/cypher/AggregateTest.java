@@ -28,7 +28,7 @@ public class AggregateTest extends CypherTestTemplate {
     @Before
     public void reset() {
         tearDown();
-        createSchema();
+        createGraph();
     }
 
 

@@ -20,21 +20,20 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 public class CrossModelTestTemplate {
 
-    @SafeVarargs
-    public static void executeStatements( SqlConsumer<Statement>... statementConsumers ) {
+    public static void executeStatements( SqlConsumer... statementConsumers ) {
         executeStatements( List.of( statementConsumers ) );
     }
 
 
-    public static void executeStatements( List<SqlConsumer<Statement>> statementConsumers ) {
+    public static void executeStatements( List<SqlConsumer> statementConsumers ) {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
-            for ( SqlConsumer<Statement> consumer : statementConsumers ) {
+            for ( SqlConsumer consumer : statementConsumers ) {
                 executeStatement( connection, consumer );
             }
 
@@ -44,25 +43,25 @@ public class CrossModelTestTemplate {
     }
 
 
-    public static void executeStatement( Connection connection, SqlConsumer<Statement> statementConsumer ) throws SQLException {
+    private static void executeStatement( Connection connection, SqlConsumer statementConsumer ) throws SQLException {
         try ( Statement statement = connection.createStatement() ) {
-            statementConsumer.accept( statement );
+            statementConsumer.accept( statement, connection );
         }
     }
 
 
-    public interface SqlConsumer<T> extends Consumer<T> {
+    public interface SqlConsumer extends BiConsumer<Statement, Connection> {
 
         @Override
-        default void accept( T t ) {
+        default void accept( Statement statement, Connection connection ) {
             try {
-                tryAccept( t );
+                tryAccept( statement, connection );
             } catch ( Exception e ) {
                 throw new RuntimeException( e );
             }
         }
 
-        void tryAccept( T t ) throws Exception;
+        void tryAccept( Statement statement, Connection connection ) throws Exception;
 
     }
 

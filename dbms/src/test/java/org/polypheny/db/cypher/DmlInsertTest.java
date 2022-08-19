@@ -45,7 +45,7 @@ public class DmlInsertTest extends CypherTestTemplate {
     @Before
     public void reset() {
         tearDown();
-        createSchema();
+        createGraph();
     }
 
 
