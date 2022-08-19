@@ -66,10 +66,11 @@ public class LpgOnRelationalTest extends CrossModelTestTemplate {
 
     private static void initStructure() {
         executeStatements( ( s, c ) -> {
+            s.executeUpdate( format( "CREATE SCHEMA %s", SCHEMA_NAME ) );
             s.executeUpdate( format( "CREATE TABLE %s( id INTEGER NOT NULL, name VARCHAR(39), foo INTEGER, PRIMARY KEY (id))", FULL_TABLE_NAME ) );
 
             for ( Object[] row : DATA ) {
-                s.executeUpdate( format( "INSERT INTO %s VALUES (%s, %s, %s)", FULL_TABLE_NAME, row[0], row[1], row[2] ) );
+                s.executeUpdate( format( "INSERT INTO %s VALUES (%s, '%s', %s)", FULL_TABLE_NAME, row[0], row[1], row[2] ) );
             }
 
             c.commit();

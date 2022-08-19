@@ -20,7 +20,9 @@ import static java.lang.String.format;
 import static org.polypheny.db.mql.MqlTestTemplate.execute;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -64,10 +66,11 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
 
     private static void initStructure() {
         executeStatements( ( s, c ) -> {
+            s.executeUpdate( format( "CREATE SCHEMA %s", SCHEMA_NAME ) );
             s.executeUpdate( format( "CREATE TABLE %s( id INTEGER NOT NULL, name VARCHAR(39), foo INTEGER, PRIMARY KEY (id))", FULL_TABLE_NAME ) );
 
             for ( Object[] row : DATA ) {
-                s.executeUpdate( format( "INSERT INTO %s VALUES (%s, %s, %s)", FULL_TABLE_NAME, row[0], row[1], row[2] ) );
+                s.executeUpdate( format( "INSERT INTO %s VALUES (%s, '%s', %s)", FULL_TABLE_NAME, row[0], row[1], row[2] ) );
             }
 
             c.commit();
@@ -88,7 +91,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     public void simpleFindTest() {
         TestHelper.MongoConnection.checkUnorderedResultSet(
                 execute( String.format( "db.%s.find({})", TABLE_NAME ), SCHEMA_NAME ),
-                List.of(), true );
+                DATA.stream().map( r -> Arrays.stream( r ).map( Object::toString ).toArray( String[]::new ) ).collect( Collectors.toList() ), true );
     }
 
 }

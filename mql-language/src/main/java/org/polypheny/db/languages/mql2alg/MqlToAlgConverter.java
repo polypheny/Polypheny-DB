@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -277,7 +278,7 @@ public class MqlToAlgConverter {
         node = LogicalDocumentScan.create( cluster, entity );
         this.usesDocumentModel = true;
 
-        AlgDataType rowType = entity.getRowType();//new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
+        AlgDataType rowType = entity.getRowType();
 
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
@@ -318,9 +319,12 @@ public class MqlToAlgConverter {
 
 
     private AlgOptTable getEntity( MqlCollectionStatement query, String dbSchemaName ) {
-        PreparingTable table = catalogReader.getTable( ImmutableList.of( dbSchemaName, query.getCollection() ) );
+        List<String> names = ImmutableList.of( dbSchemaName, query.getCollection() ).stream().map( n -> n.toLowerCase( Locale.ROOT ) ).collect( Collectors.toList() );
+
+        PreparingTable table = catalogReader.getTable( names );
+
         if ( table == null ) {
-            return catalogReader.getDocument( ImmutableList.of( dbSchemaName, query.getCollection() ) );
+            return catalogReader.getDocument( names );
         }
         return table;
     }

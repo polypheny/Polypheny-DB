@@ -16,6 +16,7 @@
 
 package org.polypheny.db.crossmodel;
 
+import static java.lang.String.format;
 import static org.polypheny.db.mql.MqlTestTemplate.execute;
 
 import java.util.List;
@@ -31,12 +32,15 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
 
     private static final String GRAPH_NAME = "crossGraph";
 
+    private static final String DATA_LABEL = "label1";
+
 
     @BeforeClass
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         CypherTestTemplate.createGraph( GRAPH_NAME );
+        CypherTestTemplate.execute( format( "CREATE (n:%s {\"key\": 3})", DATA_LABEL ) );
     }
 
 
@@ -49,19 +53,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     @Test
     public void simpleFindTest() {
         TestHelper.MongoConnection.checkUnorderedResultSet(
-                execute( String.format( "db.%s.find({})", "_nodes_" ), GRAPH_NAME ),
-                List.of(), true );
-
-        TestHelper.MongoConnection.checkUnorderedResultSet(
-                execute( String.format( "db.%s.find({})", "_nodeProperties_" ), GRAPH_NAME ),
-                List.of(), true );
-
-        TestHelper.MongoConnection.checkUnorderedResultSet(
-                execute( String.format( "db.%s.find({})", "_edges_" ), GRAPH_NAME ),
-                List.of(), true );
-
-        TestHelper.MongoConnection.checkUnorderedResultSet(
-                execute( String.format( "db.%s.find({})", "_edgeProperties_" ), GRAPH_NAME ),
+                execute( format( "db.%s.find({})", DATA_LABEL ), GRAPH_NAME ),
                 List.of(), true );
     }
 
