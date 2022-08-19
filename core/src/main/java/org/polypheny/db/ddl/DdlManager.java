@@ -485,14 +485,15 @@ public abstract class DdlManager {
     /**
      * Create a new trigger
      *
-     * @param schemaId the id of schema
+     * @param databaseId  the id of the database
+     * @param schemaId    the id of schema
      * @param triggerName the name of the new trigger
-     * @param databaseId the id of the database
-     * @param replace whether to replace an existing or insert a new trigger
-     * @param event the table event on which to bind the trigger
-     * @param query the body of the trigger
+     * @param replace     whether to replace an existing or insert a new trigger
+     * @param event       the table event on which to bind the trigger
+     * @param query       the body of the trigger
+     * @param language
      */
-    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query);
+    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query, QueryLanguage language);
 
     /**
      * Delete a trigger

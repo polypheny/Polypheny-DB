@@ -944,17 +944,18 @@ public class CatalogImpl extends Catalog {
     /**
      * Creates a new trigger with the given name in the specified schema.
      *
-     * @param databaseId    The id of the database
-     * @param schemaId      The id of the schema
-     * @param triggerName   The name of the trigger
-     * @param table         The referenced table
-     * @param event         The event on which to execute the trigger
-     * @param query         The query to run
+     * @param databaseId  The id of the database
+     * @param schemaId    The id of the schema
+     * @param triggerName The name of the trigger
+     * @param table       The referenced table
+     * @param event       The event on which to execute the trigger
+     * @param query       The query to run
+     * @param language    The language in which the query was written
      */
     @Override
-    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query) {
+    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, QueryLanguage language) {
         long id = procedureIdBuilder.getAndIncrement();
-        CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, table.id, query);
+        CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, table.id, language, query);
         synchronized (this) {
             triggers.put(id, trigger);
             triggerNames.put(new Object[]{databaseId, schemaId, triggerName}, trigger);

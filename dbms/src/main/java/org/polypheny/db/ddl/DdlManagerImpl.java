@@ -1746,7 +1746,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
     @Override
-    public void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query) {
+    public void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query, QueryLanguage language) {
         Event polyphenyEvent = mapEventType(event);
         if(replace) {
             //catalog.updateTrigger(databaseId, schemaId, triggerName, table, event, query);
@@ -1757,7 +1757,7 @@ public class DdlManagerImpl extends DdlManager {
             } catch (UnknownTableException e) {
                 throw new RuntimeException(e);
             }
-            catalog.createTrigger(databaseId, schemaId, triggerName, catalogTable, polyphenyEvent, query);
+            catalog.createTrigger(databaseId, schemaId, triggerName, catalogTable, polyphenyEvent, query, language);
         }
     }
 

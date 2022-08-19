@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Event;
@@ -35,14 +36,18 @@ public final class CatalogTrigger implements CatalogEntity {
     private final long triggerId;
 
     private final long tableId;
+
+    @Getter
+    private final Catalog.QueryLanguage language;
     private final String query;
 
-    public CatalogTrigger(Long schemaId, String name, Long databaseId, Long triggerId, Event event, long tableId, String query, final String... arguments) {
+    public CatalogTrigger(Long schemaId, String name, Long databaseId, Long triggerId, Event event, long tableId, Catalog.QueryLanguage language, String query, final String... arguments) {
         this.name = name;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
         this.event = event;
         this.tableId = tableId;
+        this.language = language;
         this.query = query;
         this.triggerId = triggerId;
     }
