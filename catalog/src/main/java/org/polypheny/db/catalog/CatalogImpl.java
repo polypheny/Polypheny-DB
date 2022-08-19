@@ -395,69 +395,67 @@ public class CatalogImpl extends Catalog {
     public void restoreViews( Transaction transaction ) {
         Statement statement = transaction.createStatement();
 
-        for ( CatalogTable c : tables.values() ) {
-            if ( c.tableType == TableType.VIEW || c.tableType == TableType.MATERIALIZED_VIEW ) {
-                String query;
-                QueryLanguage language;
-                if ( c.tableType == TableType.VIEW ) {
-                    query = ((CatalogView) c).getQuery();
-                    language = ((CatalogView) c).getLanguage();
-                } else {
-                    query = ((CatalogMaterializedView) c).getQuery();
-                    language = ((CatalogMaterializedView) c).getLanguage();
-                }
+        tables.values().stream()
+                .filter(table -> table instanceof CatalogView)
+                .map(view -> (Restorable) view)
+                .forEach(entity -> {
+                    AlgRoot algRoot = restoreAlgRoot(statement, entity);
+                    nodeInfo.put( entity.getId(), algRoot.alg );
+                    algTypeInfo.put( entity.getId(), algRoot.validatedRowType );
+                    if ( entity instanceof CatalogTable && ((CatalogTable) entity).tableType == TableType.MATERIALIZED_VIEW ) {
+                        CatalogTable materializedView = (CatalogTable) entity;
+                        log.info( "Updating materialized view: {}", materializedView.getSchemaName() + "." + materializedView.name );
+                        MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
+                        materializedManager.addMaterializedInfo( materializedView.id, ((CatalogMaterializedView) materializedView).getMaterializedCriteria() );
+                        materializedManager.updateData( statement.getTransaction(), materializedView.id );
+                        materializedManager.updateMaterializedTime( materializedView.id );
+                    }
+                });
+    }
 
-                switch ( language ) {
-                    case SQL:
-                        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-                        Node sqlNode = sqlProcessor.parse( query );
-                        AlgRoot algRoot = sqlProcessor.translate(
-                                statement,
-                                sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
-                                new QueryParameters( query, c.getSchemaType() ) );
-                        nodeInfo.put( c.id, algRoot.alg );
-                        algTypeInfo.put( c.id, algRoot.validatedRowType );
-                        break;
+    private AlgRoot restoreAlgRoot(Statement statement, Restorable entity) {
+        switch (entity.getLanguage()) {
+            case SQL:
+                Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+                Node sqlNode = sqlProcessor.parse(entity.getQuery());
+                return sqlProcessor.translate(
+                        statement,
+                        sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
+                        new QueryParameters(entity.getQuery(), entity.getSchemaType() ) );
+            case REL_ALG:
+                Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
+                AlgNode result = jsonRelProcessor.translate(statement, null, new QueryParameters(entity.getQuery(), entity.getSchemaType() ) ).alg;
 
-                    case REL_ALG:
-                        Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
-                        AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query, c.getSchemaType() ) ).alg;
+                final AlgDataType rowType = result.getRowType();
+                final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+                final AlgCollation collation =
+                        result instanceof Sort
+                                ? ((Sort) result).collation
+                                : AlgCollations.EMPTY;
+                return new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
+            case MONGO_QL:
+                Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
+                Node mqlNode = mqlProcessor.parse(entity.getQuery());
 
-                        final AlgDataType rowType = result.getRowType();
-                        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-                        final AlgCollation collation =
-                                result instanceof Sort
-                                        ? ((Sort) result).collation
-                                        : AlgCollations.EMPTY;
-                        AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
-
-                        nodeInfo.put( c.id, root.alg );
-                        algTypeInfo.put( c.id, root.validatedRowType );
-                        break;
-
-                    case MONGO_QL:
-                        Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
-                        Node mqlNode = mqlProcessor.parse( query );
-
-                        AlgRoot mqlRel = mqlProcessor.translate(
-                                statement,
-                                mqlNode,
-                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name, SchemaType.DOCUMENT ) );
-                        nodeInfo.put( c.id, mqlRel.alg );
-                        algTypeInfo.put( c.id, mqlRel.validatedRowType );
-                        break;
-                }
-                if ( c.tableType == TableType.MATERIALIZED_VIEW ) {
-                    log.info( "Updating materialized view: {}", c.getSchemaName() + "." + c.name );
-                    MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
-                    materializedManager.addMaterializedInfo( c.id, ((CatalogMaterializedView) c).getMaterializedCriteria() );
-                    materializedManager.updateData( statement.getTransaction(), c.id );
-                    materializedManager.updateMaterializedTime( c.id );
-                }
-            }
+                return mqlProcessor.translate(
+                        statement,
+                        mqlNode,
+                        new MqlQueryParameters(entity.getQuery(), getSchema( defaultDatabaseId ).name, SchemaType.DOCUMENT ) );
+            default:
+                throw new RuntimeException("Cannot restore entity with unknown query language");
         }
     }
 
+    /**
+     * Recreate the AlgRoot objects for saved Triggers
+     * @return a collection of algRoot objects for each installed {@link CatalogTrigger}
+     */
+    public Collection<AlgRoot> restoreTriggers(Transaction transaction) {
+        Statement statement = transaction.createStatement();
+        return triggers.values().stream().
+                map(entity -> restoreAlgRoot(statement, entity))
+                .collect(Collectors.toList());
+    }
 
     /**
      * Sets the idBuilder for a given map to the new starting position

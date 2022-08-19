@@ -25,7 +25,7 @@ import org.polypheny.db.catalog.Event;
 import java.io.Serializable;
 
 @EqualsAndHashCode
-public final class CatalogTrigger implements CatalogEntity {
+public final class CatalogTrigger implements CatalogEntity, Restorable {
 
     private static final long serialVersionUID = -4752365450652498995L;
     private final Long schemaId;
@@ -69,6 +69,7 @@ public final class CatalogTrigger implements CatalogEntity {
     }
 
 
+    @Override
     @SneakyThrows
     public Catalog.SchemaType getSchemaType() {
         return Catalog.getInstance().getSchema(schemaId).schemaType;
@@ -78,8 +79,18 @@ public final class CatalogTrigger implements CatalogEntity {
         return name;
     }
 
+    @Override
+    public long getId() {
+        return triggerId;
+    }
+
     public String getQuery() {
         return query;
+    }
+
+    @Override
+    public Catalog.QueryLanguage getLanguage() {
+        return language;
     }
 
     public long getTriggerId() {

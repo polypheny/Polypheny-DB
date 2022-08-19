@@ -29,6 +29,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -116,6 +117,8 @@ public abstract class Catalog {
      * Restores all views and materialized views after restart
      */
     public abstract void restoreViews( Transaction transaction );
+
+    public abstract Collection<AlgRoot> restoreTriggers(Transaction transaction);
 
 
     protected final boolean isValidIdentifier( final String str ) {
