@@ -324,7 +324,7 @@ public class MqlToAlgConverter {
         PreparingTable table = catalogReader.getTable( names );
 
         if ( table == null ) {
-            return catalogReader.getDocument( names );
+            return catalogReader.getCollection( names );
         }
         return table;
     }

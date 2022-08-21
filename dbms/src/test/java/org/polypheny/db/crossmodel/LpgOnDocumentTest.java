@@ -16,10 +16,13 @@
 
 package org.polypheny.db.crossmodel;
 
+import static java.lang.String.format;
+
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -28,12 +31,23 @@ import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.util.Pair;
 
-@Ignore
 public class LpgOnDocumentTest extends CrossModelTestTemplate {
 
-    private static final String DATABASE_NAME = "crossDocumentSchema";
+    private static final String DATABASE_NAME = "crossdocumentschema";
 
-    private static final String COLLECTION_NAME = "crossCollection";
+    private static final String COLLECTION_NAME = "crosscollection";
+
+    public static final Map<String, Object> TEST_MAP = Map.of(
+            "test", 3,
+            "key", "value",
+            "_id", "630103687f2e95058018fd9b" );
+    public static final String TEST_DATA = TEST_MAP.entrySet().stream().map( e -> {
+        String value = "" + e.getValue();
+        if ( e.getValue() instanceof String ) {
+            value = "\"" + e.getValue() + "\"";
+        }
+        return format( "\"%s\": %s", e.getKey(), value );
+    } ).collect( Collectors.joining( ",", "{", "}" ) );
 
 
     @BeforeClass
@@ -42,6 +56,7 @@ public class LpgOnDocumentTest extends CrossModelTestTemplate {
         TestHelper.getInstance();
         MqlTestTemplate.initDatabase( DATABASE_NAME );
         MqlTestTemplate.createCollection( COLLECTION_NAME, DATABASE_NAME );
+        MqlTestTemplate.insert( TEST_DATA, COLLECTION_NAME, DATABASE_NAME );
     }
 
 
@@ -51,14 +66,27 @@ public class LpgOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
+    public static Row dataAsRow() {
+        return Row.of( TestNode.from( List.of( COLLECTION_NAME ), TEST_MAP.entrySet().stream().filter( e -> !e.getKey().equals( "_id" ) ).map( e -> Pair.of( e.getKey(), e.getValue() ) ).collect( Collectors.toList() ).toArray( new Pair[0] ) ) );
+    }
+
+
     @Test
     public void simpleMatchTest() {
         CypherTestTemplate.containsRows(
-                CypherTestTemplate.execute( "MATCH (n) RETURN n", DATABASE_NAME ),
+                CypherTestTemplate.execute( format( "MATCH (n:%s) RETURN n", COLLECTION_NAME ), DATABASE_NAME ),
                 true,
                 false,
-                Row.of(
-                        TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
+                dataAsRow() );
+    }
+
+
+    @Test
+    public void emptyMatchTest() {
+        CypherTestTemplate.containsRows(
+                CypherTestTemplate.execute( format( "MATCH (n:%s) RETURN n", "random" ), DATABASE_NAME ),
+                true,
+                false );
     }
 
 }

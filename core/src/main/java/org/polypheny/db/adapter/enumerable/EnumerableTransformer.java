@@ -80,20 +80,94 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         }
 
         if ( outModelTrait == ModelTrait.GRAPH ) {
-
             if ( isCrossModel ) {
                 if ( inModelTrait == ModelTrait.RELATIONAL ) {
                     return implementGraphOnRelational( implementor, pref );
                 } else if ( inModelTrait == ModelTrait.DOCUMENT ) {
-
+                    return implementGraphOnDocument( implementor, pref );
                 }
-
             }
             return implementGraph( implementor, pref );
-
         }
 
         throw new RuntimeException( "Transformation of the given data models is not yet supported." );
+    }
+
+
+    private Result implementGraphOnDocument( EnumerableAlgImplementor implementor, Prefer pref ) {
+        BlockBuilder builder = new BlockBuilder();
+        final JavaTypeFactory typeFactory = implementor.getTypeFactory();
+
+        final Map<String, Result> nodes = new HashMap<>();
+        for ( int i = 0; i < getInputs().size(); i++ ) {
+            nodes.put( names.get( i ), implementor.visitChild( this, i, (EnumerableAlg) getInput( i ), pref ) );
+        }
+
+        //final Result edges = implementor.visitChild( this, 1, (EnumerableAlg) getInput( 1 ), pref );
+
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getRowType(), pref.prefer( JavaRowFormat.SCALAR ) );
+
+        Type inputJavaType = physType.getJavaRowType();
+        ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
+
+        Type outputJavaType = physType.getJavaRowType();
+        final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
+
+        List<Expression> tableAsNodes = new ArrayList<>();
+        int i = 0;
+        for ( Entry<String, Result> entry : nodes.entrySet() ) {
+            Expression exp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), entry.getValue().block );
+            MethodCallExpression transformedTable = Expressions.call( BuiltInMethod.X_MODEL_COLLECTION_TO_NODE.method, exp, Expressions.constant( entry.getKey() ) );
+            tableAsNodes.add( transformedTable );
+            i++;
+        }
+
+        Expression nodesExp = Expressions.call( BuiltInMethod.X_MODEL_MERGE_NODE_COLLECTIONS.method, EnumUtils.expressionList( tableAsNodes ) );
+
+        //Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), nodes.block );
+        //Expression edgeExp = builder.append( builder.newName( "edges_" + System.nanoTime() ), edges.block );
+
+        //MethodCallExpression nodeCall = Expressions.call( BuiltInMethod.TO_NODE.method, nodesExp );
+        //MethodCallExpression edgeCall = Expressions.call( BuiltInMethod.TO_EDGE.method, edgeExp );
+
+        MethodCallExpression call = Expressions.call( BuiltInMethod.TO_GRAPH.method, nodesExp, Expressions.call( Linq4j.class, "emptyEnumerable" ) );
+
+        Expression body = Expressions.new_(
+                enumeratorType,
+                EnumUtils.NO_EXPRS,
+                Expressions.list(
+                        Expressions.fieldDecl(
+                                Modifier.PUBLIC | Modifier.FINAL,
+                                inputEnumerator,
+                                Expressions.call( call, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_RESET.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_RESET.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_MOVE_NEXT.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_CLOSE.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CLOSE.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_CURRENT.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ) ) )
+                ) );
+
+        builder.add(
+                Expressions.return_(
+                        null,
+                        Expressions.new_(
+                                BuiltInMethod.ABSTRACT_ENUMERABLE_CTOR.constructor,
+                                // TODO: generics
+                                //   Collections.singletonList(inputRowType),
+                                EnumUtils.NO_EXPRS,
+                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
+        return implementor.result( physType, builder.toBlock() );
     }
 
 

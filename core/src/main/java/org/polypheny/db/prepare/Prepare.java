@@ -353,7 +353,7 @@ public abstract class Prepare {
         @Override
         PreparingTable getTable( List<String> names );
 
-        AlgOptTable getDocument( List<String> names );
+        AlgOptTable getCollection( List<String> names );
 
         Graph getGraph( String name );
 

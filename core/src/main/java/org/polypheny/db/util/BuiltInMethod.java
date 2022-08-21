@@ -463,7 +463,8 @@ public enum BuiltInMethod {
     SPLIT_GRAPH_MODIFY( CypherFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class ),
 
     X_MODEL_TABLE_TO_NODE( CypherFunctions.class, "tableToNodes", Enumerable.class, String.class, List.class ),
-    X_MODEL_MERGE_NODE_COLLECTIONS( CypherFunctions.class, "mergeNodeCollections", List.class );
+    X_MODEL_MERGE_NODE_COLLECTIONS( CypherFunctions.class, "mergeNodeCollections", List.class ),
+    X_MODEL_COLLECTION_TO_NODE( CypherFunctions.class, "collectionToNodes", Enumerable.class, String.class );
 
     public final Method method;
     public final Constructor constructor;

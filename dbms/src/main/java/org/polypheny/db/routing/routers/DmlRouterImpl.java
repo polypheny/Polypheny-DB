@@ -840,7 +840,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             String collectionName = collection.name + "_" + placement.id;
 
-            AlgOptTable document = reader.getDocument( List.of( namespaceName, collectionName ) );
+            AlgOptTable document = reader.getCollection( List.of( namespaceName, collectionName ) );
             if ( !adapter.getSupportedNamespaces().contains( NamespaceType.DOCUMENT ) ) {
                 // move "slower" updates in front
                 modifies.add( 0, attachRelationalModify( alg, statement, placementId, queryInformation ) );
@@ -927,7 +927,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     private AlgNode buildDocumentDml( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
         if ( node instanceof DocumentScan ) {
-            return super.handleDocumentScan( (DocumentScan) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), queryInformation, null ).build();
+            return super.handleDocumentScan( (DocumentScan) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), null ).build();
         }
         int i = 0;
         List<AlgNode> inputs = new ArrayList<>();
@@ -1024,7 +1024,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         switch ( ((DocumentAlg) alg).getDocType() ) {
 
             case SCAN:
-                handleDocumentScan( (DocumentScan) alg, statement, builder, information, adapterId );
+                handleDocumentScan( (DocumentScan) alg, statement, builder, adapterId );
                 break;
             case VALUES:
                 builder.push( LogicalDocumentValues.create( alg.getCluster(), ((DocumentValues) alg).documentTuples ) );

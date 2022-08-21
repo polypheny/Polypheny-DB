@@ -808,4 +808,56 @@ public class BsonUtil {
 
     }
 
+
+    public static Comparable<?> getAsObject( BsonValue value ) {
+        switch ( value.getBsonType() ) {
+            case END_OF_DOCUMENT:
+                break;
+            case DOUBLE:
+                return value.asDouble().decimal128Value();
+            case STRING:
+                return value.asString().getValue();
+            case DOCUMENT:
+                return value.asDocument().toJson();
+            case ARRAY:
+                return Arrays.toString( value.asArray().toArray() );
+            case BINARY:
+                return value.asBinary().asUuid();
+            case UNDEFINED:
+                break;
+            case OBJECT_ID:
+                break;
+            case BOOLEAN:
+                return value.asBoolean().getValue();
+            case DATE_TIME:
+                break;
+            case NULL:
+                return null;
+            case REGULAR_EXPRESSION:
+                break;
+            case DB_POINTER:
+                break;
+            case JAVASCRIPT:
+                break;
+            case SYMBOL:
+                break;
+            case JAVASCRIPT_WITH_SCOPE:
+                break;
+            case INT32:
+                return value.asInt32().getValue();
+            case TIMESTAMP:
+                break;
+            case INT64:
+                return value.asInt64().getValue();
+            case DECIMAL128:
+                return BigDecimal.valueOf( value.asDecimal128().doubleValue() );
+            case MIN_KEY:
+                break;
+            case MAX_KEY:
+                break;
+
+        }
+        throw new RuntimeException( "BsonType cannot be transformed." );
+    }
+
 }

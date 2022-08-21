@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,8 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Function0;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.Modify.Operation;
@@ -46,6 +49,7 @@ import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.BsonUtil;
 
 @Deterministic
 @Slf4j
@@ -489,8 +493,26 @@ public class CypherFunctions {
                 return Linq4j.transform( enumerable.enumerator(), r -> new PolyNode( new PolyDictionary( Map.of( keys.get( 0 ), r.toString() ) ), List.of( label ), "n" ) );
             }
         };
+    }
 
 
+    public static Enumerable<?> collectionToNodes( Enumerable<?> enumerable, String label ) {
+        return new AbstractEnumerable<PolyNode>() {
+            @Override
+            public Enumerator<PolyNode> enumerator() {
+                return Linq4j.transform( enumerable.enumerator(), r -> {
+                    BsonDocument doc = BsonDocument.parse( (String) r );
+                    Map<String, Comparable<?>> map = new HashMap<>();
+                    for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+                        if ( entry.getKey().equals( "_id" ) ) {
+                            continue;
+                        }
+                        map.put( entry.getKey(), BsonUtil.getAsObject( entry.getValue() ) );
+                    }
+                    return new PolyNode( doc.get( "_id" ).asString().getValue(), new PolyDictionary( map ), List.of( label ), "n" );
+                } );
+            }
+        };
     }
 
 

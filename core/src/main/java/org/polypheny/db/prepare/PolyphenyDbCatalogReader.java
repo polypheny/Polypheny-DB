@@ -127,7 +127,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public AlgOptTable getDocument( final List<String> names ) {
+    public AlgOptTable getCollection( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
         PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
         if ( entry != null ) {

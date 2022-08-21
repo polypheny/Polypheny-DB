@@ -42,6 +42,7 @@ public class LogicalDocumentProject extends DocumentProject {
 
 
     public static LogicalDocumentProject create( AlgNode node, List<? extends RexNode> ids, List<String> fieldNames ) {
+        assert ids.size() == fieldNames.size() : "Ids and field names need to be the same size";
         final AlgMetadataQuery mq = node.getCluster().getMetadataQuery();
         final AlgDataType rowType = RexUtil.createStructType( node.getCluster().getTypeFactory(), ids, fieldNames, ValidatorUtil.F_SUGGESTER );
         AlgTraitSet traitSet = node.getCluster().traitSet().replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, node, ids ) );

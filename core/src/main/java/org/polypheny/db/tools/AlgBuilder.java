@@ -71,6 +71,8 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
@@ -1336,6 +1338,18 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( String... tableNames ) {
         return scan( ImmutableList.copyOf( tableNames ) );
+    }
+
+
+    public AlgBuilder documentScan( AlgOptTable collection ) {
+        stack.add( new Frame( new LogicalDocumentScan( cluster, cluster.traitSet().replace( ModelTrait.DOCUMENT ), collection ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder documentProject( List<? extends RexNode> projects, List<String> names ) {
+        stack.add( new Frame( LogicalDocumentProject.create( build(), projects, names ) ) );
+        return this;
     }
 
 

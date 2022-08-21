@@ -34,8 +34,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
@@ -72,7 +75,7 @@ import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
-import org.polypheny.db.routing.RoutingManager;
+import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.TranslatableGraph;
@@ -87,7 +90,7 @@ import org.polypheny.db.util.Pair;
  * Base Router for all routers including DML, DQL and Cached plans.
  */
 @Slf4j
-public abstract class BaseRouter {
+public abstract class BaseRouter implements Router {
 
     public static final Cache<Integer, AlgNode> joinedScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
@@ -363,6 +366,9 @@ public abstract class BaseRouter {
         if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
             // cross model queries on relational
             return handleGraphOnRelational( alg, namespace, statement, placementId );
+        } else if ( namespace.namespaceType == NamespaceType.DOCUMENT ) {
+            // cross model queries on document
+            return handleGraphOnDocument( alg, namespace, statement, placementId );
         }
 
         CatalogGraphDatabase catalogGraph = catalog.getGraph( alg.getGraph().getId() );
@@ -410,6 +416,27 @@ public abstract class BaseRouter {
         infoBuilder.add( "g", null, PolyType.GRAPH );
 
         return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), alg.getTraitSet().replace( ModelTrait.GRAPH ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, infoBuilder.build(), true );
+    }
+
+
+    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
+        AlgOptCluster cluster = alg.getCluster();
+        RexBuilder rexBuilder = cluster.getRexBuilder();
+        List<CatalogCollection> collections = catalog.getCollections( namespace.id, null );
+        List<Pair<String, AlgNode>> scans = collections.stream()
+                .map( t -> {
+                    RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
+                    AlgOptTable collection = statement.getTransaction().getCatalogReader().getCollection( List.of( t.getNamespaceName(), t.name ) );
+                    AlgNode scan = algBuilder.documentScan( collection ).build();
+                    routeDocument( algBuilder, (AlgNode & DocumentAlg) scan, statement );
+                    return Pair.of( t.name, algBuilder.build() );
+                } )
+                .collect( Collectors.toList() );
+
+        Builder infoBuilder = cluster.getTypeFactory().builder();
+        infoBuilder.add( "g", null, PolyType.GRAPH );
+
+        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), alg.getTraitSet().replace( ModelTrait.GRAPH ), ModelTrait.DOCUMENT, ModelTrait.GRAPH, infoBuilder.build(), true );
     }
 
 
@@ -462,12 +489,12 @@ public abstract class BaseRouter {
     }
 
 
-    protected RoutedAlgBuilder handleDocumentScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation, Integer adapterId ) {
+    protected RoutedAlgBuilder handleDocumentScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, Integer adapterId ) {
         Catalog catalog = Catalog.getInstance();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         if ( alg.getCollection().getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
-            return handleTransformerDocScan( alg, statement, builder, queryInformation );
+            return handleTransformerDocScan( alg, statement, builder );
         }
 
         CatalogCollection collection = catalog.getCollection( alg.getCollection().getTable().getTableId() );
@@ -491,7 +518,7 @@ public abstract class BaseRouter {
             CatalogCollectionPlacement placement = catalog.getCollectionPlacement( collection.id, placementId );
             String namespaceName = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, collection.getNamespaceName(), placement.physicalNamespaceName );
             String collectionName = collection.name + "_" + placement.id;
-            AlgOptTable collectionTable = reader.getDocument( List.of( namespaceName, collectionName ) );
+            AlgOptTable collectionTable = reader.getCollection( List.of( namespaceName, collectionName ) );
             // we might previously have pushed the non-native transformer
             builder.clear();
             return builder.push( LogicalDocumentScan.create( alg.getCluster(), collectionTable ) );
@@ -506,11 +533,11 @@ public abstract class BaseRouter {
     }
 
 
-    private RoutedAlgBuilder handleTransformerDocScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder, LogicalQueryInformation queryInformation ) {
-        AlgNode scan = builder.scan( alg.getCollection() ).build();
+    private RoutedAlgBuilder handleTransformerDocScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder ) {
+        AlgNode scan = buildJoinedScan( statement, alg.getCluster(), selectPlacement( catalog.getTable( alg.getCollection().getTable().getTableId() ) ) );
 
-        List<RoutedAlgBuilder> scans = ((AbstractDqlRouter) RoutingManager.getInstance().getRouters().get( 0 )).buildDql( scan, List.of( builder ), statement, alg.getCluster(), queryInformation );
-        builder.push( scans.get( 0 ).build() );
+        //List<RoutedAlgBuilder> scans = ((AbstractDqlRouter) RoutingManager.getInstance().getRouters().get( 0 )).buildDql( scan, List.of( builder ), statement, alg.getCluster(), queryInformation );
+        builder.push( scan );
         AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, alg.getRowType(), false ) );
         return builder;
@@ -525,6 +552,30 @@ public abstract class BaseRouter {
         builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType(), false ) );
         return builder;
+    }
+
+
+    @Override
+    public List<RoutedAlgBuilder> route( AlgRoot algRoot, Statement statement, LogicalQueryInformation queryInformation ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void resetCaches() {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public <T extends AlgNode & LpgAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement ) {
+        throw new UnsupportedOperationException();
     }
 
 }

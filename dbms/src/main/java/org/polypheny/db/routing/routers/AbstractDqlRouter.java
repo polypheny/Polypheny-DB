@@ -161,15 +161,15 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     @Override
-    public <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement, LogicalQueryInformation queryInformation ) {
+    public <T extends AlgNode & DocumentAlg> AlgNode routeDocument( RoutedAlgBuilder builder, T alg, Statement statement ) {
         if ( alg.getInputs().size() == 1 ) {
-            routeDocument( builder, (AlgNode & DocumentAlg) alg.getInput( 0 ), statement, queryInformation );
+            routeDocument( builder, (AlgNode & DocumentAlg) alg.getInput( 0 ), statement );
             if ( builder.stackSize() > 0 ) {
                 alg.replaceInput( 0, builder.build() );
             }
             return alg;
         } else if ( alg.getDocType() == DocType.SCAN ) {
-            builder.push( handleDocumentScan( (DocumentScan) alg, statement, builder, queryInformation, null ).build() );
+            builder.push( handleDocumentScan( (DocumentScan) alg, statement, builder, null ).build() );
             return alg;
         } else if ( alg.getDocType() == DocType.VALUES ) {
             return alg;
@@ -208,7 +208,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), queryInformation, null ) );
+            return Lists.newArrayList( super.handleDocumentScan( (DocumentScan) node, statement, builders.get( 0 ), null ) );
         }
 
         if ( node instanceof LogicalScan && node.getTable() != null ) {
