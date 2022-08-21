@@ -460,7 +460,10 @@ public enum BuiltInMethod {
     CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, boolean.class ),
     CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
     CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
-    SPLIT_GRAPH_MODIFY( CypherFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class );
+    SPLIT_GRAPH_MODIFY( CypherFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class ),
+
+    X_MODEL_TABLE_TO_NODE( CypherFunctions.class, "tableToNodes", Enumerable.class, String.class, List.class ),
+    X_MODEL_MERGE_NODE_COLLECTIONS( CypherFunctions.class, "mergeNodeCollections", List.class );
 
     public final Method method;
     public final Constructor constructor;

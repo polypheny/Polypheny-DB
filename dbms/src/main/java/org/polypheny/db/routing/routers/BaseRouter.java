@@ -45,10 +45,12 @@ import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
@@ -57,6 +59,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
@@ -77,6 +80,7 @@ import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -94,6 +98,36 @@ public abstract class BaseRouter {
 
     static {
         RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.setRequiresRestart( true );
+    }
+
+
+    /**
+     * Execute the table scan on the first placement of a table
+     */
+    protected static Map<Long, List<CatalogColumnPlacement>> selectPlacement( CatalogTable table ) {
+        // Find the adapter with the most column placements
+        int adapterIdWithMostPlacements = -1;
+        int numOfPlacements = 0;
+        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+            if ( entry.getValue().size() > numOfPlacements ) {
+                adapterIdWithMostPlacements = entry.getKey();
+                numOfPlacements = entry.getValue().size();
+            }
+        }
+
+        // Take the adapter with most placements as base and add missing column placements
+        List<CatalogColumnPlacement> placementList = new LinkedList<>();
+        for ( long cid : table.fieldIds ) {
+            if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
+                placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+            } else {
+                placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );
+            }
+        }
+
+        return new HashMap<Long, List<CatalogColumnPlacement>>() {{
+            put( table.partitionProperty.partitionIds.get( 0 ), placementList );
+        }};
     }
 
 
@@ -308,10 +342,11 @@ public abstract class BaseRouter {
             builder.push( new LogicalTransformer(
                     node.getCluster(),
                     List.of( node ),
+                    null,
                     node.getTraitSet().replace( ModelTrait.RELATIONAL ),
                     ModelTrait.DOCUMENT,
                     ModelTrait.RELATIONAL,
-                    rowType ) );
+                    rowType, false ) );
             node = builder.build();
         }
 
@@ -323,6 +358,13 @@ public abstract class BaseRouter {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         Catalog catalog = Catalog.getInstance();
+
+        CatalogNamespace namespace = catalog.getNamespace( alg.getGraph().getId() );
+        if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
+            // cross model queries on relational
+            return handleGraphOnRelational( alg, namespace, statement, placementId );
+        }
+
         CatalogGraphDatabase catalogGraph = catalog.getGraph( alg.getGraph().getId() );
 
         List<AlgNode> scans = new ArrayList<>();
@@ -354,6 +396,20 @@ public abstract class BaseRouter {
 
         // rather naive selection strategy
         return scans.get( 0 );
+    }
+
+
+    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
+        AlgOptCluster cluster = alg.getCluster();
+        List<CatalogTable> tables = catalog.getTables( Catalog.defaultDatabaseId, new Pattern( namespace.name ), null );
+        List<Pair<String, AlgNode>> scans = tables.stream()
+                .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, selectPlacement( t ) ) ) )
+                .collect( Collectors.toList() );
+
+        Builder infoBuilder = cluster.getTypeFactory().builder();
+        infoBuilder.add( "g", null, PolyType.GRAPH );
+
+        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), alg.getTraitSet().replace( ModelTrait.GRAPH ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, infoBuilder.build(), true );
     }
 
 
@@ -456,7 +512,7 @@ public abstract class BaseRouter {
         List<RoutedAlgBuilder> scans = ((AbstractDqlRouter) RoutingManager.getInstance().getRouters().get( 0 )).buildDql( scan, List.of( builder ), statement, alg.getCluster(), queryInformation );
         builder.push( scans.get( 0 ).build() );
         AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
-        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, alg.getRowType() ) );
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, alg.getRowType(), false ) );
         return builder;
     }
 
@@ -467,7 +523,7 @@ public abstract class BaseRouter {
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
         builder.scan( getSubstitutionTable( statement, node.getCollection().getTable().getTableId(), columns.get( 0 ).id, adapterId ) );
         builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
-        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType() ) );
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType(), false ) );
         return builder;
     }
 

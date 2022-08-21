@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -30,12 +29,11 @@ import org.polypheny.db.cypher.CypherTestTemplate.Row;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 
-@Ignore
 public class LpgOnRelationalTest extends CrossModelTestTemplate {
 
-    private static final String SCHEMA_NAME = "crossRelational";
+    private static final String SCHEMA_NAME = "crossrelational";
 
-    private static final String TABLE_NAME = "crossRelationalTable";
+    private static final String TABLE_NAME = "crossrelationaltable";
 
     private static final String FULL_TABLE_NAME = format( "%s.%s", SCHEMA_NAME, TABLE_NAME );
 
@@ -81,20 +79,48 @@ public class LpgOnRelationalTest extends CrossModelTestTemplate {
     private static void destroyStructure() {
         executeStatements( ( s, c ) -> {
             s.executeUpdate( format( "DROP TABLE %s", FULL_TABLE_NAME ) );
+            s.executeUpdate( format( "DROP SCHEMA %s", SCHEMA_NAME ) );
 
             c.commit();
         } );
     }
 
 
+    private static TestNode rowToNodes( Object[] row ) {
+        return TestNode.from(
+                List.of( TABLE_NAME ),
+                Pair.of( "foo", row[2] ),
+                Pair.of( "name", row[1] ),
+                Pair.of( "id", row[0] ) );
+    }
+
+
     @Test
-    public void simpleMatchTest() {
+    public void simpleAllTest() {
         CypherTestTemplate.containsRows(
                 CypherTestTemplate.execute( "MATCH (n) RETURN n", SCHEMA_NAME ),
                 true,
                 false,
-                Row.of(
-                        TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ), Pair.of( "age", 25 ) ) ) );
+                DATA.stream().map( r -> Row.of( rowToNodes( r ) ) ).toArray( Row[]::new ) );
+    }
+
+
+    @Test
+    public void simpleMatchTest() {
+        CypherTestTemplate.containsRows(
+                CypherTestTemplate.execute( format( "MATCH (n:%s) RETURN n", TABLE_NAME ), SCHEMA_NAME ),
+                true,
+                false,
+                DATA.stream().map( r -> Row.of( rowToNodes( r ) ) ).toArray( Row[]::new ) );
+    }
+
+
+    @Test
+    public void emptyMatchTest() {
+        CypherTestTemplate.containsRows(
+                CypherTestTemplate.execute( format( "MATCH (n:%s) RETURN n", "random" ), SCHEMA_NAME ),
+                true,
+                false );
     }
 
 }

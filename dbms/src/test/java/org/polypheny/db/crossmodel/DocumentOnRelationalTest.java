@@ -79,6 +79,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     private static void destroyStructure() {
         executeStatements( ( s, c ) -> {
             s.executeUpdate( format( "DROP TABLE %s", FULL_TABLE_NAME ) );
+            s.executeUpdate( format( "DROP SCHEMA %s", SCHEMA_NAME ) );
 
             c.commit();
         } );

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
@@ -468,6 +469,33 @@ public class CypherFunctions {
         context.setParameterTypes( typeBackup );
 
         return Linq4j.singletonEnumerable( 1 );
+    }
+
+
+    public static Enumerable<?> tableToNodes( Enumerable<?> enumerable, String label, List<String> keys ) {
+        return new AbstractEnumerable<PolyNode>() {
+            @Override
+            public Enumerator<PolyNode> enumerator() {
+                if ( keys.size() > 1 ) {
+                    return Linq4j.transform( enumerable.enumerator(), r -> {
+                        Object[] row = (Object[]) r;
+                        Map<String, Comparable<?>> map = new HashMap<>();
+                        for ( int i = 0; i < row.length; i++ ) {
+                            map.put( keys.get( i ), row[i].toString() );
+                        }
+                        return new PolyNode( new PolyDictionary( map ), List.of( label ), "n" );
+                    } );
+                }
+                return Linq4j.transform( enumerable.enumerator(), r -> new PolyNode( new PolyDictionary( Map.of( keys.get( 0 ), r.toString() ) ), List.of( label ), "n" ) );
+            }
+        };
+
+
+    }
+
+
+    public static Enumerable<?> mergeNodeCollections( List<Enumerable<PolyNode>> enumerables ) {
+        return Linq4j.concat( enumerables );
     }
 
 

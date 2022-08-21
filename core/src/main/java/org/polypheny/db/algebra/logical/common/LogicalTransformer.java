@@ -32,20 +32,19 @@ public class LogicalTransformer extends Transformer {
     /**
      * Subclass of {@link Transformer} not targeted at any particular engine or calling convention.
      */
-    public LogicalTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-        super( cluster, inputs, traitSet, inTraitSet, outTraitSet, rowType );
+    public LogicalTransformer( AlgOptCluster cluster, List<AlgNode> inputs, List<String> names, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
+        super( cluster, inputs, names, traitSet, inTraitSet, outTraitSet, rowType, isCrossModel );
     }
 
 
     public static AlgNode create( List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-        return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, inTraitSet, outTraitSet, rowType );
+        return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, null, traitSet, inTraitSet, outTraitSet, rowType, false );
     }
-
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, inModelTrait, outModelTrait, rowType );
+        return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, names, traitSet, inModelTrait, outModelTrait, rowType, isCrossModel );
     }
 
 

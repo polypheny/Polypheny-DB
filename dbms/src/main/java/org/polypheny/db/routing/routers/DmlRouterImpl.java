@@ -985,7 +985,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
         AlgNode query = builder.build();
         query = createDocumentTransform( query, rexBuilder );
-        builder.push( new LogicalTransformer( alg.getCluster(), List.of( query ), alg.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.DOCUMENT, ModelTrait.RELATIONAL, query.getRowType() ) );
+        builder.push( new LogicalTransformer( alg.getCluster(), List.of( query ), null, alg.getTraitSet().replace( ModelTrait.RELATIONAL ), ModelTrait.DOCUMENT, ModelTrait.RELATIONAL, query.getRowType(), false ) );
 
         AlgNode collector = builder.build();
 

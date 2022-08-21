@@ -42,7 +42,7 @@ public class EnumerableTransformerRule extends ConverterRule {
                         .replace( transformer.inModelTrait ) ) )
                 .collect( Collectors.toList() );
 
-        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, transformer.getTraitSet().replace( EnumerableConvention.INSTANCE ), transformer.inModelTrait, transformer.outModelTrait, transformer.getRowType() );
+        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, transformer.names, transformer.getTraitSet().replace( EnumerableConvention.INSTANCE ), transformer.inModelTrait, transformer.outModelTrait, transformer.getRowType(), transformer.isCrossModel );
     }
 
 }

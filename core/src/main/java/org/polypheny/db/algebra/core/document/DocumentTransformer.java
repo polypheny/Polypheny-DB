@@ -32,7 +32,7 @@ public class DocumentTransformer extends Transformer {
      * Transforms the underlying {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node to a {@link org.polypheny.db.schema.ModelTrait#RELATIONAL} node.
      */
     public DocumentTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, AlgDataType rowType ) {
-        super( cluster, inputs, traitSet.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, rowType );
+        super( cluster, inputs, null, traitSet.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, rowType, false );
     }
 
 
