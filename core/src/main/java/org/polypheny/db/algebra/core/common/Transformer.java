@@ -20,11 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.adapter.enumerable.EnumerableTransformer;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -36,8 +36,8 @@ public class Transformer extends AbstractAlgNode {
     @Getter
     private final List<AlgNode> inputs;
 
-    public final ModelTrait inTrait;
-    public final ModelTrait outTrait;
+    public final ModelTrait inModelTrait;
+    public final ModelTrait outModelTrait;
 
 
     /**
@@ -45,13 +45,18 @@ public class Transformer extends AbstractAlgNode {
      * non-native underlying adapters if needed.
      * For example, it will transform the {@link org.polypheny.db.algebra.core.lpg.LpgScan}, which can be handled directly by
      * a native adapter, to a combination of {@link Scan} and {@link org.polypheny.db.algebra.core.Union}.
-     *
      */
-    public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-        super( cluster, traitSet.replace( outTraitSet ) );
-        this.inputs = new ArrayList<>( inputs );
-        this.inTrait = inTraitSet;
-        this.outTrait = outTraitSet;
+    public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, ModelTrait inModelTrait, ModelTrait outModelTrait, AlgDataType rowType ) {
+        super( cluster, traitSet.replace( outModelTrait ) );
+        if ( inModelTrait == ModelTrait.DOCUMENT && outModelTrait == ModelTrait.RELATIONAL && inputs.size() == 1 && inputs.get( 0 ).getRowType().getFieldCount() == 2 ) {
+            // todo dl: remove after RowType refactor
+            this.inputs = List.of( LogicalProject.create( inputs.get( 0 ), List.of( cluster.getRexBuilder().makeInputRef( inputs.get( 0 ).getRowType().getFieldList().get( 0 ).getType(), 1 ) ), List.of( "d" ) ) );
+        } else {
+            this.inputs = new ArrayList<>( inputs );
+        }
+
+        this.inModelTrait = inModelTrait;
+        this.outModelTrait = outModelTrait;
         this.rowType = rowType;
     }
 
@@ -75,7 +80,7 @@ public class Transformer extends AbstractAlgNode {
 
     @Override
     public String algCompareString() {
-        return getClass().getSimpleName() + "$" + inTrait + "$" + outTrait + "$" + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$";
+        return getClass().getSimpleName() + "$" + inModelTrait + "$" + outModelTrait + "$" + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$";
     }
 
 }

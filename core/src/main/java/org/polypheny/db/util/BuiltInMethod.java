@@ -447,6 +447,10 @@ public enum BuiltInMethod {
     GRAPH_MATCH_CTOR( MatchEnumerable.class, List.class ),
     GRAPH_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, String.class ),
     CYPHER_EXTRACT_PROPERTY( CypherFunctions.class, "extractProperty", GraphPropertyHolder.class, String.class ),
+
+    CYPHER_EXTRACT_PROPERTIES( CypherFunctions.class, "extractProperties", GraphPropertyHolder.class ),
+
+    CYPHER_EXTRACT_ID( CypherFunctions.class, "extractId", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),
     CYPHER_TO_LIST( CypherFunctions.class, "toList", Object.class ),

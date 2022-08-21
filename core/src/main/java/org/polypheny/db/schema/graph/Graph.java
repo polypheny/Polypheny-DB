@@ -16,10 +16,26 @@
 
 package org.polypheny.db.schema.graph;
 
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 public interface Graph extends Wrapper {
 
     long getId();
+
+    default AlgDataType getRowType() {
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+        final Builder fieldInfo = typeFactory.builder();
+
+        fieldInfo.add( "g", null, typeFactory.createPolyType( PolyType.GRAPH ) );
+
+        return fieldInfo.build();
+    }
 
 }

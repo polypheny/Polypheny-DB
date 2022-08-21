@@ -18,16 +18,15 @@ package org.polypheny.db.crossmodel;
 
 import static java.lang.String.format;
 
+import com.google.common.collect.ImmutableList;
 import java.sql.ResultSet;
 import java.util.List;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
 
-@Ignore
 public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
     private static final String GRAPH_NAME = "crossGraph";
@@ -40,13 +39,13 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         CypherTestTemplate.createGraph( GRAPH_NAME );
-        CypherTestTemplate.execute( format( "CREATE (n:%s {\"key\": 3})", DATA_LABEL ) );
+        CypherTestTemplate.execute( format( "CREATE (n:%s {key: 3})", DATA_LABEL ), GRAPH_NAME );
     }
 
 
     @AfterClass
     public static void tearDown() {
-        CypherTestTemplate.tearDown();
+        CypherTestTemplate.deleteData( GRAPH_NAME );
     }
 
 
@@ -54,9 +53,23 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
     public void simpleSelectTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
-            TestHelper.checkResultSet( result, List.of() );
-
+            // can not test use default comparator method as id is dynamic
+            List<Object[]> data = TestHelper.convertResultSetToList( result );
+            assert (data.size() == 1);
+            assert (data.get( 0 ).length == 3);
         } );
+
+    }
+
+
+    @Test
+    public void simpleProjectTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
+            TestHelper.checkResultSet( result,
+                    ImmutableList.of( new Object[]{ "{key=3}", new Object[]{ DATA_LABEL } } ) );
+        } );
+
     }
 
 }

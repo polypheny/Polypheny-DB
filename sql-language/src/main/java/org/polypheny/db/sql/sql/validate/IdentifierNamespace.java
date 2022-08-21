@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,8 +112,8 @@ public class IdentifierNamespace extends AbstractNamespace {
             if ( resolve.remainingNames.isEmpty() ) {
                 return resolve.namespace;
             }
-            // If we're not case sensitive, give an error.
-            // If we're case sensitive, we'll shortly try again and give an error then.
+            // If we're not case-sensitive, give an error.
+            // If we're case-sensitive, we'll shortly try again and give an error then.
             if ( !nameMatcher.isCaseSensitive() ) {
                 throw validator.newValidationError( id, Static.RESOURCE.objectNotFoundWithin( resolve.remainingNames.get( 0 ), SqlIdentifier.getString( resolve.path.stepNames() ) ) );
             }

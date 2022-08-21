@@ -25,11 +25,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 
-@Ignore
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class DocumentOnRelationalTest extends CrossModelTestTemplate {
 
@@ -91,7 +89,26 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     public void simpleFindTest() {
         TestHelper.MongoConnection.checkUnorderedResultSet(
                 execute( String.format( "db.%s.find({})", TABLE_NAME ), SCHEMA_NAME ),
-                DATA.stream().map( r -> Arrays.stream( r ).map( Object::toString ).toArray( String[]::new ) ).collect( Collectors.toList() ), true );
+                DATA.stream().map( r -> Arrays.stream( r ).map( Object::toString ).toArray( String[]::new ) ).collect( Collectors.toList() ),
+                true );
+    }
+
+
+    @Test
+    public void simpleProjectTest() {
+        TestHelper.MongoConnection.checkUnorderedResultSet(
+                execute( String.format( "db.%s.find({},{id: 1})", TABLE_NAME ), SCHEMA_NAME ),
+                DATA.stream().map( r -> new String[]{ r[0].toString() } ).collect( Collectors.toList() ),
+                true );
+    }
+
+
+    @Test
+    public void simpleFilterTest() {
+        TestHelper.MongoConnection.checkUnorderedResultSet(
+                execute( String.format( "db.%s.find({id: 1},{})", TABLE_NAME ), SCHEMA_NAME ),
+                List.of( new String[][]{ Arrays.stream( DATA.get( 0 ) ).map( Object::toString ).toArray( String[]::new ) } ),
+                true );
     }
 
 }

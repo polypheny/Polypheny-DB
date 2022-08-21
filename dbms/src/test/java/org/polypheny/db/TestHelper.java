@@ -236,7 +236,7 @@ public class TestHelper {
     }
 
 
-    private static List<Object[]> convertResultSetToList( ResultSet resultSet ) throws SQLException {
+    public static List<Object[]> convertResultSetToList( ResultSet resultSet ) throws SQLException {
         ResultSetMetaData md = resultSet.getMetaData();
         int columns = md.getColumnCount();
         List<Object[]> list = new ArrayList<>();
@@ -270,7 +270,7 @@ public class TestHelper {
     }
 
 
-    private static List<Object[]> orderResultList( List<Object[]> result ) {
+    public static List<Object[]> orderResultList( List<Object[]> result ) {
         List<Object[]> list = new ArrayList<>( result );
         list.sort( ( lhs, rhs ) -> {
             String lhsStr = Arrays.toString( lhs );

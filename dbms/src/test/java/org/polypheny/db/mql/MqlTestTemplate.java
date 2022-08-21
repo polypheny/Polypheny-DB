@@ -48,8 +48,8 @@ public class MqlTestTemplate {
     }
 
 
-    public static void createCollection( String collection ) {
-        MongoConnection.executeGetResponse( String.format( "db.createCollection( %s )", collection ) );
+    public static void createCollection( String collection, String database ) {
+        MongoConnection.executeGetResponse( String.format( "db.createCollection( %s )", collection ), database );
     }
 
 
@@ -159,8 +159,13 @@ public class MqlTestTemplate {
     }
 
 
-    public static void insert( String json, String db ) {
-        MongoConnection.executeGetResponse( "db." + db + ".insert(" + json + ")" );
+    public static void insert( String json, String collection ) {
+        insert( json, collection, database );
+    }
+
+
+    public static void insert( String json, String collection, String database ) {
+        MongoConnection.executeGetResponse( "db." + collection + ".insert(" + json + ")", database );
     }
 
 

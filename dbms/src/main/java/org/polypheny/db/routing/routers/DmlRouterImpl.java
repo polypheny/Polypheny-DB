@@ -1341,6 +1341,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( node instanceof LogicalDocumentScan ) {
             builder = super.handleScan(
                     builder,
+                    statement,
                     placements.get( 0 ).tableId,
                     placements.get( 0 ).adapterUniqueName,
                     catalogTable.getNamespaceName(),
@@ -1363,6 +1364,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 builder = super.handleScan(
                         builder,
+                        statement,
                         placements.get( 0 ).tableId,
                         placements.get( 0 ).adapterUniqueName,
                         catalogTable.getNamespaceName(),

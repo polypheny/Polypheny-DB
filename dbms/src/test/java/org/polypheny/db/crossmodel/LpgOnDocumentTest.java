@@ -41,7 +41,7 @@ public class LpgOnDocumentTest extends CrossModelTestTemplate {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         MqlTestTemplate.initDatabase( DATABASE_NAME );
-        MqlTestTemplate.createCollection( COLLECTION_NAME );
+        MqlTestTemplate.createCollection( COLLECTION_NAME, DATABASE_NAME );
     }
 
 

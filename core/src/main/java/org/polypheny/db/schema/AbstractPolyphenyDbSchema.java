@@ -33,8 +33,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
 import org.polypheny.db.util.NameSet;
@@ -305,7 +312,22 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         for ( Map.Entry<String, TableEntry> entry : tableMap.range( tableName, caseSensitive ).entrySet() ) {
             return entry.getValue();
         }
-        return getImplicitTable( tableName, caseSensitive );
+        TableEntry table = getImplicitTable( tableName, caseSensitive );
+
+        if ( table != null ) {
+            return table;
+        } else if ( namespaceType == NamespaceType.GRAPH ) {
+            // label table for cross model queries
+            final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+            final Builder fieldInfo = typeFactory.builder();
+            fieldInfo.add( new AlgDataTypeFieldImpl( "id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ) );
+            fieldInfo.add( new AlgDataTypeFieldImpl( "properties", 0, typeFactory.createPolyType( PolyType.VARCHAR, 2064 ) ) );
+            fieldInfo.add( new AlgDataTypeFieldImpl( "labels", 0, typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ) ) );
+
+            return new TableEntryImpl( this, tableName, new LogicalTable( -1, name, tableName, List.of(), List.of(), AlgDataTypeImpl.proto( fieldInfo.build() ), NamespaceType.GRAPH ), ImmutableList.<String>builder().build() );
+        }
+        return null;
     }
 
 

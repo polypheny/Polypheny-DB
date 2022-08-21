@@ -51,6 +51,12 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_EXTRACT_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_PROPERTY.name(), Kind.CYPHER_FUNCTION ) );
 
+        register( OperatorName.CYPHER_EXTRACT_PROPERTIES, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_PROPERTIES.name(), Kind.CYPHER_FUNCTION ) );
+
+        register( OperatorName.CYPHER_EXTRACT_ID, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_ID.name(), Kind.CYPHER_FUNCTION ) );
+
+        register( OperatorName.CYPHER_EXTRACT_LABELS, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_LABELS.name(), Kind.CYPHER_FUNCTION ) );
+
         register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.CYPHER_FUNCTION ) );
 
         register( OperatorName.CYPHER_TO_LIST, new LangFunctionOperator( OperatorName.CYPHER_TO_LIST.name(), Kind.CYPHER_FUNCTION ) );

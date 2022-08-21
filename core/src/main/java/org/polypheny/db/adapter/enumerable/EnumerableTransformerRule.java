@@ -39,10 +39,10 @@ public class EnumerableTransformerRule extends ConverterRule {
                 .stream()
                 .map( i -> AlgOptRule.convert( i, i.getTraitSet()
                         .replace( EnumerableConvention.INSTANCE )
-                        .replace( transformer.inTrait ) ) )
+                        .replace( transformer.inModelTrait ) ) )
                 .collect( Collectors.toList() );
 
-        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, transformer.getTraitSet().replace( EnumerableConvention.INSTANCE ), transformer.inTrait, transformer.outTrait, transformer.getRowType() );
+        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, transformer.getTraitSet().replace( EnumerableConvention.INSTANCE ), transformer.inModelTrait, transformer.outModelTrait, transformer.getRowType() );
     }
 
 }

@@ -20,18 +20,17 @@ import java.sql.ResultSet;
 import java.util.List;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.mql.MqlTestTemplate;
 
-@Ignore
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
     private static final String DATABASE_NAME = "crossDocumentSchema";
 
     private static final String COLLECTION_NAME = "crossCollection";
+    public static final String TEST_DATA = "{\"test\": 3, \"_id\": \"630103687f2e95058018fd9b\"}";
 
 
     @BeforeClass
@@ -39,7 +38,8 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         MqlTestTemplate.initDatabase( DATABASE_NAME );
-        MqlTestTemplate.createCollection( COLLECTION_NAME );
+        MqlTestTemplate.createCollection( COLLECTION_NAME, DATABASE_NAME );
+        MqlTestTemplate.insert( TEST_DATA, COLLECTION_NAME, DATABASE_NAME );
     }
 
 
@@ -52,8 +52,8 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     @Test
     public void simpleSelectTest() {
         executeStatements( ( s, c ) -> {
-            ResultSet result = s.executeQuery( String.format( "SELECT * FROM %s.%s", MqlTestTemplate.database, COLLECTION_NAME ) );
-            TestHelper.checkResultSet( result, List.of() );
+            ResultSet result = s.executeQuery( String.format( "SELECT * FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
+            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ TEST_DATA } } ) );
         } );
     }
 

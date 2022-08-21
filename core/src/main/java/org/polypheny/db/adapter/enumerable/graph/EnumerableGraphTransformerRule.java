@@ -36,7 +36,7 @@ public class EnumerableGraphTransformerRule extends ConverterRule {
     public AlgNode convert( AlgNode alg ) {
         LpgTransformer lpgTransformer = (LpgTransformer) alg;
         AlgTraitSet out = alg.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        AlgTraitSet inputOut = out.replace( lpgTransformer.inTrait );
+        AlgTraitSet inputOut = out.replace( lpgTransformer.inModelTrait );
         return new EnumerableLpgTransformer(
                 alg.getCluster(),
                 out,

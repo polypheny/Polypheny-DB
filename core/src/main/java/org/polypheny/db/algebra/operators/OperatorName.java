@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1394,6 +1394,10 @@ public enum OperatorName {
 
     CYPHER_EXTRACT_PROPERTY( LangFunctionOperator.class ),
 
+    CYPHER_EXTRACT_ID( LangFunctionOperator.class ),
+
+    CYPHER_EXTRACT_PROPERTIES( LangFunctionOperator.class ),
+
     CYPHER_EXTRACT_LABELS( LangFunctionOperator.class ),
 
     CYPHER_EXTRACT_LABEL( LangFunctionOperator.class ),
@@ -1410,7 +1414,9 @@ public enum OperatorName {
 
     CYPHER_REMOVE_LABELS( LangFunctionOperator.class ),
 
-    CYPHER_REMOVE_PROPERTY( LangFunctionOperator.class );
+    CYPHER_REMOVE_PROPERTY( LangFunctionOperator.class ),
+
+    CYPHER_REMOVE_PROPERTIES( LangFunctionOperator.class );
 
 
     @Getter

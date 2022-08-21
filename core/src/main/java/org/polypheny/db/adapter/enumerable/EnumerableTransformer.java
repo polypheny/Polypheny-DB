@@ -69,7 +69,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             return implementUnModifyTransform( implementor, pref );
         }
 
-        if ( outTrait == ModelTrait.DOCUMENT ) {
+        if ( outModelTrait == ModelTrait.DOCUMENT ) {
             return implementDocument( implementor, pref );
         }
 
@@ -169,7 +169,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, inTrait, outTrait, rowType );
+        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, inModelTrait, outModelTrait, rowType );
     }
 
 }

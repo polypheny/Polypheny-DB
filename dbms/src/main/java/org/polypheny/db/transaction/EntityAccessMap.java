@@ -271,8 +271,10 @@ public class EntityAccessMap {
             List<Long> relevantPartitions;
             if ( accessedPartitions.containsKey( p.getId() ) ) {
                 relevantPartitions = accessedPartitions.get( p.getId() );
-            } else {
+            } else if ( table.getTable().getTableId() != -1 ) {
                 relevantPartitions = Catalog.getInstance().getTable( table.getTable().getTableId() ).partitionProperty.partitionIds;
+            } else {
+                relevantPartitions = List.of();
             }
 
             for ( long partitionId : relevantPartitions ) {

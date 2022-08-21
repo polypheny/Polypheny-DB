@@ -259,6 +259,18 @@ public class CypherFunctions {
     }
 
 
+    @SuppressWarnings("unused")
+    public static String extractProperties( GraphPropertyHolder holder ) {
+        return holder.getProperties().toString();
+    }
+
+
+    @SuppressWarnings("unused")
+    public static String extractId( GraphPropertyHolder holder ) {
+        return holder.getId();
+    }
+
+
     /**
      * Returns a single label of a given graph element.
      *

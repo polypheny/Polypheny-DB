@@ -44,6 +44,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -73,6 +76,7 @@ import org.polypheny.db.schema.TranslatableGraph;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -106,6 +110,7 @@ public abstract class BaseRouter {
 
     public RoutedAlgBuilder handleScan(
             RoutedAlgBuilder builder,
+            Statement statement,
             long tableId,
             String storeUniqueName,
             String logicalSchemaName,
@@ -113,6 +118,7 @@ public abstract class BaseRouter {
             String physicalSchemaName,
             String physicalTableName,
             long partitionId ) {
+
         AlgNode node = builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
                 logicalTableName + "_" + partitionId ) ).build();
@@ -192,6 +198,7 @@ public abstract class BaseRouter {
 
                 builder = handleScan(
                         builder,
+                        statement,
                         ccp.tableId,
                         ccp.adapterUniqueName,
                         ccp.getLogicalSchemaName(),
@@ -239,6 +246,7 @@ public abstract class BaseRouter {
 
                     handleScan(
                             builder,
+                            statement,
                             ccp.tableId,
                             ccp.adapterUniqueName,
                             ccp.getLogicalSchemaName(),
@@ -292,6 +300,21 @@ public abstract class BaseRouter {
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
             joinedScanCache.put( placements.hashCode(), node );
         }
+
+        CatalogColumnPlacement placement = new ArrayList<>( placements.values() ).get( 0 ).get( 0 );
+        // todo dl: remove after RowType refactor
+        if ( statement.getTransaction().getCatalogReader().getTable( List.of( placement.getLogicalSchemaName(), placement.getLogicalTableName() ) ).getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
+            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
+            builder.push( new LogicalTransformer(
+                    node.getCluster(),
+                    List.of( node ),
+                    node.getTraitSet().replace( ModelTrait.RELATIONAL ),
+                    ModelTrait.DOCUMENT,
+                    ModelTrait.RELATIONAL,
+                    rowType ) );
+            node = builder.build();
+        }
+
         return node;
     }
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher;
 
+import static java.lang.String.format;
 import static org.junit.Assert.fail;
 
 import com.google.gson.Gson;
@@ -87,19 +88,19 @@ public class CypherTestTemplate {
 
 
     public static void createGraph( String name ) {
-        execute( String.format( "CREATE DATABASE %s", name ) );
-        execute( String.format( "USE GRAPH %s", name ) );
+        execute( format( "CREATE DATABASE %s", name ) );
+        execute( format( "USE GRAPH %s", name ) );
     }
 
 
     @AfterClass
     public static void tearDown() {
-        deleteData();
+        deleteData( GRAPH_NAME );
     }
 
 
-    private static void deleteData() {
-        execute( "DROP DATABASE test IF EXISTS" );
+    public static void deleteData( String graph ) {
+        execute( format( "DROP DATABASE %s IF EXISTS", graph ) );
     }
 
 
@@ -407,7 +408,7 @@ public class CypherTestTemplate {
                         direction = EdgeDirection.valueOf( in.nextString() );
                         break;
                     default:
-                        throw new RuntimeException( String.format( "Was not able to parse : %s GraphObject.", name ) );
+                        throw new RuntimeException( format( "Was not able to parse : %s GraphObject.", name ) );
 
                 }
             }

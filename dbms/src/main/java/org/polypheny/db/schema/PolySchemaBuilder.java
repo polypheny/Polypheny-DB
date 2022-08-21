@@ -104,7 +104,9 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
         buildGraphLogical( polyphenyDbSchema, rootSchema, catalog, catalogDatabase );
 
-        // build physical namespaces
+        // Build mapping structures
+
+        // Build physical namespaces
         List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
 
         buildPhysicalTables( polyphenyDbSchema, rootSchema, catalog, catalogDatabase, adapters );
@@ -181,7 +183,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             for ( CatalogCollection catalogEntity : catalog.getCollections( catalogNamespace.id, null ) ) {
                 List<String> columnNames = new LinkedList<>();
 
-                AlgDataType rowType;
                 final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
                 final Builder fieldInfo = typeFactory.builder();

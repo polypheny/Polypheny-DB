@@ -71,6 +71,10 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -79,6 +83,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -99,7 +104,10 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
@@ -1331,6 +1339,33 @@ public class AlgBuilder {
     }
 
 
+    public AlgBuilder lpgScan( long id ) {
+        LogicalGraph graph = new LogicalGraph( id );
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder lpgMatch( List<RexCall> matches, List<String> names ) {
+        stack.add( new Frame( new LogicalLpgMatch( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), build(), matches, names ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder lpgProject( List<? extends RexNode> projects, List<String> names ) {
+        stack.add( new Frame( new LogicalLpgProject( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), build(), projects, names ) ) );
+        return this;
+    }
+
+
+    public RexCall lpgNodeMatch( List<String> labels ) {
+        RexBuilder rexBuilder = getRexBuilder();
+        Operator op = OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_MATCH );
+        AlgDataType nodeType = getTypeFactory().createPolyType( PolyType.NODE );
+        return (RexCall) rexBuilder.makeCall( nodeType, op, List.of( rexBuilder.makeInputRef( peek().getRowType().getFieldList().get( 0 ).getType(), 0 ), new RexLiteral( new PolyNode( new PolyDictionary(), labels, null ), nodeType, PolyType.NODE ) ) );
+    }
+
+
     /**
      * Creates a {@link Filter} of an array of predicates.
      *
@@ -2494,7 +2529,6 @@ public class AlgBuilder {
     public void clear() {
         stack.clear();
     }
-
 
 
     /**

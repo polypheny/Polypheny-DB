@@ -1341,6 +1341,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     LogicalTable logicalTable = ((LogicalTable) table.getTable());
                     int scanId = alg.getId();
 
+                    if ( logicalTable.getTableId() == -1 ) {
+                        // todo dl: remove after RowType refactor
+                        return accessedPartitionList;
+                    }
+
                     // Get placements of this table
                     CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
@@ -1402,7 +1407,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void prepareMonitoring( Statement statement, AlgRoot logicalRoot, boolean isAnalyze, boolean isSubquery, LogicalQueryInformation queryInformation ) {
-        
+
         // Initialize Monitoring
         if ( statement.getMonitoringEvent() == null ) {
             StatementEvent event;

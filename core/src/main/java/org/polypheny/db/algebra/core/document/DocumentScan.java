@@ -17,10 +17,13 @@
 package org.polypheny.db.algebra.core.document;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -39,7 +42,14 @@ public abstract class DocumentScan extends AbstractAlgNode implements DocumentAl
     public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable collection ) {
         super( cluster, traitSet );
         this.collection = collection;
-        this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );//new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
+
+        AlgDataType docType = cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT );
+        // todo dl: change after RowType refactor
+        if ( this.collection.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
+            this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, docType ) ) );
+        } else {
+            this.rowType = new AlgRecordType( collection.getRowType().getFieldList().stream().map( f -> new AlgDataTypeFieldImpl( f.getName(), f.getIndex(), cluster.getTypeFactory().createPolyType( PolyType.ANY ) ) ).collect( Collectors.toList() ) );
+        }
     }
 
 

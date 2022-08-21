@@ -271,7 +271,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentTransformer transformer ) {
-        hashBasis.add( "LogicalDocumentTransformer#" + transformer.inTrait.getDataModel().name() + "#" + transformer.outTrait.getDataModel().name() );
+        hashBasis.add( "LogicalDocumentTransformer#" + transformer.inModelTrait.getDataModel().name() + "#" + transformer.outModelTrait.getDataModel().name() );
         return visitChildren( transformer );
     }
 

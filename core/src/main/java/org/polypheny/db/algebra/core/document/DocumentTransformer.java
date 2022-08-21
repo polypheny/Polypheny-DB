@@ -38,7 +38,7 @@ public class DocumentTransformer extends Transformer {
 
     @Override
     public String algCompareString() {
-        return "$" + outTrait + "$" + inTrait + "$" + getInput( 0 ).algCompareString();
+        return "$" + outModelTrait + "$" + inModelTrait + "$" + getInput( 0 ).algCompareString();
     }
 
 

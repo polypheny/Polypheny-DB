@@ -35,17 +35,22 @@ import org.polypheny.db.algebra.core.document.DocumentAlg.DocType;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgAlg.NodeType;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -214,6 +219,11 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
 
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
+
+            if ( logicalTable.getTableId() == -1 ) {
+                return handleRelationalOnGraphScan( node, statement, logicalTable, builders, cluster, queryInformation );
+            }
+
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
             // Check if table is even horizontal partitioned
@@ -233,6 +243,30 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         } else {
             return Lists.newArrayList( super.handleGeneric( node, builders ) );
         }
+    }
+
+
+    private List<RoutedAlgBuilder> handleRelationalOnGraphScan( AlgNode node, Statement statement, LogicalTable logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+        // todo dl: remove after RowType refactor
+        AlgBuilder algBuilder = AlgBuilder.create( statement );
+        RexBuilder rexBuilder = algBuilder.getRexBuilder();
+
+        algBuilder.lpgScan( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( logicalTable.getLogicalSchemaName() ) ).get( 0 ).id );
+        algBuilder.lpgMatch( List.of( algBuilder.lpgNodeMatch( List.of( logicalTable.getLogicalTableName() ) ) ), List.of( "n" ) );
+        algBuilder.lpgProject(
+                List.of( rexBuilder.makeLpgGetId(), rexBuilder.makeLpgPropertiesExtract(), rexBuilder.makeLpgLabels() ),
+                List.of( "id", "properties", "labels" ) );
+
+        AlgNode built = routeGraph( RoutedAlgBuilder.create( statement, cluster ), (AlgNode & LpgAlg) algBuilder.build(), statement );
+
+        builders.get( 0 ).push( new LogicalTransformer(
+                node.getCluster(),
+                List.of( built ),
+                node.getTraitSet().replace( ModelTrait.RELATIONAL ),
+                ModelTrait.GRAPH,
+                ModelTrait.RELATIONAL,
+                logicalTable.getRowType( algBuilder.getTypeFactory() ) ) );
+        return builders;
     }
 
 

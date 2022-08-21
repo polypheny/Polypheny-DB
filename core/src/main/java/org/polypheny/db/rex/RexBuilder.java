@@ -44,6 +44,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.IntervalQualifier;
@@ -1507,6 +1508,38 @@ public class RexBuilder {
         @SuppressWarnings("RedundantCast") // seems necessary
         PolyMap<RexLiteral, RexLiteral> map = PolyMap.of( (Map<RexLiteral, RexLiteral>) bson.entrySet().stream().collect( Collectors.toMap( e -> makeLiteral( e.getKey() ), e -> BsonUtil.getAsLiteral( e.getValue(), this ) ) ) );
         return new RexLiteral( map, type, PolyType.CHAR );
+    }
+
+
+    public RexCall makeLpgExtract( String key ) {
+        return new RexCall(
+                typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_PROPERTY ),
+                List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ), makeLiteral( key ) ) );
+    }
+
+
+    public RexCall makeLpgGetId() {
+        return new RexCall(
+                typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_ID ),
+                List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
+    }
+
+
+    public RexCall makeLpgPropertiesExtract() {
+        return new RexCall(
+                typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_PROPERTIES ),
+                List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
+    }
+
+
+    public RexCall makeLpgLabels() {
+        return new RexCall(
+                typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
+                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_LABELS ),
+                List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
     }
 
 }
