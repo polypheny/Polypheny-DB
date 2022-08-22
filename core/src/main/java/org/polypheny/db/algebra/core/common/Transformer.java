@@ -51,7 +51,7 @@ public class Transformer extends AbstractAlgNode {
      */
     public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, @Nullable List<String> names, AlgTraitSet traitSet, ModelTrait inModelTrait, ModelTrait outModelTrait, AlgDataType rowType, boolean isCrossModel ) {
         super( cluster, traitSet.replace( outModelTrait ) );
-        if ( inModelTrait == ModelTrait.DOCUMENT && outModelTrait == ModelTrait.RELATIONAL && inputs.size() == 1 && inputs.get( 0 ).getRowType().getFieldCount() == 2 ) {
+        if ( isCrossModel && inModelTrait == ModelTrait.DOCUMENT && outModelTrait == ModelTrait.RELATIONAL && inputs.size() == 1 && inputs.get( 0 ).getRowType().getFieldCount() == 2 ) {
             // todo dl: remove after RowType refactor
             this.inputs = List.of( LogicalProject.create( inputs.get( 0 ), List.of( cluster.getRexBuilder().makeInputRef( inputs.get( 0 ).getRowType().getFieldList().get( 0 ).getType(), 1 ) ), List.of( "d" ) ) );
         } else {

@@ -524,7 +524,11 @@ public class CypherFunctions {
             public Enumerator<Object> enumerator() {
                 return Linq4j.transform(
                         enumerable.enumerator(),
-                        r -> new Object[]{ r.id, new BsonDocument( r.properties.entrySet().stream().map( e -> new BsonElement( e.getKey(), new BsonString( e.getValue().toString() ) ) ).collect( Collectors.toList() ) ).toJson() } );
+                        r -> {
+                            BsonDocument doc = new BsonDocument( r.properties.entrySet().stream().map( e -> new BsonElement( e.getKey(), new BsonString( e.getValue().toString() ) ) ).collect( Collectors.toList() ) );
+                            doc.put( "_id", new BsonString( r.id.substring( 0, 23 ) ) );
+                            return doc.toJson();
+                        } );
             }
         };
     }

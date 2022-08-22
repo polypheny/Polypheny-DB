@@ -71,12 +71,16 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        if ( rowType.getFieldList().stream().map( f -> f.getType().getPolyType() ).noneMatch( t -> t == PolyType.EDGE || t == PolyType.NODE || t == PolyType.GRAPH ) ) {
-            return implementUnModifyTransform( implementor, pref );
+        if ( outModelTrait == ModelTrait.DOCUMENT ) {
+
+            if ( isCrossModel && inModelTrait == ModelTrait.GRAPH ) {
+                return implementDocumentOnGraph( implementor, pref );
+            }
+            return implementDocument( implementor, pref );
         }
 
-        if ( outModelTrait == ModelTrait.DOCUMENT ) {
-            return implementDocument( implementor, pref );
+        if ( rowType.getFieldList().stream().map( f -> f.getType().getPolyType() ).noneMatch( t -> t == PolyType.EDGE || t == PolyType.NODE || t == PolyType.GRAPH ) ) {
+            return implementUnModifyTransform( implementor, pref );
         }
 
         if ( outModelTrait == ModelTrait.GRAPH ) {
@@ -318,10 +322,6 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     private Result implementUnModifyTransform( EnumerableAlgImplementor implementor, Prefer pref ) {
-        if ( isCrossModel ) {
-            return implementDocumentOnGraph( implementor, pref );
-        }
-
         if ( getInputs().size() == 1 ) {
             return implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
         }

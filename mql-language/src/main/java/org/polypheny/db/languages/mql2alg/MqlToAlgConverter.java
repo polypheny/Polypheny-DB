@@ -341,8 +341,8 @@ public class MqlToAlgConverter {
             final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
             final Builder fieldInfo = typeFactory.builder();
-            fieldInfo.add( new AlgDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
-            fieldInfo.add( new AlgDataTypeFieldImpl( "d", 1, typeFactory.createPolyType( PolyType.DOCUMENT ) ) );
+            //fieldInfo.add( new AlgDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
+            fieldInfo.add( new AlgDataTypeFieldImpl( "d", 0, typeFactory.createPolyType( PolyType.DOCUMENT ) ) );
             AlgDataType rowType = fieldInfo.build();
 
             return AlgOptTableImpl.create(

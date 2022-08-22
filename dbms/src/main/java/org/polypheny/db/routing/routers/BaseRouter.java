@@ -349,7 +349,8 @@ public abstract class BaseRouter implements Router {
                     node.getTraitSet().replace( ModelTrait.RELATIONAL ),
                     ModelTrait.DOCUMENT,
                     ModelTrait.RELATIONAL,
-                    rowType, false ) );
+                    rowType,
+                    true ) );
             node = builder.build();
         }
 
