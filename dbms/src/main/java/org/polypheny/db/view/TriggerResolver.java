@@ -18,6 +18,7 @@ package org.polypheny.db.view;
 
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.LogicalTriggerExecution;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -38,6 +39,16 @@ public class TriggerResolver {
     private static final Pattern NAMED_ARGUMENTS_PATTERN = Pattern.compile("@(\\w+)=");
     private final SqlProcessorFacade sqlProcessor = new SqlProcessorFacade(new SqlProcessorImpl());
 
+    public LogicalTriggerExecution lookupTriggers(Statement statement, CatalogTable catalogTable) {
+        List<AlgNode> algNodes = searchTriggers(catalogTable)
+                .stream()
+                .map(trigger -> Catalog.getInstance().getNodeInfo().get(trigger.getTriggerId()))
+                .collect(Collectors.toList());
+        return LogicalTriggerExecution.create(algNodes, true);
+    }
+
+
+
     public void runTriggers(AlgNode node, Statement statement, CatalogTable catalogTable) {
         List<CatalogTrigger> triggers = Catalog.getInstance()
                 .getTriggers(catalogTable.schemaId)
@@ -51,6 +62,14 @@ public class TriggerResolver {
             // TODO(nic): Run query processor based on query type
             sqlProcessor.runSql(replaced, statement);
         }
+    }
+
+    private List<CatalogTrigger> searchTriggers(CatalogTable catalogTable){
+        return Catalog.getInstance()
+                .getTriggers(catalogTable.schemaId)
+                .stream().filter(trigger -> trigger.getTableId() == catalogTable.id)
+                .collect(Collectors.toList());
+
     }
 
     private String insertParameters(DataContext dataContext, String query) {
