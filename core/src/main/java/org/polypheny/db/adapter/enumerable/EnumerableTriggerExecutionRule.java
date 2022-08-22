@@ -37,10 +37,10 @@ class EnumerableTriggerExecutionRule extends ConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalTriggerExecution union = (LogicalTriggerExecution) alg;
+        final LogicalTriggerExecution triggerExecution = (LogicalTriggerExecution) alg;
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
-        final AlgTraitSet traitSet = union.getTraitSet().replace( out );
-        return new EnumerableTriggerExecution( alg.getCluster(), traitSet, convertList( union.getInputs(), out ), true );
+        final AlgTraitSet traitSet = triggerExecution.getTraitSet().replace( out );
+        return new EnumerableTriggerExecution( alg.getCluster(), traitSet, convertList( triggerExecution.getInputs(), out ), true );
     }
 
 }
