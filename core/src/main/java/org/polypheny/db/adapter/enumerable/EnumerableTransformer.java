@@ -318,10 +318,71 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     private Result implementUnModifyTransform( EnumerableAlgImplementor implementor, Prefer pref ) {
+        if ( isCrossModel ) {
+            return implementDocumentOnGraph( implementor, pref );
+        }
+
         if ( getInputs().size() == 1 ) {
             return implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
         }
         throw new UnsupportedOperationException();
+    }
+
+
+    private Result implementDocumentOnGraph( EnumerableAlgImplementor implementor, Prefer pref ) {
+        BlockBuilder builder = new BlockBuilder();
+        final JavaTypeFactory typeFactory = implementor.getTypeFactory();
+
+        Result res = implementor.visitChild( this, 0, (EnumerableAlg) getInput( 0 ), pref );
+
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getRowType(), pref.prefer( JavaRowFormat.SCALAR ) );
+
+        Type inputJavaType = physType.getJavaRowType();
+        ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
+
+        Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), res.block );
+
+        Type outputJavaType = physType.getJavaRowType();
+        final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
+
+        MethodCallExpression call = Expressions.call( BuiltInMethod.X_MODEL_NODE_TO_COLLECTION.method, nodesExp );
+        Expression body = Expressions.new_(
+                enumeratorType,
+                EnumUtils.NO_EXPRS,
+                Expressions.list(
+                        Expressions.fieldDecl(
+                                Modifier.PUBLIC | Modifier.FINAL,
+                                inputEnumerator,
+                                Expressions.call( call, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_RESET.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_RESET.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_MOVE_NEXT.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_CLOSE.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CLOSE.method ) ) ),
+                        EnumUtils.overridingMethodDecl(
+                                BuiltInMethod.ENUMERATOR_CURRENT.method,
+                                EnumUtils.NO_PARAMS,
+                                Blocks.toFunctionBlock( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ) ) )
+                ) );
+
+        builder.add(
+                Expressions.return_(
+                        null,
+                        Expressions.new_(
+                                BuiltInMethod.ABSTRACT_ENUMERABLE_CTOR.constructor,
+                                // TODO: generics
+                                //   Collections.singletonList(inputRowType),
+                                EnumUtils.NO_EXPRS,
+                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
+        return implementor.result( physType, builder.toBlock() );
+
     }
 
 

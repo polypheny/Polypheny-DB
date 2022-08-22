@@ -62,7 +62,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private final List<String> logicalColumnNames;
 
 
-    protected LogicalTable(
+    public LogicalTable(
             long tableId,
             String logicalSchemaName,
             String logicalTableName,

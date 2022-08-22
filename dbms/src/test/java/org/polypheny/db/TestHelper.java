@@ -432,8 +432,8 @@ public class TestHelper {
                                     .collect( Collectors.toList() ) )
                     .collect( Collectors.toList() );
 
-            assertTrue( finalExpected.containsAll( parsedResults ) );
-            assertTrue( parsedResults.containsAll( finalExpected ) );
+            assertTrue( "Expected result does not contain all actual results", finalExpected.containsAll( parsedResults ) );
+            assertTrue( "Actual result does not contain all expected results", parsedResults.containsAll( finalExpected ) );
             return true;
         }
 

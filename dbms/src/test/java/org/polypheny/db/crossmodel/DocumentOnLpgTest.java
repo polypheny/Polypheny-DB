@@ -19,15 +19,13 @@ package org.polypheny.db.crossmodel;
 import static java.lang.String.format;
 import static org.polypheny.db.mql.MqlTestTemplate.execute;
 
-import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
 
-@Ignore
 public class DocumentOnLpgTest extends CrossModelTestTemplate {
 
     private static final String GRAPH_NAME = "crossGraph";
@@ -40,13 +38,13 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         CypherTestTemplate.createGraph( GRAPH_NAME );
-        CypherTestTemplate.execute( format( "CREATE (n:%s {\"key\": 3})", DATA_LABEL ) );
+        CypherTestTemplate.execute( format( "CREATE (n:%s {key: 3})", DATA_LABEL ), GRAPH_NAME );
     }
 
 
     @AfterClass
     public static void tearDown() {
-        CypherTestTemplate.tearDown();
+        CypherTestTemplate.deleteData( GRAPH_NAME );
     }
 
 
@@ -54,7 +52,15 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     public void simpleFindTest() {
         TestHelper.MongoConnection.checkUnorderedResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL ), GRAPH_NAME ),
-                List.of(), true );
+                ImmutableList.of( new String[]{ "{\"key\":\"3\"}" } ), true );
+    }
+
+
+    @Test
+    public void simpleProjectTest() {
+        TestHelper.MongoConnection.checkUnorderedResultSet(
+                execute( format( "db.%s.find({},{\"key\":1})", DATA_LABEL ), GRAPH_NAME ),
+                ImmutableList.of( new String[]{ "3" } ), false );
     }
 
 

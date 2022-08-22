@@ -421,7 +421,6 @@ public abstract class BaseRouter implements Router {
 
     private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
-        RexBuilder rexBuilder = cluster.getRexBuilder();
         List<CatalogCollection> collections = catalog.getCollections( namespace.id, null );
         List<Pair<String, AlgNode>> scans = collections.stream()
                 .map( t -> {
@@ -494,6 +493,10 @@ public abstract class BaseRouter implements Router {
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
         if ( alg.getCollection().getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
+            if ( alg.getCollection().getTable().getSchemaType() == NamespaceType.GRAPH ) {
+                return handleDocumentOnGraph( alg, statement, builder );
+            }
+
             return handleTransformerDocScan( alg, statement, builder );
         }
 
@@ -546,11 +549,22 @@ public abstract class BaseRouter implements Router {
 
     @NotNull
     private RoutedAlgBuilder handleDocumentOnRelational( DocumentScan node, Integer adapterId, Statement statement, RoutedAlgBuilder builder ) {
-        List<CatalogColumn> columns = Catalog.getInstance().getColumns( node.getCollection().getTable().getTableId() );
+        List<CatalogColumn> columns = catalog.getColumns( node.getCollection().getTable().getTableId() );
         AlgTraitSet out = node.getTraitSet().replace( ModelTrait.RELATIONAL );
         builder.scan( getSubstitutionTable( statement, node.getCollection().getTable().getTableId(), columns.get( 0 ).id, adapterId ) );
         builder.project( node.getCluster().getRexBuilder().makeInputRef( node.getRowType(), 1 ) );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, node.getRowType(), false ) );
+        return builder;
+    }
+
+
+    private RoutedAlgBuilder handleDocumentOnGraph( DocumentScan alg, Statement statement, RoutedAlgBuilder builder ) {
+        AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.GRAPH );
+        builder.lpgScan( alg.getCollection().getTable().getTableId() );
+        List<String> names = alg.getCollection().getQualifiedName();
+        builder.lpgMatch( List.of( builder.lpgNodeMatch( List.of( names.get( names.size() - 1 ) ) ) ), List.of( "n" ) );
+        AlgNode unrouted = builder.build();
+        builder.push( new LogicalTransformer( builder.getCluster(), List.of( routeGraph( builder, (AlgNode & LpgAlg) unrouted, statement ) ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.GRAPH, ModelTrait.DOCUMENT, alg.getRowType(), true ) );
         return builder;
     }
 

@@ -34,6 +34,8 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Function0;
 import org.bson.BsonDocument;
+import org.bson.BsonElement;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -511,6 +513,18 @@ public class CypherFunctions {
                     }
                     return new PolyNode( doc.get( "_id" ).asString().getValue(), new PolyDictionary( map ), List.of( label ), "n" );
                 } );
+            }
+        };
+    }
+
+
+    public static Enumerable<?> nodesToCollection( Enumerable<PolyNode> enumerable ) {
+        return new AbstractEnumerable<Object>() {
+            @Override
+            public Enumerator<Object> enumerator() {
+                return Linq4j.transform(
+                        enumerable.enumerator(),
+                        r -> new Object[]{ r.id, new BsonDocument( r.properties.entrySet().stream().map( e -> new BsonElement( e.getKey(), new BsonString( e.getValue().toString() ) ) ).collect( Collectors.toList() ) ).toJson() } );
             }
         };
     }

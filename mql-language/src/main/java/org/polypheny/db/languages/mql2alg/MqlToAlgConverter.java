@@ -62,8 +62,15 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryParameters;
@@ -81,6 +88,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.processing.Processor;
@@ -89,8 +97,11 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.PolyphenyDbSchema.TableEntryImpl;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -271,7 +282,7 @@ public class MqlToAlgConverter {
 
         AlgNode node;
 
-        if ( entity.getTable().getSchemaType() != NamespaceType.DOCUMENT ) {
+        if ( entity.getTable().getSchemaType() == NamespaceType.RELATIONAL ) {
             _dataExists = false;
         }
 
@@ -325,7 +336,25 @@ public class MqlToAlgConverter {
 
         if ( table == null ) {
             return catalogReader.getCollection( names );
+        } else if ( table.getTable().getSchemaType() == NamespaceType.GRAPH ) {
+
+            final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+            final Builder fieldInfo = typeFactory.builder();
+            fieldInfo.add( new AlgDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
+            fieldInfo.add( new AlgDataTypeFieldImpl( "d", 1, typeFactory.createPolyType( PolyType.DOCUMENT ) ) );
+            AlgDataType rowType = fieldInfo.build();
+
+            return AlgOptTableImpl.create(
+                    table.getRelOptSchema(),
+                    rowType,
+                    new TableEntryImpl(
+                            catalogReader.getRootSchema(), names.get( names.size() - 1 ),
+                            new LogicalTable( Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, new Pattern( dbSchemaName ) ).get( 0 ).id, names.get( 0 ), names.get( names.size() - 1 ), List.of(), List.of(), AlgDataTypeImpl.proto( rowType ), NamespaceType.GRAPH ),
+                            ImmutableList.<String>builder().build() ),
+                    1.0 );
         }
+
         return table;
     }
 

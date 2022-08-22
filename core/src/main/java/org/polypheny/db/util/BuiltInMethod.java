@@ -464,7 +464,8 @@ public enum BuiltInMethod {
 
     X_MODEL_TABLE_TO_NODE( CypherFunctions.class, "tableToNodes", Enumerable.class, String.class, List.class ),
     X_MODEL_MERGE_NODE_COLLECTIONS( CypherFunctions.class, "mergeNodeCollections", List.class ),
-    X_MODEL_COLLECTION_TO_NODE( CypherFunctions.class, "collectionToNodes", Enumerable.class, String.class );
+    X_MODEL_COLLECTION_TO_NODE( CypherFunctions.class, "collectionToNodes", Enumerable.class, String.class ),
+    X_MODEL_NODE_TO_COLLECTION( CypherFunctions.class, "nodesToCollection", Enumerable.class );
 
     public final Method method;
     public final Constructor constructor;
