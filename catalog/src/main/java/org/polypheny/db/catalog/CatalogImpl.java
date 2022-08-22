@@ -448,12 +448,18 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Recreate the AlgRoot objects for saved Triggers
-     * @return a collection of algRoot objects for each installed {@link CatalogTrigger}
+     *
+     * @return a collection of algNode objects for each installed {@link CatalogTrigger}
      */
-    public Collection<AlgRoot> restoreTriggers(Transaction transaction) {
+    public List<AlgNode> restoreTriggers(Transaction transaction) {
         Statement statement = transaction.createStatement();
         return triggers.values().stream().
-                map(entity -> restoreAlgRoot(statement, entity))
+                map(entity -> {
+                    AlgRoot algRoot = restoreAlgRoot(statement, entity);
+                    nodeInfo.putIfAbsent( entity.getId(), algRoot.alg );
+                    algTypeInfo.putIfAbsent( entity.getId(), algRoot.validatedRowType );
+                    return algRoot.alg;
+                })
                 .collect(Collectors.toList());
     }
 

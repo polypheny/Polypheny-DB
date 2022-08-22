@@ -121,6 +121,6 @@ public class SqlCreateTrigger extends SqlCreate implements ExecutableStatement {
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
-        instance.createTrigger(databaseId, schemaId, name.getSimple(), replace, table.getSimple(), event, query.toString(), Catalog.QueryLanguage.SQL);
+        instance.createTrigger(databaseId, schemaId, name.getSimple(), replace, table.getSimple(), event, query.toString().substring(1, query.toString().length() - 2), Catalog.QueryLanguage.SQL);
     }
 }
