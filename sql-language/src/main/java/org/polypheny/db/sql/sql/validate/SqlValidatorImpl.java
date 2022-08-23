@@ -2578,6 +2578,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 scopes.put( node, parentScope );
                 break;
 
+            case PROCEDURE_EXEC:
             case OTHER_FUNCTION:
                 call = (SqlCall) node;
                 ProcedureNamespace procNs =
