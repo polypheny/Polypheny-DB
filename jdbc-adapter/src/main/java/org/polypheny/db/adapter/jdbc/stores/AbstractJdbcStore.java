@@ -169,7 +169,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                 .append( " ( " );
         boolean first = true;
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
-            CatalogColumn catalogColumn = catalog.getField( placement.columnId );
+            CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
             }

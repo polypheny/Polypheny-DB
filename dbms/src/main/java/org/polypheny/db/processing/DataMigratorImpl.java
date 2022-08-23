@@ -85,7 +85,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
             if ( !selectColumnList.contains( catalogColumn ) ) {
                 selectColumnList.add( catalogColumn );
             }
@@ -240,7 +240,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : to ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( ccp.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
         }
@@ -286,7 +286,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : placements ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( ccp.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
         }
@@ -332,7 +332,7 @@ public class DataMigratorImpl implements DataMigrator {
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
         for ( long cid : primaryKey.columnIds ) {
             CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( to.get( 0 ).adapterId, cid );
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
                     new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id )
@@ -348,7 +348,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<String> columnNames = new LinkedList<>();
         List<RexNode> values = new LinkedList<>();
         for ( CatalogColumnPlacement ccp : to ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( ccp.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( ccp.columnId );
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
         }
@@ -452,7 +452,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : sourcePrimaryKey.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
             if ( !selectColumnList.contains( catalogColumn ) ) {
                 selectColumnList.add( catalogColumn );
             }
@@ -554,7 +554,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
             if ( !selectColumnList.contains( catalogColumn ) ) {
                 selectColumnList.add( catalogColumn );
             }
@@ -562,7 +562,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add partition columns to select column list
         long partitionColumnId = targetTable.partitionProperty.partitionColumnId;
-        CatalogColumn partitionColumn = Catalog.getInstance().getField( partitionColumnId );
+        CatalogColumn partitionColumn = Catalog.getInstance().getColumn( partitionColumnId );
         if ( !selectColumnList.contains( partitionColumn ) ) {
             selectColumnList.add( partitionColumn );
         }

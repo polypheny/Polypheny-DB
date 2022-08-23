@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 
@@ -56,9 +56,9 @@ public class ColumnIndex {
         try {
             log.debug( "Creating ColumnIndex." );
             Catalog catalog = Catalog.getInstance();
-            CatalogColumn column = catalog.getField( inDatabase, schemaName, tableName, columnName );
+            CatalogColumn column = catalog.getColumn( inDatabase, schemaName, tableName, columnName );
             return new ColumnIndex( column, schemaName, tableName, columnName );
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException | UnknownColumnException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | UnknownColumnException e ) {
             log.error( "Cannot find a underlying column for the specified column name: {}.{}.{}.", schemaName, tableName, columnName, e );
             throw new UnknownIndexException( "Cannot find a underlying column for the specified column name: " + schemaName + "." + tableName + "." + columnName + "." );
         }

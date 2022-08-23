@@ -30,8 +30,8 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.cypher.ddl.DdlManager;
@@ -171,7 +171,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
             }
-        } catch ( UnknownPartitionTypeException | GenericCatalogException | UnknownDatabaseException | UnknownTableException | TransactionException | UnknownNamespaceException | UnknownUserException | UnknownKeyException e ) {
+        } catch ( UnknownPartitionTypeException | GenericCatalogException | UnknownDatabaseException | UnknownTableException | TransactionException | UnknownSchemaException | UnknownUserException | UnknownKeyException e ) {
             throw new RuntimeException( e );
         } catch ( PartitionGroupNamesNotUniqueException e ) {
             throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );

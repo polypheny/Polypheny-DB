@@ -28,10 +28,10 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -88,8 +88,8 @@ public class StatisticQueryProcessor {
         Catalog catalog = Catalog.getInstance();
         List<List<String>> result = new ArrayList<>();
         List<String> schemaTree = new ArrayList<>();
-        List<CatalogNamespace> schemas = catalog.getSchemas( databaseId, null );
-        for ( CatalogNamespace schema : schemas ) {
+        List<CatalogSchema> schemas = catalog.getSchemas( databaseId, null );
+        for ( CatalogSchema schema : schemas ) {
             List<String> tables = new ArrayList<>();
             List<CatalogTable> childTables = catalog.getTables( schema.id, null );
             for ( CatalogTable childTable : childTables ) {
@@ -200,7 +200,7 @@ public class StatisticQueryProcessor {
     private Transaction getTransaction() {
         try {
             return transactionManager.startTransaction( userId, databaseId, false, "Statistics", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

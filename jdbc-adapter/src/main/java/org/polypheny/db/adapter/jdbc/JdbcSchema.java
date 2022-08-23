@@ -133,7 +133,7 @@ public class JdbcSchema implements Schema {
         String physicalSchemaName = null;
 
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( placement.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             if ( physicalSchemaName == null ) {
                 physicalSchemaName = placement.physicalSchemaName;
             }

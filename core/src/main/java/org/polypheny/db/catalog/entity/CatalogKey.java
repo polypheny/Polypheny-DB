@@ -61,7 +61,7 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getNamespace( schemaId ).name;
+        return Catalog.getInstance().getSchema( schemaId ).name;
     }
 
 
@@ -76,7 +76,7 @@ public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
         Catalog catalog = Catalog.getInstance();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : columnIds ) {
-            columnNames.add( catalog.getField( columnId ).name );
+            columnNames.add( catalog.getColumn( columnId ).name );
         }
         return columnNames;
     }

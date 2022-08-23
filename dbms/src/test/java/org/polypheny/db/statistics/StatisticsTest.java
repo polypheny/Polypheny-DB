@@ -34,7 +34,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 
@@ -241,7 +241,7 @@ public class StatisticsTest {
 
                         Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
                         Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
-                    } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+                    } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                         log.error( "Caught exception test", e );
                     }
                     connection.commit();
@@ -312,7 +312,7 @@ public class StatisticsTest {
                 log.warn( "Collection was already removed from the catalog, therefore the count will be null, which is correct" );
             }
 
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException | InterruptedException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | InterruptedException e ) {
             log.error( "Caught exception test", e );
         }
     }

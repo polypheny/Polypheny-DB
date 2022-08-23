@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
 @EqualsAndHashCode
-public final class CatalogNamespace implements CatalogObject, Comparable<CatalogNamespace> {
+public final class CatalogSchema implements CatalogObject, Comparable<CatalogSchema> {
 
     private static final long serialVersionUID = 6130781950959616712L;
 
@@ -43,7 +43,7 @@ public final class CatalogNamespace implements CatalogObject, Comparable<Catalog
     public final NamespaceType namespaceType;
 
 
-    public CatalogNamespace(
+    public CatalogSchema(
             final long id,
             @NonNull final String name,
             final long databaseId,
@@ -73,7 +73,7 @@ public final class CatalogNamespace implements CatalogObject, Comparable<Catalog
 
 
     @Override
-    public int compareTo( CatalogNamespace o ) {
+    public int compareTo( CatalogSchema o ) {
         if ( o != null ) {
             int comp = (int) (this.databaseId - o.databaseId);
             if ( comp == 0 ) {

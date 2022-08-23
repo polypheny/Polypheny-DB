@@ -50,7 +50,7 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -285,17 +285,17 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 Statement statement = transaction.createStatement();
                 Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
                 // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-                idAccessMap.add(Pair.of(LockManager.GLOBAL_LOCK, LockMode.SHARED));
+                idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
                 // Get locks for individual tables
-                EntityAccessMap accessMap = new EntityAccessMap(((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>());
-                idAccessMap.addAll(accessMap.getAccessedEntityPair());
-                LockManager.INSTANCE.lock(idAccessMap, (TransactionImpl) statement.getTransaction());
+                EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
+                idAccessMap.addAll( accessMap.getAccessedEntityPair() );
+                LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }
             updateData( transaction, materializedId );
             commitTransaction( transaction );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
         }
         updateMaterializedTime( materializedId );
@@ -352,7 +352,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 int localAdapterIndex = catalogMaterializedView.dataPlacements.indexOf( id );
                 catalog.getDataPlacement( catalogMaterializedView.dataPlacements.get( localAdapterIndex ), catalogMaterializedView.id )
                         .columnPlacementsOnAdapter.forEach( col ->
-                                catalogColumns.add( catalog.getField( col ) )
+                                catalogColumns.add( catalog.getColumn( col ) )
                         );
                 columns.put( id, catalogColumns );
             }

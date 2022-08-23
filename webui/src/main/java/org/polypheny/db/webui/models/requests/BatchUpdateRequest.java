@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -65,8 +65,8 @@ public class BatchUpdateRequest {
                 String[] split = tableId.split( "\\." );
                 CatalogColumn catalogColumn;
                 try {
-                    catalogColumn = catalog.getField( catalog.getTable( "APP", split[0], split[1] ).id, entry.getKey() );
-                } catch ( UnknownColumnException | UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+                    catalogColumn = catalog.getColumn( catalog.getTable( "APP", split[0], split[1] ).id, entry.getKey() );
+                } catch ( UnknownColumnException | UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Could not determine column type", e );
                     return null;
                 }

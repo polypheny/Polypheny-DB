@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
@@ -113,7 +113,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     private Long getCatalogTableId() {
         try {
             return Catalog.getInstance().getTable( cassandraSchema.name, columnFamily, physicalName ).id;
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Not possible to get tableId within CassandraTable", e );
         }
     }

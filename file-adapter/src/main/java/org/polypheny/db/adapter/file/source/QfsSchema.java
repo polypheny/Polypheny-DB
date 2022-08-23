@@ -101,7 +101,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
         columnPlacementsOnStore.sort( Comparator.comparingLong( p -> p.columnId ) );
         for ( CatalogColumnPlacement p : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn;
-            catalogColumn = Catalog.getInstance().getField( p.columnId );
+            catalogColumn = Catalog.getInstance().getColumn( p.columnId );
             if ( p.adapterId == source.getAdapterId() ) {
                 columnIds.add( p.columnId );
                 if ( catalogColumn.collectionsType != null ) {

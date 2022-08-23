@@ -27,7 +27,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -87,11 +87,11 @@ public class StatisticCrud {
         long tableId;
         long schemaId;
         try {
-            schemaId = Catalog.getInstance().getNamespace( 1, request.tableId.split( "\\." )[0] ).id;
+            schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
             tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
 
             ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
-        } catch ( UnknownTableException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException | UnknownSchemaException e ) {
             throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
                     + request.tableId.split( "\\." )[1] + "is unknown." );
         }

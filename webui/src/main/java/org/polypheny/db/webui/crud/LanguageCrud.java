@@ -44,12 +44,12 @@ import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.cql.Cql2RelConverter;
@@ -568,7 +568,7 @@ public class LanguageCrud {
             String[] t = request.tableId.split( "\\." );
             try {
                 catalogTable = Catalog.getInstance().getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
-            } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+            } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                 log.error( "Caught exception", e );
             }
         }
@@ -601,7 +601,7 @@ public class LanguageCrud {
             if ( catalogTable != null ) {
                 try {
                     if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
+                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
                         if ( catalogColumn.defaultValue != null ) {
                             dbCol.defaultValue = catalogColumn.defaultValue.value;
                         }
@@ -661,7 +661,7 @@ public class LanguageCrud {
         Map<String, String> names = Catalog.getInstance()
                 .getSchemas( Catalog.defaultDatabaseId, null )
                 .stream()
-                .collect( Collectors.toMap( CatalogNamespace::getName, s -> s.namespaceType.name() ) );
+                .collect( Collectors.toMap( CatalogSchema::getName, s -> s.namespaceType.name() ) );
 
         String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
         ctx.json( new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data ) );
@@ -723,8 +723,8 @@ public class LanguageCrud {
         Catalog catalog = Catalog.getInstance();
         long namespaceId;
         try {
-            namespaceId = catalog.getNamespace( Catalog.defaultDatabaseId, namespace ).id;
-        } catch ( UnknownNamespaceException e ) {
+            namespaceId = catalog.getSchema( Catalog.defaultDatabaseId, namespace ).id;
+        } catch ( UnknownSchemaException e ) {
             context.json( new Placement( e ) );
             return;
         }

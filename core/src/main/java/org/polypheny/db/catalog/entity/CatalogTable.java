@@ -131,13 +131,13 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
 
     @SneakyThrows
     public String getNamespaceName() {
-        return Catalog.getInstance().getNamespace( namespaceId ).name;
+        return Catalog.getInstance().getSchema( namespaceId ).name;
     }
 
 
     @SneakyThrows
     public NamespaceType getNamespaceType() {
-        return Catalog.getInstance().getNamespace( namespaceId ).namespaceType;
+        return Catalog.getInstance().getSchema( namespaceId ).namespaceType;
     }
 
 
@@ -152,7 +152,7 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
         Catalog catalog = Catalog.getInstance();
         List<String> fieldNames = new LinkedList<>();
         for ( long fieldId : fieldIds ) {
-            fieldNames.add( catalog.getField( fieldId ).name );
+            fieldNames.add( catalog.getColumn( fieldId ).name );
         }
         return fieldNames;
     }

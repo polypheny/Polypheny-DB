@@ -256,7 +256,7 @@ public class MongoStore extends DataStore {
         commitAll();
 
         if ( this.currentSchema == null ) {
-            createNewSchema( null, Catalog.getInstance().getNamespace( catalogTable.namespaceId ).getName() );
+            createNewSchema( null, Catalog.getInstance().getSchema( catalogTable.namespaceId ).getName() );
         }
 
         for ( long partitionId : partitionIds ) {
@@ -287,7 +287,7 @@ public class MongoStore extends DataStore {
         commitAll();
 
         if ( this.currentSchema == null ) {
-            createNewSchema( null, Catalog.getInstance().getNamespace( catalogCollection.namespaceId ).getName() );
+            createNewSchema( null, Catalog.getInstance().getSchema( catalogCollection.namespaceId ).getName() );
         }
 
         String physicalCollectionName = getPhysicalTableName( catalogCollection.id, adapterId );

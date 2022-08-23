@@ -70,7 +70,7 @@ public class CatalogCollection implements CatalogObject {
 
     @SneakyThrows
     public String getNamespaceName() {
-        return Catalog.getInstance().getNamespace( namespaceId ).name;
+        return Catalog.getInstance().getSchema( namespaceId ).name;
     }
 
 

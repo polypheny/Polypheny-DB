@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +19,19 @@ package org.polypheny.db.catalog.exceptions;
 
 import lombok.Getter;
 
-public class UnknownNamespaceException extends CatalogException {
+public class UnknownSchemaException extends CatalogException {
 
     @Getter
     private final String schemaName;
 
 
-    public UnknownNamespaceException( String databaseName, String schemaName ) {
+    public UnknownSchemaException( String databaseName, String schemaName ) {
         super( "There is no schema with name '" + schemaName + "' in the database '" + databaseName + "'" );
         this.schemaName = schemaName;
     }
 
 
-    public UnknownNamespaceException( long databaseId, String schemaName ) {
+    public UnknownSchemaException( long databaseId, String schemaName ) {
         super( "There is no schema with name '" + schemaName + "' in the database with the id '" + databaseId + "'" );
         this.schemaName = schemaName;
     }

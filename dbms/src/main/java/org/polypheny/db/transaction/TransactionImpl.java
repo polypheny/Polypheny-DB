@@ -41,9 +41,9 @@ import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.Enforce
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
@@ -83,7 +83,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final CatalogUser user;
     @Getter
-    private final CatalogNamespace defaultSchema;
+    private final CatalogSchema defaultSchema;
     @Getter
     private final CatalogDatabase database;
 
@@ -124,7 +124,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             PolyXid xid,
             TransactionManagerImpl transactionManager,
             CatalogUser user,
-            CatalogNamespace defaultSchema,
+            CatalogSchema defaultSchema,
             CatalogDatabase database,
             boolean analyze,
             String origin,

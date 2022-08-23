@@ -59,13 +59,13 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
@@ -203,7 +203,7 @@ public class ConstraintEnforceAttacher {
         final Modify root = (Modify) logicalRoot.alg;
 
         final Catalog catalog = Catalog.getInstance();
-        final CatalogNamespace schema = statement.getTransaction().getDefaultSchema();
+        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
         final CatalogTable table;
         final CatalogPrimaryKey primaryKey;
         final List<CatalogConstraint> constraints;
@@ -501,7 +501,7 @@ public class ConstraintEnforceAttacher {
                     final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final CatalogColumn foreignColumn;
                     try {
-                        foreignColumn = Catalog.getInstance().getField( foreignTable.id, foreignColumnName );
+                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
                     } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
@@ -576,8 +576,8 @@ public class ConstraintEnforceAttacher {
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
                     final CatalogColumn column, foreignColumn;
                     try {
-                        column = Catalog.getInstance().getField( table.id, columnName );
-                        foreignColumn = Catalog.getInstance().getField( foreignTable.id, foreignColumnName );
+                        column = Catalog.getInstance().getColumn( table.id, columnName );
+                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
                     } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
@@ -696,7 +696,7 @@ public class ConstraintEnforceAttacher {
                     }
 
 
-                } catch ( UnknownDatabaseException | UnknownNamespaceException | UnknownUserException | TransactionException | GenericCatalogException e ) {
+                } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownUserException | TransactionException | GenericCatalogException e ) {
                     return false;
                 }
             }

@@ -212,7 +212,7 @@ public abstract class DataStore extends Adapter {
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
             for ( long columnId : columnIds ) {
-                columnNames.add( Catalog.getInstance().getField( columnId ).name );
+                columnNames.add( Catalog.getInstance().getColumn( columnId ).name );
             }
             return columnNames;
         }

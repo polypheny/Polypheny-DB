@@ -474,7 +474,7 @@ public abstract class Adapter {
                     catalog.getColumnPlacementsOnAdapterPerTable( adapterId, cpp.tableId ).forEach( placement -> {
                         physicalColumnNames.addRow(
                                 placement.columnId,
-                                catalog.getField( placement.columnId ).name,
+                                catalog.getColumn( placement.columnId ).name,
                                 cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName );
                     } )
             );

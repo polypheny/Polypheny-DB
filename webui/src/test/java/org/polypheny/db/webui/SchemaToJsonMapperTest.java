@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -70,7 +70,7 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
 
         );
 
-        new CatalogNamespace( 1, "public", 1, 1, "hans", NamespaceType.RELATIONAL );
+        new CatalogSchema( 1, "public", 1, 1, "hans", NamespaceType.RELATIONAL );
         new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" );
         new CatalogUser( 1, "hans", "secrete", 1L );
         new HashMap<>();

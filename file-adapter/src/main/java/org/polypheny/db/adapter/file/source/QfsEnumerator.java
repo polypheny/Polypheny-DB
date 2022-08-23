@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,13 +61,13 @@ public class QfsEnumerator<E> implements Enumerator<E> {
         if ( condition == null && this.projectionMapping != null ) {
             for ( int projection : this.projectionMapping ) {
                 long colId = columnIds[projection];
-                CatalogColumn col = Catalog.getInstance().getField( colId );
+                CatalogColumn col = Catalog.getInstance().getColumn( colId );
                 columns.add( col.name );
                 columnTypes.add( col.type );
             }
         } else {
             for ( long colId : columnIds ) {
-                CatalogColumn col = Catalog.getInstance().getField( colId );
+                CatalogColumn col = Catalog.getInstance().getColumn( colId );
                 columns.add( col.name );
                 columnTypes.add( col.type );
             }

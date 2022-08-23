@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public class CatalogColumnPlacement implements CatalogObject {
 
     @SneakyThrows
     public String getLogicalColumnName() {
-        return Catalog.getInstance().getField( columnId ).name;
+        return Catalog.getInstance().getColumn( columnId ).name;
     }
 
 

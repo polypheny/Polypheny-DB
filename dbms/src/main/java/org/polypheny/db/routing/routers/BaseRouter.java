@@ -62,8 +62,8 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -246,7 +246,7 @@ public abstract class BaseRouter implements Router {
                 // Final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> catalog.getField( col.columnId ) )
+                        .map( col -> catalog.getColumn( col.columnId ) )
                         .sorted( Comparator.comparingInt( col -> col.position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {
@@ -262,7 +262,7 @@ public abstract class BaseRouter implements Router {
                 List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
                 List<CatalogColumn> pkColumns = new LinkedList<>();
                 for ( long pkColumnId : pkColumnIds ) {
-                    pkColumns.add( catalog.getField( pkColumnId ) );
+                    pkColumns.add( catalog.getColumn( pkColumnId ) );
                 }
 
                 // Add primary key
@@ -319,7 +319,7 @@ public abstract class BaseRouter implements Router {
                 // Final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> catalog.getField( col.columnId ) )
+                        .map( col -> catalog.getColumn( col.columnId ) )
                         .sorted( Comparator.comparingInt( col -> col.position ) )
                         .collect( Collectors.toList() );
                 for ( CatalogColumn catalogColumn : placementList ) {
@@ -363,7 +363,7 @@ public abstract class BaseRouter implements Router {
 
         Catalog catalog = Catalog.getInstance();
 
-        CatalogNamespace namespace = catalog.getNamespace( alg.getGraph().getId() );
+        CatalogSchema namespace = catalog.getSchema( alg.getGraph().getId() );
         if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
             // cross model queries on relational
             return handleGraphOnRelational( alg, namespace, statement, placementId );
@@ -406,7 +406,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
+    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, CatalogSchema namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
         List<CatalogTable> tables = catalog.getTables( Catalog.defaultDatabaseId, new Pattern( namespace.name ), null );
         List<Pair<String, AlgNode>> scans = tables.stream()
@@ -420,7 +420,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogNamespace namespace, Statement statement, Integer placementId ) {
+    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, CatalogSchema namespace, Statement statement, Integer placementId ) {
         AlgOptCluster cluster = alg.getCluster();
         List<CatalogCollection> collections = catalog.getCollections( namespace.id, null );
         List<Pair<String, AlgNode>> scans = collections.stream()

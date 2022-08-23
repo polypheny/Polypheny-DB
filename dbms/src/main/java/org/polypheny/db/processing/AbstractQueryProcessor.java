@@ -79,10 +79,10 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationCode;
@@ -621,21 +621,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalModify ltm = (LogicalModify) node;
                         final CatalogTable table;
-                        final CatalogNamespace schema;
+                        final CatalogSchema schema;
                         try {
                             String tableName;
                             if ( ltm.getTable().getQualifiedName().size() == 3 ) { // DatabaseName.SchemaName.TableName
-                                schema = catalog.getNamespace( ltm.getTable().getQualifiedName().get( 0 ), ltm.getTable().getQualifiedName().get( 1 ) );
+                                schema = catalog.getSchema( ltm.getTable().getQualifiedName().get( 0 ), ltm.getTable().getQualifiedName().get( 1 ) );
                                 tableName = ltm.getTable().getQualifiedName().get( 2 );
                             } else if ( ltm.getTable().getQualifiedName().size() == 2 ) { // SchemaName.TableName
-                                schema = catalog.getNamespace( statement.getPrepareContext().getDatabaseId(), ltm.getTable().getQualifiedName().get( 0 ) );
+                                schema = catalog.getSchema( statement.getPrepareContext().getDatabaseId(), ltm.getTable().getQualifiedName().get( 0 ) );
                                 tableName = ltm.getTable().getQualifiedName().get( 1 );
                             } else { // TableName
-                                schema = catalog.getNamespace( statement.getPrepareContext().getDatabaseId(), statement.getPrepareContext().getDefaultSchemaName() );
+                                schema = catalog.getSchema( statement.getPrepareContext().getDatabaseId(), statement.getPrepareContext().getDefaultSchemaName() );
                                 tableName = ltm.getTable().getQualifiedName().get( 0 );
                             }
                             table = catalog.getTable( schema.id, tableName );
-                        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+                        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                             // This really should not happen
                             log.error( "Table not found: {}", ltm.getTable().getQualifiedName().get( 0 ), e );
                             throw new RuntimeException( e );
@@ -881,7 +881,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalConditionalExecute ) {
                         final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
                         final Index index = IndexManager.getInstance().getIndex(
-                                lce.getCatalogNamespace(),
+                                lce.getCatalogSchema(),
                                 lce.getCatalogTable(),
                                 lce.getCatalogColumns()
                         );
@@ -933,7 +933,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         ctypes.add( field.getType() );
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
-                    final CatalogNamespace schema = statement.getTransaction().getDefaultSchema();
+                    final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
                     final CatalogTable ctable;
                     try {
                         ctable = Catalog.getInstance().getTable( schema.id, table );
@@ -1359,7 +1359,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                             "TableID: {} is partitioned on column: {} - {}",
                                             logicalTable.getTableId(),
                                             catalogTable.partitionProperty.partitionColumnId,
-                                            Catalog.getInstance().getField( catalogTable.partitionProperty.partitionColumnId ).name );
+                                            Catalog.getInstance().getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
                                 }
                                 List<Long> identifiedPartitions = new ArrayList<>();
                                 for ( String partitionValue : partitionValues ) {

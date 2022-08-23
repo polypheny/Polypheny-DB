@@ -156,7 +156,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 long pkid = catalogTable.primaryKey;
                 List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
-                CatalogColumn pkColumn = catalog.getField( pkColumnIds.get( 0 ) );
+                CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
 
                 // Essentially gets a list of all stores where this table resides
                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
@@ -205,7 +205,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 String columnName = updateColumnListIterator.next();
                                 sourceExpressionListIterator.next();
                                 try {
-                                    CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
+                                    CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
                                     if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.adapterId, catalogColumn.id ) ) {
                                         updateColumnListIterator.remove();
                                         sourceExpressionListIterator.remove();
@@ -272,7 +272,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                             for ( String cn : updateColumnList ) {
                                 try {
-                                    if ( catalog.getField( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
+                                    if ( catalog.getColumn( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
                                         if ( log.isDebugEnabled() ) {
                                             log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionProperty.partitionColumnId, index );
                                         }
@@ -522,7 +522,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             } else if ( modify.getInput() instanceof LogicalProject
                                     && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
 
-                                String partitionColumnName = catalog.getField( catalogTable.partitionProperty.partitionColumnId ).name;
+                                String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
                                 List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
 
                                 LogicalModify ltm = modify;
@@ -631,7 +631,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             }
 
                             if ( log.isDebugEnabled() ) {
-                                String partitionColumnName = catalog.getField( catalogTable.partitionProperty.partitionColumnId ).name;
+                                String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
                                 String partitionName = catalog.getPartitionGroup( identPart ).partitionGroupName;
                                 log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
                                         partitionValue, identPart, partitionName, partitionColumnName );
@@ -1471,7 +1471,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 } else {
                     throw new RuntimeException( "Invalid column name: " + field.getName() );
                 }
-                column = catalog.getField( catalogTable.id, columnName );
+                column = catalog.getColumn( catalogTable.id, columnName );
             } catch ( UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }

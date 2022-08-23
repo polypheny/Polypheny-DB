@@ -76,7 +76,7 @@ public final class CatalogForeignKey extends CatalogKey {
 
     @SneakyThrows
     public String getReferencedKeySchemaName() {
-        return Catalog.getInstance().getNamespace( referencedKeySchemaId ).name;
+        return Catalog.getInstance().getSchema( referencedKeySchemaId ).name;
     }
 
 
@@ -91,7 +91,7 @@ public final class CatalogForeignKey extends CatalogKey {
         Catalog catalog = Catalog.getInstance();
         List<String> columnNames = new LinkedList<>();
         for ( long columnId : referencedKeyColumnIds ) {
-            columnNames.add( catalog.getField( columnId ).name );
+            columnNames.add( catalog.getColumn( columnId ).name );
         }
         return columnNames;
     }

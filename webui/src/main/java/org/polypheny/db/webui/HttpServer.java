@@ -44,7 +44,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -180,7 +180,7 @@ public class HttpServer implements Runnable {
         defaultException( IOException.class, server );
         defaultException( ServletException.class, server );
         defaultException( UnknownDatabaseException.class, server );
-        defaultException( UnknownNamespaceException.class, server );
+        defaultException( UnknownSchemaException.class, server );
         defaultException( UnknownTableException.class, server );
         defaultException( UnknownColumnException.class, server );
     }

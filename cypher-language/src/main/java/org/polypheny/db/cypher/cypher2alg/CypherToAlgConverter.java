@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
 import org.polypheny.db.cypher.clause.CypherClause;
@@ -135,8 +135,8 @@ public class CypherToAlgConverter {
     private long getDatabaseId( CypherQueryParameters parameters ) {
         long databaseId;
         try {
-            databaseId = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, parameters.databaseName ).id;
-        } catch ( UnknownNamespaceException e ) {
+            databaseId = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, parameters.databaseName ).id;
+        } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "Error on retrieving the used namespace" );
         }
         return databaseId;

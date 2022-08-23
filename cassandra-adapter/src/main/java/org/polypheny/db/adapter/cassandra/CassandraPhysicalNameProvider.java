@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 
@@ -90,12 +90,12 @@ public class CassandraPhysicalNameProvider {
 
 
     public String getLogicalColumnName( long columnId ) {
-        return catalog.getField( columnId ).name;
+        return catalog.getColumn( columnId ).name;
     }
 
 
     public CatalogColumn getLogicalColumn( long columnId ) {
-        return catalog.getField( columnId );
+        return catalog.getColumn( columnId );
     }
 
 
@@ -103,7 +103,7 @@ public class CassandraPhysicalNameProvider {
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( "APP", schemaName, tableName );
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
         return catalogTable.id;
@@ -113,8 +113,8 @@ public class CassandraPhysicalNameProvider {
     private long columnId( String logicalSchemaName, String logicalTableName, String logicalColumnName ) {
         CatalogColumn catalogColumn;
         try {
-            catalogColumn = catalog.getField( "APP", logicalSchemaName, logicalTableName, logicalColumnName );
-        } catch ( UnknownColumnException | UnknownNamespaceException | UnknownDatabaseException | UnknownTableException e ) {
+            catalogColumn = catalog.getColumn( "APP", logicalSchemaName, logicalTableName, logicalColumnName );
+        } catch ( UnknownColumnException | UnknownSchemaException | UnknownDatabaseException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
         return catalogColumn.id;
@@ -124,7 +124,7 @@ public class CassandraPhysicalNameProvider {
     private long columnId( long tableId, String logicalColumnName ) {
         CatalogColumn catalogColumn;
         try {
-            catalogColumn = catalog.getField( tableId, logicalColumnName );
+            catalogColumn = catalog.getColumn( tableId, logicalColumnName );
         } catch ( UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

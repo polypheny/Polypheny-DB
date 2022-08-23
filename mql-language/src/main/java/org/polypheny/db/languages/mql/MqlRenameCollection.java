@@ -19,10 +19,10 @@ package org.polypheny.db.languages.mql;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -58,7 +58,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {
-            CatalogNamespace schema = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+            CatalogSchema schema = catalog.getSchema( Catalog.defaultDatabaseId, database );
             List<CatalogTable> tables = catalog.getTables( schema.id, null );
 
             if ( dropTarget ) {
@@ -80,7 +80,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
             }
 
             DdlManager.getInstance().renameTable( table.get(), newName, statement );
-        } catch ( DdlOnSourceException | EntityAlreadyExistsException | UnknownNamespaceException e ) {
+        } catch ( DdlOnSourceException | EntityAlreadyExistsException | UnknownSchemaException e ) {
             throw new RuntimeException( "The rename was not successful, due to an error: " + e.getMessage() );
         }
     }

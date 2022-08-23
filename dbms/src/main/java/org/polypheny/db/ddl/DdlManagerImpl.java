@@ -77,9 +77,9 @@ import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
@@ -98,8 +98,8 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownGraphException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -200,7 +200,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private CatalogColumn getCatalogColumn( long tableId, String columnName ) throws ColumnNotExistsException {
         try {
-            return catalog.getField( tableId, columnName );
+            return catalog.getColumn( tableId, columnName );
         } catch ( UnknownColumnException e ) {
             throw new ColumnNotExistsException( tableId, columnName );
         }
@@ -210,12 +210,12 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public long createNamespace( String name, long databaseId, NamespaceType type, int userId, boolean ifNotExists, boolean replace ) throws NamespaceAlreadyExistsException {
         // Check if there is already a schema with this name
-        if ( catalog.checkIfExistsNamespace( databaseId, name ) ) {
+        if ( catalog.checkIfExistsSchema( databaseId, name ) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
                 try {
-                    return catalog.getNamespace( Catalog.defaultDatabaseId, name ).id;
-                } catch ( UnknownNamespaceException e ) {
+                    return catalog.getSchema( Catalog.defaultDatabaseId, name ).id;
+                } catch ( UnknownSchemaException e ) {
                     throw new RuntimeException( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
                 }
             } else if ( replace ) {
@@ -224,7 +224,7 @@ public class DdlManagerImpl extends DdlManager {
                 throw new NamespaceAlreadyExistsException();
             }
         } else {
-            return catalog.addNamespace( name, databaseId, userId, type );
+            return catalog.addSchema( name, databaseId, userId, type );
         }
     }
 
@@ -404,23 +404,23 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterSchemaOwner( String schemaName, String ownerName, long databaseId ) throws UnknownUserException, UnknownNamespaceException {
-        CatalogNamespace catalogNamespace = catalog.getNamespace( databaseId, schemaName );
+    public void alterSchemaOwner( String schemaName, String ownerName, long databaseId ) throws UnknownUserException, UnknownSchemaException {
+        CatalogSchema catalogSchema = catalog.getSchema( databaseId, schemaName );
         CatalogUser catalogUser = catalog.getUser( ownerName );
-        catalog.setSchemaOwner( catalogNamespace.id, catalogUser.id );
+        catalog.setSchemaOwner( catalogSchema.id, catalogUser.id );
     }
 
 
     @Override
-    public void renameSchema( String newName, String oldName, long databaseId ) throws NamespaceAlreadyExistsException, UnknownNamespaceException {
-        if ( catalog.checkIfExistsNamespace( databaseId, newName ) ) {
+    public void renameSchema( String newName, String oldName, long databaseId ) throws NamespaceAlreadyExistsException, UnknownSchemaException {
+        if ( catalog.checkIfExistsSchema( databaseId, newName ) ) {
             throw new NamespaceAlreadyExistsException();
         }
-        CatalogNamespace catalogNamespace = catalog.getNamespace( databaseId, oldName );
-        catalog.renameSchema( catalogNamespace.id, newName );
+        CatalogSchema catalogSchema = catalog.getSchema( databaseId, oldName );
+        catalog.renameSchema( catalogSchema.id, newName );
 
         // Update Name in statistics
-        StatisticsManager.getInstance().updateSchemaName( catalogNamespace, newName );
+        StatisticsManager.getInstance().updateSchemaName( catalogSchema, newName );
     }
 
 
@@ -486,7 +486,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Add default value
         addDefaultValue( defaultValue, columnId );
-        CatalogColumn addedColumn = catalog.getField( columnId );
+        CatalogColumn addedColumn = catalog.getColumn( columnId );
 
         // Add column placement
         catalog.addColumnPlacement(
@@ -556,7 +556,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Add default value
         addDefaultValue( defaultValue, columnId );
-        CatalogColumn addedColumn = catalog.getField( columnId );
+        CatalogColumn addedColumn = catalog.getColumn( columnId );
 
         // Ask router on which stores this column shall be placed
         List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
@@ -583,12 +583,12 @@ public class DdlManagerImpl extends DdlManager {
     public void addForeignKey( CatalogTable catalogTable, CatalogTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException {
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
+            CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
             columnIds.add( catalogColumn.id );
         }
         List<Long> referencesIds = new LinkedList<>();
         for ( String columnName : refColumnNames ) {
-            CatalogColumn catalogColumn = catalog.getField( refTable.id, columnName );
+            CatalogColumn catalogColumn = catalog.getColumn( refTable.id, columnName );
             referencesIds.add( catalogColumn.id );
         }
         catalog.addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
@@ -596,10 +596,10 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownNamespaceException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
+    public void addIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
+            CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
             columnIds.add( catalogColumn.id );
         }
 
@@ -681,7 +681,7 @@ public class DdlManagerImpl extends DdlManager {
         // Check if all required columns are present on this store
         for ( long columnId : columnIds ) {
             if ( !catalog.checkIfExistsColumnPlacement( location.getAdapterId(), columnId ) ) {
-                throw new MissingColumnPlacementException( catalog.getField( columnId ).name );
+                throw new MissingColumnPlacementException( catalog.getColumn( columnId ).name );
             }
         }
 
@@ -721,10 +721,10 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    public void addPolyphenyIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownNamespaceException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
+    public void addPolyphenyIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
+            CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
             columnIds.add( catalogColumn.id );
         }
 
@@ -872,7 +872,7 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null
             );
-            addedColumns.add( catalog.getField( cid ) );
+            addedColumns.add( catalog.getColumn( cid ) );
         }
         // Check if placement includes primary key columns
         CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
@@ -886,7 +886,7 @@ public class DdlManagerImpl extends DdlManager {
                         null,
                         null
                 );
-                addedColumns.add( catalog.getField( cid ) );
+                addedColumns.add( catalog.getColumn( cid ) );
             }
         }
 
@@ -928,7 +928,7 @@ public class DdlManagerImpl extends DdlManager {
 
             List<Long> columnIds = new LinkedList<>();
             for ( String columnName : columnNames ) {
-                CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
+                CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
                 columnIds.add( catalogColumn.id );
             }
             catalog.addPrimaryKey( catalogTable.id, columnIds );
@@ -950,7 +950,7 @@ public class DdlManagerImpl extends DdlManager {
                         AdapterManager.getInstance().getStore( ccp.adapterId ).addColumn(
                                 statement.getPrepareContext(),
                                 catalog.getTable( ccp.tableId ),
-                                catalog.getField( columnId ) );
+                                catalog.getColumn( columnId ) );
                     }
                 }
             }
@@ -970,7 +970,7 @@ public class DdlManagerImpl extends DdlManager {
         try {
             List<Long> columnIds = new LinkedList<>();
             for ( String columnName : columnNames ) {
-                CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
+                CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
                 columnIds.add( catalogColumn.id );
             }
             catalog.addUniqueConstraint( catalogTable.id, constraintName, columnIds );
@@ -1177,7 +1177,7 @@ public class DdlManagerImpl extends DdlManager {
             AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                     statement.getPrepareContext(),
                     placement,
-                    catalog.getField( catalogColumn.id ),
+                    catalog.getColumn( catalogColumn.id ),
                     catalogColumn.type );
         }
 
@@ -1320,7 +1320,7 @@ public class DdlManagerImpl extends DdlManager {
                 // Check whether there are any indexes located on the store requiring this column
                 for ( CatalogIndex index : catalog.getIndexes( catalogTable.id, false ) ) {
                     if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( placement.columnId ) ) {
-                        throw new IndexPreventsRemovalException( index.name, catalog.getField( placement.columnId ).name );
+                        throw new IndexPreventsRemovalException( index.name, catalog.getColumn( placement.columnId ).name );
                     }
                 }
                 // Check whether the column is a primary key column
@@ -1427,9 +1427,9 @@ public class DdlManagerImpl extends DdlManager {
                         null
                 );
                 // Add column on store
-                storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalog.getField( cid ) );
+                storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalog.getColumn( cid ) );
                 // Add to list of columns for which we need to copy data
-                addedColumns.add( catalog.getField( cid ) );
+                addedColumns.add( catalog.getColumn( cid ) );
             }
         }
 
@@ -1523,7 +1523,7 @@ public class DdlManagerImpl extends DdlManager {
 
             // Get only columns that are actually on that store
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
-            catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ).forEach( cp -> necessaryColumns.add( catalog.getField( cp.columnId ) ) );
+            catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeId ), necessaryColumns, newPartitions );
 
             // Add indexes on this new Partition Placement if there is already an index
@@ -1825,7 +1825,7 @@ public class DdlManagerImpl extends DdlManager {
                 } else {
                     catalogColumns = new ArrayList<>();
                 }
-                catalogColumns.add( catalog.getField( columnId ) );
+                catalogColumns.add( catalog.getColumn( columnId ) );
                 addedColumns.put( adapterId, catalogColumns );
             }
 
@@ -2354,7 +2354,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void checkDocumentModel( long schemaId, List<FieldInformation> columns, List<ConstraintInformation> constraints ) {
-        if ( catalog.getNamespace( schemaId ).namespaceType == NamespaceType.DOCUMENT ) {
+        if ( catalog.getSchema( schemaId ).namespaceType == NamespaceType.DOCUMENT ) {
             List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
 
             if ( names.contains( "_id" ) ) {
@@ -2397,8 +2397,8 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException, UnknownDatabaseException, UnknownTableException, TransactionException, UnknownNamespaceException, UnknownUserException, UnknownKeyException {
-        CatalogColumn catalogColumn = catalog.getField( partitionInfo.table.id, partitionInfo.columnName );
+    public void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException, UnknownDatabaseException, UnknownTableException, TransactionException, UnknownSchemaException, UnknownUserException, UnknownKeyException {
+        CatalogColumn catalogColumn = catalog.getColumn( partitionInfo.table.id, partitionInfo.columnName );
 
         PartitionType actualPartitionType = PartitionType.getByName( partitionInfo.typeName );
 
@@ -2590,7 +2590,7 @@ public class DdlManagerImpl extends DdlManager {
         long pkid = partitionInfo.table.primaryKey;
         List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
         // Basically get first part of PK even if its compound of PK it is sufficient
-        CatalogColumn pkColumn = catalog.getField( pkColumnIds.get( 0 ) );
+        CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
         // This gets us only one ccp per store (first part of PK)
 
         boolean fillStores = false;
@@ -2631,7 +2631,7 @@ public class DdlManagerImpl extends DdlManager {
             // Get only columns that are actually on that store
             // Every store of a newly partitioned table, initially will hold all partitions
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
-            catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), partitionedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getField( cp.columnId ) ) );
+            catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), partitionedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
 
             // Copy data from the old partition to new partitions
             dataMigrator.copyPartitionData(
@@ -2681,7 +2681,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void removePartitioning( CatalogTable partitionedTable, Statement statement ) throws UnknownDatabaseException, GenericCatalogException, UnknownTableException, TransactionException, UnknownNamespaceException, UnknownUserException, UnknownKeyException {
+    public void removePartitioning( CatalogTable partitionedTable, Statement statement ) throws UnknownDatabaseException, GenericCatalogException, UnknownTableException, TransactionException, UnknownSchemaException, UnknownUserException, UnknownKeyException {
         long tableId = partitionedTable.id;
 
         if ( log.isDebugEnabled() ) {
@@ -2707,7 +2707,7 @@ public class DdlManagerImpl extends DdlManager {
         long pkid = partitionedTable.primaryKey;
         List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
         // Basically get first part of PK even if its compound of PK it is sufficient
-        CatalogColumn pkColumn = catalog.getField( pkColumnIds.get( 0 ) );
+        CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
         // This gets us only one ccp per store (first part of PK)
 
         List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getColumnPlacement( pkColumn.id );
@@ -2738,7 +2738,7 @@ public class DdlManagerImpl extends DdlManager {
 
             // Get only columns that are actually on that store
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
-            catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), mergedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getField( cp.columnId ) ) );
+            catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), mergedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
 
             // TODO @HENNLO Check if this can be omitted
             catalog.updateDataPlacement(
@@ -2841,7 +2841,7 @@ public class DdlManagerImpl extends DdlManager {
     public void addConstraint( String constraintName, ConstraintType constraintType, List<String> columnNames, long tableId ) throws UnknownColumnException, GenericCatalogException {
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
-            CatalogColumn catalogColumn = catalog.getField( tableId, columnName );
+            CatalogColumn catalogColumn = catalog.getColumn( tableId, columnName );
             columnIds.add( catalogColumn.id );
         }
         if ( constraintType == ConstraintType.PRIMARY ) {
@@ -2859,23 +2859,23 @@ public class DdlManagerImpl extends DdlManager {
     public void dropSchema( long databaseId, String schemaName, boolean ifExists, Statement statement ) throws SchemaNotExistException, DdlOnSourceException {
         try {
             // Check if there is a schema with this name
-            if ( catalog.checkIfExistsNamespace( databaseId, schemaName ) ) {
-                CatalogNamespace catalogNamespace = catalog.getNamespace( databaseId, schemaName );
+            if ( catalog.checkIfExistsSchema( databaseId, schemaName ) ) {
+                CatalogSchema catalogSchema = catalog.getSchema( databaseId, schemaName );
 
                 // Drop all collections in this namespace
-                List<CatalogCollection> collections = catalog.getCollections( catalogNamespace.id, null );
+                List<CatalogCollection> collections = catalog.getCollections( catalogSchema.id, null );
                 for ( CatalogCollection collection : collections ) {
                     dropCollection( collection, statement );
                 }
 
                 // Drop all tables in this schema
-                List<CatalogTable> catalogEntities = catalog.getTables( catalogNamespace.id, null );
+                List<CatalogTable> catalogEntities = catalog.getTables( catalogSchema.id, null );
                 for ( CatalogTable catalogTable : catalogEntities ) {
                     dropTable( catalogTable, statement );
                 }
 
                 // Drop schema
-                catalog.deleteSchema( catalogNamespace.id );
+                catalog.deleteSchema( catalogSchema.id );
             } else {
                 if ( ifExists ) {
                     // This is ok because "IF EXISTS" was specified
@@ -2884,7 +2884,7 @@ public class DdlManagerImpl extends DdlManager {
                     throw new SchemaNotExistException();
                 }
             }
-        } catch ( UnknownNamespaceException e ) {
+        } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
     }

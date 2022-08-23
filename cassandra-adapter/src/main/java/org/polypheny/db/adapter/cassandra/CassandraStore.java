@@ -255,13 +255,13 @@ public class CassandraStore extends DataStore {
         // List<CatalogColumn> columns = combinedTable.getColumns();
         List<CatalogColumnPlacement> columns = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
         CatalogColumnPlacement primaryColumnPlacement = columns.stream().filter( c -> c.columnId == primaryKeyColumnLambda ).findFirst().get();
-        CatalogColumn catalogColumn = catalog.getField( primaryColumnPlacement.columnId );
+        CatalogColumn catalogColumn = catalog.getColumn( primaryColumnPlacement.columnId );
 
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
                 .withPartitionKey( physicalNameProvider.generatePhysicalColumnName( catalogColumn.id ), CassandraTypesUtils.getDataType( catalogColumn.type, this.arrayContainerUdt ) );
 
         for ( CatalogColumnPlacement placement : columns ) {
-            catalogColumn = catalog.getField( placement.columnId );
+            catalogColumn = catalog.getColumn( placement.columnId );
             DataType fieldType;
             if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
                 fieldType = this.arrayContainerUdt;

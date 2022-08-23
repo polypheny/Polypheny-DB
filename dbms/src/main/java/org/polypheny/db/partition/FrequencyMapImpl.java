@@ -40,7 +40,7 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
@@ -306,7 +306,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                         store.createTable( statement.getPrepareContext(), table, hotPartitionsToCreate );
 
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
-                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getField( cp.columnId ) ) );
+                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
 
                         dataMigrator.copyData(
                                 statement.getTransaction(),
@@ -353,7 +353,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                         store.createTable( statement.getPrepareContext(), table, coldPartitionsToCreate );
 
                         List<CatalogColumn> catalogColumns = new ArrayList<>();
-                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getField( cp.columnId ) ) );
+                        catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> catalogColumns.add( catalog.getColumn( cp.columnId ) ) );
 
                         dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), catalogColumns, coldPartitionsToCreate );
 
@@ -384,7 +384,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             }
 
             transaction.commit();
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException | TransactionException e ) {
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException | TransactionException e ) {
             log.error( "Error while reassigning new location for temperature-based partitions", e );
             if ( transaction != null ) {
                 try {

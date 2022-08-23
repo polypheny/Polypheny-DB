@@ -78,12 +78,12 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
@@ -107,11 +107,11 @@ import org.polypheny.db.catalog.exceptions.UnknownGraphPlacementsException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionGroupIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
@@ -147,8 +147,8 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<String, CatalogDatabase> databaseNames;
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
 
-    private static BTreeMap<Long, CatalogNamespace> schemas;
-    private static BTreeMap<Object[], CatalogNamespace> schemaNames;
+    private static BTreeMap<Long, CatalogSchema> schemas;
+    private static BTreeMap<Object[], CatalogSchema> schemaNames;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
 
     private static BTreeMap<Long, CatalogTable> tables;
@@ -311,7 +311,7 @@ public class CatalogImpl extends Catalog {
                 }
 
             } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException |
-                      UnknownNamespaceException | UnknownAdapterException | UnknownColumnException e ) {
+                      UnknownSchemaException | UnknownAdapterException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
             if ( doInitInformationPage ) {
@@ -520,7 +520,7 @@ public class CatalogImpl extends Catalog {
                         AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,
-                                new MqlQueryParameters( query, getNamespace( defaultDatabaseId ).name, NamespaceType.DOCUMENT ) );
+                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name, NamespaceType.DOCUMENT ) );
                         nodeInfo.put( c.id, mqlRel.alg );
                         algTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;
@@ -742,7 +742,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownNamespaceException, UnknownAdapterException, UnknownColumnException {
+    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownAdapterException, UnknownColumnException {
 
         //////////////
         // init users
@@ -773,9 +773,9 @@ public class CatalogImpl extends Catalog {
 
         long schemaId;
         if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
-            schemaId = addNamespace( "public", databaseId, 1, NamespaceType.getDefault() );
+            schemaId = addSchema( "public", databaseId, 1, NamespaceType.getDefault() );
         } else {
-            schemaId = getNamespace( "APP", "public" ).id;
+            schemaId = getSchema( "APP", "public" ).id;
         }
 
         //////////////
@@ -840,8 +840,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Initiates default columns for csv files
      */
-    private void addDefaultCsvColumns( CatalogAdapter csv ) throws UnknownNamespaceException, UnknownTableException, GenericCatalogException, UnknownColumnException, UnknownDatabaseException {
-        CatalogNamespace schema = getNamespace( "APP", "public" );
+    private void addDefaultCsvColumns( CatalogAdapter csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException, UnknownColumnException, UnknownDatabaseException {
+        CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );
 
         addDefaultCsvColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
@@ -878,25 +878,25 @@ public class CatalogImpl extends Catalog {
         addDefaultCsvColumn( csv, work, "dailyrate", PolyType.INTEGER, null, 9, null );
 
         // set all needed primary keys
-        addPrimaryKey( depts.id, Collections.singletonList( getField( depts.id, "deptno" ).id ) );
-        addPrimaryKey( emps.id, Collections.singletonList( getField( emps.id, "empid" ).id ) );
-        addPrimaryKey( emp.id, Collections.singletonList( getField( emp.id, "employeeno" ).id ) );
-        addPrimaryKey( work.id, Collections.singletonList( getField( work.id, "employeeno" ).id ) );
+        addPrimaryKey( depts.id, Collections.singletonList( getColumn( depts.id, "deptno" ).id ) );
+        addPrimaryKey( emps.id, Collections.singletonList( getColumn( emps.id, "empid" ).id ) );
+        addPrimaryKey( emp.id, Collections.singletonList( getColumn( emp.id, "employeeno" ).id ) );
+        addPrimaryKey( work.id, Collections.singletonList( getColumn( work.id, "employeeno" ).id ) );
 
         // set foreign keys
         addForeignKey(
                 emps.id,
-                ImmutableList.of( getField( emps.id, "deptno" ).id ),
+                ImmutableList.of( getColumn( emps.id, "deptno" ).id ),
                 depts.id,
-                ImmutableList.of( getField( depts.id, "deptno" ).id ),
+                ImmutableList.of( getColumn( depts.id, "deptno" ).id ),
                 "fk_emps_depts",
                 ForeignKeyOption.NONE,
                 ForeignKeyOption.NONE );
         addForeignKey(
                 work.id,
-                ImmutableList.of( getField( work.id, "employeeno" ).id ),
+                ImmutableList.of( getColumn( work.id, "employeeno" ).id ),
                 emp.id,
-                ImmutableList.of( getField( emp.id, "employeeno" ).id ),
+                ImmutableList.of( getColumn( emp.id, "employeeno" ).id ),
                 "fk_work_emp",
                 ForeignKeyOption.NONE,
                 ForeignKeyOption.NONE );
@@ -1096,12 +1096,12 @@ public class CatalogImpl extends Catalog {
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogNamespace> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
+    public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
 
         List<CatalogDatabase> catalogDatabases = getDatabases( databaseNamePattern );
 
         if ( catalogDatabases.size() > 0 ) {
-            Stream<CatalogNamespace> catalogSchemas = catalogDatabases.stream().filter( d -> databaseChildren.containsKey( d.id ) ).flatMap( d -> Objects.requireNonNull( databaseChildren.get( d.id ) ).stream() ).map( schemas::get );
+            Stream<CatalogSchema> catalogSchemas = catalogDatabases.stream().filter( d -> databaseChildren.containsKey( d.id ) ).flatMap( d -> Objects.requireNonNull( databaseChildren.get( d.id ) ).stream() ).map( schemas::get );
 
             if ( schemaNamePattern != null ) {
                 catalogSchemas = catalogSchemas.filter( s -> s.name.matches( schemaNamePattern.toRegex() ) );
@@ -1122,10 +1122,10 @@ public class CatalogImpl extends Catalog {
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogNamespace> getSchemas( long databaseId, Pattern schemaNamePattern ) {
+    public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         if ( schemaNamePattern != null ) {
-            List<CatalogNamespace> list = new ArrayList<>();
-            for ( CatalogNamespace schema : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
+            List<CatalogSchema> list = new ArrayList<>();
+            for ( CatalogSchema schema : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
                 if ( schema.name.matches( schemaNamePattern.pattern ) ) {
                     list.add( schema );
                 }
@@ -1144,7 +1144,7 @@ public class CatalogImpl extends Catalog {
      * @return The schema
      */
     @Override
-    public CatalogNamespace getNamespace( long schemaId ) {
+    public CatalogSchema getSchema( long schemaId ) {
         try {
             return Objects.requireNonNull( schemas.get( schemaId ) );
         } catch ( NullPointerException e ) {
@@ -1159,15 +1159,15 @@ public class CatalogImpl extends Catalog {
      * @param databaseName The name of the database
      * @param schemaName The name of the schema
      * @return The schema
-     * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
+     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
     @Override
-    public CatalogNamespace getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException {
+    public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException {
         try {
             long databaseId = getDatabase( databaseName ).id;
             return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownNamespaceException( databaseName, schemaName );
+            throw new UnknownSchemaException( databaseName, schemaName );
         }
     }
 
@@ -1178,14 +1178,14 @@ public class CatalogImpl extends Catalog {
      * @param databaseId The id of the database
      * @param schemaName The name of the schema
      * @return The schema
-     * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
+     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
     @Override
-    public CatalogNamespace getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException {
+    public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
         try {
             return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownNamespaceException( databaseId, schemaName );
+            throw new UnknownSchemaException( databaseId, schemaName );
         }
     }
 
@@ -1200,10 +1200,10 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted schema
      */
     @Override
-    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
+    public long addSchema( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         CatalogUser owner = getUser( ownerId );
         long id = namespaceIdBuilder.getAndIncrement();
-        CatalogNamespace schema = new CatalogNamespace( id, name, databaseId, ownerId, owner.name, namespaceType );
+        CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, namespaceType );
         synchronized ( this ) {
             schemas.put( id, schema );
             schemaNames.put( new Object[]{ databaseId, name }, schema );
@@ -1225,7 +1225,7 @@ public class CatalogImpl extends Catalog {
      * @return True if there is a schema with this name. False if not.
      */
     @Override
-    public boolean checkIfExistsNamespace( long databaseId, String schemaName ) {
+    public boolean checkIfExistsSchema( long databaseId, String schemaName ) {
         return schemaNames.containsKey( new Object[]{ databaseId, schemaName } );
     }
 
@@ -1239,8 +1239,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameSchema( long schemaId, String name ) {
         try {
-            CatalogNamespace old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogNamespace schema = new CatalogNamespace( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.namespaceType );
+            CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.namespaceType );
 
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
@@ -1263,8 +1263,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setSchemaOwner( long schemaId, long ownerId ) {
         try {
-            CatalogNamespace old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogNamespace schema = new CatalogNamespace( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.namespaceType );
+            CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogSchema schema = new CatalogSchema( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.namespaceType );
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
                 schemaNames.replace( new Object[]{ schema.databaseId, schema.name }, schema );
@@ -1283,7 +1283,7 @@ public class CatalogImpl extends Catalog {
             throw new GraphAlreadyExistsException( name );
         }
 
-        long id = addNamespace( name, databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
+        long id = addSchema( name, databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
 
         //addGraphLogistics( id, stores );
 
@@ -1407,8 +1407,8 @@ public class CatalogImpl extends Catalog {
             idNodeId = addColumn( "_id_", nodesId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
             labelNodeId = addColumn( "_label_", nodesId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
         } else {
-            idNodeId = getField( nodesId, "_id_" ).id;
-            labelNodeId = getField( nodesId, "_label_" ).id;
+            idNodeId = getColumn( nodesId, "_id_" ).id;
+            labelNodeId = getColumn( nodesId, "_label_" ).id;
         }
 
         for ( DataStore s : stores ) {
@@ -1456,9 +1456,9 @@ public class CatalogImpl extends Catalog {
             keyNodePropertyId = addColumn( "_key_", nodesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
             valueNodePropertyId = addColumn( "_value_", nodesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
         } else {
-            idNodesPropertyId = getField( nodesPropertyId, "_id_" ).id;
-            keyNodePropertyId = getField( nodesPropertyId, "_key_" ).id;
-            valueNodePropertyId = getField( nodesPropertyId, "_value_" ).id;
+            idNodesPropertyId = getColumn( nodesPropertyId, "_id_" ).id;
+            keyNodePropertyId = getColumn( nodesPropertyId, "_key_" ).id;
+            valueNodePropertyId = getColumn( nodesPropertyId, "_value_" ).id;
         }
 
         for ( DataStore s : stores ) {
@@ -1517,10 +1517,10 @@ public class CatalogImpl extends Catalog {
             sourceEdgeId = addColumn( "_l_id_", edgesId, 2, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
             targetEdgeId = addColumn( "_r_id_", edgesId, 3, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
         } else {
-            idEdgeId = getField( edgesId, "_id_" ).id;
-            labelEdgeId = getField( edgesId, "_label_" ).id;
-            sourceEdgeId = getField( edgesId, "_l_id_" ).id;
-            targetEdgeId = getField( edgesId, "_r_id_" ).id;
+            idEdgeId = getColumn( edgesId, "_id_" ).id;
+            labelEdgeId = getColumn( edgesId, "_label_" ).id;
+            sourceEdgeId = getColumn( edgesId, "_l_id_" ).id;
+            targetEdgeId = getColumn( edgesId, "_r_id_" ).id;
         }
 
         for ( DataStore store : stores ) {
@@ -1586,9 +1586,9 @@ public class CatalogImpl extends Catalog {
             keyEdgePropertyId = addColumn( "_key_", edgesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
             valueEdgePropertyId = addColumn( "_value_", edgesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
         } else {
-            idEdgePropertyId = getField( edgesPropertyId, "_id_" ).id;
-            keyEdgePropertyId = getField( edgesPropertyId, "_key_" ).id;
-            valueEdgePropertyId = getField( edgesPropertyId, "_value_" ).id;
+            idEdgePropertyId = getColumn( edgesPropertyId, "_id_" ).id;
+            keyEdgePropertyId = getColumn( edgesPropertyId, "_key_" ).id;
+            valueEdgePropertyId = getColumn( edgesPropertyId, "_value_" ).id;
         }
 
         for ( DataStore s : stores ) {
@@ -1713,7 +1713,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteSchema( long schemaId ) {
-        CatalogNamespace schema = getNamespace( schemaId );
+        CatalogSchema schema = getSchema( schemaId );
         synchronized ( this ) {
             schemaNames.remove( new Object[]{ schema.databaseId, schema.name } );
             List<Long> oldChildren = new ArrayList<>( Objects.requireNonNull( databaseChildren.get( schema.databaseId ) ) );
@@ -1743,7 +1743,7 @@ public class CatalogImpl extends Catalog {
     public List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern ) {
         if ( schemas.containsKey( schemaId ) ) {
 
-            CatalogNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             if ( tableNamePattern != null ) {
                 return Collections.singletonList( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableNamePattern.pattern } ) );
             } else {
@@ -1766,12 +1766,12 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         if ( schemaNamePattern != null && tableNamePattern != null ) {
-            CatalogNamespace schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            CatalogSchema schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
             if ( schema != null ) {
                 return Collections.singletonList( Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schema.id, tableNamePattern.pattern } ) ) );
             }
         } else if ( schemaNamePattern != null ) {
-            CatalogNamespace schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            CatalogSchema schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
             if ( schema != null ) {
                 return new ArrayList<>( tableNames.prefixSubMap( new Object[]{ databaseId, schema.id } ).values() );
             }
@@ -1796,10 +1796,10 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        List<CatalogNamespace> catalogNamespaces = getSchemas( databaseNamePattern, schemaNamePattern );
+        List<CatalogSchema> catalogSchemas = getSchemas( databaseNamePattern, schemaNamePattern );
 
-        if ( catalogNamespaces.size() > 0 ) {
-            Stream<CatalogTable> catalogTables = catalogNamespaces.stream().filter( t -> schemaChildren.containsKey( t.id ) ).flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() ).map( tables::get );
+        if ( catalogSchemas.size() > 0 ) {
+            Stream<CatalogTable> catalogTables = catalogSchemas.stream().filter( t -> schemaChildren.containsKey( t.id ) ).flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() ).map( tables::get );
 
             if ( tableNamePattern != null ) {
                 catalogTables = catalogTables.filter( t -> t.name.matches( tableNamePattern.toRegex() ) );
@@ -1838,7 +1838,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException {
         try {
-            CatalogNamespace schema = getNamespace( schemaId );
+            CatalogSchema schema = getSchema( schemaId );
             return Objects.requireNonNull( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( schemaId, tableName );
@@ -1888,10 +1888,10 @@ public class CatalogImpl extends Catalog {
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
     @Override
-    public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException {
+    public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException {
         try {
             long databaseId = getDatabase( databaseName ).id;
-            long schemaId = getNamespace( databaseId, schemaName ).id;
+            long schemaId = getSchema( databaseId, schemaName ).id;
             return Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schemaId, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( databaseName, schemaName, tableName );
@@ -1912,7 +1912,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addEntity( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
         long id = entityIdBuilder.getAndIncrement();
-        CatalogNamespace schema = getNamespace( namespaceId );
+        CatalogSchema schema = getSchema( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
         try {
@@ -1972,7 +1972,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = entityIdBuilder.getAndIncrement();
-        CatalogNamespace schema = getNamespace( namespaceId );
+        CatalogSchema schema = getSchema( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
         PartitionProperty partitionProperty = PartitionProperty.builder()
@@ -2037,7 +2037,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         long id = entityIdBuilder.getAndIncrement();
-        CatalogNamespace schema = getNamespace( namespaceId );
+        CatalogSchema schema = getSchema( namespaceId );
         CatalogUser owner = getUser( ownerId );
 
         // Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
@@ -2095,7 +2095,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Update all information after the addition of all kind of tables
      */
-    private void updateEntityLogistics( String name, long namespaceId, long id, CatalogNamespace schema, CatalogTable entity ) {
+    private void updateEntityLogistics( String name, long namespaceId, long id, CatalogSchema schema, CatalogTable entity ) {
         synchronized ( this ) {
             tables.put( id, entity );
             tableChildren.put( id, ImmutableList.<Long>builder().build() );
@@ -2161,7 +2161,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
-        CatalogNamespace schema = getNamespace( namespaceId );
+        CatalogSchema schema = getSchema( namespaceId );
         return tableNames.containsKey( new Object[]{ schema.databaseId, namespaceId, entityName } );
     }
 
@@ -2485,7 +2485,7 @@ public class CatalogImpl extends Catalog {
     public List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern ) {
         if ( schemas.containsKey( namespaceId ) ) {
 
-            CatalogNamespace schema = Objects.requireNonNull( schemas.get( namespaceId ) );
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( namespaceId ) );
             if ( namePattern != null ) {
                 return Collections.singletonList( collectionNames.get( new Object[]{ schema.databaseId, namespaceId, namePattern.pattern } ) );
             } else {
@@ -2503,7 +2503,7 @@ public class CatalogImpl extends Catalog {
             collectionId = id;
         }
 
-        CatalogNamespace namespace = getNamespace( schemaId );
+        CatalogSchema namespace = getSchema( schemaId );
 
         CatalogCollection collection = new CatalogCollection( Catalog.defaultDatabaseId, schemaId, collectionId, name, List.of(), EntityType.ENTITY, null );
 
@@ -2588,8 +2588,8 @@ public class CatalogImpl extends Catalog {
             dataId = addColumn( "_data_", tableId, 1, PolyType.JSON, null, null, null, null, null, false, Collation.getDefaultCollation() );
         } else {
             try {
-                idId = getField( tableId, "_id_" ).id;
-                dataId = getField( tableId, "_data_" ).id;
+                idId = getColumn( tableId, "_id_" ).id;
+                dataId = getColumn( tableId, "_data_" ).id;
             } catch ( UnknownColumnException e ) {
                 throw new RuntimeException( "Error while adding a document placement." );
             }
@@ -2688,7 +2688,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly ) {
-        CatalogTable oldTable = getTable( getField( columnId ).tableId );
+        CatalogTable oldTable = getTable( getColumn( columnId ).tableId );
 
         synchronized ( this ) {
 
@@ -2727,7 +2727,7 @@ public class CatalogImpl extends Catalog {
             return Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
-            getField( columnId );
+            getColumn( columnId );
             throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
@@ -2769,7 +2769,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId ) {
-        final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingInt( p -> getField( p.columnId ).position );
+        final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingInt( p -> getColumn( p.columnId ).position );
         return getColumnPlacementsOnAdapter( adapterId )
                 .stream()
                 .filter( p -> p.tableId == tableId )
@@ -2871,7 +2871,7 @@ public class CatalogImpl extends Catalog {
             return getColumnPlacementsOnAdapter( adapterId ).stream().filter( p -> Objects.requireNonNull( columns.get( p.columnId ) ).schemaId == schemaId ).collect( Collectors.toList() );
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
-            getNamespace( schemaId );
+            getSchema( schemaId );
             return new ArrayList<>();
         }
     }
@@ -2903,7 +2903,7 @@ public class CatalogImpl extends Catalog {
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
-            getField( columnId );
+            getColumn( columnId );
             throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
@@ -2935,7 +2935,7 @@ public class CatalogImpl extends Catalog {
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
-            getField( columnId );
+            getColumn( columnId );
             throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
@@ -2967,7 +2967,7 @@ public class CatalogImpl extends Catalog {
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
-            getField( columnId );
+            getColumn( columnId );
             throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
@@ -3001,7 +3001,7 @@ public class CatalogImpl extends Catalog {
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
-            getField( columnId );
+            getColumn( columnId );
             throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
@@ -3058,7 +3058,7 @@ public class CatalogImpl extends Catalog {
      * @return A CatalogColumn
      */
     @Override
-    public CatalogColumn getField( long columnId ) {
+    public CatalogColumn getColumn( long columnId ) {
         try {
             return Objects.requireNonNull( columns.get( columnId ) );
         } catch ( NullPointerException e ) {
@@ -3076,7 +3076,7 @@ public class CatalogImpl extends Catalog {
      * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
     @Override
-    public CatalogColumn getField( long tableId, String columnName ) throws UnknownColumnException {
+    public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
         try {
             CatalogTable table = getTable( tableId );
             return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.namespaceId, table.id, columnName } ) );
@@ -3096,7 +3096,7 @@ public class CatalogImpl extends Catalog {
      * @return A CatalogColumn
      */
     @Override
-    public CatalogColumn getField( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownNamespaceException, UnknownDatabaseException, UnknownTableException {
+    public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException {
         try {
             CatalogTable table = getTable( databaseName, schemaName, tableName );
             return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.namespaceId, table.id, columnName } ) );
@@ -3179,7 +3179,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void renameColumn( long columnId, String name ) {
-        CatalogColumn old = getField( columnId );
+        CatalogColumn old = getColumn( columnId );
         CatalogColumn column = new CatalogColumn( old.id, name, old.tableId, old.schemaId, old.databaseId, old.position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, old.nullable, old.collation, old.defaultValue );
         synchronized ( this ) {
             columns.replace( columnId, column );
@@ -3198,7 +3198,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setColumnPosition( long columnId, int position ) {
-        CatalogColumn old = getField( columnId );
+        CatalogColumn old = getColumn( columnId );
         CatalogColumn column = new CatalogColumn( old.id, old.name, old.tableId, old.schemaId, old.databaseId, position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, old.nullable, old.collation, old.defaultValue );
         synchronized ( this ) {
             columns.replace( columnId, column );
@@ -3315,7 +3315,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setCollation( long columnId, Collation collation ) {
-        CatalogColumn old = getField( columnId );
+        CatalogColumn old = getColumn( columnId );
 
         if ( old.type.getFamily() != PolyTypeFamily.CHARACTER ) {
             throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
@@ -3366,7 +3366,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void deleteColumn( long columnId ) {
         //TODO also delete keys with that column?
-        CatalogColumn column = getField( columnId );
+        CatalogColumn column = getColumn( columnId );
 
         List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( column.tableId ) ) );
         children.remove( columnId );
@@ -3440,7 +3440,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setDefaultValue( long columnId, PolyType type, String defaultValue ) {
-        CatalogColumn old = getField( columnId );
+        CatalogColumn old = getColumn( columnId );
         CatalogColumn column = new CatalogColumn(
                 old.id,
                 old.name,
@@ -3472,7 +3472,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteDefaultValue( long columnId ) {
-        CatalogColumn old = getField( columnId );
+        CatalogColumn old = getColumn( columnId );
         CatalogColumn column = new CatalogColumn(
                 old.id,
                 old.name,
@@ -3695,8 +3695,8 @@ public class CatalogImpl extends Catalog {
 
                     int i = 0;
                     for ( long referencedColumnId : refKey.columnIds ) {
-                        CatalogColumn referencingColumn = getField( columnIds.get( i++ ) );
-                        CatalogColumn referencedColumn = getField( referencedColumnId );
+                        CatalogColumn referencingColumn = getColumn( columnIds.get( i++ ) );
+                        CatalogColumn referencedColumn = getColumn( referencedColumnId );
                         if ( referencedColumn.type != referencingColumn.type ) {
                             throw new GenericCatalogException( "The data type of the referenced columns does not match the data type of the referencing column: " + referencingColumn.type.name() + " != " + referencedColumn.type );
                         }
@@ -4293,7 +4293,7 @@ public class CatalogImpl extends Catalog {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Creating partitionGroup of type '{}' with id '{}'", partitionType, id );
             }
-            CatalogNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
 
             List<Long> partitionIds = new ArrayList<>();
             for ( int i = 0; i < numberOfInternalPartitions; i++ ) {
@@ -4486,7 +4486,7 @@ public class CatalogImpl extends Catalog {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Creating partition with id '{}'", id );
             }
-            CatalogNamespace schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
 
             CatalogPartition partition = new CatalogPartition(
                     id,

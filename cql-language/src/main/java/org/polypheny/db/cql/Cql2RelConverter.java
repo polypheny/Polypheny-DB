@@ -199,7 +199,7 @@ public class Cql2RelConverter {
                         int ordinal = tableScanColumnOrdinalities.size();
                         RexNode inputRef = rexBuilder.makeInputRef( baseNode, ordinal );
                         inputRefs.add( inputRef );
-                        CatalogColumn column = catalog.getField( columnId );
+                        CatalogColumn column = catalog.getColumn( columnId );
                         columnNames.add( columnNamePrefix + column.name );
                         tableScanColumnOrdinalities.put( columnId, ordinal );
                     }

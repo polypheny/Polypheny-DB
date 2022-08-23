@@ -124,8 +124,8 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -135,9 +135,9 @@ import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -378,8 +378,8 @@ public class Crud implements InformationObserver {
             ctx.json( new ArrayList<>() );
         }
 
-        List<CatalogNamespace> schemas = catalog.getSchemas( databaseId, null );
-        for ( CatalogNamespace schema : schemas ) {
+        List<CatalogSchema> schemas = catalog.getSchemas( databaseId, null );
+        for ( CatalogSchema schema : schemas ) {
             SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", getIconName( schema.namespaceType ) );
 
             if ( request.depth > 1 && schema.namespaceType != NamespaceType.GRAPH ) {
@@ -460,7 +460,7 @@ public class Crud implements InformationObserver {
         if ( request.schema != null ) {
             requestedSchema = request.schema;
         } else {
-            requestedSchema = catalog.getNamespace( schemaId ).name;
+            requestedSchema = catalog.getSchema( schemaId ).name;
         }
 
         try {
@@ -1156,7 +1156,7 @@ public class Crud implements InformationObserver {
             catalogTable = catalog.getTable( databaseId, tableName, columnName );
             CatalogPrimaryKey pk = catalog.getPrimaryKey( catalogTable.primaryKey );
             for ( long colId : pk.columnIds ) {
-                String colName = catalog.getField( colId ).name;
+                String colName = catalog.getColumn( colId ).name;
                 String condition;
                 if ( filter.containsKey( colName ) ) {
                     String val = filter.get( colName );
@@ -1368,7 +1368,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getDataSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownNamespaceException {
+    void getDataSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
         CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
@@ -1378,7 +1378,7 @@ public class Crud implements InformationObserver {
 
             List<DbColumn> columns = new ArrayList<>();
             for ( Long columnIds : catalogTable.fieldIds ) {
-                CatalogColumn col = catalog.getField( columnIds );
+                CatalogColumn col = catalog.getColumn( columnIds );
                 columns.add( new DbColumn(
                         col.name,
                         col.type.getName(),
@@ -1404,7 +1404,7 @@ public class Crud implements InformationObserver {
             List<String> pkColumnNames = primaryKey.getColumnNames();
             List<DbColumn> columns = new ArrayList<>();
             for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
-                CatalogColumn col = catalog.getField( ccp.columnId );
+                CatalogColumn col = catalog.getColumn( ccp.columnId );
                 columns.add( new DbColumn(
                         col.name,
                         col.type.getName(),
@@ -1426,7 +1426,7 @@ public class Crud implements InformationObserver {
     /**
      * Get additional columns of the DataSource that are not mapped to the table.
      */
-    void getAvailableSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownNamespaceException {
+    void getAvailableSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
         CatalogTable table = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
@@ -1469,7 +1469,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getMaterializedInfo( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownNamespaceException {
+    void getMaterializedInfo( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
 
         CatalogTable catalogTable = catalog.getTable( databaseId, request.schema, request.table );
@@ -2078,7 +2078,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getUnderlyingTable( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownNamespaceException {
+    void getUnderlyingTable( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
 
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
@@ -2090,7 +2090,7 @@ public class Crud implements InformationObserver {
             for ( Entry<Long, ImmutableList<Long>> entry : underlyingTableOriginal.entrySet() ) {
                 List<String> columns = new ArrayList<>();
                 for ( Long ids : entry.getValue() ) {
-                    columns.add( catalog.getField( ids ).name );
+                    columns.add( catalog.getColumn( ids ).name );
                 }
                 underlyingTable.put( catalog.getTable( entry.getKey() ).name, columns );
             }
@@ -2122,7 +2122,7 @@ public class Crud implements InformationObserver {
             } else {
                 long pkid = table.primaryKey;
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-                CatalogColumn pkColumn = Catalog.getInstance().getField( pkColumnIds.get( 0 ) );
+                CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
                 for ( CatalogColumnPlacement placement : pkPlacements ) {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
@@ -2245,7 +2245,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getPartitionFunctionModel( final Context ctx ) throws UnknownDatabaseException, UnknownColumnException, UnknownTableException, UnknownNamespaceException {
+    void getPartitionFunctionModel( final Context ctx ) throws UnknownDatabaseException, UnknownColumnException, UnknownTableException, UnknownSchemaException {
         PartitioningRequest request = ctx.bodyAsClass( PartitioningRequest.class );
 
         // Get correct partition function
@@ -2255,7 +2255,7 @@ public class Crud implements InformationObserver {
         // Check whether the selected partition function supports the selected partition column
         CatalogColumn partitionColumn;
 
-        partitionColumn = Catalog.getInstance().getField( "APP", request.schemaName, request.tableName, request.column );
+        partitionColumn = Catalog.getInstance().getColumn( "APP", request.schemaName, request.tableName, request.column );
 
         if ( !partitionManager.supportsColumnOfType( partitionColumn.type ) ) {
             ctx.json( new PartitionFunctionModel( "The partition function " + request.method + " does not support columns of type " + partitionColumn.type ) );
@@ -3045,7 +3045,7 @@ public class Crud implements InformationObserver {
         // drop schema
         else if ( !schema.isCreate() && schema.isDrop() ) {
             if ( type == null ) {
-                List<CatalogNamespace> namespaces = catalog.getSchemas( Catalog.defaultDatabaseId, new Catalog.Pattern( schema.getName() ) );
+                List<CatalogSchema> namespaces = catalog.getSchemas( Catalog.defaultDatabaseId, new Catalog.Pattern( schema.getName() ) );
                 assert namespaces.size() == 1;
                 type = namespaces.get( 0 ).namespaceType;
 
@@ -3706,7 +3706,7 @@ public class Crud implements InformationObserver {
             if ( catalogTable != null ) {
                 try {
                     if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getField( catalogTable.id, columnName );
+                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
                         if ( catalogColumn.defaultValue != null ) {
                             dbCol.defaultValue = catalogColumn.defaultValue.value;
                         }
@@ -4062,7 +4062,7 @@ public class Crud implements InformationObserver {
             Transaction transaction = transactionManager.startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.FILE );
             transaction.setUseCache( useCache );
             return transaction;
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }
@@ -4114,7 +4114,7 @@ public class Crud implements InformationObserver {
         ctx.json( catalog
                 .getSchemas( 1, null )
                 .stream()
-                .collect( Collectors.toMap( CatalogNamespace::getName, CatalogNamespace::getNamespaceType ) ) );
+                .collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getNamespaceType ) ) );
     }
 
 

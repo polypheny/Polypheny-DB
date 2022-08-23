@@ -31,8 +31,8 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 @Category({ AdapterTestSuite.class })
@@ -48,10 +48,10 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
-    public void addCollectionTest() throws UnknownNamespaceException {
+    public void addCollectionTest() throws UnknownSchemaException {
         Catalog catalog = Catalog.getInstance();
 
-        CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+        CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
         int size = catalog.getCollections( namespace.id, null ).size();
 
@@ -70,12 +70,12 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
-    public void addPlacementTest() throws UnknownNamespaceException, SQLException {
+    public void addPlacementTest() throws UnknownSchemaException, SQLException {
         Catalog catalog = Catalog.getInstance();
 
         String placement = "store1";
         try {
-            CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+            CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
             List<String> collectionNames = catalog.getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
@@ -103,7 +103,7 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
-    public void deletePlacementTest() throws UnknownNamespaceException, SQLException {
+    public void deletePlacementTest() throws UnknownSchemaException, SQLException {
         Catalog catalog = Catalog.getInstance();
 
         String placement = "store1";
@@ -111,7 +111,7 @@ public class DdlTest extends MqlTestTemplate {
 
             execute( "db.createCollection(\"" + collectionName + "\")" );
 
-            CatalogNamespace namespace = catalog.getNamespace( Catalog.defaultDatabaseId, database );
+            CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
             CatalogCollection collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 

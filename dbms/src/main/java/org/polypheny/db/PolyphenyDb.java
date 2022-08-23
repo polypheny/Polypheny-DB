@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.ConfigManager;
@@ -337,7 +337,7 @@ public class PolyphenyDb {
             catalog.restoreColumnPlacements( trx );
             catalog.restoreViews( trx );
             trx.commit();
-        } catch ( UnknownDatabaseException | UnknownUserException | UnknownNamespaceException | TransactionException e ) {
+        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
             if ( trx != null ) {
                 try {
                     trx.rollback();
@@ -372,7 +372,7 @@ public class PolyphenyDb {
         try {
             IndexManager.getInstance().initialize( transactionManager );
             IndexManager.getInstance().restoreIndexes();
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownNamespaceException | UnknownTableException | TransactionException | UnknownKeyException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 

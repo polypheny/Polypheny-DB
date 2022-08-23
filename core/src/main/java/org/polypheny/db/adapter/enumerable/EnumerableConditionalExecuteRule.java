@@ -42,7 +42,7 @@ public class EnumerableConditionalExecuteRule extends ConverterRule {
         final AlgNode action = AlgOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final EnumerableConditionalExecute ece = EnumerableConditionalExecute.create( input, action, lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
         ece.setCheckDescription( lce.getCheckDescription() );
-        ece.setCatalogNamespace( lce.getCatalogNamespace() );
+        ece.setCatalogSchema( lce.getCatalogSchema() );
         ece.setCatalogTable( lce.getCatalogTable() );
         ece.setCatalogColumns( lce.getCatalogColumns() );
         ece.setValues( lce.getValues() );

@@ -195,7 +195,7 @@ public class CottontailStore extends DataStore {
         }
 
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( placement.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
 
             AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
@@ -278,7 +278,7 @@ public class CottontailStore extends DataStore {
 
         for ( CatalogColumnPlacement placement : placements ) {
             final ColumnDefinition.Builder columnBuilder = ColumnDefinition.newBuilder();
-            final CatalogColumn catalogColumn = catalog.getField( placement.columnId );
+            final CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
             columnBuilder.setName( ColumnName.newBuilder().setName( CottontailNameUtil.createPhysicalColumnName( placement.columnId ) ) );
             final CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation(
                     catalogColumn.type,

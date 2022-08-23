@@ -112,7 +112,7 @@ public final class CatalogColumn implements CatalogObject, Comparable<CatalogCol
 
     public NamespaceType getNamespaceType() {
         if ( namespaceType == null ) {
-            namespaceType = Catalog.getInstance().getNamespace( schemaId ).namespaceType;
+            namespaceType = Catalog.getInstance().getSchema( schemaId ).namespaceType;
         }
         return namespaceType;
     }
@@ -126,7 +126,7 @@ public final class CatalogColumn implements CatalogObject, Comparable<CatalogCol
 
     @SneakyThrows
     public String getSchemaName() {
-        return Catalog.getInstance().getNamespace( schemaId ).name;
+        return Catalog.getInstance().getSchema( schemaId ).name;
     }
 
 

@@ -54,7 +54,7 @@ import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
@@ -160,7 +160,7 @@ public class Neo4jStore extends DataStore {
         Catalog catalog = Catalog.getInstance();
 
         if ( this.currentSchema == null ) {
-            createNewSchema( null, Catalog.getInstance().getNamespace( combinedTable.namespaceId ).getName() );
+            createNewSchema( null, Catalog.getInstance().getSchema( combinedTable.namespaceId ).getName() );
         }
 
         for ( long partitionId : partitionIds ) {
@@ -400,8 +400,8 @@ public class Neo4jStore extends DataStore {
                     expression,
                     transactionProvider,
                     this,
-                    Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, namespaceName ).id );
-        } catch ( UnknownNamespaceException e ) {
+                    Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, namespaceName ).id );
+        } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "Error while generating new namespace" );
         }
     }

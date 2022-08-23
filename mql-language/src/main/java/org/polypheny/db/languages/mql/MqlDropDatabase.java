@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.cypher.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.cypher.ddl.exception.SchemaNotExistException;
@@ -39,7 +39,7 @@ public class MqlDropDatabase extends MqlNode implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogNamespace schema = catalog.getUser( context.getCurrentUserId() ).getDefaultSchema();
+        CatalogSchema schema = catalog.getUser( context.getCurrentUserId() ).getDefaultSchema();
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
         try {

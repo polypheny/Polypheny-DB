@@ -47,7 +47,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -264,7 +264,7 @@ public class RequestParser {
                 log.debug( "Finished parsing table \"{}\".", tableName );
             }
             return table;
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Unable to fetch table: {}.", tableName, e );
             throw new ParserException( ParserErrorCode.TABLE_LIST_UNKNOWN_TABLE, tableName );
         }
@@ -309,7 +309,7 @@ public class RequestParser {
         long internalPosition = 0L;
         for ( CatalogTable table : tables ) {
             for ( long columnId : table.fieldIds ) {
-                CatalogColumn column = this.catalog.getField( columnId );
+                CatalogColumn column = this.catalog.getColumn( columnId );
                 int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
                 RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, true );
                 columns.add( requestColumn );
@@ -337,7 +337,7 @@ public class RequestParser {
                 try {
                     catalogColumn = this.getCatalogColumnFromString( columnName );
                     log.debug( "Fetched catalog column for projection key: {}.", columnName );
-                } catch ( UnknownColumnException | UnknownDatabaseException | UnknownNamespaceException | UnknownTableException e ) {
+                } catch ( UnknownColumnException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
                     log.warn( "Unable to fetch column: {}.", columnName, e );
                     throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, columnName );
                 }
@@ -362,7 +362,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            CatalogColumn column = this.catalog.getField( columnId );
+            CatalogColumn column = this.catalog.getColumn( columnId );
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );
@@ -412,14 +412,14 @@ public class RequestParser {
     }
 
 
-    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownDatabaseException, UnknownNamespaceException, UnknownTableException {
+    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownDatabaseException, UnknownSchemaException, UnknownTableException {
         String[] splitString = name.split( "\\." );
         if ( splitString.length != 3 ) {
             log.warn( "Column name is not 3 fields long. Got: {}", name );
             throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, name );
         }
 
-        return this.catalog.getField( this.databaseName, splitString[0], splitString[1], splitString[2] );
+        return this.catalog.getColumn( this.databaseName, splitString[0], splitString[1], splitString[2] );
 
     }
 

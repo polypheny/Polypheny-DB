@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
@@ -49,25 +49,25 @@ public class SchemaTypeVisitor extends AlgShuttleImpl {
     public AlgNode visit( Scan scan ) {
         try {
             List<String> names = scan.getTable().getQualifiedName();
-            CatalogNamespace schema;
+            CatalogSchema schema;
             if ( names.size() == 3 ) {
-                schema = Catalog.getInstance().getNamespace( names.get( 0 ), names.get( 1 ) );
+                schema = Catalog.getInstance().getSchema( names.get( 0 ), names.get( 1 ) );
             } else if ( names.size() == 2 ) {
                 if ( names.get( 0 ).contains( "_" ) ) {
-                    schema = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, names.get( 0 ).split( "_" )[names.size() - 1] );
+                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, names.get( 0 ).split( "_" )[names.size() - 1] );
                 } else {
-                    schema = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, names.get( 0 ) );
+                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, names.get( 0 ) );
                 }
             } else {
                 Table logicalTable = scan.getTable().getTable();
                 if ( logicalTable instanceof LogicalTable ) {
-                    schema = Catalog.getInstance().getNamespace( Catalog.defaultDatabaseId, ((LogicalTable) logicalTable).getLogicalSchemaName() );
+                    schema = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, ((LogicalTable) logicalTable).getLogicalSchemaName() );
                 } else {
                     throw new RuntimeException( "The used table did not use a full name." );
                 }
             }
             namespaceTypes.add( schema.getNamespaceType() );
-        } catch ( UnknownNamespaceException | UnknownDatabaseException e ) {
+        } catch ( UnknownSchemaException | UnknownDatabaseException e ) {
             throw new RuntimeException( "The was an error on retrieval of the data model." );
         }
         return super.visit( scan );

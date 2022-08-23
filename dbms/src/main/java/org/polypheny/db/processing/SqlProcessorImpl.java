@@ -42,7 +42,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
@@ -249,7 +249,7 @@ public class SqlProcessorImpl extends Processor {
 
         if ( oldColumnList != null ) {
             CatalogTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            NamespaceType namespaceType = Catalog.getInstance().getNamespace( catalogTable.namespaceId ).namespaceType;
+            NamespaceType namespaceType = Catalog.getInstance().getSchema( catalogTable.namespaceId ).namespaceType;
 
             catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
@@ -364,19 +364,19 @@ public class SqlProcessorImpl extends Processor {
             long schemaId;
             String tableOldName;
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = Catalog.getInstance().getNamespace( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
+                schemaId = Catalog.getInstance().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = Catalog.getInstance().getNamespace( transaction.getDefaultSchema().databaseId, tableName.names.get( 0 ) ).id;
+                schemaId = Catalog.getInstance().getSchema( transaction.getDefaultSchema().databaseId, tableName.names.get( 0 ) ).id;
                 tableOldName = tableName.names.get( 1 );
             } else { // TableName
-                schemaId = Catalog.getInstance().getNamespace( transaction.getDefaultSchema().databaseId, transaction.getDefaultSchema().name ).id;
+                schemaId = Catalog.getInstance().getSchema( transaction.getDefaultSchema().databaseId, transaction.getDefaultSchema().name ).id;
                 tableOldName = tableName.names.get( 0 );
             }
             catalogTable = Catalog.getInstance().getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
-        } catch ( UnknownNamespaceException e ) {
+        } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {
             throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );

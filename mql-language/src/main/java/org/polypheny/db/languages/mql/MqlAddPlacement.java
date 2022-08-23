@@ -24,7 +24,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -48,8 +48,8 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
 
         long namespaceId;
         try {
-            namespaceId = catalog.getNamespace( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
-        } catch ( UnknownNamespaceException e ) {
+            namespaceId = catalog.getSchema( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
+        } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
         }
 

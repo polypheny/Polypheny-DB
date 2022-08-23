@@ -52,7 +52,7 @@ public class EthereumSchema extends AbstractSchema {
         List<EthereumFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getField( placement.columnId );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( EthereumFieldType.getBlockchainFieldType( catalogColumn.type ) );

@@ -49,12 +49,12 @@ import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
@@ -75,7 +75,6 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionRuntimeExcepti
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
@@ -83,6 +82,7 @@ import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -238,7 +238,7 @@ public abstract class Catalog {
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogNamespace> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern );
+    public abstract List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern );
 
     /**
      * Get all schemas of the specified database which fit to the specified filter pattern.
@@ -248,7 +248,7 @@ public abstract class Catalog {
      * @param schemaNamePattern Pattern for the schema name. null returns all
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogNamespace> getSchemas( long databaseId, Pattern schemaNamePattern );
+    public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern );
 
     /**
      * Returns the schema with the specified id.
@@ -256,7 +256,7 @@ public abstract class Catalog {
      * @param schemaId The id of the schema
      * @return The schema
      */
-    public abstract CatalogNamespace getNamespace( long schemaId );
+    public abstract CatalogSchema getSchema( long schemaId );
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -264,9 +264,9 @@ public abstract class Catalog {
      * @param databaseName The name of the database
      * @param schemaName The name of the schema
      * @return The schema
-     * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
+     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogNamespace getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException;
+    public abstract CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException;
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -274,9 +274,9 @@ public abstract class Catalog {
      * @param databaseId The id of the database
      * @param schemaName The name of the schema
      * @return The schema
-     * @throws UnknownNamespaceException If there is no schema with this name in the specified database.
+     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogNamespace getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException;
+    public abstract CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException;
 
     /**
      * Adds a schema in a specified database
@@ -287,7 +287,7 @@ public abstract class Catalog {
      * @param namespaceType The type of this schema
      * @return The id of the inserted schema
      */
-    public abstract long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType );
+    public abstract long addSchema( String name, long databaseId, int ownerId, NamespaceType namespaceType );
 
     /**
      * Checks weather a schema with the specified name exists in a database.
@@ -296,7 +296,7 @@ public abstract class Catalog {
      * @param schemaName The name of the schema to check
      * @return True if there is a schema with this name. False if not.
      */
-    public abstract boolean checkIfExistsNamespace( long databaseId, String schemaName );
+    public abstract boolean checkIfExistsSchema( long databaseId, String schemaName );
 
     /**
      * Renames a schema
@@ -368,7 +368,7 @@ public abstract class Catalog {
      * @param tableName The name of the table
      * @return The table
      */
-    public abstract CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException;
+    public abstract CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException;
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -668,7 +668,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @return A CatalogColumn
      */
-    public abstract CatalogColumn getField( long columnId );
+    public abstract CatalogColumn getColumn( long columnId );
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -678,7 +678,7 @@ public abstract class Catalog {
      * @return A CatalogColumn
      * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
-    public abstract CatalogColumn getField( long tableId, String columnName ) throws UnknownColumnException;
+    public abstract CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException;
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -689,7 +689,7 @@ public abstract class Catalog {
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    public abstract CatalogColumn getField( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownNamespaceException, UnknownDatabaseException, UnknownTableException;
+    public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException;
 
     /**
      * Adds a column.

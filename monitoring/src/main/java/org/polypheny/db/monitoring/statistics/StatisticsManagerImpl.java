@@ -55,11 +55,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -176,15 +176,15 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     @Override
-    public void updateSchemaName( CatalogNamespace catalogNamespace, String newName ) {
-        if ( statisticSchemaMap.containsKey( catalogNamespace.id ) ) {
-            Map<Long, Map<Long, StatisticColumn<T>>> tableInformation = statisticSchemaMap.get( catalogNamespace.id );
+    public void updateSchemaName( CatalogSchema catalogSchema, String newName ) {
+        if ( statisticSchemaMap.containsKey( catalogSchema.id ) ) {
+            Map<Long, Map<Long, StatisticColumn<T>>> tableInformation = statisticSchemaMap.get( catalogSchema.id );
             for ( long tableId : tableInformation.keySet() ) {
-                Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogNamespace.id ).remove( tableId );
+                Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogSchema.id ).remove( tableId );
                 for ( Entry<Long, StatisticColumn<T>> columnInfo : columnsInformation.entrySet() ) {
                     StatisticColumn<T> statisticColumn = columnInfo.getValue();
                     statisticColumn.updateSchemaName( newName );
-                    statisticSchemaMap.get( catalogNamespace.id ).get( tableId ).put( columnInfo.getKey(), statisticColumn );
+                    statisticSchemaMap.get( catalogSchema.id ).get( tableId ).put( columnInfo.getKey(), statisticColumn );
                 }
             }
         }
@@ -195,7 +195,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         Transaction transaction;
         try {
             transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Statistic Manager" );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownNamespaceException e ) {
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
         return transaction;
@@ -916,7 +916,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private void handleTruncate( long tableId, long schemaId, Catalog catalog ) {
         CatalogTable catalogTable = catalog.getTable( tableId );
         for ( int i = 0; i < catalogTable.fieldIds.size(); i++ ) {
-            PolyType polyType = catalog.getField( catalogTable.fieldIds.get( i ) ).type;
+            PolyType polyType = catalog.getColumn( catalogTable.fieldIds.get( i ) ).type;
             QueryResult queryResult = new QueryResult( schemaId, catalogTable.id, catalogTable.fieldIds.get( i ), polyType );
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.fieldIds.get( i ) ) != null ) {
                 StatisticColumn<T> statisticColumn = createNewStatisticColumns( polyType, queryResult );
@@ -947,7 +947,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         if ( this.statisticSchemaMap.get( schemaId ) != null ) {
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ) != null ) {
                 for ( int i = 0; i < columns.size(); i++ ) {
-                    PolyType polyType = catalog.getField( columns.get( i ) ).type;
+                    PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
                     QueryResult queryResult = new QueryResult( schemaId, catalogTable.id, columns.get( i ), polyType );
                     if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( columns.get( i ) ) != null && changedValues.get( (long) i ) != null ) {
                         handleInsertColumn( tableId, changedValues, schemaId, columns, i, queryResult );
@@ -969,7 +969,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     private void addInserts( Map<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
         for ( int i = 0; i < columns.size(); i++ ) {
-            PolyType polyType = catalog.getField( columns.get( i ) ).type;
+            PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
             QueryResult queryResult = new QueryResult( catalogTable.namespaceId, catalogTable.id, columns.get( i ), polyType );
             addNewColumnStatistics( changedValues, i, polyType, queryResult );
         }
@@ -1208,7 +1208,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             } else if ( v.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
                 alphabeticInfo.add( (AlphabeticStatisticColumn<T>) v );
                 statisticTable.setAlphabeticColumn( alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getField( k ).type ) ) {
+            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getColumn( k ).type ) ) {
                 temporalInfo.add( (TemporalStatisticColumn<T>) v );
                 statisticTable.setTemporalColumn( temporalInfo );
             }

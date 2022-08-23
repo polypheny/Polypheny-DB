@@ -41,12 +41,12 @@ import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
@@ -59,8 +59,8 @@ import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -258,43 +258,43 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogNamespace> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
+    public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogNamespace> getSchemas( long databaseId, Pattern schemaNamePattern ) {
+    public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogNamespace getNamespace( long schemaId ) {
+    public CatalogSchema getSchema( long schemaId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogNamespace getNamespace( String databaseName, String schemaName ) throws UnknownNamespaceException, UnknownDatabaseException {
+    public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogNamespace getNamespace( long databaseId, String schemaName ) throws UnknownNamespaceException {
+    public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
+    public long addSchema( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean checkIfExistsNamespace( long databaseId, String schemaName ) {
+    public boolean checkIfExistsSchema( long databaseId, String schemaName ) {
         throw new NotImplementedException();
     }
 
@@ -330,7 +330,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownNamespaceException {
+    public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException {
         throw new NotImplementedException();
     }
 
@@ -588,19 +588,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public CatalogColumn getField( long columnId ) {
+    public CatalogColumn getColumn( long columnId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogColumn getField( long tableId, String columnName ) throws UnknownColumnException {
+    public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogColumn getField( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownNamespaceException, UnknownDatabaseException, UnknownTableException {
+    public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException {
         throw new NotImplementedException();
     }
 

@@ -42,10 +42,10 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogNamespace;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownNamespaceException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -383,7 +383,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public static String getEntityName( Modify root, CatalogNamespace schema ) {
+    public static String getEntityName( Modify root, CatalogSchema schema ) {
         String tableName;
         if ( root.getTable().getQualifiedName().size() == 1 ) { // tableName
             tableName = root.getTable().getQualifiedName().get( 0 );
@@ -429,10 +429,10 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         } else {
             throw new RuntimeException( "The schema was not provided correctly!" );
         }
-        final CatalogNamespace schema;
+        final CatalogSchema schema;
         try {
-            schema = catalog.getNamespace( Catalog.defaultDatabaseId, schemaName );
-        } catch ( UnknownNamespaceException e ) {
+            schema = catalog.getSchema( Catalog.defaultDatabaseId, schemaName );
+        } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( "The schema was not provided correctly!" );
         }
 
