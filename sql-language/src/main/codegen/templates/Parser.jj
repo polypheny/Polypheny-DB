@@ -1224,19 +1224,24 @@ SqlNode SqlProcedureCall() :
 SqlCall SqlExecProcedure() :
 {
     final SqlIdentifier id;
-    final SqlNodeList arguments = new SqlNodeList(getPos());
+    final List<SqlNode> arguments = new ArrayList<SqlNode>();
     final Span s;
+    final ExprContext exprContext = ExprContext.ACCEPT_SUB_QUERY;
 }
 {
     <EXEC><PROCEDURE>
     id = CompoundIdentifier() {
         s = span();
     }
-    (Argument(arguments))*
-    (
-        <COMMA>
-        Argument(arguments)
-    )*
+    [
+    Arg0(arguments, exprContext)
+        (
+            <COMMA> {
+                checkNonQueryExpression(exprContext);
+            }
+            Arg(arguments, exprContext)
+        )*
+    ]
     {
         return SqlDdlNodes.executeProcedure(s.end(this), id, arguments);
     }

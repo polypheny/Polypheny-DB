@@ -97,7 +97,7 @@ public class SqlDdlNodes {
     /**
      * Executes a PROCEDURE.
      */
-    public static SqlExecuteProcedure executeProcedure(ParserPos pos, SqlIdentifier name, SqlNodeList arguments ) {
+    public static SqlExecuteProcedure executeProcedure(ParserPos pos, SqlIdentifier name, List<SqlNode> arguments ) {
         return new SqlExecuteProcedure( pos, name, arguments);
     }
 

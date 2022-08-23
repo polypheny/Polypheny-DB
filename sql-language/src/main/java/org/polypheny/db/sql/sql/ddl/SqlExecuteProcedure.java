@@ -43,14 +43,14 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
     private final SqlIdentifier identifier;
 
     private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator("EXEC PROCEDURE", Kind.PROCEDURE_EXEC);
-    private final SqlNodeList argumentList;
+    private final List<SqlNode> argumentList;
     private final Map<String, Object> arguments = new HashMap<>();
 
-    public SqlExecuteProcedure(ParserPos pos, SqlIdentifier identifier, SqlNodeList argumentList) {
+    public SqlExecuteProcedure(ParserPos pos, SqlIdentifier identifier, List<SqlNode> argumentList) {
         super(pos);
         this.identifier = identifier;
         this.argumentList = argumentList;
-        for (Pair<Node, Node> argument : pairs()) {
+        for (Pair<SqlNode, SqlNode> argument : pairs()) {
             arguments.put(argument.left.toString(), argument.right.toString());
         }
     }
@@ -62,13 +62,9 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
         identifier.unparse(writer, 0, 0);
         if (argumentList.size() > 0) {
             final SqlWriter.Frame frame = writer.startList(SqlWriter.FrameTypeEnum.SIMPLE);
-            List<Pair<Node, Node>> pairs = pairs();
-            for (Pair<Node, Node> argument : pairs) {
+            for (SqlNode sqlNode : argumentList) {
                 writer.sep(",");
-                writer.keyword("@");
-                writer.literal(argument.left.toString().trim());
-                writer.keyword("=");
-                writer.literal(argument.right.toString().trim());
+                writer.print(sqlNode.toString());
             }
             writer.endList(frame);
         }
@@ -118,7 +114,7 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
     }
 
     @SuppressWarnings("unchecked")
-    private List<Pair<Node, Node>> pairs() {
-        return Util.pairs(argumentList.getList());
+    private List<Pair<SqlNode, SqlNode>> pairs() {
+        return Util.pairs(argumentList);
     }
 }

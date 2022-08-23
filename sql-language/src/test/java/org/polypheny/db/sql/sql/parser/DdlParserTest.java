@@ -248,15 +248,15 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testExecProcedureWithOneArgument() {
-        final String sql = "exec procedure myProc @id=1";
-        final String expected = "EXEC PROCEDURE `MYPROC` @ ID = 1";
+        final String sql = "exec procedure myProc id=>1";
+        final String expected = "EXEC PROCEDURE `MYPROC` `ID` => 1";
         sql( sql ).ok( expected );
     }
 
     @Test
     public void testExecProcedureWithManyArguments() {
-        final String sql = "exec procedure myProc @id=1, @city=\'London\'";
-        final String expected = "EXEC PROCEDURE `MYPROC` @ ID = 1, @ CITY = 'London'";
+        final String sql = "exec procedure myProc id=>1, city=>\'London\'";
+        final String expected = "EXEC PROCEDURE `MYPROC` `ID` => 1, `CITY` => 'London'";
         sql( sql ).ok( expected );
     }
 
