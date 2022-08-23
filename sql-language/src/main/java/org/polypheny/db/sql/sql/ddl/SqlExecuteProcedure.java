@@ -33,6 +33,7 @@ import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,8 +51,16 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
         super(pos);
         this.identifier = identifier;
         this.argumentList = argumentList;
-        for (Pair<SqlNode, SqlNode> argument : pairs()) {
-            arguments.put(argument.left.toString(), argument.right.toString());
+        for (SqlNode sqlNode : argumentList) {
+            SqlBasicCall sqlBasicCall = (SqlBasicCall) sqlNode;
+            SqlNode value = sqlBasicCall.operand(0);
+            if(value instanceof SqlNumericLiteral) {
+                var numericValue = (SqlNumericLiteral) value;
+                BigDecimal bigDecimal = numericValue.bigDecimalValue();
+                arguments.put(sqlBasicCall.operand(1).toString(), bigDecimal.longValue());
+            } else {
+                arguments.put(sqlBasicCall.operand(1).toString(), value.toString());
+            }
         }
     }
 
