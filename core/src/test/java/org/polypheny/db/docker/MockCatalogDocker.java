@@ -17,11 +17,9 @@
 package org.polypheny.db.docker;
 
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Event;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -31,6 +29,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogTrigger;
 import org.polypheny.db.catalog.exceptions.ProcedureAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
 
 /**
@@ -101,6 +100,11 @@ public class MockCatalogDocker extends MockCatalog {
         return adapters.containsKey( adapterId );
     }
 
+
+    @Override
+    public List<AlgNode> restoreTriggers(Transaction transaction) {
+        return Collections.emptyList();
+    }
 
     @Override
     public CatalogAdapter getAdapter( int adapterId ) {
