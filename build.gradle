@@ -79,6 +79,11 @@ allprojects {
         // check for updates every build
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
     }
+    // limit test runs to sequential execution
+    tasks.withType(Test) {
+        maxParallelForks = 1
+    }
+
 
     tasks.withType(Javadoc) {
         if (JavaVersion.current().isJava9Compatible()) {
