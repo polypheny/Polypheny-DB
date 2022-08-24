@@ -1401,7 +1401,8 @@ public enum Kind {
             DELETE,
             UPDATE,
             MERGE,
-            PROCEDURE_CALL
+            PROCEDURE_CALL,
+            PROCEDURE_EXEC
     );
 
     /**
@@ -1436,7 +1437,6 @@ public enum Kind {
             ALTER_SCHEMA,
             OTHER_DDL,
             CREATE_PROCEDURE,
-            PROCEDURE_EXEC,
             DROP_PROCEDURE,
             CREATE_TRIGGER,
             DROP_TRIGGER
