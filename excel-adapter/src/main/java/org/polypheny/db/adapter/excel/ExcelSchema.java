@@ -119,7 +119,7 @@ public class ExcelSchema extends AbstractSchema {
                 case SCANNABLE:
                     return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
                 case FILTERABLE:
-                    //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                    return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
                 default:
                     throw new AssertionError( "Unknown flavor " + this.flavor );
             }
@@ -130,7 +130,7 @@ public class ExcelSchema extends AbstractSchema {
                 case SCANNABLE:
                     return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId, this.sheet );
                 case FILTERABLE:
-                    //return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                    return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId, this.sheet  );
                 default:
                     throw new AssertionError( "Unknown flavor " + this.flavor );
             }
