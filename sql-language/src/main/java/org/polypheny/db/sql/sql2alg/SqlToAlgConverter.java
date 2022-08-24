@@ -95,21 +95,7 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.*;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
@@ -2806,6 +2792,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 return convertWith( (SqlWith) query, top );
             case VALUES:
                 return AlgRoot.of( convertValues( (SqlCall) query, targetRowType ), kind );
+            case PROCEDURE_EXEC:
+                return AlgRoot.of( convertProcedure( (SqlCall) query), kind );
             default:
                 throw new AssertionError( "not a query: " + query );
         }
@@ -3539,6 +3527,13 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
+    private AlgNode convertProcedure(SqlCall query) {
+        final SqlValidatorScope scope = validator.getOverScope( query );
+        assert scope != null;
+        final Blackboard bb = createBlackboard( scope, null, false );
+        convertMultisets(query.getSqlOperandList(), bb);
+        return LogicalProcedureExecution.create(bb.root);
+    }
     /**
      * Converts a SELECT statement's parse tree into a relational expression.
      */
