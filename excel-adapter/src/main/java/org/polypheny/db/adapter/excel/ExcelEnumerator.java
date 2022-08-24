@@ -19,16 +19,21 @@ package org.polypheny.db.adapter.excel;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -389,8 +394,17 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                         return null;
                     }
                     try {
-                        Date date = cell.getDateCellValue();
-                        return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
+                        //convert date from string to date
+                        if ( cell.getCellType() == CellType.STRING ) {
+                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "dd.MM.yyyy", Locale.ENGLISH );
+                            LocalDate date2 = LocalDate.parse( cell.getStringCellValue(), formatter );
+                            return (int) (TimeUnit.DAYS.toMillis( date2.toEpochDay() ) / DateTimeUtils.MILLIS_PER_DAY);
+                        } else {
+                            Date date = cell.getDateCellValue();
+                            return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
+                        }
+
+
                     } catch ( Exception e ) {
                         return null;
                     }
