@@ -94,6 +94,7 @@ public class PGInterface extends QueryInterface {
 
     @Override
     public void run() {
+        //ToDo: Instantiate Server (open port...)
 
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();

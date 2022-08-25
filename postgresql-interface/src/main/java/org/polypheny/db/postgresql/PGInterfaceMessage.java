@@ -22,14 +22,14 @@ public class PGInterfaceMessage {
     private PGInterfaceHeaders header;
     private String msgBody;
     private int length; //default is 4, if a different length is mentioned in protocol, this is given
-    private boolean defaultLength;
-    private static final char delimiter = '§'; //for the subparts
+    private int sizeMsgBody; //how many subparts are in the message. seperated by delimiter
+    private final char delimiter = '§';
 
-    public PGInterfaceMessage(PGInterfaceHeaders header, String msgBody, int length, boolean defaultLength) {
+    public PGInterfaceMessage(PGInterfaceHeaders header, String msgBody, int length, int sizeMsgBody) {
         this.header = header;
         this.msgBody = msgBody;
         this.length = length;
-        this.defaultLength = defaultLength;
+        this.sizeMsgBody = sizeMsgBody;
     }
 
     public PGInterfaceHeaders getHeader() {
@@ -112,8 +112,8 @@ public class PGInterfaceMessage {
      * @return a string array with each requested part
      */
     public String[] getMsgPart(int[] part) {
-        String subStrings[] = msgBody.split(getDelimiter());
-        String result[] = new String[part.length];
+        String subStrings[] = msgBody.split("§");
+        String result[] = new String[0];
 
         for (int i=0; i<(part.length); i++) {
             result[i] = subStrings[i];
