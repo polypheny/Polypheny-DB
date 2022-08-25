@@ -221,7 +221,7 @@ public class MqlTestTemplate {
 
     public static void dropDatabase( String database ) {
         MongoConnection.executeGetResponse( "use " + database );
-        MongoConnection.executeGetResponse( "db.dropDatabase()" );
+        MongoConnection.executeGetResponse( "db.dropDatabase()", database );
     }
 
 }
