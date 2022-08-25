@@ -19,15 +19,11 @@ package org.polypheny.db.postgresql;
 
 import com.google.common.collect.ImmutableList;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -40,7 +36,6 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
-import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -52,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 @Slf4j
-public class PostgresqlInterface extends QueryInterface {
+public class PGInterface extends QueryInterface {
 
     @SuppressWarnings("WeakerAccess")
     public static final String INTERFACE_NAME = "Postgresql Interface";
@@ -82,7 +77,7 @@ public class PostgresqlInterface extends QueryInterface {
 
 
 
-    public PostgresqlInterface(TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+    public PGInterface(TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
         super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
         this.uniqueName = uniqueName;
         this.port = Integer.parseInt( settings.get( "port" ) );
@@ -117,11 +112,15 @@ public class PostgresqlInterface extends QueryInterface {
 
 
                             //Outbound
-                            channelPipeline.addLast("frameEncoder", new LengthFieldPrepender(4));
-                            channelPipeline.addLast("encoder", new StringEncoder());
+                            // only accepts bytebuf
+                            //channelPipeline.addLast("frameEncoder", new LengthFieldPrepender(4, true));
+                            //channelPipeline.addLast("headerPrepender", new HeaderPrepender());
+                            //channelPipeline.addLast("encoder", new StringEncoder());
 
                             //Handler
-                            channelPipeline.addLast("handler", new ServerHandler());
+                            channelPipeline.addLast("handler", new PGInterfaceServerHandler());
+                            //channelPipeline.addLast("handler2", new ServerHandler2());
+                            //channelPipeline.addLast("handler", new ServerHandler3());
 
                         }
                     }).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true);
