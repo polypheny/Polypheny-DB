@@ -89,7 +89,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.eclipse.jetty.websocket.api.Session;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
@@ -2827,7 +2827,7 @@ public class Crud implements InformationObserver {
         AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
-        PolyResult polyResult = statement.getQueryProcessor().prepareQuery( root, true );
+        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -2942,15 +2942,15 @@ public class Crud implements InformationObserver {
 
         List<List<Object>> rows;
         try {
-            rows = polyResult.getRows( statement, getPageSize(), true, false );
+            rows = polyImplementation.getRows( statement, getPageSize(), true, false );
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
             return new Result( e );
         }
 
-        DbColumn[] header = new DbColumn[polyResult.getRowType().getFieldCount()];
+        DbColumn[] header = new DbColumn[polyImplementation.getRowType().getFieldCount()];
         int counter = 0;
-        for ( AlgDataTypeField col : polyResult.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField col : polyImplementation.getRowType().getFieldList() ) {
             header[counter++] = new DbColumn(
                     col.getName(),
                     col.getType().getFullTypeString(),
@@ -3089,7 +3089,7 @@ public class Crud implements InformationObserver {
             List<? extends Node> nodes = processor.parse( query );
             CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
             try {
-                PolyResult result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
+                PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
                 transaction.commit();
                 ctx.json( new Result( rowsChanged ) );
@@ -3111,7 +3111,7 @@ public class Crud implements InformationObserver {
             List<? extends Node> nodes = processor.parse( query );
             CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
             try {
-                PolyResult result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
+                PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
                 transaction.commit();
                 ctx.json( new Result( rowsChanged ) );
@@ -3643,7 +3643,7 @@ public class Crud implements InformationObserver {
 
 
     private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
-        PolyResult result;
+        PolyImplementation result;
         List<List<Object>> rows;
         boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
@@ -3898,8 +3898,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyResult processQuery( Statement statement, String sql, boolean isAnalyze ) {
-        PolyResult result;
+    private PolyImplementation processQuery( Statement statement, String sql, boolean isAnalyze ) {
+        PolyImplementation result;
         if ( isAnalyze ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
@@ -3937,7 +3937,7 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        PolyResult result;
+        PolyImplementation result;
 
         try {
             result = processQuery( statement, sqlUpdate, transaction.isAnalyze() );

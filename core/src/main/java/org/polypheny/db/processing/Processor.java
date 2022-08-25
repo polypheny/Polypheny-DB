@@ -18,7 +18,7 @@ package org.polypheny.db.processing;
 
 
 import java.util.List;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
@@ -51,7 +51,7 @@ public abstract class Processor {
     public abstract AlgRoot translate( Statement statement, Node query, QueryParameters parameters );
 
 
-    public PolyResult prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+    public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         if ( parsed instanceof ExecutableStatement ) {
             try {
                 // Acquire global schema lock
@@ -72,11 +72,11 @@ public abstract class Processor {
     }
 
 
-    PolyResult getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
+    PolyImplementation getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
         ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();
-        return new PolyResult(
+        return new PolyImplementation(
                 null,
                 parameters.getNamespaceType(),
                 new ExecutionTimeMonitor(),

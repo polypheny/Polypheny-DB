@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -114,7 +114,7 @@ public class ExploreQueryProcessor {
 
 
     private ExploreQueryResult executeSqlSelect( final Statement statement, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
-        PolyResult result;
+        PolyImplementation result;
         try {
             result = processQuery( statement, sqlSelect );
         } catch ( Throwable t ) {
@@ -161,8 +161,8 @@ public class ExploreQueryProcessor {
     }
 
 
-    private PolyResult processQuery( Statement statement, String sql ) {
-        PolyResult result;
+    private PolyImplementation processQuery( Statement statement, String sql ) {
+        PolyImplementation result;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
 
         Node parsed = sqlProcessor.parse( sql ).get( 0 );

@@ -17,7 +17,7 @@
 package org.polypheny.db.processing;
 
 
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -31,7 +31,7 @@ public interface QueryProcessor {
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyResult prepareQuery( AlgRoot logicalRoot, boolean withMonitoring );
+    PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean withMonitoring );
 
     /**
      * @param logicalRoot Logical query plan.
@@ -39,7 +39,7 @@ public interface QueryProcessor {
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyResult prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean withMonitoring );
+    PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean withMonitoring );
 
     /**
      * @param logicalRoot Logical query plan.
@@ -49,7 +49,7 @@ public interface QueryProcessor {
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyResult prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
+    PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
 
     /**
      * @return Gets the planner.

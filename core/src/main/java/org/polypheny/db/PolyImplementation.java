@@ -52,7 +52,7 @@ import org.polypheny.db.util.LimitIterator;
 
 
 @Getter
-public class PolyResult {
+public class PolyImplementation {
 
     public final AlgDataType rowType;
     private final long maxRowCount = -1;
@@ -72,7 +72,7 @@ public class PolyResult {
 
 
     /**
-     * {@link PolyResult} should serve as a jack-of-all-trades results implementation of the results of a query.
+     * {@link PolyImplementation} should serve as a jack-of-all-trades results implementation of the results of a query.
      * It should minimize the needed variables to be instantiated and defer access of more complex information
      * on access e.g. {@link #getColumns()}
      *
@@ -84,7 +84,7 @@ public class PolyResult {
      * @param statement used statement for this result
      * @param resultConvention the nullable result convention
      */
-    public PolyResult(
+    public PolyImplementation(
             @Nullable AlgDataType rowType,
             NamespaceType namespaceType,
             ExecutionTimeMonitor executionTimeMonitor,

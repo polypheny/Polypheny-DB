@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
@@ -560,7 +560,7 @@ public class Rest {
         RestResult restResult;
         try {
             // Prepare
-            PolyResult result = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, true );
             log.debug( "AlgRoot was prepared." );
 
             final Iterable<Object> iterable = result.enumerable( statement.getDataContext() );

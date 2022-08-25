@@ -17,7 +17,7 @@
 package org.polypheny.db.processing;
 
 import java.util.List;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -51,7 +51,7 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    public PolyResult prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+    public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         throw new RuntimeException( "JsonProcessor does not support DDLs!" );
     }
 

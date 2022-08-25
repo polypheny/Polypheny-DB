@@ -30,7 +30,7 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -87,7 +87,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     }
 
 
-    public static <T> PolyphenyDbSignature<T> from( PolyResult prepareQuery ) {
+    public static <T> PolyphenyDbSignature<T> from( PolyImplementation prepareQuery ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
         if ( prepareQuery.rowType != null ) {
             for ( AlgDataTypeField field : prepareQuery.rowType.getFieldList() ) {
@@ -122,7 +122,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
 
 
     public Enumerable<T> enumerable( DataContext dataContext ) {
-        return PolyResult.enumerable( bindable, dataContext );
+        return PolyImplementation.enumerable( bindable, dataContext );
     }
 
 }
