@@ -121,6 +121,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.validate.ValidatorNamespace;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSamplingParameters;
@@ -183,6 +184,7 @@ import org.polypheny.db.sql.sql.SqlValuesOperator;
 import org.polypheny.db.sql.sql.SqlWindow;
 import org.polypheny.db.sql.sql.SqlWith;
 import org.polypheny.db.sql.sql.SqlWithItem;
+import org.polypheny.db.sql.sql.ddl.SqlExecuteProcedure;
 import org.polypheny.db.sql.sql.fun.SqlCase;
 import org.polypheny.db.sql.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.sql.sql.fun.SqlInOperator;
@@ -2613,6 +2615,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
     public RexDynamicParam convertDynamicParam( final SqlDynamicParam dynamicParam ) {
         // REVIEW jvs: dynamic params may be encountered out of order.  Should probably cross-check with the count from the parser at the end and make sure they all got filled in.  Why doesn't List have a resize() method?!?  Make this a utility.
+        // TODO(Nic): Type check for DynamicNamedParameter and call paramter mapping saved in Catalog
         while ( dynamicParam.getIndex() >= dynamicParamSqlNodes.size() ) {
             dynamicParamSqlNodes.add( null );
         }
@@ -2620,6 +2623,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         dynamicParamSqlNodes.set(
                 dynamicParam.getIndex(),
                 dynamicParam );
+        // TODO(NIC): New method for namedDynamicParam
         return rexBuilder.makeDynamicParam(
                 getDynamicParamType( dynamicParam.getIndex() ),
                 dynamicParam.getIndex() );
@@ -3528,11 +3532,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     private AlgNode convertProcedure(SqlCall query) {
-        final SqlValidatorScope scope = validator.getOverScope( query );
-        assert scope != null;
-        final Blackboard bb = createBlackboard( scope, null, false );
-        convertMultisets(query.getSqlOperandList(), bb);
-        return LogicalProcedureExecution.create(bb.root);
+        final ValidatorNamespace namespace = validator.getNamespace(query);
+        SqlExecuteProcedure executeProcedure = (SqlExecuteProcedure) query;
+
+        assert namespace != null;
+
+        return LogicalProcedureExecution.create(null);
     }
     /**
      * Converts a SELECT statement's parse tree into a relational expression.

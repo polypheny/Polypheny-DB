@@ -336,6 +336,7 @@ public class SqlIdentifier extends SqlNode implements Identifier {
             validator.validateCall( call, scope );
             return;
         }
+        // TODO(NIC): Might have to check for SqlProcedureExec here, or its Operator: SqlSpecialOperator
 
         validator.validateIdentifier( this, scope );
     }

@@ -251,6 +251,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<PolyResult> results = new ArrayList<>();
         List<String> generatedCodes = new ArrayList<>();
 
+
+        // TODO(NIC): Check for PlaceholderNodes
         //
         // Check for view
         if ( logicalRoot.alg.hasView() ) {

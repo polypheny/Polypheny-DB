@@ -44,6 +44,7 @@ public class TriggerResolver {
                 .stream()
                 .map(trigger -> Catalog.getInstance().getNodeInfo().get(trigger.getTriggerId()))
                 .collect(Collectors.toList());
+        // TODO(Nic): Pass statement, so TriggerExecution can prepare datacontext
         return LogicalTriggerExecution.create(algNodes, true);
     }
 
@@ -54,6 +55,7 @@ public class TriggerResolver {
                 .getTriggers(catalogTable.schemaId)
                 // TODO(nic): Filter for event (insert, update, delete)
                 .stream().filter(trigger -> trigger.getTableId() == catalogTable.id).collect(Collectors.toList());
+        // TODO(Nic): Move this logic to TriggerExecution
         QueryParameterizer queryParameterizer = extractParameters(node);
         populateDatacontext(statement, queryParameterizer);
         for (CatalogTrigger trigger : triggers) {

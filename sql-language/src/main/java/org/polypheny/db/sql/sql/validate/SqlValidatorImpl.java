@@ -61,12 +61,7 @@ import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.algebra.type.DynamicRecordType;
+import org.polypheny.db.algebra.type.*;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -135,10 +130,12 @@ import org.polypheny.db.sql.sql.SqlUtil;
 import org.polypheny.db.sql.sql.SqlWindow;
 import org.polypheny.db.sql.sql.SqlWith;
 import org.polypheny.db.sql.sql.SqlWithItem;
+import org.polypheny.db.sql.sql.ddl.SqlExecuteProcedure;
 import org.polypheny.db.sql.sql.fun.SqlCase;
 import org.polypheny.db.sql.sql.util.SqlShuttle;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.AssignableOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -619,7 +616,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         SqlValidatorScope scope = new EmptyScope( this );
         scope = new CatalogScope( scope, ImmutableList.of( "CATALOG" ) );
         final SqlNode topNode2 = validateScopedExpression( topNode, scope );
-        final AlgDataType type = getValidatedNodeType( topNode2 );
+        AlgDataType type;
+        // SqlExecuteProcedure doesn't have a dedicated type
+        if(topNode instanceof SqlExecuteProcedure) {
+            type = new PolyTypeFactoryImpl(AlgDataTypeSystem.DEFAULT).createUnknownType();
+        } else {
+            type = getValidatedNodeType( topNode2 );
+        }
         Util.discard( type );
         return topNode2;
     }
