@@ -94,7 +94,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
                         case MATERIALIZED_VIEW:
                         case VIEW:
-                            Catalog.getInstance().restoreTriggers(statement.getTransaction()); // remove after debugging, will be done during startup.
                             TriggerResolver triggerResolver = new TriggerResolver();
                             //triggerResolver.runTriggers(node, statement, catalogTable);
                             return triggerResolver.lookupTriggers(statement, catalogTable);

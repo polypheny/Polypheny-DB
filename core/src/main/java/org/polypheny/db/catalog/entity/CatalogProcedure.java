@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 @EqualsAndHashCode
-public final class CatalogProcedure implements CatalogEntity {
+public final class CatalogProcedure implements CatalogEntity, Restorable{
 
     private static final long serialVersionUID = 1781666800808312001L;
     private final String name;
@@ -72,8 +72,18 @@ public final class CatalogProcedure implements CatalogEntity {
         return name;
     }
 
+    @Override
+    public long getId() {
+        return procedureId;
+    }
+
     public String getQuery() {
         return query;
+    }
+
+    @Override
+    public Catalog.QueryLanguage getLanguage() {
+        return Catalog.QueryLanguage.SQL;
     }
 
     public Long getProcedureId() {

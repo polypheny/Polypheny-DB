@@ -119,7 +119,11 @@ public abstract class Catalog {
      */
     public abstract void restoreViews( Transaction transaction );
 
-    public abstract List<AlgNode> restoreTriggers(Transaction transaction);
+    /**
+     * Recreate the AlgRoot objects for saved CatalogProcedures
+     *
+     */
+    public abstract List<AlgNode> restoreProcedures(Transaction transaction);
 
 
     protected final boolean isValidIdentifier( final String str ) {

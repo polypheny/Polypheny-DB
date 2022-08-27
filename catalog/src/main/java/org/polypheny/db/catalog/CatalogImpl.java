@@ -159,6 +159,9 @@ public class CatalogImpl extends Catalog {
     @Getter
     private final Map<Long, AlgNode> procedureNodes = new HashMap<>();
 
+    @Getter
+    private final Map<Long, AlgDataType> procedureAlgTypeInfo = new HashMap<>();
+
     public CatalogImpl() {
         this( FILE_PATH, true, true, false );
     }
@@ -420,13 +423,6 @@ public class CatalogImpl extends Catalog {
             case SQL:
                 Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
                 Node sqlNode = sqlProcessor.parse(entity.getQuery());
-                if(entity instanceof CatalogTrigger) {
-                        return sqlProcessor.translate(
-                        statement,
-                        sqlNode, // don't validate Procedures of Triggers
-                        new QueryParameters(entity.getQuery(), entity.getSchemaType() ) );
-
-                }
                 return sqlProcessor.translate(
                         statement,
                         sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
@@ -455,18 +451,14 @@ public class CatalogImpl extends Catalog {
         }
     }
 
-    /**
-     * Recreate the AlgRoot objects for saved Triggers
-     *
-     * @return a collection of algNode objects for each installed {@link CatalogTrigger}
-     */
-    public List<AlgNode> restoreTriggers(Transaction transaction) {
+    @Override
+    public List<AlgNode> restoreProcedures(Transaction transaction) {
         Statement statement = transaction.createStatement();
-        return triggers.values().stream().
+        return procedureNames.values().stream().
                 map(entity -> {
                     AlgRoot algRoot = restoreAlgRoot(statement, entity);
-                    nodeInfo.putIfAbsent( entity.getId(), algRoot.alg );
-                    algTypeInfo.putIfAbsent( entity.getId(), algRoot.validatedRowType );
+                    procedureNodes.putIfAbsent( entity.getId(), algRoot.alg );
+                    procedureAlgTypeInfo.putIfAbsent( entity.getId(), algRoot.validatedRowType );
                     return algRoot.alg;
                 })
                 .collect(Collectors.toList());
