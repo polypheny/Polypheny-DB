@@ -196,48 +196,57 @@ public class DdlParserTest extends SqlParserTest {
     }
 
     @Test
-    public void testCreateOrReplaceProcedure() {
+    public void testCreateOrReplaceProcedureDQL() {
         final String sql = "create procedure \"myudf\"\n"
                 + " $ select * from customers $";
-        final String expected = "CREATE PROCEDURE `myudf`"
-                + " $ 'select * from customers' $";
+        final String expected = "CREATE PROCEDURE `myudf` "
+                + "$ SELECT *\nFROM `CUSTOMERS` $";
         sql( sql ).ok( expected );
     }
+
     @Test
-    public void testCreatePolyScriptProcedure() {
+    public void testCreateOrReplaceProcedureDML() {
         final String sql = "create procedure \"myudf\"\n"
-                + " $ \'sql(select * from customers);\' $";
-        final String expected = "CREATE PROCEDURE `myudf`"
-                + " $ 'sql(select * from customers);' $";
+                + " $ insert into deps values(99, 'B99') $";
+        final String expected = "CREATE PROCEDURE `myudf` $ INSERT INTO `DEPS`\n" +
+                "VALUES (ROW(99, 'B99')) $";
         sql( sql ).ok( expected );
     }
-
-    @Test
-    public void testCreatePolyScriptProcedureWithOneArgument() {
-        final String sql = "create procedure \"myudf\" @id=1\n"
-                + " $ \'sql(select * from customers);\' $";
-        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1"
-                + " $ 'sql(select * from customers);' $";
-        sql( sql ).ok( expected );
-    }
-
-    @Test
-    public void testCreatePolyScriptProcedureWithManyArguments() {
-        final String sql = "create procedure \"myudf\" @id=1, @city=\'London\'\n"
-                + " $ \'sql(select * from customers);\' $";
-        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1, @ CITY = \'London\'"
-                + " $ 'sql(select * from customers);' $";
-        sql( sql ).ok( expected );
-    }
-
-    @Test
-    public void testCreateMultiLinePolyScriptProcedure() {
-        final String sql = "create procedure \"myudf\""
-                + " $ \'sql(select * from customers);sql(select * from customers);\' $";
-        final String expected = "CREATE PROCEDURE `myudf`"
-                + " $ 'sql(select * from customers);sql(select * from customers);' $";
-        sql( sql ).ok( expected );
-    }
+//    @Test
+//    public void testCreatePolyScriptProcedure() {
+//        final String sql = "create procedure \"myudf\"\n"
+//                + " $ \'sql(select * from customers);\' $";
+//        final String expected = "CREATE PROCEDURE `myudf`"
+//                + " $ 'sql(select * from customers);' $";
+//        sql( sql ).ok( expected );
+//    }
+//
+//    @Test
+//    public void testCreatePolyScriptProcedureWithOneArgument() {
+//        final String sql = "create procedure \"myudf\" @id=1\n"
+//                + " $ \'sql(select * from customers);\' $";
+//        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1"
+//                + " $ 'sql(select * from customers);' $";
+//        sql( sql ).ok( expected );
+//    }
+//
+//    @Test
+//    public void testCreatePolyScriptProcedureWithManyArguments() {
+//        final String sql = "create procedure \"myudf\" @id=1, @city=\'London\'\n"
+//                + " $ \'sql(select * from customers);\' $";
+//        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1, @ CITY = \'London\'"
+//                + " $ 'sql(select * from customers);' $";
+//        sql( sql ).ok( expected );
+//    }
+//
+//    @Test
+//    public void testCreateMultiLinePolyScriptProcedure() {
+//        final String sql = "create procedure \"myudf\""
+//                + " $ \'sql(select * from customers);sql(select * from customers);\' $";
+//        final String expected = "CREATE PROCEDURE `myudf`"
+//                + " $ 'sql(select * from customers);sql(select * from customers);' $";
+//        sql( sql ).ok( expected );
+//    }
 
     @Test
     public void testExecProcedure() {

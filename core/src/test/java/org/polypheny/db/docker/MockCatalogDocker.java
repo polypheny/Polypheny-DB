@@ -50,12 +50,12 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
-    public void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
 
     }
 
     @Override
-    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
+    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
 
     }
 

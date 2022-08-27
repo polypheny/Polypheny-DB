@@ -504,7 +504,7 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
         Argument(arguments)
     )*
     <DOLLAR>
-    query = StringLiteral()
+    query = SqlQueryOrDml()
     <DOLLAR>
     {
         return SqlDdlNodes.createProcedure(s.end(this), replace, ifNotExists, id, query, arguments);

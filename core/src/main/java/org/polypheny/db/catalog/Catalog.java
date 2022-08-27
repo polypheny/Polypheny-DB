@@ -1556,9 +1556,9 @@ public abstract class Catalog {
 
     public abstract void clear();
 
-    public abstract void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException;
+    public abstract void createProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException;
 
-    public abstract void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException;
+    public abstract void updateProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException;
 
     public abstract List<CatalogProcedure> getProcedures(Long schemaId);
 

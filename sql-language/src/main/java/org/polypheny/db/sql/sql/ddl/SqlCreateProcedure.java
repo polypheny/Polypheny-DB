@@ -18,10 +18,14 @@ package org.polypheny.db.sql.sql.ddl;
 
 
 import com.google.common.base.Preconditions;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -29,7 +33,9 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.sql.sql.*;
+import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Pair;
@@ -118,6 +124,16 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
     public void execute(Context context, Statement statement, QueryParameters parameters) {
         DdlManager instance = DdlManager.getInstance();
 
+        Processor sqlProcessor = statement.getTransaction().getProcessor( Catalog.QueryLanguage.SQL );
+        AlgRoot algRoot = sqlProcessor.translate(
+                statement,
+                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
+
+        AlgNode algNode = algRoot.alg;
+        AlgCollation algCollation = algRoot.collation;
+
+        String queryString = String.valueOf(query.toSqlString(PolyphenyDbSqlDialect.DEFAULT));
+
         Catalog catalog = Catalog.getInstance();
         long schemaId;
         String procedureName;
@@ -139,7 +155,7 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.schemaNotFound( name.toString() ) );
         }
-        instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, query.toString(), argumentPairs);
+        instance.createProcedure(schemaId, name.getSimple(), databaseId, replace, algNode, queryString, argumentPairs);
     }
 
 

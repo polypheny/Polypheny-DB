@@ -464,14 +464,15 @@ public abstract class DdlManager {
     /**
      * Create a new procedure
      *
-     * @param schemaId the id of schema
+     * @param schemaId      the id of schema
      * @param procedureName the name of the new procedure
-     * @param databaseId the id of the database
-     * @param replace whether to replace an existing or insert a new procedure
-     * @param query the body of the procedure
-     * @param arguments the arguments to the procedure (optional)
+     * @param databaseId    the id of the database
+     * @param replace       whether to replace an existing or insert a new procedure
+     * @param query         the body of the procedure
+     * @param queryString
+     * @param arguments     the arguments to the procedure (optional)
      */
-    public abstract void createProcedure( Long schemaId, String procedureName, Long databaseId, boolean replace, String query, List<Pair<String, Object>> arguments);
+    public abstract void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, AlgNode query, String queryString, List<Pair<String, Object>> arguments);
 
     /**
      * Execute a procedure

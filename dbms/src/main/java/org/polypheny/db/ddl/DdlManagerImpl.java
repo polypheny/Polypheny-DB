@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.polypheny.db.PolyResult;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -1713,12 +1712,12 @@ public class DdlManagerImpl extends DdlManager {
         materializedManager.addData(statement.getTransaction(), stores, addedColumns, algRoot, catalogMaterializedView);
     }
 
-    public void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, String query, List<Pair<String, Object>> arguments) {
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, boolean replace, AlgNode definition, String queryString, List<Pair<String, Object>> arguments) {
         try {
             if(replace) {
-                catalog.updateProcedure(schemaId, procedureName, databaseId, query, arguments);
+                catalog.updateProcedure(schemaId, procedureName, databaseId, definition, queryString, arguments);
             } else {
-                catalog.createProcedure(schemaId, procedureName, databaseId, query, arguments);
+                catalog.createProcedure(schemaId, procedureName, databaseId, definition, queryString, arguments);
             }
         } catch (ProcedureAlreadyExistsException e) {
             throw new RuntimeException(e);
@@ -1733,10 +1732,10 @@ public class DdlManagerImpl extends DdlManager {
             }
             CatalogProcedure procedure = optionalProcedure.get();
             PolyScriptInterpreter polyScriptInterpreter = new PolyScriptInterpreter(new SqlProcessorFacade(new SqlProcessorImpl()), statement.getTransaction());
-            PolyResult result = polyScriptInterpreter.interprete(procedure.getQuery(), arguments);
-            prepareMonitoring(statement, Kind.PROCEDURE_EXEC);
-            //TODO(nic): Don't call this right here
-            result.getRowsChanged(statement);
+//            PolyResult result = polyScriptInterpreter.interprete(procedure.getQuery(), arguments);
+//            prepareMonitoring(statement, Kind.PROCEDURE_EXEC);
+//            //TODO(nic): Don't call this right here
+//            result.getRowsChanged(statement);
 
         } catch (UnknownProcedureException e) {
             throw new RuntimeException(e);

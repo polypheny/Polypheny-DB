@@ -156,6 +156,8 @@ public class CatalogImpl extends Catalog {
     @Getter
     private final Map<Long, AlgDataType> algTypeInfo = new HashMap<>();
 
+    @Getter
+    private final Map<Long, AlgNode> procedureNodes = new HashMap<>();
 
     public CatalogImpl() {
         this( FILE_PATH, true, true, false );
@@ -418,6 +420,13 @@ public class CatalogImpl extends Catalog {
             case SQL:
                 Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
                 Node sqlNode = sqlProcessor.parse(entity.getQuery());
+                if(entity instanceof CatalogTrigger) {
+                        return sqlProcessor.translate(
+                        statement,
+                        sqlNode, // don't validate Procedures of Triggers
+                        new QueryParameters(entity.getQuery(), entity.getSchemaType() ) );
+
+                }
                 return sqlProcessor.translate(
                         statement,
                         sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
@@ -863,26 +872,29 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
         Optional<CatalogProcedure> existingProcedure = getProcedure(databaseId, schemaId, procedureName);
         if(existingProcedure.isPresent()) {
             throw new ProcedureAlreadyExistsException(databaseId, schemaId, procedureName);
         }
         long id = procedureIdBuilder.getAndIncrement();
-        CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, query, arguments);
+        CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, queryString, arguments);
         synchronized (this) {
+            Object[] key = {databaseId, schemaId, procedureName};
             procedures.put(id, procedure);
-            procedureNames.put(new Object[]{databaseId, schemaId, procedureName}, procedure);
+            procedureNames.put(key, procedure);
+            procedureNodes.put( id, query );
         }
     }
 
     @Override
-    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, List<Pair<String, Object>> arguments) {
+    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) {
         long id = procedureIdBuilder.getAndIncrement();
-        CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, query, arguments);
+        CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, queryString, arguments);
         synchronized (this) {
             procedures.replace(procedure.getProcedureId(), procedure);
             procedureNames.replace(new Object[]{databaseId, schemaId, procedure.getName()}, procedure);
+            procedureNodes.replace( id, query );
         }
     }
 
@@ -942,6 +954,7 @@ public class CatalogImpl extends Catalog {
             if(removedProcedure == null) {
                 throw new RuntimeException(String.format("Procedure that should have existed wasn't found: %s", deletedProcedure.getProcedureId()));
             }
+            procedureNodes.remove(key);
         }
     }
 
