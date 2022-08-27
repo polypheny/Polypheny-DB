@@ -80,6 +80,8 @@ public abstract class Catalog {
 
     public abstract Map<Long, AlgNode> getNodeInfo();
 
+    public abstract Map<Long, AlgNode> getProcedureNodes();
+
 
     /**
      * Adds a listener which gets notified on updates

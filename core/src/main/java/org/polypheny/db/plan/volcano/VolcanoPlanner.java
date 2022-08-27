@@ -1319,9 +1319,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         }
 
         assert !isRegistered( alg ) : "already been registered: " + alg;
-        if ( alg.getCluster().getPlanner() != this ) {
-            throw new AssertionError( "Relational expression " + alg + " belongs to a different planner than is currently being used." );
-        }
+//        if ( alg.getCluster().getPlanner() != this ) {
+//            throw new AssertionError( "Relational expression " + alg + " belongs to a different planner than is currently being used." );
+//        }
 
         // Now is a good time to ensure that the algational expression implements the interface required by its calling convention.
         final AlgTraitSet traits = alg.getTraitSet();

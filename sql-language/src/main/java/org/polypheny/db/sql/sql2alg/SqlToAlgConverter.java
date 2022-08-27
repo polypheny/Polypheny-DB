@@ -106,6 +106,7 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -541,8 +542,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                             ExplainFormat.TEXT,
                             ExplainLevel.EXPPLAN_ATTRIBUTES ) );
         }
-
-        final AlgDataType validatedRowType = validator.getValidatedNodeType( query );
+        final AlgDataType validatedRowType;
+        if(query instanceof SqlExecuteProcedure) {
+            validatedRowType = result.getRowType();
+        } else {
+            validatedRowType = validator.getValidatedNodeType( query );
+        }
 
         return AlgRoot.of( result, validatedRowType, query.getKind() ).withCollation( collation );
     }
@@ -2797,7 +2802,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             case VALUES:
                 return AlgRoot.of( convertValues( (SqlCall) query, targetRowType ), kind );
             case PROCEDURE_EXEC:
-                return AlgRoot.of( convertProcedure( (SqlCall) query), kind );
+                AlgNode alg = convertProcedure((SqlCall) query);
+                return AlgRoot.of(alg, kind );
             default:
                 throw new AssertionError( "not a query: " + query );
         }
@@ -3532,12 +3538,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     private AlgNode convertProcedure(SqlCall query) {
-        final ValidatorNamespace namespace = validator.getNamespace(query);
         SqlExecuteProcedure executeProcedure = (SqlExecuteProcedure) query;
-
-        assert namespace != null;
-
-        return LogicalProcedureExecution.create(null);
+        Long identifier = Long.valueOf(executeProcedure.getIdentifier().getSimple());
+        // At the moment identifier is passed as name, but if not specified, there is no databse.schema part.
+        // and this is needed to find the correct procedure.
+        // Hack for development: Assume input is the procedure ID
+        return Catalog.getInstance().getProcedureNodes().get(identifier);
     }
     /**
      * Converts a SELECT statement's parse tree into a relational expression.

@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -62,6 +63,7 @@ import org.polypheny.db.sql.sql.SqlInsert;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
+import org.polypheny.db.sql.sql.ddl.SqlExecuteProcedure;
 import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.sql.parser.SqlParser;
@@ -74,6 +76,7 @@ import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionImpl;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DeadlockException;
@@ -157,7 +160,12 @@ public class SqlProcessorImpl extends Processor {
         AlgDataType type;
         try {
             validated = validator.validate( parsed );
-            type = validator.getValidatedNodeType( validated );
+            // No special validation for execute procedure for now.
+            if(validated instanceof SqlExecuteProcedure) {
+                type = new PolyTypeFactoryImpl(AlgDataTypeSystem.DEFAULT).createUnknownType();
+            } else {
+                type = validator.getValidatedNodeType( validated );
+            }
         } catch ( RuntimeException e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();

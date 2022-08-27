@@ -1559,7 +1559,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return type;
         }
         final SqlValidatorNamespace ns = getSqlNamespace( node );
-        if ( ns != null ) {
+        if(node instanceof SqlExecuteProcedure) {
+            return new PolyTypeFactoryImpl(AlgDataTypeSystem.DEFAULT).createUnknownType();
+        } else if ( ns != null ) {
             return ns.getType();
         }
         final SqlNode original = originalExprs.get( node );
@@ -5039,6 +5041,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 == FunctionCategory.MATCH_RECOGNIZE
                 && !(operandScope instanceof MatchRecognizeScope) ) {
             throw newValidationError( call, Static.RESOURCE.functionMatchRecognizeOnly( call.toString() ) );
+        }
+        if ( call instanceof SqlExecuteProcedure) {
+            return;
         }
         // Delegate validation to the operator.
         ((SqlOperator) operator).validateCall( call, this, scope, operandScope );
