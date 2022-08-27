@@ -179,8 +179,4 @@ public class CatalogView extends CatalogTable implements Restorable {
         return id;
     }
 
-    @Override
-    public QueryLanguage getLanguage() {
-        return language;
-    }
 }
