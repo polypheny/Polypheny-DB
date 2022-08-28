@@ -134,6 +134,7 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_LIMIT_RULE,
                     EnumerableRules.ENUMERABLE_UNION_RULE,
                     EnumerableRules.ENUMERABLE_MODIFY_COLLECT_RULE,
+                    EnumerableRules.ENUMERABLE_TRIGGER_EXECUTION_RULE,
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_MODIFICATION_RULE,
