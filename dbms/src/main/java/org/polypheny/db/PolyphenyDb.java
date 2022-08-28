@@ -334,8 +334,9 @@ public class PolyphenyDb {
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
             catalog.restoreViews( trx );
-            //catalog.restoreTriggers( trx );
             catalog.restoreProcedures( trx );
+            // TODO(NIC): Uncomment
+            //catalog.restoreTriggers( trx );
             trx.commit();
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
             if ( trx != null ) {

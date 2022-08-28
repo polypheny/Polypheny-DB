@@ -413,7 +413,8 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        List<Procedure> procedures = catalog.getProcedures(schema.id).stream()
+        // TODO: FIlter by schemaId
+        List<Procedure> procedures = catalog.getProcedures().stream()
                 .map(this::mapToApi)
                 .collect(Collectors.toList());
         ctx.json( procedures );

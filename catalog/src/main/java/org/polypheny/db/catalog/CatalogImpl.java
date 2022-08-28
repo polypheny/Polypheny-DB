@@ -110,9 +110,15 @@ public class CatalogImpl extends Catalog {
 
     // Container Object that contains all other placements
     private static BTreeMap<Object[], CatalogDataPlacement> dataPlacements; // (AdapterId, TableId) -> CatalogDataPlacement
+
+    @Getter
     private static BTreeMap<Long, CatalogProcedure> procedures;
 
     private static BTreeMap<Object[], CatalogProcedure> procedureNames;
+
+    // TODO: Save trigger queries as AlgNode
+    @Getter
+    private final Map<Object[], AlgNode> triggerNodes = new HashMap<>();
 
     private static BTreeMap<Long, CatalogTrigger> triggers;
 
@@ -152,6 +158,7 @@ public class CatalogImpl extends Catalog {
     // {@link AlgNode} used to create view and materialized view
     @Getter
     private final Map<Long, AlgNode> nodeInfo = new HashMap<>();
+
     // AlgDataTypes used to create view and materialized view
     @Getter
     private final Map<Long, AlgDataType> algTypeInfo = new HashMap<>();
@@ -457,7 +464,8 @@ public class CatalogImpl extends Catalog {
         return procedureNames.values().stream().
                 map(entity -> {
                     AlgRoot algRoot = restoreAlgRoot(statement, entity);
-                    procedureNodes.putIfAbsent( entity.getId(), algRoot.alg );
+                    Object[] key = {entity.getDatabaseId(), entity.getSchemaId(), entity.getName()};
+                    procedureNodes.putIfAbsent(entity.getId(), algRoot.alg );
                     procedureAlgTypeInfo.putIfAbsent( entity.getId(), algRoot.validatedRowType );
                     return algRoot.alg;
                 })
@@ -875,7 +883,7 @@ public class CatalogImpl extends Catalog {
             Object[] key = {databaseId, schemaId, procedureName};
             procedures.put(id, procedure);
             procedureNames.put(key, procedure);
-            procedureNodes.put( id, query );
+            procedureNodes.put( procedure.getId(), query );
         }
     }
 
@@ -885,8 +893,9 @@ public class CatalogImpl extends Catalog {
         CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, queryString, arguments);
         synchronized (this) {
             procedures.replace(procedure.getProcedureId(), procedure);
-            procedureNames.replace(new Object[]{databaseId, schemaId, procedure.getName()}, procedure);
-            procedureNodes.replace( id, query );
+            Object[] key = {databaseId, schemaId, procedure.getName()};
+            procedureNames.replace(key, procedure);
+            procedureNodes.replace( procedure.getId(), query );
         }
     }
 
@@ -906,8 +915,18 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public List<CatalogProcedure> getProcedures(Long schemaId) {
+    public Optional<CatalogProcedure> getProcedure(Object[] key) throws UnknownProcedureException {
+        return Optional.ofNullable(procedureNames.get(key));
+    }
+
+    @Override
+    public List<CatalogProcedure> getProcedures() {
         return List.copyOf(procedures.getValues());
+    }
+
+    @Override
+    public CatalogProcedure getProcedure(Long id) {
+        return procedures.get(id);
     }
 
     @Override
@@ -959,15 +978,18 @@ public class CatalogImpl extends Catalog {
      * @param table       The referenced table
      * @param event       The event on which to execute the trigger
      * @param query       The query to run
+     * @param algNode     The logical representation of the query to run
      * @param language    The language in which the query was written
      */
     @Override
-    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, QueryLanguage language) {
+    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, AlgNode algNode, QueryLanguage language) {
         long id = procedureIdBuilder.getAndIncrement();
         CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, table.id, language, query);
         synchronized (this) {
             triggers.put(id, trigger);
-            triggerNames.put(new Object[]{databaseId, schemaId, triggerName}, trigger);
+            Object[] key = {databaseId, schemaId, triggerName};
+            triggerNames.put(key, trigger);
+            triggerNodes.put(key, algNode);
         }
     }
 

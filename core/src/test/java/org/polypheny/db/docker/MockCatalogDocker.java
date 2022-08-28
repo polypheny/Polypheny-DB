@@ -60,8 +60,8 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
-    public List<CatalogProcedure> getProcedures(Long schemaId) {
-        throw new UnsupportedOperationException();
+    public List<CatalogProcedure> getProcedures() {
+        return null;
     }
 
     @Override
@@ -80,6 +80,11 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
+    public Optional<CatalogProcedure> getProcedure(Object[] key) throws UnknownProcedureException {
+        return Optional.empty();
+    }
+
+    @Override
     public void deleteProcedure(long databaseId, long schemaId, String procedureName) throws UnknownProcedureException {
         throw new UnsupportedOperationException();
     }
@@ -94,16 +99,24 @@ public class MockCatalogDocker extends MockCatalog {
         throw new UnsupportedOperationException();
     }
 
-
     @Override
     public boolean checkIfExistsAdapter( int adapterId ) {
         return adapters.containsKey( adapterId );
     }
 
+    @Override
+    public Map<Long, AlgNode> getProcedureNodes() {
+        return null;
+    }
 
     @Override
-    public List<AlgNode> restoreTriggers(Transaction transaction) {
-        return Collections.emptyList();
+    public CatalogProcedure getProcedure(Long id) {
+        return null;
+    }
+
+    @Override
+    public List<AlgNode> restoreProcedures(Transaction transaction) {
+        return null;
     }
 
     @Override

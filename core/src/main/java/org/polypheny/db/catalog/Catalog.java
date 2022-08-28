@@ -82,6 +82,7 @@ public abstract class Catalog {
 
     public abstract Map<Long, AlgNode> getProcedureNodes();
 
+    public abstract CatalogProcedure getProcedure(Long id);
 
     /**
      * Adds a listener which gets notified on updates
@@ -1566,7 +1567,7 @@ public abstract class Catalog {
 
     public abstract void updateProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException;
 
-    public abstract List<CatalogProcedure> getProcedures(Long schemaId);
+    public abstract List<CatalogProcedure> getProcedures();
 
     public abstract List<CatalogTrigger> getTriggers(Long schemaId);
 
@@ -1575,9 +1576,11 @@ public abstract class Catalog {
 
     public abstract Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException;
 
+    public abstract Optional<CatalogProcedure> getProcedure(Object[] key) throws UnknownProcedureException;
+
     public abstract void deleteProcedure(long databaseId, long schemaId, String procedureName ) throws UnknownProcedureException;
 
-    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, QueryLanguage language);
+    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, AlgNode algNode, QueryLanguage language);
 
     public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName);
 

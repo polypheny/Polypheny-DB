@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity;
 import com.google.common.collect.Lists;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.util.Pair;
 
@@ -44,6 +45,14 @@ public final class CatalogProcedure implements CatalogEntity, Restorable{
         this.procedureId = procedureId;
         this.arguments = new ProcedureArguments(Collections.unmodifiableList(Lists.newArrayList(arguments)));
         this.query = query;
+    }
+
+    public Long getSchemaId() {
+        return schemaId;
+    }
+
+    public long getDatabaseId() {
+        return databaseId;
     }
 
     @Override
@@ -88,6 +97,10 @@ public final class CatalogProcedure implements CatalogEntity, Restorable{
 
     public Long getProcedureId() {
         return procedureId;
+    }
+
+    public AlgNode getDefinition() {
+        return Catalog.getInstance().getProcedureNodes().get(procedureId);
     }
 
     static class ProcedureArguments implements CatalogEntity{

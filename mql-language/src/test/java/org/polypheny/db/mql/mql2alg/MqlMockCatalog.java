@@ -14,21 +14,38 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.mql2alg;
+package org.polypheny.db.mql.mql2alg;
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.Event;
 import org.polypheny.db.catalog.MockCatalog;
-import org.polypheny.db.catalog.entity.CatalogProcedure;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.exceptions.ProcedureAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.util.Pair;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 
 public class MqlMockCatalog extends MockCatalog {
+
+    @Override
+    public Map<Long, AlgNode> getProcedureNodes() {
+        return null;
+    }
+
+    @Override
+    public CatalogProcedure getProcedure(Long id) {
+        return null;
+    }
+
+    @Override
+    public List<AlgNode> restoreProcedures(Transaction transaction) {
+        return null;
+    }
 
     @Override
     public CatalogSchema getSchema( long schemaId ) {
@@ -41,8 +58,18 @@ public class MqlMockCatalog extends MockCatalog {
     }
 
     @Override
-    public void createProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
+    public void createProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
 
+    }
+
+    @Override
+    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws ProcedureAlreadyExistsException {
+
+    }
+
+    @Override
+    public List<CatalogProcedure> getProcedures() {
+        return null;
     }
 
     @Override
@@ -57,7 +84,12 @@ public class MqlMockCatalog extends MockCatalog {
 
     @Override
     public Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) {
-        return Optional.of(new CatalogProcedure(1L, "myProcedure", 2L, 3L, ""));
+        return Optional.of(null);
+    }
+
+    @Override
+    public Optional<CatalogProcedure> getProcedure(Object[] key) throws UnknownProcedureException {
+        return Optional.empty();
     }
 
     @Override

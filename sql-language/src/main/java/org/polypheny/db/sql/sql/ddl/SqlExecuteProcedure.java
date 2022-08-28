@@ -89,6 +89,24 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
         return OPERATOR;
     }
 
+    public Object[] getKey() {
+        if(identifier.names.isEmpty()) {
+            throw new RuntimeException("Can't retrieve key without all required identifier parts: databaseId.schemaId.procedureName");
+        }
+        String[] fqdn = identifier.names.get(0).split("\\.");
+        if(fqdn.length != 3) {
+            throw new RuntimeException("Can't retrieve key without all required identifier parts: databaseId.schemaId.procedureName");
+        }
+        try {
+            long databaseId = Catalog.getInstance().getDatabase(fqdn[0].toUpperCase()).id;
+            long schemaId = Catalog.getInstance().getSchema(databaseId, fqdn[1]).id;
+            String procedureName = fqdn[2];
+            return new Object[]{databaseId, schemaId, procedureName};
+        } catch (UnknownSchemaException | UnknownDatabaseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void execute(Context context, Statement statement, QueryParameters parameters) {
         DdlManager instance = DdlManager.getInstance();

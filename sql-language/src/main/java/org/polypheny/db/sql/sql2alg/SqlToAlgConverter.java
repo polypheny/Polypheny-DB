@@ -42,21 +42,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.util.AbstractList;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -108,6 +94,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.entity.CatalogProcedure;
+import org.polypheny.db.catalog.exceptions.UnknownProcedureException;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -3539,11 +3527,14 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
     private AlgNode convertProcedure(SqlCall query) {
         SqlExecuteProcedure executeProcedure = (SqlExecuteProcedure) query;
-        Long identifier = Long.valueOf(executeProcedure.getIdentifier().getSimple());
-        // At the moment identifier is passed as name, but if not specified, there is no databse.schema part.
-        // and this is needed to find the correct procedure.
-        // Hack for development: Assume input is the procedure ID
-        return Catalog.getInstance().getProcedureNodes().get(identifier);
+        Optional<CatalogProcedure> procedureNodes;
+        try {
+            procedureNodes = Catalog.getInstance().getProcedure(executeProcedure.getKey());
+        } catch (UnknownProcedureException e) {
+            throw new RuntimeException(e);
+        }
+        CatalogProcedure procedure = procedureNodes.get();
+        return procedure.getDefinition();
     }
     /**
      * Converts a SELECT statement's parse tree into a relational expression.

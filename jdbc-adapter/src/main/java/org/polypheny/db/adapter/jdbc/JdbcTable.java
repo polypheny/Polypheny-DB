@@ -35,10 +35,9 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import com.google.common.collect.Lists;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+
+import java.util.*;
+
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -238,7 +237,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     @Override
     public Collection getModifiableCollection() {
-        throw new RuntimeException( "getModifiableCollection() is not implemented for JDBC adapter!" );
+        return new ArrayList<>();
     }
 
 
