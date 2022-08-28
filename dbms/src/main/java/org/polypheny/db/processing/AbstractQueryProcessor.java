@@ -62,11 +62,7 @@ import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.*;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -1106,6 +1102,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 .simplify();
 
         final Program program = Programs.standard();
+        if(logicalRoot.alg instanceof LogicalTriggerExecution) {
+            return logicalRoot.alg;
+        }
         final AlgNode rootAlg4 = program.run( getPlanner(), logicalPlan, desiredTraits );
 
         //final {@link AlgNode} algNode = getPlanner().changeTraits( root.alg, desiredTraits );
