@@ -116,9 +116,8 @@ public class CatalogImpl extends Catalog {
 
     private static BTreeMap<Object[], CatalogProcedure> procedureNames;
 
-    // TODO: Save trigger queries as AlgNode
     @Getter
-    private final Map<Object[], AlgNode> triggerNodes = new HashMap<>();
+    private final Map<Long, AlgNode> triggerNodes = new HashMap<>();
 
     private static BTreeMap<Long, CatalogTrigger> triggers;
 
@@ -989,7 +988,7 @@ public class CatalogImpl extends Catalog {
             triggers.put(id, trigger);
             Object[] key = {databaseId, schemaId, triggerName};
             triggerNames.put(key, trigger);
-            triggerNodes.put(key, algNode);
+            triggerNodes.put(id, algNode);
         }
     }
 
@@ -1003,6 +1002,7 @@ public class CatalogImpl extends Catalog {
         synchronized (this) {
             triggers.remove(catalogTrigger.getTriggerId());
             triggerNames.remove(triggerKey);
+            triggerNodes.remove(catalogTrigger.getTriggerId());
         }
     }
 

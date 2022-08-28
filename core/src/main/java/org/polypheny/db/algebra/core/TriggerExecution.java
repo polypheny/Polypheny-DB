@@ -32,8 +32,11 @@ import java.util.stream.Collectors;
  */
 public abstract class TriggerExecution extends SetOp {
 
+    // TODO(Nic): Save NamedDynamicParam map
+
     protected TriggerExecution(AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
         super( cluster, traits, inputs, Kind.UNION, all );
+        // TODO(Nic): Fill data context
     }
 
 

@@ -50,22 +50,22 @@ public class EnumerableTriggerExecution extends TriggerExecution implements Enum
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-//        Expression unionExp = null;
+        Expression unionExp = null;
         for ( Ord<AlgNode> ord : Ord.zip( inputs ) ) {
             EnumerableAlg input = (EnumerableAlg) ord.e;
-            final Result result = implementor.visitChild( this, ord.i, input, pref );
-            builder.append( "child" + ord.i, result.block );
+            final Result result = implementor.visitChild( this, ord.i, input, pref ); // The code that would return the result
+            Expression childExp = builder.append( "child" + ord.i, result.block );
 
-//            if ( unionExp == null ) {
-//                unionExp = childExp;
-//            } else {
-//                unionExp = all
-//                        ? Expressions.call( unionExp, BuiltInMethod.CONCAT.method, childExp )
-//                        : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType.comparer() ) );
-//            }
+            if ( unionExp == null ) {
+                unionExp = childExp;
+            } else {
+                unionExp = all
+                        ? Expressions.call( unionExp, BuiltInMethod.CONCAT.method, childExp )
+                        : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType.comparer() ) );
+            }
         }
 
-//        builder.add( unionExp );
+        builder.add( unionExp );
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),

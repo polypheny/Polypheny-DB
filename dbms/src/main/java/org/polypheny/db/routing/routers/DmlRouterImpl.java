@@ -95,7 +95,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         case MATERIALIZED_VIEW:
                         case VIEW:
                             TriggerResolver triggerResolver = new TriggerResolver();
-                            //triggerResolver.runTriggers(node, statement, catalogTable);
                             return triggerResolver.lookupTriggers(statement, catalogTable);
 
                         default:

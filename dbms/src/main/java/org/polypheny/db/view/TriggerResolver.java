@@ -42,7 +42,7 @@ public class TriggerResolver {
     public LogicalTriggerExecution lookupTriggers(Statement statement, CatalogTable catalogTable) {
         List<AlgNode> algNodes = searchTriggers(catalogTable)
                 .stream()
-                .map(trigger -> Catalog.getInstance().getNodeInfo().get(trigger.getTriggerId()))
+                .map(CatalogTrigger::getDefinition)
                 .collect(Collectors.toList());
         // TODO(Nic): Pass statement, so TriggerExecution can prepare datacontext
         return LogicalTriggerExecution.create(algNodes, true);

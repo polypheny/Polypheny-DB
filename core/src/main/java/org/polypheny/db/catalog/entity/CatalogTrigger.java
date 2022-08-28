@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Event;
 
@@ -41,7 +42,7 @@ public final class CatalogTrigger implements CatalogEntity {
     private final Catalog.QueryLanguage language;
     private final String query;
 
-    public CatalogTrigger(Long schemaId, String name, Long databaseId, Long triggerId, Event event, long tableId, Catalog.QueryLanguage language, String query, final String... arguments) {
+    public CatalogTrigger(Long schemaId, String name, Long databaseId, Long triggerId, Event event, long tableId, Catalog.QueryLanguage language, String query) {
         this.name = name;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
@@ -90,5 +91,13 @@ public final class CatalogTrigger implements CatalogEntity {
 
     public Event getEvent() {
         return event;
+    }
+
+    public AlgNode getDefinition() {
+        AlgNode triggerQuery = Catalog.getInstance().getTriggerNodes().get(triggerId);
+        if(triggerQuery == null) {
+            throw new RuntimeException("No definition for trigger query found");
+        }
+        return triggerQuery;
     }
 }

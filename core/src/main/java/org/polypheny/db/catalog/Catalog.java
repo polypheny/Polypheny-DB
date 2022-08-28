@@ -1573,6 +1573,7 @@ public abstract class Catalog {
 
     public abstract List<CatalogTrigger> getTriggers(String schemaName, String tableName);
 
+    public abstract Map<Long, AlgNode> getTriggerNodes();
 
     public abstract Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException;
 

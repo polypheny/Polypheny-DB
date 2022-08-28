@@ -73,13 +73,13 @@ public class MqlMockCatalog extends MockCatalog {
     }
 
     @Override
-    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, String query, String... arguments) throws ProcedureAlreadyExistsException {
-
+    public List<CatalogTrigger> getTriggers(Long schemaId) {
+        return null;
     }
 
     @Override
-    public List<CatalogProcedure> getProcedures(Long schemaId) {
-        return Collections.emptyList();
+    public List<CatalogTrigger> getTriggers(String schemaName, String tableName) {
+        return null;
     }
 
     @Override
@@ -94,6 +94,16 @@ public class MqlMockCatalog extends MockCatalog {
 
     @Override
     public void deleteProcedure(long databaseId, long schemaId, String procedureName) {
+
+    }
+
+    @Override
+    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, AlgNode algNode, QueryLanguage language) {
+
+    }
+
+    @Override
+    public void dropTrigger(long databaseId, Long schemaId, String triggerName) {
 
     }
 
