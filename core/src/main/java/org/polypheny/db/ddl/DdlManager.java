@@ -492,9 +492,10 @@ public abstract class DdlManager {
      * @param replace     whether to replace an existing or insert a new trigger
      * @param event       the table event on which to bind the trigger
      * @param query       the body of the trigger
+     * @param algNode     The logical representation of the query to run
      * @param language
      */
-    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query, QueryLanguage language);
+    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, boolean replace, String table, String event, String query, AlgNode algNode, QueryLanguage language);
 
     /**
      * Delete a trigger

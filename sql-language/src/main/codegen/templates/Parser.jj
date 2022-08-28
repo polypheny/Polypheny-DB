@@ -1082,6 +1082,8 @@ SqlNode SqlQueryOrDml() :
 }
 {
     (
+        stmt = SqlExecProcedure()
+    |
         stmt = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
         stmt = SqlInsert()

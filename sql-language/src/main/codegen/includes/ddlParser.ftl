@@ -543,7 +543,7 @@ SqlCreate SqlCreateTrigger(Span s, boolean replace) :
     event = parseEvent()
     notForReplication = NotForReplicationOpt()
     <DOLLAR>
-    query = StringLiteral()
+    query = SqlQueryOrDml()
     {
         return SqlDdlNodes.createTrigger(s.end(this), replace, ifNotExists, schema, name, table, event, notForReplication, query);
     }

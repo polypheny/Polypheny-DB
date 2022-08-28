@@ -90,7 +90,7 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
-    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, QueryLanguage language) {
+    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, AlgNode algNode, QueryLanguage language) {
         throw new UnsupportedOperationException();
     }
 
