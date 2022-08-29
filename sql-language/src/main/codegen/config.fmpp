@@ -36,6 +36,7 @@ data: {
             "org.polypheny.db.sql.sql.SqlDescribeTable"
             "org.polypheny.db.sql.sql.SqlDrop"
             "org.polypheny.db.sql.sql.SqlDynamicParam"
+            "org.polypheny.db.sql.sql.SqlNamedDynamicParam"
             "org.polypheny.db.sql.sql.SqlExplain"
             "org.polypheny.db.sql.sql.SqlIdentifier"
             "org.polypheny.db.sql.sql.SqlInsert"

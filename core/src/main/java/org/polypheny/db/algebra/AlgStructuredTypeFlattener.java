@@ -463,6 +463,10 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         rewriteGeneric( alg );
     }
 
+    public void rewriteRel( LogicalProcedureExecution alg ) {
+        rewriteGeneric( alg );
+    }
+
 
     public void rewriteRel( LogicalProject alg ) {
         final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();

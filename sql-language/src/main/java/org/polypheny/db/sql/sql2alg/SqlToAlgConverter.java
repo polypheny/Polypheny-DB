@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgCollations;
@@ -143,36 +144,7 @@ import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.sql.sql.SqlAggFunction;
-import org.polypheny.db.sql.sql.SqlBasicCall;
-import org.polypheny.db.sql.sql.SqlCall;
-import org.polypheny.db.sql.sql.SqlCallBinding;
-import org.polypheny.db.sql.sql.SqlDelete;
-import org.polypheny.db.sql.sql.SqlDynamicParam;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlInsert;
-import org.polypheny.db.sql.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.sql.SqlJoin;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.SqlMatchRecognize;
-import org.polypheny.db.sql.sql.SqlMerge;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.sql.sql.SqlNumericLiteral;
-import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.sql.sql.SqlOrderBy;
-import org.polypheny.db.sql.sql.SqlSampleSpec;
-import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.sql.sql.SqlSelectKeyword;
-import org.polypheny.db.sql.sql.SqlSetOperator;
-import org.polypheny.db.sql.sql.SqlUnnestOperator;
-import org.polypheny.db.sql.sql.SqlUpdate;
-import org.polypheny.db.sql.sql.SqlUtil;
-import org.polypheny.db.sql.sql.SqlValuesOperator;
-import org.polypheny.db.sql.sql.SqlWindow;
-import org.polypheny.db.sql.sql.SqlWith;
-import org.polypheny.db.sql.sql.SqlWithItem;
+import org.polypheny.db.sql.sql.*;
 import org.polypheny.db.sql.sql.ddl.SqlExecuteProcedure;
 import org.polypheny.db.sql.sql.fun.SqlCase;
 import org.polypheny.db.sql.sql.fun.SqlCountAggFunction;
@@ -196,6 +168,7 @@ import org.polypheny.db.sql.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -3534,8 +3507,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             throw new RuntimeException(e);
         }
         CatalogProcedure procedure = procedureNodes.get();
-        return procedure.getDefinition();
+        // Pass original node here to extract parameters
+        return LogicalProcedureExecution.create(procedure.getDefinition());
     }
+
     /**
      * Converts a SELECT statement's parse tree into a relational expression.
      */

@@ -41,8 +41,15 @@ public class LogicalProcedureExecution extends ProcedureExecution {
     }
 
     @Override
+    public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
+        AlgNode input = inputs.get(0);
+        final AlgOptCluster cluster = input.getCluster();
+        return new LogicalProcedureExecution(cluster, traitSet, input);
+    }
+
+    @Override
     public String algCompareString() {
-        return null;
+        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
     }
 
     @Override

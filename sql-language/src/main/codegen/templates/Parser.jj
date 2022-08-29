@@ -3348,6 +3348,8 @@ SqlNode AtomicRowExpression() :
         LOOKAHEAD(1)
         e = Literal()
     |
+        e = NamedDynamicParam()
+    |
         e = DynamicParam()
     |
         e = BuiltinFunctionCall()
@@ -4180,6 +4182,19 @@ SqlDynamicParam DynamicParam() :
 {
     <HOOK> {
         return new SqlDynamicParam(nDynamicParams++, getPos());
+    }
+}
+
+/**
+ * Parses a named dynamic parameter marker.
+ */
+SqlDynamicParam NamedDynamicParam() :
+{
+    SqlNode name;
+}
+{
+    <COLON>name = SimpleIdentifier() {
+        return new SqlNamedDynamicParam(nDynamicParams++, getPos(), name);
     }
 }
 

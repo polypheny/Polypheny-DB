@@ -205,30 +205,21 @@ public class DdlParserTest extends SqlParserTest {
     }
 
     @Test
-    public void testCreateOrReplaceProcedureDML() {
+    public void testCreateProcedureWithoutArguments() {
         final String sql = "create procedure \"myudf\"\n"
                 + " $ insert into deps values(99, 'B99') $";
         final String expected = "CREATE PROCEDURE `myudf` $ INSERT INTO `DEPS`\n" +
                 "VALUES (ROW(99, 'B99')) $";
         sql( sql ).ok( expected );
     }
-//    @Test
-//    public void testCreatePolyScriptProcedure() {
-//        final String sql = "create procedure \"myudf\"\n"
-//                + " $ \'sql(select * from customers);\' $";
-//        final String expected = "CREATE PROCEDURE `myudf`"
-//                + " $ 'sql(select * from customers);' $";
-//        sql( sql ).ok( expected );
-//    }
-//
-//    @Test
-//    public void testCreatePolyScriptProcedureWithOneArgument() {
-//        final String sql = "create procedure \"myudf\" @id=1\n"
-//                + " $ \'sql(select * from customers);\' $";
-//        final String expected = "CREATE PROCEDURE `myudf` @ ID = 1"
-//                + " $ 'sql(select * from customers);' $";
-//        sql( sql ).ok( expected );
-//    }
+    @Test
+    public void testCreateProcedureWithOneArgument() {
+        final String sql = "create procedure \"myudf\"\n"
+                + " $ insert into myTable values(:id) $";
+        final String expected = "CREATE PROCEDURE `myudf` $ INSERT INTO `MYTABLE`\n" +
+                "VALUES (ROW(ID=>?)) $";
+        sql( sql ).ok( expected );
+    }
 //
 //    @Test
 //    public void testCreatePolyScriptProcedureWithManyArguments() {

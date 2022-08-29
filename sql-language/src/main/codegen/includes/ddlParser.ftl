@@ -498,11 +498,6 @@ SqlCreate SqlCreateProcedure(Span s, boolean replace) :
 {
     <PROCEDURE> ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
-    (Argument(arguments))*
-    (
-        <COMMA>
-        Argument(arguments)
-    )*
     <DOLLAR>
     query = SqlQueryOrDml()
     <DOLLAR>
@@ -516,7 +511,6 @@ private void Argument(SqlNodeList argumentList) :
     final SqlNode argument, variable;
 }
 {
-    <AT_SIGN>
     variable = SimpleIdentifier() { argumentList.add(variable); }
     <EQ>
     argument = Literal() { argumentList.add(argument); }// TODO(nic): How to find out type - even necessary

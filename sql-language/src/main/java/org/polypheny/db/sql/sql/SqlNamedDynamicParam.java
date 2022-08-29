@@ -34,16 +34,16 @@ import org.polypheny.db.util.Litmus;
 public class SqlNamedDynamicParam extends SqlDynamicParam {
 
 
-    private final String name;
+    private final SqlNode name;
 
 
-    public SqlNamedDynamicParam(int index, ParserPos pos, String name ) {
+    public SqlNamedDynamicParam(int index, ParserPos pos, SqlNode name ) {
         super( index, pos );
         this.name = name;
     }
 
     public String getName() {
-        return name;
+        return name.toString();
     }
 
         //TODO(Nic): Add new Enum NAMED_DYNAMIC_PARAM?
@@ -54,7 +54,7 @@ public class SqlNamedDynamicParam extends SqlDynamicParam {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        writer.print( name + "=>?" );
+        writer.print( ":" + name );
         writer.setNeedWhitespace( true );
     }
 
