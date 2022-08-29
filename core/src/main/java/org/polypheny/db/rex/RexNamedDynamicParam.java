@@ -33,80 +33,46 @@
 
 package org.polypheny.db.rex;
 
-
-import java.util.Objects;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 
+import java.util.Objects;
 
 /**
- * Dynamic parameter reference in a row-expression.
+ * Named dynamic parameter reference in a row-expression.
  */
-public class RexDynamicParam extends RexVariable {
-
-    private final long index;
-
+public class RexNamedDynamicParam extends RexDynamicParam {
 
     /**
-     * Creates a dynamic parameter.
+     * Creates a named dynamic parameter.
      *
      * @param type inferred type of parameter
      * @param index 0-based index of dynamic parameter in statement
      */
-    public RexDynamicParam( AlgDataType type, long index ) {
-        super( "?" + index, type );
-        this.index = index;
-    }
-
-    /**
-     * Alternative constructor for the RexNamedDynamicParam subclass
-     * It's marker character is ':' not '?' followd by an index.
-     * @param type inferred type of parameter
-     * @param index 0-based index of dynamic parameter in statement
-     * @param name placeholder to fill in actual value during runtime
-     */
-    public RexDynamicParam( AlgDataType type, long index, String name ) {
-        super( name, type );
-        this.index = index;
+    public RexNamedDynamicParam(AlgDataType type, long index, String name) {
+        super( type, index, ":" + name);
     }
 
 
-    @Override
-    public Kind getKind() {
-        return Kind.DYNAMIC_PARAM;
-    }
-
-
-    public long getIndex() {
-        return index;
-    }
-
-
-    @Override
-    public <R> R accept( RexVisitor<R> visitor ) {
-        return visitor.visitDynamicParam( this );
-    }
-
-
-    @Override
-    public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
-        return visitor.visitDynamicParam( this, arg );
-    }
-
+//    @Override
+//    public Kind getKind() {
+//        return Kind.DYNAMIC_PARAM;
+//    }
+//
 
     @Override
     public boolean equals( Object obj ) {
         return this == obj
-                || obj instanceof RexDynamicParam
-                && digest.equals( ((RexDynamicParam) obj).digest )
-                && type.equals( ((RexDynamicParam) obj).type )
-                && index == ((RexDynamicParam) obj).index;
+                || obj instanceof RexNamedDynamicParam
+                && digest.equals( ((RexNamedDynamicParam) obj).digest )
+                && type.equals( ((RexNamedDynamicParam) obj).type )
+                && getIndex() == ((RexNamedDynamicParam) obj).getIndex()
+                && name.equals(((RexNamedDynamicParam) obj).name);
     }
 
 
     @Override
     public int hashCode() {
-        return Objects.hash( digest, type, index );
+        return Objects.hash( digest, type, getIndex(), name );
     }
 
 }

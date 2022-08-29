@@ -1103,6 +1103,18 @@ public class RexBuilder {
         return new RexDynamicParam( type, index );
     }
 
+    /**
+     * Creates a reference to a named dynamic parameter
+     *
+     * @param type Type of named dynamic parameter
+     * @param index Index of named dynamic parameter
+     * @param name Name of named dynamic parameter
+     * @return Expression referencing named dynamic parameter
+     */
+    public RexNamedDynamicParam makeNamedDynamicParam( AlgDataType type, int index, String name ) {
+        return new RexNamedDynamicParam( type, index, name );
+    }
+
 
     /**
      * Creates a literal whose value is NULL, with a particular type.
