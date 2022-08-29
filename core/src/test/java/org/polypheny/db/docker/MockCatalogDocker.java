@@ -75,6 +75,11 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
+    public Map<Long, AlgNode> getTriggerNodes() {
+        return null;
+    }
+
+    @Override
     public Optional<CatalogProcedure> getProcedure(long databaseId, long schemaId, String tableName) throws UnknownProcedureException {
         throw new UnsupportedOperationException();
     }
