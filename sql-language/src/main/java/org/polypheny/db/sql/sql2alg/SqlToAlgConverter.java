@@ -48,18 +48,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgDecorrelator;
-import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.*;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
-import org.polypheny.db.algebra.AlgFieldTrimmer;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
-import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.JoinConditionType;
@@ -111,7 +101,6 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.validate.ValidatorNamespace;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSamplingParameters;
@@ -168,7 +157,6 @@ import org.polypheny.db.sql.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -2581,15 +2569,20 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
     public RexDynamicParam convertDynamicParam( final SqlDynamicParam dynamicParam ) {
         // REVIEW jvs: dynamic params may be encountered out of order.  Should probably cross-check with the count from the parser at the end and make sure they all got filled in.  Why doesn't List have a resize() method?!?  Make this a utility.
-        // TODO(Nic): Type check for DynamicNamedParameter and call paramter mapping saved in Catalog
         while ( dynamicParam.getIndex() >= dynamicParamSqlNodes.size() ) {
             dynamicParamSqlNodes.add( null );
         }
-
         dynamicParamSqlNodes.set(
                 dynamicParam.getIndex(),
                 dynamicParam );
-        // TODO(NIC): New method for namedDynamicParam
+
+        if(dynamicParam instanceof SqlNamedDynamicParam) {
+            SqlNamedDynamicParam namedParam = (SqlNamedDynamicParam) dynamicParam;
+            return rexBuilder.makeNamedDynamicParam(
+                getDynamicParamType( namedParam.getIndex() ),
+                    namedParam.getIndex(),
+                    namedParam.getName());
+        }
         return rexBuilder.makeDynamicParam(
                 getDynamicParamType( dynamicParam.getIndex() ),
                 dynamicParam.getIndex() );
@@ -3501,14 +3494,34 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private AlgNode convertProcedure(SqlCall query) {
         SqlExecuteProcedure executeProcedure = (SqlExecuteProcedure) query;
         Optional<CatalogProcedure> procedureNodes;
+        convertArguments(executeProcedure.getArgumentList());
         try {
             procedureNodes = Catalog.getInstance().getProcedure(executeProcedure.getKey());
         } catch (UnknownProcedureException e) {
             throw new RuntimeException(e);
         }
+        /*
+        // error when there aren't enough arguments for all namedArguments
+        // assert algNode.getParameters().size() == procedure.getArguments().size();
+        List<AlgNode> inputs = new ArrayList<>();
+        for(NamedDynamicArgument parameter : algNode.getParameters) {
+            var argument = procedure.get(parameter);
+            if(argument == null) continue;
+            inputs.add(argument);
+        }
+        // create new instance with replaced parameters
+        algNode.copy(algNode.getTraitset(), inputs);
+         */
         CatalogProcedure procedure = procedureNodes.get();
-        // Pass original node here to extract parameters
-        return LogicalProcedureExecution.create(procedure.getDefinition());
+        AlgNode algNode = procedure.getDefinition();
+        return LogicalProcedureExecution.create(algNode);
+    }
+
+    private AlgNode convertArguments(List<SqlNode> nodes) {
+        for(SqlNode node : nodes) {
+            // Convert into
+        }
+        return null;
     }
 
     /**

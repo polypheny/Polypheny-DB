@@ -45,6 +45,8 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
 
     private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator("EXEC PROCEDURE", Kind.PROCEDURE_EXEC);
     private final List<SqlNode> argumentList;
+
+
     private final Map<String, Object> arguments = new HashMap<>();
 
     public SqlExecuteProcedure(ParserPos pos, SqlIdentifier identifier, List<SqlNode> argumentList) {
@@ -87,6 +89,14 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
     @Override
     public Operator getOperator() {
         return OPERATOR;
+    }
+
+    public Map<String, Object> getArguments() {
+        return arguments;
+    }
+
+    public List<SqlNode> getArgumentList() {
+        return argumentList;
     }
 
     public Object[] getKey() {
