@@ -3494,34 +3494,16 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private AlgNode convertProcedure(SqlCall query) {
         SqlExecuteProcedure executeProcedure = (SqlExecuteProcedure) query;
         Optional<CatalogProcedure> procedureNodes;
-        convertArguments(executeProcedure.getArgumentList());
         try {
             procedureNodes = Catalog.getInstance().getProcedure(executeProcedure.getKey());
         } catch (UnknownProcedureException e) {
             throw new RuntimeException(e);
         }
-        /*
         // error when there aren't enough arguments for all namedArguments
         // assert algNode.getParameters().size() == procedure.getArguments().size();
-        List<AlgNode> inputs = new ArrayList<>();
-        for(NamedDynamicArgument parameter : algNode.getParameters) {
-            var argument = procedure.get(parameter);
-            if(argument == null) continue;
-            inputs.add(argument);
-        }
-        // create new instance with replaced parameters
-        algNode.copy(algNode.getTraitset(), inputs);
-         */
         CatalogProcedure procedure = procedureNodes.get();
         AlgNode algNode = procedure.getDefinition();
-        return LogicalProcedureExecution.create(algNode);
-    }
-
-    private AlgNode convertArguments(List<SqlNode> nodes) {
-        for(SqlNode node : nodes) {
-            // Convert into
-        }
-        return null;
+        return LogicalProcedureExecution.create(algNode, executeProcedure.getArguments());
     }
 
     /**

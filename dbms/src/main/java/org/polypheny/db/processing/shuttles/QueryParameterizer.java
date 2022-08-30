@@ -25,32 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.*;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexCorrelVariable;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexLocalRef;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexOver;
-import org.polypheny.db.rex.RexPatternFieldRef;
-import org.polypheny.db.rex.RexRangeRef;
-import org.polypheny.db.rex.RexSubQuery;
-import org.polypheny.db.rex.RexTableInputRef;
-import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.rex.*;
+import org.polypheny.db.sql.sql.ddl.SqlExecuteProcedure;
 import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -169,6 +154,43 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     inputs,
                     ((LogicalModifyCollect) other).all
             );
+        }
+        else if (other instanceof LogicalProcedureExecution){
+            LogicalProcedureExecution execution = ((LogicalProcedureExecution) other);
+            LogicalTableModify logicalTableModify = (LogicalTableModify) execution.getInput();
+            LogicalProject logicalProject = (LogicalProject) logicalTableModify.getInput();
+            List<RexNode> expressions = logicalProject.getChildExps();
+            List<RexNode> projects = new ArrayList<>();
+            HashMap<Integer, Integer> idxMapping = new HashMap<>();
+            LogicalValues logicalValues = (LogicalValues) logicalProject.getInput();
+            for ( RexNode node : expressions) {
+                int i = 0;
+                if(!(node instanceof RexNamedDynamicParam)) {
+                    continue;
+                }
+                RexNamedDynamicParam dynamicParam = (RexNamedDynamicParam) node;
+                if(!execution.hasMapping(dynamicParam.getName())) {
+                    continue;
+                }
+                int idx;
+                if ( !idxMapping.containsKey( i ) ) {
+                    idx = index.getAndIncrement();
+                    idxMapping.put( i, idx );
+                } else {
+                    idx = idxMapping.get( i );
+                }
+                AlgDataType type = logicalProject.getRowType().getFieldList().get( i ).getValue();
+                if ( !values.containsKey( idx ) ) {
+                    types.add( type );
+                    values.put( idx, new ArrayList<>( ((LogicalValues) logicalProject.getInput()).getTuples().size() ) );
+                }
+                Object value = execution.getMapping(dynamicParam.getName());
+                // TODO(nic): Get proper type see RexLiteral#queryParameterize
+                values.get( idx ).add( new ParameterValue( idx, type, value ) );
+                i++;
+            }
+            // return wrapped AlgNode from LogicalProcedureExecution
+            return logicalTableModify;
         } else {
             return super.visit( other );
         }
@@ -199,6 +221,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         int i = index.getAndIncrement();
         values.put( i, Collections.singletonList( new ParameterValue( i, literal.getType(), literal.getValueForQueryParameterizer() ) ) );
         types.add( literal.getType() );
+
         return new RexDynamicParam( literal.getType(), i );
     }
 

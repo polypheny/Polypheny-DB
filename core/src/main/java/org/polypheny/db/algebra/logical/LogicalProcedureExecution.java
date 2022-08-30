@@ -23,28 +23,33 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class LogicalProcedureExecution extends ProcedureExecution {
 
-    protected LogicalProcedureExecution(AlgOptCluster cluster, AlgTraitSet traits, AlgNode input) {
+    private Map<String, Object> parameters;
+
+    protected LogicalProcedureExecution(AlgOptCluster cluster, AlgTraitSet traits, Map<String, Object> parameters, AlgNode input) {
         super(cluster, traits, input);
+        this.parameters = parameters;
     }
 
     /**
      * Creates a LogicalProcedureExecution.
      */
-    public static LogicalProcedureExecution create(AlgNode input) {
+    public static LogicalProcedureExecution create(AlgNode input, Map<String, Object> parameters) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalProcedureExecution( cluster, traitSet, input );
+        return new LogicalProcedureExecution( cluster, traitSet, parameters, input );
     }
 
     @Override
     public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
         AlgNode input = inputs.get(0);
         final AlgOptCluster cluster = input.getCluster();
-        return new LogicalProcedureExecution(cluster, traitSet, input);
+        return new LogicalProcedureExecution(cluster, traitSet, Collections.unmodifiableMap(this.parameters), input);
     }
 
     @Override
@@ -75,5 +80,13 @@ public class LogicalProcedureExecution extends ProcedureExecution {
     @Override
     public Catalog.SchemaType getModel() {
         return super.getModel();
+    }
+
+    public boolean hasMapping(String key) {
+        return parameters.containsKey(key);
+    }
+
+    public Object getMapping(String key) {
+        return parameters.get(key);
     }
 }
