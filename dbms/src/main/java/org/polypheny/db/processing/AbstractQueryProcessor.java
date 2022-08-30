@@ -1102,8 +1102,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 .simplify();
 
         final Program program = Programs.standard();
-        if(logicalRoot.alg instanceof LogicalTriggerExecution) {
-            return logicalRoot.alg;
+        // return wrapped AlgNode, there is no implementation for Trigger or Procedures
+        if(logicalRoot.alg instanceof LogicalTriggerExecution || logicalRoot.alg instanceof LogicalProcedureExecution) {
+            return logicalRoot.alg.getInput(0);
         }
         final AlgNode rootAlg4 = program.run( getPlanner(), logicalPlan, desiredTraits );
 
