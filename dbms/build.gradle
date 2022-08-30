@@ -44,7 +44,6 @@ dependencies {
     implementation project(":avatica-interface")
     implementation project(":http-interface")
     implementation project(":rest-interface")
-    implementation project(":statistic")
     implementation project(":explore-by-example")
     implementation project(":monitoring")
 
