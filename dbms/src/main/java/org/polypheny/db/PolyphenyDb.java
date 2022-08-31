@@ -47,6 +47,7 @@ import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
+import org.polypheny.db.extraction.SchemaExtractor;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
@@ -392,6 +393,10 @@ public class PolyphenyDb {
         // Start monitoring service
         MonitoringServiceProvider.resetRepository = resetCatalog;
         MonitoringServiceProvider.getInstance();
+
+        // Initialize schema extractor
+        SchemaExtractor extractor = SchemaExtractor.getInstance();
+        extractor.setTransactionManager( transactionManager );
 
         // Add icon to system tray
         if ( trayMenu ) {
