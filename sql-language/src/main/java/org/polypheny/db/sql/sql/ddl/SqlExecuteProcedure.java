@@ -55,13 +55,14 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
         this.argumentList = argumentList;
         for (SqlNode sqlNode : argumentList) {
             SqlBasicCall sqlBasicCall = (SqlBasicCall) sqlNode;
-            SqlNode value = sqlBasicCall.operand(1);
+            SqlNode value = sqlBasicCall.operand(0);
+            SqlNode key = sqlBasicCall.operand(1);
             if(value instanceof SqlNumericLiteral) {
                 var numericValue = (SqlNumericLiteral) value;
                 BigDecimal bigDecimal = numericValue.bigDecimalValue();
-                arguments.put(sqlBasicCall.operand(0).toString(), bigDecimal.longValue());
+                arguments.put(key.toString(), bigDecimal.longValue());
             } else {
-                arguments.put(sqlBasicCall.operand(0).toString(), value.toString());
+                arguments.put(key.toString(), value.toString());
             }
         }
     }
