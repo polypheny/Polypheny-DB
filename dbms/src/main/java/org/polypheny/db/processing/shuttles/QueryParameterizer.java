@@ -160,16 +160,14 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             LogicalTableModify logicalTableModify = (LogicalTableModify) execution.getInput();
             LogicalProject logicalProject = (LogicalProject) logicalTableModify.getInput();
             List<RexNode> expressions = logicalProject.getChildExps();
-            List<RexNode> projects = new ArrayList<>();
             HashMap<Integer, Integer> idxMapping = new HashMap<>();
-            LogicalValues logicalValues = (LogicalValues) logicalProject.getInput();
             for ( RexNode node : expressions) {
                 int i = 0;
                 if(!(node instanceof RexNamedDynamicParam)) {
                     continue;
                 }
                 RexNamedDynamicParam dynamicParam = (RexNamedDynamicParam) node;
-                if(!execution.hasMapping(dynamicParam.getName())) {
+                if(!execution.hasMapping(dynamicParam.getName().substring(1))) {
                     continue;
                 }
                 int idx;
