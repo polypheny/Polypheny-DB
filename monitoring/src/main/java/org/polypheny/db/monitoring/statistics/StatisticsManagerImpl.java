@@ -1151,8 +1151,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         calls.getNumberOfUpdates() + 1 ) );
                 tableStatistic.put( tableId, statisticTable );
                 break;
-            case "EXEC_PROCEDURE":
-                // EXEC PROCEDURE sets the wrong Kind, this is to fix the exception
+            case "PROCEDURE_EXEC":
+                // PROCEDURE_EXEC sets the wrong Kind, this is to fix the exception
                 break;
             default:
                 log.error( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
