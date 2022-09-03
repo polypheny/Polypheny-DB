@@ -17,14 +17,15 @@
 package org.polypheny.db.algebra.logical;
 
 
+import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.ModifyCollect;
 import org.polypheny.db.algebra.core.TriggerExecution;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -46,10 +47,25 @@ public final class LogicalTriggerExecution extends TriggerExecution {
     /**
      * Creates a LogicalTriggerExecution.
      */
-    public static LogicalTriggerExecution create(List<AlgNode> inputs, boolean all ) {
-        final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
+    public static LogicalTriggerExecution create(AlgOptCluster cluster, List<AlgNode> inputs, boolean all ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalTriggerExecution( cluster, traitSet, inputs, all );
+        List<AlgNode> copiedInputs = copyInputsWithCluster(cluster, inputs);
+        return new LogicalTriggerExecution( cluster, traitSet, copiedInputs, all );
+    }
+
+    private static List<AlgNode> copyInputsWithCluster(AlgOptCluster cluster, List<AlgNode> inputs) {
+        List<AlgNode> inputCopy = new ArrayList<>();
+        for(AlgNode node : inputs) {
+            AlgNode nodeCopy = overwriteCluster(cluster, node);
+            inputCopy.add(nodeCopy);
+        }
+        return inputCopy;
+    }
+
+    private static AlgNode overwriteCluster(AlgOptCluster cluster, AlgNode node) {
+        AlgNode nodeCopy = node.copy(node.getTraitSet(), node.getInputs());
+        ((AbstractAlgNode) nodeCopy).setCluster(cluster);
+        return nodeCopy;
     }
 
 

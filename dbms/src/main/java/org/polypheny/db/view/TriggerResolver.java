@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogTrigger;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.processing.SqlProcessorFacade;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
@@ -39,13 +40,12 @@ public class TriggerResolver {
     private static final Pattern NAMED_ARGUMENTS_PATTERN = Pattern.compile("@(\\w+)=");
     private final SqlProcessorFacade sqlProcessor = new SqlProcessorFacade(new SqlProcessorImpl());
 
-    public LogicalTriggerExecution lookupTriggers(Statement statement, CatalogTable catalogTable) {
+    public LogicalTriggerExecution lookupTriggers(AlgOptCluster cluster, CatalogTable catalogTable) {
         List<AlgNode> algNodes = searchTriggers(catalogTable)
                 .stream()
                 .map(CatalogTrigger::getDefinition)
                 .collect(Collectors.toList());
-        // TODO(Nic): Pass statement, so TriggerExecution can prepare datacontext
-        return LogicalTriggerExecution.create(algNodes, true);
+        return LogicalTriggerExecution.create(cluster, algNodes, true);
     }
 
 
