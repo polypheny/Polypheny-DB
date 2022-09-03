@@ -237,7 +237,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     @Override
     public Collection getModifiableCollection() {
-        return new ArrayList<>();
+        throw new RuntimeException( "getModifiableCollection() is not implemented for JDBC adapter!" );
     }
 
 
