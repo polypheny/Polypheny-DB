@@ -40,14 +40,14 @@ public class LogicalProcedureExecution extends ProcedureExecution {
      * Creates a LogicalProcedureExecution.
      */
     public static LogicalProcedureExecution create(AlgNode input, Map<String, Object> parameters) {
-        final AlgOptCluster cluster = input.getCluster();
+        AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalProcedureExecution( cluster, traitSet, parameters, input );
     }
 
     @Override
     public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
-        AlgNode input = inputs.get(0);
+        final AlgNode input = inputs.get(0);
         final AlgOptCluster cluster = input.getCluster();
         return new LogicalProcedureExecution(cluster, traitSet, Collections.unmodifiableMap(this.parameters), input);
     }

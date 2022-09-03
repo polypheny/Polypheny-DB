@@ -3503,6 +3503,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // assert algNode.getParameters().size() == procedure.getArguments().size();
         CatalogProcedure procedure = procedureNodes.get();
         AlgNode algNode = procedure.getDefinition();
+        ((AbstractAlgNode) algNode).setCluster( cluster );
         return LogicalProcedureExecution.create(algNode, executeProcedure.getArguments());
     }
 
