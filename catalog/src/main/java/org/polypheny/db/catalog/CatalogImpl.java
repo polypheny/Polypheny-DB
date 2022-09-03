@@ -887,12 +887,15 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) {
-        long id = procedureIdBuilder.getAndIncrement();
-        CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, id, queryString, arguments);
+    public void updateProcedure(Long schemaId, String procedureName, Long databaseId, AlgNode query, String queryString, List<Pair<String, Object>> arguments) throws UnknownProcedureException {
+        Object[] key = {databaseId, schemaId, procedureName};
+        CatalogProcedure currentProcedure = procedureNames.get(key);
+        if(currentProcedure == null) {
+            throw new UnknownProcedureException(schemaId, procedureName);
+        }
+        CatalogProcedure procedure = new CatalogProcedure(schemaId, procedureName, databaseId, currentProcedure.getId(), queryString, arguments);
         synchronized (this) {
             procedures.replace(procedure.getProcedureId(), procedure);
-            Object[] key = {databaseId, schemaId, procedure.getName()};
             procedureNames.replace(key, procedure);
             procedureNodes.replace( procedure.getId(), query );
         }

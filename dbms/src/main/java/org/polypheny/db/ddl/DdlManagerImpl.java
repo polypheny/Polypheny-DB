@@ -1719,7 +1719,7 @@ public class DdlManagerImpl extends DdlManager {
             } else {
                 catalog.createProcedure(schemaId, procedureName, databaseId, definition, queryString, arguments);
             }
-        } catch (ProcedureAlreadyExistsException e) {
+        } catch (ProcedureAlreadyExistsException | UnknownProcedureException e) {
             throw new RuntimeException(e);
         }
     }
