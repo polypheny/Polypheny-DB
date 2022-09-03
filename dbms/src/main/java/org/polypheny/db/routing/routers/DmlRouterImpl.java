@@ -95,7 +95,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         case MATERIALIZED_VIEW:
                         case VIEW:
                             TriggerResolver triggerResolver = new TriggerResolver();
-                            return triggerResolver.lookupTriggers(statement, catalogTable);
+                            final LogicalTriggerExecution logicalTriggerExecution = triggerResolver.lookupTriggers(cluster, catalogTable);
+                            List<AlgNode> routedNodes = new ArrayList<>();
+                            for(AlgNode triggerNode : logicalTriggerExecution.getInputs()) {
+                                final AlgNode routedNode = routeDml(triggerNode, statement);
+                                routedNodes.add(routedNode);
+                            }
+                            return logicalTriggerExecution.copy(logicalTriggerExecution.getTraitSet(), routedNodes);
 
                         default:
                             throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );

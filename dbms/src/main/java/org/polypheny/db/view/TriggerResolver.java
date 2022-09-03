@@ -16,8 +16,10 @@
 
 package org.polypheny.db.view;
 
+import lombok.extern.java.Log;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.LogicalProcedureExecution;
 import org.polypheny.db.algebra.logical.LogicalTriggerExecution;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
@@ -44,8 +46,16 @@ public class TriggerResolver {
         List<AlgNode> algNodes = searchTriggers(catalogTable)
                 .stream()
                 .map(CatalogTrigger::getDefinition)
+                // TODO(nic): Watch out, this removes all DML queries from the list!
+                .filter(node -> node instanceof LogicalProcedureExecution)
+                .map(node -> (LogicalProcedureExecution) node)
+                .map(this::logicalProcedureToTableModify)
                 .collect(Collectors.toList());
         return LogicalTriggerExecution.create(cluster, algNodes, true);
+    }
+
+    private AlgNode logicalProcedureToTableModify(LogicalProcedureExecution logicalProcedure) {
+        return logicalProcedure.getInput();
     }
 
 
