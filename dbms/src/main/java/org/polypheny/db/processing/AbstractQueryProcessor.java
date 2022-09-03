@@ -247,12 +247,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<PolyResult> results = new ArrayList<>();
         List<String> generatedCodes = new ArrayList<>();
 
-
-        // TODO(NIC): Check for PlaceholderNodes
-        //
         // Check for view
         if ( logicalRoot.alg.hasView() ) {
             logicalRoot = logicalRoot.tryExpandView();
+        }
+
+        // TODO(NIC): Check for PlaceholderNodes
+        // parameterize and rewire reference to logicalRoot
+        if(logicalRoot.alg instanceof LogicalProcedureExecution) {
+            Pair<AlgRoot, AlgDataType> parameterized = parameterize( logicalRoot, parameterRowType );
+            // move unwrap from QP to here
+            logicalRoot = parameterized.left;
         }
 
         logicalRoot.alg.accept( new DataModelShuttle() );
