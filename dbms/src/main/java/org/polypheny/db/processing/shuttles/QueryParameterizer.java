@@ -158,6 +158,9 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         else if (other instanceof LogicalProcedureExecution){
             LogicalProcedureExecution execution = ((LogicalProcedureExecution) other);
             LogicalTableModify logicalTableModify = (LogicalTableModify) execution.getInput();
+            if (!(logicalTableModify.getInput() instanceof LogicalProject)) {
+                return logicalTableModify;
+            }
             LogicalProject logicalProject = (LogicalProject) logicalTableModify.getInput();
             List<RexNode> expressions = logicalProject.getChildExps();
             HashMap<Integer, Integer> idxMapping = new HashMap<>();
