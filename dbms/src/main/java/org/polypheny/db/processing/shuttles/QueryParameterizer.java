@@ -182,7 +182,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     types.add( type );
                     values.put( idx, new ArrayList<>( ((LogicalValues) logicalProject.getInput()).getTuples().size() ) );
                 }
-                Object value = execution.getMapping(dynamicParam.getName());
+                Object value = execution.getMapping(dynamicParam.getName().substring(1));
                 // TODO(nic): Get proper type see RexLiteral#queryParameterize
                 values.get( idx ).add( new ParameterValue( idx, type, value ) );
                 i++;
