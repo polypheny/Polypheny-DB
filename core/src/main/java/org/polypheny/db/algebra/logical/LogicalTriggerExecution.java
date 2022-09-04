@@ -58,14 +58,23 @@ public final class LogicalTriggerExecution extends TriggerExecution {
     private static List<AlgNode> copyInputsWithCluster(AlgOptCluster cluster, List<AlgNode> inputs) {
         List<AlgNode> inputCopy = new ArrayList<>();
         for(AlgNode node : inputs) {
-            AlgNode nodeCopy = overwriteCluster(cluster, node);
+            List<AlgNode> subNodeCopies = new ArrayList<>();
+            for(AlgNode subNode : node.getInputs()) {
+                AlgNode subNodeCopy = overwriteCluster(cluster, subNode);
+                subNodeCopies.add(subNodeCopy);
+            }
+            AlgNode nodeCopy = overwriteCluster(cluster, node, subNodeCopies);
             inputCopy.add(nodeCopy);
         }
         return inputCopy;
     }
 
     private static AlgNode overwriteCluster(AlgOptCluster cluster, AlgNode node) {
-        AlgNode nodeCopy = node.copy(node.getTraitSet(), node.getInputs());
+        return overwriteCluster(cluster, node, node.getInputs());
+    }
+
+    private static AlgNode overwriteCluster(AlgOptCluster cluster, AlgNode node, List<AlgNode> inputs) {
+        AlgNode nodeCopy = node.copy(node.getTraitSet(), inputs);
         ((AbstractAlgNode) nodeCopy).setCluster(cluster);
         return nodeCopy;
     }
