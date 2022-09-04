@@ -1151,6 +1151,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         calls.getNumberOfUpdates() + 1 ) );
                 tableStatistic.put( tableId, statisticTable );
                 break;
+            //TODO(nic): Still necessary if Exec Procedure launched form console? Trigger uses correct Kind
             case "PROCEDURE_EXEC":
                 // PROCEDURE_EXEC sets the wrong Kind, this is to fix the exception
                 break;

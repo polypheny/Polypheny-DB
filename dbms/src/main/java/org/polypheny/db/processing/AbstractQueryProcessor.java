@@ -294,8 +294,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 if(catalogTable.tableType == Catalog.TableType.VIEW) {
                     TriggerResolver triggerResolver = new TriggerResolver();
                     final LogicalTriggerExecution logicalTriggerExecution = triggerResolver.lookupTriggers(logicalRoot);
-                    // TODO(nic): Replace PROCEDURE_EXEC with logicalRoot.kind
-                    logicalRoot = AlgRoot.of(logicalTriggerExecution, Kind.PROCEDURE_EXEC);
+                    logicalRoot = AlgRoot.of(logicalTriggerExecution, logicalRoot.kind);
                 }
             }
         }
