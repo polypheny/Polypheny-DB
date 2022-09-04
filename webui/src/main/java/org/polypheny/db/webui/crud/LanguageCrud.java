@@ -479,8 +479,8 @@ public class LanguageCrud {
         boolean hasMoreRows = result.hasMoreRows();
 
         CatalogTable catalogTable = null;
-        if ( request.tableId != null ) {
-            String[] t = request.tableId.split( "\\." );
+        if ( request.tableName != null ) {
+            String[] t = request.tableName.split( "\\." );
             try {
                 catalogTable = Catalog.getInstance().getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
             } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {

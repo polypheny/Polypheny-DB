@@ -46,9 +46,9 @@ public class UIRequest {
     public String requestType;
 
     /**
-     * The id of the table the data should be fetched from
+     * The name of the table the data should be fetched from
      */
-    public String tableId;
+    public String tableName;
 
     /**
      * Information about the pagination,
@@ -89,7 +89,7 @@ public class UIRequest {
                     requestType = in.nextString();
                     break;
                 case "tableId":
-                    tableId = in.nextString();
+                    tableName = in.nextString();
                     break;
                 case "currentPage":
                     currentPage = in.nextInt();
@@ -114,16 +114,16 @@ public class UIRequest {
 
 
     public String getSchemaName() {
-        if ( tableId != null ) {
-            return tableId.split( "\\." )[0];
+        if ( tableName != null ) {
+            return tableName.split( "\\." )[0];
         }
         return null;
     }
 
 
-    public String getTableId() {
-        if ( tableId != null ) {
-            return tableId.split( "\\." )[1];
+    public String getTableName() {
+        if ( tableName != null ) {
+            return tableName.split( "\\." )[1];
         }
         return null;
     }
@@ -173,7 +173,7 @@ public class UIRequest {
                 out.name( "requestType" );
                 out.value( value.requestType );
                 out.name( "tableId" );
-                out.value( value.tableId);
+                out.value( value.tableName);
                 out.name( "currentPage" );
                 out.value( value.currentPage );
                 out.name( "data" );
