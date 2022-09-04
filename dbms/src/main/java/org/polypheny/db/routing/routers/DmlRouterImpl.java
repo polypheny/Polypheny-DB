@@ -77,7 +77,15 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     @Override
     public AlgNode routeDml( AlgNode node, Statement statement ) {
         AlgOptCluster cluster = node.getCluster();
-
+        if(node instanceof LogicalTriggerExecution) {
+            LogicalTriggerExecution triggerExecution = (LogicalTriggerExecution) node;
+            List<AlgNode> routedNodes = new ArrayList<>();
+            for(AlgNode triggerNode : triggerExecution.getInputs()) {
+                final AlgNode routedNode = routeDml(triggerNode, statement);
+                routedNodes.add(routedNode);
+            }
+            return triggerExecution.copy(triggerExecution.getTraitSet(), routedNodes);
+        }
         if ( node.getTable() != null ) {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
@@ -94,15 +102,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
                         case MATERIALIZED_VIEW:
                         case VIEW:
-                            TriggerResolver triggerResolver = new TriggerResolver();
-                            final LogicalTriggerExecution logicalTriggerExecution = triggerResolver.lookupTriggers(cluster, catalogTable);
-                            List<AlgNode> routedNodes = new ArrayList<>();
-                            for(AlgNode triggerNode : logicalTriggerExecution.getInputs()) {
-                                final AlgNode routedNode = routeDml(triggerNode, statement);
-                                routedNodes.add(routedNode);
-                            }
-                            return logicalTriggerExecution.copy(logicalTriggerExecution.getTraitSet(), routedNodes);
-
+                            throw new RuntimeException( "Writing operations aren't supported." );
                         default:
                             throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                     }

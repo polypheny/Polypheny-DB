@@ -937,6 +937,11 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
+    public List<CatalogTrigger> getTriggers() {
+            return List.copyOf(triggers.getValues());
+    }
+
+    @Override
     public List<CatalogTrigger> getTriggers(String schemaName, String tableName) {
         return List.copyOf(triggers.values()
                 .stream()

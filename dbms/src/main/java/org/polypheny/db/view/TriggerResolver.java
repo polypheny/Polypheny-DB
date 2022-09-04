@@ -16,16 +16,18 @@
 
 package org.polypheny.db.view;
 
-import lombok.extern.java.Log;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.logical.LogicalProcedureExecution;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTriggerExecution;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogTrigger;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.processing.SqlProcessorFacade;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
@@ -39,11 +41,21 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class TriggerResolver {
-    private static final Pattern NAMED_ARGUMENTS_PATTERN = Pattern.compile("@(\\w+)=");
-    private final SqlProcessorFacade sqlProcessor = new SqlProcessorFacade(new SqlProcessorImpl());
 
-    public LogicalTriggerExecution lookupTriggers(AlgOptCluster cluster, CatalogTable catalogTable) {
-        List<AlgNode> algNodes = searchTriggers(catalogTable)
+    private AlgNode logicalProcedureToTableModify(LogicalProcedureExecution logicalProcedure) {
+        return logicalProcedure.getInput();
+    }
+
+    private List<CatalogTrigger> searchTriggers(Long tableId){
+        return Catalog.getInstance()
+                .getTriggers()
+                .stream().filter(trigger -> trigger.getTableId() == tableId)
+                .collect(Collectors.toList());
+
+    }
+    public LogicalTriggerExecution lookupTriggers(AlgRoot logicalRoot) {
+        Long tableId = logicalRoot.alg.getTable().getTable().getTableId();
+        List<AlgNode> algNodes = searchTriggers(tableId)
                 .stream()
                 .map(CatalogTrigger::getDefinition)
                 // TODO(nic): Watch out, this removes all DML queries from the list!
@@ -51,88 +63,6 @@ public class TriggerResolver {
                 .map(node -> (LogicalProcedureExecution) node)
                 .map(this::logicalProcedureToTableModify)
                 .collect(Collectors.toList());
-        return LogicalTriggerExecution.create(cluster, algNodes, true);
+        return LogicalTriggerExecution.create(logicalRoot.alg.getCluster(), (LogicalTableModify) logicalRoot.alg, algNodes, true);
     }
-
-    private AlgNode logicalProcedureToTableModify(LogicalProcedureExecution logicalProcedure) {
-        return logicalProcedure.getInput();
-    }
-
-
-
-    public void runTriggers(AlgNode node, Statement statement, CatalogTable catalogTable) {
-        List<CatalogTrigger> triggers = Catalog.getInstance()
-                .getTriggers(catalogTable.schemaId)
-                // TODO(nic): Filter for event (insert, update, delete)
-                .stream().filter(trigger -> trigger.getTableId() == catalogTable.id).collect(Collectors.toList());
-        // TODO(Nic): Move this logic to TriggerExecution
-        QueryParameterizer queryParameterizer = extractParameters(node);
-        populateDatacontext(statement, queryParameterizer);
-        for (CatalogTrigger trigger : triggers) {
-            String unquoted = trigger.getQuery().substring(1, trigger.getQuery().length() - 2); // remove quotes and ;
-            String replaced = insertParameters(statement.getDataContext(), unquoted);
-            // TODO(nic): Run query processor based on query type
-            sqlProcessor.runSql(replaced, statement);
-        }
-    }
-
-    private List<CatalogTrigger> searchTriggers(CatalogTable catalogTable){
-        return Catalog.getInstance()
-                .getTriggers(catalogTable.schemaId)
-                .stream().filter(trigger -> trigger.getTableId() == catalogTable.id)
-                .collect(Collectors.toList());
-
-    }
-
-    private String insertParameters(DataContext dataContext, String query) {
-        List<String> namedArguments = parseNamedArguments(query);
-        return parameterize(namedArguments, query, dataContext);
-    }
-
-    private List<String> parseNamedArguments(String query) {
-        List<String> namedArguments = new ArrayList<>();
-        final Matcher matcher = NAMED_ARGUMENTS_PATTERN.matcher(query);
-        while (matcher.find()) {
-            String argument = matcher.group(0);
-            namedArguments.add(argument);
-        }
-        return namedArguments;
-    }
-
-    private String parameterize(List<String> arguments, String query, DataContext dataContext) {
-        String parameterizedQuery = query;
-        Map<Long, Object> dataContextValues = dataContext.getParameterValues().get(0);
-        for(int index = 1; index <= arguments.size(); index++) {
-            Object parameterValue = dataContextValues.get(Long.valueOf(index)); // boxing for map keys access
-            String parameter = arguments.get(index - 1); // dataContext is 1-based
-            parameterizedQuery = replaceParameter(parameterizedQuery, parameter, parameterValue);
-        }
-        return parameterizedQuery;
-    }
-
-    private String replaceParameter(String query, String parameter, Object parameterValue) {
-        String replacedParameter = parameter + parameterValue.toString();
-        return query.replace(parameter, replacedParameter);
-    }
-
-    private QueryParameterizer extractParameters(AlgNode node) {
-        // Duplicated code from AQP#parameterize
-        List<AlgDataType> parameterRowTypeList = new ArrayList<>();
-        node.getRowType().getFieldList().forEach( algDataTypeField -> parameterRowTypeList.add( algDataTypeField.getType() ) );
-        QueryParameterizer queryParameterizer = new QueryParameterizer( node.getRowType().getFieldCount(), parameterRowTypeList );
-        AlgNode parameterized = node.accept( queryParameterizer );
-        List<AlgDataType> types = queryParameterizer.getTypes();
-        return queryParameterizer;
-    }
-
-    private void populateDatacontext(Statement statement, QueryParameterizer queryParameterizer) {
-        for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
-            List<Object> o = new ArrayList<>();
-            for ( DataContext.ParameterValue v : values ) {
-                o.add( v.getValue() );
-            }
-            statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
-        }
-    }
-
 }

@@ -60,6 +60,7 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.*;
@@ -138,6 +139,7 @@ import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManager.TableUpdateVisitor;
+import org.polypheny.db.view.TriggerResolver;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 
@@ -252,8 +254,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             logicalRoot = logicalRoot.tryExpandView();
         }
 
-        // TODO(NIC): Check for PlaceholderNodes
-        // parameterize and rewire reference to logicalRoot
         if(logicalRoot.alg instanceof LogicalProcedureExecution) {
             Pair<AlgRoot, AlgDataType> parameterized = parameterize( logicalRoot, parameterRowType );
             // move unwrap from QP to here
@@ -283,6 +283,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Expand Views" );
         }
+
+        // Check for Triggers with logicalRoot. Access logicalRoot.alg.table.table.tableId
+        TriggerResolver triggerResolver = new TriggerResolver();
+        final LogicalTriggerExecution logicalTriggerExecution = triggerResolver.lookupTriggers(logicalRoot);
+        logicalRoot = AlgRoot.of(logicalTriggerExecution, Kind.PROCEDURE_EXEC);
 
         // Check if the relRoot includes Views or Materialized Views and replaces what necessary
         // View: replace LogicalViewTableScan with underlying information
@@ -987,6 +992,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, statement, queryInformation );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryClass() ) );
+        } else if ( logicalRoot.alg instanceof LogicalTriggerExecution ) {
+            LogicalTriggerExecution triggerExecution = (LogicalTriggerExecution) logicalRoot.alg;
+            ArrayList<AlgNode> routedNodes = new ArrayList<>();
+            for(AlgNode node : logicalRoot.alg.getInputs()) {
+                AlgNode routedNode = dmlRouter.routeDml(node, statement);
+                routedNodes.add(routedNode);
+            }
+            SetOp routedTriggerExecutions = triggerExecution.copy(triggerExecution.getTraitSet(), routedNodes);
+            return Lists.newArrayList( new ProposedRoutingPlanImpl(routedTriggerExecutions, logicalRoot, queryInformation.getQueryClass() ) );
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
             if ( statement.getTransaction().isAnalyze() ) {

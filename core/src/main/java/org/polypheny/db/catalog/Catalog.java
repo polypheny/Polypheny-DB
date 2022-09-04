@@ -1571,6 +1571,8 @@ public abstract class Catalog {
 
     public abstract List<CatalogTrigger> getTriggers(Long schemaId);
 
+    public abstract List<CatalogTrigger> getTriggers();
+
     public abstract List<CatalogTrigger> getTriggers(String schemaName, String tableName);
 
     public abstract Map<Long, AlgNode> getTriggerNodes();

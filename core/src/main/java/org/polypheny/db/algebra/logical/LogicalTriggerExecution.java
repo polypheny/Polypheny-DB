@@ -34,23 +34,25 @@ import java.util.List;
  */
 public final class LogicalTriggerExecution extends TriggerExecution {
 
+    private final LogicalTableModify modify;
     /**
      * Creates a LogicalTriggerExecution.
      * <p>
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalTriggerExecution(AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+    public LogicalTriggerExecution(AlgOptCluster cluster, LogicalTableModify modify, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
+        this.modify = modify;
     }
 
 
     /**
      * Creates a LogicalTriggerExecution.
      */
-    public static LogicalTriggerExecution create(AlgOptCluster cluster, List<AlgNode> inputs, boolean all ) {
+    public static LogicalTriggerExecution create(AlgOptCluster cluster, LogicalTableModify modify, List<AlgNode> inputs, boolean all ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         List<AlgNode> copiedInputs = copyInputsWithCluster(cluster, inputs);
-        return new LogicalTriggerExecution( cluster, traitSet, copiedInputs, all );
+        return new LogicalTriggerExecution( cluster, modify, traitSet, copiedInputs, all );
     }
 
     private static List<AlgNode> copyInputsWithCluster(AlgOptCluster cluster, List<AlgNode> inputs) {
@@ -72,7 +74,7 @@ public final class LogicalTriggerExecution extends TriggerExecution {
     @Override
     public LogicalTriggerExecution copy(AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalTriggerExecution( getCluster(), traitSet, inputs, all );
+        return new LogicalTriggerExecution( getCluster(), modify, traitSet, inputs, all );
     }
 
 
@@ -81,5 +83,8 @@ public final class LogicalTriggerExecution extends TriggerExecution {
         return shuttle.visit( this );
     }
 
+    public LogicalTableModify getModify() {
+        return modify;
+    }
 }
 
