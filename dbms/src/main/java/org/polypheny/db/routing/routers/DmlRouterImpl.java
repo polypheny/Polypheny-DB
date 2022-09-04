@@ -77,15 +77,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     @Override
     public AlgNode routeDml( AlgNode node, Statement statement ) {
         AlgOptCluster cluster = node.getCluster();
-        if(node instanceof LogicalTriggerExecution) {
-            LogicalTriggerExecution triggerExecution = (LogicalTriggerExecution) node;
-            List<AlgNode> routedNodes = new ArrayList<>();
-            for(AlgNode triggerNode : triggerExecution.getInputs()) {
-                final AlgNode routedNode = routeDml(triggerNode, statement);
-                routedNodes.add(routedNode);
-            }
-            return triggerExecution.copy(triggerExecution.getTraitSet(), routedNodes);
-        }
         if ( node.getTable() != null ) {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
