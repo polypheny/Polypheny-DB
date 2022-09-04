@@ -284,10 +284,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Expand Views" );
         }
 
-        // Check for Triggers with logicalRoot. Access logicalRoot.alg.table.table.tableId
-        TriggerResolver triggerResolver = new TriggerResolver();
-        final LogicalTriggerExecution logicalTriggerExecution = triggerResolver.lookupTriggers(logicalRoot);
-        logicalRoot = AlgRoot.of(logicalTriggerExecution, Kind.PROCEDURE_EXEC);
+        // TODO(nic): Move code to Visitor/Shuttle, e.g. TriggerVisitor
+        AlgNode node = logicalRoot.alg;
+        if ( node.getTable() != null ) {
+            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
+            if (table.getTable() instanceof LogicalTable) {
+                LogicalTable t = ((LogicalTable) table.getTable());
+                CatalogTable catalogTable = Catalog.getInstance().getTable(t.getTableId());
+                if(catalogTable.tableType == Catalog.TableType.VIEW) {
+                    TriggerResolver triggerResolver = new TriggerResolver();
+                    final LogicalTriggerExecution logicalTriggerExecution = triggerResolver.lookupTriggers(logicalRoot);
+                    // TODO(nic): Replace PROCEDURE_EXEC with logicalRoot.kind
+                    logicalRoot = AlgRoot.of(logicalTriggerExecution, Kind.PROCEDURE_EXEC);
+                }
+            }
+        }
 
         // Check if the relRoot includes Views or Materialized Views and replaces what necessary
         // View: replace LogicalViewTableScan with underlying information
