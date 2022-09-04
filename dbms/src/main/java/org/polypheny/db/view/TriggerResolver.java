@@ -58,10 +58,6 @@ public class TriggerResolver {
         List<AlgNode> algNodes = searchTriggers(tableId)
                 .stream()
                 .map(CatalogTrigger::getDefinition)
-                // TODO(nic): Watch out, this removes all DML queries from the list!
-                .filter(node -> node instanceof LogicalProcedureExecution)
-                .map(node -> (LogicalProcedureExecution) node)
-                .map(this::logicalProcedureToTableModify)
                 .collect(Collectors.toList());
         return LogicalTriggerExecution.create(logicalRoot.alg.getCluster(), (LogicalTableModify) logicalRoot.alg, algNodes, true);
     }

@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.logical.*;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rex.*;
 import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
@@ -163,7 +164,30 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             }
             // return wrapped AlgNode from LogicalProcedureExecution
             return logicalTableModify;
-        }else {
+        } else if (other instanceof LogicalTriggerExecution) {
+            LogicalTriggerExecution triggerExecution = (LogicalTriggerExecution) other;
+            LogicalTableModify insertNode = triggerExecution.getModify();
+            LogicalValues logicalValues = (LogicalValues) insertNode.getInput();
+            HashMap<String, Object> insertParameters = new HashMap<>();
+            for ( ImmutableList<RexLiteral> node : logicalValues.getTuples() ) {
+                int i = 0;
+                for ( RexLiteral literal : node ) {
+                    AlgDataTypeField field = logicalValues.getRowType().getFieldList().get(i);
+                    insertParameters.put(field.getName(), literal.getValueForQueryParameterizer());
+                    i++;
+                }
+            }
+            ArrayList<AlgNode> parameterizedNodes = new ArrayList<>();
+            for (AlgNode triggerInput : triggerExecution.getInputs()) {
+                if(triggerInput instanceof LogicalProcedureExecution) {
+                    LogicalProcedureExecution logicalProcedureExecution = (LogicalProcedureExecution) triggerInput;
+                    LogicalProcedureExecution execution = LogicalProcedureExecution.create(logicalProcedureExecution.getInput(), insertParameters);
+                    AlgNode visit = visit(execution);
+                    parameterizedNodes.add(visit);
+                }
+            }
+            return triggerExecution.copy(triggerExecution.getTraitSet(), parameterizedNodes);
+        } else {
             return super.visit( other );
         }
     }

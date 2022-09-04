@@ -29,7 +29,7 @@ import java.util.Map;
 
 public class LogicalProcedureExecution extends ProcedureExecution {
 
-    private Map<String, Object> parameters;
+    private final Map<String, Object> parameters;
 
     protected LogicalProcedureExecution(AlgOptCluster cluster, AlgTraitSet traits, Map<String, Object> parameters, AlgNode input) {
         super(cluster, traits, input);

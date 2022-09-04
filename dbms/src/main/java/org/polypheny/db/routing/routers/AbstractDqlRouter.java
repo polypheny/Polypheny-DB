@@ -182,6 +182,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         builders = buildDql( node.getInput( 0 ), builders, statement, cluster, queryInformation );
 
         RoutedAlgBuilder builder0 = RoutedAlgBuilder.create( statement, cluster );
+        // TODO(nic): Why access index 1?
         RoutedAlgBuilder b0 = buildDql( node.getInput( 1 ), Lists.newArrayList( builder0 ), statement, cluster, queryInformation ).get( 0 );
 
         builders.forEach(

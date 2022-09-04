@@ -996,7 +996,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             LogicalTriggerExecution triggerExecution = (LogicalTriggerExecution) logicalRoot.alg;
             ArrayList<AlgNode> routedNodes = new ArrayList<>();
             for(AlgNode node : logicalRoot.alg.getInputs()) {
-                AlgNode routedNode = dmlRouter.routeDml(node, statement);
+                AlgNode routedNode;
+                if(node instanceof LogicalProcedureExecution) {
+                    LogicalProcedureExecution procedureExecution = (LogicalProcedureExecution) node;
+                    AlgNode routedSubNode = dmlRouter.routeDml(procedureExecution.getInput(), statement);
+                    routedNode = procedureExecution.copy(procedureExecution.getTraitSet(), List.of(routedSubNode));
+                } else {
+                    routedNode = dmlRouter.routeDml(node, statement);
+                }
                 routedNodes.add(routedNode);
             }
             SetOp routedTriggerExecutions = triggerExecution.copy(triggerExecution.getTraitSet(), routedNodes);
