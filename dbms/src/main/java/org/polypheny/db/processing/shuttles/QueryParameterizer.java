@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -166,30 +167,42 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             return logicalTableModify;
         } else if (other instanceof LogicalTriggerExecution) {
             LogicalTriggerExecution triggerExecution = (LogicalTriggerExecution) other;
-            LogicalTableModify insertNode = triggerExecution.getModify();
-            LogicalValues logicalValues = (LogicalValues) insertNode.getInput();
-            HashMap<String, Object> insertParameters = new HashMap<>();
-            for ( ImmutableList<RexLiteral> node : logicalValues.getTuples() ) {
-                int i = 0;
-                for ( RexLiteral literal : node ) {
-                    AlgDataTypeField field = logicalValues.getRowType().getFieldList().get(i);
-                    insertParameters.put(field.getName(), literal.getValueForQueryParameterizer());
-                    i++;
-                }
-            }
-            ArrayList<AlgNode> parameterizedNodes = new ArrayList<>();
-            for (AlgNode triggerInput : triggerExecution.getInputs()) {
-                if(triggerInput instanceof LogicalProcedureExecution) {
-                    LogicalProcedureExecution logicalProcedureExecution = (LogicalProcedureExecution) triggerInput;
-                    LogicalProcedureExecution execution = LogicalProcedureExecution.create(logicalProcedureExecution.getInput(), insertParameters);
-                    AlgNode visit = visit(execution);
-                    parameterizedNodes.add(visit);
-                }
-            }
+            HashMap<String, Object> insertParameters = extractParameters(triggerExecution);
+            ArrayList<AlgNode> parameterizedNodes = insertProcedureParameters(triggerExecution, insertParameters);
             return triggerExecution.copy(triggerExecution.getTraitSet(), parameterizedNodes);
         } else {
             return super.visit( other );
         }
+    }
+
+    @NotNull
+    private ArrayList<AlgNode> insertProcedureParameters(LogicalTriggerExecution triggerExecution, HashMap<String, Object> insertParameters) {
+        ArrayList<AlgNode> parameterizedNodes = new ArrayList<>();
+        for (AlgNode triggerInput : triggerExecution.getInputs()) {
+            if(triggerInput instanceof LogicalProcedureExecution) {
+                LogicalProcedureExecution logicalProcedureExecution = (LogicalProcedureExecution) triggerInput;
+                LogicalProcedureExecution execution = LogicalProcedureExecution.create(logicalProcedureExecution.getInput(), insertParameters);
+                AlgNode visit = visit(execution);
+                parameterizedNodes.add(visit);
+            }
+        }
+        return parameterizedNodes;
+    }
+
+    @NotNull
+    private HashMap<String, Object> extractParameters(LogicalTriggerExecution triggerExecution) {
+        LogicalTableModify insertNode = triggerExecution.getModify();
+        LogicalValues logicalValues = (LogicalValues) insertNode.getInput();
+        HashMap<String, Object> insertParameters = new HashMap<>();
+        for ( ImmutableList<RexLiteral> node : logicalValues.getTuples() ) {
+            int i = 0;
+            for ( RexLiteral literal : node ) {
+                AlgDataTypeField field = logicalValues.getRowType().getFieldList().get(i);
+                insertParameters.put(field.getName(), literal.getValueForQueryParameterizer());
+                i++;
+            }
+        }
+        return insertParameters;
     }
 
 //    @Override
