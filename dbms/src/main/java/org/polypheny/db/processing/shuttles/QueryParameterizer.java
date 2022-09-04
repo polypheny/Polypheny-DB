@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -35,7 +34,6 @@ import org.polypheny.db.algebra.logical.*;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rex.*;
-import org.polypheny.db.sql.sql.ddl.SqlExecuteProcedure;
 import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -104,22 +102,12 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
                     int i = 0;
                     for ( RexLiteral literal : node ) {
-                        int idx;
-                        if ( !idxMapping.containsKey( i ) ) {
-                            idx = index.getAndIncrement();
-                            idxMapping.put( i, idx );
-                        } else {
-                            idx = idxMapping.get( i );
-                        }
+                        int idx = getIndex(idxMapping, i);
                         AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
                         if ( firstRow ) {
                             projects.add( new RexDynamicParam( type, idx ) );
                         }
-                        if ( !values.containsKey( idx ) ) {
-                            types.add( type );
-                            values.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
-                        }
-                        values.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                        addValue(idx, type, input, literal.getValueForQueryParameterizer());
                         i++;
                     }
                     firstRow = false;
@@ -154,48 +142,71 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     inputs,
                     ((LogicalModifyCollect) other).all
             );
-        }
-        else if (other instanceof LogicalProcedureExecution){
-            LogicalProcedureExecution execution = ((LogicalProcedureExecution) other);
-            LogicalTableModify logicalTableModify = (LogicalTableModify) execution.getInput();
+        } else if (other instanceof LogicalProcedureExecution) {
+            LogicalProcedureExecution procedureExecution = (LogicalProcedureExecution) other;
+            LogicalTableModify logicalTableModify = (LogicalTableModify) procedureExecution.getInput();
             if (!(logicalTableModify.getInput() instanceof LogicalProject)) {
                 return logicalTableModify;
             }
             LogicalProject logicalProject = (LogicalProject) logicalTableModify.getInput();
-            List<RexNode> expressions = logicalProject.getChildExps();
             HashMap<Integer, Integer> idxMapping = new HashMap<>();
-            for ( RexNode node : expressions) {
-                int i = 0;
+            int i = 0;
+            for ( RexNode node : logicalProject.getChildExps()) {
                 if(!(node instanceof RexNamedDynamicParam)) {
                     continue;
                 }
-                RexNamedDynamicParam dynamicParam = (RexNamedDynamicParam) node;
-                if(!execution.hasMapping(dynamicParam.getName().substring(1))) {
-                    continue;
-                }
-                int idx;
-                if ( !idxMapping.containsKey( i ) ) {
-                    idx = index.getAndIncrement();
-                    idxMapping.put( i, idx );
-                } else {
-                    idx = idxMapping.get( i );
-                }
+                Object value = visitRexNamedDynamicParam(procedureExecution, (RexNamedDynamicParam) node);
+                int idx = getIndex(idxMapping, i);
                 AlgDataType type = logicalProject.getRowType().getFieldList().get( i ).getValue();
-                if ( !values.containsKey( idx ) ) {
-                    types.add( type );
-                    values.put( idx, new ArrayList<>( ((LogicalValues) logicalProject.getInput()).getTuples().size() ) );
-                }
-                Object value = execution.getMapping(dynamicParam.getName().substring(1));
-                // TODO(nic): Get proper type see RexLiteral#queryParameterize
-                values.get( idx ).add( new ParameterValue( idx, type, value ) );
+                addValue(idx, type, logicalProject.getInput(), value);
                 i++;
             }
             // return wrapped AlgNode from LogicalProcedureExecution
             return logicalTableModify;
-        } else {
+        }else {
             return super.visit( other );
         }
     }
+
+//    @Override
+//    public AlgNode visit(LogicalProcedureExecution procedureExecution) {
+//
+//    }
+
+    private Object visitRexNamedDynamicParam(LogicalProcedureExecution procedureExecution, RexNamedDynamicParam node) {
+        RexNamedDynamicParam dynamicParam = node;
+        if(!procedureExecution.hasMapping(dynamicParam.getName().substring(1))) {
+            throw new RuntimeException("No parameter defined for argument ´" + dynamicParam.getName() + "´");
+        }
+        return procedureExecution.getMapping(dynamicParam.getName().substring(1));
+    }
+
+    private void addValue(int idx, AlgDataType type, AlgNode logicalProject, Object value) {
+        if ( !values.containsKey(idx) ) {
+            types.add(type);
+            values.put(idx, new ArrayList<>( ((LogicalValues) logicalProject).getTuples().size() ) );
+        }
+        // TODO(nic): Get proper type see RexLiteral#queryParameterize
+        values.get(idx).add( new ParameterValue(idx, type, value) );
+    }
+
+    private int getIndex(HashMap<Integer, Integer> idxMapping, int i) {
+        int idx;
+        if ( !idxMapping.containsKey(i) ) {
+            idx = index.getAndIncrement();
+            idxMapping.put(i, idx );
+        } else {
+            idx = idxMapping.get(i);
+        }
+        return idx;
+    }
+
+
+//    @Override
+//    public AlgNode visit(LogicalTriggerExecution triggerExecution) {
+//
+//        return visitChildren(triggerExecution);
+//    }
 
     //
     // Rex
