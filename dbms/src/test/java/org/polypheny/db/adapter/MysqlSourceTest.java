@@ -27,12 +27,11 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings("SqlDialectInspection")
-@Ignore
+//@Ignore
 public class MysqlSourceTest extends AbstractSourceTest {
 
     private static EmbeddedMysql server;
@@ -66,6 +65,7 @@ public class MysqlSourceTest extends AbstractSourceTest {
                 statement.executeUpdate( "ALTER ADAPTERS ADD mariadbunit USING 'Mysql' AS 'Source' WITH '" + gson.toJson( settings ) + "'" );
             }
         }
+        System.out.println("RAN HERE");
     }
 
 

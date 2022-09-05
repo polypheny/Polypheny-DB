@@ -36,7 +36,6 @@ package org.polypheny.db.test;
 
 import com.google.common.collect.Ordering;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.util.Sources;
@@ -58,7 +57,6 @@ import static org.junit.Assert.assertThat;
 /**
  * Unit test of the Polypheny-DB CSV adapter.
  */
-@Ignore
 public class CsvTest {
 
     /**
@@ -68,6 +66,10 @@ public class CsvTest {
         return escapeString( new StringBuilder(), s ).toString();
     }
 
+    @Test
+    public void what() {
+        assertTrue( true );
+    }
 
     /**
      * Quotes a string for Java or JSON, into a builder.
@@ -176,7 +178,6 @@ public class CsvTest {
     /**
      * Tests the vanity driver.
      */
-    @Ignore
     @Test
     public void testVanityDriver() throws SQLException {
         Properties info = new Properties();
@@ -188,7 +189,6 @@ public class CsvTest {
     /**
      * Tests the vanity driver with properties in the URL.
      */
-    @Ignore
     @Test
     public void testVanityDriverArgsInUrl() throws SQLException {
         Connection connection = DriverManager.getConnection( "jdbc:csv:" + "directory='foo'" );

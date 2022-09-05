@@ -17,6 +17,12 @@
 package org.polypheny.db.adapter.googlesheet;
 
 
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -31,39 +37,30 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Util;
 
-import java.net.URL;
-import java.util.*;
 
 /**
- * Questions: How do all of these things work?
+ * Schema mapped onto a Google Sheet URL. Each table in the schema is a sheet in the URL.
  */
-
-/**
- * VARIABLES: sheets URL, tableMap
- *
- * - Main: set the sheetsURL
- *
- * - createSheetsTable: you're using CatalogTable, List of Catalog Column placements, and DataSource to return Table
- * No idea what all the functions are doing - but not needed. CP: build Table, put into map.
- * Refer to GoogleSheetsTable
- *
- * - getTableMap: map version of table
- *
- * - private sqlType, parseTypeString: pretty similarly defined in the other directories.
- *
- *
- */
-
 public class GoogleSheetSchema extends AbstractSchema {
+
     private final URL sheetsURL;
+    private final int querySize;
     private Map<String, GoogleSheetTable> tableMap = new HashMap<>();
 
 
-    public GoogleSheetSchema( URL sheetsURL ) {
+    /**
+     * Creates a GoogleSheet Schema
+     *
+     * @param sheetsURL - the url of the Google Sheet
+     * @param querySize - the size of each query while scanning
+     */
+    public GoogleSheetSchema( URL sheetsURL, int querySize ) {
         this.sheetsURL = sheetsURL;
+        this.querySize = querySize;
     }
 
-    public Table createGoogleSheetTable(CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, GoogleSheetSource googleSheetSource) {
+
+    public Table createGoogleSheetTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, GoogleSheetSource googleSheetSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<GoogleSheetFieldType> fieldTypes = new LinkedList<>();
@@ -84,17 +81,19 @@ public class GoogleSheetSchema extends AbstractSchema {
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         // build table and return later based on what you need for the table
-        GoogleSheetTable table = new GoogleSheetTable(sheetsURL, tableName, AlgDataTypeImpl.proto( fieldInfo.build() ), fields, googleSheetSource, fieldTypes);
+        GoogleSheetTable table = new GoogleSheetTable( sheetsURL, querySize, tableName, AlgDataTypeImpl.proto( fieldInfo.build() ), fields, googleSheetSource, fieldTypes );
         tableMap.put( catalogTable.name, table );
         return table;
     }
+
 
     @Override
     public Map<String, Table> getTableMap() {
         return new HashMap<>( tableMap );
     }
 
-    private AlgDataType sqlType(AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
+
+    private AlgDataType sqlType( AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
         switch ( polyType ) {
@@ -149,10 +148,11 @@ public class GoogleSheetSchema extends AbstractSchema {
             return typeName.allowsPrecScale( true, true )
                     ? typeFactory.createPolyType( typeName, precision, scale )
                     : typeName.allowsPrecScale( true, false )
-                    ? typeFactory.createPolyType( typeName, precision )
-                    : typeFactory.createPolyType( typeName );
+                            ? typeFactory.createPolyType( typeName, precision )
+                            : typeFactory.createPolyType( typeName );
         } catch ( IllegalArgumentException e ) {
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
     }
+
 }

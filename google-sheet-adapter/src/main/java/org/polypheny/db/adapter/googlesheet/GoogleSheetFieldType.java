@@ -16,19 +16,17 @@
 
 package org.polypheny.db.adapter.googlesheet;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Both of the files are the same, so not much to say here. Types for Google Sheet (not yet used since we're
- * currently only dealing with strings)
+ * Type of field in a Google Sheet. A field is always of type String.
  */
-
 public enum GoogleSheetFieldType {
     STRING( String.class, "string" ),
     BOOLEAN( Primitive.BOOLEAN ),
@@ -101,7 +99,7 @@ public enum GoogleSheetFieldType {
     }
 
 
-    public AlgDataType toType(JavaTypeFactory typeFactory ) {
+    public AlgDataType toType( JavaTypeFactory typeFactory ) {
         AlgDataType javaType = typeFactory.createJavaType( clazz );
         AlgDataType sqlType = typeFactory.createPolyType( javaType.getPolyType() );
         return typeFactory.createTypeWithNullability( sqlType, true );

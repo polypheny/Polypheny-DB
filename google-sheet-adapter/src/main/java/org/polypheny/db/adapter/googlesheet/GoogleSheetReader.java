@@ -12,10 +12,11 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.api.services.sheets.v4.model.GridProperties;
 import com.google.api.services.sheets.v4.model.Sheet;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.ValueRange;
-
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,125 +27,303 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
- * SOURCE: sheets quick start by google.
+ * Class that scans the Google Sheet directly using the GoogleSheetApi.
  */
-
-/**
- * How to optimize when we've already read into the table?
- */
-
 public class GoogleSheetReader {
+
     private final String APPLICATION_NAME = "POLYPHENY GOOGLE SHEET READER";
     private final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private final String TOKENS_DIRECTORY_PATH = "google-sheet-adapter/src/main/resources/tokens";
-    private final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS_READONLY);
+    private final List<String> SCOPES = Collections.singletonList( SheetsScopes.SPREADSHEETS_READONLY );
     private final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
 
-
     private final URL url;
+    private final int querySize;
+    private HashMap<String, List<Object>> tableSurfaceData = new HashMap<>();
     private HashMap<String, List<List<Object>>> tableData = new HashMap<>();
-    private String targetTableName;
-    private List<List<Object>> targetTableData;
-    private int currBlock;  // ptr to the current row to read from in the first table.
+    private HashMap<String, Integer> tableStart = new HashMap<>();
+    private HashMap<String, Integer> tableLeftOffset = new HashMap<>();
+    private HashMap<String, Integer> enumPointer = new HashMap<>();
 
-    public GoogleSheetReader(URL url) {
+
+    /**
+     * @param url - url of the Google Sheet to source.
+     * @param querySize - size of the query (in case of large files)
+     */
+    public GoogleSheetReader( URL url, int querySize ) {
         this.url = url;
-        readAllTables();
-
-    }
-
-    public GoogleSheetReader(URL url, String tableName) {
-        this.url = url;
-        readAllTables();
-        setTargetTable(tableName);
-        currBlock = 0;
-        System.out.println(targetTableName);
-        System.out.println(targetTableData.size());
+        this.querySize = querySize;
     }
 
 
-    private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-        // Load client secrets.
-        InputStream in = GoogleSheetReader.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-        if (in == null) {
-            throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
-        }
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        // Build flow and trigger user authorization request.
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-                .setAccessType("offline")
-                .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-        return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-    }
-
-    private String parseUrlToString(URL url) {
-        String content = url.getPath();
-        String[] contentArr = content.split("/");
-        return contentArr[3];
-    }
-
-
-    private void readAllTables() {
-        if (!tableData.isEmpty()){
+    /**
+     * Finds first row for field names
+     */
+    private void readTableSurfaceData() {
+        if ( !tableSurfaceData.isEmpty() ) {
             return;
         }
         try {
             final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-            final String spreadsheetId = parseUrlToString(url);
+            final String spreadsheetId = parseUrlToString( url );
 
-            Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-                    .setApplicationName(APPLICATION_NAME)
+            Sheets service = new Sheets.Builder( HTTP_TRANSPORT, JSON_FACTORY, getCredentials( HTTP_TRANSPORT ) )
+                    .setApplicationName( APPLICATION_NAME )
                     .build();
 
             // get the properties of all the sheets
-            Spreadsheet s = service.spreadsheets().get(spreadsheetId).execute();
+            Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute();
 
-            for (Sheet sheet: s.getSheets()) {
+            for ( Sheet sheet : s.getSheets() ) {
                 String sheetName = sheet.getProperties().getTitle();
-                ValueRange response = service.spreadsheets().values()
-                        .get(spreadsheetId, sheetName)
-                        .execute();
+                GridProperties gp = sheet.getProperties().getGridProperties();
+                int queryStartRow = 1;
+                while ( true ) {
+                    if ( queryStartRow > gp.getRowCount() ) { // nothing in the sheet
+                        break;
+                    }
+                    int queryEndRow = queryStartRow + querySize - 1;
+                    String sheetRange = sheetName + "!" + queryStartRow + ":" + queryEndRow;
+                    ValueRange response = service.spreadsheets().values()
+                            .get( spreadsheetId, sheetRange )
+                            .execute();
 
-                List<List<Object>> values = response.getValues();
-                tableData.put(sheetName, values);
+                    List<List<Object>> values = response.getValues();
+                    if ( values == null ) { // no rows had values
+                        queryStartRow += querySize;
+                        continue;
+                    }
+                    for ( List<Object> row : values ) { // found at least 1 row
+                        if ( row.size() != 0 ) {
+                            for ( int i = 0; i < row.size(); i++ ) {
+                                if ( !Objects.equals( row.get( i ).toString(), "" ) ) {
+                                    row = row.subList( i, row.size() );
+                                    break;
+                                }
+                            }
+                            tableSurfaceData.put( sheetName, row );
+                            break;
+                        }
+                    }
+                    break;
+                }
             }
-        } catch (IOException | GeneralSecurityException e ) {
-            throw new RuntimeException(e);
+        } catch ( IOException | GeneralSecurityException e ) {
+            throw new RuntimeException( e );
         }
     }
 
-    private void setTargetTable(String tableName) {
-        targetTableName = tableName;
-        targetTableData = tableData.get(tableName);
+
+    public HashMap<String, List<Object>> getTableSurfaceData() {
+        if ( tableSurfaceData.isEmpty() ) {
+            readTableSurfaceData();
+        }
+        return tableSurfaceData;
     }
 
 
-    public String[] readNext() {
-        if (currBlock >= targetTableData.size()) {
+    private Credential getCredentials( final NetHttpTransport HTTP_TRANSPORT ) throws IOException {
+        // Load client secrets.
+        InputStream in = GoogleSheetReader.class.getResourceAsStream( CREDENTIALS_FILE_PATH );
+        if ( in == null ) {
+            throw new FileNotFoundException( "Resource not found: " + CREDENTIALS_FILE_PATH );
+        }
+        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load( JSON_FACTORY, new InputStreamReader( in ) );
+
+        // Build flow and trigger user authorization request.
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES )
+                .setDataStoreFactory( new FileDataStoreFactory( new java.io.File( TOKENS_DIRECTORY_PATH ) ) )
+                .setAccessType( "offline" )
+                .build();
+        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort( 8888 ).build();
+        return new AuthorizationCodeInstalledApp( flow, receiver ).authorize( "user" );
+    }
+
+
+    public void deleteToken() {
+        File file = new File( TOKENS_DIRECTORY_PATH + "/StoredCredential" );
+        if ( file.exists() ) {
+            file.delete();
+        }
+
+    }
+
+
+    private String parseUrlToString( URL url ) {
+        String content = url.getPath();
+        String[] contentArr = content.split( "/" );
+        return contentArr[3];
+    }
+
+
+    /**
+     * Reads sheet in Google Sheet URL block by block
+     *
+     * @param tableName - name of the sheet to read in the URL.
+     */
+    private void readTable( String tableName ) {
+        try {
+            final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+            final String spreadsheetId = parseUrlToString( url );
+
+            Sheets service = new Sheets.Builder( HTTP_TRANSPORT, JSON_FACTORY, getCredentials( HTTP_TRANSPORT ) )
+                    .setApplicationName( APPLICATION_NAME )
+                    .build();
+
+            // first query! let's start searching till we find first row.
+            if ( !tableStart.containsKey( tableName ) ) {
+                Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute(); // get all the sheets
+                Sheet chosen_sheet = new Sheet();
+                for ( Sheet sheet : s.getSheets() ) {
+                    if ( Objects.equals( sheet.getProperties().getTitle(), tableName ) ) {
+                        chosen_sheet = sheet;
+                        break;
+                    }
+                }
+
+                int queryStartRow = 1;
+                while ( true ) {
+                    // nothing in sheet
+                    if ( queryStartRow > chosen_sheet.getProperties().getGridProperties().getRowCount() ) {
+                        tableStart.put( tableName, -1 );
+                        return;
+                    }
+
+                    int queryEndRow = queryStartRow + querySize - 1;
+
+                    String sheetRange = tableName + "!" + queryStartRow + ":" + queryEndRow;
+                    ValueRange response = service.spreadsheets().values()
+                            .get( spreadsheetId, sheetRange )
+                            .execute();
+                    List<List<Object>> values = response.getValues();
+
+                    if ( values == null ) {
+                        queryStartRow += querySize;
+                        continue;
+                    }
+
+                    int firstRowIndex = -1;
+                    int indexCounter = 0;
+                    for ( List<Object> row : values ) { // found at least 1 row, set the left shift
+                        if ( row.size() != 0 ) {
+                            for ( int i = 0; i < row.size(); i++ ) {
+                                if ( !Objects.equals( row.get( i ).toString(), "" ) ) {
+                                    tableLeftOffset.put( tableName, i );
+                                    break;
+                                }
+                            }
+                            firstRowIndex = indexCounter + 1;
+                            break;
+                        }
+                        indexCounter++;
+                    }
+
+                    // TODO: optimize this
+                    // add the remaining data to tableData
+                    for ( int i = firstRowIndex; i < values.size(); i++ ) {
+                        List<Object> fullRow = values.get( i );
+                        List<Object> trueRow = fullRow.subList( tableLeftOffset.get( tableName ), fullRow.size() );
+                        values.set( i, trueRow );
+                    }
+                    tableData.put( tableName, values.subList( firstRowIndex, values.size() ) );
+
+                    if ( values.size() < querySize ) { // we already queried everything
+                        tableStart.put( tableName, -1 );
+                    } else { // we'll start at that value later?
+                        tableStart.put( tableName, firstRowIndex + 1 );
+                    }
+
+                    break;
+
+                }
+            } else if ( tableStart.get( tableName ) == -1 ) { // end of document already
+                return;
+            } else { // begin getting from
+
+                Spreadsheet s = service.spreadsheets().get( spreadsheetId ).execute(); // get all the sheets
+                Sheet chosen_sheet = new Sheet();
+                for ( Sheet sheet : s.getSheets() ) {
+                    if ( Objects.equals( sheet.getProperties().getTitle(), tableName ) ) {
+                        chosen_sheet = sheet;
+                        break;
+                    }
+                }
+
+                int queryStartRow = tableStart.get( tableName );
+
+                int queryEndRow = queryStartRow + querySize - 1;
+
+                if ( queryStartRow > chosen_sheet.getProperties().getGridProperties().getRowCount() ) {
+                    tableStart.put( tableName, -1 );
+                    return;
+                }
+
+                String sheetRange = tableName + "!" + queryStartRow + ":" + queryEndRow;
+                ValueRange response = service.spreadsheets().values()
+                        .get( spreadsheetId, sheetRange )
+                        .execute();
+                List<List<Object>> values = response.getValues();
+
+                if ( values == null ) { // we've reached an empty part of the document, so all rows have been queried
+                    tableStart.put( tableName, -1 );
+                    return;
+                }
+
+                List<List<Object>> currData = tableData.getOrDefault( tableName, new ArrayList<>() );
+                for ( List<Object> row : values ) {
+                    List<Object> trueRow = row.subList( tableLeftOffset.get( tableName ), row.size() );
+                    currData.add( trueRow );
+                }
+                tableData.put( tableName, currData );
+
+                // final check: if the current data that we have is smaller than our query, we reached
+                // the end, so we set our start to -1.
+                if ( values.size() < querySize ) {
+                    tableStart.put( tableName, -1 );
+                } else {
+                    tableStart.put( tableName, queryEndRow + 1 );
+                }
+            }
+        } catch ( IOException | GeneralSecurityException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public String[] readNext( String tableName ) {
+        if ( !enumPointer.containsKey( tableName ) ) {
+            enumPointer.put( tableName, 0 );
+        }
+
+        if ( !tableData.containsKey( tableName ) || tableData.get( tableName ).size() <= enumPointer.get( tableName ) ) {
+            readTable( tableName );
+        }
+
+        // still true, so we've reached the end of the google sheet
+        if ( tableData.get( tableName ).size() <= enumPointer.get( tableName ) ) {
             return null;
         }
 
-        List<Object> results = targetTableData.get(currBlock);
+        List<Object> results = tableData.get( tableName ).get( enumPointer.get( tableName ) );
         List<String> resultsStr = new ArrayList<>();
-        currBlock += 1;
+        enumPointer.put( tableName, enumPointer.get( tableName ) + 1 );
 
-        for (Object val: results) {
-            resultsStr.add(val.toString());
+        for ( Object val : results ) {
+            resultsStr.add( val.toString() );
         }
 
-        return resultsStr.toArray(new String[0]);
+        return resultsStr.toArray( new String[0] );
     }
 
 
     public HashMap<String, List<List<Object>>> getTableData() {
         return tableData;
     }
+
 }

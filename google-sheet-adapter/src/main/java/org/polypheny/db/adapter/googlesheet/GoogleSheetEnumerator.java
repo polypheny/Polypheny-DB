@@ -16,10 +16,6 @@
 
 package org.polypheny.db.adapter.googlesheet;
 
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.commons.lang3.time.FastDateFormat;
-
 import java.math.BigInteger;
 import java.net.URL;
 import java.text.ParseException;
@@ -27,48 +23,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.lang3.time.FastDateFormat;
 
 
 /**
- * Questions:
- * - What does array row converter do, single column row converter too...
- * - Identity list??
- * - How does row converter work? And all the other abstract classes where I literally could not understand what it does?
- */
-
-/**
- * VARIABLES:
- * timezone stuff - copy paste
- * (optional, seen in CSV): extra data of read-in time.
- * source,
- * reader (blockReader in ETH, or just import)
- * (optional) filter values
- * cancelFlag,
- * rowConverter,
- * E current - the current row type
- */
-
-/**
- * FUNCTIONS
- * - MAIN: setting up variables, standard.
+ * Enumerator that reads from the blockchain
  *
- * - converter: depends on SingleColumnRowConverter and ArrayRowConverter (same everywhere), converter is the same too.
- *
- * - (optional) Identity list
- *
- * - public E current() - returns the current row type.
- *
- * - moveNext: moves onto the next row. If there is something, convert row. If not, return False.
- * all wrapped in try catch. Add filter if necessary.
- *
- * - Row converter: self-explanatory
- *
- * - reset, close: the same thing
- *
- */
-
-/**
- * @param <E> Row Type
+ * @param <E> Row type
  */
 
 public class GoogleSheetEnumerator<E> implements Enumerator<E> {
@@ -85,23 +48,29 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
         TIME_FORMAT_TIMESTAMP = FastDateFormat.getInstance( "yyyy-MM-dd HH:mm:ss", gmt );
     }
 
-    private final URL sheetsUrl;
+
     private final String tableName;
     private final GoogleSheetReader reader;
     private final AtomicBoolean cancelFlag;
     private final RowConverter<E> rowConverter;
     private E current;
 
-    GoogleSheetEnumerator(URL sheetsUrl, String tableName, AtomicBoolean cancelFlag, boolean stream, RowConverter<E> rowConverter) {
-        this.sheetsUrl = sheetsUrl;
+
+    GoogleSheetEnumerator( URL sheetsUrl, int querySize, String tableName, AtomicBoolean cancelFlag, RowConverter<E> rowConverter ) {
         this.tableName = tableName;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
-        this.reader = new GoogleSheetReader(sheetsUrl, tableName);
-        reader.readNext();
+        this.reader = new GoogleSheetReader( sheetsUrl, querySize );
+
     }
 
-    static RowConverter<?> converter(List<GoogleSheetFieldType> fieldTypes, int[] fields ) {
+
+    GoogleSheetEnumerator( URL sheetsUrl, int querySize, String tableName, AtomicBoolean cancelFlag, List<GoogleSheetFieldType> fieldTypes, int[] fields ) {
+        this( sheetsUrl, querySize, tableName, cancelFlag, (RowConverter<E>) converter( fieldTypes, fields ) );
+    }
+
+
+    static RowConverter<?> converter( List<GoogleSheetFieldType> fieldTypes, int[] fields ) {
         if ( fields.length == 1 ) {
             final int field = fields[0];
             return new SingleColumnRowConverter( fieldTypes.get( field ), field );
@@ -110,13 +79,6 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
         }
     }
 
-    static int[] identityList( int n ) {
-        int[] integers = new int[n];
-        for ( int i = 0; i < n; i++ ) {
-            integers[i] = i;
-        }
-        return integers;
-    }
 
     @Override
     public E current() {
@@ -126,12 +88,11 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
 
     @Override
     public boolean moveNext() {
-        outer:
         for ( ; ; ) {
             if ( cancelFlag.get() ) {
                 return false;
             }
-            final String[] strings = reader.readNext();
+            final String[] strings = reader.readNext( tableName );
             if ( strings == null ) {
                 return false;
             }
@@ -139,8 +100,8 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
             current = rowConverter.convertRow( strings );
             return true;
         }
-
     }
+
 
     @Override
     public void reset() {
@@ -148,13 +109,11 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
     }
 
 
+    /**
+     * Doesn't need to do any thing to close
+     */
     @Override
     public void close() {
-//        try {
-//            reader.close();
-//        } catch ( IOException e ) {
-//            throw new RuntimeException( "Error closing Blockchain reader", e );
-//        }
     }
 
 
@@ -244,7 +203,9 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
                     return string;
             }
         }
+
     }
+
 
     /**
      * Array row converter.
@@ -302,6 +263,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
         }
 
     }
+
 
     /**
      * Single column row converter.
