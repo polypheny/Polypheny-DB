@@ -57,6 +57,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Unit test of the Polypheny-DB CSV adapter.
  */
+@Ignore
 public class CsvTest {
 
     /**
@@ -64,11 +65,6 @@ public class CsvTest {
      */
     private static String escapeString( String s ) {
         return escapeString( new StringBuilder(), s ).toString();
-    }
-
-    @Test
-    public void what() {
-        assertTrue( true );
     }
 
     /**
@@ -178,6 +174,7 @@ public class CsvTest {
     /**
      * Tests the vanity driver.
      */
+    @Ignore
     @Test
     public void testVanityDriver() throws SQLException {
         Properties info = new Properties();
@@ -189,6 +186,7 @@ public class CsvTest {
     /**
      * Tests the vanity driver with properties in the URL.
      */
+    @Ignore
     @Test
     public void testVanityDriverArgsInUrl() throws SQLException {
         Connection connection = DriverManager.getConnection( "jdbc:csv:" + "directory='foo'" );
