@@ -18,6 +18,7 @@ package org.polypheny.db.extraction;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -42,7 +43,8 @@ import org.polypheny.db.transaction.TransactionManager;
 
 public class SchemaExtractor {
 
-    public static final String PYTHON_COMMAND = "python3";
+    // TODO: The "PYTHON_COMMAND" needs to be system-agnostic (python3 didn't work for me)
+    public static final String PYTHON_COMMAND = "python";
     private static final SchemaExtractor INSTANCE = new SchemaExtractor();
 
     @Setter
@@ -129,9 +131,18 @@ public class SchemaExtractor {
 
         JsonArrayBuilder tablesBuilder = Json.createArrayBuilder();
         for ( CatalogTable catalogTable : catalog.getTables( namespaceId, null ) ) {
+
+            // Array of column names in namespace
+            JsonArrayBuilder columnsBuilder = Json.createArrayBuilder();
+            for (String columnName : catalogTable.getColumnNames()) {
+                columnsBuilder.add(columnName);
+            }
+
             tablesBuilder.add( Json.createObjectBuilder()
-                    .add( "name", catalogTable.name )
-                    .add( "number", "111-111-1111" ) );
+                    .add("tableName", catalogTable.name )
+                    .add("columnNames", columnsBuilder )
+                    .add("primaryKey", catalogTable.primaryKey)
+            );
         }
         jsonObjectBuilder.add( "tables", tablesBuilder );
         return jsonObjectBuilder.build().toString();
