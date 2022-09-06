@@ -16,8 +16,6 @@
 
 package org.polypheny.db.adapter;
 
-import static org.junit.Assert.assertTrue;
-
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import java.sql.Connection;
@@ -68,22 +66,16 @@ public class GoogleSheetSourceTest {
 
 
     @Test
-    public void testTest() {
-        assertTrue( true );
-    }
-
-
-    @Test
     public void existsSelect() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ "Oracle", "Product Manager", "127000" },
-                        new Object[]{ "eBay", "Software Engineer", "100000" },
-                        new Object[]{ "Amazon", "Product Manager", "310000" },
-                        new Object[]{ "Apple", "Software Engineering Manager", "372000" },
-                        new Object[]{ "Microsoft", "Software Engineer", "157000" }
+                        new Object[]{ "Oracle", "Product Manager", 127000 },
+                        new Object[]{ "eBay", "Software Engineer", 100000 },
+                        new Object[]{ "Amazon", "Product Manager", 310000 },
+                        new Object[]{ "Apple", "Software Engineering Manager", 372000 },
+                        new Object[]{ "Microsoft", "Software Engineer", 157000 }
 
                 );
                 TestHelper.checkResultSet(
@@ -101,9 +93,9 @@ public class GoogleSheetSourceTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ "GP", "F", "18", "U", "GT3", "A", "4", "4", "at_home", "teacher", "course", "mother", "2", "2", "0", "yes", "no", "no", "no", "yes", "yes", "no", "no", "4", "3", "4", "3", "6", "5", "6", "6" },
-                        new Object[]{ "GP", "F", "17", "U", "GT3", "T", "1", "1", "at_home", "other", "course", "father", "1", "2", "0", "no", "yes", "no", "no", "no", "yes", "yes", "no", "5", "3", "3", "3", "4", "5", "5", "6" },
-                        new Object[]{ "GP", "F", "15", "U", "LE3", "T", "1", "1", "at_home", "other", "other", "mother", "1", "2", "3", "yes", "no", "yes", "no", "yes", "yes", "yes", "no", "4", "3", "2", "3", "10", "7", "8", "10" }
+                        new Object[]{ "GP", "F", 18, "U", "GT3", "A", 4, 4, "at_home", "teacher", "course", "mother", 2, 2, 0, "yes", "no", "no", "no", "yes", "yes", "no", "no", 4, 3, 4, 3, 6, 5, 6, 6 },
+                        new Object[]{ "GP", "F", 17, "U", "GT3", "T", 1, 1, "at_home", "other", "course", "father", 1, 2, 0, "no", "yes", "no", "no", "no", "yes", "yes", "no", 5, 3, 3, 3, 4, 5, 5, 6 },
+                        new Object[]{ "GP", "F", 15, "U", "LE3", "T", 1, 1, "at_home", "other", "other", "mother", 1, 2, 3, "yes", "no", "yes", "no", "yes", "yes", "yes", "no", 4, 3, 2, 3, 10, 7, 8, 10 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * from student_data LIMIT 3" ),

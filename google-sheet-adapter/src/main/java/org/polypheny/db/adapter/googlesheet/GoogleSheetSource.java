@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
@@ -133,11 +134,61 @@ public class GoogleSheetSource extends DataSource {
             List<ExportedColumn> exportedCols = new ArrayList<>();
             int position = 0;
             for ( Object col : tableColumns ) {
+                String colStr = col.toString();
+                int colon_index =  colStr.indexOf( ':' );
+
+                String colName = colStr;
+                PolyType type = PolyType.VARCHAR;
+                Integer length = maxStringLength;
+
+                if (colon_index != -1) {
+                    colName = colStr.substring( 0, colon_index ).trim();
+                    String colType = colStr.substring( colon_index+1 ).toLowerCase( Locale.ROOT ).trim();
+                    switch (colType) {
+                        case "int":
+                            type = PolyType.INTEGER;
+                            length = null;
+                            break;
+                        case "string":
+                            break;
+                        case "boolean":
+                            type = PolyType.BOOLEAN;
+                            length = null;
+                            break;
+                        case "long":
+                            type = PolyType.BIGINT;
+                            length = null;
+                            break;
+                        case "float":
+                            type = PolyType.REAL;
+                            length = null;
+                            break;
+                        case "double":
+                            type = PolyType.DOUBLE;
+                            length = null;
+                            break;
+                        case "date":
+                            type = PolyType.DATE;
+                            length = null;
+                            break;
+                        case "time":
+                            type = PolyType.TIME;
+                            length = 0;
+                            break;
+                        case "timestamp":
+                            type = PolyType.TIMESTAMP;
+                            length = 0;
+                            break;
+                        default:
+                            throw new RuntimeException( "Unknown type: " + colType.toLowerCase() );
+                    }
+                }
+
                 exportedCols.add( new ExportedColumn(
-                        col.toString(),
-                        PolyType.VARCHAR, // defaulting to VARCHAR currently
+                        colName,
+                        type,
                         null,
-                        null,
+                        length,
                         null,
                         null,
                         null,
