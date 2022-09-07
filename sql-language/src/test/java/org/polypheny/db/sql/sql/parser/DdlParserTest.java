@@ -217,7 +217,7 @@ public class DdlParserTest extends SqlParserTest {
         final String sql = "create procedure \"myudf\"\n"
                 + " $ insert into myTable values(:id) $";
         final String expected = "CREATE PROCEDURE `myudf` $ INSERT INTO `MYTABLE`\n" +
-                "VALUES (ROW(ID=>?)) $";
+                "VALUES (ROW(:ID)) $";
         sql( sql ).ok( expected );
     }
 //
