@@ -57,21 +57,19 @@ public class SqlCreateTrigger extends SqlCreate implements ExecutableStatement {
     private final SqlIdentifier table;
     private final SqlIdentifier schema;
     private final String event;
-    private final boolean notForReplication;
 
     private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "CREATE TRIGGER", Kind.CREATE_TRIGGER );
 
     /**
      * Creates a SqlCreateFunction.
      */
-    public SqlCreateTrigger(ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier schema, SqlIdentifier name, SqlIdentifier table, String event, boolean notForReplication, SqlNode query) {
+    public SqlCreateTrigger(ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier schema, SqlIdentifier name, SqlIdentifier table, String event, SqlNode query) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.query = Objects.requireNonNull( query );
         this.table = table;
         this.schema = schema;
         this.event = event;
-        this.notForReplication = notForReplication;
     }
 
     @Override

@@ -34,15 +34,6 @@ boolean IfExistsOpt() :
     { return false; }
 }
 
-boolean NotForReplicationOpt() :
-{
-}
-{
-    <NOT><FOR><REPLICATION> { return true; }
-    |
-    { return false; }
-}
-
 SqlCreate SqlCreateSchema(Span s, boolean replace) :
 {
     final boolean ifNotExists;
@@ -520,7 +511,6 @@ private void Argument(SqlNodeList argumentList) :
 SqlCreate SqlCreateTrigger(Span s, boolean replace) :
 {
     final boolean ifNotExists;
-    final boolean notForReplication;
     final SqlIdentifier schema;
     final SqlIdentifier name;
     final SqlIdentifier table;
@@ -535,11 +525,10 @@ SqlCreate SqlCreateTrigger(Span s, boolean replace) :
     table = CompoundIdentifier()
     <AFTER>
     event = parseEvent()
-    notForReplication = NotForReplicationOpt()
     <DOLLAR>
     query = SqlQueryOrDml()
     {
-        return SqlDdlNodes.createTrigger(s.end(this), replace, ifNotExists, schema, name, table, event, notForReplication, query);
+        return SqlDdlNodes.createTrigger(s.end(this), replace, ifNotExists, schema, name, table, event, query);
     }
 }
 

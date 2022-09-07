@@ -106,8 +106,8 @@ public class SqlDdlNodes {
      */
     public static SqlCreateTrigger createTrigger(ParserPos pos, boolean replace, boolean ifNotExists,
                                                  SqlIdentifier schema, SqlIdentifier name, SqlIdentifier table,
-                                                 String event, boolean notForReplication, SqlNode query) {
-        return new SqlCreateTrigger( pos, replace, ifNotExists, schema, name, table, event, notForReplication, query);
+                                                 String event, SqlNode query) {
+        return new SqlCreateTrigger( pos, replace, ifNotExists, schema, name, table, event, query);
     }
 
     /**

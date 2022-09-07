@@ -136,7 +136,6 @@ data: {
             "JAR"
             "FILE"
             "ARCHIVE"
-            "REPLICATION"
         ]
 
         # List of keywords from "keywords" section that are not reserved.
