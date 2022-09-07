@@ -463,8 +463,20 @@ public class CatalogImpl extends Catalog {
         return procedureNames.values().stream().
                 map(entity -> {
                     AlgRoot algRoot = restoreAlgRoot(statement, entity);
-                    Object[] key = {entity.getDatabaseId(), entity.getSchemaId(), entity.getName()};
                     procedureNodes.putIfAbsent(entity.getId(), algRoot.alg );
+                    procedureAlgTypeInfo.putIfAbsent( entity.getId(), algRoot.validatedRowType );
+                    return algRoot.alg;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AlgNode> restoreTriggers(Transaction transaction) {
+        Statement statement = transaction.createStatement();
+        return triggerNames.values().stream().
+                map(entity -> {
+                    AlgRoot algRoot = restoreAlgRoot(statement, entity);
+                    triggerNodes.putIfAbsent(entity.getId(), algRoot.alg );
                     procedureAlgTypeInfo.putIfAbsent( entity.getId(), algRoot.validatedRowType );
                     return algRoot.alg;
                 })

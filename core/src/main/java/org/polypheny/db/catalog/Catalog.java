@@ -127,6 +127,9 @@ public abstract class Catalog {
     public abstract List<AlgNode> restoreProcedures(Transaction transaction);
 
 
+    public abstract List<AlgNode> restoreTriggers(Transaction transaction);
+
+
     protected final boolean isValidIdentifier( final String str ) {
         return str.length() <= 100 && str.matches( "^[a-z_][a-z0-9_]*$" ) && !str.isEmpty();
     }
