@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.excel;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -353,84 +352,109 @@ class ExcelEnumerator<E> implements Enumerator<E> {
             if ( fieldType == null ) {
                 return cell;
             }
-            switch ( fieldType ) {
-                case BOOLEAN:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    return cell.getBooleanCellValue();
-                case BYTE:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    return Byte.parseByte( cell.getStringCellValue() );
-                case SHORT:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    return Short.parseShort( cell.getStringCellValue() );
-                case INT:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    return (Double.valueOf( cell.getNumericCellValue() ).intValue());
-                case LONG:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    return Long.parseLong( cell.getStringCellValue() );
-                case FLOAT:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    return Float.parseFloat( cell.getStringCellValue() );
-                case DOUBLE:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    return cell.getNumericCellValue();
-                case DATE:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    try {
-                        //convert date from string to date
-                        if ( cell.getCellType() == CellType.STRING ) {
-                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "dd.MM.yyyy", Locale.ENGLISH );
-                            LocalDate date2 = LocalDate.parse( cell.getStringCellValue(), formatter );
-                            return (int) (TimeUnit.DAYS.toMillis( date2.toEpochDay() ) / DateTimeUtils.MILLIS_PER_DAY);
-                        } else {
-                            Date date = cell.getDateCellValue();
-                            return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
+            try {
+
+                switch ( fieldType ) {
+                    case BOOLEAN:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        return cell.getBooleanCellValue();
+                    case BYTE:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        return Byte.parseByte( cell.getStringCellValue() );
+                    case SHORT:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        return Short.parseShort( cell.getStringCellValue() );
+                    case INT:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        return (Double.valueOf( cell.getNumericCellValue() ).intValue());
+                    case LONG:
+                        if ( cell == null ) {
+                            return null;
                         }
 
+                        if ( cell.getCellType() == CellType.STRING ) {
+                            return Long.parseLong( cell.getStringCellValue() );
+                        } else if ( cell.getCellType() == CellType.NUMERIC ) {
+                            return Long.toString( (long) cell.getNumericCellValue() );
+                        }
+                        return Long.parseLong( String.valueOf( cell.getNumericCellValue() ) );
+                    case FLOAT:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        if ( cell.getCellType() == CellType.STRING ) {
+                            return Float.parseFloat( cell.getStringCellValue() );
+                        } else if ( cell.getCellType() == CellType.NUMERIC ) {
+                            return Float.parseFloat( String.valueOf( cell.getNumericCellValue() ) );
+                        }
+                        return Float.parseFloat( String.valueOf( cell.getNumericCellValue() ) );
+                    case DOUBLE:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        return cell.getNumericCellValue();
+                    case DATE:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        try {
+                            //convert date from string to date
+                            if ( cell.getCellType() == CellType.STRING ) {
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "dd.MM.yyyy", Locale.ENGLISH );
+                                LocalDate date2 = LocalDate.parse( cell.getStringCellValue(), formatter );
+                                return (int) (TimeUnit.DAYS.toMillis( date2.toEpochDay() ) / DateTimeUtils.MILLIS_PER_DAY);
+                            } else {
+                                Date date = cell.getDateCellValue();
+                                return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
+                            }
 
-                    } catch ( Exception e ) {
-                        return null;
-                    }
-                case TIME:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    try {
-                        Date date = TIME_FORMAT_TIME.parse( cell.getStringCellValue() );
-                        return (int) date.getTime();
-                    } catch ( ParseException e ) {
-                        return null;
-                    }
-                case TIMESTAMP:
-                    if ( cell == null ) {
-                        return null;
-                    }
-                    try {
-                        Date date = TIME_FORMAT_TIMESTAMP.parse( cell.getStringCellValue() );
-                        return date.getTime();
-                    } catch ( ParseException e ) {
-                        return null;
-                    }
-                case STRING:
-                default:
-                    return cell.getStringCellValue();
+
+                        } catch ( Exception e ) {
+                            return null;
+                        }
+                    case TIME:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        try {
+                            Date date = TIME_FORMAT_TIME.parse( cell
+                                    .getStringCellValue() );
+                            return (int) date.getTime();
+
+
+                        } catch ( Exception e ) {
+                            return null;
+                        }
+                    case TIMESTAMP:
+                        if ( cell == null ) {
+                            return null;
+                        }
+                        try {
+                            if ( cell.getCellType() == CellType.STRING ) {
+                                return cell.getStringCellValue();
+                            } else if ( cell.getCellType() == CellType.NUMERIC ) {
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "yyyy-mm-dd hh:mm:ss", Locale.ENGLISH );
+                                LocalDate date2 = LocalDate.parse( cell.getStringCellValue(), formatter );
+                                return date2.toString();
+                            }
+
+                        } catch ( Exception e ) {
+                            return null;
+                        }
+                    case STRING:
+                    default:
+                        return cell.getStringCellValue();
+                }
+            } catch ( Exception e ) {
+                return cell.getStringCellValue();
             }
         }
 
