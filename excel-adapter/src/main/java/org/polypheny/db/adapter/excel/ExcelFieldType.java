@@ -15,6 +15,7 @@
  */
 
 package org.polypheny.db.adapter.excel;
+
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -22,6 +23,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.apache.poi.ss.usermodel.Cell;
+
 /**
  * Type of a field in a Excel file.
  *
@@ -103,6 +105,8 @@ enum ExcelFieldType {
     public static ExcelFieldType of( String typeString ) {
         return MAP.get( typeString );
     }
+
+
     public static ExcelFieldType of( Cell cell ) {
         return MAP.get( cell );
     }

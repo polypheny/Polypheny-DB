@@ -38,7 +38,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class ExcelTableScan extends TableScan implements EnumerableAlg{
+public class ExcelTableScan extends TableScan implements EnumerableAlg {
 
     final ExcelTranslatableTable excelTable;
     final int[] fields;
@@ -103,4 +103,5 @@ public class ExcelTableScan extends TableScan implements EnumerableAlg{
         }*/
         return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( ExcelTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
     }
+
 }

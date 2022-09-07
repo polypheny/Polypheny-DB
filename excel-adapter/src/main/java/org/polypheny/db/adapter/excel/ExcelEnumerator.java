@@ -128,7 +128,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<ExcelFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
-        //Iterator<Row> rows = null;
+
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
@@ -162,7 +162,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                         fieldTypes.add( fieldType );
                     }
                 }
-                //rowCount++;
+
             }
         } catch ( IOException e ) {
             // ignore
@@ -215,7 +215,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                         fieldTypes.add( fieldType );
                     }
                 }
-                //rowCount++;
+
             }
         } catch ( IOException e ) {
             // ignore
@@ -226,18 +226,6 @@ class ExcelEnumerator<E> implements Enumerator<E> {
         }
         return typeFactory.createStructType( Pair.zip( names, types ) );
     }
-
-//    public static Iterator<Row> openExcel( Source source ) throws IOException {
-//
-//        Iterator<Row> rowIterator = null;
-//        FileInputStream fileIn = new FileInputStream(source.file());
-//
-//        Workbook workbook = WorkbookFactory.create(fileIn);
-//        workbook.getNumberOfSheets();
-//        Sheet sheet = workbook.getSheetAt(0);
-//        rowIterator = sheet.iterator();
-//        return rowIterator;
-//    }
 
 
     public static Iterator<Row> openExcel( Source source, String sheetname ) throws IOException {
@@ -277,7 +265,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                 if ( cancelFlag.get() ) {
                     return false;
                 }
-                // final String[] strings = reader.readNext();
+
                 Row columnValues = null;
                 try {
                     if ( reader.hasNext() ) {
@@ -306,7 +294,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
-        // return true;
+
     }
 
 
