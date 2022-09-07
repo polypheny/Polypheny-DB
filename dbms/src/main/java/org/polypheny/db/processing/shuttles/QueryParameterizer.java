@@ -167,7 +167,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             return logicalTableModify;
         } else if (other instanceof LogicalTriggerExecution) {
             LogicalTriggerExecution triggerExecution = (LogicalTriggerExecution) other;
-            HashMap<String, Object> insertParameters = extractParameters(triggerExecution);
+            Map<String, Object> insertParameters = extractParameters(triggerExecution);
             ArrayList<AlgNode> parameterizedNodes = insertProcedureParameters(triggerExecution, insertParameters);
             return triggerExecution.copy(triggerExecution.getTraitSet(), parameterizedNodes);
         } else {
@@ -176,7 +176,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     }
 
     @NotNull
-    private ArrayList<AlgNode> insertProcedureParameters(LogicalTriggerExecution triggerExecution, HashMap<String, Object> insertParameters) {
+    private ArrayList<AlgNode> insertProcedureParameters(LogicalTriggerExecution triggerExecution, Map<String, Object> insertParameters) {
         ArrayList<AlgNode> parameterizedNodes = new ArrayList<>();
         for (AlgNode triggerInput : triggerExecution.getInputs()) {
             if(triggerInput instanceof LogicalProcedureExecution) {
@@ -190,10 +190,30 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     }
 
     @NotNull
-    private HashMap<String, Object> extractParameters(LogicalTriggerExecution triggerExecution) {
+    private Map<String, Object> extractParameters(LogicalTriggerExecution triggerExecution) {
         LogicalTableModify insertNode = triggerExecution.getModify();
-        LogicalValues logicalValues = (LogicalValues) insertNode.getInput();
-        HashMap<String, Object> insertParameters = new HashMap<>();
+        AlgNode insertInput = insertNode.getInput();
+        LogicalValues logicalValues = getLogicalValues(insertInput);
+        return addParameter(logicalValues);
+    }
+
+    private LogicalValues getLogicalValues(AlgNode insertInput) {
+        LogicalValues logicalValues;
+        if(insertInput instanceof LogicalValues) {
+            // LogicalValues when more than value given
+            logicalValues = (LogicalValues) insertInput;
+        } else if (insertInput instanceof LogicalProject) {
+            // LogicalProject when one value given
+            var logicalProject = (LogicalProject) insertInput;
+            logicalValues = (LogicalValues) logicalProject.getInput();
+        } else {
+            throw new RuntimeException("Cannot extract parameters from LogicalTableModify");
+        }
+        return logicalValues;
+    }
+
+    private Map<String, Object> addParameter(LogicalValues logicalValues) {
+        Map<String, Object> insertParameters = new HashMap<>();
         for ( ImmutableList<RexLiteral> node : logicalValues.getTuples() ) {
             int i = 0;
             for ( RexLiteral literal : node ) {
