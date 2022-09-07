@@ -438,14 +438,9 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                             return null;
                         }
                         try {
-                            if ( cell.getCellType() == CellType.STRING ) {
-                                return cell.getStringCellValue();
-                            } else if ( cell.getCellType() == CellType.NUMERIC ) {
-                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "yyyy-mm-dd hh:mm:ss", Locale.ENGLISH );
-                                LocalDate date2 = LocalDate.parse( cell.getStringCellValue(), formatter );
-                                return date2.toString();
-                            }
-
+                            Date date = TIME_FORMAT_TIMESTAMP.parse( cell
+                                    .getStringCellValue() );
+                            return date.getTime();
                         } catch ( Exception e ) {
                             return null;
                         }
