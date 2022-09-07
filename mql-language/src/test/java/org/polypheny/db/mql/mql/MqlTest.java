@@ -28,8 +28,8 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
-import org.polypheny.db.languages.mql2alg.MqlMockCatalog;
 import org.polypheny.db.mql.MqlLanguageDependent;
+import org.polypheny.db.mql.mql2alg.MqlMockCatalog;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.util.SourceStringReader;
 

@@ -70,6 +70,11 @@ public class MockCatalogDocker extends MockCatalog {
     }
 
     @Override
+    public List<CatalogTrigger> getTriggers() {
+        return null;
+    }
+
+    @Override
     public List<CatalogTrigger> getTriggers(String schemaName, String tableName) {
         throw new UnsupportedOperationException();
     }
@@ -121,6 +126,11 @@ public class MockCatalogDocker extends MockCatalog {
 
     @Override
     public List<AlgNode> restoreProcedures(Transaction transaction) {
+        return null;
+    }
+
+    @Override
+    public List<AlgNode> restoreTriggers(Transaction transaction) {
         return null;
     }
 

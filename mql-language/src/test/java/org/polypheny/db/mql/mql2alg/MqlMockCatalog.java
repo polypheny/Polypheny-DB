@@ -48,6 +48,11 @@ public class MqlMockCatalog extends MockCatalog {
     }
 
     @Override
+    public List<AlgNode> restoreTriggers(Transaction transaction) {
+        return null;
+    }
+
+    @Override
     public CatalogSchema getSchema( long schemaId ) {
         return new CatalogSchema( 1, "private", 0, 0, "tester", SchemaType.DOCUMENT );
     }
@@ -78,7 +83,17 @@ public class MqlMockCatalog extends MockCatalog {
     }
 
     @Override
+    public List<CatalogTrigger> getTriggers() {
+        return null;
+    }
+
+    @Override
     public List<CatalogTrigger> getTriggers(String schemaName, String tableName) {
+        return null;
+    }
+
+    @Override
+    public Map<Long, AlgNode> getTriggerNodes() {
         return null;
     }
 
