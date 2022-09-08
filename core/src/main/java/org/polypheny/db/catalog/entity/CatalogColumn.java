@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;

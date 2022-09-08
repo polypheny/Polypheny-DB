@@ -19,6 +19,7 @@ package org.polypheny.db.schema.graph;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 
+
 public interface QueryableGraph {
 
     /**

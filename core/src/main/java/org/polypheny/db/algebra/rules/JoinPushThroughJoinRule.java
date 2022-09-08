@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.algebra.rules;
@@ -41,7 +58,8 @@ import org.polypheny.db.util.mapping.Mappings;
 /**
  * Rule that pushes the right input of a join into through the left input of the join, provided that the left input is also a join.
  *
- * Thus, {@code (A join B) join C} becomes {@code (A join C) join B}. The advantage of applying this rule is that it may be possible to apply conditions earlier. For instance,
+ * Thus, {@code (A join B) join C} becomes {@code (A join C) join B}. The advantage of applying this rule is that it may be
+ * possible to apply conditions earlier. For instance,
  *
  * <blockquote>
  * <pre>(sales as s join product_class as pc on true)
@@ -56,19 +74,26 @@ import org.polypheny.db.util.mapping.Mappings;
  * join product_class as pc
  * on p.product_class_id = pc.product_class_id</pre></blockquote>
  *
- * Before the rule, one join has two conditions and the other has none ({@code ON TRUE}). After the rule, each join has one condition.
+ * Before the rule, one join has two conditions and the other has none ({@code ON TRUE}). After the rule, each join
+ * has one condition.
  */
 public class JoinPushThroughJoinRule extends AlgOptRule {
 
     /**
      * Instance of the rule that works on logical joins only, and pushes to the right.
      */
-    public static final AlgOptRule RIGHT = new JoinPushThroughJoinRule( "JoinPushThroughJoinRule:right", true, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final AlgOptRule RIGHT = new JoinPushThroughJoinRule(
+            "JoinPushThroughJoinRule:right",
+            true, LogicalJoin.class,
+            AlgFactories.LOGICAL_BUILDER );
 
     /**
      * Instance of the rule that works on logical joins only, and pushes to the left.
      */
-    public static final AlgOptRule LEFT = new JoinPushThroughJoinRule( "JoinPushThroughJoinRule:left", false, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final AlgOptRule LEFT = new JoinPushThroughJoinRule(
+            "JoinPushThroughJoinRule:left",
+            false, LogicalJoin.class,
+            AlgFactories.LOGICAL_BUILDER );
 
     private final boolean right;
 
@@ -77,9 +102,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
      * Creates a JoinPushThroughJoinRule.
      */
     public JoinPushThroughJoinRule( String description, boolean right, Class<? extends Join> clazz, AlgBuilderFactory algBuilderFactory ) {
-        super(
-                operand( clazz, operand( clazz, any() ), operand( AlgNode.class, any() ) ),
-                algBuilderFactory, description );
+        super( operand( clazz, operand( clazz, any() ), operand( AlgNode.class, any() ) ), algBuilderFactory, description );
         this.right = right;
     }
 

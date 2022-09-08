@@ -587,7 +587,7 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Initiates all needed maps for adapters
-     * <p>
+     *
      * adapters: adapterId {@code ->} CatalogAdapter
      * adapterName: adapterName {@code ->}  CatalogAdapter
      */
@@ -599,7 +599,7 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Initiates all needed maps for query interfaces
-     * <p>
+     *
      * queryInterfaces: ifaceId  CatalogQueryInterface
      * queryInterfaceNames: ifaceName  CatalogQueryInterface
      */
@@ -610,8 +610,8 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * creates all needed maps for keys and constraints
-     * <p>
+     * Creates all needed maps for keys and constraints
+     *
      * keyColumns: [columnId1, columnId2,...]  keyId
      * keys: keyId  CatalogKey
      * primaryKeys: keyId  CatalogPrimaryKey
@@ -630,8 +630,8 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * creates all needed maps for users
-     * <p>
+     * Creates all needed maps for users
+     *
      * users: userId {@code ->} CatalogUser
      * userNames: name {@code ->} CatalogUser
      */
@@ -642,8 +642,8 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * initialize the column maps
-     * <p>
+     * Initialize the column maps
+     *
      * columns: columnId {@code ->} CatalogColumn
      * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} {@code ->} CatalogColumn
      * columnPlacements: new Object[]{adapterId, columnId} {@code ->} CatalogPlacement
@@ -660,7 +660,7 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Creates all maps needed for tables
-     * <p>
+     *
      * tables: tableId {@code ->} CatalogEntity
      * tableChildren: tableId {@code ->} [columnId, columnId,..]
      * tableNames: new Object[]{databaseId, schemaId, tableName} {@code ->} CatalogEntity
@@ -708,8 +708,8 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * creates all needed maps for schemas
-     * <p>
+     * Creates all needed maps for schemas
+     *
      * schemas: schemaId {@code ->} CatalogNamespace
      * schemaChildren: schemaId {@code ->} [tableId, tableId, etc]
      * schemaNames: new Object[]{databaseId, schemaName} {@code ->} CatalogNamespace
@@ -724,8 +724,8 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * creates maps for databases
-     * <p>
+     * Creates maps for databases
+     *
      * databases: databaseId {@code ->} CatalogDatabase
      * databaseNames: databaseName {@code ->} CatalogDatabase
      * databaseChildren: databaseId {@code ->} [tableId, tableId,...]
@@ -1097,9 +1097,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
-
         List<CatalogDatabase> catalogDatabases = getDatabases( databaseNamePattern );
-
         if ( catalogDatabases.size() > 0 ) {
             Stream<CatalogSchema> catalogSchemas = catalogDatabases.stream().filter( d -> databaseChildren.containsKey( d.id ) ).flatMap( d -> Objects.requireNonNull( databaseChildren.get( d.id ) ).stream() ).map( schemas::get );
 
@@ -1108,7 +1106,6 @@ public class CatalogImpl extends Catalog {
             }
             return catalogSchemas.collect( Collectors.toList() );
         }
-
         return new ArrayList<>();
     }
 
@@ -1278,14 +1275,11 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public long addGraphDatabase( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
-
         if ( getGraphs( databaseId, new Pattern( name ) ).size() != 0 && !ifNotExists ) {
             throw new GraphAlreadyExistsException( name );
         }
 
         long id = addSchema( name, databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
-
-        //addGraphLogistics( id, stores );
 
         CatalogGraphDatabase graph = new CatalogGraphDatabase( databaseId, id, name, Catalog.defaultUserId, modifiable, ImmutableList.of() );
 
@@ -1309,7 +1303,6 @@ public class CatalogImpl extends Catalog {
         CatalogTable edgeProperties = Objects.requireNonNull( tables.get( mapping.edgesPropertyId ) );
 
         for ( DataStore store : stores ) {
-
             addPartitionPlacement(
                     store.getAdapterId(),
                     nodes.id,
@@ -1345,8 +1338,6 @@ public class CatalogImpl extends Catalog {
                     null,
                     null,
                     DataPlacementRole.UPTODATE );
-
-            //store.createTable( statement.getPrepareContext(), rels, rels.partitionProperty.partitionIds );
         }
     }
 
@@ -1512,10 +1503,54 @@ public class CatalogImpl extends Catalog {
         long targetEdgeId;
 
         if ( !onlyPlacement ) {
-            idEdgeId = addColumn( "_id_", edgesId, 0, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
-            labelEdgeId = addColumn( "_label_", edgesId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-            sourceEdgeId = addColumn( "_l_id_", edgesId, 2, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
-            targetEdgeId = addColumn( "_r_id_", edgesId, 3, PolyType.VARCHAR, null, 36, null, null, null, false, Collation.getDefaultCollation() );
+            idEdgeId = addColumn(
+                    "_id_",
+                    edgesId,
+                    0,
+                    PolyType.VARCHAR,
+                    null,
+                    36,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            labelEdgeId = addColumn(
+                    "_label_",
+                    edgesId,
+                    1,
+                    PolyType.VARCHAR,
+                    null,
+                    255,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            sourceEdgeId = addColumn(
+                    "_l_id_",
+                    edgesId,
+                    2,
+                    PolyType.VARCHAR,
+                    null,
+                    36,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            targetEdgeId = addColumn(
+                    "_r_id_",
+                    edgesId,
+                    3,
+                    PolyType.VARCHAR,
+                    null,
+                    36,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
         } else {
             idEdgeId = getColumn( edgesId, "_id_" ).id;
             labelEdgeId = getColumn( edgesId, "_label_" ).id;
@@ -1582,9 +1617,42 @@ public class CatalogImpl extends Catalog {
         long valueEdgePropertyId;
 
         if ( !onlyPlacement ) {
-            idEdgePropertyId = addColumn( "_id_", edgesPropertyId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-            keyEdgePropertyId = addColumn( "_key_", edgesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
-            valueEdgePropertyId = addColumn( "_value_", edgesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            idEdgePropertyId = addColumn(
+                    "_id_",
+                    edgesPropertyId,
+                    0,
+                    PolyType.VARCHAR,
+                    null,
+                    255,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            keyEdgePropertyId = addColumn(
+                    "_key_",
+                    edgesPropertyId,
+                    1,
+                    PolyType.VARCHAR,
+                    null,
+                    255,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            valueEdgePropertyId = addColumn(
+                    "_value_",
+                    edgesPropertyId,
+                    2,
+                    PolyType.VARCHAR,
+                    null,
+                    255,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
         } else {
             idEdgePropertyId = getColumn( edgesPropertyId, "_id_" ).id;
             keyEdgePropertyId = getColumn( edgesPropertyId, "_key_" ).id;
@@ -1799,7 +1867,10 @@ public class CatalogImpl extends Catalog {
         List<CatalogSchema> catalogSchemas = getSchemas( databaseNamePattern, schemaNamePattern );
 
         if ( catalogSchemas.size() > 0 ) {
-            Stream<CatalogTable> catalogTables = catalogSchemas.stream().filter( t -> schemaChildren.containsKey( t.id ) ).flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() ).map( tables::get );
+            Stream<CatalogTable> catalogTables = catalogSchemas.stream()
+                    .filter( t -> schemaChildren.containsKey( t.id ) )
+                    .flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() )
+                    .map( tables::get );
 
             if ( tableNamePattern != null ) {
                 catalogTables = catalogTables.filter( t -> t.name.matches( tableNamePattern.toRegex() ) );
@@ -2387,9 +2458,8 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             columnPlacements.put( new Object[]{ adapterId, columnId }, columnPlacement );
 
-            // adds this ColumnPlacement to existing DataPlacement container
+            // Adds this ColumnPlacement to existing DataPlacement container
             addColumnsToDataPlacement( adapterId, column.tableId, Arrays.asList( columnId ) );
-
         }
         listeners.firePropertyChange( "columnPlacement", null, columnPlacement );
     }
@@ -2421,7 +2491,6 @@ public class CatalogImpl extends Catalog {
                 partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
                 listeners.firePropertyChange( "partitionPlacement", old, placement );
             }
-
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
             getPartition( partitionId );
@@ -2484,7 +2553,6 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern ) {
         if ( schemas.containsKey( namespaceId ) ) {
-
             CatalogSchema schema = Objects.requireNonNull( schemas.get( namespaceId ) );
             if ( namePattern != null ) {
                 return Collections.singletonList( collectionNames.get( new Object[]{ schema.databaseId, namespaceId, namePattern.pattern } ) );
@@ -2504,8 +2572,14 @@ public class CatalogImpl extends Catalog {
         }
 
         CatalogSchema namespace = getSchema( schemaId );
-
-        CatalogCollection collection = new CatalogCollection( Catalog.defaultDatabaseId, schemaId, collectionId, name, List.of(), EntityType.ENTITY, null );
+        CatalogCollection collection = new CatalogCollection(
+                Catalog.defaultDatabaseId,
+                schemaId,
+                collectionId,
+                name,
+                List.of(),
+                EntityType.ENTITY,
+                null );
 
         synchronized ( this ) {
             collections.put( collectionId, collection );
@@ -2527,8 +2601,6 @@ public class CatalogImpl extends Catalog {
         }
 
         CatalogCollection collection = old.addPlacement( adapterId );
-
-        //addGraphPlacementLogistics( adapterId, graphId );
 
         synchronized ( this ) {
             collectionPlacements.put( new Object[]{ collectionId, adapterId }, placement );
@@ -2691,7 +2763,6 @@ public class CatalogImpl extends Catalog {
         CatalogTable oldTable = getTable( getColumn( columnId ).tableId );
 
         synchronized ( this ) {
-
             if ( log.isDebugEnabled() ) {
                 log.debug( "Is flagged for deletion {}", isTableFlaggedForDeletion( oldTable.id ) );
             }
@@ -3164,7 +3235,6 @@ public class CatalogImpl extends Catalog {
             updatedTable = table.getTableWithColumns( ImmutableList.copyOf( columnIds ) );
             tables.replace( tableId, updatedTable );
             tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.namespaceId, updatedTable.name }, updatedTable );
-
         }
         listeners.firePropertyChange( "column", null, column );
         return id;
@@ -3431,7 +3501,7 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
-     * <p>
+     *
      * TODO: String is only a temporary solution
      *
      * @param columnId The id of the column
@@ -4836,7 +4906,7 @@ public class CatalogImpl extends Catalog {
             }
         }
 
-        return catalogAdapters.stream().collect( Collectors.toList() );
+        return new ArrayList<>( catalogAdapters );
     }
 
 
@@ -4857,7 +4927,7 @@ public class CatalogImpl extends Catalog {
                 )
         );
 
-        return partitionGroups.stream().collect( Collectors.toList() );
+        return new ArrayList<>( partitionGroups );
     }
 
 
@@ -4875,7 +4945,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns list with the index of the partitions on this store from  0..numPartitions
+     * Returns list with the index of the partitions on this store from  0...numPartitions
      *
      * @param adapterId The unique id of the adapter
      * @param tableId The unique id of the table
@@ -4922,8 +4992,7 @@ public class CatalogImpl extends Catalog {
     public List<CatalogDataPlacement> getDataPlacements( long tableId ) {
         List<CatalogDataPlacement> catalogDataPlacements = new ArrayList<>();
 
-        getTable( tableId ).dataPlacements.forEach( adapterId ->
-                catalogDataPlacements.add( getDataPlacement( adapterId, tableId ) ) );
+        getTable( tableId ).dataPlacements.forEach( adapterId -> catalogDataPlacements.add( getDataPlacement( adapterId, tableId ) ) );
 
         return catalogDataPlacements;
     }

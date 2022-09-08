@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
+
 public class LogicalDocumentTransformer extends DocumentTransformer {
 
     /**

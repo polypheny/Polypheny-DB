@@ -16,7 +16,6 @@
 
 package org.polypheny.db.runtime;
 
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,10 +52,10 @@ import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BsonUtil;
 
+
 @Deterministic
 @Slf4j
 public class CypherFunctions {
-
 
     /**
      * Matches all suitable paths for the given graph.
@@ -99,7 +98,6 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static Enumerable<?> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
-
         PolyMap<String, PolyNode> ns = new PolyMap<>();
         for ( PolyNode node : nodes ) {
             ns.put( node.id, node );
@@ -111,7 +109,6 @@ public class CypherFunctions {
         }
 
         return Linq4j.asEnumerable( List.of( new PolyGraph( ns, es ) ) );
-
     }
 
 
@@ -327,7 +324,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyEdge adjustEdge( PolyEdge edge, PolyNode left, PolyNode right ) {
-        // if isVariable is true, the node is only a placeholder and the id should not be replaced
+        // If isVariable is true, the node is only a placeholder and the id should not be replaced
         return edge.from( left.isVariable() ? null : left.id, right.isVariable() ? null : right.id );
     }
 
@@ -464,7 +461,6 @@ public class CypherFunctions {
 
                 // edge property table insert
                 edgePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, edge );
-
             }
 
             i++;

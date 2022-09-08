@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.algebra.rules;
@@ -172,10 +189,13 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
 
 
         /**
-         * For static schema systems, a filter that is always false or null can be replaced by a values operator that produces no rows, as the schema information can just be taken from the input Rel.
-         * In dynamic schema environments, the filter might have an unknown input type, in these cases they must define a system specific alternative to a Values operator, such as inserting a limit 0 instead of a filter on top of the original input.
+         * For static schema systems, a filter that is always false or null can be replaced by a values operator that
+         * produces no rows, as the schema information can just be taken from the input Rel. In dynamic schema environments,
+         * the filter might have an unknown input type, in these cases they must define a system specific alternative to a
+         * Values operator, such as inserting a limit 0 instead of a filter on top of the original input.
          *
-         * The default implementation of this method is to call {@link AlgBuilder#empty}, which for the static schema will be optimized to an empty {@link org.polypheny.db.algebra.core.Values}.
+         * The default implementation of this method is to call {@link AlgBuilder#empty}, which for the static schema will be
+         * optimized to an empty {@link org.polypheny.db.algebra.core.Values}.
          *
          * @param input alg to replace, assumes caller has already determined equivalence to Values operation for 0 records or a false filter.
          * @return equivalent but less expensive replacement rel

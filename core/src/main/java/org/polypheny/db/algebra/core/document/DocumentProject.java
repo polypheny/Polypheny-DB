@@ -26,6 +26,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 
+
 public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
     public final List<? extends RexNode> projects;

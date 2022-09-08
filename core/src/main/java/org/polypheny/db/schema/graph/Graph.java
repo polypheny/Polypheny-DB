@@ -24,6 +24,7 @@ import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
+
 public interface Graph extends Wrapper {
 
     long getId();

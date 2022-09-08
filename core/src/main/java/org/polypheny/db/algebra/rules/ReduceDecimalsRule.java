@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.algebra.rules;
@@ -53,15 +70,17 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * ReduceDecimalsRule is a rule which reduces decimal operations (such as casts or arithmetic) into operations involving more primitive types (such as longs and doubles). The rule allows Polypheny-DB
- * implementations to deal with decimals in a consistent manner, while saving the effort of implementing them.
+ * ReduceDecimalsRule is a rule which reduces decimal operations (such as casts or arithmetic) into operations involving more
+ * primitive types (such as longs and doubles). The rule allows Polypheny-DB implementations to deal with decimals in a
+ * consistent manner, while saving the effort of implementing them.
  *
  * The rule can be applied to a
  * {@link LogicalCalc} with a program for which
  * {@link RexUtil#requiresDecimalExpansion} returns true. The rule relies on a
  * {@link RexShuttle} to walk over relational expressions and replace them.
  *
- * While decimals are generally not implemented by the Polypheny-DB runtime, the rule is optionally applied, in order to support the situation in which we would like to push down decimal operations to an external database.
+ * While decimals are generally not implemented by the Polypheny-DB runtime, the rule is optionally applied, in order to
+ * support the situation in which we would like to push down decimal operations to an external database.
  */
 public class ReduceDecimalsRule extends AlgOptRule {
 
@@ -282,12 +301,16 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
     /**
-     * Rewrites a decimal expression for a specific set of SqlOperator's. In general, most expressions are rewritten in such a way that SqlOperator's do not have to deal with decimals. Decimals are represented by their
-     * unscaled integer representations, similar to {@link BigDecimal#unscaledValue()} (i.e. 10^scale). Once decimals are decoded, SqlOperators can then operate on the integer representations. The value can later be recoded as a decimal.
+     * Rewrites a decimal expression for a specific set of SqlOperator's. In general, most expressions are rewritten in such
+     * a way that SqlOperator's do not have to deal with decimals. Decimals are represented by their unscaled integer
+     * representations, similar to {@link BigDecimal#unscaledValue()} (i.e. 10^scale). Once decimals are decoded, SqlOperators
+     * can then operate on the integer representations. The value can later be recoded as a decimal.
      *
-     * For example, suppose one casts 2.0 as a decima(10,4). The value is decoded (20), multiplied by a scale factor (1000), for a result of (20000) which is encoded as a decimal(10,4), in this case 2.0000
+     * For example, suppose one casts 2.0 as a decima(10,4). The value is decoded (20), multiplied by a scale factor (1000),
+     * for a result of (20000) which is encoded as a decimal(10,4), in this case 2.0000
      *
-     * To avoid the lengthy coding of RexNode expressions, this base class provides succinct methods for building expressions used in rewrites.
+     * To avoid the lengthy coding of RexNode expressions, this base class provides succinct methods for building expressions
+     * used in rewrites.
      */
     public abstract class RexExpander {
 
@@ -318,10 +341,12 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
         /**
-         * This defaults to the utility method, {@link RexUtil#requiresDecimalExpansion(RexNode, boolean)} which checks general guidelines on whether a rewrite should be considered at all.  In general, it is helpful to update
-         * the utility method since that method is often used to filter the somewhat expensive rewrite process.
+         * This defaults to the utility method, {@link RexUtil#requiresDecimalExpansion(RexNode, boolean)} which checks
+         * general guidelines on whether a rewrite should be considered at all. In general, it is helpful to update the
+         * utility method since that method is often used to filter the somewhat expensive rewrite process.
          *
-         * However, this method provides another place for implementations of RexExpander to make a more detailed analysis before deciding on whether to perform a rewrite.
+         * However, this method provides another place for implementations of RexExpander to make a more detailed analysis
+         * before deciding on whether to perform a rewrite.
          */
         public boolean canExpand( RexCall call ) {
             return RexUtil.requiresDecimalExpansion( call, false );
@@ -329,7 +354,8 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
         /**
-         * Rewrites an expression containing decimals. Normally, this method always performs a rewrite, but implementations may choose to return the original expression if no change was required.
+         * Rewrites an expression containing decimals. Normally, this method always performs a rewrite, but implementations
+         * may choose to return the original expression if no change was required.
          */
         public abstract RexNode expand( RexCall call );
 
@@ -422,7 +448,8 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
         /**
-         * Scales down a decimal value, and returns the scaled value as an exact numeric. with the rounding convention {@link BigDecimal#ROUND_HALF_UP BigDecimal.ROUND_HALF_UP}. (Values midway between two points are rounded away from zero.)
+         * Scales down a decimal value, and returns the scaled value as an exact numeric. with the rounding convention
+         * {@link BigDecimal#ROUND_HALF_UP BigDecimal.ROUND_HALF_UP}. (Values midway between two points are rounded away from zero.)
          *
          * @param value the integer representation of a decimal
          * @param scale a value from zero to max precision
@@ -465,7 +492,8 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
         /**
-         * Scales down a decimal value and returns the scaled value as a an double precision approximate value. Scaling is implemented with double precision arithmetic.
+         * Scales down a decimal value and returns the scaled value as a an double precision approximate value.
+         * Scaling is implemented with double precision arithmetic.
          *
          * @param value the integer representation of a decimal
          * @param scale a value from zero to max precision
@@ -483,8 +511,10 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
         /**
-         * Ensures a value is of a required scale. If it is not, then the value is multiplied by a scale factor. Scaling up an exact value is limited to max precision - 1, because we cannot represent the result of
-         * larger scales internally. Scaling up a floating point value is more flexible since the value may be very small despite having a scale of zero and the scaling may still produce a reasonable result.
+         * Ensures a value is of a required scale. If it is not, then the value is multiplied by a scale factor. Scaling up
+         * an exact value is limited to max precision - 1, because we cannot represent the result of larger scales internally.
+         * Scaling up a floating point value is more flexible since the value may be very small despite having a scale of
+         * zero and the scaling may still produce a reasonable result.
          *
          * @param value integer representation of decimal, or a floating point number
          * @param scale current scale, 0 for floating point numbers
@@ -525,7 +555,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
         /**
-         * Retrieves the primitive value of a numeric node. If the node is a decimal, then it must first be decoded. Otherwise the original node may be returned.
+         * Retrieves the primitive value of a numeric node. If the node is a decimal, then it must first be decoded. Otherwise, the original node may be returned.
          *
          * @param node a numeric node, possibly a decimal
          * @return the primitive value of the numeric node
@@ -540,7 +570,8 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
         /**
-         * Casts a decimal's integer representation to a decimal node. If the expression is not the expected integer type, then it is casted first.
+         * Casts a decimal's integer representation to a decimal node. If the expression is not the expected integer type,
+         * then it is casted first.
          *
          * This method does not request an overflow check.
          *
@@ -554,7 +585,8 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
 
         /**
-         * Casts a decimal's integer representation to a decimal node. If the expression is not the expected integer type, then it is casted first.
+         * Casts a decimal's integer representation to a decimal node. If the expression is not the expected integer type,
+         * then it is casted first.
          *
          * An overflow check may be requested to ensure the internal value does not exceed the maximum value of the decimal type.
          *

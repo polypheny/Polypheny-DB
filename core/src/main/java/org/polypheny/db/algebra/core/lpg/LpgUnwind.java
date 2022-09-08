@@ -35,6 +35,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
+
 public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
     public final String alias;
@@ -67,7 +68,6 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
         AlgDataType arrayType = input.getCluster().getTypeFactory().createArrayType( ref.getType(), -1 );
         ref = input.getCluster().getRexBuilder().makeCall( arrayType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_TO_LIST ), List.of( ref ) );
         return new LogicalLpgProject( input.getCluster(), input.getTraitSet(), input, Collections.singletonList( ref ), Collections.singletonList( field.getName() ) );
-
     }
 
 

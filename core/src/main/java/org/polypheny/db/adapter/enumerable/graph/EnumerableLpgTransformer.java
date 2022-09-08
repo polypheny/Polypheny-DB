@@ -44,15 +44,11 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
+
 public class EnumerableLpgTransformer extends LpgTransformer implements EnumerableAlg {
 
     /**
      * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param inputs
-     * @param rowType
-     * @param operationOrder
      */
     public EnumerableLpgTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, traitSet, inputs, rowType, operationOrder, operation );
@@ -95,7 +91,7 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
 
         ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "enumerable" + System.nanoTime() ) );
 
-        // move executor enumerable into a lambda so parameters get not prematurely  executed with a "wrong" context (e.g. Cottontail)
+        // Move executor enumerable into a lambda so parameters get not prematurely  executed with a "wrong" context (e.g. Cottontail)
         FunctionExpression<Function<?>> expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
 
         builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );

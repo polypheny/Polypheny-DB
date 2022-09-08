@@ -102,7 +102,7 @@ public class CassandraStore extends DataStore {
     private CassandraSchema currentSchema;
 
     @Getter
-    // apparently this cannot be static according to lombok even if it should create a non-static getter
+    // Apparently this cannot be static according to lombok even if it should create a non-static getter
     private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 

@@ -20,6 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 
+
 public class LogicalCollection extends LogicalTable {
 
     protected LogicalCollection( long tableId, String logicalSchemaName, String logicalTableName, AlgProtoDataType protoRowType ) {

@@ -27,6 +27,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 
+
 @Getter
 public class LogicalLpgProject extends LpgProject {
 

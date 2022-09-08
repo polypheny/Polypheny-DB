@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.core.common.ContextSwitcher;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
+
 public class EnumerableContextSwitcher extends ContextSwitcher implements EnumerableAlg {
 
     /**

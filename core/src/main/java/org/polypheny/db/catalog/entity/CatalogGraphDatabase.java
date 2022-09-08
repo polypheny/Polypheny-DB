@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
+
 @EqualsAndHashCode
 public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGraphDatabase> {
 

@@ -31,6 +31,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.util.ValidatorUtil;
 
+
 public class LogicalDocumentProject extends DocumentProject {
 
     /**

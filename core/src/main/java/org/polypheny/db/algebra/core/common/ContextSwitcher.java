@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.core.common;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 
+
 public class ContextSwitcher extends SingleAlg {
 
     /**

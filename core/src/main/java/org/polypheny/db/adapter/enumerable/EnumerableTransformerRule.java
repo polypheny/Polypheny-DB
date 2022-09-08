@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
+
 public class EnumerableTransformerRule extends ConverterRule {
 
     public EnumerableTransformerRule() {

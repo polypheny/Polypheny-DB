@@ -47,7 +47,8 @@ import org.polypheny.db.schema.ModelTrait;
 /**
  * Abstract base class for relational expressions with a single input.
  * <p>
- * It is not required that single-input relational expressions use this class as a base class. However, default implementations of methods make life easier.
+ * It is not required that single-input relational expressions use this class as a base class. However, default
+ * implementations of methods make life easier.
  */
 public abstract class SingleAlg extends AbstractAlgNode {
 

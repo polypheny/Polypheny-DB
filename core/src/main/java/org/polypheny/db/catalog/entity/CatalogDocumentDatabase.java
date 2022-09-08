@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 
+
 public class CatalogDocumentDatabase implements CatalogObject {
 
     public final long id;

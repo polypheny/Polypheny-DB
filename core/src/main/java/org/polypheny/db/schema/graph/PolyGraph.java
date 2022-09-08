@@ -35,6 +35,7 @@ import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.schema.graph.PolyPath.PolySegment;
 import org.polypheny.db.util.Pair;
 
+
 @Getter
 public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
@@ -58,7 +59,6 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
     @Override
     public int compareTo( PolyGraph o ) {
-
         if ( this.nodes.size() > o.nodes.size() ) {
             return 1;
         }
@@ -88,7 +88,7 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
 
 
     public List<PolyPath> extract( PolyPath pattern ) {
-        // retrieve hop as de-referenced segments, which store the full information of nodes and edges
+        // Retrieve hop as de-referenced segments, which store the full information of nodes and edges
         List<List<PolySegment>> segments = pattern.getDerefSegments();
 
         List<List<TreePart>> trees = segments.stream().map( this::buildMatchingTree ).collect( Collectors.toList() );
@@ -125,7 +125,6 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         }
 
         return adjusted;
-
     }
 
 
@@ -222,20 +221,20 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
         for ( PolyEdge edge : edges.values() ) {
             PolyNode left = nodes.get( edge.source );
             PolyNode right = nodes.get( edge.target );
-            // we attach stubs, which allows ()->() and ()-()
+            // We attach stubs, which allows ()->() and ()-()
             if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( left, edge, right ) ) {
                     usedIds.add( Pair.of( edge.source, segment.source.getVariableName() ) );
                 }
             }
-            // we attach stubs, which allows ()<-() and ()-() AKA inverted
+            // We attach stubs, which allows ()<-() and ()-() AKA inverted
             if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
                 if ( segment.matches( right, edge, left ) ) {
                     usedIds.add( Pair.of( edge.target, segment.source.getVariableName() ) );
                 }
             }
         }
-        // so we filter out edges which point to the same node
+        // So we filter out edges which point to the same node
         usedIds.forEach( pair -> root.add( new TreePart( null, null, pair.left, null, pair.right ) ) );
     }
 

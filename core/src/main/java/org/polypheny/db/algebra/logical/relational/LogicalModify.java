@@ -16,7 +16,6 @@
 
 package org.polypheny.db.algebra.logical.relational;
 
-
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;

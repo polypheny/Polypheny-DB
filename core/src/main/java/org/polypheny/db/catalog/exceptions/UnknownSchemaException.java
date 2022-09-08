@@ -16,8 +16,8 @@
 
 package org.polypheny.db.catalog.exceptions;
 
-
 import lombok.Getter;
+
 
 public class UnknownSchemaException extends CatalogException {
 

@@ -24,6 +24,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 
+
 public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
     @Getter

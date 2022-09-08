@@ -33,6 +33,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 
+
 public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
     @Getter

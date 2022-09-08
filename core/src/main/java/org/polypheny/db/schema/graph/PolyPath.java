@@ -39,6 +39,7 @@ import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.Pair;
 
+
 @Getter
 public class PolyPath extends GraphObject implements Comparable<PolyPath> {
 
@@ -142,7 +143,6 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
         }
 
         return pathType;
-
     }
 
 

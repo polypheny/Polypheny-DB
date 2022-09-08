@@ -31,6 +31,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NlsString;
 
+
 @Getter
 public abstract class GraphPropertyHolder extends GraphObject {
 
@@ -69,7 +70,6 @@ public abstract class GraphPropertyHolder extends GraphObject {
             }
         }
         return true;
-
     }
 
 

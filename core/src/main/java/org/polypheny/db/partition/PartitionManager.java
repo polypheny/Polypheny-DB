@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.type.PolyType;
 
+
 public interface PartitionManager {
 
     /**

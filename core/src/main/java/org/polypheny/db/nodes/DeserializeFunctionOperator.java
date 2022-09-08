@@ -27,13 +27,12 @@ import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.type.PolyType;
 
-public class DeserializeFunctionOperator extends OperatorImpl {
 
+public class DeserializeFunctionOperator extends OperatorImpl {
 
     private final static AlgDataTypeFactory factory = new JavaTypeFactoryImpl();
     private final static AlgDataType mapType = factory
             .createMapType( factory.createPolyType( PolyType.ANY ), factory.createPolyType( PolyType.ANY ) );
-    ;
 
 
     public DeserializeFunctionOperator( String name ) {
@@ -69,6 +68,5 @@ public class DeserializeFunctionOperator extends OperatorImpl {
     public AlgDataType inferReturnType( AlgDataTypeFactory typeFactory, List<AlgDataType> operandTypes ) {
         return mapType;
     }
-
 
 }

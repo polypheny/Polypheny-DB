@@ -16,7 +16,6 @@
 
 package org.polypheny.db.algebra.logical.relational;
 
-
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.PrimaryKeyCheck;

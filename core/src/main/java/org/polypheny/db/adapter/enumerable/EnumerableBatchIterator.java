@@ -31,6 +31,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
+
 public class EnumerableBatchIterator extends BatchIterator implements EnumerableAlg {
 
     /**

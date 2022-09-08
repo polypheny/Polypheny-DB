@@ -25,6 +25,7 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
+
 public interface ModifiableCollection extends QueryableTable {
 
     DocumentModify toModificationAlg(

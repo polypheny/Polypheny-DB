@@ -37,6 +37,7 @@ import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
+
 @Getter
 public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge>, ExpressionTransformable {
 
@@ -208,7 +209,6 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
 
             return new PolyEdge( id, properties, labels, leftId, rightId, direction, variableName );
         }
-
 
     }
 

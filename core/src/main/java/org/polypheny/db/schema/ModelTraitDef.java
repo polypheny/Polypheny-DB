@@ -20,6 +20,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 
+
 public class ModelTraitDef extends AlgTraitDef<ModelTrait> {
 
     public static final ModelTraitDef INSTANCE = new ModelTraitDef();

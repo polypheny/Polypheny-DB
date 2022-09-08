@@ -30,6 +30,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 
+
 public interface ModifiableGraph extends Graph {
 
     LpgModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations );

@@ -23,15 +23,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
+
 public class EnumerableDocumentTransformer extends DocumentTransformer implements EnumerableAlg {
 
     /**
      * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param inputs
-     * @param traitSet
-     * @param rowType
      */
     public EnumerableDocumentTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, AlgDataType rowType ) {
         super( cluster, inputs, traitSet, rowType );

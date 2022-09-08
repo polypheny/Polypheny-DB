@@ -29,6 +29,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.ModelTrait;
 
+
 public class LogicalDocumentScan extends DocumentScan implements RelationalTransformable {
 
     /**

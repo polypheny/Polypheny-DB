@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.algebra.rules;
@@ -56,12 +73,15 @@ import org.slf4j.Logger;
 
 
 /**
- * {@link CalcAlgSplitter} operates on a {@link Calc} with multiple {@link RexCall} sub-expressions that cannot all be implemented by a single concrete {@link AlgNode}.
+ * {@link CalcAlgSplitter} operates on a {@link Calc} with multiple {@link RexCall} sub-expressions that cannot all be
+ * implemented by a single concrete {@link AlgNode}.
  *
- * For example, the Java and Fennel calculator do not implement an identical set of operators. The Calc can be used to split a single Calc with mixed Java- and Fennel-only operators into a tree of Calc object that can
- * each be individually implemented by either Java or Fennel.and splits it into several Calc instances.
+ * For example, the Java and Fennel calculator do not implement an identical set of operators. The Calc can be used to split
+ * a single Calc with mixed Java- and Fennel-only operators into a tree of Calc object that can each be individually
+ * implemented by either Java or Fennel.and splits it into several Calc instances.
  *
- * Currently the splitter is only capable of handling two "rel types". That is, it can deal with Java vs. Fennel Calcs, but not Java vs. Fennel vs. some other type of Calc.
+ * Currently, the splitter is only capable of handling two "rel types". That is, it can deal with Java vs. Fennel Calcs,
+ * but not Java vs. Fennel vs. some other type of Calc.
  *
  * See {@link ProjectToWindowRule} for an example of how this class is used.
  */
@@ -103,7 +123,8 @@ public abstract class CalcAlgSplitter {
 
 
     AlgNode execute() {
-        // Check that program is valid. In particular, this means that every expression is trivial (either an atom, or a function applied to references to atoms) and every expression depends only on expressions to the left.
+        // Check that program is valid. In particular, this means that every expression is trivial (either an atom, or a
+        // function applied to references to atoms) and every expression depends only on expressions to the left.
         assert program.isValid( Litmus.THROW, null );
         final List<RexNode> exprList = program.getExprList();
         final RexNode[] exprs = exprList.toArray( new RexNode[0] );
@@ -212,7 +233,8 @@ public abstract class CalcAlgSplitter {
 
 
     /**
-     * Opportunity to further refine the relational expression created for a given level. The default implementation returns the relational expression unchanged.
+     * Opportunity to further refine the relational expression created for a given level. The default implementation returns
+     * the relational expression unchanged.
      */
     protected AlgNode handle( AlgNode alg ) {
         return alg;
@@ -337,14 +359,17 @@ public abstract class CalcAlgSplitter {
 
 
     /**
-     * Computes the order in which to visit expressions, so that we decide the level of an expression only after the levels of lower expressions have been decided.
+     * Computes the order in which to visit expressions, so that we decide the level of an expression only after the levels
+     * of lower expressions have been decided.
      *
      * First, we need to ensure that an expression is visited after all of its inputs.
      *
-     * Further, if the expression is a member of a cohort, we need to visit it after the inputs of all other expressions in that cohort. With this condition, expressions in the same cohort will
+     * Further, if the expression is a member of a cohort, we need to visit it after the inputs of all other expressions in
+     * that cohort. With this condition, expressions in the same cohort will
      * very likely end up in the same level.
      *
-     * Note that if there are no cohorts, the expressions from the {@link RexProgram} are already in a suitable order. We perform the topological sort just to ensure that the code path is well-trodden.
+     * Note that if there are no cohorts, the expressions from the {@link RexProgram} are already in a suitable order.
+     * We perform the topological sort just to ensure that the code path is well-trodden.
      *
      * @param exprs Expressions
      * @param cohorts List of cohorts, each of which is a set of expr ordinals
@@ -413,7 +438,8 @@ public abstract class CalcAlgSplitter {
     /**
      * Creates a program containing the expressions for a given level.
      *
-     * The expression list of the program will consist of all entries in the expression list <code>allExprs[i]</code> for which the corresponding level ordinal <code>exprLevels[i]</code> is equal to <code>level</code>.
+     * The expression list of the program will consist of all entries in the expression list <code>allExprs[i]</code> for
+     * which the corresponding level ordinal <code>exprLevels[i]</code> is equal to <code>level</code>.
      * Expressions are mapped according to <code>inputExprOrdinals</code>.
      *
      * @param level Level ordinal
@@ -594,13 +620,14 @@ public abstract class CalcAlgSplitter {
     /**
      * Returns a list of sets of expressions that should be on the same level.
      *
-     * For example, if this method returns { {3, 5}, {4, 7} }, it means that expressions 3 and 5, should be on the same level, and expressions 4 and 7 should be on the same level.
-     * The two cohorts do not need to be on the same level.
+     * For example, if this method returns { {3, 5}, {4, 7} }, it means that expressions 3 and 5, should be on the same level,
+     * and expressions 4 and 7 should be on the same level. The two cohorts do not need to be on the same level.
      *
-     * The list is best effort. If it is not possible to arrange that the expressions in a cohort are on the same level, the {@link #execute()} method will still succeed.
+     * The list is best effort. If it is not possible to arrange that the expressions in a cohort are on the same level,
+     * the {@link #execute()} method will still succeed.
      *
-     * The default implementation of this method returns the empty list; expressions will be put on the most suitable level. This is generally the lowest possible level,
-     * except for literals, which are placed at the level where they are used.
+     * The default implementation of this method returns the empty list; expressions will be put on the most suitable level.
+     * This is generally the lowest possible level, except for literals, which are placed at the level where they are used.
      *
      * @return List of cohorts, that is sets of expressions, that the splitting algorithm should attempt to place on the same level
      */

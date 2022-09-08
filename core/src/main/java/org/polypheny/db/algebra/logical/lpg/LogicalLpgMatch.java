@@ -24,6 +24,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 
+
 public class LogicalLpgMatch extends LpgMatch {
 
 
@@ -46,6 +47,5 @@ public class LogicalLpgMatch extends LpgMatch {
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
     }
-
 
 }

@@ -23,6 +23,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 
+
 public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
     public final RexNode condition;

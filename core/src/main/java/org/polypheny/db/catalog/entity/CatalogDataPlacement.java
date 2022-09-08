@@ -16,16 +16,8 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.SneakyThrows;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -33,6 +25,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
 /**

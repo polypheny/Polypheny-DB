@@ -59,7 +59,7 @@ public class CatalogAdapter implements CatalogObject {
 
     public List<NamespaceType> getSupportedNamespaces() {
         if ( supportedNamespaces == null ) {
-            // general settings are provided by the annotations of the adapter class
+            // General settings are provided by the annotations of the adapter class
             try {
                 AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
                 this.supportedNamespaces = List.of( annotations.supportedNamespaceTypes() );

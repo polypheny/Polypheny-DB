@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.core.lpg.LpgTransformer;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
+
 public class EnumerableGraphTransformerRule extends ConverterRule {
 
     public EnumerableGraphTransformerRule() {

@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
+
 public class EnumerableBatchIteratorRule extends ConverterRule {
 
     public EnumerableBatchIteratorRule() {

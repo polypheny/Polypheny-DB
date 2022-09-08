@@ -34,6 +34,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTraitSet;
 
+
 public class DocumentToEnumerableRule extends AlgOptRule {
 
     public static DocumentToEnumerableRule PROJECT_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.PROJECT, operand( LogicalDocumentProject.class, any() ), "DOCUMENT_PROJECT_TO_ENUMERABLE" );
@@ -93,7 +94,6 @@ public class DocumentToEnumerableRule extends AlgOptRule {
             //AlgNode node = new LogicalAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls );
 
             call.transformTo( node );
-
         } catch ( InvalidAlgException e ) {
             //EnumerableRules.LOGGER.debug( e.toString() );
         }

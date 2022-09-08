@@ -27,6 +27,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.graph.Graph;
 
+
 public abstract class LpgModify extends SingleAlg implements LpgAlg {
 
     public final Operation operation;

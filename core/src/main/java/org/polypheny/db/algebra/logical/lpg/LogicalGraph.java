@@ -39,6 +39,7 @@ import org.polypheny.db.schema.TranslatableGraph;
 import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.type.PolyType;
 
+
 @Getter
 public class LogicalGraph implements RelationalTransformable, Schema, Graph, TranslatableGraph {
 
@@ -135,6 +136,5 @@ public class LogicalGraph implements RelationalTransformable, Schema, Graph, Tra
     public AlgNode toAlg( ToAlgContext context, Graph graph ) {
         throw new RuntimeException( "toAlg() is not implemented for Logical Graphs!" );
     }
-
 
 }

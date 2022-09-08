@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity;
 import java.io.Serializable;
 import javax.annotation.Nullable;
 
+
 public class CatalogCollectionPlacement implements CatalogObject {
 
     public final int adapter;

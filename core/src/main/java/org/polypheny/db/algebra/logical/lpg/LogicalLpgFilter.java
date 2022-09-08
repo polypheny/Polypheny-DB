@@ -25,6 +25,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
+
 public class LogicalLpgFilter extends LpgFilter {
 
 
@@ -58,6 +59,5 @@ public class LogicalLpgFilter extends LpgFilter {
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
     }
-
 
 }

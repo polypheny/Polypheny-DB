@@ -26,6 +26,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.TranslatableGraph;
 import org.polypheny.db.type.PolyType;
 
+
 public abstract class LpgScan extends AbstractAlgNode implements LpgAlg {
 
     @Getter

@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
+
 public class LogicalLpgUnion extends Union {
 
     /**

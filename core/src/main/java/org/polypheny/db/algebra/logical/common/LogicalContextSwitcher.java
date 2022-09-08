@@ -21,6 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ContextSwitcher;
 import org.polypheny.db.plan.AlgTraitSet;
 
+
 public class LogicalContextSwitcher extends ContextSwitcher {
 
     /**

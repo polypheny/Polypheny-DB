@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTrait;
 
+
 public class EnumerableDocumentTransformerRule extends ConverterRule {
 
     public EnumerableDocumentTransformerRule() {

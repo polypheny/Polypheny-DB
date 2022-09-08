@@ -16,7 +16,6 @@
 
 package org.polypheny.db.algebra.logical.lpg;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
@@ -38,6 +37,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.TranslatableGraph;
+
 
 public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
 

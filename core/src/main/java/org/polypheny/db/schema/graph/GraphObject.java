@@ -22,6 +22,7 @@ import com.google.gson.annotations.Expose;
 import lombok.Getter;
 import org.polypheny.db.tools.ExpressionTransformable;
 
+
 @Getter
 public abstract class GraphObject implements ExpressionTransformable {
 

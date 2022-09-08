@@ -27,6 +27,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyNode;
 
+
 @Getter
 public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
 
@@ -38,7 +39,6 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
     /**
      * Creates an {@link LpgValues}.
      * Which are either one or multiple nodes or edges, or literal values.
-     *
      */
     public LpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet );

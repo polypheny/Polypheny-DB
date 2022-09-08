@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
+
 @Getter
 public class LogicalLpgUnwind extends LpgUnwind {
 

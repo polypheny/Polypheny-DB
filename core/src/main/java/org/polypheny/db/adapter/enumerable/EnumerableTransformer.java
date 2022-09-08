@@ -50,6 +50,7 @@ import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
+
 @Getter
 public class EnumerableTransformer extends Transformer implements EnumerableAlg {
 
@@ -59,10 +60,6 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
      * non-native underlying adapters if needed.
      * For example, it will transform the {@link org.polypheny.db.algebra.core.lpg.LpgScan}, which can be handled directly by
      * a native adapter, to a combination of {@link Scan} and {@link org.polypheny.db.algebra.core.Union}.
-     *
-     * @param cluster
-     * @param inputs
-     * @param isCrossModel
      */
     public EnumerableTransformer( AlgOptCluster cluster, List<AlgNode> inputs, List<String> names, AlgTraitSet traitSet, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
         super( cluster, inputs, names, traitSet, inTraitSet, outTraitSet, rowType, isCrossModel );

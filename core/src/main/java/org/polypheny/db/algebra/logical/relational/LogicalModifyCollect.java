@@ -16,7 +16,6 @@
 
 package org.polypheny.db.algebra.logical.relational;
 
-
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;

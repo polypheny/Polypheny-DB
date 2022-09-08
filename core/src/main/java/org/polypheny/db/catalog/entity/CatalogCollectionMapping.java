@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 
+
 public class CatalogCollectionMapping implements CatalogObject {
 
     public final long collectionId;

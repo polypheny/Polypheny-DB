@@ -46,8 +46,8 @@ import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
-public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
 
+public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
 
     /**
      * Creates a <code>SingleRel</code>.
@@ -110,7 +110,7 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
         if ( expressions.size() == 1 ) {
             return_ = expressions.get( 0 );
         } else {
-            // we have to join ( cross product ) all results together
+            // We have to join ( cross product ) all results together
             return_ = Expressions.new_(
                     BuiltInMethod.GRAPH_MATCH_CTOR.constructor,
                     Expressions.call( Arrays.class, "asList", expressions ) );

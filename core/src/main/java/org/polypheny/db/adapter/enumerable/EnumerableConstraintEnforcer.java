@@ -42,8 +42,8 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
      * Left is the initial dml query, which modifies the entity
      * right is the control query, which tests if still all conditions are correct
      */
-    public EnumerableConstraintEnforcer(AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage) {
-        super(cluster, traitSet, modify, control, exceptionClass, exceptionMessage);
+    public EnumerableConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
+        super( cluster, traitSet, modify, control, exceptionClass, exceptionMessage );
     }
 
 

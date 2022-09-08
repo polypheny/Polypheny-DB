@@ -33,6 +33,7 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.graph.Graph;
 
+
 public class LogicalLpgModify extends LpgModify implements RelationalTransformable {
 
 
@@ -56,12 +57,11 @@ public class LogicalLpgModify extends LpgModify implements RelationalTransformab
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<AlgOptTable> entities, CatalogReader catalogReader ) {
         List<AlgNode> modifies = new ArrayList<>();
 
-        //modify of nodes
-
+        // modify of nodes
         Modify nodeModify = RelationalTransformable.getModify( entities.get( 0 ), catalogReader, inputs.get( 0 ), operation );
         modifies.add( nodeModify );
 
-        //modify of properties
+        // modify of properties
         if ( inputs.get( 1 ) != null ) {
             Modify nodePropertyModify = RelationalTransformable.getModify( entities.get( 1 ), catalogReader, inputs.get( 1 ), operation );
             modifies.add( nodePropertyModify );
@@ -72,7 +72,6 @@ public class LogicalLpgModify extends LpgModify implements RelationalTransformab
         }
 
         // modify of edges
-
         Modify edgeModify = RelationalTransformable.getModify( entities.get( 2 ), catalogReader, inputs.get( 2 ), operation );
         modifies.add( edgeModify );
 

@@ -50,6 +50,7 @@ import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
+
 @Getter
 public class LogicalLpgValues extends LpgValues implements RelationalTransformable {
 

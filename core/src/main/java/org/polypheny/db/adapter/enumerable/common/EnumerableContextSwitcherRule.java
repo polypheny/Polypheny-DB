@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.plan.Convention;
 
+
 public class EnumerableContextSwitcherRule extends ConverterRule {
 
     public EnumerableContextSwitcherRule() {

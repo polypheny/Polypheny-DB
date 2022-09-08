@@ -110,7 +110,6 @@ public interface MonitoringService {
      */
     void updateQueryPostCosts( @NonNull String physicalQueryClass, long executionTime );
 
-
     /**
      * Removes all aggregates post costs from cache.
      */

@@ -27,6 +27,7 @@ import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 
+
 public class CatalogCollection implements CatalogObject {
 
     public final long id;

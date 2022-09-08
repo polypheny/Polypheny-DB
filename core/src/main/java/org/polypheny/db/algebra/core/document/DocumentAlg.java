@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.core.document;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptTable;
 
+
 /**
  * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node.
  */

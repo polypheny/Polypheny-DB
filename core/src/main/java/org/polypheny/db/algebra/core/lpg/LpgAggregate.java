@@ -24,6 +24,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 
+
 public abstract class LpgAggregate extends Aggregate implements LpgAlg {
 
     /**

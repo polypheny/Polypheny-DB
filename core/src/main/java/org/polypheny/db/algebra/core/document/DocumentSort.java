@@ -27,6 +27,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
+
 public abstract class DocumentSort extends SingleAlg {
 
     public final AlgCollation collation;

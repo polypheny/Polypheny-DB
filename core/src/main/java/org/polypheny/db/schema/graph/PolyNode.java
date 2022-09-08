@@ -34,6 +34,7 @@ import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.tools.ExpressionTransformable;
 
+
 @Getter
 public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode>, ExpressionTransformable {
 

@@ -29,6 +29,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
+
 public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
 
     public final Operation operation;

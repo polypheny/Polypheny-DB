@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.algebra.rules;
@@ -53,7 +70,8 @@ public class FilterMergeRule extends AlgOptRule {
         final Filter topFilter = call.alg( 0 );
         final Filter bottomFilter = call.alg( 1 );
 
-        // use RexPrograms to merge the two FilterRels into a single program so we can convert the two LogicalFilter conditions to directly reference the bottom LogicalFilter's child
+        // use RexPrograms to merge the two FilterRels into a single program so we can convert the two LogicalFilter
+        // conditions to directly reference the bottom LogicalFilter's child
         RexBuilder rexBuilder = topFilter.getCluster().getRexBuilder();
         RexProgram bottomProgram = createProgram( bottomFilter );
         RexProgram topProgram = createProgram( topFilter );
