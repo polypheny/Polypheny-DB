@@ -84,7 +84,6 @@ public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
     }
 
 
-
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalLpgScan( inputs.get( 0 ).getCluster(), traitSet, graph, rowType );

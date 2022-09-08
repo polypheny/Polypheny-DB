@@ -1101,13 +1101,13 @@ public abstract class MockCatalog extends Catalog {
     /**
      * Adds a placement for a partition.
      *
-     * @param adapterId          The adapter on which the table should be placed on
-     * @param placementType      The type of placement
+     * @param adapterId The adapter on which the table should be placed on
+     * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName  The table name on the adapter
+     * @param physicalTableName The table name on the adapter
      */
     @Override
-    public void addPartitionPlacement(int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
         throw new NotImplementedException();
     }
 
@@ -1236,31 +1236,31 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogDataPlacement> getDataPlacements(long tableId) {
+    public List<CatalogDataPlacement> getDataPlacements( long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogDataPlacement> getDataPlacementsByRole(long tableId, DataPlacementRole role) {
+    public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole(long tableId, DataPlacementRole role) {
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void addDataPlacement(int adapterId, long tableId) {
+    public void addDataPlacement( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public CatalogDataPlacement addDataPlacementIfNotExists(int adapterId, long tableId ) {
+    public CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -1368,7 +1368,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long getPartitionGroupByPartition(long partitionId) {
+    public long getPartitionGroupByPartition( long partitionId ) {
         throw new NotImplementedException();
     }
 

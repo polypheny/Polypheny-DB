@@ -27,7 +27,6 @@ public class CypherParameter extends CypherExpression {
     private final String name;
 
 
-
     protected CypherParameter( ParserPos pos, String name, ParameterType parameterType ) {
         super( pos );
         this.name = name;

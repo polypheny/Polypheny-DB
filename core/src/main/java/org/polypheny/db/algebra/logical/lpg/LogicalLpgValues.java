@@ -137,8 +137,6 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     }
 
 
-
-
     private ImmutableList<ImmutableList<RexLiteral>> getNodeValues( ImmutableList<PolyNode> nodes ) {
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyNode node : nodes ) {
@@ -146,7 +144,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             // empty node without label, as non label nodes are permitted (use $, as null is not possible for pk)
             ImmutableList.Builder<RexLiteral> idRow = ImmutableList.builder();
             idRow.add( id );
-            idRow.add( getCluster().getRexBuilder().makeLiteral("$") );
+            idRow.add( getCluster().getRexBuilder().makeLiteral( "$" ) );
             rows.add( idRow.build() );
 
             for ( String label : node.labels ) {

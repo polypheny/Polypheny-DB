@@ -96,7 +96,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         this.transactionManager = transactionManager;
         this.materializedInfo = new ConcurrentHashMap<>();
         this.updateCandidates = new HashMap<>();
-        this.intervalToUpdate = Collections.synchronizedList(new ArrayList<>());
+        this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
         registerFreshnessLoop();
     }
 
@@ -172,7 +172,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
-     * @param tableNames  table that was changed
+     * @param tableNames table that was changed
      */
     @Override
     public void addTables( Transaction transaction, List<String> tableNames ) {
@@ -181,7 +181,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
                 long id = catalogTable.id;
                 if ( !catalogTable.getConnectedViews().isEmpty() ) {
-                    updateCandidates.put(transaction.getXid(), id);
+                    updateCandidates.put( transaction.getXid(), id );
                 }
             } catch ( UnknownTableException e ) {
                 throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
@@ -198,8 +198,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public void updateCommittedXid( PolyXid xid ) {
-        if (updateCandidates.containsKey(xid)) {
-            materializedUpdate(updateCandidates.remove(xid));
+        if ( updateCandidates.containsKey( xid ) ) {
+            materializedUpdate( updateCandidates.remove( xid ) );
         }
     }
 

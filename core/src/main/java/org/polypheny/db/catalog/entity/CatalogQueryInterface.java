@@ -55,5 +55,7 @@ public class CatalogQueryInterface implements CatalogObject {
     public static class PrimitiveCatalogQueryInterface {
 
         public final String name;
+
     }
+
 }

@@ -32,4 +32,5 @@ public class ResourceDeleteRequest {
     public final List<RequestColumn> requestColumns;
     public final Map<String, RequestColumn> nameMapping;
     public final Filters filters;
+
 }

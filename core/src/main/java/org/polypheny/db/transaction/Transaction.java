@@ -78,19 +78,19 @@ public interface Transaction {
 
     DataMigrator getDataMigrator();
 
-    void setUseCache(boolean useCache);
+    void setUseCache( boolean useCache );
 
     boolean getUseCache();
 
     Set<CatalogTable> getCatalogTables();
 
-    void setAcceptsOutdated(boolean acceptsOutdated);
+    void setAcceptsOutdated( boolean acceptsOutdated );
 
     boolean acceptsOutdated();
 
     AccessMode getAccessMode();
 
-    void updateAccessMode(AccessMode accessCandidate);
+    void updateAccessMode( AccessMode accessCandidate );
 
     /**
      * Flavor, how multimedia results should be returned from a store.

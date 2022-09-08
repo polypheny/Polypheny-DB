@@ -16,13 +16,12 @@
 
 package org.polypheny.db.transaction;
 
-import org.polypheny.db.transaction.Transaction.AccessMode;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import org.polypheny.db.transaction.Transaction.AccessMode;
 
 
 // Based on code taken from https://github.com/dstibrany/LockManager
@@ -43,11 +42,11 @@ public class Lock {
 
     void acquire( TransactionImpl txn, LockMode lockMode ) throws InterruptedException {
         if ( lockMode == LockMode.SHARED ) {
-            acquireSLock(txn);
-            txn.updateAccessMode(AccessMode.READ_ACCESS);
+            acquireSLock( txn );
+            txn.updateAccessMode( AccessMode.READ_ACCESS );
         } else if ( lockMode == LockMode.EXCLUSIVE ) {
-            acquireXLock(txn);
-            txn.updateAccessMode(AccessMode.WRITE_ACCESS);
+            acquireXLock( txn );
+            txn.updateAccessMode( AccessMode.WRITE_ACCESS );
         } else {
             throw new RuntimeException( "Lock mode does not exist" );
         }

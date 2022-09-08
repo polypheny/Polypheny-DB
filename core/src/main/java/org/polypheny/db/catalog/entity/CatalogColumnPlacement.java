@@ -96,6 +96,4 @@ public class CatalogColumnPlacement implements CatalogObject {
                 physicalColumnName };
     }
 
-
-
 }

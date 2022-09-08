@@ -72,13 +72,13 @@ public class CatalogDataPlacement implements CatalogObject {
             PlacementType placementType,
             DataPlacementRole dataPlacementRole,
             @NonNull final ImmutableList<Long> columnPlacementsOnAdapter,
-            @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter) {
+            @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;
         this.dataPlacementRole = dataPlacementRole;
         this.columnPlacementsOnAdapter = columnPlacementsOnAdapter;
-        this.partitionPlacementsOnAdapterByRole = structurizeDataPlacements(partitionPlacementsOnAdapter);
+        this.partitionPlacementsOnAdapterByRole = structurizeDataPlacements( partitionPlacementsOnAdapter );
 
     }
 
@@ -101,20 +101,20 @@ public class CatalogDataPlacement implements CatalogObject {
 
 
     public boolean hasColumnFullPlacement() {
-        return Catalog.getInstance().getTable(this.tableId).fieldIds.size() == columnPlacementsOnAdapter.size();
+        return Catalog.getInstance().getTable( this.tableId ).fieldIds.size() == columnPlacementsOnAdapter.size();
     }
 
 
     public boolean hasPartitionFullPlacement() {
-        return Catalog.getInstance().getTable(this.tableId).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
+        return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
     }
 
 
     public List<Long> getAllPartitionIds() {
         return partitionPlacementsOnAdapterByRole.values()
                 .stream()
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
+                .flatMap( List::stream )
+                .collect( Collectors.toList() );
     }
 
 
@@ -124,39 +124,39 @@ public class CatalogDataPlacement implements CatalogObject {
     }
 
 
-    private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements(@NonNull final ImmutableList<Long> unsortedPartitionIds) {
+    private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final ImmutableList<Long> unsortedPartitionIds ) {
         // Since this shall only be called after initialization of dataPlacement object,
         // we need to clear the contents of partitionPlacementsOnAdapterByRole
         Map<DataPlacementRole, ImmutableList<Long>> partitionsPerRole = new HashMap<>();
 
         try {
             Catalog catalog = Catalog.getInstance();
-            if (!unsortedPartitionIds.isEmpty()) {
+            if ( !unsortedPartitionIds.isEmpty() ) {
                 CatalogPartitionPlacement partitionPlacement;
-                for (long partitionId : unsortedPartitionIds) {
-                    partitionPlacement = catalog.getPartitionPlacement(this.adapterId, partitionId);
+                for ( long partitionId : unsortedPartitionIds ) {
+                    partitionPlacement = catalog.getPartitionPlacement( this.adapterId, partitionId );
                     DataPlacementRole role = partitionPlacement.role;
 
                     List<Long> partitions = new ArrayList<>();
-                    if (partitionsPerRole.containsKey(role)) {
+                    if ( partitionsPerRole.containsKey( role ) ) {
                         // Get contents of List and add partition to it
-                        partitions = new ArrayList<>(partitionsPerRole.get(role));
+                        partitions = new ArrayList<>( partitionsPerRole.get( role ) );
                     } else {
-                        partitionsPerRole.put(role, ImmutableList.copyOf(new ArrayList<>()));
+                        partitionsPerRole.put( role, ImmutableList.copyOf( new ArrayList<>() ) );
                     }
-                    partitions.add(partitionId);
-                    partitionsPerRole.replace(role, ImmutableList.copyOf(partitions));
+                    partitions.add( partitionId );
+                    partitionsPerRole.replace( role, ImmutableList.copyOf( partitions ) );
                 }
             }
-        } catch (RuntimeException e) {
+        } catch ( RuntimeException e ) {
             // Catalog is not ready
             // Happens only for defaultColumns during setAndGetInstance of Catalog
             // Just assume UPTODATE for all.
-            partitionsPerRole.put(DataPlacementRole.UPTODATE, ImmutableList.copyOf(unsortedPartitionIds));
+            partitionsPerRole.put( DataPlacementRole.UPTODATE, ImmutableList.copyOf( unsortedPartitionIds ) );
         }
 
         // Finally, overwrite entire partitionPlacementsOnAdapterByRole at Once
-        return ImmutableMap.copyOf(partitionsPerRole);
+        return ImmutableMap.copyOf( partitionsPerRole );
     }
 
 }

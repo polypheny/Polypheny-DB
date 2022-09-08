@@ -44,7 +44,4 @@ public class CypherCreate extends CypherClause {
         visitor.visit( this );
     }
 
-
-
-
 }

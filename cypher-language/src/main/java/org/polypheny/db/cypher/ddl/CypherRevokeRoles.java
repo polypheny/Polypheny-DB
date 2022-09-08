@@ -31,7 +31,7 @@ public class CypherRevokeRoles extends CypherAdminCommand {
 
 
     public CypherRevokeRoles( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> roles, List<CypherSimpleEither<String, CypherParameter>> users ) {
-        super(pos);
+        super( pos );
         this.roles = roles;
         this.users = users;
     }

@@ -54,7 +54,6 @@ public class CypherUnwind extends CypherClause {
     }
 
 
-
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.UNWIND;

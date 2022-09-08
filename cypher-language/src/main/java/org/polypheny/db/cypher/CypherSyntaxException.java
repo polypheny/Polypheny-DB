@@ -24,7 +24,8 @@ public class CypherSyntaxException extends RuntimeException {
         throw new RuntimeException( e.getMessage() );
     }
 
-    public static String relationshipPatternNotAllowed( ConstraintType constraintType ){
+
+    public static String relationshipPatternNotAllowed( ConstraintType constraintType ) {
         return "Used relationship pattern is not allowed: " + constraintType.name() + ".";
     }
 

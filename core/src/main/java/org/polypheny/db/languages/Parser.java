@@ -87,7 +87,7 @@ public interface Parser {
     Node parseStmt() throws NodeParseException;
 
     default List<? extends Node> parseStmts() throws NodeParseException {
-        throw new UnsupportedOperationException( "This operation is not supported by the used parser.");
+        throw new UnsupportedOperationException( "This operation is not supported by the used parser." );
     }
 
     /**

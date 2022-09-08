@@ -17,11 +17,10 @@
 package org.polypheny.db.catalog.entity;
 
 
+import java.io.Serializable;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-
-import java.io.Serializable;
 
 
 /**
@@ -63,7 +62,7 @@ public class CatalogPartitionPlacement implements CatalogObject {
             final String physicalSchemaName,
             final String physicalTableName,
             final long partitionId,
-            DataPlacementRole role) {
+            DataPlacementRole role ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;

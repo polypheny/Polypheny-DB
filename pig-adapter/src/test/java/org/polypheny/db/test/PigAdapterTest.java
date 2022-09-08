@@ -52,7 +52,6 @@ public class PigAdapterTest extends AbstractPigTest {
     // Undo the %20 replacement of a space by URL
     public static final ImmutableMap<String, String> MODEL = ImmutableMap.of( "model", Sources.of( PigAdapterTest.class.getResource( "/model.json" ) ).file().getAbsolutePath() );
 
-
     // TODO MV: enable
 //    @Test
 //    public void testScanAndFilter() throws Exception {
@@ -202,4 +201,5 @@ public class PigAdapterTest extends AbstractPigTest {
             assertEquals( "expected Pig script not found", strings[0], actualArray );
         };
     }
+
 }

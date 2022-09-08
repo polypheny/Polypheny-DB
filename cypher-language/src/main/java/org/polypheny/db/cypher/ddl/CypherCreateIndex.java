@@ -42,6 +42,7 @@ public class CypherCreateIndex extends CypherSchemaCommand {
     private final List<CypherProperty> properties;
     private final CypherSimpleEither options;
 
+
     public CypherCreateIndex( ParserPos pos, IndexType type, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, List<StringPos> labels, List<CypherProperty> properties, CypherSimpleEither options ) {
         super( pos );
         this.type = type;

@@ -88,7 +88,6 @@ public abstract class DataStore extends Adapter {
      * Default method for creating a new graph on the {@link DataStore}.
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the LPG data model natively.
-     *
      */
     public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
         // overwrite this if the datastore supports graph
@@ -105,6 +104,7 @@ public abstract class DataStore extends Adapter {
         // overwrite this if the datastore supports graph
         dropGraphSubstitution( context, graphPlacement );
     }
+
 
     /**
      * Substitution method, which is used to handle the {@link DataStore} required operations
@@ -126,6 +126,7 @@ public abstract class DataStore extends Adapter {
         createTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
     }
 
+
     /**
      * Substitution method, which is used to handle the {@link DataStore} required operations
      * as if the data model would be {@link NamespaceType#RELATIONAL}.
@@ -146,6 +147,7 @@ public abstract class DataStore extends Adapter {
         CatalogTable edgeProperty = catalog.getTable( mapping.edgesPropertyId );
         dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
     }
+
 
     /**
      * Default method for creating a new collection on the {@link DataStore}.
@@ -170,6 +172,7 @@ public abstract class DataStore extends Adapter {
         createTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
     }
 
+
     /**
      * Default method for dropping an existing collection on the {@link DataStore}.
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
@@ -179,6 +182,7 @@ public abstract class DataStore extends Adapter {
         // overwrite this if the datastore supports document
         dropCollectionSubstitution( prepareContext, catalogCollection );
     }
+
 
     /**
      * Substitution method, which is used to handle the {@link DataStore} required operations

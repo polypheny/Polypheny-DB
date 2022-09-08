@@ -858,7 +858,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-
         @Override
         public Schema.TableType getJdbcTableType() {
             return table.stream ? Schema.TableType.STREAM : Schema.TableType.TABLE;

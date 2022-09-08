@@ -119,6 +119,7 @@ class EmptyScope implements SqlValidatorScope {
         }
     }
 
+
     // todo dl: refactor for 0.10
     private void resolve_( final PolyphenyDbSchema rootSchema, List<String> names, List<String> schemaNames, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         final List<String> concat = ImmutableList.<String>builder().addAll( schemaNames ).addAll( names ).build();

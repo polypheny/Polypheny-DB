@@ -77,7 +77,6 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-
     @Override
     protected ConnectionFactory deployDocker( int dockerInstanceId ) {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "topaztechnology/monetdb:11.37.11", getUniqueName(), dockerInstanceId )

@@ -17,6 +17,11 @@
 package org.polypheny.db.misc;
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -31,15 +36,9 @@ import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.excluded.CassandraExcluded;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
 
-
-@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
-@Category({AdapterTestSuite.class, CassandraExcluded.class})
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class VerticalPartitioningTest {
 
 
@@ -179,7 +178,7 @@ public class VerticalPartitioningTest {
                     Assert.assertEquals( table.fieldIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
-                    Assert.assertEquals(1, dataPlacement.getAllPartitionIds().size());
+                    Assert.assertEquals( 1, dataPlacement.getAllPartitionIds().size() );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"

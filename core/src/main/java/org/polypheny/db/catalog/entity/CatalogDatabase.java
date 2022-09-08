@@ -73,5 +73,7 @@ public final class CatalogDatabase implements CatalogObject, Comparable<CatalogD
         public final String tableCat;
         public final String owner;
         public final String defaultSchema;
+
     }
+
 }

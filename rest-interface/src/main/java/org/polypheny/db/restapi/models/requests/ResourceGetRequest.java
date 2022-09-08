@@ -38,4 +38,5 @@ public class ResourceGetRequest {
     public final int offset;
     public final List<Pair<RequestColumn, Boolean>> sorting;
     public final Filters filters;
+
 }

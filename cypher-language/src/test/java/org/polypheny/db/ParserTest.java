@@ -19,5 +19,4 @@ package org.polypheny.db;
 public class ParserTest {
 
 
-
 }

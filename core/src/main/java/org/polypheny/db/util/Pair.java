@@ -400,6 +400,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         public void remove() {
             iterator.remove();
         }
+
     }
 
 
@@ -435,6 +436,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         public void remove() {
             iterator.remove();
         }
+
     }
 
 
@@ -471,6 +473,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         public void remove() {
             throw new UnsupportedOperationException( "remove" );
         }
+
     }
 
 
@@ -509,6 +512,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
             leftIterator.remove();
             rightIterator.remove();
         }
+
     }
 
 
@@ -550,6 +554,8 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         public void remove() {
             throw new UnsupportedOperationException( "remove" );
         }
+
     }
+
 }
 

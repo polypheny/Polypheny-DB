@@ -78,7 +78,6 @@ public abstract class Adapter {
     private final List<NamespaceType> supportedNamespaceTypes;
 
 
-
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface AdapterProperties {

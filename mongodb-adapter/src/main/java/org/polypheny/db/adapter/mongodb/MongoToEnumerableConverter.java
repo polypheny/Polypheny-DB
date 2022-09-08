@@ -127,6 +127,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
                                             }
 
+
                                             @Override
                                             public int size() {
                                                 return rowType.getFieldCount();

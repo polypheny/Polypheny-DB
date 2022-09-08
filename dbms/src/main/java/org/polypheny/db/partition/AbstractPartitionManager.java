@@ -35,6 +35,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     // Returns the Index of the partition where to place the object
     protected final Catalog catalog = Catalog.getInstance();
 
+
     // Returns the Index of the partition where to place the object
     @Override
     public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
