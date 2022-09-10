@@ -89,10 +89,8 @@ public class SqlCreateProcedure extends SqlCreate implements ExecutableStatement
             List<Pair<Node, Node>> pairs = pairs();
             for ( Pair<Node, Node> argument : pairs) {
                 writer.sep( "," );
-                argumentPairs.add(new Pair<>(argument.left.toString(), argument.right.toString()));
-                writer.keyword("@");
                 writer.literal(argument.left.toString().trim());
-                writer.keyword("=");
+                writer.keyword("=>");
                 writer.literal(argument.right.toString().trim());
             }
             writer.endList( frame );

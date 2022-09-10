@@ -76,7 +76,7 @@ public class SqlExecuteProcedure extends SqlCall implements ExecutableStatement 
             final SqlWriter.Frame frame = writer.startList(SqlWriter.FrameTypeEnum.SIMPLE);
             for (SqlNode sqlNode : argumentList) {
                 writer.sep(",");
-                writer.print(sqlNode.toString());
+                sqlNode.unparse(writer, 0, 0);
             }
             writer.endList(frame);
         }
