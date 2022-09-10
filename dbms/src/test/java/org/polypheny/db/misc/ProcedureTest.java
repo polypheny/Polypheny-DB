@@ -50,34 +50,76 @@ public class ProcedureTest {
                 setupTestTable(statement);
 
                 try {
-                    // create procedure
-                    statement.executeUpdate("CREATE PROCEDURE spNoParam $ insert into proceduretest VALUES(101, 'Harold') $");
-
-                    // create view
-                    statement.executeUpdate( "CREATE VIEW v_mytable3_spNoParam as select id, name from proceduretest" );
-
-                    // create trigger
-                    statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spNoParamVariantA ON v_mytable3_spNoParam  AFTER INSERT $ exec Procedure \"APP.public.spNoParam\"" );
-                    statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spNoParamVariantB ON v_mytable3_spNoParam  AFTER INSERT $ exec Procedure \"APP.public.spNoParam\" id=>:id" );
-
-                    // invoke trigger
-                    statement.executeUpdate( "insert into v_mytable3_spNoParam values(999, '999')");
-
-                    // Checks
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM proceduretest" ),
-                            ImmutableList.of(
-                                    new Object[]{ 101, "Harold" },
-                                    new Object[]{ 101, "Harold" } ) );
+                    testNoParams(statement);
+                    statement.executeUpdate( "TRUNCATE TABLE proceduretest" );
+                    //testOneParam(statement);
+                    //statement.executeUpdate( "TRUNCATE TABLE proceduretest" );
+                    //testTwoParams(statement);
                 } finally {
-                    // remove fixtures
+                    removeTestNoParams(statement);
                     statement.executeUpdate( "DROP TABLE proceduretest" );
-                    statement.executeUpdate( "DROP TRIGGER trigger_proceduretest_spNoParamVariantA" );
-                    statement.executeUpdate( "DROP VIEW v_proceduretest_spNoParam" );
-                    statement.executeUpdate( "DROP PROCEDURE spNoParam" );
+                    //removeTestOneParam(statement);
+                    //removeTestTwoParams(statement);
                 }
             }
         }
+    }
+
+    private void removeTestOneParam(Statement statement) throws SQLException {
+        statement.executeUpdate( "DROP TRIGGER trigger_proceduretest_spOneParamVariantA" );
+        statement.executeUpdate( "DROP VIEW v_proceduretest_spOneParam" );
+        statement.executeUpdate( "DROP PROCEDURE spOneParam" );
+    }
+
+    private void removeTestTwoParams(Statement statement) throws SQLException {
+        statement.executeUpdate( "DROP TRIGGER trigger_proceduretest_spTwoParamVariantA" );
+        statement.executeUpdate( "DROP VIEW v_proceduretest_spTwoParam" );
+        statement.executeUpdate( "DROP PROCEDURE spToParam" );
+    }
+
+    private void testOneParam(Statement statement) throws SQLException {
+        // create procedure
+        statement.executeUpdate("CREATE PROCEDURE spNoParam $ insert into proceduretest VALUES(101, 'Harold') $");
+
+        // create view
+        statement.executeUpdate( "CREATE VIEW v_mytable3_spOneParam as select id, name from proceduretest" );
+
+        // create trigger
+        statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spOneParamVariantA ON v_mytable3_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\"" );
+        statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spOneParamVariantB ON v_mytable3_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\" id=>:id" );
+
+        // invoke trigger
+        statement.executeUpdate( "insert into v_mytable3_spOneParam values(999, '999')");
+
+    }
+
+    private void removeTestNoParams(Statement statement) throws SQLException {
+        // call fails
+        statement.executeUpdate( "DROP TRIGGER trigger_proceduretest_spNoParamVariantA" );
+        statement.executeUpdate( "DROP VIEW v_proceduretest_spNoParam" );
+        statement.executeUpdate( "DROP PROCEDURE spNoParam" );
+    }
+
+    private void testNoParams(Statement statement) throws SQLException {
+        // create procedure
+        statement.executeUpdate("CREATE PROCEDURE spNoParam $ insert into proceduretest VALUES(101, 'Harold') $");
+
+        // create view
+        statement.executeUpdate( "CREATE VIEW v_mytable3_spNoParam as select id, name from proceduretest" );
+
+        // create trigger
+        statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spNoParamVariantA ON v_mytable3_spNoParam  AFTER INSERT $ exec Procedure \"APP.public.spNoParam\"" );
+        statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spNoParamVariantB ON v_mytable3_spNoParam  AFTER INSERT $ exec Procedure \"APP.public.spNoParam\" id=>:id" );
+
+        // invoke trigger
+        statement.executeUpdate( "insert into v_mytable3_spNoParam values(999, '999')");
+
+        // Checks
+        TestHelper.checkResultSet(
+                statement.executeQuery( "SELECT * FROM proceduretest" ),
+                ImmutableList.of(
+                        new Object[]{ 101, "Harold" },
+                        new Object[]{ 101, "Harold" } ) );
     }
 
     private void setupTestTable(Statement statement) throws SQLException {
