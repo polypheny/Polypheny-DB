@@ -80,7 +80,6 @@ public class SqlCreateTrigger extends SqlCreate implements ExecutableStatement {
             writer.keyword( "IF NOT EXISTS" );
         }
         schema.unparse( writer, 0, 0 );
-        writer.keyword(".");
         name.unparse( writer, 0, 0 );
         writer.keyword("ON");
         table.unparse( writer, 0, 0 );

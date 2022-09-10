@@ -519,10 +519,10 @@ SqlCreate SqlCreateTrigger(Span s, boolean replace) :
 }
 {
     <TRIGGER> ifNotExists = IfNotExistsOpt()
-    schema = CompoundIdentifier()
-    name = CompoundIdentifier()
+    schema = SimpleIdentifier()
+    name = SimpleIdentifier()
     <ON>
-    table = CompoundIdentifier()
+    table = SimpleIdentifier()
     <AFTER>
     event = parseEvent()
     <DOLLAR>

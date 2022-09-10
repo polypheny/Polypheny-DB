@@ -262,18 +262,18 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateOrReplaceTriggerWithQuery() {
-        final String sql = "create trigger \"mySchema\"\n\"myudf\"\n"
+        final String sql = "create trigger \"mySchema\" \"myudf\""
                 + " ON \"myTable\" after insert $ select * from customers";
-        final String expected = "CREATE TRIGGER `mySchema`.`myudf` ON `myTable` AFTER INSERT $ SELECT *\n" +
+        final String expected = "CREATE TRIGGER `mySchema` `myudf` ON `myTable` AFTER INSERT $ SELECT *\n" +
                 "FROM `CUSTOMERS`";
         sql( sql ).ok( expected );
     }
 
     @Test
     public void testCreateOrReplaceTriggerWithProcedure() {
-        final String sql = "create trigger \"mySchema\"\n\"myudf\"\n"
+        final String sql = "create trigger \"mySchema\" \"myudf\""
                 + " ON \"myTable\" after insert $ exec procedure myProcedure";
-        final String expected = "CREATE TRIGGER `mySchema`.`myudf` ON `myTable` AFTER INSERT $ EXEC PROCEDURE `MYPROCEDURE`";
+        final String expected = "CREATE TRIGGER `mySchema` `myudf` ON `myTable` AFTER INSERT $ EXEC PROCEDURE `MYPROCEDURE`";
         sql( sql ).ok( expected );
     }
 
