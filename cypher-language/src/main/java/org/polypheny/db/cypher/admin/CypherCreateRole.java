@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
 public class CypherCreateRole extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
@@ -31,7 +32,12 @@ public class CypherCreateRole extends CypherAdminCommand implements UnsupportedE
     private final boolean ifNotExists;
 
 
-    public CypherCreateRole( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> roleName, CypherSimpleEither<String, CypherParameter> sourceRoleName, boolean ifNotExists ) {
+    public CypherCreateRole(
+            ParserPos pos,
+            boolean replace,
+            CypherSimpleEither<String, CypherParameter> roleName,
+            CypherSimpleEither<String, CypherParameter> sourceRoleName,
+            boolean ifNotExists ) {
         super( pos );
         this.replace = replace;
         this.roleName = roleName;

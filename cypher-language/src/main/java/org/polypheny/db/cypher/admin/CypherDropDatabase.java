@@ -31,6 +31,7 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
+
 public class CypherDropDatabase extends CypherAdminCommand implements ExecutableStatement {
 
     private final String databaseName;
@@ -39,7 +40,12 @@ public class CypherDropDatabase extends CypherAdminCommand implements Executable
     private final CypherWaitClause wait;
 
 
-    public CypherDropDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifExists, boolean dumpData, CypherWaitClause wait ) {
+    public CypherDropDatabase(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            boolean ifExists,
+            boolean dumpData,
+            CypherWaitClause wait ) {
         super( pos );
         this.databaseName = databaseName.getLeft() != null ? databaseName.getLeft() : databaseName.getRight().getName();
         this.ifExists = ifExists;

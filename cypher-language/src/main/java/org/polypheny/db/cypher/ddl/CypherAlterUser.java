@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherAlterUser extends CypherAdminCommand {
 
@@ -36,7 +37,16 @@ public class CypherAlterUser extends CypherAdminCommand {
     private final boolean removeHome;
 
 
-    public CypherAlterUser( ParserPos pos, boolean ifExists, CypherSimpleEither<String, CypherParameter> username, CypherExpression password, boolean encrypted, Boolean orElse, Boolean orElse1, CypherSimpleEither<String, CypherParameter> orElse2, boolean removeHome ) {
+    public CypherAlterUser(
+            ParserPos pos,
+            boolean ifExists,
+            CypherSimpleEither<String, CypherParameter> username,
+            CypherExpression password,
+            boolean encrypted,
+            Boolean orElse,
+            Boolean orElse1,
+            CypherSimpleEither<String, CypherParameter> orElse2,
+            boolean removeHome ) {
         super( pos );
         this.ifExists = ifExists;
         this.username = username;

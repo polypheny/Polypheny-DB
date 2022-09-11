@@ -22,6 +22,7 @@ import lombok.Getter;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherDropIndex extends CypherSchemaCommand {
 

@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.CypherCallResultItem;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherCall extends CypherClause {
 
@@ -35,7 +36,17 @@ public class CypherCall extends CypherClause {
     private final List<CypherCallResultItem> items;
 
 
-    public CypherCall( ParserPos pos, ParserPos nextPos, ParserPos procedurePos, ParserPos resultPos, List<String> namespace, String name, List<CypherExpression> arguments, boolean yieldAll, List<CypherCallResultItem> items, CypherWhere where ) {
+    public CypherCall(
+            ParserPos pos,
+            ParserPos nextPos,
+            ParserPos procedurePos,
+            ParserPos resultPos,
+            List<String> namespace,
+            String name,
+            List<CypherExpression> arguments,
+            boolean yieldAll,
+            List<CypherCallResultItem> items,
+            CypherWhere where ) {
         super( pos );
         this.nextPos = nextPos;
         this.procedurePos = procedurePos;

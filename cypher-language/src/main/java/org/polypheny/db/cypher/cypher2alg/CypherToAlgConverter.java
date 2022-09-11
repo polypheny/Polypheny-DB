@@ -128,7 +128,11 @@ public class CypherToAlgConverter {
 
 
     private AlgNode buildFullScan( LogicalGraph graph ) {
-        return new LogicalLpgScan( cluster, cluster.traitSet(), graph, new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "*", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) ) );
+        return new LogicalLpgScan(
+                cluster,
+                cluster.traitSet(),
+                graph,
+                new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "*", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) ) );
     }
 
 
@@ -251,7 +255,6 @@ public class CypherToAlgConverter {
 
         }
         context.add( node );
-
     }
 
 
@@ -364,8 +367,6 @@ public class CypherToAlgConverter {
         convertWhere( clause.getWhere(), context );
 
         context.combineFilter();
-
-
     }
 
 
@@ -382,7 +383,6 @@ public class CypherToAlgConverter {
             // convert filter pattern ( RexNode CYPHER_PATTERN_MATCH )
             context.add( pattern.getPatternMatch( context ) );
         }
-
     }
 
 
@@ -420,7 +420,13 @@ public class CypherToAlgConverter {
         private List<Pair<String, EdgeVariableHolder>> edges = new LinkedList<>();
 
 
-        private CypherContext( CypherNode original, LogicalGraph graph, AlgOptCluster cluster, AlgBuilder algBuilder, RexBuilder rexBuilder, PolyphenyDbCatalogReader catalogReader ) {
+        private CypherContext(
+                CypherNode original,
+                LogicalGraph graph,
+                AlgOptCluster cluster,
+                AlgBuilder algBuilder,
+                RexBuilder rexBuilder,
+                PolyphenyDbCatalogReader catalogReader ) {
             this.original = original;
             this.graph = graph;
             this.cluster = cluster;
@@ -441,9 +447,12 @@ public class CypherToAlgConverter {
             if ( !stack.isEmpty() ) {
                 return;
             }
-            stack.add( new LogicalLpgScan( cluster, cluster.traitSet(), graph, new AlgRecordType(
-                    List.of( new AlgDataTypeFieldImpl( "g", 0, graphType ) ) ) ) );
-
+            LogicalLpgScan lps = new LogicalLpgScan(
+                    cluster,
+                    cluster.traitSet(),
+                    graph,
+                    new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "g", 0, graphType ) ) ) );
+            stack.add( lps );
         }
 
 
@@ -640,8 +649,13 @@ public class CypherToAlgConverter {
                     i++;
                 }
 
-                return new LogicalLpgValues( cluster, cluster.traitSet(), List.of(), List.of(),
-                        ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).collect( Collectors.toList() ) ) ), new AlgRecordType( fields ) );
+                return new LogicalLpgValues(
+                        cluster,
+                        cluster.traitSet(),
+                        List.of(),
+                        List.of(),
+                        ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).collect( Collectors.toList() ) ) ),
+                        new AlgRecordType( fields ) );
             } else {
                 throw new UnsupportedOperationException();
             }
@@ -680,7 +694,13 @@ public class CypherToAlgConverter {
 
             if ( stack.isEmpty() ) {
                 // simple unfiltered insert
-                add( LogicalLpgValues.create( cluster, cluster.traitSet(), nodes, nodeType, edges.stream().map( t -> Pair.of( t.left, t.right.edge ) ).collect( Collectors.toList() ), edgeType ) );
+                add( LogicalLpgValues.create(
+                        cluster,
+                        cluster.traitSet(),
+                        nodes,
+                        nodeType,
+                        edges.stream().map( t -> Pair.of( t.left, t.right.edge ) ).collect( Collectors.toList() ),
+                        edgeType ) );
 
                 add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Operation.INSERT, null, null ) );
             } else {
@@ -732,7 +752,9 @@ public class CypherToAlgConverter {
                 List<Pair<String, RexNode>> nodesAndEdges = Stream.concat( newNodes.stream(), newEdges.stream() ).collect( Collectors.toList() );
 
                 AtomicLong id = new AtomicLong(); // todo dl maybe move into values
-                List<String> adjustedNames = Pair.left( nodesAndEdges ).stream().map( n -> Objects.requireNonNullElseGet( n, () -> "EXPR$" + id.getAndIncrement() ) ).collect( Collectors.toList() );
+                List<String> adjustedNames = Pair.left( nodesAndEdges ).stream()
+                        .map( n -> Objects.requireNonNullElseGet( n, () -> "EXPR$" + id.getAndIncrement() ) )
+                        .collect( Collectors.toList() );
 
                 add( new LogicalLpgProject( node.getCluster(), node.getTraitSet(), pop(), Pair.right( nodesAndEdges ), adjustedNames ) );
 

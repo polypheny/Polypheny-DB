@@ -1286,8 +1286,9 @@ public class MongoRules {
             BsonDocument doc = new BsonDocument();
             CatalogTable catalogTable = implementor.mongoEntity.getCatalogTable();
             GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
+            //noinspection AssertWithSideEffects
             assert input.getRowType().getFieldCount() == this.getTable().getRowType().getFieldCount();
-            Map<Integer, String> physicalMapping = null;
+            Map<Integer, String> physicalMapping;
             if ( input.getInput() instanceof MongoValues ) {
                 physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
             } else if ( input.getInput() instanceof MongoDocuments ) {

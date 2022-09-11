@@ -33,7 +33,13 @@ public class CypherShowAllPrivileges extends CypherWithGraph implements Unsuppor
     private final CypherWhere where;
 
 
-    public CypherShowAllPrivileges( ParserPos pos, boolean asCommand, boolean asRevoke, CypherYield yield, CypherReturnClause returnClause, CypherWhere where ) {
+    public CypherShowAllPrivileges(
+            ParserPos pos,
+            boolean asCommand,
+            boolean asRevoke,
+            CypherYield yield,
+            CypherReturnClause returnClause,
+            CypherWhere where ) {
         super( pos );
         this.asCommand = asCommand;
         this.asRevoke = asRevoke;

@@ -613,7 +613,6 @@ public class CypherFunctions {
      * @param context dataContext of the delete operation
      * @param enumerables collection of all modify enumerables
      * @param order the order of modify operations
-     * @return
      */
     private static Enumerable<?> sendDeletes( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
         int i = 0;

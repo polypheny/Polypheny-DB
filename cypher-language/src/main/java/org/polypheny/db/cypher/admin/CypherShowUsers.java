@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
 public class CypherShowUsers extends CypherWithGraph implements UnsupportedExecutableStatement {
 

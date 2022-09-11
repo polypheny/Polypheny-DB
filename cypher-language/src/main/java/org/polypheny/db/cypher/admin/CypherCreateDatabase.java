@@ -32,6 +32,7 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
+
 @Getter
 public class CypherCreateDatabase extends CypherAdminCommand implements ExecutableStatement {
 
@@ -43,7 +44,14 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
     private final String store;
 
 
-    public CypherCreateDatabase( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither options, CypherSimpleEither<String, CypherParameter> store ) {
+    public CypherCreateDatabase(
+            ParserPos pos,
+            boolean replace,
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            boolean ifNotExists,
+            CypherWaitClause wait,
+            CypherSimpleEither options,
+            CypherSimpleEither<String, CypherParameter> store ) {
         super( pos );
         this.replace = replace;
         this.databaseName = getNameOrNull( databaseName );
@@ -81,7 +89,6 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
                 ifNotExists,
                 replace,
                 statement );
-
     }
 
 

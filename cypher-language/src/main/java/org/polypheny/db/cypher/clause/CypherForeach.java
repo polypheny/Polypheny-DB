@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherForeach extends CypherClause {
 

@@ -30,6 +30,7 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
+
 @Getter
 public class CypherCreateDatabaseAlias extends CypherAdminCommand implements ExecutableStatement {
 
@@ -39,7 +40,12 @@ public class CypherCreateDatabaseAlias extends CypherAdminCommand implements Exe
     private final boolean ifNotExists;
 
 
-    public CypherCreateDatabaseAlias( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> aliasName, CypherSimpleEither<String, CypherParameter> targetName, boolean ifNotExists ) {
+    public CypherCreateDatabaseAlias(
+            ParserPos pos,
+            boolean replace,
+            CypherSimpleEither<String, CypherParameter> aliasName,
+            CypherSimpleEither<String, CypherParameter> targetName,
+            boolean ifNotExists ) {
         super( pos );
         this.replace = replace;
         this.aliasName = aliasName.getLeft() != null ? aliasName.getLeft() : aliasName.getRight().getName();

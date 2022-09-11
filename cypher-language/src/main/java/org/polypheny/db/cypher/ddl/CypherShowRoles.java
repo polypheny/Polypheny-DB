@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.clause.CypherReturnClause;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherShowRoles extends CypherWithGraph {
 
@@ -33,7 +34,13 @@ public class CypherShowRoles extends CypherWithGraph {
     private final CypherWhere where;
 
 
-    public CypherShowRoles( ParserPos pos, boolean withUsers, boolean showAll, CypherYield yield, CypherReturnClause returnClause, CypherWhere where ) {
+    public CypherShowRoles(
+            ParserPos pos,
+            boolean withUsers,
+            boolean showAll,
+            CypherYield yield,
+            CypherReturnClause returnClause,
+            CypherWhere where ) {
         super( pos );
         this.withUsers = withUsers;
         this.showAll = showAll;

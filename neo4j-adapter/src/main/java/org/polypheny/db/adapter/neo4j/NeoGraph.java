@@ -219,8 +219,6 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
 
         /**
          * Gets an already open transaction of creates a new one if it not exists.
-         *
-         * @return
          */
         private Transaction getTrx() {
             return graph.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );

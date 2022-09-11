@@ -17,8 +17,8 @@
 package org.polypheny.db.cypher;
 
 public enum Cypher {
-    CREATE,
-    QUERY;
 
+    CREATE,
+    QUERY
 
 }

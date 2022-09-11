@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.clause;
 import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherWith extends CypherClause {
 

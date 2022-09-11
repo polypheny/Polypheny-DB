@@ -23,6 +23,7 @@ import lombok.Setter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.QueryParameters;
 
+
 @Getter
 public class CypherQueryParameters extends QueryParameters {
 

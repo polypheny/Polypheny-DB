@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherTerminateTransaction extends CypherClause {
 

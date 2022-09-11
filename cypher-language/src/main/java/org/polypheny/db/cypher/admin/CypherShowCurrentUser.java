@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
 public class CypherShowCurrentUser extends CypherWithGraph implements UnsupportedExecutableStatement {
 
@@ -31,7 +32,11 @@ public class CypherShowCurrentUser extends CypherWithGraph implements Unsupporte
     private final CypherWhere where;
 
 
-    public CypherShowCurrentUser( ParserPos pos, CypherYield yield, CypherReturnClause returnClause, CypherWhere where ) {
+    public CypherShowCurrentUser(
+            ParserPos pos,
+            CypherYield yield,
+            CypherReturnClause returnClause,
+            CypherWhere where ) {
         super( pos );
         this.yield = yield;
         this.returnClause = returnClause;

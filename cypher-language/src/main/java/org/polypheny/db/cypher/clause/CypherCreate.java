@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherCreate extends CypherClause {
 

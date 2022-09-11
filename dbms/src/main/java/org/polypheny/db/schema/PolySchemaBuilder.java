@@ -165,7 +165,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
             rootSchema.add( catalogSchema.name, s, catalogSchema.namespaceType );
             tableMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
-            if ( catalogDatabase.defaultSchemaId != null && catalogSchema.id == catalogDatabase.defaultSchemaId ) {
+            if ( catalogDatabase.defaultNamespaceId != null && catalogSchema.id == catalogDatabase.defaultNamespaceId ) {
                 tableMap.forEach( rootSchema::add );
             }
             s.polyphenyDbSchema().setSchema( new LogicalSchema( catalogSchema.name, tableMap, new HashMap<>() ) );
@@ -219,7 +219,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
             rootSchema.add( catalogSchema.name, s, catalogSchema.namespaceType );
             collectionMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
-            if ( catalogDatabase.defaultSchemaId != null && catalogSchema.id == catalogDatabase.defaultSchemaId ) {
+            if ( catalogDatabase.defaultNamespaceId != null && catalogSchema.id == catalogDatabase.defaultNamespaceId ) {
                 collectionMap.forEach( rootSchema::add );
             }
             PolyphenyDbSchema schema = s.polyphenyDbSchema().getSubSchema( catalogSchema.name, true );

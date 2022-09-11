@@ -34,13 +34,17 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
+
 public class CypherAddPlacement extends CypherAdminCommand implements ExecutableStatement {
 
     private final String store;
     private final String database;
 
 
-    public CypherAddPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherSimpleEither<String, CypherParameter> storeName ) {
+    public CypherAddPlacement(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            CypherSimpleEither<String, CypherParameter> storeName ) {
         super( pos );
         this.database = getNameOrNull( databaseName );
         this.store = getNameOrNull( storeName );
@@ -74,7 +78,6 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
         }
 
         DdlManager.getInstance().addGraphDatabasePlacement( graphs.get( 0 ).id, dataStores, true, statement );
-
     }
 
 }

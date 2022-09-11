@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherGrantRoles extends CypherAdminCommand {
 
@@ -30,7 +31,10 @@ public class CypherGrantRoles extends CypherAdminCommand {
     private final List<CypherSimpleEither<String, CypherParameter>> users;
 
 
-    public CypherGrantRoles( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> roles, List<CypherSimpleEither<String, CypherParameter>> users ) {
+    public CypherGrantRoles(
+            ParserPos pos,
+            List<CypherSimpleEither<String, CypherParameter>> roles,
+            List<CypherSimpleEither<String, CypherParameter>> users ) {
         super( pos );
         this.roles = roles;
         this.users = users;

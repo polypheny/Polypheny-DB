@@ -280,10 +280,10 @@ public class SqlDialect {
     }
 
 
-    public void unparseSqlDatetimeArithmetic( SqlWriter writer, SqlCall call, Kind Kind, int leftPrec, int rightPrec ) {
+    public void unparseSqlDatetimeArithmetic( SqlWriter writer, SqlCall call, Kind kind, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
         ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
-        writer.sep( (Kind.PLUS == Kind) ? "+" : "-" );
+        writer.sep( (Kind.PLUS == kind) ? "+" : "-" );
         ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
         writer.endList( frame );
         //Only two parameters are present normally

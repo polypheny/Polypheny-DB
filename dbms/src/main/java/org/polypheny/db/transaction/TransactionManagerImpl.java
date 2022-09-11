@@ -105,7 +105,7 @@ public class TransactionManagerImpl implements TransactionManager {
         Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( (int) userId );
         CatalogDatabase catalogDatabase = catalog.getDatabase( databaseId );
-        CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
+        CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultNamespaceName );
         return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze, origin, flavor );
     }
 

@@ -40,6 +40,7 @@ import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
+
 @Getter
 public class CypherUnwind extends CypherClause {
 
@@ -87,14 +88,25 @@ public class CypherUnwind extends CypherClause {
             if ( !node.getRowType().getFieldNames().contains( namedNode.left ) ) {
                 throw new UnsupportedOperationException();
             }
-            node = new LogicalLpgProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) );
+            node = new LogicalLpgProject(
+                    node.getCluster(),
+                    node.getTraitSet(),
+                    context.pop(),
+                    List.of( namedNode.right ),
+                    List.of( namedNode.left ) );
 
             context.add( node );
         }
 
         if ( namedNode.left != null ) {
             // first project the expression out
-            context.add( new LogicalLpgProject( node.getCluster(), node.getTraitSet(), context.pop(), List.of( namedNode.right ), List.of( namedNode.left ) ) );
+            LogicalLpgProject llp = new LogicalLpgProject(
+                    node.getCluster(),
+                    node.getTraitSet(),
+                    context.pop(),
+                    List.of( namedNode.right ),
+                    List.of( namedNode.left ) );
+            context.add( llp );
         }
 
         context.add( new LogicalLpgUnwind(
@@ -103,7 +115,6 @@ public class CypherUnwind extends CypherClause {
                 context.pop(),
                 0,
                 variable.getName() ) );
-
     }
 
 }

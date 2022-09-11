@@ -206,7 +206,6 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
          *
          * @param values the values to execute the query with
          * @param parameterTypes the types of the attached values
-         * @return
          */
         private Map<String, Object> toParameters( Map<Long, Object> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
             Map<String, Object> parameters = new HashMap<>();

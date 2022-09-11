@@ -222,7 +222,6 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
      * @param builder helper builder to generate expressions
      * @param rowType the RowType to transform
      * @param typeGetter function, which transforms a {@link AlgDataType} into a matching {@link PolyType}
-     * @return
      */
     public Expression getFields( BlockBuilder builder, AlgDataType rowType, Function1<AlgDataType, PolyType> typeGetter ) {
         return builder.append(

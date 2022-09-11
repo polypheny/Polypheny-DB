@@ -21,6 +21,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.remove.CypherRemoveItem;
 import org.polypheny.db.languages.ParserPos;
 
+
 public class CypherRemove extends CypherClause {
 
     private final List<CypherRemoveItem> items;
@@ -42,9 +43,7 @@ public class CypherRemove extends CypherClause {
         for ( CypherRemoveItem item : items ) {
             item.removeItem( context );
         }
-
         context.combineSet();
-
     }
 
 }

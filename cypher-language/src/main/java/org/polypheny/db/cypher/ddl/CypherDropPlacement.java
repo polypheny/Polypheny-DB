@@ -39,7 +39,10 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
     private final String databaseName;
 
 
-    public CypherDropPlacement( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherSimpleEither<String, CypherParameter> storeName ) {
+    public CypherDropPlacement(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            CypherSimpleEither<String, CypherParameter> storeName ) {
         super( pos );
         this.databaseName = getNameOrNull( databaseName );
         this.storeName = getNameOrNull( storeName );

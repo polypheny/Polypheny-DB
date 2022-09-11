@@ -31,6 +31,7 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
+
 @Getter
 public class CypherCreateConstraint extends CypherSchemaCommand implements ExecutableStatement {
 
@@ -46,7 +47,18 @@ public class CypherCreateConstraint extends CypherSchemaCommand implements Execu
     private final ConstraintVersion constraintVersion;
 
 
-    public CypherCreateConstraint( ParserPos pos, ConstraintType constraintType, boolean replace, boolean ifNotExists, String name, CypherVariable variable, StringPos parserPosStringPos, List<CypherProperty> properties, CypherSimpleEither options, boolean containsOn, ConstraintVersion constraintVersion ) {
+    public CypherCreateConstraint(
+            ParserPos pos,
+            ConstraintType constraintType,
+            boolean replace,
+            boolean ifNotExists,
+            String name,
+            CypherVariable variable,
+            StringPos parserPosStringPos,
+            List<CypherProperty> properties,
+            CypherSimpleEither options,
+            boolean containsOn,
+            ConstraintVersion constraintVersion ) {
         super( pos );
         this.constraintType = constraintType;
         this.replace = replace;

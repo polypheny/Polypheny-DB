@@ -61,7 +61,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 /**
  * Periodically retrieves information from the MonitoringService to get current statistics about
  * the frequency map to determine which chunk of data should reside in HOT {@literal &}  which in COLD partition
- * <p>
+ *
  * Only one instance of the MAP exists.
  * Which gets created once the first TEMPERATURE partitioned table gets created. (Including creation of BackgroundTask)
  * and consequently will be shutdown when no TEMPERATURE partitioned tables exist anymore

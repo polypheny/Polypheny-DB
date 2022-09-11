@@ -446,7 +446,7 @@ public abstract class BaseRouter implements Router {
         PreparingTable nodesTable = getSubstitutionTable( statement, mapping.nodesId, mapping.idNodeId, adapterId );
         PreparingTable nodePropertiesTable = getSubstitutionTable( statement, mapping.nodesPropertyId, mapping.idNodesPropertyId, adapterId );
         PreparingTable edgesTable = getSubstitutionTable( statement, mapping.edgesId, mapping.idEdgeId, adapterId );
-        ;
+
         PreparingTable edgePropertiesTable = getSubstitutionTable( statement, mapping.edgesPropertyId, mapping.idEdgesPropertyId, adapterId );
 
         AlgNode node = buildSubstitutionJoin( alg, nodesTable, nodePropertiesTable );

@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherCreateUser extends CypherAdminCommand {
 
@@ -36,7 +37,16 @@ public class CypherCreateUser extends CypherAdminCommand {
     private final CypherSimpleEither<String, CypherParameter> orElse2;
 
 
-    public CypherCreateUser( ParserPos pos, boolean replace, boolean ifNotExists, CypherSimpleEither<String, CypherParameter> username, CypherExpression password, boolean encrypted, Boolean orElse, Boolean orElse1, CypherSimpleEither<String, CypherParameter> orElse2 ) {
+    public CypherCreateUser(
+            ParserPos pos,
+            boolean replace,
+            boolean ifNotExists,
+            CypherSimpleEither<String, CypherParameter> username,
+            CypherExpression password,
+            boolean encrypted,
+            Boolean orElse,
+            Boolean orElse1,
+            CypherSimpleEither<String, CypherParameter> orElse2 ) {
         super( pos );
         this.replace = replace;
         this.ifNotExists = ifNotExists;

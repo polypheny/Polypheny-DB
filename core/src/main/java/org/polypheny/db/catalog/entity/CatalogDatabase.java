@@ -31,8 +31,8 @@ public final class CatalogDatabase implements CatalogObject, Comparable<CatalogD
     public final String name;
     public final int ownerId;
     public final String ownerName;
-    public final Long defaultSchemaId; // can be null
-    public final String defaultSchemaName; // can be null
+    public final Long defaultNamespaceId; // can be null
+    public final String defaultNamespaceName; // can be null
 
 
     public CatalogDatabase(
@@ -40,21 +40,21 @@ public final class CatalogDatabase implements CatalogObject, Comparable<CatalogD
             @NonNull final String name,
             final int ownerId,
             @NonNull final String ownerName,
-            final Long defaultSchemaId,
-            final String defaultSchemaName ) {
+            final Long defaultNamespaceId,
+            final String defaultNamespaceName ) {
         this.id = id;
         this.name = name;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
-        this.defaultSchemaId = defaultSchemaId;
-        this.defaultSchemaName = defaultSchemaName;
+        this.defaultNamespaceId = defaultNamespaceId;
+        this.defaultNamespaceName = defaultNamespaceName;
     }
 
 
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, ownerName, defaultSchemaName };
+        return new Serializable[]{ name, ownerName, defaultNamespaceName };
     }
 
 

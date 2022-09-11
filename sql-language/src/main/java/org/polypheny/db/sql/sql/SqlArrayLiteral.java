@@ -28,10 +28,6 @@ public class SqlArrayLiteral extends SqlLiteral {
 
     /**
      * Creates a <code>SqlLiteral</code>.
-     *
-     * @param value
-     * @param type
-     * @param pos
      */
     protected SqlArrayLiteral( List<SqlNode> value, AlgDataType type, ParserPos pos ) {
         super( value, type.getPolyType(), pos );

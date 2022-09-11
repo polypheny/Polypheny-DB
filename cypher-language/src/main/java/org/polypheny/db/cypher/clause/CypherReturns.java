@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherReturns extends CypherClause {
 
@@ -32,14 +33,13 @@ public class CypherReturns extends CypherClause {
         super( pos );
         this.returnAll = returnAll;
         if ( returnAll ) {
-            // attach a star select, which preserves all previous variables
+            // Attach a star select, which preserves all previous variables
             List<CypherReturn> list = new ArrayList<>( returns );
             list.add( 0, new CypherStarReturn( pos ) );
             this.returns = list;
         } else {
             this.returns = returns;
         }
-
     }
 
 

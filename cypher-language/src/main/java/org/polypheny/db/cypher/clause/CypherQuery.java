@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.clause;
 import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.languages.ParserPos;
 
+
 public abstract class CypherQuery extends CypherStatement {
 
     protected CypherQuery( ParserPos pos ) {
@@ -30,6 +31,5 @@ public abstract class CypherQuery extends CypherStatement {
     public CypherKind getCypherKind() {
         return CypherKind.QUERY;
     }
-
 
 }

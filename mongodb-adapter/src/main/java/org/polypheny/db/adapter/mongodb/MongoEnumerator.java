@@ -151,11 +151,7 @@ class MongoEnumerator implements Enumerator<Object> {
      * This method is needed to translate the special types back to their initial ones in Arrays,
      * for example Float is not available in MongoDB and has to be stored as Double,
      * This needs to be fixed when retrieving the arrays.
-     * Additionally for array we cannot be sure how the value is stored, as we lose this information on insert
-     *
-     * @param objects
-     * @param arrayFieldClass
-     * @return
+     * Additionally, for array we cannot be sure how the value is stored, as we lose this information on insert
      */
     static List<Object> arrayGetter( List<Object> objects, Class<?> arrayFieldClass ) {
         if ( arrayFieldClass == Float.class || arrayFieldClass == float.class ) {

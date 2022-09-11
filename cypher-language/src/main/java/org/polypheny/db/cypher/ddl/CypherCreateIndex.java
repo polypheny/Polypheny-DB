@@ -27,6 +27,7 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherCreateIndex extends CypherSchemaCommand {
 
@@ -43,7 +44,17 @@ public class CypherCreateIndex extends CypherSchemaCommand {
     private final CypherSimpleEither options;
 
 
-    public CypherCreateIndex( ParserPos pos, IndexType type, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, List<StringPos> labels, List<CypherProperty> properties, CypherSimpleEither options ) {
+    public CypherCreateIndex(
+            ParserPos pos,
+            IndexType type,
+            boolean replace,
+            boolean ifNotExists,
+            boolean isNode,
+            String indexName,
+            CypherVariable variable,
+            List<StringPos> labels,
+            List<CypherProperty> properties,
+            CypherSimpleEither options ) {
         super( pos );
         this.type = type;
         this.replace = replace;
@@ -60,7 +71,17 @@ public class CypherCreateIndex extends CypherSchemaCommand {
     }
 
 
-    public CypherCreateIndex( ParserPos pos, IndexType type, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, StringPos funcName, CypherVariable funcParam, CypherSimpleEither options ) {
+    public CypherCreateIndex(
+            ParserPos pos,
+            IndexType type,
+            boolean replace,
+            boolean ifNotExists,
+            boolean isNode,
+            String indexName,
+            CypherVariable variable,
+            StringPos funcName,
+            CypherVariable funcParam,
+            CypherSimpleEither options ) {
         super( pos );
         this.type = type;
         this.replace = replace;
@@ -77,11 +98,17 @@ public class CypherCreateIndex extends CypherSchemaCommand {
     }
 
 
-    public CypherCreateIndex( ParserPos pos, IndexType type, StringPos stringPos, List<StringPos> properties ) {
+    public CypherCreateIndex(
+            ParserPos pos,
+            IndexType type,
+            StringPos stringPos,
+            List<StringPos> properties ) {
         super( pos );
         this.type = type;
         this.indexName = stringPos.getImage();
-        this.properties = properties.stream().map( p -> new CypherProperty( new CypherExpression( p.getPos() ), p ) ).collect( Collectors.toList() );
+        this.properties = properties.stream()
+                .map( p -> new CypherProperty( new CypherExpression( p.getPos() ), p ) )
+                .collect( Collectors.toList() );
 
         this.replace = false;
         this.variable = null;
@@ -94,7 +121,17 @@ public class CypherCreateIndex extends CypherSchemaCommand {
     }
 
 
-    public <E> CypherCreateIndex( ParserPos pos, IndexType type, boolean replace, boolean ifNotExists, boolean isNode, String indexName, CypherVariable variable, ImmutableList<StringPos> labels, List<CypherProperty> properties, CypherSimpleEither options ) {
+    public <E> CypherCreateIndex(
+            ParserPos pos,
+            IndexType type,
+            boolean replace,
+            boolean ifNotExists,
+            boolean isNode,
+            String indexName,
+            CypherVariable variable,
+            ImmutableList<StringPos> labels,
+            List<CypherProperty> properties,
+            CypherSimpleEither options ) {
         super( pos );
         this.type = type;
         this.replace = replace;

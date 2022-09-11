@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.admin;
 
 import org.polypheny.db.languages.ParserPos;
 
+
 public class CypherAdminCommand extends CypherWithGraph {
 
     protected CypherAdminCommand( ParserPos pos ) {

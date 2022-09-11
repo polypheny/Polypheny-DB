@@ -30,6 +30,7 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
+
 @Getter
 public class CypherAlterDatabaseAlias extends CypherAdminCommand implements ExecutableStatement {
 
@@ -38,7 +39,11 @@ public class CypherAlterDatabaseAlias extends CypherAdminCommand implements Exec
     private final boolean ifExists;
 
 
-    public CypherAlterDatabaseAlias( ParserPos pos, CypherSimpleEither<String, CypherParameter> aliasName, CypherSimpleEither<String, CypherParameter> targetName, boolean ifExists ) {
+    public CypherAlterDatabaseAlias(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> aliasName,
+            CypherSimpleEither<String, CypherParameter> targetName,
+            boolean ifExists ) {
         super( pos );
         this.aliasName = aliasName.getLeft() != null ? aliasName.getLeft() : aliasName.getRight().getName();
         this.targetName = targetName.getLeft() != null ? targetName.getLeft() : targetName.getRight().getName();
@@ -51,16 +56,13 @@ public class CypherAlterDatabaseAlias extends CypherAdminCommand implements Exec
         List<CatalogGraphDatabase> graphs = Catalog.getInstance().getGraphs( Catalog.defaultDatabaseId, new Pattern( targetName ) );
 
         if ( graphs.size() != 1 ) {
-
             if ( !ifExists ) {
                 throw new RuntimeException( "Graph database does not exist and IF EXISTS was not specified." );
             }
-
             return;
         }
 
         DdlManager.getInstance().replaceGraphAlias( graphs.get( 0 ).id, targetName, aliasName );
-
     }
 
 }

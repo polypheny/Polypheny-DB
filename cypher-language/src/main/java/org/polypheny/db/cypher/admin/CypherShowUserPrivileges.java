@@ -26,6 +26,7 @@ import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
 public class CypherShowUserPrivileges extends CypherWithGraph implements UnsupportedExecutableStatement {
 
@@ -37,7 +38,14 @@ public class CypherShowUserPrivileges extends CypherWithGraph implements Unsuppo
     private final CypherWhere where;
 
 
-    public CypherShowUserPrivileges( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> users, boolean asCommand, boolean asRevoke, CypherYield yield, CypherReturnClause returnClause, CypherWhere where ) {
+    public CypherShowUserPrivileges(
+            ParserPos pos,
+            List<CypherSimpleEither<String, CypherParameter>> users,
+            boolean asCommand,
+            boolean asRevoke,
+            CypherYield yield,
+            CypherReturnClause returnClause,
+            CypherWhere where ) {
         super( pos );
         this.users = users;
         this.asCommand = asCommand;

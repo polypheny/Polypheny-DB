@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.clause.CypherWaitClause;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
 public class CypherStartDatabase extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
@@ -30,9 +31,11 @@ public class CypherStartDatabase extends CypherAdminCommand implements Unsupport
     private final CypherWaitClause wait;
 
 
-    public CypherStartDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, CypherWaitClause wait ) {
+    public CypherStartDatabase(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            CypherWaitClause wait ) {
         super( pos );
-
         this.databaseName = databaseName;
         this.wait = wait;
     }

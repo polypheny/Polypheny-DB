@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherWhere extends CypherClause {
 

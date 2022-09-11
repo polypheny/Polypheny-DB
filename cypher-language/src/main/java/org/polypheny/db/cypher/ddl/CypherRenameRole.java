@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherRenameRole extends CypherAdminCommand {
 
@@ -30,7 +31,11 @@ public class CypherRenameRole extends CypherAdminCommand {
     private final boolean ifExists;
 
 
-    public CypherRenameRole( ParserPos pos, CypherSimpleEither<String, CypherParameter> fromRoleName, CypherSimpleEither<String, CypherParameter> toRoleName, boolean ifExists ) {
+    public CypherRenameRole(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> fromRoleName,
+            CypherSimpleEither<String, CypherParameter> toRoleName,
+            boolean ifExists ) {
         super( pos );
         this.fromRoleName = fromRoleName;
         this.toRoleName = toRoleName;

@@ -231,10 +231,6 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
      * seg11, seg12, seg2, seg3
      * seg1, seg2, seg31, seg32
      * seg11, seg12, seg2, seg31, seg31
-     *
-     * @param unevenlySegments
-     * @param variants
-     * @return
      */
     private List<List<PolySegment>> distributeEvenly( List<List<List<PolySegment>>> unevenlySegments, int variants ) {
         List<List<PolySegment>> evenSegments = new ArrayList<>();

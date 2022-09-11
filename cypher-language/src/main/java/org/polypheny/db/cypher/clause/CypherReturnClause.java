@@ -40,6 +40,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 
+
 @Getter
 public class CypherReturnClause extends CypherClause {
 
@@ -53,7 +54,16 @@ public class CypherReturnClause extends CypherClause {
     private final ParserPos pos3;
 
 
-    public CypherReturnClause( ParserPos pos, boolean distinct, List<CypherReturn> returnItems, List<CypherOrderItem> order, ParserPos pos1, CypherExpression skip, ParserPos pos2, CypherExpression limit, ParserPos pos3 ) {
+    public CypherReturnClause(
+            ParserPos pos,
+            boolean distinct,
+            List<CypherReturn> returnItems,
+            List<CypherOrderItem> order,
+            ParserPos pos1,
+            CypherExpression skip,
+            ParserPos pos2,
+            CypherExpression limit,
+            ParserPos pos3 ) {
         super( pos );
         this.distinct = distinct;
         this.returnItems = returnItems;
@@ -73,7 +83,10 @@ public class CypherReturnClause extends CypherClause {
 
 
     public AlgNode getGraphProject( CypherContext context ) {
-        List<Pair<String, RexNode>> nameAndProject = returnItems.stream().map( i -> i.getRex( context, RexType.PROJECT ) ).filter( Objects::nonNull ).collect( Collectors.toCollection( ArrayList::new ) );
+        List<Pair<String, RexNode>> nameAndProject = returnItems.stream()
+                .map( i -> i.getRex( context, RexType.PROJECT ) )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toCollection( ArrayList::new ) );
         nameAndProject.addAll( 0, context.popNodes() );
 
         AlgNode node = getProject( context, nameAndProject );
@@ -101,7 +114,9 @@ public class CypherReturnClause extends CypherClause {
             }
         }
 
-        List<String> aggNames = Pair.left( aggIndexes ).stream().filter( Objects::nonNull ).collect( Collectors.toList() );
+        List<String> aggNames = Pair.left( aggIndexes ).stream()
+                .filter( Objects::nonNull )
+                .collect( Collectors.toList() );
 
         List<Integer> groupIndexes = node
                 .getRowType()
@@ -118,9 +133,7 @@ public class CypherReturnClause extends CypherClause {
                 false,
                 ImmutableBitSet.of( groupIndexes ),
                 null, // instead of grouping by only one filed add multiple combinations (), (1,2)
-                aggCalls
-
-        );
+                aggCalls );
     }
 
 
@@ -147,8 +160,9 @@ public class CypherReturnClause extends CypherClause {
 
 
     public AlgNode getGraphSort( CypherContext context ) {
-        List<Pair<Direction, String>> orders = order.stream().map( o ->
-                Pair.of( o.isAsc() ? Direction.ASCENDING : Direction.DESCENDING, o.getExpression().getName() ) ).collect( Collectors.toList() );
+        List<Pair<Direction, String>> orders = order.stream()
+                .map( o -> Pair.of( o.isAsc() ? Direction.ASCENDING : Direction.DESCENDING, o.getExpression().getName() ) )
+                .collect( Collectors.toList() );
 
         AlgNode node = context.peek();
 
@@ -156,7 +170,6 @@ public class CypherReturnClause extends CypherClause {
 
         for ( Pair<Direction, String> item : orders ) {
             int index = node.getRowType().getFieldNames().indexOf( item.right );
-
             collations.add( new AlgFieldCollation( index, item.left ) );
         }
 

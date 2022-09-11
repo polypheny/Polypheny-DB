@@ -24,6 +24,7 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
 public class CypherDenyPrivilege extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
@@ -31,7 +32,10 @@ public class CypherDenyPrivilege extends CypherAdminCommand implements Unsupport
     private final CypherPrivilegeType privilege;
 
 
-    public CypherDenyPrivilege( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> roles, CypherPrivilegeType privilege ) {
+    public CypherDenyPrivilege(
+            ParserPos pos,
+            List<CypherSimpleEither<String, CypherParameter>> roles,
+            CypherPrivilegeType privilege ) {
         super( pos );
         this.roles = roles;
         this.privilege = privilege;

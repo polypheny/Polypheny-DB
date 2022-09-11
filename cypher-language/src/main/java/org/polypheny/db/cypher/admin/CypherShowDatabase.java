@@ -33,7 +33,12 @@ public class CypherShowDatabase extends CypherWithGraph implements UnsupportedEx
     private final CypherWhere where;
 
 
-    public CypherShowDatabase( ParserPos pos, CypherDbScope scope, CypherYield yield, CypherReturnClause returnClause, CypherWhere where ) {
+    public CypherShowDatabase(
+            ParserPos pos,
+            CypherDbScope scope,
+            CypherYield yield,
+            CypherReturnClause returnClause,
+            CypherWhere where ) {
         super( pos );
         this.scope = scope;
         this.yield = yield;

@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.admin;
 import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.languages.ParserPos;
 
+
 public abstract class CypherWithGraph extends CypherStatement {
 
     protected CypherWithGraph( ParserPos pos ) {

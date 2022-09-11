@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherDropUser extends CypherAdminCommand {
 

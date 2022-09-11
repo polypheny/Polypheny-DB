@@ -21,6 +21,7 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherLoadCSV extends CypherClause {
 
@@ -30,7 +31,12 @@ public class CypherLoadCSV extends CypherClause {
     private final String separator;
 
 
-    public CypherLoadCSV( ParserPos pos, boolean headers, CypherExpression expression, CypherVariable variable, String separator ) {
+    public CypherLoadCSV(
+            ParserPos pos,
+            boolean headers,
+            CypherExpression expression,
+            CypherVariable variable,
+            String separator ) {
         super( pos );
         this.headers = headers;
         this.expression = expression;

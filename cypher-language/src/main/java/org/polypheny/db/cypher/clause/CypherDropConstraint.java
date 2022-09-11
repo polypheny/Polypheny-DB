@@ -25,6 +25,7 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherDropConstraint extends CypherSchemaCommand {
 
@@ -36,7 +37,12 @@ public class CypherDropConstraint extends CypherSchemaCommand {
     private List<CypherProperty> properties;
 
 
-    public CypherDropConstraint( ParserPos pos, ConstraintType constraintType, CypherVariable variable, StringPos parserPosStringPos, List<CypherProperty> properties ) {
+    public CypherDropConstraint(
+            ParserPos pos,
+            ConstraintType constraintType,
+            CypherVariable variable,
+            StringPos parserPosStringPos,
+            List<CypherProperty> properties ) {
         super( pos );
         this.constraintType = constraintType;
         this.variable = variable;

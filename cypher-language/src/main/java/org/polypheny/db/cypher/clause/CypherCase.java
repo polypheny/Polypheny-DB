@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherCase extends CypherExpression {
 
@@ -30,7 +31,12 @@ public class CypherCase extends CypherExpression {
     private final CypherExpression elseCase;
 
 
-    public CypherCase( ParserPos pos, CypherExpression condition, List<CypherExpression> when, List<CypherExpression> then, CypherExpression elseCase ) {
+    public CypherCase(
+            ParserPos pos,
+            CypherExpression condition,
+            List<CypherExpression> when,
+            List<CypherExpression> then,
+            CypherExpression elseCase ) {
         super( pos );
         this.condition = condition;
         this.when = when;

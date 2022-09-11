@@ -652,8 +652,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     /**
      * Gets the amount of entries for a column
-     *
-     * @return
      */
     private AlgNode getColumnCount( QueryResult queryResult, Scan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
@@ -678,8 +676,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     /**
      * Gets the amount of entries for a table.
-     *
-     * @return
      */
     private AlgNode getTableCount( Scan tableScan, AlgOptCluster cluster ) {
         AggregateCall aggregateCall = getRowCountAggregateCall( cluster );

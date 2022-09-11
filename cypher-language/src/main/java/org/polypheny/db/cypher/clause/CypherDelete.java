@@ -25,6 +25,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
+
 @Getter
 public class CypherDelete extends CypherClause {
 

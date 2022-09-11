@@ -24,6 +24,7 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
 public class CypherRevokePrivilege extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
@@ -33,7 +34,12 @@ public class CypherRevokePrivilege extends CypherAdminCommand implements Unsuppo
     private final boolean revokeDeny;
 
 
-    public CypherRevokePrivilege( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> roles, CypherPrivilegeType privilege, boolean revokeGrant, boolean revokeDeny ) {
+    public CypherRevokePrivilege(
+            ParserPos pos,
+            List<CypherSimpleEither<String, CypherParameter>> roles,
+            CypherPrivilegeType privilege,
+            boolean revokeGrant,
+            boolean revokeDeny ) {
         super( pos );
         this.roles = roles;
         this.privilege = privilege;

@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
 public class CypherAlterDatabase extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
@@ -30,7 +31,11 @@ public class CypherAlterDatabase extends CypherAdminCommand implements Unsupport
     private final AccessType accessType;
 
 
-    public CypherAlterDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifExists, AccessType accessType ) {
+    public CypherAlterDatabase(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            boolean ifExists,
+            AccessType accessType ) {
         super( pos );
         this.databaseName = databaseName;
         this.ifExists = ifExists;

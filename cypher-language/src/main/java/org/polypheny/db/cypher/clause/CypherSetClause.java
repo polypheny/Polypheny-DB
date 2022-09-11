@@ -22,6 +22,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.set.CypherSetItem;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
 public class CypherSetClause extends CypherClause {
 

@@ -63,6 +63,7 @@ import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Optionality;
 import org.slf4j.Logger;
 
+
 public class CypherLanguageDependent extends LanguageManager {
 
     static {
@@ -82,7 +83,13 @@ public class CypherLanguageDependent extends LanguageManager {
 
 
     @Override
-    public NodeToAlgConverter createToRelConverter( QueryLanguage sql, Validator validator, CatalogReader catalogReader, AlgOptCluster cluster, RexConvertletTable convertletTable, Config config ) {
+    public NodeToAlgConverter createToRelConverter(
+            QueryLanguage sql,
+            Validator validator,
+            CatalogReader catalogReader,
+            AlgOptCluster cluster,
+            RexConvertletTable convertletTable,
+            Config config ) {
         return null;
     }
 
@@ -100,7 +107,12 @@ public class CypherLanguageDependent extends LanguageManager {
 
 
     @Override
-    public Validator createPolyphenyValidator( QueryLanguage language, OperatorTable operatorTable, PolyphenyDbCatalogReader catalogReader, JavaTypeFactory typeFactory, Conformance conformance ) {
+    public Validator createPolyphenyValidator(
+            QueryLanguage language,
+            OperatorTable operatorTable,
+            PolyphenyDbCatalogReader catalogReader,
+            JavaTypeFactory typeFactory,
+            Conformance conformance ) {
         return null;
     }
 
@@ -136,19 +148,43 @@ public class CypherLanguageDependent extends LanguageManager {
 
 
     @Override
-    public DataTypeSpec createDataTypeSpec( QueryLanguage language, Identifier typeIdentifier, int precision, int scale, String charSetName, TimeZone o, ParserPos zero ) {
+    public DataTypeSpec createDataTypeSpec(
+            QueryLanguage language,
+            Identifier typeIdentifier,
+            int precision,
+            int scale,
+            String charSetName,
+            TimeZone o,
+            ParserPos zero ) {
         return null;
     }
 
 
     @Override
-    public DataTypeSpec createDataTypeSpec( QueryLanguage language, Identifier typeIdentifier, Identifier componentTypeIdentifier, int precision, int scale, int dimension, int cardinality, String charSetName, TimeZone o, boolean nullable, ParserPos zero ) {
+    public DataTypeSpec createDataTypeSpec(
+            QueryLanguage language,
+            Identifier typeIdentifier,
+            Identifier componentTypeIdentifier,
+            int precision,
+            int scale,
+            int dimension,
+            int cardinality,
+            String charSetName,
+            TimeZone o,
+            boolean nullable,
+            ParserPos zero ) {
         return null;
     }
 
 
     @Override
-    public IntervalQualifier createIntervalQualifier( QueryLanguage language, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision, ParserPos zero ) {
+    public IntervalQualifier createIntervalQualifier(
+            QueryLanguage language,
+            TimeUnit startUnit,
+            int startPrecision,
+            TimeUnit endUnit,
+            int fractionalSecondPrecision,
+            ParserPos zero ) {
         return null;
     }
 
@@ -184,7 +220,14 @@ public class CypherLanguageDependent extends LanguageManager {
 
 
     @Override
-    public Operator createFunction( QueryLanguage language, String artificial_selectivity, Kind otherFunction, PolyReturnTypeInference aBoolean, PolyOperandTypeInference o, PolySingleOperandTypeChecker numeric, FunctionCategory system ) {
+    public Operator createFunction(
+            QueryLanguage language,
+            String artificial_selectivity,
+            Kind otherFunction,
+            PolyReturnTypeInference aBoolean,
+            PolyOperandTypeInference o,
+            PolySingleOperandTypeChecker numeric,
+            FunctionCategory system ) {
         return null;
     }
 
@@ -196,25 +239,56 @@ public class CypherLanguageDependent extends LanguageManager {
 
 
     @Override
-    public Operator createUserDefinedFunction( QueryLanguage language, Identifier name, PolyReturnTypeInference infer, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, List<AlgDataType> paramTypes, Function function ) {
+    public Operator createUserDefinedFunction(
+            QueryLanguage language,
+            Identifier name,
+            PolyReturnTypeInference infer,
+            PolyOperandTypeInference explicit,
+            FamilyOperandTypeChecker typeChecker,
+            List<AlgDataType> paramTypes,
+            Function function ) {
         return null;
     }
 
 
     @Override
-    public Operator createUserDefinedAggFunction( QueryLanguage language, Identifier name, PolyReturnTypeInference infer, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, AggregateFunction function, boolean b, boolean b1, Optionality forbidden, AlgDataTypeFactory typeFactory ) {
+    public Operator createUserDefinedAggFunction(
+            QueryLanguage language,
+            Identifier name,
+            PolyReturnTypeInference infer,
+            PolyOperandTypeInference explicit,
+            FamilyOperandTypeChecker typeChecker,
+            AggregateFunction function,
+            boolean b,
+            boolean b1,
+            Optionality forbidden,
+            AlgDataTypeFactory typeFactory ) {
         return null;
     }
 
 
     @Override
-    public Operator createUserDefinedTableMacro( QueryLanguage language, Identifier name, PolyReturnTypeInference cursor, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, List<AlgDataType> paramTypes, TableMacro function ) {
+    public Operator createUserDefinedTableMacro(
+            QueryLanguage language,
+            Identifier name,
+            PolyReturnTypeInference cursor,
+            PolyOperandTypeInference explicit,
+            FamilyOperandTypeChecker typeChecker,
+            List<AlgDataType> paramTypes,
+            TableMacro function ) {
         return null;
     }
 
 
     @Override
-    public Operator createUserDefinedTableFunction( QueryLanguage sql, Identifier name, PolyReturnTypeInference cursor, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, List<AlgDataType> paramTypes, TableFunction function ) {
+    public Operator createUserDefinedTableFunction(
+            QueryLanguage sql,
+            Identifier name,
+            PolyReturnTypeInference cursor,
+            PolyOperandTypeInference explicit,
+            FamilyOperandTypeChecker typeChecker,
+            List<AlgDataType> paramTypes,
+            TableFunction function ) {
         return null;
     }
 
