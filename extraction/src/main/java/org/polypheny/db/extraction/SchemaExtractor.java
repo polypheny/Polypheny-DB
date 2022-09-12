@@ -28,8 +28,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.LinkedList;
+import java.util.List;
+
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -138,10 +142,38 @@ public class SchemaExtractor {
                 columnsBuilder.add(columnName);
             }
 
+            // Array of primary key column names in namespace
+            JsonArrayBuilder primaryKeyBuilder = Json.createArrayBuilder();
+            for (String primaryKeyColumnName : catalog.getPrimaryKey(catalogTable.primaryKey).getColumnNames()) {
+                primaryKeyBuilder.add(primaryKeyColumnName);
+            }
+
+            // Array of foreign key relationships (from this table to other tables)
+            JsonObjectBuilder foreignKeyBuilder = Json.createObjectBuilder();
+            for ( CatalogForeignKey foreignKey : catalog.getForeignKeys( catalogTable.id ) ) {
+                JsonArrayBuilder columnNamesHere = Json.createArrayBuilder();
+                String tableNameHere = catalogTable.name;
+                for (Long columnId : foreignKey.columnIds) {
+                    columnNamesHere.add(catalog.getColumn(columnId).name);
+                }
+                long tableIdThere = foreignKey.referencedKeyTableId;
+                String targetTableName = catalog.getTable(tableIdThere).name;
+                JsonArrayBuilder primaryKeyThereBuilder = Json.createArrayBuilder();
+                for (String primaryKeyThereColumnName:catalog.getPrimaryKey(catalog.getTable(tableIdThere).primaryKey).getColumnNames() ) {
+                    primaryKeyThereBuilder.add(primaryKeyThereColumnName);
+                }
+
+                foreignKeyBuilder.add("tableName", tableNameHere);
+                foreignKeyBuilder.add("columnNames", columnNamesHere);
+                foreignKeyBuilder.add("foreignTableName", targetTableName);
+                foreignKeyBuilder.add("foreignTableColumNames", primaryKeyThereBuilder);
+            }
+
             tablesBuilder.add( Json.createObjectBuilder()
                     .add("tableName", catalogTable.name )
                     .add("columnNames", columnsBuilder )
-                    .add("primaryKey", catalogTable.primaryKey)
+                    .add("primaryKey", primaryKeyBuilder)
+                    .add("foreignKeys", foreignKeyBuilder)
             );
         }
         jsonObjectBuilder.add( "tables", tablesBuilder );
