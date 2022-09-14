@@ -25,6 +25,7 @@ package org.polypheny.db.postgresql;
 //TODO: not complete with all commands yet (especially for copy commands, extended query cycle and different authentication methods)
 public enum PGInterfaceHeaders {
 
+
     //----------------------------------------------- server to client ------------------------------------------------
 
     /**
@@ -59,9 +60,14 @@ public enum PGInterfaceHeaders {
     n,
 
     /**
-     * Authenticatio request  - from server to client - used by several different messages
+     * Authenticatio request  - from server to client - (used by several different messages
      */
     R,
+
+    /**
+     * ParameterStatus message - from server to client - (shauld actually be) voluntary
+     */
+    S,
 
     /**
      * RowDescription - from server to client
@@ -81,8 +87,17 @@ public enum PGInterfaceHeaders {
     /**
      * ParseComplete - from server to client - indicator (actually sent as 1)
      */
-    //TODO: does it make sense to use the word?
     ONE,
+
+    /**
+     * BindComplete - from server to client - indicator
+     */
+    TWO,
+
+    /**
+     * CloseComplete - from server to client - indicator
+     */
+    THREE,
 
     //----------------------------------------------- client to server ------------------------------------------------
 
@@ -99,7 +114,10 @@ public enum PGInterfaceHeaders {
      */
     X
 
+
+
 }
+
 
 /*
 ONE(1);

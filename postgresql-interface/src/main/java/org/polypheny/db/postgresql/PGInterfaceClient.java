@@ -16,5 +16,28 @@
 
 package org.polypheny.db.postgresql;
 
-public class Encoder {
+import io.netty.channel.ChannelHandlerContext;
+
+import java.net.InetSocketAddress;
+
+public class PGInterfaceClient {
+    public static  ChannelHandlerContext ctx = null;
+    public String state;
+
+    public PGInterfaceClient (ChannelHandlerContext ctx) {
+        this.ctx = ctx;
+        //int port = ((InetSocketAddress)ctx.channel().remoteAddress()).getPort();
+    }
+
+    public static ChannelHandlerContext getCtx() {
+        return ctx;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getState() {
+        return state;
+    }
 }

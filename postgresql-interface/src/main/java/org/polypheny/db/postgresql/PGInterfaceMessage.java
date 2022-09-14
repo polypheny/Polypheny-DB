@@ -16,23 +16,64 @@
 
 package org.polypheny.db.postgresql;
 
+//message sent by client and server (connection-level)
 public class PGInterfaceMessage {
 
     private PGInterfaceHeaders header;
     private String msgBody;
     private int length; //default is 4, if a different length is mentioned in protocol, this is given
-    private int sizeMsgBody; //how many subparts are in the message. seperated by delimiter
-    private final char delimiter = '§';
+    private boolean defaultLength;
+    private final char delimiter = '§'; //for the subparts
 
-    public PGInterfaceMessage(PGInterfaceHeaders header, String msgBody, int length, int sizeMsgBody) {
+    public PGInterfaceMessage(PGInterfaceHeaders header, String msgBody, int length, boolean defaultLength) {
         this.header = header;
         this.msgBody = msgBody;
         this.length = length;
-        this.sizeMsgBody = sizeMsgBody;
+        this.defaultLength = defaultLength;
     }
 
     public PGInterfaceHeaders getHeader() {
         return this.header;
+    }
+
+    public char getHeaderChar() {
+
+        //if header is a single character
+        if (header != PGInterfaceHeaders.ONE && header != PGInterfaceHeaders.TWO && header != PGInterfaceHeaders.THREE) {
+            String headerString = header.toString();
+            return headerString.charAt(0);
+        }
+        //if header is a number
+        //TODO: make a nicer version of this... if you cast headerInt to char directly it returns '\u0001' and not '1'
+        else {
+            int headerInt = getHeaderInt();
+            if (headerInt == 1) {
+                return '1';
+            }
+            else if (headerInt == 2) {
+                return '2';
+            }
+            else if (headerInt == 3) {
+                return '3';
+            }
+        }
+        //TODO: if returns 0, something went wrong
+        return 0;
+    }
+
+    public int getHeaderInt() {
+        String headerString = header.toString();
+        if(headerString.equals("ONE")) {
+            return 1;
+        }
+        else if(headerString.equals("TWO")) {
+            return 2;
+        }
+        else if (headerString.equals("THREE")) {
+            return 3;
+        }
+        //TODO: if returns 0, something went wrong
+        return 0;
     }
 
     public void setHeader(PGInterfaceHeaders header) {
@@ -45,6 +86,14 @@ public class PGInterfaceMessage {
 
     public void setLength(int length) {
         this.length = length;
+    }
+
+    public void setDefaultLength(boolean val) {
+        this.defaultLength = val;
+    }
+
+    public boolean isDefaultLength() {
+        return this.defaultLength;
     }
 
     public String getMsgBody() {
@@ -64,7 +113,7 @@ public class PGInterfaceMessage {
      */
     public String[] getMsgPart(int[] part) {
         String subStrings[] = msgBody.split("§");
-        String result[] = new String[0];
+        String result[] = new String[part.length];
 
         for (int i=0; i<(part.length); i++) {
             result[i] = subStrings[i];
