@@ -18,39 +18,33 @@ package org.polypheny.db.postgresql;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import org.polypheny.db.transaction.TransactionManager;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 
-/**
- * Manages all incoming communication, not using the netty framework
- */
 public class PGInterfaceInboundCommunicationHandler {
     String type;
+    PGInterfaceClient client;
     ChannelHandlerContext ctx;
-    TransactionManager transactionManager;
 
-    public PGInterfaceInboundCommunicationHandler (String type, ChannelHandlerContext ctx, TransactionManager transactionManager) {
+    public PGInterfaceInboundCommunicationHandler (String type, PGInterfaceClient client) {
         this.type = type;
-        this.ctx = ctx;
-        this.transactionManager = transactionManager;
+        this.client = client;
+        this.ctx = client.getCtx();
     }
 
+    //ich mues ergendwie identifiziere wele client dases esch... oder muesich öberhaupt speichere was fören phase das de client denne esch...
+    //muesich das wörklech oder esches eidütig vom protokoll här? --> has gfühl chas eidütig metem protokoll handle
 
-    /**
-     * Decides in what cycle from postgres the client is (startup-phase, query-phase, etc.)
-     * @param oMsg the incoming message from the client (unchanged)
-     * @return
-     */
-    public void decideCycle(Object oMsg) {
+
+    public String decideCycle(Object oMsg) {
+        String cycleState = "";
         String msgWithZeroBits = ((String) oMsg);
         String wholeMsg = msgWithZeroBits.replace("\u0000", "");
 
-        //TODO(FF): simple query phase is not implemented
+
+
         switch (wholeMsg.substring(0, 1)) {
-            case "C":   //TODO(FF):was gnau passiert do??
+            case "C":
                 PGInterfaceMessage msg = null;
                 msg.setHeader(PGInterfaceHeaders.C);
                 //msg.setMsgBody();
@@ -66,6 +60,7 @@ public class PGInterfaceInboundCommunicationHandler {
                 break;
 
         }
+        return cycleState;
     }
 
     public void startUpPhase() {
@@ -76,7 +71,6 @@ public class PGInterfaceInboundCommunicationHandler {
 
         //server_version (Parameter Status message)
         PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version§14", 4, true);
-        //PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version" + PGInterfaceMessage.getDelimiter() + "14", 4, true);
         PGInterfaceServerWriter parameterStatusServerVsWriter = new PGInterfaceServerWriter("ss", parameterStatusServerVs, ctx);
         ctx.writeAndFlush(parameterStatusServerVsWriter.writeOnByteBuf());
 
@@ -91,6 +85,36 @@ public class PGInterfaceInboundCommunicationHandler {
     public void extendedQueryPhase(String incomingMsg) {
 
         if (incomingMsg.substring(2,5).equals("SET")) {
+            //parseComplete
+            /*
+            PGInterfaceMessage parseComplete = new PGInterfaceMessage(PGInterfaceHeaders.ONE, "0", 4, false);
+            PGInterfaceServerWriter parseCompleteWriter = new PGInterfaceServerWriter("i", parseComplete, ctx);
+            ctx.writeAndFlush(parseCompleteWriter.writeOnByteBuf());
+
+            */
+
+            //ParameterStatus - client_encoding (ParameterStatus message)
+            String paramu = "SET";
+            String paramValu = "UTF8";
+            ByteBuf buffer3u = ctx.alloc().buffer(4+paramu.length()+10);
+            buffer3u.writeByte('1');
+            buffer3u.writeInt(4); // size excluding char
+            //buffer3u.writeBytes(paramu.getBytes(StandardCharsets.UTF_8));
+            //buffer3u.writeBytes(paramValu.getBytes(StandardCharsets.UTF_8));
+            ctx.writeAndFlush(buffer3u);
+
+            /*
+            //bindComplete
+            PGInterfaceMessage bindComplete = new PGInterfaceMessage(PGInterfaceHeaders.TWO, "0", 4, true);
+            PGInterfaceServerWriter bindCompleteWriter = new PGInterfaceServerWriter("i", bindComplete, ctx);
+            ctx.writeAndFlush(bindCompleteWriter.writeOnByteBuf());
+
+             */
+
+            ByteBuf buffer4u = ctx.alloc().buffer(4+10);
+            buffer4u.writeByte('2');
+            buffer4u.writeInt(4); // size excluding char
+            ctx.writeAndFlush(buffer4u);
 
             sendParseBindComplete();
 
