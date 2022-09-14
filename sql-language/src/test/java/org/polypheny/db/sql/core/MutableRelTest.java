@@ -30,8 +30,8 @@ import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
-import org.polypheny.db.algebra.rules.ProjectToWindowRule;
-import org.polypheny.db.algebra.rules.SemiJoinRule;
+import org.polypheny.db.algebra.rules.ProjectToWindowRules;
+import org.polypheny.db.algebra.rules.SemiJoinRules;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -96,7 +96,7 @@ public class MutableRelTest {
                 "Window",
                 "select sal, avg(sal) over (partition by deptno) from emp",
                 false,
-                ImmutableList.of( ProjectToWindowRule.PROJECT ) );
+                ImmutableList.of( ProjectToWindowRules.PROJECT ) );
     }
 
 
@@ -166,7 +166,7 @@ public class MutableRelTest {
                 "SemiJoin",
                 sql,
                 true,
-                ImmutableList.of( FilterProjectTransposeRule.INSTANCE, FilterJoinRule.FILTER_ON_JOIN, ProjectMergeRule.INSTANCE, SemiJoinRule.PROJECT ) );
+                ImmutableList.of( FilterProjectTransposeRule.INSTANCE, FilterJoinRule.FILTER_ON_JOIN, ProjectMergeRule.INSTANCE, SemiJoinRules.PROJECT ) );
     }
 
 

@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.algebra.rules;
@@ -45,7 +28,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
@@ -85,10 +67,6 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
  */
 public abstract class ProjectToWindowRule extends AlgOptRule {
 
-    public static final ProjectToWindowRule INSTANCE = new CalcToWindowRule( AlgFactories.LOGICAL_BUILDER );
-
-    public static final ProjectToWindowRule PROJECT = new ProjectToLogicalProjectAndWindowRule( AlgFactories.LOGICAL_BUILDER );
-
 
     /**
      * Creates a ProjectToWindowRule.
@@ -106,7 +84,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
      * Instance of the rule that applies to a {@link Calc} that contains windowed aggregates and converts it into a mixture
      * of {@link LogicalWindow} and {@code Calc}.
      */
-    public static class CalcToWindowRule extends ProjectToWindowRule {
+    protected static class CalcToWindowRule extends ProjectToWindowRule {
 
         /**
          * Creates a CalcToWindowRule.
@@ -136,7 +114,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
      * Instance of the rule that can be applied to a {@link Project} and that produces, in turn,
      * a mixture of {@code LogicalProject} and {@link LogicalWindow}.
      */
-    public static class ProjectToLogicalProjectAndWindowRule extends ProjectToWindowRule {
+    protected static class ProjectToLogicalProjectAndWindowRule extends ProjectToWindowRule {
 
         /**
          * Creates a ProjectToWindowRule.

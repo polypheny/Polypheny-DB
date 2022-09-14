@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.rules;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableFilter;
@@ -34,7 +35,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTraitSet;
 
-
+@Slf4j
 public class DocumentToEnumerableRule extends AlgOptRule {
 
     public static DocumentToEnumerableRule PROJECT_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.PROJECT, operand( LogicalDocumentProject.class, any() ), "DOCUMENT_PROJECT_TO_ENUMERABLE" );
@@ -90,12 +91,10 @@ public class DocumentToEnumerableRule extends AlgOptRule {
 
         try {
             AlgNode node = new EnumerableAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls );
-            // Rule AggregateExpandDistinctAggregatesRule is only applied on Aggregate
-            //AlgNode node = new LogicalAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls );
 
             call.transformTo( node );
         } catch ( InvalidAlgException e ) {
-            //EnumerableRules.LOGGER.debug( e.toString() );
+            log.debug( e.toString() );
         }
     }
 

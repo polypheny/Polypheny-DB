@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.algebra.rules;
@@ -45,16 +28,12 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.EquiJoin;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -109,25 +88,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
      */
     public static final Pattern EXCLUSION_PATTERN = Pattern.compile( "Reduce(Expressions|Values)Rule.*" );
 
-    /**
-     * Singleton rule that reduces constants inside a {@link LogicalFilter}.
-     */
-    public static final ReduceExpressionsRule FILTER_INSTANCE = new FilterReduceExpressionsRule( LogicalFilter.class, true, AlgFactories.LOGICAL_BUILDER );
 
-    /**
-     * Singleton rule that reduces constants inside a {@link LogicalProject}.
-     */
-    public static final ReduceExpressionsRule PROJECT_INSTANCE = new ProjectReduceExpressionsRule( LogicalProject.class, true, AlgFactories.LOGICAL_BUILDER );
-
-    /**
-     * Singleton rule that reduces constants inside a {@link Join}.
-     */
-    public static final ReduceExpressionsRule JOIN_INSTANCE = new JoinReduceExpressionsRule( Join.class, true, AlgFactories.LOGICAL_BUILDER );
-
-    /**
-     * Singleton rule that reduces constants inside a {@link LogicalCalc}.
-     */
-    public static final ReduceExpressionsRule CALC_INSTANCE = new CalcReduceExpressionsRule( LogicalCalc.class, true, AlgFactories.LOGICAL_BUILDER );
 
     protected final boolean matchNullability;
 
@@ -136,7 +97,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
      * Rule that reduces constants inside a {@link Filter}.
      * If the condition is a constant, the filter is removed (if TRUE) or replaced with an empty {@link org.polypheny.db.algebra.core.Values} (if FALSE or NULL).
      */
-    public static class FilterReduceExpressionsRule extends ReduceExpressionsRule {
+    protected static class FilterReduceExpressionsRule extends ReduceExpressionsRule {
 
         public FilterReduceExpressionsRule( Class<? extends Filter> filterClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
             super( filterClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Filter)" );
@@ -241,7 +202,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
     /**
      * Rule that reduces constants inside a {@link Project}.
      */
-    public static class ProjectReduceExpressionsRule extends ReduceExpressionsRule {
+    protected static class ProjectReduceExpressionsRule extends ReduceExpressionsRule {
 
         public ProjectReduceExpressionsRule( Class<? extends Project> projectClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
             super( projectClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Project)" );
@@ -272,7 +233,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
     /**
      * Rule that reduces constants inside a {@link Join}.
      */
-    public static class JoinReduceExpressionsRule extends ReduceExpressionsRule {
+    protected static class JoinReduceExpressionsRule extends ReduceExpressionsRule {
 
         public JoinReduceExpressionsRule( Class<? extends Join> joinClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
             super( joinClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Join)" );
@@ -318,7 +279,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
     /**
      * Rule that reduces constants inside a {@link Calc}.
      */
-    public static class CalcReduceExpressionsRule extends ReduceExpressionsRule {
+    protected static class CalcReduceExpressionsRule extends ReduceExpressionsRule {
 
         public CalcReduceExpressionsRule( Class<? extends Calc> calcClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
             super( calcClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Calc)" );

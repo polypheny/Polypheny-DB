@@ -26,9 +26,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 
-public class EnumerableGraphTransformerRule extends ConverterRule {
+public class EnumerableLpgTransformerRule extends ConverterRule {
 
-    public EnumerableGraphTransformerRule() {
+    public EnumerableLpgTransformerRule() {
         super( LpgTransformer.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER, "EnumerableGraphTransformer" );
     }
 

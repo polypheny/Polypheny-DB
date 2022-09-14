@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.rules.JoinToCorrelateRule;
-import org.polypheny.db.algebra.rules.SemiJoinRule;
+import org.polypheny.db.algebra.rules.SemiJoinRules;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
@@ -185,8 +185,8 @@ public final class SortRemoveRuleTest extends SqlLanguagelDependant {
         RuleSet prepareRules =
                 RuleSets.ofList(
                         SortProjectTransposeRule.INSTANCE,
-                        SemiJoinRule.PROJECT,
-                        SemiJoinRule.JOIN,
+                        SemiJoinRules.PROJECT,
+                        SemiJoinRules.JOIN,
                         EnumerableRules.ENUMERABLE_PROJECT_RULE,
                         EnumerableRules.ENUMERABLE_SORT_RULE,
                         EnumerableRules.ENUMERABLE_SEMI_JOIN_RULE,

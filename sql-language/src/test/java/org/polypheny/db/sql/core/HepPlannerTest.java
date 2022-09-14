@@ -34,7 +34,7 @@ import org.polypheny.db.algebra.rules.CoerceInputsRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
 import org.polypheny.db.algebra.rules.ProjectRemoveRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
-import org.polypheny.db.algebra.rules.ReduceExpressionsRule;
+import org.polypheny.db.algebra.rules.ReduceExpressionsRules;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
 import org.polypheny.db.plan.AlgOptListener;
 import org.polypheny.db.plan.hep.HepMatchOrder;
@@ -287,8 +287,8 @@ public class HepPlannerTest extends RelOptTestBase {
     private long checkRuleApplyCount( HepMatchOrder matchOrder ) {
         final HepProgramBuilder programBuilder = HepProgram.builder();
         programBuilder.addMatchOrder( matchOrder );
-        programBuilder.addRuleInstance( ReduceExpressionsRule.FILTER_INSTANCE );
-        programBuilder.addRuleInstance( ReduceExpressionsRule.PROJECT_INSTANCE );
+        programBuilder.addRuleInstance( ReduceExpressionsRules.FILTER_INSTANCE );
+        programBuilder.addRuleInstance( ReduceExpressionsRules.PROJECT_INSTANCE );
 
         final HepTestListener listener = new HepTestListener( 0 );
         HepPlanner planner = new HepPlanner( programBuilder.build() );

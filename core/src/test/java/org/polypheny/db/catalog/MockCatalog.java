@@ -64,7 +64,6 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -89,20 +88,10 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-    @Override
-    public void removeCollectionLogistics( CatalogCollection catalogCollection ) {
-        throw new NotImplementedException();
-    }
 
 
     @Override
     public void deleteCollection( CatalogCollection catalogCollection ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement ) {
         throw new NotImplementedException();
     }
 

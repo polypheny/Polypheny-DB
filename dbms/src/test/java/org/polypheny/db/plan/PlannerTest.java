@@ -63,7 +63,7 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
 import org.polypheny.db.algebra.rules.LoptOptimizeJoinRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
-import org.polypheny.db.algebra.rules.ProjectToWindowRule;
+import org.polypheny.db.algebra.rules.ProjectToWindowRules;
 import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
@@ -551,7 +551,7 @@ public class PlannerTest extends SqlLanguagelDependant {
     // "Redundant throws: 'ValidationException' listed more then one time"
     // "Redundant throws: 'AlgConversionException' listed more then one time"
     private void runDuplicateSortCheck( String sql, String plan ) throws Exception {
-        RuleSet ruleSet = RuleSets.ofList( SortRemoveRule.INSTANCE, EnumerableRules.ENUMERABLE_PROJECT_RULE, EnumerableRules.ENUMERABLE_WINDOW_RULE, EnumerableRules.ENUMERABLE_SORT_RULE, ProjectToWindowRule.PROJECT );
+        RuleSet ruleSet = RuleSets.ofList( SortRemoveRule.INSTANCE, EnumerableRules.ENUMERABLE_PROJECT_RULE, EnumerableRules.ENUMERABLE_WINDOW_RULE, EnumerableRules.ENUMERABLE_SORT_RULE, ProjectToWindowRules.PROJECT );
         Planner planner = getPlanner( null, Parser.configBuilder().setLex( Lex.JAVA ).build(), Programs.of( ruleSet ) );
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );

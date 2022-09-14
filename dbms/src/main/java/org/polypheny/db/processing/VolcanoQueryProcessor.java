@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
 import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
-import org.polypheny.db.algebra.rules.ReduceExpressionsRule;
+import org.polypheny.db.algebra.rules.ReduceExpressionsRules;
 import org.polypheny.db.algebra.rules.ScanRule;
 import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
@@ -132,10 +132,10 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
     public static final List<AlgOptRule> CONSTANT_REDUCTION_RULES =
             ImmutableList.of(
-                    ReduceExpressionsRule.PROJECT_INSTANCE,
-                    ReduceExpressionsRule.FILTER_INSTANCE,
-                    ReduceExpressionsRule.CALC_INSTANCE,
-                    ReduceExpressionsRule.JOIN_INSTANCE,
+                    ReduceExpressionsRules.PROJECT_INSTANCE,
+                    ReduceExpressionsRules.FILTER_INSTANCE,
+                    ReduceExpressionsRules.CALC_INSTANCE,
+                    ReduceExpressionsRules.JOIN_INSTANCE,
                     ValuesReduceRule.FILTER_INSTANCE,
                     ValuesReduceRule.PROJECT_FILTER_INSTANCE,
                     ValuesReduceRule.PROJECT_INSTANCE,

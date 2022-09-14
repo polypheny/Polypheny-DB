@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.algebra.rules;
@@ -305,14 +288,14 @@ public class ReduceDecimalsRule extends AlgOptRule {
      * a way that SqlOperator's do not have to deal with decimals. Decimals are represented by their unscaled integer
      * representations, similar to {@link BigDecimal#unscaledValue()} (i.e. 10^scale). Once decimals are decoded, SqlOperators
      * can then operate on the integer representations. The value can later be recoded as a decimal.
-     *
+     * <p>
      * For example, suppose one casts 2.0 as a decima(10,4). The value is decoded (20), multiplied by a scale factor (1000),
      * for a result of (20000) which is encoded as a decimal(10,4), in this case 2.0000
-     *
+     * <p>
      * To avoid the lengthy coding of RexNode expressions, this base class provides succinct methods for building expressions
      * used in rewrites.
      */
-    public abstract class RexExpander {
+    public abstract static class RexExpander {
 
         /**
          * Factory for constructing new relational expressions
@@ -344,7 +327,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
          * This defaults to the utility method, {@link RexUtil#requiresDecimalExpansion(RexNode, boolean)} which checks
          * general guidelines on whether a rewrite should be considered at all. In general, it is helpful to update the
          * utility method since that method is often used to filter the somewhat expensive rewrite process.
-         *
+         * <p>
          * However, this method provides another place for implementations of RexExpander to make a more detailed analysis
          * before deciding on whether to perform a rewrite.
          */
@@ -571,8 +554,8 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
         /**
          * Casts a decimal's integer representation to a decimal node. If the expression is not the expected integer type,
-         * then it is casted first.
-         *
+         * then it is cast first.
+         * <p>
          * This method does not request an overflow check.
          *
          * @param value integer representation of decimal
@@ -586,8 +569,8 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
         /**
          * Casts a decimal's integer representation to a decimal node. If the expression is not the expected integer type,
-         * then it is casted first.
-         *
+         * then it is cast first.
+         * <p>
          * An overflow check may be requested to ensure the internal value does not exceed the maximum value of the decimal type.
          *
          * @param value integer representation of decimal
@@ -602,12 +585,12 @@ public class ReduceDecimalsRule extends AlgOptRule {
 
         /**
          * Ensures expression is interpreted as a specified type. The returned expression may be wrapped with a cast.
-         *
+         * <p>
          * This method corrects the nullability of the specified type to match the nullability of the expression.
          *
          * @param type desired type
          * @param node expression
-         * @return a casted expression or the original expression
+         * @return a cast expression or the original expression
          */
         protected RexNode ensureType( AlgDataType type, RexNode node ) {
             return ensureType( type, node, true );
@@ -700,7 +683,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
     /**
      * Expands a decimal cast expression
      */
-    private class CastExpander extends RexExpander {
+    private static class CastExpander extends RexExpander {
 
         private CastExpander( RexBuilder builder ) {
             super( builder );
@@ -784,7 +767,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
     /**
      * Expands a decimal arithmetic expression
      */
-    private class BinaryArithmeticExpander extends RexExpander {
+    private static class BinaryArithmeticExpander extends RexExpander {
 
         AlgDataType typeA;
         AlgDataType typeB;
@@ -968,7 +951,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
      *     value / (10 ^ scale)
      * </pre></blockquote>
      */
-    private class FloorExpander extends RexExpander {
+    private static class FloorExpander extends RexExpander {
 
         FloorExpander( RexBuilder rexBuilder ) {
             super( rexBuilder );
@@ -1019,7 +1002,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
      *     value / (10 ^ scale)
      * </pre></blockquote>
      */
-    private class CeilExpander extends RexExpander {
+    private static class CeilExpander extends RexExpander {
 
         CeilExpander( RexBuilder rexBuilder ) {
             super( rexBuilder );
@@ -1067,10 +1050,10 @@ public class ReduceDecimalsRule extends AlgOptRule {
      *
      * This expander casts all values to the return type. If the target type is a decimal, then the values are then decoded. The result of expansion is that the case operator no longer deals with decimals args.
      * (The return value is encoded if necessary.)
-     *
+     * <p>
      * Note: a decimal type is returned iff arguments have decimals.
      */
-    private class CaseExpander extends RexExpander {
+    private static class CaseExpander extends RexExpander {
 
         CaseExpander( RexBuilder rexBuilder ) {
             super( rexBuilder );
@@ -1109,7 +1092,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
     /**
      * An expander that substitutes decimals with their integer representations. If the output is decimal, the output is reinterpreted from the integer representation into a decimal.
      */
-    private class PassThroughExpander extends RexExpander {
+    private static class PassThroughExpander extends RexExpander {
 
         PassThroughExpander( RexBuilder builder ) {
             super( builder );
@@ -1169,7 +1152,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
     /**
      * An expander which casts decimal arguments as another type
      */
-    private abstract class CastArgAsTypeExpander extends RexExpander {
+    private abstract static class CastArgAsTypeExpander extends RexExpander {
 
         private CastArgAsTypeExpander( RexBuilder builder ) {
             super( builder );
@@ -1204,7 +1187,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
      * This expander simplifies reinterpret calls. Consider (1.0+1)*1. The inner operation encodes a decimal (Reinterpret(...)) which the outer operation immediately decodes: (Reinterpret(Reinterpret(...))).
      * Arithmetic overflow is handled by underlying integer operations, so we don't have to consider it. Simply remove the nested Reinterpret.
      */
-    private class ReinterpretExpander extends RexExpander {
+    private static class ReinterpretExpander extends RexExpander {
 
         ReinterpretExpander( RexBuilder builder ) {
             super( builder );
@@ -1264,14 +1247,11 @@ public class ReduceDecimalsRule extends AlgOptRule {
                 return false;
             }
 
-            // One would think that we could go from Nullable -> Not Nullable since we are substituting a general type with a more specific type. However the optimizer doesn't like it.
+            // One would think that we could go from Nullable -> Not Nullable since we are substituting a general type with a more specific type. However, the optimizer doesn't like it.
             if ( valueType.isNullable() != outerType.isNullable() ) {
                 return false;
             }
-            if ( innerCheck || outerCheck ) {
-                return false;
-            }
-            return true;
+            return !innerCheck && !outerCheck;
         }
 
     }

@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.logical.relational;
+package org.polypheny.db.algebra.rules;
 
-import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.PrimaryKeyCheck;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.rules.ProjectToWindowRule.CalcToWindowRule;
+import org.polypheny.db.algebra.rules.ProjectToWindowRule.ProjectToLogicalProjectAndWindowRule;
 
+public interface ProjectToWindowRules {
 
-public abstract class LogicalPrimaryKeyCheck extends PrimaryKeyCheck {
+    ProjectToWindowRule INSTANCE = new CalcToWindowRule( AlgFactories.LOGICAL_BUILDER );
 
-    /**
-     * Creates an {@link AbstractAlgNode}.
-     */
-    public LogicalPrimaryKeyCheck( AlgNode dbSource, AlgNode values, AlgOptTable table ) {
-        super( dbSource, values, table );
-    }
+    ProjectToWindowRule PROJECT = new ProjectToLogicalProjectAndWindowRule( AlgFactories.LOGICAL_BUILDER );
 
 }

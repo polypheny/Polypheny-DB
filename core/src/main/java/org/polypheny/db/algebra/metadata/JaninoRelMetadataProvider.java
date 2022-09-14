@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.algebra.metadata;
@@ -62,13 +45,43 @@ import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.codehaus.commons.compiler.ISimpleCompiler;
 import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
+import org.polypheny.db.adapter.enumerable.EnumerableBatchIterator;
+import org.polypheny.db.adapter.enumerable.EnumerableConditionalExecute;
+import org.polypheny.db.adapter.enumerable.EnumerableDocumentTransformer;
 import org.polypheny.db.adapter.enumerable.EnumerableFilter;
 import org.polypheny.db.adapter.enumerable.EnumerableJoin;
+import org.polypheny.db.adapter.enumerable.EnumerableModifyCollect;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.enumerable.EnumerableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableTransformer;
+import org.polypheny.db.adapter.enumerable.EnumerableUnwind;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
+import org.polypheny.db.algebra.logical.common.LogicalStreamer;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
@@ -150,11 +163,49 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         LogicalChi.class,
                         LogicalDelta.class,
 
+                        // Common
+                        LogicalTransformer.class,
+                        LogicalStreamer.class,
+                        LogicalContextSwitcher.class,
+                        LogicalConditionalExecute.class,
+                        LogicalConstraintEnforcer.class,
+
+                        // LPG
+                        LogicalLpgScan.class,
+                        LogicalLpgAggregate.class,
+                        LogicalLpgFilter.class,
+                        LogicalLpgMatch.class,
+                        LogicalLpgModify.class,
+                        LogicalLpgProject.class,
+                        LogicalLpgSort.class,
+                        LogicalLpgTransformer.class,
+                        LogicalLpgUnion.class,
+                        LogicalLpgUnwind.class,
+                        LogicalLpgValues.class,
+
+                        // Document
+                        LogicalDocumentScan.class,
+                        LogicalDocumentAggregate.class,
+                        LogicalDocumentFilter.class,
+                        LogicalDocumentProject.class,
+                        LogicalDocumentModify.class,
+                        LogicalDocumentSort.class,
+                        LogicalDocumentTransformer.class,
+                        LogicalDocumentValues.class,
+
+                        // Enumerable
                         EnumerableAggregate.class,
                         EnumerableFilter.class,
                         EnumerableProject.class,
                         EnumerableJoin.class,
-                        EnumerableScan.class ) );
+                        EnumerableScan.class,
+                        EnumerableUnwind.class,
+                        EnumerableTransformer.class,
+                        EnumerableTransformer.class,
+                        EnumerableBatchIterator.class,
+                        EnumerableConditionalExecute.class,
+                        EnumerableModifyCollect.class,
+                        EnumerableDocumentTransformer.class ) );
     }
 
 

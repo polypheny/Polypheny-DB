@@ -25,9 +25,9 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
-public class EnumerableGraphMatchRule extends ConverterRule {
+public class EnumerableLpgMatchRule extends ConverterRule {
 
-    public EnumerableGraphMatchRule( AlgBuilderFactory builder ) {
+    public EnumerableLpgMatchRule( AlgBuilderFactory builder ) {
         super( LogicalLpgMatch.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, builder, "EnumerableGraphMatch" );
     }
 
