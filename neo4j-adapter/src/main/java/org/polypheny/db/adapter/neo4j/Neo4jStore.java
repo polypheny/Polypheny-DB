@@ -196,7 +196,6 @@ public class Neo4jStore extends DataStore {
             transactionProvider.rollbackDdlTransaction();
             throw new RuntimeException( e );
         }
-
     }
 
 

@@ -52,10 +52,18 @@ public class Translator extends RexVisitorImpl<String> {
     private final String mappingLabel;
     private final boolean useBrackets;
 
-    private static List<OperatorName> binaries = Arrays.stream( OperatorName.values() ).filter( o -> o.getClazz() == BinaryOperator.class ).collect( Collectors.toList() );
+    private static List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
+            .filter( o -> o.getClazz() == BinaryOperator.class )
+            .collect( Collectors.toList() );
 
 
-    public Translator( AlgDataType afterRowType, AlgDataType beforeRowType, Map<String, String> mapping, NeoRelationalImplementor implementor, @Nullable String mappingLabel, boolean useBrackets ) {
+    public Translator(
+            AlgDataType afterRowType,
+            AlgDataType beforeRowType,
+            Map<String, String> mapping,
+            NeoRelationalImplementor implementor,
+            @Nullable String mappingLabel,
+            boolean useBrackets ) {
         super( true );
         this.afterFields = afterRowType.getFieldList();
         this.beforeFields = beforeRowType.getFieldList();

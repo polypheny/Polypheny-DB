@@ -110,7 +110,15 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
      * @param flattened if the {@link Modify} is flattened
      */
     @Override
-    public Modify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public Modify toModificationAlg(
+            AlgOptCluster cluster,
+            AlgOptTable table,
+            CatalogReader catalogReader,
+            AlgNode child,
+            Operation operation,
+            List<String> updateColumnList,
+            List<RexNode> sourceExpressionList,
+            boolean flattened ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
         return new LogicalModify(
                 cluster,
@@ -143,7 +151,11 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
         @Override
         public Enumerator<T> enumerator() {
-            return execute( String.format( "MATCH (n:%s) RETURN %s", entity.physicalEntityName, buildAllQuery() ), getTypes(), getComponentType(), Map.of() ).enumerator();
+            return execute(
+                    String.format( "MATCH (n:%s) RETURN %s", entity.physicalEntityName, buildAllQuery() ),
+                    getTypes(),
+                    getComponentType(),
+                    Map.of() ).enumerator();
         }
 
 
@@ -210,7 +222,9 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
         private Map<String, Object> toParameters( Map<Long, Object> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
             Map<String, Object> parameters = new HashMap<>();
             for ( Entry<Long, Object> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).collect( Collectors.toList() ) ) {
-                parameters.put( NeoUtil.asParameter( entry.getKey(), false ), NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ) ) );
+                parameters.put(
+                        NeoUtil.asParameter( entry.getKey(), false ),
+                        NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ) ) );
             }
             return parameters;
         }

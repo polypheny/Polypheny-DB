@@ -19,6 +19,7 @@ package org.polypheny.db.webui.models.requests;
 import java.util.List;
 import lombok.Getter;
 
+
 @Getter
 public class GraphRequest extends QueryRequest {
 

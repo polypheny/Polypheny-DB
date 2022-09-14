@@ -65,6 +65,7 @@ import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
+
 /**
  * Graph entity in the Neo4j representation.
  */
@@ -99,7 +100,14 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
      * @param operations the operations to perform
      */
     @Override
-    public LpgModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+    public LpgModify toModificationAlg(
+            AlgOptCluster cluster,
+            AlgTraitSet traits,
+            Graph graph,
+            PolyphenyDbCatalogReader catalogReader,
+            AlgNode input,
+            Operation operation,
+            List<String> ids, List<? extends RexNode> operations ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
         return new LogicalLpgModify(
                 cluster,
@@ -263,6 +271,5 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
         }
 
     }
-
 
 }

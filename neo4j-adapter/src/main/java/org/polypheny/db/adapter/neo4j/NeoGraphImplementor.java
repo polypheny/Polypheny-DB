@@ -49,6 +49,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.util.Pair;
 
+
 /**
  * Shuttle class, which saves the state of the graph Neo4j algebra nodes it passes through when needed.
  * This state is then later used to build the graph code ({@link org.apache.calcite.linq4j.tree.Expression}), which represents the passed algebra tree.

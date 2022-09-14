@@ -23,7 +23,7 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
 /**
- * Model for a schema of a DBMS
+ * Model for a namespace of the logical schema.
  */
 @Getter
 public class Schema {

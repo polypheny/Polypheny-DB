@@ -33,6 +33,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
+
 public class NeoNamespace extends AbstractSchema {
 
     public final Driver graph;
@@ -79,7 +80,10 @@ public class NeoNamespace extends AbstractSchema {
             fieldInfo.add( catalogColumn.name, Neo4jStore.getPhysicalFieldName( catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
         }
 
-        return new NeoEntity( Neo4jStore.getPhysicalEntityName( combinedTable.namespaceId, combinedTable.id, partitionPlacement.partitionId ), AlgDataTypeImpl.proto( fieldInfo.build() ), combinedTable.id );
+        return new NeoEntity(
+                Neo4jStore.getPhysicalEntityName( combinedTable.namespaceId, combinedTable.id, partitionPlacement.partitionId ),
+                AlgDataTypeImpl.proto( fieldInfo.build() ),
+                combinedTable.id );
     }
 
 

@@ -224,7 +224,10 @@ public interface NeoUtil {
         }
 
         // ARRAY
-        return o -> Pair.zip( o.fields(), functions ).stream().map( e -> e.right.apply( e.left.value() ) ).collect( Collectors.toList() ).toArray();
+        return o -> Pair.zip( o.fields(), functions ).stream()
+                .map( e -> e.right.apply( e.left.value() ) )
+                .collect( Collectors.toList() )
+                .toArray();
     }
 
     static String asParameter( long key, boolean withDollar ) {

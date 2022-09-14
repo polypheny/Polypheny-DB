@@ -48,6 +48,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
+
 /**
  * {@link ConverterImpl}, which serves as a bridge between the enumerable algebra and the Neo4j specific algebra opertors.
  */

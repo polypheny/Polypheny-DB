@@ -3127,7 +3127,6 @@ public class Crud implements InformationObserver {
         } else {
             ctx.json( new Result( "Neither the field 'create' nor the field 'drop' was set." ) );
         }
-
     }
 
 

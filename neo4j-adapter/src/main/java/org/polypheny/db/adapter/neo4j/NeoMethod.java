@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Types;
 
+
 public enum NeoMethod {
     EXECUTE( NeoEntity.NeoQueryable.class, "execute", String.class, List.class, List.class, Map.class ),
     GRAPH_EXECUTE( NeoGraph.NeoQueryable.class, "execute", String.class, List.class, List.class, Map.class ),
@@ -44,4 +45,5 @@ public enum NeoMethod {
     NeoMethod( Class<?> clazz, String methodName, Class<?>... argumentTypes ) {
         this.method = Types.lookupMethod( clazz, methodName, argumentTypes );
     }
+
 }

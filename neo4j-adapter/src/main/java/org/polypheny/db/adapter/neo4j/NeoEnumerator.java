@@ -22,6 +22,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 
+
 /**
  * Neo4j representation of a {@link Enumerator}.
  *
@@ -77,6 +78,5 @@ public class NeoEnumerator<T> implements Enumerator<T> {
     public void close() {
         this.result.consume();
     }
-
 
 }
