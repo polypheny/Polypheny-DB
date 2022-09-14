@@ -91,7 +91,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void deleteCollection( CatalogCollection catalogCollection ) {
+    public void deleteCollection( long id ) {
         throw new NotImplementedException();
     }
 
@@ -193,7 +193,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void removeGraphAlias( String alias, boolean ifNotExists ) {
+    public void removeGraphAlias( long graphId, String alias, boolean ifNotExists ) {
         throw new NotImplementedException();
     }
 
@@ -217,7 +217,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void deleteGraphPlacement( DataStore adapterId, long graphId ) {
+    public void deleteGraphPlacement( int adapterId, long graphId ) {
         throw new NotImplementedException();
     }
 
@@ -451,7 +451,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -535,7 +535,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType automatic ) {
+    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType placementType ) {
         throw new NotImplementedException();
     }
 

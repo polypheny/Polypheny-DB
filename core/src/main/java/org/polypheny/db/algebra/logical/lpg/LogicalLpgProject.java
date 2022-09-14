@@ -37,7 +37,7 @@ public class LogicalLpgProject extends LpgProject {
      */
     public LogicalLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
         super( cluster, traits.replace( Convention.NONE ), input, projects, names );
-        assertLogicalGraphTrait( traits );
+
         assert (this.names == null || this.projects == null) || this.names.size() == this.projects.size();
     }
 

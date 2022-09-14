@@ -1312,9 +1312,9 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void removeGraphAlias( String alias, boolean ifNotExists ) {
+    public void removeGraphAlias( long graphId, String alias, boolean ifExists ) {
         if ( !graphAliases.containsKey( alias ) ) {
-            if ( !ifNotExists ) {
+            if ( !ifExists ) {
                 throw new RuntimeException( "Error while removing alias: " + alias );
             }
             return;
@@ -2539,7 +2539,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType automatic ) {
+    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType placementType ) {
         long id = partitionIdBuilder.getAndIncrement();
         CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, null, null, id );
         CatalogCollection old = collections.get( collectionId );
@@ -2647,11 +2647,13 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void deleteCollection( CatalogCollection catalogCollection ) {
+    public void deleteCollection( long id ) {
+        CatalogCollection collection = getCollection( id );
+
         synchronized ( this ) {
-            collections.remove( catalogCollection.namespaceId );
-            collectionNames.remove( new Object[]{ catalogCollection.databaseId, catalogCollection.namespaceId, catalogCollection.name } );
-            catalogCollection.placements.forEach( p -> collectionPlacements.remove( new Object[]{ catalogCollection.id, p } ) );
+            collections.remove( collection.namespaceId );
+            collectionNames.remove( new Object[]{ collection.databaseId, collection.namespaceId, collection.name } );
+            collection.placements.forEach( p -> collectionPlacements.remove( new Object[]{ collection.id, p } ) );
         }
         listeners.firePropertyChange( "collection", null, null );
     }
@@ -4979,12 +4981,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Returns a list of all DataPlacements that contain all partitions
-     *
-     * @param tableId table to retrieve the list from
-     * @return list of all full DataPlacements
-     */
     @Override
     public List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId ) {
         List<CatalogDataPlacement> dataPlacements = new ArrayList<>();
@@ -4999,13 +4995,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Returns all DataPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all DataPlacements for the table that are associated with a specific role
-     */
     @Override
     public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
         List<CatalogDataPlacement> catalogDataPlacements = new ArrayList<>();
@@ -5018,13 +5007,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Returns all PartitionPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role
-     */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
@@ -5040,14 +5022,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param partitionId filter by ID
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
-     */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
         List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
@@ -5060,16 +5034,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Checks if the planned changes are allowed in terms of placements that need to be present.
-     * Each column must be present for all partitions somewhere
-     *
-     * @param tableId Table to be checked
-     * @param adapterId Adapter where Ids will be removed from
-     * @param columnIdsToBeRemoved columns that shall be removed
-     * @param partitionsIdsToBeRemoved partitions that shall be removed
-     * @return true if these changes can be made to the data placement, false if not
-     */
     @Override
     public boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
         if ( (columnIdsToBeRemoved.isEmpty() && partitionsIdsToBeRemoved.isEmpty()) || isTableFlaggedForDeletion( tableId ) ) {
@@ -5130,13 +5094,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Flags the table for deletion.
-     * This method should be executed on a partitioned table before we run a DROP TABLE statement.
-     *
-     * @param tableId table to be flagged for deletion
-     * @param flag true if it should be flagged, false if flag should be removed
-     */
     @Override
     public void flagTableForDeletion( long tableId, boolean flag ) {
         if ( flag && !tablesFlaggedForDeletion.contains( tableId ) ) {
@@ -5147,31 +5104,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Is used to detect if a table is flagged for deletion.
-     * Effectively checks if a drop of this table is currently in progress.
-     * This is needed to ensure that there aren't any constraints when recursively removing a table and all placements and partitions.
-     *
-     * @param tableId table to be checked
-     * @return If table is flagged for deletion or not
-     */
     @Override
     public boolean isTableFlaggedForDeletion( long tableId ) {
         return tablesFlaggedForDeletion.contains( tableId );
     }
 
 
-    /**
-     * Adds a placement for a partition.
-     *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param tableId The table for which a partition placement shall be created
-     * @param partitionId The id of a specific partition that shall create a new placement
-     * @param placementType The type of placement
-     * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName The table name on the adapter
-     * @param role Placement role indicating how this placement is being processed
-     */
     @Override
     public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
         if ( !checkIfExistsPartitionPlacement( adapterId, partitionId ) ) {
@@ -5198,14 +5136,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Adds a new DataPlacement for a given table on a specific store.
-     * If it already exists it simply returns the existing placement.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
-     */
     @Override
     public CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId ) {
         CatalogDataPlacement dataPlacement;
@@ -5221,12 +5151,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Updates the list of data placements on a table
-     *
-     * @param tableId table to be updated
-     * @param newDataPlacements list of new DataPlacements that shall replace the old ones
-     */
     @Override
     public void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements ) {
         CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
@@ -5277,12 +5201,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Adds a new DataPlacement for a given table on a specific store
-     *
-     * @param adapterId adapter where placement should be located
-     * @param tableId table to retrieve the placement from
-     */
     @Override
     public void addDataPlacement( int adapterId, long tableId ) {
         if ( log.isDebugEnabled() ) {
@@ -5307,12 +5225,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Modifies a specific DataPlacement of a given table.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     */
     @Override
     protected void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement ) {
 
@@ -5370,20 +5282,20 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void deleteGraphPlacement( DataStore store, long graphId ) {
-        if ( !graphPlacements.containsKey( new Object[]{ graphId, store.getAdapterId() } ) ) {
-            throw new UnknownGraphPlacementsException( graphId, store.getAdapterId() );
+    public void deleteGraphPlacement( int adapterId, long graphId ) {
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
         }
-        CatalogGraphPlacement placement = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, store.getAdapterId() } ) );
+        CatalogGraphPlacement placement = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
 
-        deleteGraphPlacementLogistics( placement.graphId, store.getAdapterId() );
+        deleteGraphPlacementLogistics( placement.graphId, adapterId );
 
         CatalogGraphDatabase old = Objects.requireNonNull( graphs.get( placement.graphId ) );
 
-        CatalogGraphDatabase graph = old.removePlacement( store.getAdapterId() );
+        CatalogGraphDatabase graph = old.removePlacement( adapterId );
 
         synchronized ( this ) {
-            graphPlacements.remove( new Object[]{ graphId, store.getAdapterId() } );
+            graphPlacements.remove( new Object[]{ graphId, adapterId } );
             graphs.replace( graphId, graph );
             graphNames.replace( new Object[]{ Catalog.defaultDatabaseId, graph.name }, graph );
         }

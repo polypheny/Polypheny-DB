@@ -33,7 +33,6 @@ public class LogicalLpgMatch extends LpgMatch {
      */
     public LogicalLpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
         super( cluster, traits, input, matches, names );
-        assertLogicalGraphTrait( traits );
     }
 
 

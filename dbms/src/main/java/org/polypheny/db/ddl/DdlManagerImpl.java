@@ -1923,7 +1923,7 @@ public class DdlManagerImpl extends DdlManager {
 
         afterGraphDropLogistics( store, graphId );
 
-        catalog.deleteGraphPlacement( store, graphId );
+        catalog.deleteGraphPlacement( store.getAdapterId(), graphId );
 
         PolySchemaBuilder.getInstance().getCurrent();
 
@@ -2004,13 +2004,13 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void removeGraphAlias( long graphId, String alias, boolean ifNotExists ) {
-        catalog.removeGraphAlias( alias, ifNotExists );
+        catalog.removeGraphAlias( graphId, alias, ifNotExists );
     }
 
 
     @Override
     public void replaceGraphAlias( long graphId, String oldAlias, String alias ) {
-        catalog.removeGraphAlias( oldAlias, true );
+        catalog.removeGraphAlias( graphId, oldAlias, true );
         catalog.addGraphAlias( graphId, alias, true );
     }
 
@@ -2270,7 +2270,7 @@ public class DdlManagerImpl extends DdlManager {
 
             store.dropCollection( statement.getPrepareContext(), catalogCollection );
         }
-        catalog.deleteCollection( catalogCollection );
+        catalog.deleteCollection( catalogCollection.id );
         removeDocumentLogistics( catalogCollection, statement );
     }
 

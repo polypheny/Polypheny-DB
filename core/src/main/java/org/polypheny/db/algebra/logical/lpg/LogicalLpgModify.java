@@ -42,8 +42,6 @@ public class LogicalLpgModify extends LpgModify implements RelationalTransformab
      */
     public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
-        // for the moment
-        assertLogicalGraphTrait( traits );
     }
 
 

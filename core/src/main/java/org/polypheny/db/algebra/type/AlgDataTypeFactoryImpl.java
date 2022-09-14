@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -88,8 +71,8 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
     }
 
 
-    private static final Map<Class, AlgDataTypeFamily> CLASS_FAMILIES =
-            ImmutableMap.<Class, AlgDataTypeFamily>builder()
+    private static final Map<Class<?>, AlgDataTypeFamily> CLASS_FAMILIES =
+            ImmutableMap.<Class<?>, AlgDataTypeFamily>builder()
                     .put( String.class, PolyTypeFamily.CHARACTER )
                     .put( byte[].class, PolyTypeFamily.BINARY )
                     .put( boolean.class, PolyTypeFamily.BOOLEAN )
@@ -130,7 +113,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
 
     // implement AlgDataTypeFactory
     @Override
-    public AlgDataType createJavaType( Class clazz ) {
+    public AlgDataType createJavaType( Class<?> clazz ) {
         final JavaType javaType =
                 clazz == String.class
                         ? new JavaType( clazz, true, getDefaultCharset(), Collation.IMPLICIT )
@@ -371,7 +354,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
 
     /**
      * Looks up a type using a temporary key, and if not present, creates a permanent key and type.
-     *
+     * <p>
      * This approach allows us to use a cheap temporary key. A permanent key is more expensive, because it must be immutable and not hold references into other data structures.
      */
     protected AlgDataType canonize( final StructKind kind, final List<String> names, final List<String> physicalNames, final List<AlgDataType> types ) {
@@ -458,7 +441,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
     }
 
 
-    private List<AlgDataTypeFieldImpl> fieldsOf( Class clazz ) {
+    private List<AlgDataTypeFieldImpl> fieldsOf( Class<?> clazz ) {
         final List<AlgDataTypeFieldImpl> list = new ArrayList<>();
         for ( Field field : clazz.getFields() ) {
             if ( Modifier.isStatic( field.getModifiers() ) ) {
@@ -595,23 +578,23 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
      */
     public class JavaType extends AlgDataTypeImpl {
 
-        private final Class clazz;
+        private final Class<?> clazz;
         private final boolean nullable;
-        private Collation collation;
-        private Charset charset;
+        private final Collation collation;
+        private final Charset charset;
 
 
-        public JavaType( Class clazz ) {
+        public JavaType( Class<?> clazz ) {
             this( clazz, !clazz.isPrimitive() );
         }
 
 
-        public JavaType( Class clazz, boolean nullable ) {
+        public JavaType( Class<?> clazz, boolean nullable ) {
             this( clazz, nullable, null, null );
         }
 
 
-        public JavaType( Class clazz, boolean nullable, Charset charset, Collation collation ) {
+        public JavaType( Class<?> clazz, boolean nullable, Charset charset, Collation collation ) {
             super( fieldsOf( clazz ) );
             this.clazz = clazz;
             this.nullable = nullable;
@@ -622,7 +605,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
         }
 
 
-        public Class getJavaClass() {
+        public Class<?> getJavaClass() {
             return clazz;
         }
 
@@ -650,7 +633,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
 
         @Override
         public AlgDataType getComponentType() {
-            final Class componentType = clazz.getComponentType();
+            final Class<?> componentType = clazz.getComponentType();
             if ( componentType == null ) {
                 return null;
             } else {
@@ -674,10 +657,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
         @Override
         public PolyType getPolyType() {
             final PolyType typeName = JavaToPolyTypeConversionRules.instance().lookup( clazz );
-            if ( typeName == null ) {
-                return PolyType.OTHER;
-            }
-            return typeName;
+            return Objects.requireNonNullElse( typeName, PolyType.OTHER );
         }
 
     }
