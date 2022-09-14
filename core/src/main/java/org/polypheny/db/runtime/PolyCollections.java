@@ -17,10 +17,6 @@
 package org.polypheny.db.runtime;
 
 import com.drew.lang.annotations.NotNull;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -150,22 +146,6 @@ public class PolyCollections {
 
         }
 
-
-        public static class PolyDirectorySerializer extends Serializer<PolyDictionary> {
-
-            @Override
-            public void write( Kryo kryo, Output output, PolyDictionary object ) {
-                kryo.writeClassAndObject( output, new HashMap<>( object ) );
-            }
-
-
-            @Override
-            public PolyDictionary read( Kryo kryo, Input input, Class<? extends PolyDictionary> type ) {
-                final Map<String, Comparable<?>> map = (Map<String, Comparable<?>>) kryo.readClassAndObject( input );
-                return new PolyDictionary( map );
-            }
-
-        }
 
     }
 

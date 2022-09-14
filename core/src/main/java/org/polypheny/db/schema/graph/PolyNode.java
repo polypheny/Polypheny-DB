@@ -16,10 +16,6 @@
 
 package org.polypheny.db.schema.graph;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
@@ -30,8 +26,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.runtime.PolyCollections;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.tools.ExpressionTransformable;
 
 
@@ -102,31 +96,6 @@ public class PolyNode extends GraphPropertyHolder implements Comparable<PolyNode
             return this;
         }
         return new PolyNode( id, properties, labels, variableName );
-
-    }
-
-
-    static public class PolyNodeSerializer extends Serializer<PolyNode> {
-
-        @Override
-        public void write( Kryo kryo, Output output, PolyNode object ) {
-            kryo.writeClassAndObject( output, object.id );
-            kryo.writeClassAndObject( output, object.properties );
-            kryo.writeClassAndObject( output, object.labels );
-            kryo.writeClassAndObject( output, object.isVariable );
-        }
-
-
-        @Override
-        public PolyNode read( Kryo kryo, Input input, Class<? extends PolyNode> type ) {
-            String id = (String) kryo.readClassAndObject( input );
-            PolyDictionary properties = (PolyDictionary) kryo.readClassAndObject( input );
-            PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
-            String variableName = (String) kryo.readClassAndObject( input );
-            boolean isVariable = (boolean) kryo.readClassAndObject( input );
-            return new PolyNode( id, properties, labels, variableName )
-                    .isVariable( isVariable );
-        }
 
     }
 

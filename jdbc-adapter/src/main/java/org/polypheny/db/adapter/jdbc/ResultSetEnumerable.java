@@ -62,8 +62,6 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.schema.graph.PolyNode;
-import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.sql.sql.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -319,10 +317,6 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             } else {
                 preparedStatement.setString( i, gson.toJson( value ) );
             }
-        } else if ( value instanceof Map ) {
-            preparedStatement.setBytes( i, PolySerializer.serializeAndCompress( value ) );
-        } else if ( value instanceof PolyNode ) {
-            preparedStatement.setString( i, new String( PolySerializer.serializeAndCompress( value ) ) );
         } else if ( value instanceof BigDecimal ) {
             BigDecimal bigDecimal = (BigDecimal) value;
             if ( type != null && type.getPolyType() == PolyType.REAL ) {

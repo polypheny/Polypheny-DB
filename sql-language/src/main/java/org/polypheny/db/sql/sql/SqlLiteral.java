@@ -22,7 +22,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -35,8 +34,6 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.sql.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
@@ -207,12 +204,6 @@ public class SqlLiteral extends SqlNode implements Literal {
             default:
                 throw Util.unexpected( typeName );
         }
-    }
-
-
-    //transformMapToBson
-    public static SqlNode transformMapToBson( Map<RexLiteral, RexLiteral> map, ParserPos pos ) {
-        return createBinaryString( PolySerializer.serializeAndCompress( map ), pos );
     }
 
 

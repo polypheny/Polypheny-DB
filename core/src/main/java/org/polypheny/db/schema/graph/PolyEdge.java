@@ -16,10 +16,6 @@
 
 package org.polypheny.db.schema.graph;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.google.gson.annotations.Expose;
 import java.util.List;
 import java.util.UUID;
@@ -31,8 +27,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.enumerable.EnumUtils;
 import org.polypheny.db.runtime.PolyCollections;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.tools.ExpressionTransformable;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -182,34 +176,5 @@ public class PolyEdge extends GraphPropertyHolder implements Comparable<PolyEdge
                 '}';
     }
 
-
-    public static class PolyEdgeSerializer extends Serializer<PolyEdge> {
-
-        @Override
-        public void write( Kryo kryo, Output output, PolyEdge object ) {
-            kryo.writeClassAndObject( output, object.id );
-            kryo.writeClassAndObject( output, object.properties );
-            kryo.writeClassAndObject( output, object.labels );
-            kryo.writeClassAndObject( output, object.source );
-            kryo.writeClassAndObject( output, object.target );
-            kryo.writeClassAndObject( output, object.direction );
-            kryo.writeClassAndObject( output, object.getVariableName() );
-        }
-
-
-        @Override
-        public PolyEdge read( Kryo kryo, Input input, Class<? extends PolyEdge> type ) {
-            String id = (String) kryo.readClassAndObject( input );
-            PolyDictionary properties = (PolyDictionary) kryo.readClassAndObject( input );
-            PolyList<String> labels = (PolyList<String>) kryo.readClassAndObject( input );
-            String leftId = (String) kryo.readClassAndObject( input );
-            String rightId = (String) kryo.readClassAndObject( input );
-            EdgeDirection direction = (EdgeDirection) kryo.readClassAndObject( input );
-            String variableName = (String) kryo.readClassAndObject( input );
-
-            return new PolyEdge( id, properties, labels, leftId, rightId, direction, variableName );
-        }
-
-    }
 
 }

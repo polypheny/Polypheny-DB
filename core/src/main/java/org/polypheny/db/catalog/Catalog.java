@@ -93,7 +93,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -323,8 +322,6 @@ public abstract class Catalog {
     public abstract CatalogGraphDatabase getGraph( long id );
 
     public abstract List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName );
-
-    public abstract void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement );
 
     public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
 
@@ -723,7 +720,7 @@ public abstract class Catalog {
     public abstract void setColumnPosition( long columnId, int position );
 
     /**
-     * Change the data type of an column.
+     * Change the data type of a column.
      *
      * @param columnId The id of the column
      * @param type The new type of the column
@@ -1666,13 +1663,6 @@ public abstract class Catalog {
 
     public abstract void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName );
 
-    public abstract void close();
-
-    public abstract void clear();
-
-
-    public abstract void removeCollectionLogistics( CatalogCollection catalogCollection );
-
 
     public abstract void deleteCollection( CatalogCollection catalogCollection );
 
@@ -1681,6 +1671,10 @@ public abstract class Catalog {
 
 
     public abstract List<CatalogGraphPlacement> getGraphPlacements( int adapterId );
+
+    public abstract void close();
+
+    public abstract void clear();
 
 
     public enum EntityType {

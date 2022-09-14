@@ -557,8 +557,6 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createTimestamp( literal.getValueAs( TimestampString.class ), literal.getType().getPrecision(), POS );
                         case BINARY:
                             return SqlLiteral.createBinaryString( literal.getValueAs( byte[].class ), POS );
-                        case MAP:
-                            return SqlLiteral.transformMapToBson( literal.getValueAs( Map.class ), POS );
                         case ARRAY:
                             if ( dialect.supportsNestedArrays() ) {
                                 List<SqlNode> array = literal.getRexList().stream().map( e -> toSql( program, e ) ).collect( Collectors.toList() );

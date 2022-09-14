@@ -1241,7 +1241,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW materializedFromView" );
                     statement.executeUpdate( "DROP MATERIALIZED VIEW materializedFromComplexView" );
                     statement.executeUpdate( "DROP VIEW viewTestEmp" );
-                    statement.executeUpdate( "Drop VIEW viewTestEmpDep" );
+                    statement.executeUpdate( "DROP VIEW viewTestEmpDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
                 }

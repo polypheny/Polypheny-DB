@@ -1294,55 +1294,6 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void afterGraphLogistics( List<DataStore> stores, long graphId, Statement statement ) {
-        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
-
-        CatalogTable nodes = Objects.requireNonNull( tables.get( mapping.nodesId ) );
-        CatalogTable nodeProperties = Objects.requireNonNull( tables.get( mapping.nodesPropertyId ) );
-        CatalogTable edges = Objects.requireNonNull( tables.get( mapping.edgesId ) );
-        CatalogTable edgeProperties = Objects.requireNonNull( tables.get( mapping.edgesPropertyId ) );
-
-        for ( DataStore store : stores ) {
-            addPartitionPlacement(
-                    store.getAdapterId(),
-                    nodes.id,
-                    nodes.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null,
-                    DataPlacementRole.UPTODATE );
-
-            addPartitionPlacement(
-                    store.getAdapterId(),
-                    nodeProperties.id,
-                    nodeProperties.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null,
-                    DataPlacementRole.UPTODATE );
-
-            addPartitionPlacement(
-                    store.getAdapterId(),
-                    edges.id,
-                    edges.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null,
-                    DataPlacementRole.UPTODATE );
-
-            addPartitionPlacement(
-                    store.getAdapterId(),
-                    edgeProperties.id,
-                    edgeProperties.partitionProperty.partitionIds.get( 0 ),
-                    PlacementType.AUTOMATIC,
-                    null,
-                    null,
-                    DataPlacementRole.UPTODATE );
-        }
-    }
-
-
-    @Override
     public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
         CatalogGraphDatabase graph = Objects.requireNonNull( getGraph( graphId ) );
 
@@ -1356,6 +1307,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             graphAliases.put( alias, graph );
         }
+        listeners.firePropertyChange( "graphAlias", null, alias );
     }
 
 
@@ -1370,6 +1322,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             graphAliases.remove( alias );
         }
+        listeners.firePropertyChange( "graphAlias", alias, null );
     }
 
 
@@ -1721,12 +1674,6 @@ public class CatalogImpl extends Catalog {
             throw new UnknownGraphException( graphId );
         }
 
-        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
-        /*deleteTable( mapping.nodesId );
-        deleteTable( mapping.nodesPropertyId );
-        deleteTable( mapping.edgesId );
-        deleteTable( mapping.edgesPropertyId );*/
-
         deleteSchema( graphId );
     }
 
@@ -1747,7 +1694,7 @@ public class CatalogImpl extends Catalog {
             graphNames.remove( new Object[]{ old.databaseId, old.name } );
             graphMappings.remove( id );
         }
-        listeners.firePropertyChange( "graph", null, null );
+        listeners.firePropertyChange( "graph", old, null );
     }
 
 
@@ -2626,6 +2573,7 @@ public class CatalogImpl extends Catalog {
             collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
             collectionPlacements.replace( new Object[]{ collectionId, adapterId }, placement );
         }
+        listeners.firePropertyChange( "collectionPlacements", old, collection );
     }
 
 
@@ -2695,13 +2643,6 @@ public class CatalogImpl extends Catalog {
         }
 
         return tableId;
-    }
-
-
-    @Override
-    public void removeCollectionLogistics( CatalogCollection catalogCollection ) {
-        CatalogCollectionMapping mapping = documentMappings.get( catalogCollection.id );
-        deleteTable( Objects.requireNonNull( mapping ).collectionId );
     }
 
 
@@ -5424,7 +5365,7 @@ public class CatalogImpl extends Catalog {
             graphPlacements.replace( new Object[]{ graphId, adapterId }, placement );
         }
 
-        listeners.firePropertyChange( "graphPlacement", null, placement );
+        listeners.firePropertyChange( "graphPlacement", old, placement );
     }
 
 

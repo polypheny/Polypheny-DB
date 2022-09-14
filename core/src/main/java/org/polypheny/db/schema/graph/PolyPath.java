@@ -16,10 +16,6 @@
 
 package org.polypheny.db.schema.graph;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.google.gson.annotations.Expose;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -251,30 +247,6 @@ public class PolyPath extends GraphObject implements Comparable<PolyPath> {
         }
 
         return evenSegments;
-    }
-
-
-    public static class PolyPathSerializer extends Serializer<PolyPath> {
-
-        @Override
-        public void write( Kryo kryo, Output output, PolyPath object ) {
-            kryo.writeClassAndObject( output, object.nodes );
-            kryo.writeClassAndObject( output, object.edges );
-            kryo.writeClassAndObject( output, object.names );
-            kryo.writeClassAndObject( output, object.path );
-        }
-
-
-        @Override
-        public PolyPath read( Kryo kryo, Input input, Class<? extends PolyPath> type ) {
-            List<PolyNode> nodes = (List<PolyNode>) kryo.readClassAndObject( input );
-            List<PolyEdge> edges = (List<PolyEdge>) kryo.readClassAndObject( input );
-            List<String> names = (List<String>) kryo.readClassAndObject( input );
-            List<GraphPropertyHolder> objects = (List<GraphPropertyHolder>) kryo.readClassAndObject( input );
-            String variableName = (String) kryo.readClassAndObject( input );
-            return new PolyPath( nodes, edges, names, objects, variableName );
-        }
-
     }
 
 
