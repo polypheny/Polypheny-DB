@@ -38,7 +38,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
 
-public class LogicalViewScan extends Scan {
+public class LogicalRelViewScan extends Scan {
 
     @Getter
     private final AlgNode algNode;
@@ -46,7 +46,7 @@ public class LogicalViewScan extends Scan {
     private final AlgCollation algCollation;
 
 
-    public LogicalViewScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, AlgNode algNode, AlgCollation algCollation ) {
+    public LogicalRelViewScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, AlgNode algNode, AlgCollation algCollation ) {
         super( cluster, traitSet, table );
         this.algNode = algNode;
         this.algCollation = algCollation;
@@ -73,7 +73,7 @@ public class LogicalViewScan extends Scan {
         CatalogTable catalogTable = catalog.getTable( idLogical );
         AlgCollation algCollation = ((CatalogView) catalogTable).getAlgCollation();
 
-        return new LogicalViewScan( cluster, traitSet, algOptTable, ((CatalogView) catalogTable).prepareView( cluster ), algCollation );
+        return new LogicalRelViewScan( cluster, traitSet, algOptTable, ((CatalogView) catalogTable).prepareView( cluster ), algCollation );
     }
 
 

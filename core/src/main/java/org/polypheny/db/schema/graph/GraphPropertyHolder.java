@@ -57,10 +57,6 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
 
     public boolean matchesProperties( PolyDictionary properties ) {
-        /*if ( this.properties.size() != properties.size() ) {
-            return false;
-        }*/
-
         for ( Entry<String, Object> entry : properties.entrySet() ) {
             if ( !this.properties.containsKey( entry.getKey() ) ) {
                 return false;

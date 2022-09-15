@@ -118,14 +118,6 @@ public class TransactionProvider {
 
     public void commitDdlTransaction() {
         commitAll();
-        /*if ( ddlSession == null || ddlTransaction == null ) {
-            throw new RuntimeException( "There is no ongoing DDL transaction!" );
-        }
-        ddlTransaction.commit();
-        ddlTransaction.close();
-        ddlSession.close();
-        ddlTransaction = null;
-        ddlSession = null;*/
     }
 
 

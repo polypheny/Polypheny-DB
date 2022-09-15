@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -464,8 +464,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
             prepareNode( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster, algCollation );
         }
-        if ( viewLogicalRoot instanceof LogicalViewScan ) {
-            prepareNode( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), algOptCluster, algCollation );
+        if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
+            prepareNode( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algOptCluster, algCollation );
         }
     }
 

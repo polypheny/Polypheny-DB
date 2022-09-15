@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -160,8 +160,8 @@ public class CatalogView extends CatalogTable {
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
             prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster );
         }
-        if ( viewLogicalRoot instanceof LogicalViewScan ) {
-            prepareView( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), algOptCluster );
+        if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
+            prepareView( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algOptCluster );
         }
     }
 

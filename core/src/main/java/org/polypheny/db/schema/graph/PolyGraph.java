@@ -73,11 +73,6 @@ public class PolyGraph extends GraphObject implements Comparable<PolyGraph> {
     }
 
 
-    public boolean matches( PolyGraph comp ) {
-        return true;
-    }
-
-
     @Override
     public String toString() {
         return "PolyGraph{" +

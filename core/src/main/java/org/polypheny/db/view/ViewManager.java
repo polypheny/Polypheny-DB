@@ -40,11 +40,11 @@ import org.polypheny.db.algebra.logical.relational.LogicalMatch;
 import org.polypheny.db.algebra.logical.relational.LogicalMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.logical.relational.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
@@ -76,7 +76,7 @@ public class ViewManager {
             exprs.add( rexBuilder.makeInputRef( other, i ) );
         }
 
-        AlgNode algNode = ((LogicalViewScan) other).getAlgNode();
+        AlgNode algNode = ((LogicalRelViewScan) other).getAlgNode();
 
         if ( algNode instanceof Project && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
             return algNode;
@@ -251,7 +251,7 @@ public class ViewManager {
 
 
         public AlgNode checkNode( AlgNode other ) {
-            if ( other instanceof LogicalViewScan ) {
+            if ( other instanceof LogicalRelViewScan ) {
                 return expandViewNode( other );
             } else if ( doesSubstituteOrderBy && other instanceof LogicalScan ) {
                 if ( other.getTable() instanceof AlgOptTableImpl ) {
@@ -280,7 +280,7 @@ public class ViewManager {
          * @return the AlgRoot after replacing all <code>LogicalViewScan</code>s
          */
         public AlgRoot startSubstitution( AlgRoot logicalRoot ) {
-            if ( logicalRoot.alg instanceof LogicalViewScan ) {
+            if ( logicalRoot.alg instanceof LogicalRelViewScan ) {
                 AlgNode node = checkNode( logicalRoot.alg );
                 return AlgRoot.of( node, logicalRoot.kind );
             } else {

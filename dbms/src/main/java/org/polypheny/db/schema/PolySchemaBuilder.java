@@ -195,7 +195,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 catalog.getColumns( catalogEntity.id ).forEach( c -> columnIds.add( c.id ) );
                 LogicalTable entity;
                 if ( catalogEntity.entityType == EntityType.VIEW ) {
-                    entity = new LogicalView(
+                    entity = new LogicalRelView(
                             catalogEntity.id,
                             catalogEntity.getNamespaceName(),
                             catalogEntity.name,
@@ -358,7 +358,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
 
     private void buildView( Map<String, LogicalTable> tableMap, SchemaPlus s, CatalogTable catalogTable, List<String> columnNames, Builder fieldInfo, List<Long> columnIds ) {
-        LogicalView view = new LogicalView(
+        LogicalRelView view = new LogicalRelView(
                 catalogTable.id,
                 catalogTable.getNamespaceName(),
                 catalogTable.name,
