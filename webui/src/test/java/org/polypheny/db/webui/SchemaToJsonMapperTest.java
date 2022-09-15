@@ -20,6 +20,7 @@ package org.polypheny.db.webui;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -72,12 +73,12 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
 
         new CatalogSchema( 1, "public", 1, 1, "hans", NamespaceType.RELATIONAL );
         new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" );
-        new CatalogUser( 1, "hans", "secrete", 1L );
+        new CatalogUser( 1, "hans", "secrete" );
         new HashMap<>();
         new HashMap<>();
         Arrays.asList(
                 new CatalogKey( 23L, 4, 1, 1, Arrays.asList( 5L, 6L ), EnforcementTime.ON_COMMIT ),
-                new CatalogKey( 24L, 4, 1, 1, Arrays.asList( 6L ), EnforcementTime.ON_COMMIT )
+                new CatalogKey( 24L, 4, 1, 1, List.of( 6L ), EnforcementTime.ON_COMMIT )
         );
         String json = SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, true, true );
         Assert.assertEquals( json, mockJson );
