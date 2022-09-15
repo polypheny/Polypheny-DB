@@ -31,7 +31,7 @@ public class MqlMockCatalog extends MockCatalog {
 
     @Override
     public CatalogUser getUser( int userId ) {
-        return new CatalogUser( 0, "name", "name", 1 );
+        return new CatalogUser( 0, "name", "name" );
     }
 
 }
