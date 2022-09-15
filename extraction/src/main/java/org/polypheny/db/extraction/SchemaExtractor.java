@@ -149,7 +149,7 @@ public class SchemaExtractor {
             }
 
             // Array of foreign key relationships (from this table to other tables)
-            JsonObjectBuilder foreignKeyBuilder = Json.createObjectBuilder();
+            JsonArrayBuilder foreignKeyBuilder = Json.createArrayBuilder();
             for ( CatalogForeignKey foreignKey : catalog.getForeignKeys( catalogTable.id ) ) {
                 JsonArrayBuilder columnNamesHere = Json.createArrayBuilder();
                 String tableNameHere = catalogTable.name;
@@ -163,10 +163,12 @@ public class SchemaExtractor {
                     primaryKeyThereBuilder.add(primaryKeyThereColumnName);
                 }
 
-                foreignKeyBuilder.add("tableName", tableNameHere);
-                foreignKeyBuilder.add("columnNames", columnNamesHere);
-                foreignKeyBuilder.add("foreignTableName", targetTableName);
-                foreignKeyBuilder.add("foreignTableColumNames", primaryKeyThereBuilder);
+                JsonObjectBuilder foreignKeyInformation = Json.createObjectBuilder();
+                foreignKeyInformation.add("tableName", tableNameHere);
+                foreignKeyInformation.add("columnNames", columnNamesHere);
+                foreignKeyInformation.add("foreignTableName", targetTableName);
+                foreignKeyInformation.add("foreignTableColumnNames", primaryKeyThereBuilder);
+                foreignKeyBuilder.add(foreignKeyInformation);
             }
 
             tablesBuilder.add( Json.createObjectBuilder()
