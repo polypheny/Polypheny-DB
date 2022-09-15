@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;

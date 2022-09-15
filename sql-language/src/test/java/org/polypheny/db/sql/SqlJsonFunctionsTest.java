@@ -44,8 +44,8 @@ import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
-import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.functions.Functions;
 
 
 /**

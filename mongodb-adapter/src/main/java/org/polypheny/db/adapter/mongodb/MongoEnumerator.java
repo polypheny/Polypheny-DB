@@ -36,7 +36,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
-import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.runtime.functions.Functions;
 
 
 /**

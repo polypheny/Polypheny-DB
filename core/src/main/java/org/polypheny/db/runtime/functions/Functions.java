@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.runtime;
+package org.polypheny.db.runtime.functions;
 
 
 import com.drew.imaging.ImageMetadataReader;
@@ -111,7 +94,9 @@ import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.FlatLists.ComparableList;
+import org.polypheny.db.runtime.Like;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -173,6 +158,7 @@ public class Functions {
 
 
     private Functions() {
+        // empty on purpose
     }
 
 
@@ -3275,7 +3261,7 @@ public class Functions {
     }
 
 
-    private static Enumerable<FlatLists.ComparableList<Comparable>> p2( Object[] lists, int[] fieldCounts, boolean withOrdinality, FlatProductInputType[] inputTypes ) {
+    private static Enumerable<ComparableList<Comparable>> p2( Object[] lists, int[] fieldCounts, boolean withOrdinality, FlatProductInputType[] inputTypes ) {
         final List<Enumerator<List<Comparable>>> enumerators = new ArrayList<>();
         int totalFieldCount = 0;
         for ( int i = 0; i < lists.length; i++ ) {

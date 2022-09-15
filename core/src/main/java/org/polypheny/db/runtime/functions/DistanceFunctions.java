@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime;
+package org.polypheny.db.runtime.functions;
 
 
 import java.util.List;
@@ -23,6 +23,10 @@ import org.polypheny.db.util.Pair;
 
 
 public class DistanceFunctions {
+
+    private DistanceFunctions() {
+        // empty on purpose
+    }
 
 
     protected static double l1Metric( List<Number> value, List<Number> target ) {

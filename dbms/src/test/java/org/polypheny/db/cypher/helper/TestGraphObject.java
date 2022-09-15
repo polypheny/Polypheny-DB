@@ -17,7 +17,7 @@
 package org.polypheny.db.cypher.helper;
 
 import static org.junit.Assert.fail;
-import static org.polypheny.db.runtime.Functions.toBigDecimal;
+import static org.polypheny.db.runtime.functions.Functions.toBigDecimal;
 
 import com.google.gson.Gson;
 import java.util.HashMap;

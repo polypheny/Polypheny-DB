@@ -105,8 +105,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.test.Matchers;
 
 

@@ -74,7 +74,7 @@ public interface AlgOptPlanner {
      *
      * @return whether the RelTraitDef was added, as per {@link java.util.Collection#add}
      */
-    boolean addAlgTraitDef( AlgTraitDef algTraitDef );
+    boolean addAlgTraitDef( AlgTraitDef<?> algTraitDef );
 
     /**
      * Clear all the registered RelTraitDef.
@@ -84,7 +84,7 @@ public interface AlgOptPlanner {
     /**
      * Returns the list of active trait types.
      */
-    List<AlgTraitDef> getAlgTraitDefs();
+    List<AlgTraitDef<?>> getAlgTraitDefs();
 
     /**
      * Removes all internal state, including all registered rules.
@@ -221,7 +221,7 @@ public interface AlgOptPlanner {
     void registerMetadataProviders( List<AlgMetadataProvider> list );
 
     /**
-     * Gets a timestamp for a given rel's metadata. This timestamp is used by {@link CachingAlgMetadataProvider} to decide whether cached metadata has gone stale.
+     * Gets a timestamp for a given algs metadata. This timestamp is used by {@link CachingAlgMetadataProvider} to decide whether cached metadata has gone stale.
      *
      * @param alg alg of interest
      * @return timestamp of last change which might affect metadata derivation

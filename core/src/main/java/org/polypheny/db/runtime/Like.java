@@ -66,7 +66,7 @@ public class Like {
     /**
      * Translates a SQL LIKE pattern to Java regex pattern, with optional escape string.
      */
-    static String sqlToRegexLike( String sqlPattern, CharSequence escapeStr ) {
+    public static String sqlToRegexLike( String sqlPattern, CharSequence escapeStr ) {
         final char escapeChar;
         if ( escapeStr != null ) {
             if ( escapeStr.length() != 1 ) {
@@ -215,7 +215,7 @@ public class Like {
     /**
      * Translates a SQL SIMILAR pattern to Java regex pattern, with optional escape string.
      */
-    static String sqlToRegexSimilar( String sqlPattern, CharSequence escapeStr ) {
+    public static String sqlToRegexSimilar( String sqlPattern, CharSequence escapeStr ) {
         final char escapeChar;
         if ( escapeStr != null ) {
             if ( escapeStr.length() != 1 ) {

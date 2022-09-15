@@ -98,15 +98,16 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.runtime.CypherFunctions;
 import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.Functions;
-import org.polypheny.db.runtime.Functions.FlatProductInputType;
-import org.polypheny.db.runtime.MqlFunctions;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.runtime.functions.CrossModelFunctions;
+import org.polypheny.db.runtime.functions.CypherFunctions;
+import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
+import org.polypheny.db.runtime.functions.MqlFunctions;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
@@ -436,8 +437,6 @@ public enum BuiltInMethod {
     GRAPH_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),
     CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyNode.class, String.class ),
     CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", PolyNode.class, String.class ),
-    DESERIALIZE_LIST( Functions.class, "deserializeList", String.class ),
-    DESERIALIZE_DIRECTORY( Functions.class, "deserializeDirectory", String.class ),
     GRAPH_NODE_MATCH( CypherFunctions.class, "nodeMatch", PolyGraph.class, PolyNode.class ),
     GRAPH_NODE_EXTRACT( CypherFunctions.class, "nodeExtract", PolyGraph.class ),
     GRAPH_MATCH_CTOR( MatchEnumerable.class, List.class ),
@@ -456,12 +455,12 @@ public enum BuiltInMethod {
     CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, boolean.class ),
     CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
     CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
-    SPLIT_GRAPH_MODIFY( CypherFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class ),
+    SPLIT_GRAPH_MODIFY( CrossModelFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class ),
 
-    X_MODEL_TABLE_TO_NODE( CypherFunctions.class, "tableToNodes", Enumerable.class, String.class, List.class ),
-    X_MODEL_MERGE_NODE_COLLECTIONS( CypherFunctions.class, "mergeNodeCollections", List.class ),
-    X_MODEL_COLLECTION_TO_NODE( CypherFunctions.class, "collectionToNodes", Enumerable.class, String.class ),
-    X_MODEL_NODE_TO_COLLECTION( CypherFunctions.class, "nodesToCollection", Enumerable.class );
+    X_MODEL_TABLE_TO_NODE( CrossModelFunctions.class, "tableToNodes", Enumerable.class, String.class, List.class ),
+    X_MODEL_MERGE_NODE_COLLECTIONS( CrossModelFunctions.class, "mergeNodeCollections", List.class ),
+    X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, String.class ),
+    X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class );
 
     public final Method method;
     public final Constructor constructor;

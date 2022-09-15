@@ -169,7 +169,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Holds the currently registered RelTraitDefs.
      */
-    private final List<AlgTraitDef> traitDefs = new ArrayList<>();
+    private final List<AlgTraitDef<?>> traitDefs = new ArrayList<>();
 
     /**
      * Set of all registered rules.
@@ -213,7 +213,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Maps rule classes to their name, to ensure that the names are unique and conform to rules.
      */
-    private final SetMultimap<String, Class> ruleNames = LinkedHashMultimap.create();
+    private final SetMultimap<String, Class<?>> ruleNames = LinkedHashMultimap.create();
 
 
     /**
@@ -266,7 +266,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         // We're registered all the rules, and therefore {@link AlgNode} classes, we're interested in, and have not yet started
         // calling metadata providers.
         // So now is a good time to tell the metadata layer what to expect.
-        registerMetadataRels();
+        registerMetadataAlgs();
 
         this.root = registerImpl( alg, null );
         if ( this.originalRoot == null ) {
@@ -304,7 +304,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public boolean addAlgTraitDef( AlgTraitDef algTraitDef ) {
+    public boolean addAlgTraitDef( AlgTraitDef<?> algTraitDef ) {
         return !traitDefs.contains( algTraitDef ) && traitDefs.add( algTraitDef );
     }
 
@@ -316,7 +316,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public List<AlgTraitDef> getAlgTraitDefs() {
+    public List<AlgTraitDef<?>> getAlgTraitDefs() {
         return traitDefs;
     }
 
@@ -324,7 +324,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     @Override
     public AlgTraitSet emptyTraitSet() {
         AlgTraitSet traitSet = super.emptyTraitSet();
-        for ( AlgTraitDef traitDef : traitDefs ) {
+        for ( AlgTraitDef<?> traitDef : traitDefs ) {
             if ( traitDef.multiple() ) {
                 // TODO: restructure RelTraitSet to allow a list of entries for any given trait
             }
@@ -370,7 +370,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
         final String ruleName = rule.toString();
         if ( ruleNames.put( ruleName, rule.getClass() ) ) {
-            Set<Class> x = ruleNames.get( ruleName );
+            Set<Class<?>> x = ruleNames.get( ruleName );
             if ( x.size() > 1 ) {
                 throw new RuntimeException( "Rule description '" + ruleName + "' is not unique; classes: " + x );
             }
@@ -417,7 +417,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         if ( rule instanceof ConverterRule ) {
             ConverterRule converterRule = (ConverterRule) rule;
             final AlgTrait ruleTrait = converterRule.getInTrait();
-            final AlgTraitDef ruleTraitDef = ruleTrait.getTraitDef();
+            final AlgTraitDef<?> ruleTraitDef = ruleTrait.getTraitDef();
             if ( traitDefs.contains( ruleTraitDef ) ) {
                 ruleTraitDef.deregisterConverterRule( this, converterRule );
             }
@@ -567,7 +567,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * Informs {@link JaninoRelMetadataProvider} about the different kinds of {@link AlgNode} that we will be dealing with.
      * It will reduce the number of times that we need to re-generate the provider.
      */
-    private void registerMetadataRels() {
+    private void registerMetadataAlgs() {
         JaninoRelMetadataProvider.DEFAULT.register( classOperands.keySet() );
     }
 
@@ -813,6 +813,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         addRule( DocumentToEnumerableRule.FILTER_TO_ENUMERABLE );
         addRule( DocumentToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
         addRule( DocumentToEnumerableRule.SORT_TO_ENUMERABLE );
+
+        // Relational
     }
 
 

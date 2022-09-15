@@ -276,7 +276,7 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public boolean addAlgTraitDef( AlgTraitDef algTraitDef ) {
+    public boolean addAlgTraitDef( AlgTraitDef<?> algTraitDef ) {
         return false;
     }
 
@@ -287,7 +287,7 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public List<AlgTraitDef> getAlgTraitDefs() {
+    public List<AlgTraitDef<?>> getAlgTraitDefs() {
         return ImmutableList.of();
     }
 

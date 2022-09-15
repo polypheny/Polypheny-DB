@@ -26,18 +26,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.polypheny.db.runtime.Functions.addMonths;
-import static org.polypheny.db.runtime.Functions.charLength;
-import static org.polypheny.db.runtime.Functions.concat;
-import static org.polypheny.db.runtime.Functions.greater;
-import static org.polypheny.db.runtime.Functions.initcap;
-import static org.polypheny.db.runtime.Functions.lesser;
-import static org.polypheny.db.runtime.Functions.lower;
-import static org.polypheny.db.runtime.Functions.ltrim;
-import static org.polypheny.db.runtime.Functions.rtrim;
-import static org.polypheny.db.runtime.Functions.subtractMonths;
-import static org.polypheny.db.runtime.Functions.trim;
-import static org.polypheny.db.runtime.Functions.upper;
+import static org.polypheny.db.runtime.functions.Functions.addMonths;
+import static org.polypheny.db.runtime.functions.Functions.charLength;
+import static org.polypheny.db.runtime.functions.Functions.concat;
+import static org.polypheny.db.runtime.functions.Functions.greater;
+import static org.polypheny.db.runtime.functions.Functions.initcap;
+import static org.polypheny.db.runtime.functions.Functions.lesser;
+import static org.polypheny.db.runtime.functions.Functions.lower;
+import static org.polypheny.db.runtime.functions.Functions.ltrim;
+import static org.polypheny.db.runtime.functions.Functions.rtrim;
+import static org.polypheny.db.runtime.functions.Functions.subtractMonths;
+import static org.polypheny.db.runtime.functions.Functions.trim;
+import static org.polypheny.db.runtime.functions.Functions.upper;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -47,9 +47,9 @@ import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.Test;
-import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.runtime.functions.Functions;
 
 
 /**

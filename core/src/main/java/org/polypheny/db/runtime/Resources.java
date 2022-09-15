@@ -48,7 +48,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
-import java.security.PrivilegedAction;
 import java.text.DateFormat;
 import java.text.Format;
 import java.text.MessageFormat;
@@ -314,6 +313,7 @@ public class Resources {
                 return Character.toUpperCase( name.charAt( 0 ) ) + name.substring( 1 );
             }
         }
+
     }
 
 
@@ -399,11 +399,11 @@ public class Resources {
                         String raw = raw();
                         MessageFormat format = new MessageFormat( raw );
                         final Format[] formats = format.getFormatsByArgumentIndex();
-                        final List<Class> types = new ArrayList<>();
+                        final List<Class<?>> types = new ArrayList<>();
                         final Class<?>[] parameterTypes = method.getParameterTypes();
                         for ( int i = 0; i < formats.length; i++ ) {
                             Format format1 = formats[i];
-                            Class parameterType = parameterTypes[i];
+                            Class<?> parameterType = parameterTypes[i];
                             final Class<?> e;
                             if ( format1 instanceof NumberFormat ) {
                                 e = parameterType == short.class
@@ -469,6 +469,7 @@ public class Resources {
                 return Collections.singletonMap( property.name(), property.value() );
             }
         }
+
     }
 
 
@@ -491,7 +492,7 @@ public class Resources {
         public T ex( Throwable cause ) {
             try {
                 //noinspection unchecked
-                final Class<T> exceptionClass = getExceptionClass( method.getGenericReturnType() );
+                final Class<T> exceptionClass = (Class<T>) getExceptionClass( method.getGenericReturnType() );
                 Constructor<T> constructor;
                 final String str = str();
                 boolean causeInConstructor = false;
@@ -532,10 +533,10 @@ public class Resources {
         }
 
 
-        public static Class getExceptionClass( Type type ) {
+        public static Class<?> getExceptionClass( Type type ) {
             // Get exception type from ExInstWithCause<MyException> type parameter.
             // ExInstWithCause might be one of super classes.
-            // And, this class may be a parameter-less sub-class of a generic base.
+            // And, this class may be a parameter-less sub class of a generic base.
             //
             // NOTE: We used to use com.fasterxml.jackson.databind.type.TypeFactory.findTypeParameters.
             // More powerful, but we can't afford an extra dependency.
@@ -546,13 +547,13 @@ public class Resources {
                     final Type[] types = ((ParameterizedType) type).getActualTypeArguments();
                     if ( types.length >= 1
                             && types[0] instanceof Class
-                            && Throwable.class.isAssignableFrom( (Class) types[0] ) ) {
-                        return (Class) types[0];
+                            && Throwable.class.isAssignableFrom( (Class<?>) types[0] ) ) {
+                        return (Class<?>) types[0];
                     }
                     throw new IllegalStateException( "Unable to find superclass ExInstWithCause for " + type );
                 }
                 if ( type instanceof Class ) {
-                    type = ((Class) type).getGenericSuperclass();
+                    type = ((Class<?>) type).getGenericSuperclass();
                     if ( type == null ) {
                         throw new IllegalStateException( "Unable to find superclass ExInstWithCause for " + type0 );
                     }
@@ -563,7 +564,6 @@ public class Resources {
 
         protected void validateException( Callable<Exception> exSupplier ) {
             Throwable cause = null;
-            //noinspection TryWithIdenticalCatches
             try {
                 final Exception ex = exSupplier.call();
                 if ( ex == null ) {
@@ -591,6 +591,7 @@ public class Resources {
                 validateException( () -> ex( new NullPointerException( "test" ) ) );
             }
         }
+
     }
 
 
@@ -616,6 +617,7 @@ public class Resources {
                 validateException( this::ex );
             }
         }
+
     }
 
 
@@ -658,6 +660,7 @@ public class Resources {
                 throw new NoDefaultValueException( "Property " + key + " is not set and has no default value" );
             }
         }
+
     }
 
 
@@ -700,6 +703,7 @@ public class Resources {
             checkDefault();
             return defaultValue;
         }
+
     }
 
 
@@ -742,6 +746,7 @@ public class Resources {
             checkDefault();
             return defaultValue;
         }
+
     }
 
 
@@ -784,6 +789,7 @@ public class Resources {
             checkDefault();
             return defaultValue;
         }
+
     }
 
 
@@ -826,6 +832,7 @@ public class Resources {
             checkDefault();
             return defaultValue;
         }
+
     }
 
 
@@ -837,6 +844,7 @@ public class Resources {
         NoDefaultValueException( String message ) {
             super( message );
         }
+
     }
 
 
@@ -862,6 +870,7 @@ public class Resources {
         double doubleValue( DoubleProp p );
 
         double doubleValue( DoubleProp p, double defaultValue );
+
     }
 
 
@@ -973,6 +982,7 @@ public class Resources {
     public @interface BaseMessage {
 
         String value();
+
     }
 
 
@@ -984,6 +994,7 @@ public class Resources {
     public @interface Resource {
 
         String value();
+
     }
 
 
@@ -997,6 +1008,7 @@ public class Resources {
         String name();
 
         String value();
+
     }
 
 
@@ -1008,6 +1020,7 @@ public class Resources {
     public @interface Default {
 
         String value();
+
     }
 
 
@@ -1034,7 +1047,7 @@ public class Resources {
      */
     public abstract static class ShadowResourceBundle extends ResourceBundle {
 
-        private PropertyResourceBundle bundle;
+        private final PropertyResourceBundle bundle;
 
 
         /**
@@ -1046,7 +1059,7 @@ public class Resources {
          */
         protected ShadowResourceBundle() throws IOException {
             super();
-            Class clazz = getClass();
+            Class<?> clazz = getClass();
             InputStream stream = openPropertiesFile( clazz );
             if ( stream == null ) {
                 throw new IOException( "could not open properties file for " + getClass() );
@@ -1075,17 +1088,15 @@ public class Resources {
         /**
          * Opens the properties file corresponding to a given class. The code is copied from {@link ResourceBundle}.
          */
-        private static InputStream openPropertiesFile( Class clazz ) {
+        private static InputStream openPropertiesFile( Class<?> clazz ) {
             final ClassLoader loader = clazz.getClassLoader();
             final String resName = clazz.getName().replace( '.', '/' ) + ".properties";
-            return (InputStream) java.security.AccessController.doPrivileged(
-                    (PrivilegedAction) () -> {
-                        if ( loader != null ) {
-                            return loader.getResourceAsStream( resName );
-                        } else {
-                            return ClassLoader.getSystemResourceAsStream( resName );
-                        }
-                    } );
+            if ( loader != null ) {
+                return loader.getResourceAsStream( resName );
+            }
+            return ClassLoader.getSystemResourceAsStream( resName );
+
+
         }
 
 
@@ -1132,6 +1143,7 @@ public class Resources {
             }
             return (ShadowResourceBundle) bundle;
         }
+
     }
 
 
@@ -1148,6 +1160,7 @@ public class Resources {
         void setParentTrojan( ResourceBundle parent ) {
             super.setParent( parent );
         }
+
     }
 
 
@@ -1157,7 +1170,7 @@ public class Resources {
         public final Method method;
 
 
-        BuiltinMethod( Class clazz, String methodName, Class... argumentTypes ) {
+        BuiltinMethod( Class<?> clazz, String methodName, Class<?>... argumentTypes ) {
             this.method = lookupMethod( clazz, methodName, argumentTypes );
         }
 
@@ -1172,9 +1185,8 @@ public class Resources {
          * @return A method with the given name that matches the arguments given
          * @throws RuntimeException if method not found
          */
-        public static Method lookupMethod( Class clazz, String methodName, Class... argumentTypes ) {
+        public static Method lookupMethod( Class<?> clazz, String methodName, Class<?>... argumentTypes ) {
             try {
-                //noinspection unchecked
                 return clazz.getMethod( methodName, argumentTypes );
             } catch ( NoSuchMethodException e ) {
                 throw new RuntimeException( "while resolving method '" + methodName + Arrays.toString( argumentTypes ) + "' in class " + clazz, e );
@@ -1272,6 +1284,8 @@ public class Resources {
             final String s = properties.getProperty( p.key );
             return s == null ? defaultValue : Double.parseDouble( s );
         }
+
     }
+
 }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.runtime;
+package org.polypheny.db.runtime.functions;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -45,6 +45,11 @@ public class MqlFunctions {
     public static final Gson GSON = new GsonBuilder()
             .enableComplexMapKeySerialization()
             .create();
+
+
+    private MqlFunctions() {
+        // empty on purpose
+    }
 
 
     /**
