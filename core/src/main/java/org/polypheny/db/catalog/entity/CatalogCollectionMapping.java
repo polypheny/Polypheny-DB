@@ -21,6 +21,8 @@ import java.io.Serializable;
 
 public class CatalogCollectionMapping implements CatalogObject {
 
+    private static final long serialVersionUID = -5589631288987497205L;
+
     public final long collectionId;
     public final long idId;
     public final long dataId;

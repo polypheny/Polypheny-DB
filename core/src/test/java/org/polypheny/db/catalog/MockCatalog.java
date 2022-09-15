@@ -109,12 +109,6 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void setUserSchema( int userId, long schemaId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
     public void rollback() {
         throw new NotImplementedException();
     }

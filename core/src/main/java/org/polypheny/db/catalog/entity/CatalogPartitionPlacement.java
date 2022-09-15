@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
  */
 public class CatalogPartitionPlacement implements CatalogObject {
 
-    private static final long serialVersionUID = 3035193464866141590L;
+    private static final long serialVersionUID = 8835793248417591036L;
 
     public final long tableId;
     public final long partitionId;

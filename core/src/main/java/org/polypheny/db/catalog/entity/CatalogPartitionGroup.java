@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.Catalog;
 @EqualsAndHashCode
 public final class CatalogPartitionGroup implements CatalogObject {
 
-    private static final long serialVersionUID = 2312903632511266177L;
+    private static final long serialVersionUID = -6579304497541155560L;
 
     public final long id;
     public final String partitionGroupName;

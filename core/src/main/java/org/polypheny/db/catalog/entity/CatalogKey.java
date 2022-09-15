@@ -28,6 +28,8 @@ import org.polypheny.db.catalog.Catalog;
 @EqualsAndHashCode
 public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
 
+    private static final long serialVersionUID = -5803762884192662540L;
+
     public final long id;
     public final long tableId;
     public final long schemaId;

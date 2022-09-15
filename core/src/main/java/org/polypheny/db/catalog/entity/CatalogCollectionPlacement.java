@@ -22,6 +22,8 @@ import javax.annotation.Nullable;
 
 public class CatalogCollectionPlacement implements CatalogObject {
 
+    private static final long serialVersionUID = 4227137255905904785L;
+
     public final int adapter;
     public final long collectionId;
     public final String physicalName;

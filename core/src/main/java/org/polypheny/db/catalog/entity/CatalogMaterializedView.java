@@ -30,7 +30,7 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 
 public class CatalogMaterializedView extends CatalogView {
 
-    private static final long serialVersionUID = -303234050987260484L;
+    private static final long serialVersionUID = -4806256818168368076L;
 
     @Getter
     private final QueryLanguage language;

@@ -61,7 +61,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
     @RequiredArgsConstructor
     public static class CatalogPrimaryKeyColumn implements CatalogObject {
 
-        private static final long serialVersionUID = 5426944084650275437L;
+        private static final long serialVersionUID = -2669773639977732201L;
 
         private final long pkId;
 

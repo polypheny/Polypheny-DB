@@ -31,6 +31,8 @@ import org.polypheny.db.catalog.Catalog.IndexType;
 @EqualsAndHashCode(callSuper = false)
 public final class CatalogIndex implements Serializable {
 
+    private static final long serialVersionUID = -318228681682792406L;
+
     public final long id;
     public final String name;
     public final String physicalName;

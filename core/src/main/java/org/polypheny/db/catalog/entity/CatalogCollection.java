@@ -30,6 +30,8 @@ import org.polypheny.db.catalog.Catalog.EntityType;
 
 public class CatalogCollection implements CatalogObject {
 
+    private static final long serialVersionUID = -6490762948368178584L;
+
     public final long id;
     public final ImmutableList<Integer> placements;
     public final String name;

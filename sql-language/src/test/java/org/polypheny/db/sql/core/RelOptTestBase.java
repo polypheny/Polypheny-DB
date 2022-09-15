@@ -228,11 +228,11 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
         private final String sql;
         private HepProgram preProgram;
         private final HepPlanner hepPlanner;
-        private final ImmutableMap<Hook, Consumer> hooks;
+        private final ImmutableMap<Hook, Consumer<?>> hooks;
         private ImmutableList<Function<Tester, Tester>> transforms;
 
 
-        Sql( String sql, HepProgram preProgram, HepPlanner hepPlanner, ImmutableMap<Hook, Consumer> hooks, ImmutableList<Function<Tester, Tester>> transforms ) {
+        Sql( String sql, HepProgram preProgram, HepPlanner hepPlanner, ImmutableMap<Hook, Consumer<?>> hooks, ImmutableList<Function<Tester, Tester>> transforms ) {
             this.sql = sql;
             this.preProgram = preProgram;
             this.hepPlanner = hepPlanner;
@@ -320,7 +320,7 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
         @SuppressWarnings("unchecked")
         private void check( boolean unchanged ) {
             try ( Closer closer = new Closer() ) {
-                for ( Map.Entry<Hook, Consumer> entry : hooks.entrySet() ) {
+                for ( Map.Entry<Hook, Consumer<?>> entry : hooks.entrySet() ) {
                     closer.add( entry.getKey().addThread( entry.getValue() ) );
                 }
                 Tester t = tester;

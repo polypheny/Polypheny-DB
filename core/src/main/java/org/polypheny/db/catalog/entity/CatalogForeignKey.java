@@ -133,7 +133,7 @@ public final class CatalogForeignKey extends CatalogKey {
     @RequiredArgsConstructor
     public static class CatalogForeignKeyColumn implements CatalogObject {
 
-        private static final long serialVersionUID = -1496390493702171203L;
+        private static final long serialVersionUID = 3287177728197412000L;
 
         private final long tableId;
         private final String foreignKeyName;

@@ -35,7 +35,7 @@ import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 public class CatalogView extends CatalogTable {
 
-    private static final long serialVersionUID = -4453089531698670528L;
+    private static final long serialVersionUID = -4771308114962700515L;
 
     @Getter
     protected final ImmutableMap<Long, ImmutableList<Long>> underlyingTables;

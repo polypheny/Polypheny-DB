@@ -22,6 +22,8 @@ import javax.annotation.Nullable;
 
 public class CatalogGraphPlacement implements CatalogObject {
 
+    private static final long serialVersionUID = -5078411550737889527L;
+
     public final int adapterId;
     public final long graphId;
     public final String physicalName;

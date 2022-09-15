@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 @EqualsAndHashCode
 public class CatalogColumnPlacement implements CatalogObject {
 
-    private static final long serialVersionUID = 3538121146945513108L;
+    private static final long serialVersionUID = 1376394504490481364L;
 
     public final long tableId;
     public final long columnId;

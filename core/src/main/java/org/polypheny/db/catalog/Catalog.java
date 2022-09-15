@@ -96,7 +96,6 @@ import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
-
 public abstract class Catalog {
 
     public static Adapter defaultStore;
@@ -170,7 +169,8 @@ public abstract class Catalog {
     public abstract void restoreColumnPlacements( Transaction transaction );
 
     /**
-     * Restores all views and materialized views after restart
+     * On restart, all AlgNodes used in views and materialized views need to be recreated.
+     * Depending on the query language, different methods are used.
      */
     public abstract void restoreViews( Transaction transaction );
 
@@ -180,9 +180,15 @@ public abstract class Catalog {
     }
 
 
+    /**
+     * Inserts a new user,
+     * if a user with the same name already exists, it throws an error // TODO should it?
+     *
+     * @param name of the user
+     * @param password of the user
+     * @return the id of the created user
+     */
     public abstract int addUser( String name, String password );
-
-    public abstract void setUserSchema( int userId, long schemaId );
 
 
     /**
@@ -1233,11 +1239,11 @@ public abstract class Catalog {
     public abstract long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     /**
-     * Deletes a single partition and all references.
+     * Should only be called from mergePartitions(). Deletes a single partition and all references.
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
-     * @param partitionGroupId The partitionGroupId to be deleted
+     * @param partitionGroupId The partitionId to be deleted
      */
     public abstract void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId );
 
@@ -1382,7 +1388,7 @@ public abstract class Catalog {
     public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
-     * Get a List of all partition name belonging to a specific table
+     * Get a list of all partition name belonging to a specific table
      *
      * @param tableId Table to be queried
      * @return list of all partition names on this table
@@ -1620,7 +1626,7 @@ public abstract class Catalog {
     public abstract CatalogGraphPlacement getGraphPlacement( long graphId, int adapterId );
 
     /**
-     * Removes a  DataPlacement for a given table on a specific store
+     * Removes a DataPlacement for a given table on a specific store
      *
      * @param adapterId adapter where placement should be removed from
      * @param tableId table to retrieve the placement from
