@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,9 +151,9 @@ public class DockerManagerImpl extends DockerManager {
 
 
     @Override
-    public boolean testDockerRunning( int dockerId ) {
+    public DockerStatus probeDockerStatus( int dockerId ) {
         if ( dockerInstances.containsKey( dockerId ) ) {
-            return dockerInstances.get( dockerId ).testDockerRunning( dockerId );
+            return dockerInstances.get( dockerId ).probeDockerStatus( dockerId );
         }
         throw new RuntimeException( "There was a problem retrieving the correct Docker instance." );
     }

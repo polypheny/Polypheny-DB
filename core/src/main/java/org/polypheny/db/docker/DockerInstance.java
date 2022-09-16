@@ -16,6 +16,8 @@
 
 package org.polypheny.db.docker;
 
+import static java.lang.String.format;
+
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.async.ResultCallbackTemplate;
@@ -35,6 +37,15 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import com.google.common.collect.ImmutableList;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -94,7 +105,7 @@ public class DockerInstance extends DockerManager {
         this.instanceId = instanceId;
         this.client = generateClient( this.instanceId );
 
-        dockerRunning = testDockerRunning( client );
+        dockerRunning = probeDocker( client ).isSuccessful();
         RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( dockerRunning );
 
         if ( dockerRunning ) {
@@ -197,12 +208,65 @@ public class DockerInstance extends DockerManager {
     }
 
 
-    private boolean testDockerRunning( DockerClient client ) {
+    private DockerStatus probeDocker( DockerClient client ) {
         try {
-            return null != client.infoCmd().exec();
+            if ( !dockerRunning ) {
+                refreshClient();
+            }
+
+            return new DockerStatus( instanceId, null != client.infoCmd().exec() );
         } catch ( Exception e ) {
-            return false;
+            // something wrong with the connection
+            return getCertStatus();
         }
+    }
+
+
+    private void refreshClient() {
+        this.client = generateClient( instanceId );
+    }
+
+
+    private DockerStatus getCertStatus() {
+        PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
+        if ( !dirManager.checkIfExists( "certs" ) ) {
+            return new DockerStatus(
+                    instanceId,
+                    false,
+                    "Connection certificates are not present, try restarting the Docker container." );
+        }
+
+        if ( !dirManager.checkIfExists( "certs/localhost" ) || !dirManager.checkIfExists( "certs/localhost/client" ) ) {
+            return new DockerStatus(
+                    instanceId,
+                    false,
+                    format( "Connection certificates are at the wrong location, try to clear the %s/certs folder and restart the Docker container.",
+                            dirManager.getDefaultPath().getAbsolutePath() ) );
+        }
+
+        try {
+            if ( !dirManager.checkIfExists( "certs/localhost/client/cert.pem" ) ) {
+                return new DockerStatus(
+                        instanceId,
+                        false,
+                        format( "Certificates do not exists, try to clear the %s/certs folder and restart the Docker container.",
+                                dirManager.getDefaultPath().getAbsolutePath() ) );
+            }
+            File certFile = dirManager.registerNewFile( "certs/localhost/client/cert.pem" );
+
+            String ca = Files.readString( certFile.toPath() );
+            X509Certificate cert = (X509Certificate) CertificateFactory.getInstance( "X509" ).generateCertificate( new ByteArrayInputStream( ca.getBytes() ) );
+
+            cert.checkValidity();
+
+        } catch ( CertificateNotYetValidException ex ) {
+            return new DockerStatus( instanceId, false, "Certificate is not yet valid" );
+        } catch ( CertificateExpiredException ex ) {
+            return new DockerStatus( instanceId, false, "Certificate is expired" );
+        } catch ( CertificateException | IOException ex ) {
+            return new DockerStatus( instanceId, false, ex.getMessage() );
+        }
+        return new DockerStatus( instanceId, false, "" );
     }
 
 
@@ -415,7 +479,7 @@ public class DockerInstance extends DockerManager {
         if ( !currentConfig.equals( newConfig ) ) {
             // Something changed and we need to get a new client, which matches the new config
             this.client = generateClient( instanceId );
-            this.dockerRunning = testDockerRunning( instanceId );
+            this.dockerRunning = probeDockerStatus( instanceId ).isSuccessful();
             RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( dockerRunning );
         }
         currentConfig = newConfig;
@@ -423,11 +487,11 @@ public class DockerInstance extends DockerManager {
 
 
     @Override
-    public boolean testDockerRunning( int dockerId ) {
+    public DockerStatus probeDockerStatus( int dockerId ) {
         if ( dockerId != instanceId ) {
             throw new RuntimeException( "There was a problem retrieving the correct DockerInstance" );
         }
-        return testDockerRunning( client );
+        return probeDocker( client );
     }
 
 
