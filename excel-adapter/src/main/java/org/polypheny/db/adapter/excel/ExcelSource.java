@@ -168,6 +168,8 @@ public class ExcelSource extends DataSource {
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
+        String currentSheetName;
+
         if ( exportedColumnCache != null ) {
             return exportedColumnCache;
         }
@@ -217,11 +219,14 @@ public class ExcelSource extends DataSource {
 
                 Workbook workbook = WorkbookFactory.create( fs );
                 Sheet sheet;
+
                 if ( this.sheetName.equals( "" ) ) {
                     sheet = workbook.getSheetAt( 0 );
+                    currentSheetName = workbook.getSheetName( 0 );
 
                 } else {
                     sheet = workbook.getSheet( this.sheetName );
+                    currentSheetName = this.sheetName;
                 }
                 Iterator<Row> rowIterator = sheet.iterator();
 
@@ -313,7 +318,7 @@ public class ExcelSource extends DataSource {
                 throw new RuntimeException( e );
             }
 
-            exportedColumnCache.put( physicalTableName, list );
+            exportedColumnCache.put( physicalTableName + "_" + currentSheetName, list );
         }
         return exportedColumnCache;
     }
