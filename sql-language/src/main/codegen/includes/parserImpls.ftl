@@ -651,6 +651,15 @@ SqlAlterTable SqlAlterTable(Span s) :
         {
             return new SqlAlterTableMergePartitions(s.end(this), table);
         }
+    |
+        <MERGE> <COLUMNS>
+            columnList = ParenthesizedSimpleIdentifierList()
+        <IN>
+            name = SimpleIdentifier()
+            type = DataType()
+            {
+                return new SqlAlterTableMergeColumns(s.end(this), table, columnList, name, type);
+            }
     )
 }
 

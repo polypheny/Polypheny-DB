@@ -6350,6 +6350,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MEASURES: "MEASURES" >
 |   < MEMBER: "MEMBER" >
 |   < MERGE: "MERGE" >
+|   < COLUMNS: "COLUMNS" >
 |   < MESSAGE_LENGTH: "MESSAGE_LENGTH" >
 |   < MESSAGE_OCTET_LENGTH: "MESSAGE_OCTET_LENGTH" >
 |   < MESSAGE_TEXT: "MESSAGE_TEXT" >

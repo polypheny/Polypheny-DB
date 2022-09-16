@@ -214,6 +214,7 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
+import org.polypheny.db.webui.models.requests.MergeColumnsRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
@@ -1722,7 +1723,6 @@ public class Crud implements InformationObserver {
         ctx.json( result );
     }
 
-
     /**
      * Delete a column of a table
      */
@@ -1751,6 +1751,100 @@ public class Crud implements InformationObserver {
         ctx.json( result );
     }
 
+    /**
+     * Add a column to an existing table
+     */
+    void mergeColumns( final Context ctx ) {
+        MergeColumnsRequest request = ctx.bodyAsClass( MergeColumnsRequest.class );
+        Transaction transaction = getTransaction();
+
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
+        // TODO: should be made more sophisticated.
+        DbColumn newColumn = new DbColumn(request.newColumnName, "varchar", true,
+                Arrays.stream( request.columnsToMerge ).mapToInt( o -> o.precision ).sum(), null, null);
+        newColumn.collectionsType = "";
+
+        String as = "";
+        String dataType = newColumn.dataType;
+        if ( newColumn.as != null ) {
+            //for data sources
+            as = "AS \"" + newColumn.as + "\"";
+            dataType = "";
+        }
+        String listOfColumnsToMerge =
+                Arrays.stream( request.columnsToMerge )
+                        .map( s -> "\"" + s.name + "\"")
+                        .collect( Collectors.joining(", "));
+        // TODO: try without toUpperCase
+        String query = String.format( "ALTER TABLE %s MERGE COLUMNS (%s) IN \"%s\" %s %s",
+                tableId, listOfColumnsToMerge, newColumn.name, as, dataType.toUpperCase() );
+
+        //we don't want precision, scale etc. for source columns
+        if ( newColumn.as == null ) {
+            if (newColumn.precision != null ) {
+                query = query + "(" + newColumn.precision;
+                if ( newColumn.scale != null ) {
+                    query = query + "," + newColumn.scale;
+                }
+                query = query + ")";
+            }
+            if ( !newColumn.collectionsType.equals( "" ) ) {
+                query = query + " " + newColumn.collectionsType;
+                int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
+                int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
+                query = query + String.format( "(%d,%d)", dimension, cardinality );
+            }
+            if ( !newColumn.nullable ) {
+                query = query + " NOT NULL";
+            }
+        }
+        if ( newColumn.defaultValue != null && !newColumn.defaultValue.equals( "" ) ) {
+            query = query + " DEFAULT ";
+            if ( newColumn.collectionsType != null && !newColumn.collectionsType.equals( "" ) ) {
+                //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
+                if ( !newColumn.defaultValue.startsWith( newColumn.collectionsType ) ) {
+                    query = query + newColumn.collectionsType;
+                }
+                query = query + newColumn.defaultValue;
+            } else {
+                switch ( newColumn.dataType ) {
+                    case "BIGINT":
+                    case "INTEGER":
+                    case "SMALLINT":
+                    case "TINYINT":
+                    case "FLOAT":
+                    case "DOUBLE":
+                    case "DECIMAL":
+                        newColumn.defaultValue = newColumn.defaultValue.replace( ",", "." );
+                        BigDecimal b = new BigDecimal( newColumn.defaultValue );
+                        query = query + b.toString();
+                        break;
+                    case "VARCHAR":
+                        query = query + String.format( "'%s'", newColumn.defaultValue );
+                        break;
+                    default:
+                        query = query + newColumn.defaultValue;
+                }
+            }
+        }
+        Result result;
+        try {
+            int affectedRows = executeSqlUpdate( transaction, query );
+            transaction.commit();
+            result = new Result( affectedRows ).setGeneratedQuery( query );
+        } catch ( TransactionException | QueryExecutionException e ) {
+            log.error( "Caught exception while adding a column", e );
+            result = new Result( e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+        ctx.json( result );
+    }
 
     /**
      * Get artificially generated index/foreign key/constraint names for placeholders in the UI
