@@ -1761,8 +1761,14 @@ public class DdlManagerImpl extends DdlManager {
     }
 
     @Override
-    public void dropTrigger(long databaseId, Long schemaId, String triggerName) {
-        catalog.dropTrigger(databaseId, schemaId, triggerName);
+    public void dropTrigger(long databaseId, Long schemaId, String triggerName, boolean ifExists) {
+        Object[] key = {databaseId, schemaId, triggerName};
+        Optional<CatalogTrigger> trigger = catalog.getTrigger(key);
+        if(ifExists && trigger.isEmpty()) {
+            return;
+        } else {
+            catalog.dropTrigger(databaseId, schemaId, triggerName);
+        }
     }
 
     private Event mapEventType(String event) {

@@ -67,7 +67,7 @@ public class SqlDropTrigger extends SqlDropObject {
         } catch (UnknownSchemaException | UnknownDatabaseException e) {
             throw new RuntimeException(e);
         }
-        DdlManager.getInstance().dropTrigger(databaseId, schemaId, triggerName);
+        DdlManager.getInstance().dropTrigger(databaseId, schemaId, triggerName, ifExists);
     }
 
 }

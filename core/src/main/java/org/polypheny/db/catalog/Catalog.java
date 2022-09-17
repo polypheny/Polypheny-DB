@@ -1590,6 +1590,8 @@ public abstract class Catalog {
 
     public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName);
 
+    public abstract Optional<CatalogTrigger> getTrigger(Object[] key);
+
 
     public enum TableType {
         TABLE( 1 ),

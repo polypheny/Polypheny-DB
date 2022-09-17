@@ -962,6 +962,11 @@ public class CatalogImpl extends Catalog {
         );
     }
 
+    @Override
+    public Optional<CatalogTrigger> getTrigger(Object[] key) {
+        return Optional.ofNullable(triggerNames.get(key));
+    }
+
     /**
      * Deletes the procedure with the given name in the specified schema.
      *
@@ -1016,11 +1021,11 @@ public class CatalogImpl extends Catalog {
     @Override
     public void dropTrigger(long databaseId, Long schemaId, String triggerName) {
         Object[] triggerKey = {databaseId, schemaId, triggerName};
-        CatalogTrigger catalogTrigger = triggerNames.get(triggerKey);
-        if(catalogTrigger == null) {
-            throw new RuntimeException("Given trigger doesn't exist in Catalog: " + triggerName);
-        }
         synchronized (this) {
+            CatalogTrigger catalogTrigger = triggerNames.get(triggerKey);
+            if(catalogTrigger == null) {
+                throw new RuntimeException("Given trigger doesn't exist in Catalog: " + triggerName);
+            }
             triggers.remove(catalogTrigger.getTriggerId());
             triggerNames.remove(triggerKey);
             triggerNodes.remove(catalogTrigger.getTriggerId());

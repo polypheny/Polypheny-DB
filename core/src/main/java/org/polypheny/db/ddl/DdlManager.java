@@ -500,11 +500,12 @@ public abstract class DdlManager {
     /**
      * Delete a trigger
      *
-     * @param schemaId the id of schema
+     * @param databaseId  the id of the database
+     * @param schemaId    the id of schema
      * @param triggerName the name of the new trigger
-     * @param databaseId the id of the database
+     * @param ifExists    gracefully handle missing trigger
      */
-    public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName);
+    public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName, boolean ifExists);
 
     /**
      * Add new partitions for the column
