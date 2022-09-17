@@ -1756,12 +1756,12 @@ public class DdlManagerImpl extends DdlManager {
             } catch (UnknownTableException e) {
                 throw new RuntimeException(e);
             }
-            catalog.createTrigger(databaseId, schemaId, triggerName, catalogTable, polyphenyEvent, query, algNode, language);
+            catalog.createTrigger(databaseId, schemaId, triggerName, catalogTable.id, polyphenyEvent, query, algNode, language);
         }
     }
 
     @Override
-    public void dropTrigger(long databaseId, Long schemaId, String triggerName, boolean ifExists) {
+    public void dropTrigger(long databaseId, Long schemaId, String triggerName, boolean ifExists) throws UnknownTriggerException {
         Object[] key = {databaseId, schemaId, triggerName};
         Optional<CatalogTrigger> trigger = catalog.getTrigger(key);
         if(ifExists && trigger.isEmpty()) {

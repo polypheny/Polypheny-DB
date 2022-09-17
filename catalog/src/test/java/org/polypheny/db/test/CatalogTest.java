@@ -17,22 +17,14 @@
 package org.polypheny.db.test;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.IndexType;
@@ -40,21 +32,13 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.CatalogImpl;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.Event;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.type.PolyType;
+
+import static org.junit.Assert.*;
 
 
 @Slf4j
@@ -445,6 +429,28 @@ public class CatalogTest {
         }
         stopWatch.stop();
         log.warn( "{}ms iterations needed, means 1 needed {}ms", stopWatch.getTime(), stopWatch.getTime() / 1000 );
+    }
+
+    @Test
+    public void testTrigger() throws UnknownTriggerException {
+        // test add trigger
+        catalog.createTrigger( 1, 1, "myTrigger", 1L, Event.CREATE, "SELECT * FROM myTable", null, Catalog.QueryLanguage.SQL);
+        Object[] key = {1L, 1L, "myTrigger"};
+        Optional<CatalogTrigger> trigger = catalog.getTrigger(key);
+        assertTrue(trigger.isPresent());
+
+        // test remove present
+        catalog.dropTrigger(1, 1L, "myTrigger");
+        Optional<CatalogTrigger> triggerRemoved = catalog.getTrigger(key);
+        assertTrue(triggerRemoved.isEmpty());
+
+        // test remove missing
+        try {
+            catalog.dropTrigger(1, 1L, "myTrigger");
+            fail("Expected a UnknownTriggerException to be thrown");
+        } catch (UnknownTriggerException e) {
+            assertEquals(e.getMessage(), "There is no trigger with name 'myTrigger' in schema '1' of database '1'");
+        }
     }
 
 

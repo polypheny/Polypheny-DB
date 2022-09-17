@@ -505,7 +505,7 @@ public abstract class DdlManager {
      * @param triggerName the name of the new trigger
      * @param ifExists    gracefully handle missing trigger
      */
-    public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName, boolean ifExists);
+    public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName, boolean ifExists) throws UnknownTriggerException;
 
     /**
      * Add new partitions for the column

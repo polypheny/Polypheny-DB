@@ -113,13 +113,18 @@ public class MqlMockCatalog extends MockCatalog {
     }
 
     @Override
-    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, AlgNode algNode, QueryLanguage language) {
+    public void createTrigger(long databaseId, long schemaId, String triggerName, Long tableId, Event event, String query, AlgNode algNode, QueryLanguage language) {
 
     }
 
     @Override
     public void dropTrigger(long databaseId, Long schemaId, String triggerName) {
 
+    }
+
+    @Override
+    public Optional<CatalogTrigger> getTrigger(Object[] key) {
+        return Optional.empty();
     }
 
 

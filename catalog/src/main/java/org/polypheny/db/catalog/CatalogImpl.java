@@ -1000,16 +1000,16 @@ public class CatalogImpl extends Catalog {
      * @param databaseId  The id of the database
      * @param schemaId    The id of the schema
      * @param triggerName The name of the trigger
-     * @param table       The referenced table
+     * @param tableId     The id of the referenced table
      * @param event       The event on which to execute the trigger
      * @param query       The query to run
      * @param algNode     The logical representation of the query to run
      * @param language    The language in which the query was written
      */
     @Override
-    public void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, AlgNode algNode, QueryLanguage language) {
+    public void createTrigger(long databaseId, long schemaId, String triggerName, Long tableId, Event event, String query, AlgNode algNode, QueryLanguage language) {
         long id = procedureIdBuilder.getAndIncrement();
-        CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, table.id, language, query);
+        CatalogTrigger trigger = new CatalogTrigger(schemaId, triggerName, databaseId, id, event, tableId, language, query);
         synchronized (this) {
             triggers.put(id, trigger);
             Object[] key = {databaseId, schemaId, triggerName};
@@ -1019,12 +1019,12 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void dropTrigger(long databaseId, Long schemaId, String triggerName) {
+    public void dropTrigger(long databaseId, Long schemaId, String triggerName) throws UnknownTriggerException {
         Object[] triggerKey = {databaseId, schemaId, triggerName};
         synchronized (this) {
             CatalogTrigger catalogTrigger = triggerNames.get(triggerKey);
             if(catalogTrigger == null) {
-                throw new RuntimeException("Given trigger doesn't exist in Catalog: " + triggerName);
+                throw new UnknownTriggerException(databaseId, schemaId, triggerName);
             }
             triggers.remove(catalogTrigger.getTriggerId());
             triggerNames.remove(triggerKey);

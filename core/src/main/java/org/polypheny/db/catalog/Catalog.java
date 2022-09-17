@@ -1586,9 +1586,9 @@ public abstract class Catalog {
 
     public abstract void deleteProcedure(long databaseId, long schemaId, String procedureName ) throws UnknownProcedureException;
 
-    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, CatalogTable table, Event event, String query, AlgNode algNode, QueryLanguage language);
+    public abstract void createTrigger(long databaseId, long schemaId, String triggerName, Long tableId, Event event, String query, AlgNode algNode, QueryLanguage language);
 
-    public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName);
+    public abstract void dropTrigger(long databaseId, Long schemaId, String triggerName) throws UnknownTriggerException;
 
     public abstract Optional<CatalogTrigger> getTrigger(Object[] key);
 

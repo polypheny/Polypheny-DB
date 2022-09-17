@@ -21,16 +21,15 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTriggerException;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.sql.sql.*;
+import org.polypheny.db.sql.sql.SqlIdentifier;
+import org.polypheny.db.sql.sql.SqlOperator;
+import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
-
-import static org.polypheny.db.util.Static.RESOURCE;
 
 
 /**
@@ -67,7 +66,11 @@ public class SqlDropTrigger extends SqlDropObject {
         } catch (UnknownSchemaException | UnknownDatabaseException e) {
             throw new RuntimeException(e);
         }
-        DdlManager.getInstance().dropTrigger(databaseId, schemaId, triggerName, ifExists);
-    }
 
+        try {
+            DdlManager.getInstance().dropTrigger(databaseId, schemaId, triggerName, ifExists);
+        } catch (UnknownTriggerException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
