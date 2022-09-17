@@ -2650,8 +2650,13 @@ public class DdlManagerImpl extends DdlManager {
     }
 
     @Override
-    public void dropProcedure(Long databaseId, Long schemaId, String procedureName) throws UnknownProcedureException {
-        catalog.deleteProcedure(databaseId, schemaId, procedureName);
+    public void dropProcedure(Long databaseId, Long schemaId, String procedureName, boolean ifExists) throws UnknownProcedureException {
+        Optional<CatalogProcedure> procedure = catalog.getProcedure(new Object[]{databaseId, schemaId, procedureName});
+        if(ifExists && procedure.isEmpty()){
+            return;
+        } else {
+            catalog.deleteProcedure(databaseId, schemaId, procedureName);
+        }
     }
 
 

@@ -587,7 +587,7 @@ public abstract class DdlManager {
     /**
      * Drop a procedure
      */
-    public abstract void dropProcedure(Long databaseId, Long schemaId, String procedureName) throws UnknownProcedureException;
+    public abstract void dropProcedure(Long databaseId, Long schemaId, String procedureName, boolean ifExists) throws UnknownProcedureException;
 
     /**
      * Set a option

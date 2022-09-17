@@ -973,18 +973,19 @@ public class CatalogImpl extends Catalog {
     @Override
     public void deleteProcedure(long databaseId, long schemaId, String procedureName ) throws UnknownProcedureException {
         Objects.requireNonNull(procedureName);
-        CatalogProcedure deletedProcedure;
         synchronized (this) {
             Object[] key = {databaseId, schemaId, procedureName};
-            deletedProcedure = procedureNames.remove(key);
-            if(deletedProcedure == null) {
+            CatalogProcedure procedureNamesEntry = procedureNames.get(key);
+            CatalogProcedure proceduresEntry = procedures.get(procedureNamesEntry.getProcedureId());
+            AlgNode procedureNodesEntry = procedureNodes.get(procedureNamesEntry);
+            if(procedureNamesEntry == null ||
+            proceduresEntry == null ||
+            procedureNodesEntry == null) {
                 throw new UnknownProcedureException(databaseId, schemaId, procedureName);
             }
-            CatalogProcedure removedProcedure = procedures.remove(deletedProcedure.getProcedureId());
-            if(removedProcedure == null) {
-                throw new RuntimeException(String.format("Procedure that should have existed wasn't found: %s", deletedProcedure.getProcedureId()));
-            }
-            procedureNodes.remove(key);
+            procedureNames.remove(key);
+            procedures.remove(procedureNamesEntry.getProcedureId());
+            procedureNodes.remove(procedureNamesEntry.getProcedureId());
         }
     }
 

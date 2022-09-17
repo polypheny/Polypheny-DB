@@ -65,7 +65,7 @@ public class SqlDropProcedure extends SqlDropObject {
                 schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 procedureName = name.names.get(0);
             }
-        DdlManager.getInstance().dropProcedure(databaseId, schemaId, procedureName);
+        DdlManager.getInstance().dropProcedure(databaseId, schemaId, procedureName, ifExists);
     } catch (UnknownDatabaseException | UnknownSchemaException | UnknownProcedureException e) {
             throw new RuntimeException(e);
         }
