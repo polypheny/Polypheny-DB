@@ -69,15 +69,15 @@ public class ProcedureTest {
     }
 
     private void removeTestOneParam(Statement statement) throws SQLException {
-        statement.executeUpdate( "DROP TRIGGER trigger_proceduretest_spOneParamVariantA" );
-        statement.executeUpdate( "DROP VIEW v_proceduretest_spOneParam" );
-        statement.executeUpdate( "DROP PROCEDURE spOneParam" );
+        statement.executeUpdate( "DROP TRIGGER EXISTS trigger_proceduretest_spOneParamVariantA" );
+        statement.executeUpdate( "DROP VIEW EXISTS v_proceduretest_spOneParam" );
+        statement.executeUpdate( "DROP PROCEDURE EXISTS spOneParam" );
     }
 
     private void removeTestTwoParams(Statement statement) throws SQLException {
-        statement.executeUpdate( "DROP TRIGGER trigger_proceduretest_spTwoParamVariantA" );
-        statement.executeUpdate( "DROP VIEW v_proceduretest_spTwoParam" );
-        statement.executeUpdate( "DROP PROCEDURE spToParam" );
+        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spTwoParamVariantA" );
+        statement.executeUpdate( "DROP VIEW EXISTS v_proceduretest_spTwoParam" );
+        statement.executeUpdate( "DROP PROCEDURE EXISTS spToParam" );
     }
 
     private void testOneParam(Statement statement) throws SQLException {
@@ -98,9 +98,9 @@ public class ProcedureTest {
 
     private void removeTestNoParams(Statement statement) throws SQLException {
         // call fails
-        statement.executeUpdate( "DROP TRIGGER trigger_proceduretest_spNoParamVariantA" );
-        statement.executeUpdate( "DROP VIEW v_proceduretest_spNoParam" );
-        statement.executeUpdate( "DROP PROCEDURE spNoParam" );
+        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spNoParamVariantA" );
+        statement.executeUpdate( "DROP VIEW IF EXISTS v_mytable3_spnoparam" );
+        statement.executeUpdate( "DROP PROCEDURE IF EXISTS spNoParam" );
     }
 
     private void testNoParams(Statement statement) throws SQLException {
