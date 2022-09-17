@@ -69,25 +69,29 @@ public class ProcedureTest {
     }
 
     private void removeTestOneParam(Statement statement) throws SQLException {
-        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spOneParamVariantA" );
-        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spOneParamVariantB" );
+        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spOneParam" );
         statement.executeUpdate( "DROP VIEW IF EXISTS v_proceduretest_spOneParam" );
         statement.executeUpdate( "DROP PROCEDURE IF EXISTS spOneParam" );
     }
 
     private void testOneParam(Statement statement) throws SQLException {
         // create procedure
-        statement.executeUpdate("CREATE PROCEDURE spOneParam $ insert into proceduretest VALUES(101, 'Harold') $");
+        statement.executeUpdate("CREATE PROCEDURE spOneParam $ insert into proceduretest VALUES(:id, 'spOneParam') $");
 
         // create view
         statement.executeUpdate( "CREATE VIEW v_proceduretest_spOneParam as select id, name from proceduretest" );
 
         // create trigger
-        statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spOneParamVariantA ON v_proceduretest_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\"" );
-        statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spOneParamVariantB ON v_proceduretest_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\" id=>:id" );
+        statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spOneParam ON v_proceduretest_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\" id=>:id" );
 
         // invoke trigger
-        statement.executeUpdate( "insert into v_proceduretest_spOneParam values(999, '999')");
+        statement.executeUpdate( "insert into v_proceduretest_spOneParam values(110, 'spOneParam')");
+
+        TestHelper.checkResultSet(
+                statement.executeQuery( "SELECT * FROM proceduretest" ),
+                ImmutableList.of(
+                        new Object[]{ 110, "spOneParam"} )
+        );
 
     }
 
@@ -99,7 +103,7 @@ public class ProcedureTest {
 
     private void testTwoParams(Statement statement) throws SQLException {
         // create procedure
-        statement.executeUpdate("CREATE PROCEDURE spTwoParam $ insert into proceduretest VALUES(101, 'Harold') $");
+        statement.executeUpdate("CREATE PROCEDURE spTwoParam $ insert into proceduretest VALUES(:id, :name) $");
 
         // create view
         statement.executeUpdate( "CREATE VIEW v_proceduretest_spTwoParam as select id, name from proceduretest" );
@@ -108,7 +112,14 @@ public class ProcedureTest {
         statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spTwoParam ON v_proceduretest_spTwoParam  AFTER INSERT $ exec Procedure \"APP.public.spTwoParam\" id=>:id, name=>:name" );
 
         // invoke trigger
-        statement.executeUpdate( "insert into v_proceduretest_spTwoParam values(999, '999')");
+        statement.executeUpdate( "insert into v_proceduretest_spTwoParam values(222, 'spTwoParams')");
+
+        TestHelper.checkResultSet(
+                statement.executeQuery( "SELECT * FROM proceduretest" ),
+                ImmutableList.of(
+                        new Object[]{ 222, "spTwoParams" }
+                )
+        );
 
     }
 
