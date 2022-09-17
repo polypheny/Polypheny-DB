@@ -977,10 +977,10 @@ public class CatalogImpl extends Catalog {
             Object[] key = {databaseId, schemaId, procedureName};
             CatalogProcedure procedureNamesEntry = procedureNames.get(key);
             CatalogProcedure proceduresEntry = procedures.get(procedureNamesEntry.getProcedureId());
-            AlgNode procedureNodesEntry = procedureNodes.get(procedureNamesEntry);
+            AlgNode procedureNodesEntry = procedureNodes.get(procedureNamesEntry.getProcedureId());
             if(procedureNamesEntry == null ||
-            proceduresEntry == null ||
-            procedureNodesEntry == null) {
+                proceduresEntry == null ||
+                procedureNodesEntry == null) {
                 throw new UnknownProcedureException(databaseId, schemaId, procedureName);
             }
             procedureNames.remove(key);
