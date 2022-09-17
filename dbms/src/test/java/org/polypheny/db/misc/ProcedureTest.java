@@ -55,51 +55,68 @@ public class ProcedureTest {
                 try {
                     testNoParams(statement);
                     statement.executeUpdate( "TRUNCATE TABLE proceduretest" );
-                    //testOneParam(statement);
-                    //statement.executeUpdate( "TRUNCATE TABLE proceduretest" );
-                    //testTwoParams(statement);
+                    testOneParam(statement);
+                    statement.executeUpdate( "TRUNCATE TABLE proceduretest" );
+                    testTwoParams(statement);
                 } finally {
                     removeTestNoParams(statement);
+                    removeTestOneParam(statement);
+                    removeTestTwoParams(statement);
                     statement.executeUpdate( "DROP TABLE proceduretest" );
-                    //removeTestOneParam(statement);
-                    //removeTestTwoParams(statement);
                 }
             }
         }
     }
 
     private void removeTestOneParam(Statement statement) throws SQLException {
-        statement.executeUpdate( "DROP TRIGGER EXISTS trigger_proceduretest_spOneParamVariantA" );
-        statement.executeUpdate( "DROP VIEW EXISTS v_proceduretest_spOneParam" );
-        statement.executeUpdate( "DROP PROCEDURE EXISTS spOneParam" );
-    }
-
-    private void removeTestTwoParams(Statement statement) throws SQLException {
-        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spTwoParamVariantA" );
-        statement.executeUpdate( "DROP VIEW EXISTS v_proceduretest_spTwoParam" );
-        statement.executeUpdate( "DROP PROCEDURE EXISTS spToParam" );
+        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spOneParamVariantA" );
+        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spOneParamVariantB" );
+        statement.executeUpdate( "DROP VIEW IF EXISTS v_proceduretest_spOneParam" );
+        statement.executeUpdate( "DROP PROCEDURE IF EXISTS spOneParam" );
     }
 
     private void testOneParam(Statement statement) throws SQLException {
         // create procedure
-        statement.executeUpdate("CREATE PROCEDURE spNoParam $ insert into proceduretest VALUES(101, 'Harold') $");
+        statement.executeUpdate("CREATE PROCEDURE spOneParam $ insert into proceduretest VALUES(101, 'Harold') $");
 
         // create view
-        statement.executeUpdate( "CREATE VIEW v_mytable3_spOneParam as select id, name from proceduretest" );
+        statement.executeUpdate( "CREATE VIEW v_proceduretest_spOneParam as select id, name from proceduretest" );
 
         // create trigger
-        statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spOneParamVariantA ON v_mytable3_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\"" );
-        statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spOneParamVariantB ON v_mytable3_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\" id=>:id" );
+        statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spOneParamVariantA ON v_proceduretest_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\"" );
+        statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spOneParamVariantB ON v_proceduretest_spOneParam  AFTER INSERT $ exec Procedure \"APP.public.spOneParam\" id=>:id" );
 
         // invoke trigger
-        statement.executeUpdate( "insert into v_mytable3_spOneParam values(999, '999')");
+        statement.executeUpdate( "insert into v_proceduretest_spOneParam values(999, '999')");
+
+    }
+
+    private void removeTestTwoParams(Statement statement) throws SQLException {
+        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spTwoParam" );
+        statement.executeUpdate( "DROP VIEW IF EXISTS v_proceduretest_spTwoParam" );
+        statement.executeUpdate( "DROP PROCEDURE IF EXISTS spTwoParam" );
+    }
+
+    private void testTwoParams(Statement statement) throws SQLException {
+        // create procedure
+        statement.executeUpdate("CREATE PROCEDURE spTwoParam $ insert into proceduretest VALUES(101, 'Harold') $");
+
+        // create view
+        statement.executeUpdate( "CREATE VIEW v_proceduretest_spTwoParam as select id, name from proceduretest" );
+
+        // create trigger
+        statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spTwoParam ON v_proceduretest_spTwoParam  AFTER INSERT $ exec Procedure \"APP.public.spTwoParam\" id=>:id, name=>:name" );
+
+        // invoke trigger
+        statement.executeUpdate( "insert into v_proceduretest_spTwoParam values(999, '999')");
 
     }
 
     private void removeTestNoParams(Statement statement) throws SQLException {
         // call fails
         statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spNoParamVariantA" );
-        statement.executeUpdate( "DROP VIEW IF EXISTS v_mytable3_spnoparam" );
+        statement.executeUpdate( "DROP TRIGGER IF EXISTS trigger_proceduretest_spNoParamVariantB" );
+        statement.executeUpdate( "DROP VIEW IF EXISTS v_proceduretest_spNoParam" );
         statement.executeUpdate( "DROP PROCEDURE IF EXISTS spNoParam" );
     }
 
@@ -108,14 +125,14 @@ public class ProcedureTest {
         statement.executeUpdate("CREATE PROCEDURE spNoParam $ insert into proceduretest VALUES(101, 'Harold') $");
 
         // create view
-        statement.executeUpdate( "CREATE VIEW v_mytable3_spNoParam as select id, name from proceduretest" );
+        statement.executeUpdate( "CREATE VIEW v_proceduretest_spNoParam as select id, name from proceduretest" );
 
         // create trigger
-        statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spNoParamVariantA ON v_mytable3_spNoParam  AFTER INSERT $ exec Procedure \"APP.public.spNoParam\"" );
-        statement.executeUpdate( "CREATE TRIGGER public trigger_mytable3_spNoParamVariantB ON v_mytable3_spNoParam  AFTER INSERT $ exec Procedure \"APP.public.spNoParam\" id=>:id" );
+        statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spNoParamVariantA ON v_proceduretest_spNoParam  AFTER INSERT $ exec Procedure \"APP.public.spNoParam\"" );
+        statement.executeUpdate( "CREATE TRIGGER public trigger_proceduretest_spNoParamVariantB ON v_proceduretest_spNoParam  AFTER INSERT $ exec Procedure \"APP.public.spNoParam\" id=>:id" );
 
         // invoke trigger
-        statement.executeUpdate( "insert into v_mytable3_spNoParam values(999, '999')");
+        statement.executeUpdate( "insert into v_proceduretest_spNoParam values(999, '999')");
 
         // Checks
         TestHelper.checkResultSet(
