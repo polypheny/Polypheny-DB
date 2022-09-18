@@ -184,6 +184,10 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 LogicalProcedureExecution execution = LogicalProcedureExecution.create(logicalProcedureExecution.getInput(), insertParameters);
                 AlgNode visit = visit(execution);
                 parameterizedNodes.add(visit);
+            } else if (triggerInput instanceof LogicalTableModify) {
+                LogicalTableModify tableModify = (LogicalTableModify) triggerInput;
+                AlgNode visit = visit(tableModify);
+                parameterizedNodes.add(visit);
             }
         }
         return parameterizedNodes;
