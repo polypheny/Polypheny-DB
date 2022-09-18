@@ -52,7 +52,7 @@ public class DashboardInformation {
     private long numberOfPendingEvents;
 
     @Getter
-    private final Map<String, AdapterType> availableAdapter = new HashMap<>();
+    private final Map<String, Pair<String, AdapterType>> availableAdapter = new HashMap<>();
 
     @Getter
     private final Map<Long, Pair<String, NamespaceType>> availableSchemas = new HashMap<>();
@@ -81,10 +81,10 @@ public class DashboardInformation {
         this.numberOfPendingEvents = MonitoringServiceProvider.getInstance().getNumberOfElementsInQueue();
 
         catalog.getAdapters().forEach( v -> {
-            this.availableAdapter.put( v.uniqueName, v.type );
+            this.availableAdapter.put( v.uniqueName, Pair.of( v.getAdapterTypeName(), v.type ) );
         } );
         catalog.getSchemas( null, null ).forEach( v -> {
-            availableSchemas.put( v.id, new Pair<>( v.name, v.namespaceType ) );
+            availableSchemas.put( v.id, Pair.of( v.name, v.namespaceType ) );
         } );
     }
 

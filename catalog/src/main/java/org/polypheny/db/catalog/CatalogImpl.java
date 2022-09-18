@@ -3814,8 +3814,7 @@ public class CatalogImpl extends Catalog {
         uniqueName = uniqueName.toLowerCase();
 
         int id = adapterIdBuilder.getAndIncrement();
-        Map<String, String> temp = new HashMap<>();
-        settings.forEach( temp::put );
+        Map<String, String> temp = new HashMap<>( settings );
         CatalogAdapter adapter = new CatalogAdapter( id, uniqueName, clazz, type, temp );
         synchronized ( this ) {
             adapters.put( id, adapter );

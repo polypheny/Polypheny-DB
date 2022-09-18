@@ -39,6 +39,24 @@ public class CatalogAdapter implements CatalogObject {
     public final ImmutableMap<String, String> settings;
     private List<NamespaceType> supportedNamespaces;
 
+    private String adapterTypeName;
+
+
+    public String getAdapterTypeName() {
+        if ( adapterTypeName == null ) {
+            // General settings are provided by the annotations of the adapter class
+            try {
+                AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
+                this.adapterTypeName = annotations.name();
+            } catch ( ClassNotFoundException e ) {
+                throw new RuntimeException( "The provided adapter is not correctly annotated." );
+            }
+        }
+        return adapterTypeName;
+
+
+    }
+
 
     public enum AdapterType {STORE, SOURCE}
 
