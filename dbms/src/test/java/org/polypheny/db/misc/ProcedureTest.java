@@ -45,7 +45,6 @@ public class ProcedureTest {
 
 
     @Test
-    @Ignore
     public void basicTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
