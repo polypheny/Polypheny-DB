@@ -18,8 +18,8 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.polypheny.db.adapter.enumerable.common.EnumerableContextSwitcherRule;
-import org.polypheny.db.adapter.enumerable.graph.EnumerableLpgMatchRule;
-import org.polypheny.db.adapter.enumerable.graph.EnumerableLpgTransformerRule;
+import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgMatchRule;
+import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgTransformerRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;

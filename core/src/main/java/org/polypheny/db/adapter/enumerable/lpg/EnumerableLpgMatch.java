@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.enumerable.graph;
+package org.polypheny.db.adapter.enumerable.lpg;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;

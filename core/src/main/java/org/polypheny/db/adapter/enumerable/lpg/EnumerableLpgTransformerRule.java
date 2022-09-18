@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.enumerable.graph;
+package org.polypheny.db.adapter.enumerable.lpg;
 
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;

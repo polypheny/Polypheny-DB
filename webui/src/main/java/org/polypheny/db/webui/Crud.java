@@ -379,6 +379,8 @@ public class Crud implements InformationObserver {
         }
 
         List<CatalogSchema> schemas = catalog.getSchemas( databaseId, null );
+        // remove unwanted namespaces
+        schemas = schemas.stream().filter( s -> request.dataModels.contains( s.namespaceType ) ).collect( Collectors.toList() );
         for ( CatalogSchema schema : schemas ) {
             SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", getIconName( schema.namespaceType ) );
 
@@ -1057,8 +1059,6 @@ public class Crud implements InformationObserver {
     public void createInitialExploreQuery( final Context ctx ) {
         QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
-        Transaction transaction = getTransaction( queryExplorationRequest.analyze, true );
-        Statement statement = transaction.createStatement();
 
         Result result;
 
@@ -1068,13 +1068,15 @@ public class Crud implements InformationObserver {
             return;
         }
 
-        String query = explore.getSqlStatement();
+        Transaction transaction = getTransaction( queryExplorationRequest.analyze, true, transactionManager, userId, databaseId, "Explore-by-Example" );
+        Statement statement = transaction.createStatement();
         try {
+            String query = explore.getSqlStatement();
             result = executeSqlSelect( statement, queryExplorationRequest, query, false ).setGeneratedQuery( query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
             log.error( "Caught exception while executing a query from the console", e );
-            result = new Result( e ).setGeneratedQuery( query );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {

@@ -59,7 +59,7 @@ import org.polypheny.db.adapter.enumerable.BatchIteratorEnumerable;
 import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
-import org.polypheny.db.adapter.enumerable.graph.EnumerableLpgMatch.MatchEnumerable;
+import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgMatch.MatchEnumerable;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.Modify.Operation;
