@@ -204,6 +204,9 @@ public abstract class DdlManager {
      */
     public abstract void addForeignKey( CatalogTable catalogTable, CatalogTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException;
 
+    // TODO: add comments
+    public abstract void mergeColumns( CatalogTable catalogTable, List<String> columnNamesToMerge, String newColumnName, ColumnTypeInformation type, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException;
+
     /**
      * Adds an index to a table
      *

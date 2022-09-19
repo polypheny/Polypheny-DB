@@ -17,11 +17,20 @@
 package org.polypheny.db.sql.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -33,6 +42,7 @@ import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -97,39 +107,25 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        /*
-        if ( columnsToMerge.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + columnsToMerge.toString() );
-        }
-        */
-
         // Make sure that all adapters are of type store (and not source)
         for ( int storeId : catalogTable.dataPlacements ) {
             getDataStoreInstance( storeId );
         }
 
-        /*
         try {
-            DdlManager.getInstance().addColumn(
-                    column.getSimple(),
+            DdlManager.getInstance().mergeColumns(
                     catalogTable,
-                    beforeColumnName == null ? null : beforeColumnName.getSimple(),
-                    newColumnName == null ? null : newColumnName.getSimple(),
+                    columnsToMerge.getList().stream().map( Node::toString ).collect( Collectors.toList()),
+                    newColumnName.getSimple(),
                     ColumnTypeInformation.fromDataTypeSpec( type ),
-                    nullable,
-                    defaultValue,
                     statement );
-
-
-        } catch ( NotNullAndDefaultValueException e ) {
-            throw CoreUtil.newContextException( column.getPos(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
+        } catch ( UnknownColumnException e ) {
+            throw CoreUtil.newContextException( columnsToMerge.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( ColumnAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( column.getPos(), RESOURCE.columnExists( column.getSimple() ) );
+            throw CoreUtil.newContextException( newColumnName.getPos(), RESOURCE.columnExists( newColumnName.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
-
-         */
     }
 
 }

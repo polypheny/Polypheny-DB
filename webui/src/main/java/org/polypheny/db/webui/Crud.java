@@ -1761,9 +1761,9 @@ public class Crud implements InformationObserver {
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
-        // TODO: should be made more sophisticated.
-        DbColumn newColumn = new DbColumn(request.newColumnName, "varchar", true,
-                Arrays.stream( request.columnsToMerge ).mapToInt( o -> o.precision ).sum(), null, null);
+        boolean nullable = Arrays.stream( request.columnsToMerge ).allMatch( c -> c.nullable );
+        Integer precison = Arrays.stream( request.columnsToMerge ).mapToInt( c -> c.precision ).sum();
+        DbColumn newColumn = new DbColumn(request.newColumnName, "varchar", nullable, precison, null, null);
         newColumn.collectionsType = "";
 
         String as = "";
@@ -1773,13 +1773,13 @@ public class Crud implements InformationObserver {
             as = "AS \"" + newColumn.as + "\"";
             dataType = "";
         }
+
         String listOfColumnsToMerge =
                 Arrays.stream( request.columnsToMerge )
                         .map( s -> "\"" + s.name + "\"")
                         .collect( Collectors.joining(", "));
-        // TODO: try without toUpperCase
         String query = String.format( "ALTER TABLE %s MERGE COLUMNS (%s) IN \"%s\" %s %s",
-                tableId, listOfColumnsToMerge, newColumn.name, as, dataType.toUpperCase() );
+                tableId, listOfColumnsToMerge, newColumn.name, as, dataType );
 
         //we don't want precision, scale etc. for source columns
         if ( newColumn.as == null ) {
@@ -1800,6 +1800,7 @@ public class Crud implements InformationObserver {
                 query = query + " NOT NULL";
             }
         }
+        // TODO: merge the DEFAULT values too.(?)
         if ( newColumn.defaultValue != null && !newColumn.defaultValue.equals( "" ) ) {
             query = query + " DEFAULT ";
             if ( newColumn.collectionsType != null && !newColumn.collectionsType.equals( "" ) ) {

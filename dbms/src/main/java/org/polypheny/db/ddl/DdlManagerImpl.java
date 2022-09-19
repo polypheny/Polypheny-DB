@@ -564,6 +564,63 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
     }
 
+    public void mergeColumns( CatalogTable catalogTable, List<String> columnNamesToMerge, String newColumnName, ColumnTypeInformation type, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
+
+        if ( catalog.checkIfExistsColumn( catalogTable.id, newColumnName ) ) {
+            throw new ColumnAlreadyExistsException( newColumnName, catalogTable.name );
+        }
+
+        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, columnNamesToMerge.get( columnNamesToMerge.size()-1 ) );
+        int position = updateAdjacentPositions( catalogTable, null, afterColumn );
+
+        long columnId = catalog.addColumn(
+                newColumnName,
+                catalogTable.id,
+                position,
+                type.type,
+                type.collectionType,
+                type.precision,
+                type.scale,
+                type.dimension,
+                type.cardinality,
+                true, // TODO: value is missing
+                Collation.getDefaultCollation()
+        );
+
+        // TODO: get DEFAULT from parameter
+        // Add default value
+        addDefaultValue( "DEFAULT", columnId );
+        CatalogColumn addedColumn = catalog.getColumn  ( columnId );
+
+        // Ask router on which stores this column shall be placed
+        List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
+        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+
+        // Build catalog columns
+        List<CatalogColumn> sourceCatalogColumns = new LinkedList<>();
+        for ( String columnName : columnNamesToMerge ) {
+            sourceCatalogColumns.add( catalog.getColumn( catalogTable.id, columnName ) );
+        }
+        CatalogColumn targetCatalogColumn = catalog.getColumn( catalogTable.id, newColumnName );
+
+        // Add column on underlying data stores and insert default value
+        for ( DataStore store : stores ) {
+            catalog.addColumnPlacement(
+                    store.getAdapterId(),
+                    addedColumn.id,
+                    PlacementType.AUTOMATIC,
+                    null, // Will be set later
+                    null, // Will be set later
+                    null // Will be set later
+            );//Not a valid partitionID --> placeholder
+            AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
+            // Call migrator
+            dataMigrator.mergeColumns( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), sourceCatalogColumns, targetCatalogColumn);
+        }
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+    }
 
     @Override
     public void addIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {

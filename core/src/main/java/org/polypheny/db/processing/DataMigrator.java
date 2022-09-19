@@ -75,6 +75,12 @@ public interface DataMigrator {
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
+    void mergeColumns(
+            Transaction transaction,
+            CatalogAdapter store,
+            List<CatalogColumn> sourceColumns,
+            CatalogColumn targetColumn);
+
     AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
     //is used within copyData

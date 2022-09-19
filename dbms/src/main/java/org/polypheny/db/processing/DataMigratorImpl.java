@@ -374,6 +374,52 @@ public class DataMigratorImpl implements DataMigrator {
         return algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
     }
 
+    private AlgRoot buildUpdateStatementForMerge( Statement statement, CatalogColumnPlacement to, long partitionId ) {
+        List<String> qualifiedTableName = ImmutableList.of(
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        to.adapterUniqueName,
+                        to.getLogicalSchemaName(),
+                        to.physicalSchemaName ),
+                        to.getLogicalTableName() + "_" + partitionId );
+        AlgOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
+        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+        AlgOptCluster cluster = AlgOptCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
+        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+        AlgBuilder builder = AlgBuilder.create( statement, cluster );
+        builder.scan( qualifiedTableName );
+
+        List<String> columnNames = new LinkedList<>();
+        List<RexNode> values = new LinkedList<>();
+
+        CatalogColumn catalogColumn = Catalog.getInstance().getColumn( to.columnId );
+        columnNames.add( to.getLogicalColumnName() );
+        values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
+
+        builder.projectPlus( values );
+
+        AlgNode node = modifiableTable.toModificationAlg(
+                cluster,
+                physical,
+                statement.getTransaction().getCatalogReader(),
+                builder.build(),
+                Operation.UPDATE,
+                columnNames,
+                values,
+                false
+        );
+        AlgRoot algRoot = AlgRoot.of( node, Kind.UPDATE );
+        AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
+                AlgBuilder.create( statement, algRoot.alg.getCluster() ),
+                algRoot.alg.getCluster().getRexBuilder(),
+                algRoot.alg::getCluster,
+                true );
+        return algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
+    }
+
 
     @Override
     public AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution ) {
@@ -679,6 +725,36 @@ public class DataMigratorImpl implements DataMigrator {
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
+    }
+
+
+    @Override
+    public void mergeColumns( Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn ) {
+        CatalogTable table = Catalog.getInstance().getTable( sourceColumns.get( 0 ).tableId );
+
+        // Check Lists
+        List<CatalogColumnPlacement> sourceColumnPlacements = new LinkedList<>();
+        for ( CatalogColumn catalogColumn : sourceColumns ) {
+            sourceColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
+        }
+
+        CatalogColumnPlacement targetColumnPlacement = Catalog.getInstance().getColumnPlacement( store.id, targetColumn.id );
+
+        Statement sourceStatement = transaction.createStatement();
+        Statement targetStatement = transaction.createStatement();
+
+        Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
+        placementDistribution.put(
+                table.partitionProperty.partitionIds.get( 0 ),
+                selectSourcePlacements( table, sourceColumns, -1) );
+
+        Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( placementDistribution );
+        subDistribution.keySet().retainAll( Arrays.asList( table.partitionProperty.partitionIds.get( 0 )  ) );
+
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
+        AlgRoot targetAlg = buildUpdateStatementForMerge( sourceStatement, targetColumnPlacement, table.partitionProperty.partitionIds.get( 0 ) );
+
+        executeQuery( sourceColumns, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
     }
 
 }
