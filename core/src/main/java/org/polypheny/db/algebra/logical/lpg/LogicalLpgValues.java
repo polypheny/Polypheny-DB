@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -65,7 +66,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     /**
      * Subclass of {@link LpgValues} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
+    public LogicalLpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet, nodes, edges, values, rowType );
         this.values = values;
 

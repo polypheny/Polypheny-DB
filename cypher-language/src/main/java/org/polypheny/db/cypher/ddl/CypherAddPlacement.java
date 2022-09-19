@@ -69,15 +69,19 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
                 .map( store -> (DataStore) adapterManager.getAdapter( store ) )
                 .collect( Collectors.toList() );
 
+        if ( !adapterManager.getAdapters().containsKey( store ) ) {
+            throw new RuntimeException( "The targeted store does not exist." );
+        }
+
         if ( graphs.size() != 1 ) {
-            throw new RuntimeException( "Error while adding graph placement" );
+            throw new RuntimeException( "Error while adding graph placement." );
         }
 
         if ( graphs.get( 0 ).placements.stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
             throw new RuntimeException( "Could not create placement of graph as it already exists." );
         }
 
-        DdlManager.getInstance().addGraphDatabasePlacement( graphs.get( 0 ).id, dataStores, true, statement );
+        DdlManager.getInstance().addGraphPlacement( graphs.get( 0 ).id, dataStores, true, statement );
     }
 
 }

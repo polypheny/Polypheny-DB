@@ -16,10 +16,12 @@
 
 package org.polypheny.db.routing;
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -45,5 +47,7 @@ public interface DmlRouter {
     AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
 
     AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId );
+
+    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, CatalogGraphDatabase catalogGraph, List<Integer> placements );
 
 }

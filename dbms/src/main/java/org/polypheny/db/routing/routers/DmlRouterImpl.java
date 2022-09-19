@@ -867,17 +867,23 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement ) {
+        CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
+        return routeGraphDml( alg, statement, catalogGraph, catalogGraph.placements );
+    }
+
+
+    @Override
+    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, CatalogGraphDatabase catalogGraph, List<Integer> placements ) {
         if ( alg.getGraph() == null ) {
             throw new RuntimeException( "Error while routing graph" );
         }
 
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
 
-        CatalogGraphDatabase catalogGraph = Catalog.getInstance().getGraph( alg.getGraph().getId() );
         List<AlgNode> modifies = new ArrayList<>();
         boolean usedSubstitution = false;
 
-        for ( int adapterId : catalogGraph.placements ) {
+        for ( int adapterId : placements ) {
             CatalogAdapter adapter = Catalog.getInstance().getAdapter( adapterId );
             CatalogGraphPlacement graphPlacement = Catalog.getInstance().getGraphPlacement( catalogGraph.id, adapterId );
             String name = PolySchemaBuilder.buildAdapterSchemaName( adapter.uniqueName, catalogGraph.name, graphPlacement.physicalName );

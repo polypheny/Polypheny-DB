@@ -1886,14 +1886,14 @@ public class DdlManagerImpl extends DdlManager {
         // add general graph
         long graphId = catalog.addGraphDatabase( databaseId, graphName, stores, modifiable, ifNotExists, replace );
 
-        addGraphDatabasePlacement( graphId, stores, false, statement );
+        addGraphPlacement( graphId, stores, false, statement );
 
         return graphId;
     }
 
 
     @Override
-    public long addGraphDatabasePlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement ) {
+    public long addGraphPlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement ) {
         try {
             catalog.addGraphLogistics( graphId, stores, onlyPlacement );
         } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
@@ -1903,12 +1903,26 @@ public class DdlManagerImpl extends DdlManager {
         CatalogGraphDatabase graph = catalog.getGraph( graphId );
         PolySchemaBuilder.getInstance().getCurrent();
 
+        List<Integer> preExistingPlacements = graph.placements
+                .stream()
+                .filter( p -> !stores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) )
+                .collect( Collectors.toList() );
+
+        Integer existingAdapterId = preExistingPlacements.isEmpty() ? null : preExistingPlacements.get( 0 );
+
         for ( DataStore store : stores ) {
             catalog.addGraphPlacement( store.getAdapterId(), graphId );
 
             afterGraphPlacementAddLogistics( store, graphId );
 
             store.createGraph( statement.getPrepareContext(), graph );
+
+            if ( existingAdapterId != null ) {
+                // Copy the data to the newly added column placements
+                DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+                dataMigrator.copyGraphData( graph, statement.getTransaction(), existingAdapterId, catalog.getAdapter( store.getAdapterId() ) );
+            }
+
         }
 
         return graphId;

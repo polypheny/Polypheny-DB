@@ -17,7 +17,7 @@
 package org.polypheny.db.algebra.core.lpg;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
+import java.util.Collection;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -40,7 +40,7 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
      * Creates an {@link LpgValues}.
      * Which are either one or multiple nodes or edges, or literal values.
      */
-    public LpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyNode> nodes, List<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
+    public LpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet );
         this.nodes = ImmutableList.copyOf( nodes );
         this.edges = ImmutableList.copyOf( edges );

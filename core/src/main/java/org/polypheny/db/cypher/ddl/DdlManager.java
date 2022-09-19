@@ -575,7 +575,7 @@ public abstract class DdlManager {
     public abstract void replaceGraphAlias( long graphId, String oldAlias, String alias );
 
 
-    public abstract long addGraphDatabasePlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
+    public abstract long addGraphPlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
 
     public abstract void removeGraphDatabasePlacement( long graphId, DataStore dataStores, Statement statement );
 

@@ -460,16 +460,18 @@ public class LanguageCrud {
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface Cypher" );
         AutomaticDdlProcessor cypherProcessor = (AutomaticDdlProcessor) transaction.getProcessor( QueryLanguage.CYPHER );
 
+        List<Result> results = new ArrayList<>();
+
+        InformationManager queryAnalyzer = null;
+        long executionTime = 0;
         try {
             if ( request.analyze ) {
                 transaction.getQueryAnalyzer().setSession( session );
             }
 
-            InformationManager queryAnalyzer = attachAnalyzerIfSpecified( request, observer, transaction );
+            queryAnalyzer = attachAnalyzerIfSpecified( request, observer, transaction );
 
-            List<Result> results = new ArrayList<>();
-
-            long executionTime = System.nanoTime();
+            executionTime = System.nanoTime();
             boolean noLimit = false;
 
             Statement statement = transaction.createStatement();
@@ -522,16 +524,16 @@ public class LanguageCrud {
                 }
                 i++;
             }
-            commitAndFinish( transaction, queryAnalyzer, results, executionTime );
 
-            return results;
 
         } catch ( Throwable t ) {
             printLog( t, request );
-            ArrayList<Result> results = new ArrayList<>();
             attachError( transaction, results, query, t );
-            return results;
         }
+
+        commitAndFinish( transaction, queryAnalyzer, results, executionTime );
+
+        return results;
     }
 
 
@@ -541,8 +543,8 @@ public class LanguageCrud {
 
 
     private static void attachError( Transaction transaction, List<Result> results, String query, Throwable t ) {
-        String msg = t.getMessage() == null ? "" : t.getMessage();
-        Result result = new Result( msg ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+        //String msg = t.getMessage() == null ? "" : t.getMessage();
+        Result result = new Result( t ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
 
         if ( transaction.isActive() ) {
             try {

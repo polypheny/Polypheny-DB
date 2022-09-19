@@ -5015,7 +5015,7 @@ public class CatalogImpl extends Catalog {
     protected void addColumnsToDataPlacement( int adapterId, long tableId, List<Long> columnIds ) {
         CatalogDataPlacement oldDataPlacement = addDataPlacementIfNotExists( adapterId, tableId );
 
-        Set<Long> columnPlacementsOnAdapter = oldDataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toSet() );
+        Set<Long> columnPlacementsOnAdapter = new HashSet<>( oldDataPlacement.columnPlacementsOnAdapter );
 
         // Merges new columnIds to list of already existing placements
         columnPlacementsOnAdapter.addAll( columnIds );
@@ -5025,7 +5025,7 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
                 oldDataPlacement.dataPlacementRole,
-                ImmutableList.copyOf( columnPlacementsOnAdapter.stream().collect( Collectors.toList() ) ),
+                ImmutableList.copyOf( new ArrayList<>( columnPlacementsOnAdapter ) ),
                 ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() )
         );
 

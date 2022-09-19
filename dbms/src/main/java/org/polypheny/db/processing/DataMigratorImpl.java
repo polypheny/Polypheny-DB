@@ -18,7 +18,6 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,14 +37,21 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
@@ -57,17 +63,76 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.RoutingManager;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
+import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
 
 
 @Slf4j
 public class DataMigratorImpl implements DataMigrator {
+
+    @Override
+    public void copyGraphData( CatalogGraphDatabase target, Transaction transaction, Integer existingAdapterId, CatalogAdapter to ) {
+        Statement statement = transaction.createStatement();
+
+        AlgBuilder builder = AlgBuilder.create( statement );
+
+        LogicalLpgScan scan = (LogicalLpgScan) builder.lpgScan( target.id ).build();
+
+        AlgNode routed = RoutingManager.getInstance().getFallbackRouter().handleGraphScan( scan, statement, existingAdapterId );
+
+        PolyImplementation result = statement.getQueryProcessor().prepareQuery(
+                AlgRoot.of( routed, Kind.SELECT ),
+                routed.getCluster().getTypeFactory().builder().build(),
+                true,
+                false,
+                false );
+
+        final Enumerable<Object> enumerable = result.enumerable( statement.getDataContext() );
+
+        Iterator<Object> sourceIterator = enumerable.iterator();
+
+        if ( sourceIterator.hasNext() ) {
+            PolyGraph graph = (PolyGraph) sourceIterator.next();
+
+            // we have a new statement
+            statement = transaction.createStatement();
+            builder = AlgBuilder.create( statement );
+
+            List<AlgDataTypeField> fields = List.of(
+                    new AlgDataTypeFieldImpl( "n", 0, builder.getTypeFactory().createPolyType( PolyType.NODE ) ),
+                    new AlgDataTypeFieldImpl( "e", 1, builder.getTypeFactory().createPolyType( PolyType.EDGE ) ) );
+            LogicalLpgValues values = new LogicalLpgValues( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), graph.getNodes().values(), graph.getEdges().values(), ImmutableList.of(), new AlgRecordType( fields ) );
+
+            LogicalLpgModify modify = new LogicalLpgModify( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), new LogicalGraph( target.id ), values, Operation.INSERT, null, null );
+
+            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeGraphDml( modify, statement, target, List.of( to.id ) );
+
+            result = statement.getQueryProcessor().prepareQuery(
+                    AlgRoot.of( routedModify, Kind.SELECT ),
+                    routedModify.getCluster().getTypeFactory().builder().build(),
+                    true,
+                    false,
+                    false );
+
+            final Enumerable<Object> modifyEnumerable = result.enumerable( statement.getDataContext() );
+
+            Iterator<Object> modifyIterator = modifyEnumerable.iterator();
+            if ( modifyIterator.hasNext() ) {
+                modifyIterator.next();
+            }
+
+        }
+
+
+    }
 
 
     @Override
@@ -108,7 +173,7 @@ public class DataMigratorImpl implements DataMigrator {
             Statement targetStatement = transaction.createStatement();
 
             Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( placementDistribution );
-            subDistribution.keySet().retainAll( Arrays.asList( partitionId ) );
+            subDistribution.keySet().retainAll( List.of( partitionId ) );
             AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
             AlgRoot targetAlg;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
