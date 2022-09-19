@@ -214,6 +214,15 @@ licensee {
     allowDependency('org.glassfish.hk2', 'hk2-utils', '2.6.1') { because 'Eclipse Public License v. 2.0' }
 }
 
+compileJava {
+    dependsOn(":avatica-interface:processResources")
+    dependsOn(":cassandra-adapter:processResources")
+    dependsOn(":catalog:processResources")
+    dependsOn(":cql-language:processResources")
+    dependsOn(":csv-adapter:processResources")
+    dependsOn(":cypher-language:processResources")
+}
+
 
 /**
  * JARs

@@ -40,6 +40,12 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+}
+
 
 /**
  * JARs

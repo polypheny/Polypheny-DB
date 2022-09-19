@@ -70,6 +70,10 @@ task generateParser (type: CompileJavaccTask) {
 }
 compileJava {
     dependsOn("generateParser")
+    dependsOn(":core:processResources")
+    dependsOn(":config:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":sql-language:processResources")
 }
 
 

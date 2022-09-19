@@ -64,6 +64,9 @@ task generateParser(type: CompileJavaccTask) {
 
 compileJava {
     dependsOn("generateParser")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":config:processResources")
 }
 
 

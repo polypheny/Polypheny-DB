@@ -58,6 +58,7 @@ compileJava {
     dependsOn(":sql-language:processResources")
 }
 
+
 sourceSets {
     main {
         java {

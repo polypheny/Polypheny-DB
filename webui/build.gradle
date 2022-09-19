@@ -63,6 +63,11 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":cql-language:processResources")
+    dependsOn(":cypher-language:processResources")
+}
+
 
 // unzip ui files
 task unzipUiFiles(type: Copy) {
