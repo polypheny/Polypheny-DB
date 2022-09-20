@@ -27,7 +27,7 @@ public class GraphRequest extends QueryRequest {
 
     public List<String> nodeIds;
 
-    public List<String> edgeids;
+    public List<String> edgeIds;
 
 
     public GraphRequest( String query, boolean analyze, boolean cache, String language, String database ) {

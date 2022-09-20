@@ -97,7 +97,7 @@ public class LpgOnRelationalTest extends CrossModelTestTemplate {
 
     @Test
     public void simpleAllTest() {
-        CypherTestTemplate.containsRows(
+        assert CypherTestTemplate.containsRows(
                 CypherTestTemplate.execute( "MATCH (n) RETURN n", SCHEMA_NAME ),
                 true,
                 false,

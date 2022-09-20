@@ -49,6 +49,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
 
 
 @Getter
@@ -176,9 +177,9 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         BlockBuilder builder = new BlockBuilder();
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
 
-        final Map<String, Result> nodes = new HashMap<>();
+        final Map<String, Pair<AlgNode, Result>> nodes = new HashMap<>();
         for ( int i = 0; i < getInputs().size(); i++ ) {
-            nodes.put( names.get( i ), implementor.visitChild( this, i, (EnumerableAlg) getInput( i ), pref ) );
+            nodes.put( names.get( i ), Pair.of( getInput( i ), implementor.visitChild( this, i, (EnumerableAlg) getInput( i ), pref ) ) );
         }
 
         //final Result edges = implementor.visitChild( this, 1, (EnumerableAlg) getInput( 1 ), pref );
@@ -193,20 +194,14 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         List<Expression> tableAsNodes = new ArrayList<>();
         int i = 0;
-        for ( Entry<String, Result> entry : nodes.entrySet() ) {
-            Expression exp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), entry.getValue().block );
-            MethodCallExpression transformedTable = Expressions.call( BuiltInMethod.X_MODEL_TABLE_TO_NODE.method, exp, Expressions.constant( entry.getKey() ), EnumUtils.constantArrayList( getInput( i ).getRowType().getFieldNames(), String.class ) );
+        for ( Entry<String, Pair<AlgNode, Result>> entry : nodes.entrySet() ) {
+            Expression exp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), entry.getValue().right.block );
+            MethodCallExpression transformedTable = Expressions.call( BuiltInMethod.X_MODEL_TABLE_TO_NODE.method, exp, Expressions.constant( entry.getKey() ), EnumUtils.constantArrayList( entry.getValue().getKey().getRowType().getFieldNames(), String.class ) );
             tableAsNodes.add( transformedTable );
             i++;
         }
 
         Expression nodesExp = Expressions.call( BuiltInMethod.X_MODEL_MERGE_NODE_COLLECTIONS.method, EnumUtils.expressionList( tableAsNodes ) );
-
-        //Expression nodesExp = builder.append( builder.newName( "nodes_" + System.nanoTime() ), nodes.block );
-        //Expression edgeExp = builder.append( builder.newName( "edges_" + System.nanoTime() ), edges.block );
-
-        //MethodCallExpression nodeCall = Expressions.call( BuiltInMethod.TO_NODE.method, nodesExp );
-        //MethodCallExpression edgeCall = Expressions.call( BuiltInMethod.TO_EDGE.method, edgeExp );
 
         MethodCallExpression call = Expressions.call( BuiltInMethod.TO_GRAPH.method, nodesExp, Expressions.call( Linq4j.class, "emptyEnumerable" ) );
 
