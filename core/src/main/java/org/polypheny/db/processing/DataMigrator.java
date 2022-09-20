@@ -86,6 +86,8 @@ public interface DataMigrator {
     //is used within copyData
     void executeQuery( List<CatalogColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
+    void executeMergeQuery( List<CatalogColumn> sourceColumns, List<CatalogColumn> targetColumns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+
     AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
     AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
