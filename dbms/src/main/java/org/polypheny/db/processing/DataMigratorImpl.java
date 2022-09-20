@@ -89,9 +89,18 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgNode routed = RoutingManager.getInstance().getFallbackRouter().handleGraphScan( scan, statement, existingAdapterId );
 
+        AlgRoot algRoot = AlgRoot.of( routed, Kind.SELECT );
+
+        AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
+                AlgBuilder.create( statement, algRoot.alg.getCluster() ),
+                algRoot.alg.getCluster().getRexBuilder(),
+                algRoot.alg::getCluster,
+                true );
+        algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
+
         PolyImplementation result = statement.getQueryProcessor().prepareQuery(
-                AlgRoot.of( routed, Kind.SELECT ),
-                routed.getCluster().getTypeFactory().builder().build(),
+                algRoot,
+                algRoot.alg.getCluster().getTypeFactory().builder().build(),
                 true,
                 false,
                 false );

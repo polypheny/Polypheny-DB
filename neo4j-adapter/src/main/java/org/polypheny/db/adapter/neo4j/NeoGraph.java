@@ -52,6 +52,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.TranslatableGraph;
@@ -147,7 +148,7 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
     @Override
     public AlgNode toAlg( ToAlgContext context, Graph graph ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ), this );
+        return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ).replace( ModelTrait.GRAPH ), this );
     }
 
 

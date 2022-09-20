@@ -89,7 +89,7 @@ public class PolyphenyDb {
     private final TransactionManager transactionManager = TransactionManagerImpl.getInstance();
 
     @Inject
-    public HelpOption helpOption;
+    public HelpOption<?> helpOption;
 
     @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
     public boolean resetCatalog = false;
