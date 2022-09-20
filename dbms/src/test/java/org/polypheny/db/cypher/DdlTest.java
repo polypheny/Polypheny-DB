@@ -115,6 +115,7 @@ public class DdlTest extends CypherTestTemplate {
 
 
     @Test
+    @Category(CassandraExcluded.class)
     public void deletePlacementTest() throws SQLException {
         try {
             Catalog catalog = Catalog.getInstance();
