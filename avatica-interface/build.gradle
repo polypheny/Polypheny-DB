@@ -49,6 +49,11 @@ sourceSets {
 }
 
 
+compileJava {
+    dependsOn(":core:processResources")
+    dependsOn(":monitoring:processResources")
+}
+
 /**
  * Tests
  */

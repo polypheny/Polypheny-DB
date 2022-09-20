@@ -149,14 +149,14 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgModify modify ) {
-        hashBasis.add( "LogicalGraphModify" );
+        hashBasis.add( modify.getClass().getSimpleName() );
         return super.visit( modify );
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
-        hashBasis.add( "GraphScan#" + scan.getGraph().getId() );
+        hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.getGraph().getId() );
 
         return super.visit( scan );
     }
@@ -164,7 +164,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgFilter filter ) {
-        hashBasis.add( "LogicalGraphFilter" );
+        hashBasis.add( filter.getClass().getSimpleName() );
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
@@ -176,7 +176,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgMatch match ) {
-        hashBasis.add( "LogicalGraphMatch" );
+        hashBasis.add( match.getClass().getSimpleName() );
         match.accept( this.rexShuttle );
         return visitChildren( match );
     }
@@ -184,7 +184,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgProject project ) {
-        hashBasis.add( "LogicalGraphProject#" + project.getProjects().size() );
+        hashBasis.add( project.getClass().getSimpleName() + "#" + project.getProjects().size() );
         super.visit( project );
         project.accept( this.rexShuttle );
         return project;
@@ -193,28 +193,28 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgAggregate aggregate ) {
-        hashBasis.add( "LogicalGraphAggregate#" + aggregate.getAggCallList() );
+        hashBasis.add( aggregate.getClass().getSimpleName() + "#" + aggregate.getAggCallList() );
         return visitChild( aggregate, 0, aggregate.getInput() );
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgSort sort ) {
-        hashBasis.add( "LogicalGraphSort" );
+        hashBasis.add( sort.getClass().getSimpleName() );
         return visitChild( sort, 0, sort.getInput() );
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgUnwind unwind ) {
-        hashBasis.add( "LogicalGraphUnion#" + unwind.index + "#" + unwind.alias );
+        hashBasis.add( unwind.getClass().getSimpleName() + "#" + unwind.index + "#" + unwind.alias );
         return visitChild( unwind, 0, unwind.getInput() );
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgTransformer transformer ) {
-        hashBasis.add( "LogicalGraphTransformer" );
+        hashBasis.add( transformer.getClass().getSimpleName() );
         return visitChildren( transformer );
     }
 

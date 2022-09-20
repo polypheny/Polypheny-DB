@@ -44,8 +44,8 @@ import org.polypheny.db.transaction.Statement;
  */
 public class UiRoutingPageUtil {
 
-    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, AlgNode optimalRelNode, InformationManager queryAnalyzer ) {
-        addPhysicalPlanPage( optimalRelNode, queryAnalyzer );
+    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, AlgNode optimalAlgNode, InformationManager queryAnalyzer ) {
+        addPhysicalPlanPage( optimalAlgNode, queryAnalyzer );
 
         InformationPage page = queryAnalyzer.getPage( "routing" );
         if ( page == null ) {

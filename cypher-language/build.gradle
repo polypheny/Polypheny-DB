@@ -31,11 +31,19 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 
+task generateParser(type: CompileJavaccTask) {
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false"]
+    inputDirectory = file("src/main/codegen")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/cypher/parser")
+}
+
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java", "build/generated-sources"]
+            // srcDirs = ["src/main/java", "build/generated-sources"]
+            srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -55,13 +63,6 @@ sourceSets {
     }
 }
 
-
-task generateParser(type: CompileJavaccTask) {
-    getConventionMapping().map("classpath", { configurations.javacc })
-    arguments = [static: "false"]
-    inputDirectory = file("src/main/codegen")
-    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/cypher/parser")
-}
 
 compileJava {
     dependsOn("generateParser")

@@ -439,7 +439,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
                 AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
                 if ( preparedResult != null ) {
-                    PolyImplementation result = createPolyResult(
+                    PolyImplementation result = createPolyImplementation(
                             preparedResult,
                             parameterizedRoot.kind,
                             optimalNode,
@@ -545,7 +545,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
 
-            PolyImplementation result = createPolyResult(
+            PolyImplementation result = createPolyImplementation(
                     preparedResult,
                     optimalRoot.kind,
                     optimalRoot.alg,
@@ -1257,7 +1257,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PolyImplementation createPolyResult( PreparedResult preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, NamespaceType namespaceType ) {
+    private PolyImplementation createPolyImplementation( PreparedResult preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, NamespaceType namespaceType ) {
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
         return new PolyImplementation(
                 jdbcType,

@@ -111,7 +111,7 @@ public class NeoGraph extends AbstractSchema implements ModifiableGraph, Transla
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
         return new LogicalLpgModify(
                 cluster,
-                cluster.traitSet().replace( Convention.NONE ),
+                traits.replace( Convention.NONE ),
                 graph,
                 input,
                 operation,

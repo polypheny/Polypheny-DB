@@ -43,6 +43,10 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":core:processResources")
+    dependsOn(":sql-language:processResources")
+}
 
 /**
  * JARs

@@ -68,12 +68,14 @@ compileJava {
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
     dependsOn(":monitoring:processResources")
+    dependsOn(":core:processResources")
 }
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java","build/generated-sources"]
+            //srcDirs = ["src/main/java","build/generated-sources"]
+            srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {

@@ -48,6 +48,10 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":core:processResources")
+}
+
 
 /**
  * JARs
