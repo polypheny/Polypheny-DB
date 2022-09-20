@@ -40,6 +40,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
         TestHelper.getInstance();
         CypherTestTemplate.createGraph( GRAPH_NAME );
         CypherTestTemplate.execute( format( "CREATE (n:%s {key: 3})", DATA_LABEL ), GRAPH_NAME );
+        CypherTestTemplate.execute( format( "CREATE (n:%s {key: 4})", DATA_LABEL + 1 ), GRAPH_NAME );
     }
 
 
@@ -55,6 +56,11 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
             // can not test use default comparator method as id is dynamic
             List<Object[]> data = TestHelper.convertResultSetToList( result );
+            assert (data.size() == 1);
+            assert (data.get( 0 ).length == 3);
+
+            result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL + 1 ) );
+            data = TestHelper.convertResultSetToList( result );
             assert (data.size() == 1);
             assert (data.get( 0 ).length == 3);
         } );
