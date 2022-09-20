@@ -17,7 +17,9 @@
 package org.polypheny.db.mql;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -28,11 +30,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.webui.models.Result;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 @Category({ AdapterTestSuite.class })
@@ -66,6 +70,8 @@ public class DdlTest extends MqlTestTemplate {
         execute( "db.createCollection(\"" + collectionName + "\")" );
 
         assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
+
+        execute( String.format( "db.%s.drop()", collectionName ) );
     }
 
 
@@ -95,7 +101,7 @@ public class DdlTest extends MqlTestTemplate {
             assertEquals( collection.placements.size(), 2 );
 
         } finally {
-            execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, placement ) );
+            execute( String.format( "db.%s.drop()", collectionName ) );
             removeStore( placement );
         }
 
@@ -130,6 +136,40 @@ public class DdlTest extends MqlTestTemplate {
             collection = catalog.getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 
             assertEquals( collection.placements.size(), 1 );
+
+            execute( String.format( "db.%s.drop()", collectionName ) );
+
+        } finally {
+            removeStore( placement );
+        }
+    }
+
+
+    @Test
+    public void deletePlacementDataTest() throws SQLException {
+
+        String placement = "store1";
+        final String DATA = "{ \"key\": \"value\", \"key1\": \"value1\"}";
+        try {
+
+            execute( "db.createCollection(\"" + collectionName + "\")" );
+
+            insert( DATA );
+
+            addStore( placement );
+
+            execute( String.format( "db.%s.addPlacement(\"%s\")", collectionName, placement ) );
+
+            execute( String.format( "db.%s.deletePlacement(\"%s\")", collectionName, "hsqldb" ) );
+
+            Result result = find( "{}", "{}" );
+
+            assertTrue(
+                    MongoConnection.checkResultSet(
+                            result,
+                            ImmutableList.of( new Object[]{ DATA } ), true ) );
+
+            execute( String.format( "db.%s.drop()", collectionName ) );
 
         } finally {
             removeStore( placement );

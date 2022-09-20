@@ -1850,8 +1850,8 @@ CypherClause UnwindClause() :
 }
 {
     t=<UNWIND>
-    (<NULL> { e=CypherFactory.newNullLiteral( pos(t) ); }
-    | e=Expression())
+    //(Lookahead(2) <NULL> { e=CypherFactory.newNullLiteral( pos(t) ); }| e=Expression())
+    e=Expression()
     <AS> v=Variable()
     {
         return CypherFactory.createUnwind( pos( t ), e, v );

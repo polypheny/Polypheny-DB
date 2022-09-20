@@ -65,6 +65,9 @@ task generateParser (type: CompileJavaccTask) {
 compileJava {
     dependsOn("generateParser")
     dependsOn(":avatica-interface:processResources")
+    dependsOn(":config:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":monitoring:processResources")
 }
 
 sourceSets {

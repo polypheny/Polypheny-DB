@@ -28,6 +28,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.webui.models.Result;
 
 @Category({ AdapterTestSuite.class })
 public class DdlTest extends CypherTestTemplate {
@@ -131,12 +132,41 @@ public class DdlTest extends CypherTestTemplate {
 
             assertEquals( 2, graph.placements.size() );
 
-            execute( String.format( "DROP PLACEMENT OF %s ON STORE %S", graphName, "store1" ), graphName );
+            execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
 
             execute( "DROP DATABASE " + graphName );
 
         } finally {
+            removeStore( "store1" );
+        }
 
+    }
+
+
+    @Test
+    public void deletePlacementDataTest() throws SQLException {
+        try {
+            execute( "CREATE DATABASE " + graphName );
+
+            execute( DmlInsertTest.CREATE_COMPLEX_GRAPH_2 );
+
+            addStore( "store1" );
+
+            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
+
+            execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
+
+            Result res = execute( "MATCH (n) RETURN n" );
+            assert res.getData().length == 3;
+            assertNode( res, 0 );
+
+            res = execute( "MATCH ()-[r]->() RETURN r" );
+            assert res.getData().length == 3;
+            assertEdge( res, 0 );
+
+            execute( "DROP DATABASE " + graphName );
+
+        } finally {
             removeStore( "store1" );
         }
 

@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -102,14 +103,16 @@ public class DataMigratorImpl implements DataMigrator {
         if ( sourceIterator.hasNext() ) {
             PolyGraph graph = (PolyGraph) sourceIterator.next();
 
+            if ( graph.getEdges().isEmpty() && graph.getNodes().isEmpty() ) {
+                // nothing to copy
+                return;
+            }
+
             // we have a new statement
             statement = transaction.createStatement();
             builder = AlgBuilder.create( statement );
 
-            List<AlgDataTypeField> fields = List.of(
-                    new AlgDataTypeFieldImpl( "n", 0, builder.getTypeFactory().createPolyType( PolyType.NODE ) ),
-                    new AlgDataTypeFieldImpl( "e", 1, builder.getTypeFactory().createPolyType( PolyType.EDGE ) ) );
-            LogicalLpgValues values = new LogicalLpgValues( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), graph.getNodes().values(), graph.getEdges().values(), ImmutableList.of(), new AlgRecordType( fields ) );
+            LogicalLpgValues values = getLogicalLpgValues( builder, graph );
 
             LogicalLpgModify modify = new LogicalLpgModify( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), new LogicalGraph( target.id ), values, Operation.INSERT, null, null );
 
@@ -132,6 +135,22 @@ public class DataMigratorImpl implements DataMigrator {
         }
 
 
+    }
+
+
+    @NotNull
+    private static LogicalLpgValues getLogicalLpgValues( AlgBuilder builder, PolyGraph graph ) {
+        List<AlgDataTypeField> fields = new ArrayList<>();
+        int index = 0;
+        if ( !graph.getNodes().isEmpty() ) {
+            fields.add( new AlgDataTypeFieldImpl( "n", index, builder.getTypeFactory().createPolyType( PolyType.NODE ) ) );
+            index++;
+        }
+        if ( !graph.getEdges().isEmpty() ) {
+            fields.add( new AlgDataTypeFieldImpl( "e", index, builder.getTypeFactory().createPolyType( PolyType.EDGE ) ) );
+        }
+
+        return new LogicalLpgValues( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), graph.getNodes().values(), graph.getEdges().values(), ImmutableList.of(), new AlgRecordType( fields ) );
     }
 
 
