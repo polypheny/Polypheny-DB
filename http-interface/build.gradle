@@ -35,6 +35,8 @@ sourceSets {
 
 compileJava {
     dependsOn(":cypher-language:processResources")
+    dependsOn(":mql-language:processResources")
+    dependsOn(":webui:processResources")
 }
 
 

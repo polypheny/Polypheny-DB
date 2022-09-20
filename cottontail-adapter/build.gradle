@@ -21,7 +21,14 @@ dependencies {
 
 }
 
-compileJava.dependsOn(processResources)
+compileKotlin {
+    dependsOn(":mql-language:processResources")
+}
+
+compileJava {
+    dependsOn(processResources)
+    dependsOn(":mql-language:processResources")
+}
 
 
 sourceSets {

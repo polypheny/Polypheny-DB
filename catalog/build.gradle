@@ -38,6 +38,11 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":mql-language:processResources")
+}
+
 
 /**
  * JARs

@@ -2538,7 +2538,7 @@ CypherExpression AggregateExpression():
     )
     <LPAREN> (
         <TIMES>
-        | LOOKAHEAD( 2 ) (<DISTINCT> { distinct=true;} )? target=Expression()
+        | LOOKAHEAD( 2 ) ( LOOKAHEAD( 2 ) <DISTINCT> { distinct=true;} )? target=Expression()
 
         )
     <RPAREN>

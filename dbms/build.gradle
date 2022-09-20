@@ -220,7 +220,17 @@ compileJava {
     dependsOn(":catalog:processResources")
     dependsOn(":cql-language:processResources")
     dependsOn(":csv-adapter:processResources")
-    dependsOn(":cypher-language:processResources")
+    dependsOn(":ethereum-adapter:processResources")
+    dependsOn(":explore-by-example:processResources")
+    dependsOn(":file-adapter:processResources")
+    dependsOn(":http-interface:processResources")
+    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":mongodb-adapter:processResources")
+    dependsOn(":mql-language:processResources")
+    dependsOn(":pig-language:processResources")
+    dependsOn(":neo4j-adapter:processResources")
+    dependsOn(":rest-interface:processResources")
+    dependsOn(":webui:processResources")
 }
 
 
