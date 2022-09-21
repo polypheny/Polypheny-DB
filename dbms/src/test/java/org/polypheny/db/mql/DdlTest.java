@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
@@ -146,6 +147,7 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
+    @Category(CassandraExcluded.class)
     public void deletePlacementDataTest() throws SQLException {
 
         String placement = "store1";
