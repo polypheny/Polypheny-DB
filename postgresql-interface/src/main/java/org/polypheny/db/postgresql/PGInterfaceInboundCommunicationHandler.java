@@ -20,6 +20,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 public class PGInterfaceInboundCommunicationHandler {
     String type;
@@ -70,7 +71,7 @@ public class PGInterfaceInboundCommunicationHandler {
         ctx.writeAndFlush(authenticationOkWriter.writeOnByteBuf());
 
         //server_version (Parameter Status message)
-        PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version§14", 4, true);
+        PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version" + PGInterfaceMessage.getDelimiter() + "14", 4, true);
         PGInterfaceServerWriter parameterStatusServerVsWriter = new PGInterfaceServerWriter("ss", parameterStatusServerVs, ctx);
         ctx.writeAndFlush(parameterStatusServerVsWriter.writeOnByteBuf());
 
@@ -85,36 +86,8 @@ public class PGInterfaceInboundCommunicationHandler {
     public void extendedQueryPhase(String incomingMsg) {
 
         if (incomingMsg.substring(2,5).equals("SET")) {
-            //parseComplete
-            /*
-            PGInterfaceMessage parseComplete = new PGInterfaceMessage(PGInterfaceHeaders.ONE, "0", 4, false);
-            PGInterfaceServerWriter parseCompleteWriter = new PGInterfaceServerWriter("i", parseComplete, ctx);
-            ctx.writeAndFlush(parseCompleteWriter.writeOnByteBuf());
 
-            */
-
-            //ParameterStatus - client_encoding (ParameterStatus message)
-            String paramu = "SET";
-            String paramValu = "UTF8";
-            ByteBuf buffer3u = ctx.alloc().buffer(4+paramu.length()+10);
-            buffer3u.writeByte('1');
-            buffer3u.writeInt(4); // size excluding char
-            //buffer3u.writeBytes(paramu.getBytes(StandardCharsets.UTF_8));
-            //buffer3u.writeBytes(paramValu.getBytes(StandardCharsets.UTF_8));
-            ctx.writeAndFlush(buffer3u);
-
-            /*
-            //bindComplete
-            PGInterfaceMessage bindComplete = new PGInterfaceMessage(PGInterfaceHeaders.TWO, "0", 4, true);
-            PGInterfaceServerWriter bindCompleteWriter = new PGInterfaceServerWriter("i", bindComplete, ctx);
-            ctx.writeAndFlush(bindCompleteWriter.writeOnByteBuf());
-
-             */
-
-            ByteBuf buffer4u = ctx.alloc().buffer(4+10);
-            buffer4u.writeByte('2');
-            buffer4u.writeInt(4); // size excluding char
-            ctx.writeAndFlush(buffer4u);
+            sendParseBindComplete();
 
             sendParseBindComplete();
 
@@ -128,7 +101,7 @@ public class PGInterfaceInboundCommunicationHandler {
         else {
             //Query does not have ";" at the end!!
             String query = extractQuery(incomingMsg);
-            PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler(query, ctx, this, transactionManager);
+            PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler(query, ctx, this);
             queryHandler.start();
 
         }
@@ -325,6 +298,7 @@ public class PGInterfaceInboundCommunicationHandler {
         buf.writeInt(31);
         String lol = buf.toString(Charset.defaultCharset());
         ctx.writeAndFlush(buf);
+
 
 
     }

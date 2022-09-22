@@ -91,6 +91,10 @@ public class PGInterface extends QueryInterface {
         this.transactionManager = transactionManager;
     }
 
+    public static TransactionManager getInstance() {
+        return transactionManager;
+    }   //getTransactionManager
+
 
     @Override
     public void run() {
