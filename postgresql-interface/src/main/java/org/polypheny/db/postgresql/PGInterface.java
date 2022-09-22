@@ -61,6 +61,7 @@ public class PGInterface extends QueryInterface {
             // new QueryInterfaceSettingList( "serialization", false, true, false, ImmutableList.of( "PROTOBUF", "JSON" ) )
             // Possible to add more myself
     );
+    public static TransactionManager transactionManager = null;
 
 
     private final int port;
@@ -87,7 +88,12 @@ public class PGInterface extends QueryInterface {
         }
         // Add information page
         monitoringPage = new MonitoringPage();
+        this.transactionManager = transactionManager;
     }
+
+    public static TransactionManager getInstance() {
+        return transactionManager;
+    }   //getTransactionManager
 
 
     @Override
