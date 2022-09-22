@@ -18,6 +18,7 @@ package org.polypheny.db.postgresql;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import org.polypheny.db.transaction.TransactionManager;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -26,11 +27,13 @@ public class PGInterfaceInboundCommunicationHandler {
     String type;
     PGInterfaceClient client;
     ChannelHandlerContext ctx;
+    TransactionManager transactionManager;
 
-    public PGInterfaceInboundCommunicationHandler (String type, PGInterfaceClient client) {
+    public PGInterfaceInboundCommunicationHandler (String type, PGInterfaceClient client, TransactionManager transactionManager) {
         this.type = type;
         this.client = client;
         this.ctx = client.getCtx();
+        this.transactionManager = transactionManager;
     }
 
     //ich mues ergendwie identifiziere wele client dases esch... oder muesich öberhaupt speichere was fören phase das de client denne esch...
@@ -41,8 +44,6 @@ public class PGInterfaceInboundCommunicationHandler {
         String cycleState = "";
         String msgWithZeroBits = ((String) oMsg);
         String wholeMsg = msgWithZeroBits.replace("\u0000", "");
-
-        
 
         switch (wholeMsg.substring(0, 1)) {
             case "C":
@@ -71,7 +72,8 @@ public class PGInterfaceInboundCommunicationHandler {
         ctx.writeAndFlush(authenticationOkWriter.writeOnByteBuf());
 
         //server_version (Parameter Status message)
-        PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version" + PGInterfaceMessage.getDelimiter() + "14", 4, true);
+        PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version§14", 4, true);
+        //PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version" + PGInterfaceMessage.getDelimiter() + "14", 4, true);
         PGInterfaceServerWriter parameterStatusServerVsWriter = new PGInterfaceServerWriter("ss", parameterStatusServerVs, ctx);
         ctx.writeAndFlush(parameterStatusServerVsWriter.writeOnByteBuf());
 
@@ -99,7 +101,7 @@ public class PGInterfaceInboundCommunicationHandler {
         else {
             //Query does not have ";" at the end!!
             String query = extractQuery(incomingMsg);
-            PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler(query, ctx, this);
+            PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler(query, ctx, this, transactionManager);
             queryHandler.start();
 
         }

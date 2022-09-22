@@ -34,7 +34,7 @@ import org.polypheny.db.transaction.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PGInterfaceQueryHandler implements TransactionManager {
+public class PGInterfaceQueryHandler{
     String query;
     ChannelHandlerContext ctx;
     PGInterfaceInboundCommunicationHandler communicationHandler;
@@ -42,12 +42,12 @@ public class PGInterfaceQueryHandler implements TransactionManager {
     int rowsAffected = 0;   //rows affected (changed/deleted/inserted/etc)
     List<List<Object>> rows;
 
-    public PGInterfaceQueryHandler (String query, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler) {
+    public PGInterfaceQueryHandler (String query, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager) {
         this.query = query;
         this.ctx = ctx;
         this.communicationHandler = communicationHandler;
         Object obj = new Object();
-        this.transactionManager = PGInterface.getInstance();
+        this.transactionManager = transactionManager;
     }
 
     public void start() {
@@ -86,6 +86,7 @@ public class PGInterfaceQueryHandler implements TransactionManager {
         QueryParameters parameters = new QueryParameters( query, Catalog.SchemaType.RELATIONAL );
         if ( sqlNode.isA( Kind.DDL ) ) {
             result = sqlProcessor.prepareDdl( statement, sqlNode, parameters );
+            // exception: java.lang.RuntimeException: No primary key has been provided!
         } else {
             AlgRoot algRoot = sqlProcessor.translate(
                     statement,
@@ -246,40 +247,6 @@ public class PGInterfaceQueryHandler implements TransactionManager {
         }
     }
 
-
-    @Override
-    public Transaction startTransaction(CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin) {
-        return null;
-    }
-
-    @Override
-    public Transaction startTransaction(CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin, Transaction.MultimediaFlavor flavor) {
-        return null;
-    }
-
-    @Override
-    public Transaction startTransaction(String user, String database, boolean analyze, String origin) {
-        try {
-            return transactionManager.startTransaction( "pa", "APP", true, "Test Helper" );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Error while starting transaction", e );
-        }
-    }
-
-    @Override
-    public Transaction startTransaction(String user, String database, boolean analyze, String origin, Transaction.MultimediaFlavor flavor) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
-        return null;
-    }
-
-    @Override
-    public void removeTransaction(PolyXid xid) {
-
-    }
-
-    @Override
-    public boolean isActive(PolyXid xid) {
-        return false;
-    }
 
 
     //Example of server answer to simple select query (from real server)

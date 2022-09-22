@@ -91,10 +91,6 @@ public class PGInterface extends QueryInterface {
         this.transactionManager = transactionManager;
     }
 
-    public static TransactionManager getInstance() {
-        return transactionManager;
-    }   //getTransactionManager
-
 
     @Override
     public void run() {
@@ -124,7 +120,7 @@ public class PGInterface extends QueryInterface {
                             //channelPipeline.addLast("encoder", new StringEncoder());
 
                             //Handler
-                            channelPipeline.addLast("handler", new PGInterfaceServerHandler());
+                            channelPipeline.addLast("handler", new PGInterfaceServerHandler(transactionManager));
                             //channelPipeline.addLast("handler2", new ServerHandler2());
                             //channelPipeline.addLast("handler", new ServerHandler3());
 
