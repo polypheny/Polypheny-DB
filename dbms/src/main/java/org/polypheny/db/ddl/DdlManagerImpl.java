@@ -616,6 +616,10 @@ public class DdlManagerImpl extends DdlManager {
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
             // Call migrator
             dataMigrator.mergeColumns( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), sourceCatalogColumns, targetCatalogColumn);
+
+            for ( CatalogColumn sourceCatalogColumn : sourceCatalogColumns ) {
+                catalog.deleteColumn( sourceCatalogColumn.id );
+            }
         }
 
         // Reset plan cache implementation cache & routing cache
