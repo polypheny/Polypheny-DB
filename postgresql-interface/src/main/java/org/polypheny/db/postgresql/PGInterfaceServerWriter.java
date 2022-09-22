@@ -85,7 +85,7 @@ public class PGInterfaceServerWriter {
 
             case "ss":
                 //write two strings (tag and message)
-                writeSeveralStrings(2); //TODO(FF)!!: check if this works, and if yes, maybe find better solution??
+                buffer = writeSeveralStrings(2); //TODO(FF)!!: check if this works, and if yes, maybe find better solution (switch case(?))??
 
                 /*
                 buffer.writeByte(pgMsg.getHeaderChar());
@@ -108,7 +108,7 @@ public class PGInterfaceServerWriter {
 
             case "sss":
                 //write 3 strings, example, tag with three components
-                writeSeveralStrings(2); //TODO(FF)!!: check if this works, and if yes, maybe find better solution??
+                buffer = writeSeveralStrings(3); //TODO(FF)!!: check if this works, and if yes, maybe find better solution??
                 /*
                 buffer.writeByte(pgMsg.getHeaderChar());
                 if (pgMsg.isDefaultLength()) {
