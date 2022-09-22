@@ -164,6 +164,7 @@ public enum BuiltInMethod {
     SLICE0( Enumerables.class, "slice0", Enumerable.class ),
     SEMI_JOIN( EnumerableDefaults.class, "semiJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class ),
     THETA_JOIN( EnumerableDefaults.class, "thetaJoin", Enumerable.class, Enumerable.class, Predicate2.class, Function2.class, boolean.class, boolean.class ),
+    SINGLE_SUM( Functions.class, "singleSum", Enumerable.class ),
     CORRELATE_JOIN( ExtendedEnumerable.class, "correlateJoin", CorrelateJoinType.class, Function1.class, Function2.class ),
     SELECT( ExtendedEnumerable.class, "select", Function1.class ),
     SELECT2( ExtendedEnumerable.class, "select", Function2.class ),

@@ -370,7 +370,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         .flatMap( List::stream )
                         .collect( Collectors.toSet() );
                 List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryClass(), partitionIds );
-                if ( !routingPlansCached.isEmpty() ) {
+                if ( !routingPlansCached.isEmpty() && routingPlansCached.stream().noneMatch( p -> p.physicalPlacementsOfPartitions.isEmpty() ) ) {
                     proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
                 }
             }

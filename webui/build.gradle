@@ -68,6 +68,7 @@ compileJava {
     dependsOn(":cypher-language:processResources")
     dependsOn(":explore-by-example:processResources")
     dependsOn(":mql-language:processResources")
+    dependsOn(":pig-language:processResources")
 }
 
 processResources {

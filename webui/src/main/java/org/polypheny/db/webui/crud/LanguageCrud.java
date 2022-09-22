@@ -183,7 +183,7 @@ public class LanguageCrud {
 
             PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
-            Result result = getResult( QueryLanguage.PIG, statement, request, query, polyImplementation, request.noLimit );
+            Result result = getResult( QueryLanguage.PIG, statement, request, query, polyImplementation, transaction, request.noLimit );
 
             String commitStatus;
             try {
@@ -271,7 +271,7 @@ public class LanguageCrud {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Execution" );
             }
-            Result result = getResult( QueryLanguage.CQL, statement, request, query, polyImplementation, request.noLimit );
+            Result result = getResult( QueryLanguage.CQL, statement, request, query, polyImplementation, transaction, request.noLimit );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Execution" );
             }
@@ -373,7 +373,7 @@ public class LanguageCrud {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, polyImplementation, noLimit ).setNamespaceType( NamespaceType.DOCUMENT ) );
+                    results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, polyImplementation, transaction, noLimit ).setNamespaceType( NamespaceType.DOCUMENT ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }
@@ -517,7 +517,7 @@ public class LanguageCrud {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyImplementation, true ).setNamespaceName( request.database ) );
+                    results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyImplementation, transaction, true ).setNamespaceName( request.database ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }
@@ -559,7 +559,7 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation result, final boolean noLimit ) {
+    public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation result, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
@@ -623,6 +623,7 @@ public class LanguageCrud {
                 .setLanguage( language )
                 .setAffectedRows( data.size() )
                 .setHasMoreRows( hasMoreRows )
+                .setXid( transaction.getXid().toString() )
                 .setGeneratedQuery( query );
     }
 

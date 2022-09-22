@@ -739,6 +739,15 @@ public class Functions {
     }
 
 
+    public static Enumerable<?> singleSum( Enumerable<?> results ) {
+        int amount = 0;
+        for ( Object result : results ) {
+            amount += ((Number) result).intValue();
+        }
+        return Linq4j.singletonEnumerable( amount );
+    }
+
+
     /**
      * SQL {@code LIKE} function.
      */

@@ -28,9 +28,13 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService;
@@ -45,6 +49,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -63,6 +68,7 @@ public class HttpInterface extends QueryInterface {
             new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 )
     );
 
+    private Set<String> xIds = new HashSet<>();
 
     private final int port;
     private final String uniqueName;
@@ -139,6 +145,8 @@ public class HttpInterface extends QueryInterface {
     public void anyQuery( QueryLanguage language, final Context ctx ) {
         QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
 
+        cleanup();
+
         List<Result> results = LanguageCrud.anyQuery(
                 language,
                 null,
@@ -153,6 +161,16 @@ public class HttpInterface extends QueryInterface {
             statementCounters.put( language, new AtomicLong() );
         }
         statementCounters.get( language ).incrementAndGet();
+        xIds.addAll( results.stream().map( Result::getXid ).filter( Objects::nonNull ).collect( Collectors.toSet() ) );
+    }
+
+
+    private void cleanup() {
+        // todo change this also in websocket logic, rather hacky
+        for ( String xId : xIds ) {
+            InformationManager.close( xId );
+            TemporalFileManager.deleteFilesOfTransaction( xId );
+        }
     }
 
 

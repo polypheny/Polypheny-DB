@@ -280,7 +280,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
                     newArgList.add( bottomGroups.headSet( arg ).size() );
                 }
                 newCall = AggregateCall.create(
-                        (Operator & AggFunction) aggCall.getAggregation(),
+                        aggCall.getAggregation(),
                         false,
                         aggCall.isApproximate(),
                         newArgList,

@@ -223,6 +223,13 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
+    UI_NODE_AMOUNT(
+            "ui/nodeAmount",
+            "Number of nodes in the graph data view.",
+            300,
+            ConfigType.INTEGER,
+            "uiSettingsDataViewGroup" ),
+
     UI_UPLOAD_SIZE_MB(
             "ui/uploadSizeMB",
             "Maximum size of a file upload for multimedia data in the UI, in MB. "

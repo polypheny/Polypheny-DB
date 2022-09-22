@@ -26,7 +26,7 @@ import org.polypheny.db.plan.Convention;
 
 
 /**
- * Sub-class of {@link ModifyCollect} not targeted at any particular engine or calling convention.
+ * Subclass of {@link ModifyCollect} not targeted at any particular engine or calling convention.
  */
 public final class LogicalModifyCollect extends ModifyCollect {
 

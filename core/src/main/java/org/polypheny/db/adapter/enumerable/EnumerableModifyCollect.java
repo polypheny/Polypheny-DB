@@ -62,6 +62,9 @@ public class EnumerableModifyCollect extends ModifyCollect implements Enumerable
                         : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType.comparer() ) );
             }
         }
+        if ( all ) {
+            unionExp = Expressions.call( BuiltInMethod.SINGLE_SUM.method, unionExp );
+        }
 
         builder.add( unionExp );
         final PhysType physType =

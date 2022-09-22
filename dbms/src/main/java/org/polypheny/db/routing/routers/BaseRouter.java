@@ -217,7 +217,7 @@ public abstract class BaseRouter implements Router {
         }
 
         for ( Map.Entry<Long, List<CatalogColumnPlacement>> partitionToPlacement : placements.entrySet() ) {
-            long partitionId = (long) partitionToPlacement.getKey();
+            long partitionId = partitionToPlacement.getKey();
             List<CatalogColumnPlacement> currentPlacements = partitionToPlacement.getValue();
             // Sort by adapter
             Map<Integer, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
@@ -244,15 +244,7 @@ public abstract class BaseRouter implements Router {
                         cpp.physicalTableName,
                         cpp.partitionId );
                 // Final project
-                ArrayList<RexNode> rexNodes = new ArrayList<>();
-                List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> catalog.getColumn( col.columnId ) )
-                        .sorted( Comparator.comparingInt( col -> col.position ) )
-                        .collect( Collectors.toList() );
-                for ( CatalogColumn catalogColumn : placementList ) {
-                    rexNodes.add( builder.field( catalogColumn.name ) );
-                }
-                builder.project( rexNodes );
+                buildFinalProject( builder, currentPlacements );
 
             } else if ( placementsByAdapter.size() > 1 ) {
                 // We need to join placements on different adapters
@@ -317,15 +309,7 @@ public abstract class BaseRouter implements Router {
                     }
                 }
                 // Final project
-                ArrayList<RexNode> rexNodes = new ArrayList<>();
-                List<CatalogColumn> placementList = currentPlacements.stream()
-                        .map( col -> catalog.getColumn( col.columnId ) )
-                        .sorted( Comparator.comparingInt( col -> col.position ) )
-                        .collect( Collectors.toList() );
-                for ( CatalogColumn catalogColumn : placementList ) {
-                    rexNodes.add( builder.field( catalogColumn.name ) );
-                }
-                builder.project( rexNodes );
+                buildFinalProject( builder, currentPlacements );
             } else {
                 throw new RuntimeException( "The table '" + currentPlacements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
             }
@@ -355,6 +339,19 @@ public abstract class BaseRouter implements Router {
         }
 
         return node;
+    }
+
+
+    private void buildFinalProject( RoutedAlgBuilder builder, List<CatalogColumnPlacement> currentPlacements ) {
+        List<RexNode> rexNodes = new ArrayList<>();
+        List<CatalogColumn> placementList = currentPlacements.stream()
+                .map( col -> catalog.getColumn( col.columnId ) )
+                .sorted( Comparator.comparingInt( col -> col.position ) )
+                .collect( Collectors.toList() );
+        for ( CatalogColumn catalogColumn : placementList ) {
+            rexNodes.add( builder.field( catalogColumn.name ) );
+        }
+        builder.project( rexNodes );
     }
 
 
