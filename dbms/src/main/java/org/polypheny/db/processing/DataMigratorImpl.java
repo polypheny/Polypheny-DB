@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -222,7 +223,7 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public void executeMergeQuery( List<CatalogColumn> sourceColumns, List<CatalogColumn> targetColumns, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
+    public void executeMergeQuery(List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
             PolyResult result;
             if ( isMaterializedView ) {
@@ -264,18 +265,6 @@ public class DataMigratorImpl implements DataMigrator {
                 }
             }
 
-            Map<Long, Integer> targetColMapping = new HashMap<>();
-            for ( CatalogColumn catalogColumn : targetColumns ) {
-                int i = 0;
-                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
-                    if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
-                        targetColMapping.put( catalogColumn.id, i );
-                    }
-                    i++;
-                }
-            }
-            // TODO: ismaterializedView for targetMapping?
-
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
             while ( sourceIterator.hasNext() ) {
@@ -299,19 +288,28 @@ public class DataMigratorImpl implements DataMigrator {
                         }
                     }
                 }
-                List<AlgDataTypeField> fields;
-                if ( isMaterializedView ) {
-                    fields = targetAlg.alg.getTable().getRowType().getFieldList();
-                } else {
-                    fields = sourceAlg.validatedRowType.getFieldList();
-                }
-                int pos = 0;
+
+                final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+                List<Object> mergedValueList = null;
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
-                    targetStatement.getDataContext().addParameterValues(
-                            (v.getValue().get( 0 )  instanceof  String) ? targetColumns.get( 0 ).id : v.getKey(),
-                            fields.get( sourceColMapping.get( v.getKey() ) ).getType(), // TODO: get the type of the targetcolumn
-                            (v.getValue().get( 0 )  instanceof  String) ? v.getValue().stream().map( s -> ((String)s).concat( " testtestest" ) ).collect( Collectors.toList()) : v.getValue() ) ;
-                    pos++;
+                    if (v.getValue().get( 0 ) instanceof  String) {
+                        if( mergedValueList == null ) {
+                            mergedValueList = v.getValue();
+                        } else {
+                            int j = 0;
+                            for (Object value : mergedValueList) {
+                                mergedValueList.set( j, ( (String) value).concat( " " + v.getValue().get( j++ ) ) );
+                            }
+                        }
+                    }
+                }
+                targetStatement.getDataContext().addParameterValues(targetColumn.id, targetColumn.getAlgDataType( typeFactory ) , mergedValueList );
+
+                for ( CatalogColumn primaryKey : primaryKeyColumns ) {
+                    AlgDataType primaryKeyAlgDataType = primaryKey.getAlgDataType( typeFactory );
+                    List<Object> primaryKeyValues = values.get( primaryKey.id );
+                    targetStatement.getDataContext().addParameterValues(primaryKey.id, primaryKeyAlgDataType , primaryKeyValues );
                 }
 
                 Iterator<?> iterator = targetStatement.getQueryProcessor()
@@ -463,52 +461,6 @@ public class DataMigratorImpl implements DataMigrator {
             values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
         }
 
-        builder.project( values );
-
-        AlgNode node = modifiableTable.toModificationAlg(
-                cluster,
-                physical,
-                statement.getTransaction().getCatalogReader(),
-                builder.build(),
-                Operation.UPDATE,
-                columnNames,
-                values,
-                false
-        );
-        AlgRoot algRoot = AlgRoot.of( node, Kind.UPDATE );
-        AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
-                AlgBuilder.create( statement, algRoot.alg.getCluster() ),
-                algRoot.alg.getCluster().getRexBuilder(),
-                algRoot.alg::getCluster,
-                true );
-        return algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
-    }
-
-    private AlgRoot buildUpdateStatementForMerge( Statement statement, CatalogColumnPlacement to, long partitionId ) {
-        List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildAdapterSchemaName(
-                        to.adapterUniqueName,
-                        to.getLogicalSchemaName(),
-                        to.physicalSchemaName ),
-                        to.getLogicalTableName() + "_" + partitionId );
-        AlgOptTable physical = statement.getTransaction().getCatalogReader().getTableForMember( qualifiedTableName );
-        ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
-
-        AlgOptCluster cluster = AlgOptCluster.create(
-                statement.getQueryProcessor().getPlanner(),
-                new RexBuilder( statement.getTransaction().getTypeFactory() ) );
-        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-
-        AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.scan( qualifiedTableName );
-
-        List<String> columnNames = new LinkedList<>();
-        List<RexNode> values = new LinkedList<>();
-
-        CatalogColumn catalogColumn = Catalog.getInstance().getColumn( to.columnId );
-        columnNames.add( to.getLogicalColumnName() );
-        values.add( new RexDynamicParam( catalogColumn.getAlgDataType( typeFactory ), (int) catalogColumn.id ) );
-
         builder.projectPlus( values );
 
         AlgNode node = modifiableTable.toModificationAlg(
@@ -529,7 +481,6 @@ public class DataMigratorImpl implements DataMigrator {
                 true );
         return algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
     }
-
 
     @Override
     public AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution ) {
@@ -844,6 +795,7 @@ public class DataMigratorImpl implements DataMigrator {
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
         List<CatalogColumn> selectColumnList = new LinkedList<>( sourceColumns );
+        List<CatalogColumn> primaryKeyList = new LinkedList<>( );
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
@@ -851,6 +803,7 @@ public class DataMigratorImpl implements DataMigrator {
             if ( !selectColumnList.contains( catalogColumn ) ) {
                 selectColumnList.add( catalogColumn );
             }
+            primaryKeyList.add( catalogColumn );
         }
 
         Map<Long, List<CatalogColumnPlacement>> sourceColumnPlacements = new HashMap<>();
@@ -869,7 +822,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
         AlgRoot targetAlg = buildUpdateStatement( targetStatement, Collections.singletonList( targetColumnPlacement ), table.partitionProperty.partitionIds.get( 0 ) );
 
-        executeMergeQuery( selectColumnList, Collections.singletonList(targetColumn), sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
+        executeMergeQuery( primaryKeyList, selectColumnList, targetColumn, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
     }
 
 }
