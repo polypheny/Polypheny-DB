@@ -344,7 +344,7 @@ public class ValidatorUtil {
 
 
     private static TableEntry getTableEntryFrom( PolyphenyDbSchema schema, String name, boolean caseSensitive ) {
-        TableEntry entry = schema.getTable( name, caseSensitive );
+        TableEntry entry = schema.getTable( name );
         if ( entry == null ) {
             entry = schema.getTableBasedOnNullaryFunction( name, caseSensitive );
         }

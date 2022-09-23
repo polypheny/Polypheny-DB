@@ -139,7 +139,7 @@ class EmptyScope implements SqlValidatorScope {
                 namespace = new SchemaNamespace( validator, ImmutableList.copyOf( path.stepNames() ) );
                 continue;
             }
-            PolyphenyDbSchema.TableEntry entry = schema.getTable( schemaName, nameMatcher.isCaseSensitive() );
+            PolyphenyDbSchema.TableEntry entry = schema.getTable( schemaName );
             if ( entry == null ) {
                 entry = schema.getTableBasedOnNullaryFunction( schemaName, nameMatcher.isCaseSensitive() );
             }

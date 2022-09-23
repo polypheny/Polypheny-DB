@@ -19,6 +19,7 @@ package org.polypheny.db.schema;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -90,7 +91,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
     private synchronized AbstractPolyphenyDbSchema buildSchema() {
         final Schema schema = new RootSchema();
-        final AbstractPolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "", NamespaceType.RELATIONAL );
+        final AbstractPolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "", NamespaceType.RELATIONAL, false );
 
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
         Catalog catalog = Catalog.getInstance();
@@ -122,7 +123,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
     private void buildGraphLogical( AbstractPolyphenyDbSchema polyphenyDbSchema, SchemaPlus rootSchema, Catalog catalog, CatalogDatabase catalogDatabase ) {
         for ( CatalogGraphDatabase graph : catalog.getGraphs( catalogDatabase.id, null ) ) {
-            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), graph.name, NamespaceType.GRAPH ).plus();
+            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), graph.name, NamespaceType.GRAPH, true ).plus();
 
             rootSchema.add( graph.name, s, NamespaceType.GRAPH );
             s.polyphenyDbSchema().setSchema( new LogicalGraph( graph.id ) );
@@ -136,7 +137,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 continue;
             }
             Map<String, LogicalTable> tableMap = new HashMap<>();
-            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name, catalogSchema.namespaceType ).plus();
+            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name, catalogSchema.namespaceType, catalogSchema.caseSensitive ).plus();
             for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
                 List<String> columnNames = new LinkedList<>();
 
@@ -179,7 +180,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 continue;
             }
             Map<String, LogicalTable> collectionMap = new HashMap<>();
-            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name, catalogSchema.namespaceType ).plus();
+            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name, catalogSchema.namespaceType, catalogSchema.caseSensitive ).plus();
             for ( CatalogCollection catalogEntity : catalog.getCollections( catalogSchema.id, null ) ) {
                 List<String> columnNames = new LinkedList<>();
 
@@ -222,7 +223,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             if ( catalogDatabase.defaultNamespaceId != null && catalogSchema.id == catalogDatabase.defaultNamespaceId ) {
                 collectionMap.forEach( rootSchema::add );
             }
-            PolyphenyDbSchema schema = s.polyphenyDbSchema().getSubSchema( catalogSchema.name, true );
+            PolyphenyDbSchema schema = s.polyphenyDbSchema().getSubSchema( catalogSchema.name, catalogSchema.caseSensitive );
             if ( schema != null ) {
                 LogicalSchema logicalSchema = new LogicalSchema( catalogSchema.name, ((LogicalSchema) schema.getSchema()).getTableMap(), collectionMap );
                 s.polyphenyDbSchema().setSchema( logicalSchema );
@@ -249,7 +250,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 final String schemaName = buildAdapterSchemaName( adapter.getUniqueName(), graph.name, placement.physicalName );
 
                 adapter.createGraphNamespace( rootSchema, schemaName, graph.id );
-                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH ).plus();
+                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH, true ).plus();
                 rootSchema.add( schemaName, s, NamespaceType.GRAPH );
 
                 rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentGraphNamespace() );
@@ -284,7 +285,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName );
 
                     adapter.createNewSchema( rootSchema, schemaName );
-                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName, catalogSchema.namespaceType ).plus();
+                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName, catalogSchema.namespaceType, catalogSchema.caseSensitive ).plus();
                     for ( long collectionId : collectionIds ) {
                         CatalogCollection catalogEntity = catalog.getCollection( collectionId );
 
@@ -310,7 +311,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
     private void buildPhysicalTables( AbstractPolyphenyDbSchema polyphenyDbSchema, SchemaPlus rootSchema, Catalog catalog, CatalogDatabase catalogDatabase, List<CatalogAdapter> adapters ) {
         // Build adapter schema (physical schema) RELATIONAL
-        for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ).stream().collect( Collectors.toList() ) ) {
+        for ( CatalogSchema catalogSchema : new ArrayList<>( catalog.getSchemas( catalogDatabase.id, null ) ) ) {
             for ( CatalogAdapter catalogAdapter : adapters ) {
                 // Get list of tables on this adapter
                 Map<String, Set<Long>> tableIdsPerSchema = new HashMap<>();
@@ -328,7 +329,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName );
 
                     adapter.createNewSchema( rootSchema, schemaName );
-                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName, catalogSchema.namespaceType ).plus();
+                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName, catalogSchema.namespaceType, catalogSchema.caseSensitive ).plus();
                     for ( long tableId : tableIds ) {
                         CatalogTable catalogTable = catalog.getTable( tableId );
 

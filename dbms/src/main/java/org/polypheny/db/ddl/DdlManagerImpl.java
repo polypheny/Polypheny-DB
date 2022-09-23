@@ -1884,7 +1884,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // add general graph
-        long graphId = catalog.addGraphDatabase( databaseId, graphName, stores, modifiable, ifNotExists, replace );
+        long graphId = catalog.addGraph( databaseId, graphName, stores, modifiable, ifNotExists, replace );
 
         addGraphPlacement( graphId, stores, false, statement );
 

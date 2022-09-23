@@ -23,7 +23,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -45,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
@@ -1075,7 +1075,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      */
     protected SqlNode performUnconditionalRewrites( SqlNode node, boolean underFrom ) {
         if ( node == null ) {
-            return node;
+            return null;
         }
 
         SqlNode newOperand;
@@ -3189,7 +3189,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final SelectScope fromScope = (SelectScope) getFromScope( select );
         List<String> names = fromScope.getChildNames();
         if ( !catalogReader.nameMatcher().isCaseSensitive() ) {
-            names = Lists.transform( names, s -> s.toUpperCase( Locale.ROOT ) );
+            names = names.stream().map( s -> s.toUpperCase( Locale.ROOT ) ).collect( Collectors.toList() );
         }
         final int duplicateAliasOrdinal = Util.firstDuplicate( names );
         if ( duplicateAliasOrdinal >= 0 ) {
@@ -3392,7 +3392,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     private Table findTable( PolyphenyDbSchema schema, String tableName, boolean caseSensitive ) {
-        PolyphenyDbSchema.TableEntry entry = schema.getTable( tableName, caseSensitive );
+        PolyphenyDbSchema.TableEntry entry = schema.getTable( tableName );
         if ( entry != null ) {
             return entry.getTable();
         }

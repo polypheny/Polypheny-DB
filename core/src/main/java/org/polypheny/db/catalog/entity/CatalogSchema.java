@@ -42,6 +42,8 @@ public final class CatalogSchema implements CatalogObject, Comparable<CatalogSch
     @EqualsAndHashCode.Exclude
     public final NamespaceType namespaceType;
 
+    public final boolean caseSensitive;
+
 
     public CatalogSchema(
             final long id,
@@ -49,13 +51,15 @@ public final class CatalogSchema implements CatalogObject, Comparable<CatalogSch
             final long databaseId,
             final int ownerId,
             @NonNull final String ownerName,
-            @NonNull final Catalog.NamespaceType namespaceType ) {
+            @NonNull final Catalog.NamespaceType namespaceType,
+            boolean caseSensitive ) {
         this.id = id;
         this.name = name;
         this.databaseId = databaseId;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.namespaceType = namespaceType;
+        this.caseSensitive = caseSensitive;
     }
 
 
@@ -88,7 +92,7 @@ public final class CatalogSchema implements CatalogObject, Comparable<CatalogSch
 
 
     @RequiredArgsConstructor
-    public class PrimitiveCatalogSchema {
+    public static class PrimitiveCatalogSchema {
 
         public final String tableSchem;
         public final String tableCatalog;

@@ -350,8 +350,7 @@ public class MqlToAlgConverter {
                     rowType,
                     new TableEntryImpl(
                             catalogReader.getRootSchema(), names.get( names.size() - 1 ),
-                            new LogicalTable( Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, new Pattern( dbSchemaName ) ).get( 0 ).id, names.get( 0 ), names.get( names.size() - 1 ), List.of(), List.of(), AlgDataTypeImpl.proto( rowType ), NamespaceType.GRAPH ),
-                            ImmutableList.<String>builder().build() ),
+                            new LogicalTable( Catalog.getInstance().getSchemas( Catalog.defaultDatabaseId, new Pattern( dbSchemaName ) ).get( 0 ).id, names.get( 0 ), names.get( names.size() - 1 ), List.of(), List.of(), AlgDataTypeImpl.proto( rowType ), NamespaceType.GRAPH ) ),
                     1.0 );
         }
 

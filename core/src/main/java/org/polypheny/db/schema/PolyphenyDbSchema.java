@@ -16,7 +16,6 @@
 
 package org.polypheny.db.schema;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
@@ -43,8 +42,6 @@ public interface PolyphenyDbSchema {
 
     TableEntry add( String tableName, Table table );
 
-    TableEntry add( String tableName, Table table, ImmutableList<String> sqls );
-
     TypeEntry add( String name, AlgProtoDataType type );
 
     PolyphenyDbSchema root();
@@ -60,7 +57,7 @@ public interface PolyphenyDbSchema {
      */
     PolyphenyDbSchema add( String name, Schema schema, NamespaceType type );
 
-    TableEntry getTable( String tableName, boolean caseSensitive );
+    TableEntry getTable( String tableName );
 
     String getName();
 
@@ -141,12 +138,9 @@ public interface PolyphenyDbSchema {
      */
     abstract class TableEntry extends Entry {
 
-        public final ImmutableList<String> sqls;
 
-
-        public TableEntry( PolyphenyDbSchema schema, String name, ImmutableList<String> sqls ) {
+        public TableEntry( PolyphenyDbSchema schema, String name ) {
             super( schema, name );
-            this.sqls = Objects.requireNonNull( sqls );
         }
 
 
@@ -196,8 +190,8 @@ public interface PolyphenyDbSchema {
         /**
          * Creates a TableEntryImpl.
          */
-        public TableEntryImpl( PolyphenyDbSchema schema, String name, Table table, ImmutableList<String> sqls ) {
-            super( schema, name, sqls );
+        public TableEntryImpl( PolyphenyDbSchema schema, String name, Table table ) {
+            super( schema, name );
             this.table = Objects.requireNonNull( table );
         }
 

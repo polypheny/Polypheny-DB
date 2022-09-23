@@ -71,7 +71,7 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
 
         );
 
-        new CatalogSchema( 1, "public", 1, 1, "hans", NamespaceType.RELATIONAL );
+        new CatalogSchema( 1, "public", 1, 1, "hans", NamespaceType.RELATIONAL, false );
         new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" );
         new CatalogUser( 1, "hans", "secrete" );
         new HashMap<>();

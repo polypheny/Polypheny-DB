@@ -1139,7 +1139,7 @@ public class CatalogImpl extends Catalog {
     public long addSchema( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         CatalogUser owner = getUser( ownerId );
         long id = namespaceIdBuilder.getAndIncrement();
-        CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, namespaceType );
+        CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, namespaceType, namespaceType == NamespaceType.DOCUMENT || namespaceType == NamespaceType.GRAPH );
         synchronized ( this ) {
             schemas.put( id, schema );
             schemaNames.put( new Object[]{ databaseId, name }, schema );
@@ -1169,7 +1169,7 @@ public class CatalogImpl extends Catalog {
     public void renameSchema( long schemaId, String name ) {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.namespaceType );
+            CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.namespaceType, false );
 
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
@@ -1190,7 +1190,7 @@ public class CatalogImpl extends Catalog {
     public void setSchemaOwner( long schemaId, long ownerId ) {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogSchema schema = new CatalogSchema( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.namespaceType );
+            CatalogSchema schema = new CatalogSchema( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.namespaceType, false );
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
                 schemaNames.replace( new Object[]{ schema.databaseId, schema.name }, schema );
@@ -1206,7 +1206,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public long addGraphDatabase( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
+    public long addGraph( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
         if ( getGraphs( databaseId, new Pattern( name ) ).size() != 0 && !ifNotExists ) {
             throw new GraphAlreadyExistsException( name );
         }
@@ -4849,8 +4849,6 @@ public class CatalogImpl extends Catalog {
         }
 
         CatalogGraphDatabase graph = old.addPlacement( adapterId );
-
-        //addGraphPlacementLogistics( adapterId, graphId );
 
         synchronized ( this ) {
             graphPlacements.put( new Object[]{ graph.id, adapterId }, placement );

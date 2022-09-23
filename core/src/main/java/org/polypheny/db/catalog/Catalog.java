@@ -330,7 +330,7 @@ public abstract class Catalog {
      * @param replace If the graph should replace an existing one
      * @return The id of the newly added graph
      */
-    public abstract long addGraphDatabase( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
+    public abstract long addGraph( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
 
     /**
      * Additional operations for the creation of a graph entity.

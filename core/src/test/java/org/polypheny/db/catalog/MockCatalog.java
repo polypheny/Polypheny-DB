@@ -169,7 +169,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addGraphDatabase( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
+    public long addGraph( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
         throw new NotImplementedException();
     }
 

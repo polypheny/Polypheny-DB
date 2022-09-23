@@ -55,7 +55,7 @@ import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
- * Sub-class of {@link Project} not targeted at any particular engine or calling convention.
+ * Subclass of {@link Project} not targeted at any particular engine or calling convention.
  */
 public final class LogicalProject extends Project {
 

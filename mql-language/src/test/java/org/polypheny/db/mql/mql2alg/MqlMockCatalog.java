@@ -25,7 +25,7 @@ public class MqlMockCatalog extends MockCatalog {
 
     @Override
     public CatalogSchema getSchema( long schemaId ) {
-        return new CatalogSchema( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT );
+        return new CatalogSchema( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT, true );
     }
 
 

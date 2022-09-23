@@ -75,7 +75,7 @@ public class PigScan extends Scan implements PigAlg {
 
     private PigTable getPigTable( String name ) {
         final PolyphenyDbSchema schema = getTable().unwrap( PolyphenyDbSchema.class );
-        return (PigTable) schema.getTable( name, false ).getTable();
+        return (PigTable) schema.getTable( name ).getTable();
     }
 
 

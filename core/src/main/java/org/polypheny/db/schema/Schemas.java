@@ -461,7 +461,7 @@ public final class Schemas {
      */
     public static String uniqueTableName( PolyphenyDbSchema schema, String base ) {
         String t = Objects.requireNonNull( base );
-        for ( int x = 0; schema.getTable( t, true ) != null; x++ ) {
+        for ( int x = 0; schema.getTable( t ) != null; x++ ) {
             t = base + x;
         }
         return t;
