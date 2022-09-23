@@ -472,7 +472,7 @@ public class LanguageCrud {
             queryAnalyzer = attachAnalyzerIfSpecified( request, observer, transaction );
 
             executionTime = System.nanoTime();
-            boolean noLimit = false;
+            ;
 
             Statement statement = transaction.createStatement();
             CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, request.database );
@@ -517,7 +517,7 @@ public class LanguageCrud {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyImplementation, transaction, true ).setNamespaceName( request.database ) );
+                    results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyImplementation, transaction, query.toLowerCase().contains( " limit " ) ).setNamespaceName( request.database ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }
@@ -562,7 +562,8 @@ public class LanguageCrud {
     public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation result, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
-        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : language == QueryLanguage.CYPHER ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+
         boolean hasMoreRows = result.hasMoreRows();
 
         CatalogTable catalogTable = null;
