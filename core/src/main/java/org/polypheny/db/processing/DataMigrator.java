@@ -75,17 +75,23 @@ public interface DataMigrator {
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
-    void mergeColumns(
-            Transaction transaction,
-            CatalogAdapter store,
-            List<CatalogColumn> sourceColumns,
-            CatalogColumn targetColumn);
+    /**
+     * Currently used to to transfer data if unpartitioned is about to be partitioned.
+     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, Map, List)}   } instead
+     *
+     * @param transaction Transactional scope
+     * @param store Target Store where data should be migrated to
+     * @param sourceColumns Columns to be merged
+     * @param targetColumn New column to be added
+     */
+    void mergeColumns( Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn );
 
     AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
-    //is used within copyData
+    // is used within copyData
     void executeQuery( List<CatalogColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
+    // is used within mergeColumns
     void executeMergeQuery( List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
     AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );

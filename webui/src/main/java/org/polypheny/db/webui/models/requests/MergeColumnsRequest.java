@@ -22,8 +22,8 @@ import org.polypheny.db.webui.models.DbColumn;
 
 public class MergeColumnsRequest extends UIRequest {
 
-    public DbColumn[] columnsToMerge;
-    public String newColumnName;
+    public DbColumn[] sourceColumns;
+    public String targetColumnName;
     // for data sources
     public String tableType;
 

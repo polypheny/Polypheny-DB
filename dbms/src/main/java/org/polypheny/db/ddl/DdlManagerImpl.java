@@ -564,17 +564,17 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
     }
 
-    public void mergeColumns( CatalogTable catalogTable, List<String> columnNamesToMerge, String newColumnName, ColumnTypeInformation type, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
+    public void mergeColumns( CatalogTable catalogTable, List<String> sourceColumnNames, String targetColumnName, ColumnTypeInformation type, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
 
-        if ( catalog.checkIfExistsColumn( catalogTable.id, newColumnName ) ) {
-            throw new ColumnAlreadyExistsException( newColumnName, catalogTable.name );
+        if ( catalog.checkIfExistsColumn( catalogTable.id, targetColumnName ) ) {
+            throw new ColumnAlreadyExistsException( targetColumnName, catalogTable.name );
         }
 
-        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, columnNamesToMerge.get( columnNamesToMerge.size()-1 ) );
+        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, sourceColumnNames.get( sourceColumnNames.size()-1 ) );
         int position = updateAdjacentPositions( catalogTable, null, afterColumn );
 
         long columnId = catalog.addColumn(
-                newColumnName,
+                targetColumnName,
                 catalogTable.id,
                 position,
                 type.type,
@@ -598,10 +598,10 @@ public class DdlManagerImpl extends DdlManager {
 
         // Build catalog columns
         List<CatalogColumn> sourceCatalogColumns = new LinkedList<>();
-        for ( String columnName : columnNamesToMerge ) {
+        for ( String columnName : sourceColumnNames ) {
             sourceCatalogColumns.add( catalog.getColumn( catalogTable.id, columnName ) );
         }
-        CatalogColumn targetCatalogColumn = catalog.getColumn( catalogTable.id, newColumnName );
+        CatalogColumn targetCatalogColumn = catalog.getColumn( catalogTable.id, targetColumnName );
 
         // Add column on underlying data stores and insert default value
         for ( DataStore store : stores ) {

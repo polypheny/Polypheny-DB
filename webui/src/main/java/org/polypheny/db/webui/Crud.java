@@ -1761,9 +1761,9 @@ public class Crud implements InformationObserver {
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
-        boolean nullable = Arrays.stream( request.columnsToMerge ).allMatch( c -> c.nullable );
-        Integer precison = Arrays.stream( request.columnsToMerge ).mapToInt( c -> c.precision ).sum();
-        DbColumn newColumn = new DbColumn(request.newColumnName, "varchar", nullable, precison, null, null);
+        boolean nullable = Arrays.stream( request.sourceColumns ).allMatch( c -> c.nullable );
+        Integer precison = Arrays.stream( request.sourceColumns ).mapToInt( c -> c.precision ).sum();
+        DbColumn newColumn = new DbColumn(request.targetColumnName, "varchar", nullable, precison, null, null);
         newColumn.collectionsType = "";
 
         String as = "";
@@ -1775,7 +1775,7 @@ public class Crud implements InformationObserver {
         }
 
         String listOfColumnsToMerge =
-                Arrays.stream( request.columnsToMerge )
+                Arrays.stream( request.sourceColumns )
                         .map( s -> "\"" + s.name + "\"")
                         .collect( Collectors.joining(", "));
         String query = String.format( "ALTER TABLE %s MERGE COLUMNS (%s) IN \"%s\" %s %s",
