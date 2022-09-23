@@ -1800,36 +1800,17 @@ public class Crud implements InformationObserver {
                 query = query + " NOT NULL";
             }
         }
-        // TODO: merge the DEFAULT values too.(?)
-        if ( newColumn.defaultValue != null && !newColumn.defaultValue.equals( "" ) ) {
-            query = query + " DEFAULT ";
-            if ( newColumn.collectionsType != null && !newColumn.collectionsType.equals( "" ) ) {
-                //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
-                if ( !newColumn.defaultValue.startsWith( newColumn.collectionsType ) ) {
-                    query = query + newColumn.collectionsType;
-                }
-                query = query + newColumn.defaultValue;
-            } else {
-                switch ( newColumn.dataType ) {
-                    case "BIGINT":
-                    case "INTEGER":
-                    case "SMALLINT":
-                    case "TINYINT":
-                    case "FLOAT":
-                    case "DOUBLE":
-                    case "DECIMAL":
-                        newColumn.defaultValue = newColumn.defaultValue.replace( ",", "." );
-                        BigDecimal b = new BigDecimal( newColumn.defaultValue );
-                        query = query + b.toString();
-                        break;
-                    case "VARCHAR":
-                        query = query + String.format( "'%s'", newColumn.defaultValue );
-                        break;
-                    default:
-                        query = query + newColumn.defaultValue;
-                }
-            }
+
+        String defaultValue = Arrays
+                .stream( request.sourceColumns )
+                .map( c -> c.defaultValue )
+                .filter(s -> s != null && !s.isEmpty())
+                .collect( Collectors.joining(" "));
+
+        if ( defaultValue != null && !defaultValue.equals( "" ) ) {
+            query = query + " DEFAULT " + String.format( "'%s'", defaultValue );
         }
+
         Result result;
         try {
             int affectedRows = executeSqlUpdate( transaction, query );

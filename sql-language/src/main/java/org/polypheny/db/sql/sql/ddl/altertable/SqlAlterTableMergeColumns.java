@@ -55,20 +55,25 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
     private final SqlIdentifier table;
     private final SqlNodeList columnsToMerge;
     private final SqlIdentifier newColumnName; // Can be null
-
     private final SqlDataTypeSpec type;
+    private final boolean nullable;
+    private final SqlNode defaultValue;
 
     public SqlAlterTableMergeColumns(
             ParserPos pos,
             SqlIdentifier table,
             SqlNodeList columnsToMerge,
             SqlIdentifier newColumnName,
-            SqlDataTypeSpec type ) {
+            SqlDataTypeSpec type,
+            boolean nullable,
+            SqlNode defaultValue) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnsToMerge = columnsToMerge;
         this.newColumnName = newColumnName;
         this.type = type;
+        this.nullable = nullable;
+        this.defaultValue = defaultValue;
     }
 
 
@@ -92,6 +97,12 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
         writer.keyword( "MERGE" );
         writer.keyword( "COLUMNS" );
         columnsToMerge.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "AS" );
+        columnsToMerge.unparse( writer, leftPrec, rightPrec );
+        if ( defaultValue != null ) {
+            writer.keyword( "DEFAULT" );
+            defaultValue.unparse( writer, leftPrec, rightPrec );
+        }
         if ( newColumnName != null ) {
             writer.keyword( "AFTER" );
             newColumnName.unparse( writer, leftPrec, rightPrec );
@@ -112,13 +123,17 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
             getDataStoreInstance( storeId );
         }
 
+        String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
+
         try {
             DdlManager.getInstance().mergeColumns(
                     catalogTable,
                     columnsToMerge.getList().stream().map( Node::toString ).collect( Collectors.toList()),
                     newColumnName.getSimple(),
                     ColumnTypeInformation.fromDataTypeSpec( type ),
-                    statement );
+                    nullable,
+                    defaultValue,
+                    statement);
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnsToMerge.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( ColumnAlreadyExistsException e ) {

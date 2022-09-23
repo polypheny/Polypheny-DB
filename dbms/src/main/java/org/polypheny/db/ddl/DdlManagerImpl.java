@@ -564,7 +564,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
     }
 
-    public void mergeColumns( CatalogTable catalogTable, List<String> sourceColumnNames, String targetColumnName, ColumnTypeInformation type, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
+    public void mergeColumns( CatalogTable catalogTable, List<String> sourceColumnNames, String targetColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
 
         if ( catalog.checkIfExistsColumn( catalogTable.id, targetColumnName ) ) {
             throw new ColumnAlreadyExistsException( targetColumnName, catalogTable.name );
@@ -583,13 +583,12 @@ public class DdlManagerImpl extends DdlManager {
                 type.scale,
                 type.dimension,
                 type.cardinality,
-                true, // TODO: value is missing
+                nullable,
                 Collation.getDefaultCollation()
         );
 
-        // TODO: get DEFAULT from parameter
         // Add default value
-        addDefaultValue( "DEFAULT", columnId );
+        addDefaultValue( defaultValue, columnId );
         CatalogColumn addedColumn = catalog.getColumn  ( columnId );
 
         // Ask router on which stores this column shall be placed

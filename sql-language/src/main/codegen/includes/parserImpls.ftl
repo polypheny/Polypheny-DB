@@ -657,8 +657,23 @@ SqlAlterTable SqlAlterTable(Span s) :
         <IN>
             name = SimpleIdentifier()
             type = DataType()
+            (
+                <NULL> { nullable = true; }
+            |
+                <NOT> <NULL> { nullable = false; }
+            |
+                { nullable = true; }
+            )
+            (
+                <DEFAULT_>
+                defaultValue = Literal()
+            |
+                defaultValue = ArrayConstructor()
+            |
+                { defaultValue = null; }
+            )
             {
-                return new SqlAlterTableMergeColumns(s.end(this), table, columnList, name, type);
+                return new SqlAlterTableMergeColumns(s.end(this), table, columnList, name, type, nullable, defaultValue);
             }
     )
 }
