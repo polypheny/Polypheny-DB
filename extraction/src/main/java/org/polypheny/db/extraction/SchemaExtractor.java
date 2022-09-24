@@ -18,31 +18,14 @@ package org.polypheny.db.extraction;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
-import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.LinkedList;
-import java.util.List;
-
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.information.InformationAction;
-import org.polypheny.db.information.InformationCode;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationText;
+import org.polypheny.db.information.*;
 import org.polypheny.db.transaction.TransactionManager;
 
 public class SchemaExtractor {
@@ -51,10 +34,11 @@ public class SchemaExtractor {
     public static final String PYTHON_COMMAND = "python";
     private static final SchemaExtractor INSTANCE = new SchemaExtractor();
 
-    @Setter
-    private TransactionManager transactionManager;
     private InformationCode informationLogOutput;
     private InformationCode informationResult;
+
+    @Setter
+    private TransactionManager transactionManager;
 
 
     private SchemaExtractor() {
@@ -71,6 +55,11 @@ public class SchemaExtractor {
         return INSTANCE;
     }
 
+    public static void startServer(TransactionManager transactionManager) {
+        // Start server (for communication with Python)
+        // TODO: Port number?
+        Server server = new Server(20598, transactionManager);
+    }
 
     /**
      * Your central method that serves as an entry point. Start with your implementation in this method.
@@ -78,45 +67,11 @@ public class SchemaExtractor {
      * @param namespaceId The id of the namespace to analyze
      */
     void execute( long namespaceId ) {
-        // Create files
-        final File inputFile;
-        final File outputFile;
-        try {
-            inputFile = File.createTempFile( "pdb-schema-extraction", "input" );
-            outputFile = File.createTempFile( "pdb-schema-extraction", "output" );
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
-        }
-
         // Build input
         String inputJsonStr = buildInput( namespaceId );
-        try ( FileWriter fileWriter = new FileWriter( inputFile );
-                BufferedWriter writer = new BufferedWriter( fileWriter ) ) {
-            writer.write( inputJsonStr );
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
-        }
 
-        // Execute python
-        try {
-            String log = executePython( inputFile, outputFile );
-            informationLogOutput.updateCode( log );
-        } catch ( IOException | InterruptedException e ) {
-            throw new RuntimeException( e );
-        }
-
-        // Read output
-        StringBuilder resultBuilder = new StringBuilder();
-        try ( FileReader fileReader = new FileReader( outputFile );
-                BufferedReader reader = new BufferedReader( fileReader ) ) {
-            String line;
-            while ( (line = reader.readLine()) != null ) {
-                resultBuilder.append( line ).append( System.lineSeparator() );
-            }
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
-        }
-        informationResult.updateCode( resultBuilder.toString() );
+        // Send json to listener
+        Server.broadcastMessage("Server", "namespaceInfo", inputJsonStr);
     }
 
 
@@ -183,50 +138,6 @@ public class SchemaExtractor {
     }
 
 
-    private String executePython( File inputFile, File outputFile ) throws IOException, InterruptedException {
-        // Create tmp file for code
-        final File codeFile;
-        try {
-            codeFile = File.createTempFile( "pdb-schema-extraction", "script" );
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
-        }
-
-        // Write to tmp file
-        try ( FileWriter fileWriter = new FileWriter( codeFile );
-                BufferedWriter writer = new BufferedWriter( fileWriter );
-                InputStream in = SchemaExtractor.class.getResourceAsStream( "schemaExtraction.py" );
-                BufferedReader reader = new BufferedReader( new InputStreamReader( in ) ) ) {
-            String line;
-            while ( (line = reader.readLine()) != null ) {
-                writer.write( line );
-                writer.write( System.lineSeparator() );
-            }
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
-        }
-
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                PYTHON_COMMAND,
-                codeFile.getAbsolutePath(),
-                inputFile.getPath(),
-                outputFile.getPath() );
-        processBuilder.redirectErrorStream( true );
-
-        Process process = processBuilder.start();
-
-        StringBuilder logOutput = new StringBuilder();
-        try ( var reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) ) ) {
-            String line;
-            while ( (line = reader.readLine()) != null ) {
-                logOutput.append( line ).append( System.lineSeparator() );
-            }
-        }
-        int exitCode = process.waitFor();
-        return logOutput.toString();
-    }
-
-
     /**
      * This method adds a page to the monitoring section of the Polypheny-UI. The page allows you to
      * easily trigger the execute() method.
@@ -257,7 +168,11 @@ public class SchemaExtractor {
             } catch ( UnknownSchemaException e ) {
                 return "There is no namespace with this name!";
             }
-            SchemaExtractor.getInstance().execute( catalogSchema.id );
+            if (Server.listenerMap.isEmpty()) {
+                return "No listeners!";
+            } else {
+                SchemaExtractor.getInstance().execute( catalogSchema.id );
+            }
             return "Successfully executed schema extractor!";
         } ).withParameters( "namespace" );
         runAction.setOrder( 2 );

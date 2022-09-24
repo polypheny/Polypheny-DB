@@ -4,7 +4,7 @@ group "org.polypheny"
 dependencies {
     implementation project(":core")
     implementation group: 'org.glassfish', name: 'jakarta.json', version: jakarta_json_version
-
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 
