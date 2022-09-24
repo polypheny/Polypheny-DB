@@ -184,10 +184,12 @@ public class CatalogTest {
         Long tableId = ids.get( 3 );
 
         names.remove( 3 );
-        names.add( 3, newTable );
+        names.add( 3, newTable.toLowerCase() );
 
         catalog.renameTable( tableId, newTable );
-        assertEquals( names, catalog.getTables( null, null, null ).stream().sorted().map( s -> s.name ).collect( Collectors.toList() ) );
+        assertEquals(
+                names,
+                catalog.getTables( null, null, null ).stream().sorted().map( s -> s.name ).collect( Collectors.toList() ) );
 
         // test change owner
         String newUserName = "newUser";
@@ -210,9 +212,6 @@ public class CatalogTest {
 
         CatalogPrimaryKey key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
         assertEquals( key.columnIds.get( 0 ), columnId );
-
-        //catalog.deletePrimaryKey( tableId );
-        //assertNull( catalog.getTable( tableId ).primaryKey );
 
         catalog.addPrimaryKey( tableId, columnIds );
         key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
