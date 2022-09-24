@@ -154,6 +154,11 @@ compileJava {
     dependsOn(":information:processResources")
 }
 
+delombok {
+    dependsOn(":config:processResources")
+    dependsOn(":information:processResources")
+}
+
 
 /**
  * JavaDoc

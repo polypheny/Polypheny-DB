@@ -50,6 +50,10 @@ compileJava {
     dependsOn(":sql-language:processResources")
 }
 
+delombok {
+    dependsOn(":sql-language:processResources")
+}
+
 /**
  * JARs
  */

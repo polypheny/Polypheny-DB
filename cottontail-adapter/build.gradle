@@ -30,6 +30,14 @@ compileJava {
     dependsOn(":mql-language:processResources")
 }
 
+delombok {
+    dependsOn(":mql-language:processResources")
+}
+
+inspectClassesForKotlinIC {
+    dependsOn(":cottontail-adapter:compileTestKotlin")
+}
+
 
 sourceSets {
     main {
@@ -64,9 +72,14 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
+    dependsOn(":cottontail-adapter:compileTestKotlin")
 
 }
 java {
     withJavadocJar()
     withSourcesJar()
+}
+
+javadoc {
+    dependsOn(":cottontail-adapter:compileTestKotlin")
 }

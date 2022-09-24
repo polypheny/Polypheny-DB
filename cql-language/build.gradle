@@ -69,12 +69,16 @@ compileJava {
     dependsOn(":config:processResources")
 }
 
+delombok {
+    dependsOn(":core:processResources")
+}
+
 
 /**
  * JavaDoc
  */
 javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
+    if (JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption("html5", true)
     }
     // suppress most of the warnings

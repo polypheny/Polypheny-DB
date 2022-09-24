@@ -1694,7 +1694,7 @@ public abstract class Catalog {
     protected abstract void removePartitionsFromDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
 
     /**
-     * Updates and overrides list of associated columnPlacements & partitionPlacements for a given data placement
+     * Updates and overrides list of associated columnPlacements {@code &} partitionPlacements for a given data placement
      *
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from

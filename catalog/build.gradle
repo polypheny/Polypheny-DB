@@ -43,6 +43,11 @@ compileJava {
     dependsOn(":mql-language:processResources")
 }
 
+delombok {
+    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":mql-language:processResources")
+}
+
 
 /**
  * JARs

@@ -84,10 +84,10 @@ public class LexCaseSensitiveTest extends SqlLanguagelDependant {
 
 
     private static void runProjectQueryWithLex( Lex lex, String sql ) throws NodeParseException, ValidationException, AlgConversionException {
-        boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        boolean oldCaseSensitiveValue = RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean();
         try {
             ParserConfig javaLex = Parser.configBuilder().setLex( lex ).build();
-            RuntimeConfig.CASE_SENSITIVE.setBoolean( lex.caseSensitive );
+            RuntimeConfig.RELATIONAL_CASE_SENSITIVE.setBoolean( lex.caseSensitive );
             Planner planner = getPlanner( null, javaLex, Programs.ofRules( Programs.RULE_SET ) );
             Node parse = planner.parse( sql );
             Node validate = planner.validate( parse );
@@ -104,7 +104,7 @@ public class LexCaseSensitiveTest extends SqlLanguagelDependant {
                 assertThat( fieldNames.get( 0 ) + "-" + fieldNames.get( 1 ), anyOf( is( "EMPID-empid0" ), is( "EMPID0-empid" ) ) );
             }
         } finally {
-            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+            RuntimeConfig.RELATIONAL_CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
         }
     }
 

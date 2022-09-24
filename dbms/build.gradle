@@ -234,6 +234,11 @@ compileJava {
 }
 
 
+compileJava {
+    dependsOn(":cottontail-adapter:compileTestKotlin")
+}
+
+
 /**
  * JARs
  */
@@ -288,10 +293,32 @@ application {
 }
 startScripts {
     defaultJvmOpts += ['-Xmx6g', '-XX:+HeapDumpOnOutOfMemoryError', '-Dfile.encoding=UTF-8']
+    dependsOn(shadowJar)
+    dependsOn(":jar")
+}
+
+distTar {
+    dependsOn(shadowJar)
+}
+
+distZip {
+    dependsOn(shadowJar)
 }
 
 static def buildTime() {
     def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'")
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
     return df.format(new Date())
+}
+
+startShadowScripts {
+    dependsOn(jar)
+}
+
+shadowDistTar {
+    dependsOn(jar)
+}
+
+shadowDistZip {
+    dependsOn(jar)
 }

@@ -50,6 +50,11 @@ compileJava {
     dependsOn(":monitoring:processResources")
 }
 
+delombok {
+    dependsOn(":monitoring:processResources")
+}
+
+
 /**
  * JARs
  */

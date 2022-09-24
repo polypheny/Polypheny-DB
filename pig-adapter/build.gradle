@@ -42,12 +42,24 @@ sourceSets {
     }
 }
 
+delombok {
+    dependsOn(":core:processResources")
+}
+
+compileJava {
+    dependsOn(":core:processResources")
+}
+
+javadoc {
+    dependsOn(":core:processResources")
+}
+
 
 /**
  * Tests
  */
 test {
-    include "**/PigRelBuilderStyleTest.class","**/PigAdapterTest.class"
+    include "**/PigRelBuilderStyleTest.class", "**/PigAdapterTest.class"
 }
 
 

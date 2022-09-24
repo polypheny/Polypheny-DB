@@ -60,7 +60,7 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN
     ), // Druid
 
-    CASE_SENSITIVE(
+    RELATIONAL_CASE_SENSITIVE(
             "runtime/caseSensitive",
             "Whether identifiers are matched case-sensitively.",
             false,

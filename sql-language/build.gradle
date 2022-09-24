@@ -71,6 +71,10 @@ compileJava {
     dependsOn(":core:processResources")
 }
 
+delombok {
+    dependsOn(":avatica-interface:processResources")
+}
+
 sourceSets {
     main {
         java {

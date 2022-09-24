@@ -47,6 +47,10 @@ compileJava {
     dependsOn(":information:processResources")
 }
 
+delombok {
+    dependsOn(":core:processResources")
+}
+
 /**
  * JARs
  */
