@@ -39,14 +39,17 @@ public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGr
     public final int ownerId;
     private final boolean modifiable;
 
+    public final boolean caseSensitive;
 
-    public CatalogGraphDatabase( long databaseId, long id, String name, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements ) {
+
+    public CatalogGraphDatabase( long databaseId, long id, String name, int ownerId, boolean modifiable, @NonNull Collection<Integer> placements, boolean caseSensitive ) {
         this.id = id;
         this.name = name;
         this.ownerId = ownerId;
         this.databaseId = databaseId;
         this.modifiable = modifiable;
         this.placements = ImmutableList.copyOf( placements );
+        this.caseSensitive = caseSensitive;
     }
 
 
@@ -68,12 +71,12 @@ public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGr
     public CatalogGraphDatabase addPlacement( int adapterId ) {
         List<Integer> placements = new ArrayList<>( this.placements );
         placements.add( adapterId );
-        return new CatalogGraphDatabase( databaseId, id, name, ownerId, modifiable, placements );
+        return new CatalogGraphDatabase( databaseId, id, name, ownerId, modifiable, placements, true );
     }
 
 
     public CatalogGraphDatabase removePlacement( int adapterId ) {
-        return new CatalogGraphDatabase( databaseId, id, name, ownerId, modifiable, placements.stream().filter( i -> i != adapterId ).collect( Collectors.toList() ) );
+        return new CatalogGraphDatabase( databaseId, id, name, ownerId, modifiable, placements.stream().filter( i -> i != adapterId ).collect( Collectors.toList() ), true );
     }
 
 }

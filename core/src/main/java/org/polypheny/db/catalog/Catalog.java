@@ -487,7 +487,7 @@ public abstract class Catalog {
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract long addEntity( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
+    public abstract long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
 
 
     /**
@@ -2377,6 +2377,11 @@ public abstract class Catalog {
         public Pattern( String pattern ) {
             this.pattern = pattern;
             containsWildcards = pattern.contains( "%" ) || pattern.contains( "_" );
+        }
+
+
+        public Pattern toLowerCase() {
+            return new Pattern( pattern.toLowerCase() );
         }
 
 

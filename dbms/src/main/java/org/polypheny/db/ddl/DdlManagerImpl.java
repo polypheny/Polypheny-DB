@@ -252,7 +252,7 @@ public class DdlManagerImpl extends DdlManager {
                     tableName += i;
                 }
 
-                long tableId = catalog.addEntity( tableName, 1, 1, EntityType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
+                long tableId = catalog.addTable( tableName, 1, 1, EntityType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
                 List<Long> primaryKeyColIds = new ArrayList<>();
                 int colPos = 1;
                 String physicalSchemaName = null;
@@ -1653,6 +1653,10 @@ public class DdlManagerImpl extends DdlManager {
         // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
 
+        if ( catalog.getSchema( catalogTable.namespaceId ).caseSensitive ) {
+            newTableName = newTableName.toLowerCase();
+        }
+
         catalog.renameTable( catalogTable.id, newTableName );
 
         // Update Name in statistics
@@ -2141,7 +2145,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createEntity( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
+    public void createTable( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
         try {
             // Check if there is already an entity with this name
             if ( assertEntityExists( schemaId, name, ifNotExists ) ) {
@@ -2172,7 +2176,7 @@ public class DdlManagerImpl extends DdlManager {
                 stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
             }
 
-            long tableId = catalog.addEntity(
+            long tableId = catalog.addTable(
                     name,
                     schemaId,
                     statement.getPrepareContext().getCurrentUserId(),
@@ -2183,7 +2187,7 @@ public class DdlManagerImpl extends DdlManager {
             stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), tableId ) );
 
             for ( FieldInformation information : fields ) {
-                addField( information.name, information.typeInformation, information.collation, information.defaultValue, tableId, information.position, stores, placementType );
+                addColumn( information.name, information.typeInformation, information.collation, information.defaultValue, tableId, information.position, stores, placementType );
             }
 
             for ( ConstraintInformation constraint : constraints ) {
@@ -2820,7 +2824,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void addField( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
+    private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
         long addedColumnId = catalog.addColumn(
                 columnName,
                 tableId,

@@ -240,7 +240,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         }
 
         try {
-            DdlManager.getInstance().createEntity(
+            DdlManager.getInstance().createTable(
                     schemaId,
                     tableName,
                     columns,

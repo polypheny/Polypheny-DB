@@ -449,7 +449,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createEntity( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void createTable( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
      * Create a new view

@@ -123,7 +123,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
     private void buildGraphLogical( AbstractPolyphenyDbSchema polyphenyDbSchema, SchemaPlus rootSchema, Catalog catalog, CatalogDatabase catalogDatabase ) {
         for ( CatalogGraphDatabase graph : catalog.getGraphs( catalogDatabase.id, null ) ) {
-            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), graph.name, NamespaceType.GRAPH, true ).plus();
+            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), graph.name, NamespaceType.GRAPH, graph.caseSensitive ).plus();
 
             rootSchema.add( graph.name, s, NamespaceType.GRAPH );
             s.polyphenyDbSchema().setSchema( new LogicalGraph( graph.id ) );
@@ -250,7 +250,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                 final String schemaName = buildAdapterSchemaName( adapter.getUniqueName(), graph.name, placement.physicalName );
 
                 adapter.createGraphNamespace( rootSchema, schemaName, graph.id );
-                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH, true ).plus();
+                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH, graph.caseSensitive ).plus();
                 rootSchema.add( schemaName, s, NamespaceType.GRAPH );
 
                 rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentGraphNamespace() );
@@ -287,14 +287,14 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     adapter.createNewSchema( rootSchema, schemaName );
                     SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName, catalogSchema.namespaceType, catalogSchema.caseSensitive ).plus();
                     for ( long collectionId : collectionIds ) {
-                        CatalogCollection catalogEntity = catalog.getCollection( collectionId );
+                        CatalogCollection catalogCollection = catalog.getCollection( collectionId );
 
-                        for ( CatalogCollectionPlacement partitionPlacement : catalogEntity.placements.stream().map( p -> Catalog.getInstance().getCollectionPlacement( collectionId, adapter.getAdapterId() ) ).collect( Collectors.toList() ) ) {
+                        for ( CatalogCollectionPlacement partitionPlacement : catalogCollection.placements.stream().map( p -> Catalog.getInstance().getCollectionPlacement( collectionId, adapter.getAdapterId() ) ).collect( Collectors.toList() ) ) {
                             if ( catalogSchema.namespaceType != NamespaceType.DOCUMENT && catalogAdapter.getSupportedNamespaces().contains( catalogSchema.namespaceType ) ) {
                                 continue;
                             }
 
-                            Table table = adapter.createDocumentSchema( catalogEntity, partitionPlacement );
+                            Table table = adapter.createDocumentSchema( catalogCollection, partitionPlacement );
 
                             physicalTables.put( catalog.getCollection( collectionId ).name + "_" + partitionPlacement.id, table );
 

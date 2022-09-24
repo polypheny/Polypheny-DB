@@ -97,7 +97,7 @@ public class CatalogTest {
         CatalogSchema schema = catalog.getSchema( databaseId, "test_schema" );
         assertEquals( schemaId, schema.id );
 
-        long tableId = catalog.addEntity( "test_table", schemaId, userId, EntityType.ENTITY, true );
+        long tableId = catalog.addTable( "test_table", schemaId, userId, EntityType.ENTITY, true );
         CatalogTable table = catalog.getTable( schemaId, "test_table" );
         assertEquals( tableId, table.id );
 
@@ -176,7 +176,7 @@ public class CatalogTest {
         List<Long> ids = new ArrayList<>();
 
         for ( String name : names ) {
-            ids.add( catalog.addEntity( name, schemaId, userId, EntityType.ENTITY, true ) );
+            ids.add( catalog.addTable( name, schemaId, userId, EntityType.ENTITY, true ) );
         }
 
         // test renaming table
@@ -235,7 +235,7 @@ public class CatalogTest {
 
         long schemaId = catalog.addSchema( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
 
-        long tableId = catalog.addEntity( "table1", schemaId, userId, EntityType.ENTITY, true );
+        long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         List<String> columnNames = new ArrayList<>( Arrays.asList( "column1", "column2", "column3", "column4", "column5" ) );
         List<Long> columnIds = new ArrayList<>();
@@ -315,7 +315,7 @@ public class CatalogTest {
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
         long schemaId = catalog.addSchema( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
-        long tableId = catalog.addEntity( "table1", schemaId, userId, EntityType.ENTITY, true );
+        long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         long columnId = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column = catalog.getColumn( columnId );
@@ -346,7 +346,7 @@ public class CatalogTest {
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
         long schemaId = catalog.addSchema( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
-        long tableId = catalog.addEntity( "table1", schemaId, userId, EntityType.ENTITY, true );
+        long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         long columnId1 = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column1 = catalog.getColumn( columnId1 );
@@ -404,7 +404,7 @@ public class CatalogTest {
         }
 
         // test foreign key
-        long tableId2 = catalog.addEntity( "table2", schemaId, userId, EntityType.ENTITY, true );
+        long tableId2 = catalog.addTable( "table2", schemaId, userId, EntityType.ENTITY, true );
         long columnId3 = catalog.addColumn( "column3", tableId2, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column3 = catalog.getColumn( columnId3 );
 
