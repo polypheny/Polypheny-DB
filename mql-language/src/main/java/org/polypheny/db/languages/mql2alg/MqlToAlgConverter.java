@@ -24,7 +24,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -330,7 +329,7 @@ public class MqlToAlgConverter {
 
 
     private AlgOptTable getEntity( MqlCollectionStatement query, String dbSchemaName ) {
-        List<String> names = ImmutableList.of( dbSchemaName, query.getCollection() ).stream().map( n -> n.toLowerCase( Locale.ROOT ) ).collect( Collectors.toList() );
+        List<String> names = ImmutableList.of( dbSchemaName, query.getCollection() );
 
         PreparingTable table = catalogReader.getTable( names );
 

@@ -57,6 +57,16 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
+    public void simpleFindUppercaseTest() {
+        CypherTestTemplate.execute( format( "CREATE (n:%s {key: 5})", DATA_LABEL.toUpperCase() ), GRAPH_NAME );
+
+        TestHelper.MongoConnection.checkUnorderedResultSet(
+                execute( format( "db.%s.find({})", DATA_LABEL.toUpperCase() ), GRAPH_NAME ),
+                ImmutableList.of( new String[]{ "{\"key\":\"5\"}" } ), true );
+    }
+
+
+    @Test
     public void simpleProjectTest() {
         TestHelper.MongoConnection.checkUnorderedResultSet(
                 execute( format( "db.%s.find({},{\"key\":1})", DATA_LABEL ), GRAPH_NAME ),

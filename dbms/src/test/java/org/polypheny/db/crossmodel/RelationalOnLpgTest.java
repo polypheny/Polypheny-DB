@@ -41,6 +41,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
         CypherTestTemplate.createGraph( GRAPH_NAME );
         CypherTestTemplate.execute( format( "CREATE (n:%s {key: 3})", DATA_LABEL ), GRAPH_NAME );
         CypherTestTemplate.execute( format( "CREATE (n:%s {key: 4})", DATA_LABEL + 1 ), GRAPH_NAME );
+        CypherTestTemplate.execute( format( "CREATE (n:%s {key: 5})", DATA_LABEL.toUpperCase() ), GRAPH_NAME );
     }
 
 
@@ -63,6 +64,24 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
             data = TestHelper.convertResultSetToList( result );
             assert (data.size() == 1);
             assert (data.get( 0 ).length == 3);
+        } );
+
+    }
+
+
+    @Test
+    public void simpleSelectUpperCaseTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL.toUpperCase() ) );
+            // can not test use default comparator method as id is dynamic
+            List<Object[]> data = TestHelper.convertResultSetToList( result );
+            assert (data.size() == 1);
+            assert (data.get( 0 ).length == 3);
+            // assert key is in the row
+            assert (data.get( 0 )[1].toString().contains( "5" ));
+            // assert label is in the labels
+            assert (data.get( 0 )[2].toString().contains( DATA_LABEL.toUpperCase() ));
+            assert (!data.get( 0 )[2].toString().contains( DATA_LABEL ));
         } );
 
     }

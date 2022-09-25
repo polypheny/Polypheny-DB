@@ -166,7 +166,7 @@ public class CypherProcessorImpl extends AutomaticDdlProcessor {
         assert parameters instanceof CypherQueryParameters;
         try {
             DdlManager ddlManager = DdlManager.getInstance();
-            long namespaceId = ddlManager.createGraphDatabase(
+            long namespaceId = ddlManager.createGraph(
                     Catalog.defaultDatabaseId, ((CypherQueryParameters) parameters).getDatabaseName(), true, null, true, false, statement );
 
             statement.getTransaction().commit();

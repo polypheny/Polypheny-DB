@@ -769,7 +769,7 @@ public class CatalogImpl extends Catalog {
 
         long schemaId;
         if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
-            schemaId = addSchema( "public", databaseId, 1, NamespaceType.getDefault() );
+            schemaId = addNamespace( "public", databaseId, 1, NamespaceType.getDefault() );
         } else {
             schemaId = getSchema( "APP", "public" ).id;
         }
@@ -1136,7 +1136,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public long addSchema( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
+    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         CatalogUser owner = getUser( ownerId );
         long id = namespaceIdBuilder.getAndIncrement();
         CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, namespaceType, namespaceType == NamespaceType.DOCUMENT || namespaceType == NamespaceType.GRAPH );
@@ -1148,7 +1148,7 @@ public class CatalogImpl extends Catalog {
             children.add( id );
             databaseChildren.replace( databaseId, ImmutableList.copyOf( children ) );
         }
-        listeners.firePropertyChange( "schema", null, schema );
+        listeners.firePropertyChange( "namespace", null, schema );
         return id;
     }
 
@@ -1211,7 +1211,7 @@ public class CatalogImpl extends Catalog {
             throw new GraphAlreadyExistsException( name );
         }
 
-        long id = addSchema( name, databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
+        long id = addNamespace( name, databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
 
         CatalogGraphDatabase graph = new CatalogGraphDatabase( databaseId, id, name, Catalog.defaultUserId, modifiable, ImmutableList.of(), true );
 

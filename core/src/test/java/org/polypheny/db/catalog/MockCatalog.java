@@ -271,7 +271,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addSchema( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
+    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         throw new NotImplementedException();
     }
 

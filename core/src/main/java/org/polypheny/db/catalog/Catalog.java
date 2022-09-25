@@ -292,7 +292,7 @@ public abstract class Catalog {
      * @param namespaceType The type of this schema
      * @return The id of the inserted schema
      */
-    public abstract long addSchema( String name, long databaseId, int ownerId, NamespaceType namespaceType );
+    public abstract long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType );
 
     /**
      * Checks weather a schema with the specified name exists in a database.

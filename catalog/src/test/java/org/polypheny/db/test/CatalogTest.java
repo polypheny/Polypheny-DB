@@ -93,7 +93,7 @@ public class CatalogTest {
         CatalogDatabase database = catalog.getDatabase( "test_db" );
         assertEquals( databaseId, database.id );
 
-        long schemaId = catalog.addSchema( "test_schema", databaseId, userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "test_schema", databaseId, userId, NamespaceType.RELATIONAL );
         CatalogSchema schema = catalog.getSchema( databaseId, "test_schema" );
         assertEquals( schemaId, schema.id );
 
@@ -142,7 +142,7 @@ public class CatalogTest {
         // test adding of schema
 
         for ( String name : names ) {
-            ids.add( catalog.addSchema( name, databaseId, userId, NamespaceType.RELATIONAL ) );
+            ids.add( catalog.addNamespace( name, databaseId, userId, NamespaceType.RELATIONAL ) );
         }
         assertEquals( catalog.getSchemas( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
 
@@ -170,7 +170,7 @@ public class CatalogTest {
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
 
-        long schemaId = catalog.addSchema( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
 
         List<String> names = new ArrayList<>( Arrays.asList( "table1", "table2", "table3", "table4", "table5" ) );
         List<Long> ids = new ArrayList<>();
@@ -232,7 +232,7 @@ public class CatalogTest {
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
 
-        long schemaId = catalog.addSchema( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
 
         long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
@@ -313,7 +313,7 @@ public class CatalogTest {
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        long schemaId = catalog.addSchema( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
         long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         long columnId = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
@@ -344,7 +344,7 @@ public class CatalogTest {
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        long schemaId = catalog.addSchema( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
         long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         long columnId1 = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );

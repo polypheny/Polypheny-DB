@@ -81,7 +81,7 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
             dataStore = List.of( manager.getStore( store ) );
         }
 
-        DdlManager.getInstance().createGraphDatabase(
+        DdlManager.getInstance().createGraph(
                 Catalog.defaultDatabaseId,
                 databaseName,
                 true,

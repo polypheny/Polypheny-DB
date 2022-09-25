@@ -565,7 +565,7 @@ public abstract class DdlManager {
     public abstract void refreshView( Statement statement, Long materializedId );
 
 
-    public abstract long createGraphDatabase( long databaseId, String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement );
+    public abstract long createGraph( long databaseId, String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement );
 
     public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
 

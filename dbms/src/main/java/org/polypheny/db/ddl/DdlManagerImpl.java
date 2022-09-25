@@ -224,7 +224,7 @@ public class DdlManagerImpl extends DdlManager {
                 throw new NamespaceAlreadyExistsException();
             }
         } else {
-            return catalog.addSchema( name, databaseId, userId, type );
+            return catalog.addNamespace( name, databaseId, userId, type );
         }
     }
 
@@ -1879,7 +1879,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createGraphDatabase( long databaseId, String graphName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement ) {
+    public long createGraph( long databaseId, String graphName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement ) {
         assert !replace : "Graphs cannot be replaced yet.";
 
         if ( stores == null ) {
