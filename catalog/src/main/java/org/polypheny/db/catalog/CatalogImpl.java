@@ -1902,7 +1902,10 @@ public class CatalogImpl extends Catalog {
     public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = entityIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( namespaceId );
-        CatalogUser owner = getUser( ownerId );
+
+        if ( !schema.caseSensitive ) {
+            name = name.toLowerCase();
+        }
 
         PartitionProperty partitionProperty = PartitionProperty.builder()
                 .partitionType( PartitionType.NONE )
@@ -1952,7 +1955,10 @@ public class CatalogImpl extends Catalog {
     public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         long id = entityIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( namespaceId );
-        CatalogUser owner = getUser( ownerId );
+
+        if ( !schema.caseSensitive ) {
+            name = name.toLowerCase();
+        }
 
         // Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
         List<Long> partitionGroupIds = new ArrayList<>();
@@ -2157,6 +2163,7 @@ public class CatalogImpl extends Catalog {
         CatalogTable table;
 
         if ( old instanceof CatalogMaterializedView ) {
+            CatalogMaterializedView oldView = (CatalogMaterializedView) old;
             table = new CatalogMaterializedView(
                     old.id,
                     old.name,
@@ -2165,17 +2172,17 @@ public class CatalogImpl extends Catalog {
                     old.databaseId,
                     ownerId,
                     old.entityType,
-                    ((CatalogMaterializedView) old).getQuery(),
+                    oldView.getQuery(),
                     old.primaryKey,
                     old.dataPlacements,
                     old.modifiable,
                     old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    oldView.getAlgCollation(),
                     old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered() );
+                    oldView.getUnderlyingTables(),
+                    oldView.getLanguage(),
+                    oldView.getMaterializedCriteria(),
+                    oldView.isOrdered() );
         } else {
             table = new CatalogTable(
                     old.id,
@@ -2210,6 +2217,7 @@ public class CatalogImpl extends Catalog {
         CatalogTable table;
 
         if ( old instanceof CatalogMaterializedView ) {
+            CatalogMaterializedView oldView = (CatalogMaterializedView) old;
             table = new CatalogMaterializedView(
                     old.id,
                     old.name,
@@ -2218,17 +2226,17 @@ public class CatalogImpl extends Catalog {
                     old.databaseId,
                     old.ownerId,
                     old.entityType,
-                    ((CatalogMaterializedView) old).getQuery(),
+                    oldView.getQuery(),
                     keyId,
                     old.dataPlacements,
                     old.modifiable,
                     old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    oldView.getAlgCollation(),
                     old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered() );
+                    oldView.getUnderlyingTables(),
+                    oldView.getLanguage(),
+                    oldView.getMaterializedCriteria(),
+                    oldView.isOrdered() );
         } else {
             table = new CatalogTable(
                     old.id,
@@ -2950,6 +2958,9 @@ public class CatalogImpl extends Catalog {
     public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
         try {
             CatalogTable table = getTable( tableId );
+            if ( !getSchema( table.namespaceId ).caseSensitive ) {
+                columnName = columnName.toLowerCase();
+            }
             return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.namespaceId, table.id, columnName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( tableId, columnName );
@@ -2977,6 +2988,11 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) {
         CatalogTable table = getTable( tableId );
+
+        if ( !getSchema( table.namespaceId ).caseSensitive ) {
+            name = name.toLowerCase();
+        }
+
         if ( type.getFamily() == PolyTypeFamily.CHARACTER && collation == null ) {
             throw new RuntimeException( "Collation is not allowed to be null for char types." );
         }
@@ -3031,6 +3047,11 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameColumn( long columnId, String name ) {
         CatalogColumn old = getColumn( columnId );
+
+        if ( !getSchema( old.schemaId ).caseSensitive ) {
+            name = name.toLowerCase();
+        }
+
         CatalogColumn column = new CatalogColumn( old.id, name, old.tableId, old.schemaId, old.databaseId, old.position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, old.nullable, old.collation, old.defaultValue );
         synchronized ( this ) {
             columns.replace( columnId, column );
@@ -3209,6 +3230,7 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table;
         if ( old.entityType == EntityType.MATERIALIZED_VIEW ) {
+            CatalogMaterializedView oldView = (CatalogMaterializedView) old;
             table = new CatalogMaterializedView(
                     old.id,
                     old.name,
@@ -3217,17 +3239,17 @@ public class CatalogImpl extends Catalog {
                     old.databaseId,
                     old.ownerId,
                     old.entityType,
-                    ((CatalogMaterializedView) old).getQuery(),
+                    oldView.getQuery(),
                     old.primaryKey,
                     old.dataPlacements,
                     old.modifiable,
                     old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    oldView.getAlgCollation(),
                     old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered()
+                    oldView.getUnderlyingTables(),
+                    oldView.getLanguage(),
+                    oldView.getMaterializedCriteria(),
+                    oldView.isOrdered()
             );
         } else {
             table = new CatalogTable(
@@ -4773,6 +4795,7 @@ public class CatalogImpl extends Catalog {
         CatalogTable newTable;
 
         if ( old.entityType == EntityType.MATERIALIZED_VIEW ) {
+            CatalogMaterializedView oldView = (CatalogMaterializedView) old;
             newTable = new CatalogMaterializedView(
                     old.id,
                     old.name,
@@ -4781,17 +4804,17 @@ public class CatalogImpl extends Catalog {
                     old.databaseId,
                     old.ownerId,
                     old.entityType,
-                    ((CatalogMaterializedView) old).getQuery(),
+                    oldView.getQuery(),
                     old.primaryKey,
                     ImmutableList.copyOf( newDataPlacements ),
                     old.modifiable,
                     old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    oldView.getAlgCollation(),
                     old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered()
+                    oldView.getUnderlyingTables(),
+                    oldView.getLanguage(),
+                    oldView.getMaterializedCriteria(),
+                    oldView.isOrdered()
             );
         } else {
             newTable = new CatalogTable(

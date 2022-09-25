@@ -245,7 +245,7 @@ public class CatalogTest {
 
         // test rename of column
         long columnId = columnIds.get( 0 );
-        String newColumnName = "newColumn";
+        String newColumnName = "newcolumn";
         catalog.renameColumn( columnId, newColumnName );
 
         columnNames.remove( 0 );
