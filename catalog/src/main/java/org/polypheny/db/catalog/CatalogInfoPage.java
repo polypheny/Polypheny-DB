@@ -65,7 +65,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
 
         this.adapterInformation = addCatalogInformationTable( page, "Adapters", 5, Arrays.asList( "ID", "Name", "Type" ), 0 );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", 1, Arrays.asList( "ID", "Name", "Default NamespaceID" ), 0 );
-        this.namespaceInformation = addCatalogInformationTable( page, "Namespaces", 2, Arrays.asList( "ID", "Name", "DatabaseID", "NamespaceType" ), 0 );
+        this.namespaceInformation = addCatalogInformationTable( page, "Namespaces", 2, Arrays.asList( "ID", "Name", "DatabaseID", "NamespaceType", "Case-sensitive" ), 0 );
         this.tableInformation = addCatalogInformationTable( page, "Tables", 3, Arrays.asList( "ID", "Name", "DatabaseID", "NamespaceID", "Type", "PartitionType", "PartitionGroups" ), 0 );
         this.columnInformation = addCatalogInformationTable( page, "Columns", 4, Arrays.asList( "ID", "Name", "DatabaseID", "NamespaceID", "TableID", "Placements" ), 0 );
         this.indexInformation = addCatalogInformationTable( page, "Indexes", 6, Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ), 0 );
@@ -163,7 +163,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 databaseInformation.addRow( d.id, d.name, d.defaultNamespaceId );
             } );
             catalog.getSchemas( null, null ).forEach( s -> {
-                namespaceInformation.addRow( s.id, s.name, s.databaseId, s.namespaceType );
+                namespaceInformation.addRow( s.id, s.name, s.databaseId, s.namespaceType, s.caseSensitive );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
                 tableInformation.addRow( t.id, t.name, t.databaseId, t.namespaceId, t.entityType, t.partitionProperty.partitionType.toString(), t.partitionProperty.partitionGroupIds.size() );

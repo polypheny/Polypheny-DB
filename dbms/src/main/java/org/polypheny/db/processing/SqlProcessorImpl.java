@@ -94,7 +94,7 @@ public class SqlProcessorImpl extends Processor {
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setUnquotedCasing( Casing.UNCHANGED );
         configConfigBuilder.setQuotedCasing( Casing.UNCHANGED );
         parserConfig = configConfigBuilder.build();
     }

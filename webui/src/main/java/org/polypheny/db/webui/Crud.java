@@ -3909,7 +3909,7 @@ public class Crud implements InformationObserver {
         if ( isAnalyze ) {
             statement.getOverviewDuration().stop( "Parsing" );
         }
-        AlgRoot logicalRoot = null;
+        AlgRoot logicalRoot;
         QueryParameters parameters = new QueryParameters( sql, NamespaceType.RELATIONAL );
         if ( parsed.isA( Kind.DDL ) ) {
             result = sqlProcessor.prepareDdl( statement, parsed, parameters );
