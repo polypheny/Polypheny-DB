@@ -622,8 +622,7 @@ PigNode exp3() :
   )
 }
 
-/** Parses an expression of precedence 4: relational operators (==, !=, <, <=,
- * >, >=). */
+/** Parses an expression of precedence 4: {@code relational operators (==, !=, <, <=, * >, >=).} */
 PigNode exp4() :
 {
   PigNode e;

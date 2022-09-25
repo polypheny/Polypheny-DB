@@ -60,7 +60,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     void setRouter( Class<? extends Router> routerClass );
 
     /**
-     * @return The physical placements of the necessary partitions: PartitionId {@code ->} List<AdapterId, CatalogColumnPlacementId>
+     * @return The physical placements of the necessary partitions: {@code PartitionId  -> List<AdapterId, CatalogColumnPlacementId>}
      */
     @Override
     Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>

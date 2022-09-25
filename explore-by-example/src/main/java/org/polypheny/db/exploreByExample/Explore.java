@@ -343,7 +343,7 @@ public class Explore {
 
 
     /**
-     * Rotates a List<String[]> to switch between rows and columns
+     * Rotates a {@code List<String[]>} to switch between rows and columns
      *
      * @param table of rows or columns
      * @return rotated table

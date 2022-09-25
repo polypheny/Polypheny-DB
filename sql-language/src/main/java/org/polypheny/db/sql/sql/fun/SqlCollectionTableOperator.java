@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,17 @@ package org.polypheny.db.sql.sql.fun;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.sql.sql.SqlFunctionalOperator;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
- * SqlCollectionTableOperator is the "table function derived table" operator. It converts a table-valued function into a relation, e.g. "<code>SELECT * FROM TABLE(ramp(5))</code>".
+ * SqlCollectionTableOperator is the "table function derived table" operator. It converts a table-valued function into a
+ * relation, e.g. "<code>SELECT * FROM TABLE(ramp(5))</code>".
  *
- * This operator has function syntax (with one argument), whereas {@link OperatorRegistry.get( OperatorName.EXPLICIT_TABLE )} is a prefix operator.
+ * This operator has function syntax (with one argument), whereas {@code OperatorRegistry.get( OperatorName.EXPLICIT_TABLE )}
+ * is a prefix operator.
  */
 public class SqlCollectionTableOperator extends SqlFunctionalOperator {
 

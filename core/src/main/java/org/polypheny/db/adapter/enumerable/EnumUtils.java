@@ -287,16 +287,12 @@ public class EnumUtils {
 
     /**
      * Helper method to create a "for-loop" in an enumerable, which iterates over a specified list.
-     * <code>
-     * for( int i = 0; i < list.size(); i++ ){
-     * [BlockStatement]
-     * }
-     * </code>
+     * <code>{@code for( int i = 0; i < list.size(); i++ ){ [BlockStatement] } }</code>
      *
      * @param i_ the iterator variable
      * @param _list the list to iterate over
      * @param statement the statements, which are used inside the for loop
-     * @return the loop as a enumerable statement
+     * @return the loop as an enumerable statement
      */
     public static ForStatement for_( ParameterExpression i_, ParameterExpression _list, BlockStatement statement ) {
         return Expressions.for_(

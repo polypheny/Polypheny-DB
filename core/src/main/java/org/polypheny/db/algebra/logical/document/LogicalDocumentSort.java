@@ -32,7 +32,7 @@ import org.polypheny.db.rex.RexNode;
 public class LogicalDocumentSort extends DocumentSort implements DocumentAlg {
 
     /**
-     * Subclass of {@link DocumentSort not targeted at any particular engine or calling convention.
+     * Subclass of {@link DocumentSort} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child, collation, offset, fetch );
