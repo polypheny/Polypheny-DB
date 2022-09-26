@@ -38,7 +38,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.sql.sql.SqlToAlgTestBase;
+import org.polypheny.db.sql.language.SqlToAlgTestBase;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Litmus;
 

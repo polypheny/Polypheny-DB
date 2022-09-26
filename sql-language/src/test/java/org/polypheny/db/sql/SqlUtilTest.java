@@ -24,9 +24,9 @@ import static org.junit.Assert.assertTrue;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import org.junit.Test;
-import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.sql.util.SqlBuilder;
-import org.polypheny.db.sql.sql.util.SqlString;
+import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.language.util.SqlBuilder;
+import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.util.Util;
 
 public class SqlUtilTest {

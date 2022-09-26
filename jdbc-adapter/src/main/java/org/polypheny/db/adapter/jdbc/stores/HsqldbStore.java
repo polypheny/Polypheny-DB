@@ -43,7 +43,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.dialect.HsqldbSqlDialect;
+import org.polypheny.db.sql.language.dialect.HsqldbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;

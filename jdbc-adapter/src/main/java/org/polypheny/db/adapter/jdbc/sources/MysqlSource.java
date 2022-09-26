@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.dialect.MysqlSqlDialect;
+import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 
 
 @Slf4j

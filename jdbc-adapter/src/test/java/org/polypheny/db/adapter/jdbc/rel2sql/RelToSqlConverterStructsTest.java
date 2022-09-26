@@ -41,7 +41,7 @@ import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlLanguagelDependant;
-import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 

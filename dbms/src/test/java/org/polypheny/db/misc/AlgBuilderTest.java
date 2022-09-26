@@ -63,7 +63,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.sql.SqlMatchRecognize;
+import org.polypheny.db.sql.language.SqlMatchRecognize;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.FrameworkConfig;

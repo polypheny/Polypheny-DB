@@ -46,7 +46,7 @@ import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.sql.sql.SqlToAlgTestBase;
+import org.polypheny.db.sql.language.SqlToAlgTestBase;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Closer;
 

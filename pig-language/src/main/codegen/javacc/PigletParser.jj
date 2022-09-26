@@ -44,7 +44,7 @@ package org.polypheny.db.piglet.parser;
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.sql.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.piglet.Ast.*;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;

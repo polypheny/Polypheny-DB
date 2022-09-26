@@ -29,7 +29,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 

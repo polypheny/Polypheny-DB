@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.sql.sql2alg;
@@ -167,57 +150,57 @@ import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.sql.sql.SqlAggFunction;
-import org.polypheny.db.sql.sql.SqlBasicCall;
-import org.polypheny.db.sql.sql.SqlCall;
-import org.polypheny.db.sql.sql.SqlCallBinding;
-import org.polypheny.db.sql.sql.SqlDelete;
-import org.polypheny.db.sql.sql.SqlDynamicParam;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlInsert;
-import org.polypheny.db.sql.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.sql.SqlJoin;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.SqlMatchRecognize;
-import org.polypheny.db.sql.sql.SqlMerge;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.sql.sql.SqlNumericLiteral;
-import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.sql.sql.SqlOrderBy;
-import org.polypheny.db.sql.sql.SqlSampleSpec;
-import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.sql.sql.SqlSelectKeyword;
-import org.polypheny.db.sql.sql.SqlSetOperator;
-import org.polypheny.db.sql.sql.SqlUnnestOperator;
-import org.polypheny.db.sql.sql.SqlUpdate;
-import org.polypheny.db.sql.sql.SqlUtil;
-import org.polypheny.db.sql.sql.SqlValuesOperator;
-import org.polypheny.db.sql.sql.SqlWindow;
-import org.polypheny.db.sql.sql.SqlWith;
-import org.polypheny.db.sql.sql.SqlWithItem;
-import org.polypheny.db.sql.sql.fun.SqlCase;
-import org.polypheny.db.sql.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.sql.sql.fun.SqlInOperator;
-import org.polypheny.db.sql.sql.fun.SqlQuantifyOperator;
-import org.polypheny.db.sql.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.sql.validate.AggregatingSelectScope;
-import org.polypheny.db.sql.sql.validate.CollectNamespace;
-import org.polypheny.db.sql.sql.validate.DelegatingScope;
-import org.polypheny.db.sql.sql.validate.ListScope;
-import org.polypheny.db.sql.sql.validate.MatchRecognizeScope;
-import org.polypheny.db.sql.sql.validate.ParameterScope;
-import org.polypheny.db.sql.sql.validate.SelectScope;
-import org.polypheny.db.sql.sql.validate.SqlQualified;
-import org.polypheny.db.sql.sql.validate.SqlUserDefinedTableFunction;
-import org.polypheny.db.sql.sql.validate.SqlUserDefinedTableMacro;
-import org.polypheny.db.sql.sql.validate.SqlValidator;
-import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.sql.sql.validate.SqlValidatorNamespace;
-import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.sql.language.SqlAggFunction;
+import org.polypheny.db.sql.language.SqlBasicCall;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlCallBinding;
+import org.polypheny.db.sql.language.SqlDelete;
+import org.polypheny.db.sql.language.SqlDynamicParam;
+import org.polypheny.db.sql.language.SqlFunction;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlInsert;
+import org.polypheny.db.sql.language.SqlIntervalQualifier;
+import org.polypheny.db.sql.language.SqlJoin;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlMatchRecognize;
+import org.polypheny.db.sql.language.SqlMerge;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlNumericLiteral;
+import org.polypheny.db.sql.language.SqlOperator;
+import org.polypheny.db.sql.language.SqlOrderBy;
+import org.polypheny.db.sql.language.SqlSampleSpec;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.SqlSelectKeyword;
+import org.polypheny.db.sql.language.SqlSetOperator;
+import org.polypheny.db.sql.language.SqlUnnestOperator;
+import org.polypheny.db.sql.language.SqlUpdate;
+import org.polypheny.db.sql.language.SqlUtil;
+import org.polypheny.db.sql.language.SqlValuesOperator;
+import org.polypheny.db.sql.language.SqlWindow;
+import org.polypheny.db.sql.language.SqlWith;
+import org.polypheny.db.sql.language.SqlWithItem;
+import org.polypheny.db.sql.language.fun.SqlCase;
+import org.polypheny.db.sql.language.fun.SqlCountAggFunction;
+import org.polypheny.db.sql.language.fun.SqlInOperator;
+import org.polypheny.db.sql.language.fun.SqlQuantifyOperator;
+import org.polypheny.db.sql.language.fun.SqlRowOperator;
+import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.language.validate.AggregatingSelectScope;
+import org.polypheny.db.sql.language.validate.CollectNamespace;
+import org.polypheny.db.sql.language.validate.DelegatingScope;
+import org.polypheny.db.sql.language.validate.ListScope;
+import org.polypheny.db.sql.language.validate.MatchRecognizeScope;
+import org.polypheny.db.sql.language.validate.ParameterScope;
+import org.polypheny.db.sql.language.validate.SelectScope;
+import org.polypheny.db.sql.language.validate.SqlQualified;
+import org.polypheny.db.sql.language.validate.SqlUserDefinedTableFunction;
+import org.polypheny.db.sql.language.validate.SqlUserDefinedTableMacro;
+import org.polypheny.db.sql.language.validate.SqlValidator;
+import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
+import org.polypheny.db.sql.language.validate.SqlValidatorNamespace;
+import org.polypheny.db.sql.language.validate.SqlValidatorScope;
+import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
