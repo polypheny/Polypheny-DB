@@ -14,24 +14,32 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.ddl;
+package org.polypheny.db.cypher.ddl;
 
 import lombok.Getter;
+import org.polypheny.db.cypher.CypherParameter;
+import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
-import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+
 @Getter
-public class CypherSetOwnPassword extends CypherAdminCommand {
+public class CypherRenameUser extends CypherAdminCommand {
 
-    private final CypherExpression currentPassword;
-    private final CypherExpression newPassword;
+    private final CypherSimpleEither<String, CypherParameter> fromUserName;
+    private final CypherSimpleEither<String, CypherParameter> toUserName;
+    private final boolean ifExists;
 
 
-    public CypherSetOwnPassword( ParserPos pos, CypherExpression currentPassword, CypherExpression newPassword ) {
+    public CypherRenameUser(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> fromUserName,
+            CypherSimpleEither<String, CypherParameter> toUserName,
+            boolean ifExists ) {
         super( pos );
-        this.currentPassword = currentPassword;
-        this.newPassword = newPassword;
+        this.fromUserName = fromUserName;
+        this.toUserName = toUserName;
+        this.ifExists = ifExists;
     }
 
 }

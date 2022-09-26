@@ -14,26 +14,48 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.ddl;
+package org.polypheny.db.cypher.ddl;
 
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
+import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
 
 @Getter
-public class CypherDropUser extends CypherAdminCommand {
+public class CypherAlterUser extends CypherAdminCommand {
 
     private final boolean ifExists;
     private final CypherSimpleEither<String, CypherParameter> username;
+    private final CypherExpression password;
+    private final boolean encrypted;
+    private final Boolean orElse;
+    private final Boolean orElse1;
+    private final CypherSimpleEither<String, CypherParameter> orElse2;
+    private final boolean removeHome;
 
 
-    public CypherDropUser( ParserPos pos, boolean ifExists, CypherSimpleEither<String, CypherParameter> username ) {
+    public CypherAlterUser(
+            ParserPos pos,
+            boolean ifExists,
+            CypherSimpleEither<String, CypherParameter> username,
+            CypherExpression password,
+            boolean encrypted,
+            Boolean orElse,
+            Boolean orElse1,
+            CypherSimpleEither<String, CypherParameter> orElse2,
+            boolean removeHome ) {
         super( pos );
         this.ifExists = ifExists;
         this.username = username;
+        this.password = password;
+        this.encrypted = encrypted;
+        this.orElse = orElse;
+        this.orElse1 = orElse1;
+        this.orElse2 = orElse2;
+        this.removeHome = removeHome;
     }
 
 }

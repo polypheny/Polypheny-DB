@@ -19,10 +19,10 @@ package org.polypheny.db.cypher.clause;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.cypher.ConstraintType;
+import org.polypheny.db.cypher.ddl.CypherSchemaCommand;
 import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
-import org.polypheny.db.ddl.CypherSchemaCommand;
 import org.polypheny.db.languages.ParserPos;
 
 

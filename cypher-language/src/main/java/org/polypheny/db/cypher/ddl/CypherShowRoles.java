@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.ddl;
+package org.polypheny.db.cypher.ddl;
 
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherYield;

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.ddl;
+package org.polypheny.db.cypher.ddl;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
@@ -27,25 +28,34 @@ import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
-public class CypherDropPlacement extends CypherAdminCommand implements ExecutableStatement {
 
-    private final String storeName;
-    private final String databaseName;
+public class CypherAddPlacement extends CypherAdminCommand implements ExecutableStatement {
+
+    private final String store;
+    private final String database;
 
 
-    public CypherDropPlacement(
+    public CypherAddPlacement(
             ParserPos pos,
             CypherSimpleEither<String, CypherParameter> databaseName,
             CypherSimpleEither<String, CypherParameter> storeName ) {
         super( pos );
-        this.databaseName = getNameOrNull( databaseName );
-        this.storeName = getNameOrNull( storeName );
+        this.database = getNameOrNull( databaseName );
+        this.store = getNameOrNull( storeName );
+
+        if ( this.database == null ) {
+            throw new RuntimeException( "Unknown database name." );
+        }
+        if ( this.store == null ) {
+            throw new RuntimeException( "Unknown store name." );
+        }
     }
 
 
@@ -54,17 +64,25 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
         Catalog catalog = Catalog.getInstance();
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( this.databaseName ) );
+        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( this.database ) );
 
-        DataStore dataStore = Stream.of( storeName )
-                .map( store -> (DataStore) adapterManager.getAdapter( storeName ) )
-                .collect( Collectors.toList() ).get( 0 );
+        List<DataStore> dataStores = Stream.of( store )
+                .map( store -> (DataStore) adapterManager.getAdapter( store ) )
+                .collect( Collectors.toList() );
 
-        if ( graphs.size() != 1 ) {
-            throw new RuntimeException( "Error while adding graph placement" );
+        if ( !adapterManager.getAdapters().containsKey( store ) ) {
+            throw new RuntimeException( "The targeted store does not exist." );
         }
 
-        DdlManager.getInstance().removeGraphDatabasePlacement( graphs.get( 0 ).id, dataStore, statement );
+        if ( graphs.size() != 1 ) {
+            throw new RuntimeException( "Error while adding graph placement." );
+        }
+
+        if ( graphs.get( 0 ).placements.stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
+            throw new RuntimeException( "Could not create placement of graph as it already exists." );
+        }
+
+        DdlManager.getInstance().addGraphPlacement( graphs.get( 0 ).id, dataStores, true, statement );
     }
 
 }
