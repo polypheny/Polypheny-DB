@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config.ConfigListener;
-import org.polypheny.db.cypher.ddl.DdlManager.DefaultIndexPlacementStrategy;
+import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;

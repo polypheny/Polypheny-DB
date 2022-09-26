@@ -23,7 +23,7 @@ import java.util.Objects;
 import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.cypher.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
