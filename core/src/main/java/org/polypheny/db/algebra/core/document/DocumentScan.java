@@ -69,5 +69,4 @@ public abstract class DocumentScan extends AbstractAlgNode implements DocumentAl
         return DocType.SCAN;
     }
 
-
 }

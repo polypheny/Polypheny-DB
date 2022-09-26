@@ -81,7 +81,9 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
     public static EnumerableJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         final AlgOptCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
-        final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ModelTrait.RELATIONAL ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableJoin( mq, left, right, joinType ) );
+        final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE )
+                .replace( ModelTrait.RELATIONAL )
+                .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableJoin( mq, left, right, joinType ) );
         return new EnumerableJoin( cluster, traitSet, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
     }
 

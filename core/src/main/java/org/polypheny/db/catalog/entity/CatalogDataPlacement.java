@@ -38,7 +38,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
  */
 public class CatalogDataPlacement implements CatalogObject {
 
-    private static final long serialVersionUID = -5754255191751224901L;
+    private static final long serialVersionUID = 5192378654968316873L;
     public final long tableId;
     public final int adapterId;
 

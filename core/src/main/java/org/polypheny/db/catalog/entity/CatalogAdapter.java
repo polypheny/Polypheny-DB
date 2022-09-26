@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 @EqualsAndHashCode
 public class CatalogAdapter implements CatalogObject {
 
-    private static final long serialVersionUID = -7258544461932392750L;
+    private static final long serialVersionUID = -6140489767408917639L;
 
     public final int id;
     public final String uniqueName;

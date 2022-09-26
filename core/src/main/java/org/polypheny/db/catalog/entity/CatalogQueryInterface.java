@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 @EqualsAndHashCode
 public class CatalogQueryInterface implements CatalogObject {
 
-    private static final long serialVersionUID = 1479319229612408471L;
+    private static final long serialVersionUID = 7212289724539530050L;
 
     public final int id;
     public final String name;

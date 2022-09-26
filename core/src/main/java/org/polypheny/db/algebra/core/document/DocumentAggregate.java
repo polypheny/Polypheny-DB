@@ -27,6 +27,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 
+
 public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
     public final boolean indicator;

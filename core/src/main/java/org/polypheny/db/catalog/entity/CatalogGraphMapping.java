@@ -21,7 +21,7 @@ import java.io.Serializable;
 
 public class CatalogGraphMapping implements CatalogObject {
 
-    private static final long serialVersionUID = -5899227424829094264L;
+    private static final long serialVersionUID = -4430656159805278460L;
 
     public final long id;
 

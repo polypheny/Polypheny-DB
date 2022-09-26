@@ -32,7 +32,7 @@ import org.polypheny.db.type.PolyType;
 @EqualsAndHashCode
 public final class CatalogColumn implements CatalogObject, Comparable<CatalogColumn> {
 
-    private static final long serialVersionUID = -6188211341230044056L;
+    private static final long serialVersionUID = -4792846455300897399L;
 
     public final long id;
     public final String name;

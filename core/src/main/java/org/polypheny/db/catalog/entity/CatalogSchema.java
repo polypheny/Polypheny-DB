@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 @EqualsAndHashCode
 public final class CatalogSchema implements CatalogObject, Comparable<CatalogSchema> {
 
-    private static final long serialVersionUID = 9112191066928184596L;
+    private static final long serialVersionUID = 3090632164988970558L;
 
     public final long id;
     @Getter

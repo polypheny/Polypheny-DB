@@ -70,12 +70,12 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
         Result modify = implementor.visitChild( this, 0, (EnumerableAlg) getLeft(), pref );
         Result control = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
-        // move into lambda
+        // Move into lambda
         Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), modify.block );
 
         ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "executor" + System.nanoTime() ) );
 
-        // move executor enumerable into a lambda so parameters get not prematurely
+        // Move executor enumerable into a lambda so parameters get not prematurely
         FunctionExpression<Function<?>> expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
         builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );
 

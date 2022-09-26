@@ -172,5 +172,4 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
         return shuttle.visit( this );
     }
 
-
 }

@@ -78,5 +78,4 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
         return new EnumerableContextSwitcher( inputs.get( 0 ) );
     }
 
-
 }

@@ -30,7 +30,7 @@ import lombok.NonNull;
 @EqualsAndHashCode
 public class CatalogGraphDatabase implements CatalogObject, Comparable<CatalogGraphDatabase> {
 
-    private static final long serialVersionUID = -2549881802838950542L;
+    private static final long serialVersionUID = 7343856827901459672L;
 
     public final String name;
     public final long id;
