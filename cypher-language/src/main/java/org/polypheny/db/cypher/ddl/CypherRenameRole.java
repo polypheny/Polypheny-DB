@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.ddl;
+package org.polypheny.db.cypher.ddl;
 
-import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -25,19 +24,22 @@ import org.polypheny.db.languages.ParserPos;
 
 
 @Getter
-public class CypherGrantRoles extends CypherAdminCommand {
+public class CypherRenameRole extends CypherAdminCommand {
 
-    private final List<CypherSimpleEither<String, CypherParameter>> roles;
-    private final List<CypherSimpleEither<String, CypherParameter>> users;
+    private final CypherSimpleEither<String, CypherParameter> fromRoleName;
+    private final CypherSimpleEither<String, CypherParameter> toRoleName;
+    private final boolean ifExists;
 
 
-    public CypherGrantRoles(
+    public CypherRenameRole(
             ParserPos pos,
-            List<CypherSimpleEither<String, CypherParameter>> roles,
-            List<CypherSimpleEither<String, CypherParameter>> users ) {
+            CypherSimpleEither<String, CypherParameter> fromRoleName,
+            CypherSimpleEither<String, CypherParameter> toRoleName,
+            boolean ifExists ) {
         super( pos );
-        this.roles = roles;
-        this.users = users;
+        this.fromRoleName = fromRoleName;
+        this.toRoleName = toRoleName;
+        this.ifExists = ifExists;
     }
 
 }
