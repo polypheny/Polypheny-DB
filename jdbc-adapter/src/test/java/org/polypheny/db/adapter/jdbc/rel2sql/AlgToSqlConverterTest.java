@@ -54,7 +54,7 @@ import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.ScottSchema;
-import org.polypheny.db.sql.core.SqlLanguagelDependant;
+import org.polypheny.db.sql.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlDialect.Context;

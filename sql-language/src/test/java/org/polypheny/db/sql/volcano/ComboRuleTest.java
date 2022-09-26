@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.core.volcano;
+package org.polypheny.db.sql.volcano;
 
 
 import static org.junit.Assert.assertTrue;
-import static org.polypheny.db.sql.core.volcano.PlannerTests.GoodSingleRule;
-import static org.polypheny.db.sql.core.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
-import static org.polypheny.db.sql.core.volcano.PlannerTests.PhysSingleAlg;
-import static org.polypheny.db.sql.core.volcano.PlannerTests.TestSingleAlg;
-import static org.polypheny.db.sql.core.volcano.PlannerTests.newCluster;
+import static org.polypheny.db.sql.volcano.PlannerTests.GoodSingleRule;
+import static org.polypheny.db.sql.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
+import static org.polypheny.db.sql.volcano.PlannerTests.PhysSingleAlg;
+import static org.polypheny.db.sql.volcano.PlannerTests.TestSingleAlg;
+import static org.polypheny.db.sql.volcano.PlannerTests.newCluster;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -39,9 +39,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.sql.core.volcano.PlannerTests.NoneLeafAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.NoneSingleAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafAlg;
+import org.polypheny.db.sql.volcano.PlannerTests.NoneLeafAlg;
+import org.polypheny.db.sql.volcano.PlannerTests.NoneSingleAlg;
+import org.polypheny.db.sql.volcano.PlannerTests.PhysLeafAlg;
 
 
 /**

@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.sql.core.SqlLanguagelDependant;
+import org.polypheny.db.sql.SqlLanguagelDependant;
 import org.polypheny.db.type.PolyType;
 
 

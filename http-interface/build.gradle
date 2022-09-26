@@ -51,6 +51,7 @@ delombok {
 
 javadoc {
     dependsOn(":csv-adapter:processResources")
+    dependsOn(":http-interface:compileTestJava")
 }
 
 
@@ -63,6 +64,7 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
+    dependsOn(compileTestJava)
 }
 java {
     withJavadocJar()

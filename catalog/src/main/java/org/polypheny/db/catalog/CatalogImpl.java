@@ -1065,7 +1065,7 @@ public class CatalogImpl extends Catalog {
             Stream<CatalogSchema> catalogSchemas = catalogDatabases.stream().filter( d -> databaseChildren.containsKey( d.id ) ).flatMap( d -> Objects.requireNonNull( databaseChildren.get( d.id ) ).stream() ).map( schemas::get );
 
             if ( schemaNamePattern != null ) {
-                catalogSchemas = catalogSchemas.filter( s -> s.name.matches( schemaNamePattern.toRegex() ) );
+                catalogSchemas = catalogSchemas.filter( s -> s.name.matches( schemaNamePattern.toLowerCase().toRegex() ) );
             }
             return catalogSchemas.collect( Collectors.toList() );
         }
@@ -1079,6 +1079,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         if ( schemaNamePattern != null ) {
+            schemaNamePattern = schemaNamePattern.toLowerCase();
             List<CatalogSchema> list = new ArrayList<>();
             for ( CatalogSchema schema : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
                 if ( schema.name.matches( schemaNamePattern.pattern ) ) {
@@ -1110,6 +1111,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException {
+        schemaName = schemaName.toLowerCase();
         try {
             long databaseId = getDatabase( databaseName ).id;
             return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
@@ -1125,6 +1127,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
         try {
+            schemaName = schemaName.toLowerCase();
             return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseId, schemaName );
@@ -1137,6 +1140,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
+        name = name.toLowerCase();
         CatalogUser owner = getUser( ownerId );
         long id = namespaceIdBuilder.getAndIncrement();
         CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, namespaceType, namespaceType == NamespaceType.DOCUMENT || namespaceType == NamespaceType.GRAPH );
@@ -1158,6 +1162,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public boolean checkIfExistsSchema( long databaseId, String schemaName ) {
+        schemaName = schemaName.toLowerCase();
         return schemaNames.containsKey( new Object[]{ databaseId, schemaName } );
     }
 
@@ -1167,6 +1172,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void renameSchema( long schemaId, String name ) {
+        name = name.toLowerCase();
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.namespaceType, false );
@@ -1666,7 +1672,7 @@ public class CatalogImpl extends Catalog {
             return ImmutableList.copyOf(
                     Stream.concat(
                                     graphAliases.values().stream(),
-                                    graphs.values().stream() ).filter( g -> g.name.matches( graphName.pattern ) )
+                                    graphs.values().stream() ).filter( g -> g.name.matches( graphName.pattern.toLowerCase() ) )
                             .collect( Collectors.toList() ) );
         } else {
             return ImmutableList.copyOf( graphs.values() );

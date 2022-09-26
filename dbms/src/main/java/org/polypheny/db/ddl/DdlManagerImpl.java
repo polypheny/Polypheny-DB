@@ -414,6 +414,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameSchema( String newName, String oldName, long databaseId ) throws NamespaceAlreadyExistsException, UnknownSchemaException {
+        newName = newName.toLowerCase();
         if ( catalog.checkIfExistsSchema( databaseId, newName ) ) {
             throw new NamespaceAlreadyExistsException();
         }
@@ -2040,12 +2041,15 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void removeGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+        alias = alias.toLowerCase();
         catalog.removeGraphAlias( graphId, alias, ifNotExists );
     }
 
 
     @Override
     public void replaceGraphAlias( long graphId, String oldAlias, String alias ) {
+        alias = alias.toLowerCase();
+        oldAlias = oldAlias.toLowerCase();
         catalog.removeGraphAlias( graphId, oldAlias, true );
         catalog.addGraphAlias( graphId, alias, true );
     }
@@ -2899,6 +2903,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropSchema( long databaseId, String schemaName, boolean ifExists, Statement statement ) throws SchemaNotExistException, DdlOnSourceException {
         try {
+            schemaName = schemaName.toLowerCase();
             // Check if there is a schema with this name
             if ( catalog.checkIfExistsSchema( databaseId, schemaName ) ) {
                 CatalogSchema catalogSchema = catalog.getSchema( databaseId, schemaName );

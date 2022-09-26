@@ -151,7 +151,7 @@ public class CatalogTest {
         Long id = ids.get( 0 );
         catalog.renameSchema( id, replacedName );
         names.remove( 0 );
-        names.add( 0, replacedName );
+        names.add( 0, replacedName.toLowerCase() );
 
         assertEquals( catalog.getSchemas( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
 

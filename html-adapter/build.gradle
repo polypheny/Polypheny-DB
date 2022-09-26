@@ -40,6 +40,10 @@ sourceSets {
     }
 }
 
+compileJava{
+    dependsOn(":csv-adapter:processResources")
+}
+
 delombok {
     dependsOn(":csv-adapter:processResources")
 }

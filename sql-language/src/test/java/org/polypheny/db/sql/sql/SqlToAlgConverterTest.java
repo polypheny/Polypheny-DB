@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.sql.core.DiffRepository;
+import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.sql.fun.SqlCaseOperator;
 import org.polypheny.db.sql.sql.validate.SqlDelegatingConformance;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;

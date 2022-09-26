@@ -58,7 +58,7 @@ import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.sql.core.SqlRegisterer;
+import org.polypheny.db.sql.SqlRegisterer;
 import org.polypheny.db.sql.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlFunction;

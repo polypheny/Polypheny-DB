@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.core.volcano;
+package org.polypheny.db.sql.volcano;
 
 
 import static org.junit.Assert.assertEquals;

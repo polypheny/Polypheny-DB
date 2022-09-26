@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.core;
+package org.polypheny.db.sql;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;

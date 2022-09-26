@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.core.volcano;
+package org.polypheny.db.sql.volcano;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -54,13 +54,13 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.sql.core.volcano.PlannerTests.GoodSingleRule;
-import org.polypheny.db.sql.core.volcano.PlannerTests.NoneLeafAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.NoneSingleAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafRule;
-import org.polypheny.db.sql.core.volcano.PlannerTests.PhysSingleAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.TestSingleAlg;
+import org.polypheny.db.sql.volcano.PlannerTests.GoodSingleRule;
+import org.polypheny.db.sql.volcano.PlannerTests.NoneLeafAlg;
+import org.polypheny.db.sql.volcano.PlannerTests.NoneSingleAlg;
+import org.polypheny.db.sql.volcano.PlannerTests.PhysLeafAlg;
+import org.polypheny.db.sql.volcano.PlannerTests.PhysLeafRule;
+import org.polypheny.db.sql.volcano.PlannerTests.PhysSingleAlg;
+import org.polypheny.db.sql.volcano.PlannerTests.TestSingleAlg;
 import org.polypheny.db.tools.AlgBuilder;
 
 
