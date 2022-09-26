@@ -106,7 +106,6 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
     public static final Pattern EXCLUSION_PATTERN = Pattern.compile( "Reduce(Expressions|Values)Rule.*" );
 
 
-
     protected final boolean matchNullability;
 
 

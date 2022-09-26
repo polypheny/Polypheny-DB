@@ -64,7 +64,6 @@ public abstract class LanguageManager {
     private static LanguageManager instance;
 
 
-
     public static synchronized LanguageManager setAndGetInstance( LanguageManager manager ) {
         if ( manager != null ) {
             instance = manager;

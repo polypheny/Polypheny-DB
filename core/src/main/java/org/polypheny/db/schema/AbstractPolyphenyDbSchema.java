@@ -215,6 +215,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         return new TypeEntryImpl( this, name, algProtoDataType );
     }
 
+
     /**
      * Defines a table within this schema.
      */

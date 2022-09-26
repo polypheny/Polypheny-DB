@@ -88,8 +88,6 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-
-
     @Override
     public void deleteCollection( long id ) {
         throw new NotImplementedException();

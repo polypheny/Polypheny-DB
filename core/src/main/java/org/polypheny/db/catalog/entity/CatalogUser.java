@@ -39,8 +39,6 @@ public final class CatalogUser implements CatalogObject, Comparable<CatalogUser>
     }
 
 
-
-
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {

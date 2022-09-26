@@ -679,6 +679,7 @@ public class GeoFunctions {
         Geom transform( int srid );
 
         Geom wrap( Geometry g );
+
     }
 
 
@@ -726,6 +727,7 @@ public class GeoFunctions {
         public Geom wrap( Geometry g ) {
             return new SimpleGeom( g );
         }
+
     }
 
 
@@ -776,6 +778,7 @@ public class GeoFunctions {
         public Geom wrap( Geometry g ) {
             return bind( g, this.mg.getSpatialReference() );
         }
+
     }
 
 
@@ -802,5 +805,6 @@ public class GeoFunctions {
             this.code = code;
         }
     }
+
 }
 
