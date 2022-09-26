@@ -29,7 +29,13 @@ import org.polypheny.db.plan.Convention;
 public class EnumerableLpgTransformerRule extends ConverterRule {
 
     public EnumerableLpgTransformerRule() {
-        super( LpgTransformer.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER, "EnumerableGraphTransformer" );
+        super(
+                LpgTransformer.class,
+                r -> true,
+                Convention.NONE,
+                EnumerableConvention.INSTANCE,
+                AlgFactories.LOGICAL_BUILDER,
+                "EnumerableGraphTransformer" );
     }
 
 

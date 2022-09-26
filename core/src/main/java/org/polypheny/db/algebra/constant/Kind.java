@@ -1273,7 +1273,7 @@ public enum Kind {
     MQL_EXCLUDE,
 
     /**
-     * ocument model {@code $elemMatch} operator
+     * Document model {@code $elemMatch} operator
      */
     MQL_ELEM_MATCH,
 
@@ -1316,6 +1316,7 @@ public enum Kind {
      * Deserialize operator
      */
     DESERIALIZE,
+
     /*
      * CYPHER function
      */

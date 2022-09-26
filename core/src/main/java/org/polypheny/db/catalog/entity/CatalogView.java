@@ -33,6 +33,7 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
+
 public class CatalogView extends CatalogTable {
 
     private static final long serialVersionUID = -4771308114962700515L;

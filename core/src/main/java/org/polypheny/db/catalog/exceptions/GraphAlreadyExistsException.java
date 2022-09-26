@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.exceptions;
 
+
 public class GraphAlreadyExistsException extends CatalogRuntimeException {
 
     public GraphAlreadyExistsException( String name ) {
