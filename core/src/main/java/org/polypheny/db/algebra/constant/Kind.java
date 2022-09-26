@@ -1234,7 +1234,9 @@ public enum Kind {
      */
     OTHER_DDL,
 
-
+    /**
+     * Document model transform document into string representation
+     */
     MQL_JSONIFY,
 
     /**

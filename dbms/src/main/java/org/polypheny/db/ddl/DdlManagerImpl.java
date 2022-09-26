@@ -209,6 +209,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public long createNamespace( String name, long databaseId, NamespaceType type, int userId, boolean ifNotExists, boolean replace ) throws NamespaceAlreadyExistsException {
+        name = name.toLowerCase();
         // Check if there is already a schema with this name
         if ( catalog.checkIfExistsSchema( databaseId, name ) ) {
             if ( ifNotExists ) {
@@ -231,6 +232,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addAdapter( String adapterName, String clazzName, Map<String, String> config ) {
+        adapterName = adapterName.toLowerCase();
         Adapter adapter = AdapterManager.getInstance().addAdapter( clazzName, adapterName, config );
         if ( adapter instanceof DataSource ) {
             Map<String, List<ExportedColumn>> exportedColumns;
@@ -526,6 +528,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addColumn( String columnName, CatalogTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException, ColumnNotExistsException {
+        columnName = adjustNameIfNeeded( columnName, catalogTable.namespaceId );
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
             throw new NotNullAndDefaultValueException();
@@ -722,6 +725,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     public void addPolyphenyIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
+        indexName = indexName.toLowerCase();
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
             CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
@@ -1551,6 +1555,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addColumnPlacement( CatalogTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException, ColumnNotExistsException {
+        columnName = adjustNameIfNeeded( columnName, catalogTable.namespaceId );
+
         if ( storeInstance == null ) {
             throw new UnknownAdapterException( "" );
         }
@@ -1689,6 +1695,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws EntityAlreadyExistsException {
+        viewName = adjustNameIfNeeded( viewName, schemaId );
+
         if ( catalog.checkIfExistsEntity( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
@@ -1743,8 +1751,17 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private String adjustNameIfNeeded( String name, long namespaceId ) {
+        if ( !catalog.getSchema( namespaceId ).caseSensitive ) {
+            return name.toLowerCase();
+        }
+        return name;
+    }
+
+
     @Override
     public void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException {
+        viewName = adjustNameIfNeeded( viewName, schemaId );
         // Check if there is already a table with this name
         if ( assertEntityExists( schemaId, viewName, ifNotExists ) ) {
             return;
@@ -1881,6 +1898,8 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public long createGraph( long databaseId, String graphName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement ) {
         assert !replace : "Graphs cannot be replaced yet.";
+
+        graphName = adjustNameIfNeeded( graphName, databaseId );
 
         if ( stores == null ) {
             // Ask router on which store(s) the graph should be placed
@@ -2146,6 +2165,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createTable( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
+        name = adjustNameIfNeeded( name, schemaId );
+
         try {
             // Check if there is already an entity with this name
             if ( assertEntityExists( schemaId, name, ifNotExists ) ) {
@@ -2221,6 +2242,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createCollection( long schemaId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
+        name = adjustNameIfNeeded( name, schemaId );
+
         if ( assertEntityExists( schemaId, name, ifNotExists ) ) {
             return;
         }
@@ -2825,6 +2848,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
+        columnName = adjustNameIfNeeded( columnName, catalog.getTable( tableId ).namespaceId );
         long addedColumnId = catalog.addColumn(
                 columnName,
                 tableId,
