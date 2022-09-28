@@ -218,6 +218,7 @@ public class PGInterfaceInboundCommunicationHandler {
 
 
 
+
     public void sendRowDescription(int numberOfFields, ArrayList<Object[]> valuesPerCol) {
         //String fieldName, int objectIDTable, int attributeNoCol, int objectIDCol, int dataTypeSize, int typeModifier, int formatCode
 
