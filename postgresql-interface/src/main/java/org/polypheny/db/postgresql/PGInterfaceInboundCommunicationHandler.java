@@ -201,14 +201,24 @@ public class PGInterfaceInboundCommunicationHandler {
     }
 
 
-    public void sendRowDescription(String fieldName, int objectIDTable, int attributeNoCol, int objectIDCol, int dataTypeSize, int typeModifier, int formatCode) {
+
+
+    public void sendRowDescription(int numberOfFields, ArrayList<Object[]> valuesPerCol) {
+        //String fieldName, int objectIDTable, int attributeNoCol, int objectIDCol, int dataTypeSize, int typeModifier, int formatCode
 
         //bytebuf.writeInt(int value) = 32-bit int
         //bytebuf.writeShort(int value) = 16-bit short integer;
-        String body = "";
+        ByteBuf test = ctx.alloc().buffer();
+        String body = String.valueOf(numberOfFields);
         PGInterfaceMessage rowDescription = new PGInterfaceMessage(PGInterfaceHeaders.T, body, 4, true);
         PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter("i",rowDescription, ctx);
-        rowDescriptionWriter.writeRowDescription(fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode);
+
+        for(Object[] oneCol : valuesPerCol) {
+            test = rowDescriptionWriter.writeRowDescription(oneCol[0].toString(), (Integer) oneCol[1], (Integer) oneCol[2], (Integer) oneCol[3], (Integer) oneCol[4], (Integer) oneCol[5], (Integer) oneCol[6]);
+            ctx.writeAndFlush(test);
+        }
+        //rowDescriptionWriter.writeRowDescription(fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode);
+        //ctx.writeAndFlush(test);
         ctx.writeAndFlush(rowDescriptionWriter);
     }
 
@@ -268,7 +278,5 @@ public class PGInterfaceInboundCommunicationHandler {
     public void terminateConnection() {
         ctx.close();
     }
-
-
 
 }
