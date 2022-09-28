@@ -48,9 +48,9 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -69,14 +69,14 @@ import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.sql.SqlBasicCall;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.sql.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.sql.util.SqlString;
+import org.polypheny.db.sql.language.SqlBasicCall;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlOperator;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -215,7 +215,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
-        return new JdbcTableScan( context.getCluster(), algOptTable, this, jdbcSchema.getConvention() );
+        return new JdbcScan( context.getCluster(), algOptTable, this, jdbcSchema.getConvention() );
     }
 
 
@@ -243,7 +243,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public TableModify toModificationAlg(
+    public Modify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptTable table,
             CatalogReader catalogReader,
@@ -253,7 +253,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         jdbcSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify(
+        return new LogicalModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

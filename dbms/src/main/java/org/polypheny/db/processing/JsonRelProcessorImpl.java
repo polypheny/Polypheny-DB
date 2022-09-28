@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.polypheny.db.processing;
 
-import org.polypheny.db.PolyResult;
+import java.util.List;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -32,8 +33,8 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    public Node parse( String query ) {
-        throw new RuntimeException( "JsonProcessor does not support PigNode representation!" );
+    public List<? extends Node> parse( String query ) {
+        throw new RuntimeException( "JsonProcessor does not support string representation!" );
     }
 
 
@@ -50,7 +51,7 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    public PolyResult prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+    public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         throw new RuntimeException( "JsonProcessor does not support DDLs!" );
     }
 

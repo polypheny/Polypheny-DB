@@ -42,6 +42,17 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":sql-language:processResources")
+}
+
+delombok {
+    dependsOn(":sql-language:processResources")
+}
+
+javadoc {
+    dependsOn(":sql-language:processResources")
+}
 
 /**
  * Tests
@@ -65,3 +76,4 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+

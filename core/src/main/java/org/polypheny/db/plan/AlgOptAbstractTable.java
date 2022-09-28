@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.prepare.AlgOptTableImpl;
@@ -134,7 +134,7 @@ public abstract class AlgOptAbstractTable implements AlgOptTable {
 
     @Override
     public AlgNode toAlg( ToAlgContext context ) {
-        return LogicalTableScan.create( context.getCluster(), this );
+        return LogicalScan.create( context.getCluster(), this );
     }
 
 

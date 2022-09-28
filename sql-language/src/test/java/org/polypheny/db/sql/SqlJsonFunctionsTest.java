@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
-import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.functions.Functions;
 
 
 /**

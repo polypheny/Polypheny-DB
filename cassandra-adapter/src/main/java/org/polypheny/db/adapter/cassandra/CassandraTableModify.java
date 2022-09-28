@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.adapter.cassandra.CassandraAlg.CassandraImplementContext
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -39,18 +39,18 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.util.Pair;
 
 
 @Slf4j
-public class CassandraTableModify extends TableModify implements CassandraAlg {
+public class CassandraTableModify extends Modify implements CassandraAlg {
 
     public final CassandraTable cassandraTable;
 
 
     /**
-     * Creates a {@code TableModify}.
+     * Creates a {@code Modify}.
      * <p>
      * The UPDATE operation has format like this:
      * <blockquote>

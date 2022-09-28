@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.sql.sql.SqlWriter;
-import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.language.SqlWriter;
+import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.type.PolyType;
 
 

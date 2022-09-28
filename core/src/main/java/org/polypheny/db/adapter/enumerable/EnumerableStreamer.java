@@ -32,7 +32,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Streamer;
+import org.polypheny.db.algebra.core.common.Streamer;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -66,7 +66,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).plus( right.computeSelfCost( planner, mq ) ).multiplyBy( 10 );
+        return super.computeSelfCost( planner, mq ).plus( left.computeSelfCost( planner, mq ) ).plus( right.computeSelfCost( planner, mq ) ).multiplyBy( 100 );
     }
 
 

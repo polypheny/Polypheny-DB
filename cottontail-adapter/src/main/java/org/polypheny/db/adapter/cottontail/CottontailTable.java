@@ -22,14 +22,14 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.algebra.CottontailTableScan;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
@@ -119,7 +119,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
 
     @Override
-    public TableModify toModificationAlg(
+    public Modify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptTable table,
             CatalogReader catalogReader,
@@ -129,7 +129,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         this.cottontailSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify(
+        return new LogicalModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,
@@ -166,7 +166,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
-        return new CottontailTableScan( context.getCluster(), algOptTable, this, this.cottontailSchema.getConvention() );
+        return new CottontailScan( context.getCluster(), algOptTable, this, this.cottontailSchema.getConvention() );
     }
 
 

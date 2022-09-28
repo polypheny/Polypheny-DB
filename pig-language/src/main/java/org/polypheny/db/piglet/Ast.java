@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.sql.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.util.DeadlockException;
 
@@ -33,7 +34,7 @@ import org.polypheny.db.util.DeadlockException;
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
-    public static final EntityIdentifier GLOBAL_LOCK = new EntityIdentifier( -1L, -1L ); // For locking whole schema
+    public static final EntityIdentifier GLOBAL_LOCK = new EntityIdentifier( -1L, -1L, NamespaceLevel.ENTITY_LEVEL ); // For locking whole schema
 
     private final ConcurrentHashMap<EntityIdentifier, Lock> lockTable;
     @Getter
@@ -70,9 +71,9 @@ public class LockManager {
 
             try {
                 if ( hasLock( transaction, pair.getKey() ) && (pair.getValue() == lock.getMode()) ) {
-                    return;
+                    continue;
                 } else if ( pair.getValue() == Lock.LockMode.SHARED && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.EXCLUSIVE ) {
-                    return;
+                    continue;
                 } else if ( pair.getValue() == Lock.LockMode.EXCLUSIVE && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.SHARED ) {
                     lock.upgrade( transaction );
                 } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentRules;
-import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.sql.fun.SqlDistanceFunction;
+import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlDistanceFunction;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,43 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 @EqualsAndHashCode
-public class CatalogAdapter implements CatalogEntity {
+public class CatalogAdapter implements CatalogObject {
 
-    private static final long serialVersionUID = -5837600302561930044L;
+    private static final long serialVersionUID = -6140489767408917639L;
 
     public final int id;
     public final String uniqueName;
     public final String adapterClazz;
     public final AdapterType type;
     public final ImmutableMap<String, String> settings;
+    private List<NamespaceType> supportedNamespaces;
+
+    private String adapterTypeName;
+
+
+    public String getAdapterTypeName() {
+        if ( adapterTypeName == null ) {
+            // General settings are provided by the annotations of the adapter class
+            try {
+                AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
+                this.adapterTypeName = annotations.name();
+            } catch ( ClassNotFoundException e ) {
+                throw new RuntimeException( "The provided adapter is not correctly annotated." );
+            }
+        }
+        return adapterTypeName;
+
+
+    }
 
 
     public enum AdapterType {STORE, SOURCE}
@@ -53,6 +75,20 @@ public class CatalogAdapter implements CatalogEntity {
     }
 
 
+    public List<NamespaceType> getSupportedNamespaces() {
+        if ( supportedNamespaces == null ) {
+            // General settings are provided by the annotations of the adapter class
+            try {
+                AdapterProperties annotations = Class.forName( adapterClazz ).getAnnotation( AdapterProperties.class );
+                this.supportedNamespaces = List.of( annotations.supportedNamespaceTypes() );
+            } catch ( ClassNotFoundException e ) {
+                throw new RuntimeException( "The provided adapter is not correctly annotated." );
+            }
+        }
+        return supportedNamespaces;
+    }
+
+
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
@@ -66,4 +102,5 @@ public class CatalogAdapter implements CatalogEntity {
         public final String name;
 
     }
+
 }

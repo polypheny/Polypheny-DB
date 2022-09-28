@@ -49,9 +49,9 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.Convention;
@@ -78,7 +78,6 @@ public interface MongoAlg extends AlgNode {
 
         final List<Pair<String, String>> list = new ArrayList<>();
         public List<BsonDocument> operations = new ArrayList<>();
-        public List<BsonDocument> groups = new ArrayList<>();
         public BsonArray filter = new BsonArray();
         @Getter
         @Setter
@@ -96,7 +95,7 @@ public interface MongoAlg extends AlgNode {
         @Getter
         public boolean hasProject = false;
 
-        MongoTable mongoTable;
+        MongoEntity mongoEntity;
         @Setter
         @Getter
         private boolean isDML;
@@ -134,8 +133,8 @@ public interface MongoAlg extends AlgNode {
             if ( this.staticRowType != null ) {
                 return;
             }
-            if ( mongoTable != null ) {
-                this.staticRowType = MongoRowType.fromRecordType( staticRowType, mongoTable );
+            if ( mongoEntity != null ) {
+                this.staticRowType = MongoRowType.fromRecordType( staticRowType, mongoEntity );
             } else {
                 this.staticRowType = staticRowType;
             }
@@ -143,9 +142,9 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = mongoTable.getCatalogTable().getColumnNames().indexOf( name );
+            int index = mongoEntity.getCatalogTable().getColumnNames().indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( name, mongoTable.getCatalogTable().columnIds.get( index ) );
+                return MongoStore.getPhysicalColumnName( name, mongoEntity.getCatalogTable().fieldIds.get( index ) );
             }
             throw new RuntimeException( "This column is not part of the table." );
         }
@@ -194,7 +193,7 @@ public interface MongoAlg extends AlgNode {
 
 
         @Override
-        public AlgNode visit( TableScan scan ) {
+        public AlgNode visit( Scan scan ) {
             super.visit( scan );
 
             return scan;

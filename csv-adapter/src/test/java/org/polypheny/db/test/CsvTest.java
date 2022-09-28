@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -290,7 +290,7 @@ public class CsvTest {
     public void testPushDownProjectDumb() {
         // rule does not fire, because we're using 'dumb' tables in simple model
         final String sql = "explain plan for select * from EMPS";
-        final String expected = "PLAN=EnumerableInterpreter\n  BindableTableScan(table=[[SALES, EMPS]])\n";
+        final String expected = "PLAN=EnumerableInterpreter\n  BindableScan(table=[[SALES, EMPS]])\n";
         sql( "model", sql ).returns( expected ).ok();
     }
 
@@ -298,7 +298,7 @@ public class CsvTest {
     @Test
     public void testPushDownProject() {
         final String sql = "explain plan for select * from EMPS";
-        final String expected = "PLAN=CsvTableScan(table=[[SALES, EMPS]], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])\n";
+        final String expected = "PLAN=CsvScan(table=[[SALES, EMPS]], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])\n";
         sql( "smart", sql ).returns( expected ).ok();
     }
 
@@ -306,7 +306,7 @@ public class CsvTest {
     @Test
     public void testPushDownProject2() {
         sql( "smart", "explain plan for select name, empno from EMPS" )
-                .returns( "PLAN=CsvTableScan(table=[[SALES, EMPS]], fields=[[1, 0]])\n" )
+                .returns( "PLAN=CsvScan(table=[[SALES, EMPS]], fields=[[1, 0]])\n" )
                 .ok();
         // make sure that it works...
         sql( "smart", "select name, empno from EMPS" )
@@ -318,7 +318,7 @@ public class CsvTest {
     @Test
     public void testPushDownProjectAggregate() {
         final String sql = "explain plan for\n" + "select gender, count(*) from EMPS group by gender";
-        final String expected = "PLAN=" + "EnumerableAggregate(group=[{0}], EXPR$1=[COUNT()])\n" + "  CsvTableScan(table=[[SALES, EMPS]], fields=[[3]])\n";
+        final String expected = "PLAN=" + "EnumerableAggregate(group=[{0}], EXPR$1=[COUNT()])\n" + "  CsvScan(table=[[SALES, EMPS]], fields=[[3]])\n";
         sql( "smart", sql ).returns( expected ).ok();
     }
 
@@ -329,7 +329,7 @@ public class CsvTest {
         final String expected = "PLAN=" + "EnumerableAggregate(group=[{}], EXPR$0=[MAX($0)])\n"
                 + "  EnumerableCalc(expr#0..1=[{inputs}], expr#2=['F':VARCHAR], "
                 + "expr#3=[=($t1, $t2)], proj#0..1=[{exprs}], $condition=[$t3])\n"
-                + "    CsvTableScan(table=[[SALES, EMPS]], fields=[[0, 3]])\n";
+                + "    CsvScan(table=[[SALES, EMPS]], fields=[[0, 3]])\n";
         sql( "smart", sql ).returns( expected ).ok();
     }
 
@@ -346,7 +346,7 @@ public class CsvTest {
         final String expected = "PLAN="
                 + "EnumerableAggregate(group=[{1}], EXPR$1=[MAX($2)])\n"
                 + "  EnumerableAggregate(group=[{0, 1}], QTY=[COUNT()])\n"
-                + "    CsvTableScan(table=[[SALES, EMPS]], fields=[[1, 3]])\n";
+                + "    CsvScan(table=[[SALES, EMPS]], fields=[[1, 3]])\n";
         sql( "smart", sql ).returns( expected ).ok();
     }
 

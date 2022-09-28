@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -100,9 +100,9 @@ public class AlgMdTableReferences implements MetadataHandler<BuiltInMetadata.Tab
 
 
     /**
-     * TableScan table reference.
+     * Scan table reference.
      */
-    public Set<AlgTableRef> getTableReferences( TableScan alg, AlgMetadataQuery mq ) {
+    public Set<AlgTableRef> getTableReferences( Scan alg, AlgMetadataQuery mq ) {
         return ImmutableSet.of( AlgTableRef.of( alg.getTable(), 0 ) );
     }
 

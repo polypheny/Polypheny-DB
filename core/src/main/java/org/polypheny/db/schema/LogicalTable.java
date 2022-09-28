@@ -26,13 +26,13 @@ import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
@@ -46,7 +46,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private AlgProtoDataType protoRowType;
 
     @Getter
-    private final SchemaType schemaType;
+    private final NamespaceType schemaType;
 
     @Getter
     private final String logicalSchemaName;
@@ -62,14 +62,14 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private final List<String> logicalColumnNames;
 
 
-    protected LogicalTable(
+    public LogicalTable(
             long tableId,
             String logicalSchemaName,
             String logicalTableName,
             List<Long> columnIds,
             List<String> logicalColumnNames,
             AlgProtoDataType protoRowType,
-            SchemaType schemaType ) {
+            NamespaceType schemaType ) {
         super( Object[].class );
         this.tableId = tableId;
         this.logicalSchemaName = logicalSchemaName;
@@ -87,7 +87,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
 
 
     @Override
-    public TableModify toModificationAlg(
+    public Modify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptTable table,
             CatalogReader catalogReader,
@@ -96,7 +96,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
-        return new LogicalTableModify(
+        return new LogicalModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

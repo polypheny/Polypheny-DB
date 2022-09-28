@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,13 @@ public class MongoTypeUtil {
         for ( String logicalCol : logicalCols ) {
             int index = names.indexOf( logicalCol );
             if ( index != -1 ) {
-                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, catalogTable.columnIds.get( index ) ) ) );
+                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, catalogTable.fieldIds.get( index ) ) ) );
             } else {
                 projections.append( logicalCol, new BsonInt32( 1 ) );
             }
         }
         return new BsonDocument( "$project", projections );
     }
+
 
 }

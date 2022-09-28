@@ -125,8 +125,7 @@ public class PolyphenyHomeDirManager {
 
 
     public File getFileIfExists( String path ) {
-        File file = new File( this.root, path );
-        return file;
+        return new File( this.root, path );
     }
 
 
@@ -199,6 +198,11 @@ public class PolyphenyHomeDirManager {
 
     public boolean isAccessible( File file ) {
         return file.canWrite() && file.canRead();
+    }
+
+
+    public File getDefaultPath() {
+        return root;
     }
 
 }

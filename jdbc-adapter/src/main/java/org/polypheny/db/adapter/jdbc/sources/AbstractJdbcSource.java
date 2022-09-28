@@ -39,7 +39,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.sql.SqlDialect;
+import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;

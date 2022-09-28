@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@ import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
-public final class CatalogPartitionGroup implements CatalogEntity {
+public final class CatalogPartitionGroup implements CatalogObject {
 
-    private static final long serialVersionUID = 2312903632511266177L;
+    private static final long serialVersionUID = 6229244317971622972L;
 
     public final long id;
     public final String partitionGroupName;

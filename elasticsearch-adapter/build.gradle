@@ -45,7 +45,18 @@ sourceSets {
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
+compileJava {
+    dependsOn(":core:processResources")
+}
 
+
+delombok {
+    dependsOn(":core:processResources")
+}
+
+javadoc {
+    dependsOn(":core:processResources")
+}
 
 /**
  * Tests

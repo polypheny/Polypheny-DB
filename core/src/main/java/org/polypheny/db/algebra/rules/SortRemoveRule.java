@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public class SortRemoveRule extends AlgOptRule {
         }
         // Express the "sortedness" requirement in terms of a collation trait and we can get rid of the sort. This allows us to use rels that just happen to be sorted but get the same effect.
         final AlgCollation collation = sort.getCollation();
-        assert collation == sort.getTraitSet().getTrait( AlgCollationTraitDef.INSTANCE );
+        assert collation.equals( sort.getTraitSet().getTrait( AlgCollationTraitDef.INSTANCE ) );
         final AlgTraitSet traits = sort.getInput().getTraitSet().replace( collation );
         call.transformTo( convert( sort.getInput(), traits ) );
     }

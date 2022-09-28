@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import java.util.Collection;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
 import org.polypheny.db.util.NameSet;
@@ -37,14 +37,15 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     /**
      * Creates a SimplePolyphenyDbSchema.
      *
-     * Use {@link AbstractPolyphenyDbSchema#createRootSchema(String)} or {@link #add(String, Schema, SchemaType)}.
+     * Use {@link AbstractPolyphenyDbSchema#createRootSchema(String)} or {@link #add(String, Schema, NamespaceType)}.
      */
-    SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, SchemaType schemaType ) {
+    SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, NamespaceType namespaceType, boolean caseSensitive ) {
         this(
                 parent,
                 schema,
                 name,
-                schemaType,
+                namespaceType,
+                caseSensitive,
                 null,
                 null,
                 null,
@@ -59,7 +60,8 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
             AbstractPolyphenyDbSchema parent,
             Schema schema,
             String name,
-            SchemaType schemaType,
+            NamespaceType namespaceType,
+            boolean caseSensitive,
             NameMap<PolyphenyDbSchema> subSchemaMap,
             NameMap<TableEntry> tableMap,
             NameMap<TypeEntry> typeMap,
@@ -67,7 +69,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
             NameSet functionNames,
             NameMap<FunctionEntry> nullaryFunctionMap,
             List<? extends List<String>> path ) {
-        super( parent, schema, name, schemaType, subSchemaMap, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
+        super( parent, schema, name, namespaceType, caseSensitive, subSchemaMap, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
     }
 
 
@@ -78,8 +80,8 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
 
     @Override
-    public PolyphenyDbSchema add( String name, Schema schema, SchemaType schemaType ) {
-        final PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, schema, name, schemaType );
+    public PolyphenyDbSchema add( String name, Schema schema, NamespaceType namespaceType ) {
+        final PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, schema, name, namespaceType, false );
         subSchemaMap.put( name, polyphenyDbSchema );
         return polyphenyDbSchema;
     }
@@ -90,14 +92,14 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
         // Check implicit schemas.
         Schema s = schema.getSubSchema( schemaName );
         if ( s != null ) {
-            return new SimplePolyphenyDbSchema( this, s, schemaName, schemaType );
+            return new SimplePolyphenyDbSchema( this, s, schemaName, namespaceType, false );
         }
         return null;
     }
 
 
     @Override
-    protected TableEntry getImplicitTable( String tableName, boolean caseSensitive ) {
+    protected TableEntry getImplicitTable( String tableName ) {
         // Check implicit tables.
         Table table = schema.getTable( tableName );
         if ( table != null ) {
@@ -128,7 +130,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
             }
             Schema s = schema.getSubSchema( schemaName );
             if ( s != null ) {
-                PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, s, schemaName, schemaType );
+                PolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( this, s, schemaName, namespaceType, false );
                 builder.put( schemaName, polyphenyDbSchema );
             }
         }
@@ -202,7 +204,8 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
                 parent,
                 schema.snapshot( version ),
                 name,
-                schemaType,
+                namespaceType,
+                isCaseSensitive(),
                 null,
                 tableMap,
                 typeMap,

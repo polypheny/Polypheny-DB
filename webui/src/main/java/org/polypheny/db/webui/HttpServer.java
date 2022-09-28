@@ -147,8 +147,8 @@ public class HttpServer implements Runnable {
 
         Crud crud = new Crud(
                 transactionManager,
-                Catalog.getInstance().getUser( Catalog.defaultUserId ).name,
-                Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name );
+                Catalog.defaultUserId,
+                Catalog.defaultDatabaseId );
 
         WebSocket webSocketHandler = new WebSocket( crud, gson );
         webSockets( server, webSocketHandler );
@@ -274,6 +274,12 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/getUnderlyingTable", crud::getUnderlyingTable );
 
         webuiServer.post( "/getPlacements", crud::getPlacements );
+
+        webuiServer.post( "/getGraphPlacements", crud.languageCrud::getGraphPlacements );
+
+        webuiServer.post( "/getFixedFields", crud.languageCrud::getFixedFields );
+
+        webuiServer.post( "/getCollectionPlacements", crud.languageCrud::getCollectionPlacements );
 
         webuiServer.post( "/addDropPlacement", crud::addDropPlacement );
 

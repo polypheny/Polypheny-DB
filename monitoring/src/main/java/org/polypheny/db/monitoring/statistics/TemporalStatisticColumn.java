@@ -72,6 +72,11 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
         } else {
             full = true;
         }
+
+        if ( val == null ) {
+            return;
+        }
+
         if ( min == null ) {
             min = val;
             max = val;

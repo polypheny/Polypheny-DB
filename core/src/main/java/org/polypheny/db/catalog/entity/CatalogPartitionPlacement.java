@@ -26,9 +26,9 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 /**
  * This class is considered the logical representation of a physical table on a specific store.
  */
-public class CatalogPartitionPlacement implements CatalogEntity {
+public class CatalogPartitionPlacement implements CatalogObject {
 
-    private static final long serialVersionUID = 3035193464866141590L;
+    private static final long serialVersionUID = 8835793248417591036L;
 
     public final long tableId;
     public final long partitionId;

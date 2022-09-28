@@ -19,6 +19,7 @@ package org.polypheny.db.processing;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +37,7 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -57,16 +58,16 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.sql.sql.SqlBasicCall;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlInsert;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.sql.parser.SqlParser;
-import org.polypheny.db.sql.sql.validate.PolyphenyDbSqlValidator;
+import org.polypheny.db.sql.language.SqlBasicCall;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlInsert;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.language.parser.SqlParser;
+import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
@@ -92,9 +93,9 @@ public class SqlProcessorImpl extends Processor {
 
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setUnquotedCasing( Casing.UNCHANGED );
+        configConfigBuilder.setQuotedCasing( Casing.UNCHANGED );
         parserConfig = configConfigBuilder.build();
     }
 
@@ -105,7 +106,7 @@ public class SqlProcessorImpl extends Processor {
 
 
     @Override
-    public Node parse( String query ) {
+    public List<? extends Node> parse( String query ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolySQL statement ..." );
@@ -130,7 +131,7 @@ public class SqlProcessorImpl extends Processor {
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
         }
-        return parsed;
+        return ImmutableList.of( parsed );
     }
 
 
@@ -248,13 +249,13 @@ public class SqlProcessorImpl extends Processor {
 
         if ( oldColumnList != null ) {
             CatalogTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            SchemaType schemaType = Catalog.getInstance().getSchema( catalogTable.schemaId ).schemaType;
+            NamespaceType namespaceType = Catalog.getInstance().getSchema( catalogTable.namespaceId ).namespaceType;
 
             catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
-            int size = (int) catalogTable.columnIds.size();
-            if ( schemaType == SchemaType.DOCUMENT ) {
+            int size = (int) catalogTable.fieldIds.size();
+            if ( namespaceType == NamespaceType.DOCUMENT ) {
                 List<String> columnNames = catalogTable.getColumnNames();
                 size += oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
             }
@@ -318,7 +319,7 @@ public class SqlProcessorImpl extends Processor {
             }
 
             // add doc values back TODO DL: change
-            if ( schemaType == SchemaType.DOCUMENT ) {
+            if ( namespaceType == NamespaceType.DOCUMENT ) {
                 List<SqlIdentifier> documentColumns = new ArrayList<>();
                 for ( Node column : oldColumnList.getSqlList() ) {
                     if ( newColumnList.getSqlList()
@@ -388,7 +389,7 @@ public class SqlProcessorImpl extends Processor {
         int i = 0;
         for ( Node node : columnList.getList() ) {
             SqlIdentifier identifier = (SqlIdentifier) node;
-            if ( RuntimeConfig.CASE_SENSITIVE.getBoolean() ) {
+            if ( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() ) {
                 if ( identifier.getSimple().equals( name ) ) {
                     return i;
                 }

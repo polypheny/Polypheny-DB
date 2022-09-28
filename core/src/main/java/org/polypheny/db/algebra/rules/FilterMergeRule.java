@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -47,7 +48,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that combines two {@link org.polypheny.db.algebra.logical.LogicalFilter}s.
+ * Planner rule that combines two {@link LogicalFilter}s.
  */
 public class FilterMergeRule extends AlgOptRule {
 
@@ -69,7 +70,8 @@ public class FilterMergeRule extends AlgOptRule {
         final Filter topFilter = call.alg( 0 );
         final Filter bottomFilter = call.alg( 1 );
 
-        // use RexPrograms to merge the two FilterRels into a single program so we can convert the two LogicalFilter conditions to directly reference the bottom LogicalFilter's child
+        // use RexPrograms to merge the two FilterRels into a single program so we can convert the two LogicalFilter
+        // conditions to directly reference the bottom LogicalFilter's child
         RexBuilder rexBuilder = topFilter.getCluster().getRexBuilder();
         RexProgram bottomProgram = createProgram( bottomFilter );
         RexProgram topProgram = createProgram( topFilter );

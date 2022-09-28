@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -93,11 +93,11 @@ public abstract class Index {
             cols.addAll( targetColumns );
         }
         final AlgNode scan = builder
-                .scan( ImmutableList.of( table.getSchemaName(), table.name ) )
+                .scan( ImmutableList.of( table.getNamespaceName(), table.name ) )
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyResult result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+        final PolyImplementation result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
 
         final List<List<Object>> rows = result.getRows( statement, 1, false, false, result.getStatement().getMonitoringEvent(), true );

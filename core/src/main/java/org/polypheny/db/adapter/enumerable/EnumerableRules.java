@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.polypheny.db.adapter.enumerable.common.EnumerableContextSwitcherRule;
+import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgMatchRule;
+import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgTransformerRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -69,6 +72,8 @@ public class EnumerableRules {
     public static final EnumerableConditionalExecuteFalseRule ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE = new EnumerableConditionalExecuteFalseRule();
 
     public static final EnumerableStreamerRule ENUMERABLE_STREAMER_RULE = new EnumerableStreamerRule();
+
+    public static final EnumerableContextSwitcherRule ENUMERABLE_CONTEXT_SWITCHER_RULE = new EnumerableContextSwitcherRule();
 
     public static final EnumerableTableModifyToStreamerRule ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE = new EnumerableTableModifyToStreamerRule();
 
@@ -110,9 +115,19 @@ public class EnumerableRules {
 
     public static final EnumerableProjectToCalcRule ENUMERABLE_PROJECT_TO_CALC_RULE = new EnumerableProjectToCalcRule( AlgFactories.LOGICAL_BUILDER );
 
-    public static final EnumerableTableScanRule ENUMERABLE_TABLE_SCAN_RULE = new EnumerableTableScanRule( AlgFactories.LOGICAL_BUILDER );
+    public static final EnumerableScanRule ENUMERABLE_TABLE_SCAN_RULE = new EnumerableScanRule( AlgFactories.LOGICAL_BUILDER );
 
     public static final EnumerableTableFunctionScanRule ENUMERABLE_TABLE_FUNCTION_SCAN_RULE = new EnumerableTableFunctionScanRule( AlgFactories.LOGICAL_BUILDER );
+
+    public static final EnumerableTransformerRule ENUMERABLE_TRANSFORMER_RULE = new EnumerableTransformerRule();
+
+    public static final EnumerableLpgMatchRule ENUMERABLE_GRAPH_MATCH_RULE = new EnumerableLpgMatchRule( AlgFactories.LOGICAL_BUILDER );
+
+    public static final EnumerableUnwindRule ENUMERABLE_UNWIND_RULE = new EnumerableUnwindRule();
+
+    public static final EnumerableLpgTransformerRule ENUMERABLE_GRAPH_TRANSFORMER_RULE = new EnumerableLpgTransformerRule();
+
+    public static final EnumerableDocumentTransformerRule ENUMERABLE_DOCUMENT_TRANSFORMER_RULE = new EnumerableDocumentTransformerRule();
 
 }
 

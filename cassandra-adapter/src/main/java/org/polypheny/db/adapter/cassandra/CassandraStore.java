@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
@@ -99,6 +100,10 @@ public class CassandraStore extends DataStore {
 
     private final CqlSession session;
     private CassandraSchema currentSchema;
+
+    @Getter
+    // Apparently this cannot be static according to lombok even if it should create a non-static getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
     public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {
@@ -323,7 +328,7 @@ public class CassandraStore extends DataStore {
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-//        public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+//        public void dropColumn( Context context, CatalogCombinedTable catalogEntity, CatalogColumn catalogColumn ) {
 //        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getStatement().getTransaction().getCatalog(), this.getStoreId() );
 
         CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( columnPlacement.tableId ).partitionProperty.partitionIds.get( 0 ) );

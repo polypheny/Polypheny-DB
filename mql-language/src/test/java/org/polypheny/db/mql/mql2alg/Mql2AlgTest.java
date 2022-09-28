@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.polypheny.db.mql.mql2alg;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDocument;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
@@ -51,7 +51,7 @@ public abstract class Mql2AlgTest extends MqlTest {
 
 
     public AlgRoot translate( String mql ) {
-        return MQL_TO_ALG_CONVERTER.convert( parse( mql ), new MqlQueryParameters( mql, "private", SchemaType.DOCUMENT ) );
+        return MQL_TO_ALG_CONVERTER.convert( parse( mql ), new MqlQueryParameters( mql, "private", NamespaceType.DOCUMENT ) );
     }
 
 }

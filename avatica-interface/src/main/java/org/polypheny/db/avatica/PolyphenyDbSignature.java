@@ -30,12 +30,12 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -58,7 +58,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     private final List<AlgCollation> collationList;
     private final long maxRowCount;
     private final Bindable<T> bindable;
-    private final SchemaType schemaType;
+    private final NamespaceType namespaceType;
     private final ExecutionTimeMonitor executionTimeMonitor;
 
 
@@ -75,7 +75,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
             Bindable<T> bindable,
             StatementType statementType,
             ExecutionTimeMonitor executionTimeMonitor,
-            SchemaType schemaType ) {
+            NamespaceType namespaceType ) {
         super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
         this.rowType = rowType;
         this.rootSchema = rootSchema;
@@ -83,11 +83,11 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
         this.maxRowCount = maxRowCount;
         this.bindable = bindable;
         this.executionTimeMonitor = executionTimeMonitor;
-        this.schemaType = schemaType;
+        this.namespaceType = namespaceType;
     }
 
 
-    public static <T> PolyphenyDbSignature<T> from( PolyResult prepareQuery ) {
+    public static <T> PolyphenyDbSignature<T> from( PolyImplementation prepareQuery ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
         if ( prepareQuery.rowType != null ) {
             for ( AlgDataTypeField field : prepareQuery.rowType.getFieldList() ) {
@@ -116,13 +116,13 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
                 (Bindable<T>) prepareQuery.getBindable(),
                 prepareQuery.getStatementType(),
                 prepareQuery.getExecutionTimeMonitor(),
-                prepareQuery.getSchemaType()
+                prepareQuery.getNamespaceType()
         );
     }
 
 
     public Enumerable<T> enumerable( DataContext dataContext ) {
-        return PolyResult.enumerable( bindable, dataContext );
+        return PolyImplementation.enumerable( bindable, dataContext );
     }
 
 }

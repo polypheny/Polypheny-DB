@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,15 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -45,18 +47,22 @@ public class CachedPlanRouter extends BaseRouter {
     final static Catalog catalog = Catalog.getInstance();
 
 
-    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement ) {
+    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement, LogicalQueryInformation queryInformation ) {
         final RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
-        return buildCachedSelect( logicalRoot.alg, builder, statement, logicalRoot.alg.getCluster(), routingPlanCached );
+        return buildCachedSelect( logicalRoot.alg, builder, statement, logicalRoot.alg.getCluster(), routingPlanCached, queryInformation );
     }
 
 
-    private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, Statement statement, AlgOptCluster cluster, CachedProposedRoutingPlan cachedPlan ) {
+    private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, Statement statement, AlgOptCluster cluster, CachedProposedRoutingPlan cachedPlan, LogicalQueryInformation queryInformation ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan );
+            builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan, queryInformation );
         }
 
-        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
+        if ( node instanceof DocumentScan ) {
+            return super.handleDocumentScan( (DocumentScan) node, statement, builder, null );
+        }
+
+        if ( node instanceof LogicalScan && node.getTable() != null ) {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
             if ( !(table.getTable() instanceof LogicalTable) ) {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
@@ -75,7 +81,7 @@ public class CachedPlanRouter extends BaseRouter {
                 }
             }
 
-            return builder.push( super.buildJoinedTableScan( statement, cluster, placement ) );
+            return builder.push( super.buildJoinedScan( statement, cluster, placement ) );
         } else if ( node instanceof LogicalValues ) {
             return super.handleValues( (LogicalValues) node, builder );
         } else {

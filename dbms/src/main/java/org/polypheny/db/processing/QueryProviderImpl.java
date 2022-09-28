@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ public class QueryProviderImpl implements QueryProvider {
      *
      * NOTE: The {@link Queryable#getExpression()} property of the returned {@link Queryable} object is equal to {@code expression}.
      *
-     * @param expression Expression
-     * @param rowType    Row type
+     * @param expression ExpressionType
+     * @param rowType Row type
      * @return Queryable
      */
     @Override
@@ -46,8 +46,8 @@ public class QueryProviderImpl implements QueryProvider {
     /**
      * Constructs a {@link Queryable} object that can evaluate the query represented by a specified expression tree. The row type may contain generic information.
      *
-     * @param expression Expression
-     * @param rowType    Row type
+     * @param expression ExpressionType
+     * @param rowType Row type
      * @return Queryable
      */
     @Override
@@ -59,7 +59,7 @@ public class QueryProviderImpl implements QueryProvider {
     /**
      * Executes the query represented by a specified expression tree.
      *
-     * This method executes queries that return a single value (instead of an enumerable sequence of values). Expression trees that represent queries that return enumerable results are executed when the
+     * This method executes queries that return a single value (instead of an enumerable sequence of values). ExpressionType trees that represent queries that return enumerable results are executed when the
      * {@link Queryable} object that contains the expression tree is enumerated.
      *
      * The Queryable standard query operator methods that return singleton results call {@code execute}. They pass it a {@link MethodCallExpression} that represents a linq4j query.

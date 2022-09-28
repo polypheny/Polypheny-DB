@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Function.FunctionType;

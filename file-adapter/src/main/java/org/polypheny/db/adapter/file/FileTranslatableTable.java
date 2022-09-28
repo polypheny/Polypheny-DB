@@ -27,12 +27,12 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.file.algebra.FileTableScan;
+import org.polypheny.db.adapter.file.algebra.FileScan;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
@@ -106,7 +106,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
-        return new FileTableScan( context.getCluster(), algOptTable, this );
+        return new FileScan( context.getCluster(), algOptTable, this );
     }
 
 
@@ -124,7 +124,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
 
     @Override
-    public TableModify toModificationAlg(
+    public Modify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptTable table,
             CatalogReader catalogReader,
@@ -134,7 +134,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
             List<RexNode> sourceExpressionList,
             boolean flattened ) {
         fileSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify(
+        return new LogicalModify(
                 cluster,
                 cluster.traitSetOf( Convention.NONE ),
                 table,

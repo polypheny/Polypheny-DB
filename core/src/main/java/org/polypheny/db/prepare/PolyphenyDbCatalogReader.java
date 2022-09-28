@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@
 
 package org.polypheny.db.prepare;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
@@ -59,6 +58,7 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.OperatorImpl;
 import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
@@ -68,6 +68,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.schema.impl.ScalarFunctionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -100,7 +101,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, AlgDataTypeFactory typeFactory ) {
         this(
                 rootSchema,
-                NameMatchers.withCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() ),
+                NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() ),
                 ImmutableList.of( Objects.requireNonNull( defaultSchema ), ImmutableList.of() ),
                 typeFactory );
     }
@@ -138,6 +139,32 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
             return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, null );
         }
         return null;
+    }
+
+
+    @Override
+    public AlgOptTable getCollection( final List<String> names ) {
+        // First look in the default schema, if any. If not found, look in the root schema.
+        PolyphenyDbSchema.TableEntry entry = ValidatorUtil.getTableEntry( this, names );
+        if ( entry != null ) {
+            final Table table = entry.getTable();
+            if ( table instanceof Wrapper ) {
+                //return table;
+                /*final Prepare.PreparingTable algOptTable = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
+                if ( algOptTable != null ) {
+                    return algOptTable;
+                }*/
+            }
+            return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, null );
+        }
+        return null;
+    }
+
+
+    @Override
+    public Graph getGraph( final String name ) {
+        PolyphenyDbSchema schema = rootSchema.getSubSchema( name, true );
+        return schema == null ? null : (Graph) schema.getSchema();
     }
 
 

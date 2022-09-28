@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,13 +43,15 @@ import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.BsonDocument;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.models.Result;
@@ -124,7 +126,7 @@ public class TestHelper {
 
     public Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( "pa", "APP", true, "Test Helper" );
+            return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, true, "Test Helper" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
@@ -234,7 +236,7 @@ public class TestHelper {
     }
 
 
-    private static List<Object[]> convertResultSetToList( ResultSet resultSet ) throws SQLException {
+    public static List<Object[]> convertResultSetToList( ResultSet resultSet ) throws SQLException {
         ResultSetMetaData md = resultSet.getMetaData();
         int columns = md.getColumnCount();
         List<Object[]> list = new ArrayList<>();
@@ -268,7 +270,7 @@ public class TestHelper {
     }
 
 
-    private static List<Object[]> orderResultList( List<Object[]> result ) {
+    public static List<Object[]> orderResultList( List<Object[]> result ) {
         List<Object[]> list = new ArrayList<>( result );
         list.sort( ( lhs, rhs ) -> {
             String lhsStr = Arrays.toString( lhs );
@@ -280,8 +282,36 @@ public class TestHelper {
     }
 
 
-    public static class MongoConnection {
+    public static abstract class HttpConnection {
 
+        public static HttpRequest<?> buildQuery( String route, String query, String database ) {
+            JsonObject data = new JsonObject();
+            data.addProperty( "query", query );
+            data.addProperty( "database", database );
+
+            return Unirest.post( "{protocol}://{host}:{port}" + route )
+                    .header( "Content-ExpressionType", "application/json" )
+                    .body( data );
+
+        }
+
+
+        protected static HttpResponse<String> execute( String prefix, String query, String database ) {
+            HttpRequest<?> request = buildQuery( prefix, query, database );
+            request.basicAuth( "pa", "" );
+            request.routeParam( "protocol", "http" );
+            request.routeParam( "host", "127.0.0.1" );
+            request.routeParam( "port", "13137" );
+            return request.asString();
+        }
+
+    }
+
+
+    public static class MongoConnection extends HttpConnection {
+
+        public static final String MONGO_PREFIX = "/mongo";
+        public static final String MONGO_DB = "test";
         static Gson gson = new Gson();
 
 
@@ -289,19 +319,28 @@ public class TestHelper {
         }
 
 
-        public static boolean checkResultSet( Result result, List<Object[]> expected ) {
+        public static boolean checkResultSet( Result result, List<Object[]> expected, boolean containsId ) {
             assertEquals( expected.size(), result.getData().length );
 
             int j = 0;
             for ( String[] data : result.getData() ) {
                 int i = 0;
                 for ( String entry : data ) {
-                    if ( !result.getHeader()[i].name.equals( "_id" ) ) {
-                        if ( entry != null && expected.get( j )[i] != null ) {
-                            assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
+                    if ( containsId && !entry.contains( "_id" ) ) {
+                        return false;
+                    }
+
+                    if ( entry != null && expected.get( j )[i] != null ) {
+                        if ( containsId && result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
+                            BsonDocument doc = BsonDocument.parse( entry );
+                            doc.remove( "_id" );
+
+                            assertEquals( BsonDocument.parse( ((String) expected.get( j )[i]) ), doc );
                         } else {
-                            assertEquals( expected.get( j )[i], entry );
+                            assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
                         }
+                    } else {
+                        assertEquals( expected.get( j )[i], entry );
                     }
                     i++;
                 }
@@ -312,30 +351,13 @@ public class TestHelper {
         }
 
 
-        private static HttpRequest<?> buildQuery( String mql ) {
-            JsonObject data = new JsonObject();
-            data.addProperty( "query", mql );
-            data.addProperty( "database", "test" );
-
-            return Unirest.post( "{protocol}://{host}:{port}/mongo" )
-                    .header( "Content-Type", "application/json" )
-                    .body( data );
-
-        }
-
-
         public static Result executeGetResponse( String mongoQl ) {
-            return getBody( execute( mongoQl ) );
+            return executeGetResponse( mongoQl, MONGO_DB );
         }
 
 
-        private static HttpResponse<String> execute( String mql ) {
-            HttpRequest<?> request = MongoConnection.buildQuery( mql );
-            request.basicAuth( "pa", "" );
-            request.routeParam( "protocol", "http" );
-            request.routeParam( "host", "127.0.0.1" );
-            request.routeParam( "port", "13137" );
-            return request.asString();
+        public static Result executeGetResponse( String mongoQl, String database ) {
+            return getBody( execute( MONGO_PREFIX, mongoQl, database ) );
         }
 
 
@@ -359,15 +381,28 @@ public class TestHelper {
 
 
         public static boolean checkUnorderedResultSet( Result result, List<String[]> expected, boolean excludeId ) {
+            if ( result.getData() == null ) {
+                fail( result.getError() );
+            }
             assertEquals( expected.size(), result.getData().length );
 
             List<List<String>> parsedResults = new ArrayList<>();
-            int j = 0;
+
             for ( String[] data : result.getData() ) {
                 int i = 0;
                 List<String> row = new ArrayList<>();
                 for ( String entry : data ) {
                     if ( !result.getHeader()[i].name.equals( "_id" ) ) {
+                        BsonDocument doc = tryGetBson( result, i, entry );
+                        if ( doc != null ) {
+                            if ( excludeId && result.getHeader()[i].name.equals( "d" ) ) {
+                                doc.remove( "_id" );
+                            }
+                            row.add( doc.toJson().replace( " ", "" ) );
+                            i++;
+                            continue;
+                        }
+
                         if ( entry != null ) {
                             row.add( entry.replace( " ", "" ) );
                         } else {
@@ -377,15 +412,10 @@ public class TestHelper {
                     i++;
                 }
                 parsedResults.add( row );
-                j++;
             }
             List<List<String>> parsedExpected = new ArrayList<>();
 
-            if ( !excludeId ) {
-                expected.forEach( row -> parsedExpected.add( Arrays.asList( row ) ) );
-            } else {
-                expected.forEach( row -> parsedExpected.add( Arrays.asList( row ).subList( 1, Arrays.asList( row ).size() ) ) );
-            }
+            expected.forEach( row -> parsedExpected.add( Arrays.asList( row ) ) );
 
             List<List<String>> finalExpected = parsedExpected
                     .stream()
@@ -402,9 +432,66 @@ public class TestHelper {
                                     .collect( Collectors.toList() ) )
                     .collect( Collectors.toList() );
 
-            assertTrue( finalExpected.containsAll( parsedResults ) );
-            assertTrue( parsedResults.containsAll( finalExpected ) );
+            assertTrue( "Expected result does not contain all actual results", finalExpected.containsAll( parsedResults ) );
+            assertTrue( "Actual result does not contain all expected results", parsedResults.containsAll( finalExpected ) );
             return true;
+        }
+
+
+        private static BsonDocument tryGetBson( Result result, int i, String entry ) {
+            BsonDocument doc = null;
+            if ( result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
+                doc = BsonDocument.parse( entry );
+            } else if ( result.getHeader()[i].dataType.toLowerCase().contains( "any" ) ) {
+                try {
+                    doc = BsonDocument.parse( entry );
+                } catch ( Exception e ) {
+                    // empty on purpose
+                }
+            }
+
+            return doc;
+        }
+
+
+        public static String toDoc( String key, Object value ) {
+            return String.format( "{\"%s\": %s}", key, value );
+        }
+
+    }
+
+
+    public static class CypherConnection extends HttpConnection {
+
+        static Gson gson = new Gson();
+
+
+        public static Result executeGetResponse( String query ) {
+            return getBody( execute( "/cypher", query, "test" ) );
+        }
+
+
+        public static Result executeGetResponse( String query, String database ) {
+            return getBody( execute( "/cypher", query, database ) );
+        }
+
+
+        private static Result getBody( HttpResponse<String> res ) {
+            try {
+                Result[] result = gson.fromJson( res.getBody(), Result[].class );
+                if ( result.length == 1 ) {
+                    return gson.fromJson( res.getBody(), Result[].class )[0];
+                } else if ( result.length == 0 ) {
+                    return new Result();
+                }
+                fail( "There was more than one result in the response!" );
+                throw new RuntimeException( "This cannot happen" );
+
+            } catch ( JsonSyntaxException e ) {
+                log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
+                fail();
+                throw new RuntimeException( "This cannot happen" );
+            }
         }
 
     }

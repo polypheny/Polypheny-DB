@@ -1234,7 +1234,9 @@ public enum Kind {
      */
     OTHER_DDL,
 
-
+    /**
+     * Document model transform document into string representation
+     */
     MQL_JSONIFY,
 
     /**
@@ -1273,7 +1275,7 @@ public enum Kind {
     MQL_EXCLUDE,
 
     /**
-     * ocument model {@code $elemMatch} operator
+     * Document model {@code $elemMatch} operator
      */
     MQL_ELEM_MATCH,
 
@@ -1284,38 +1286,43 @@ public enum Kind {
 
     /**
      * Document model {@code UPDATE} operator, which handles only REPLACE during updates
-     *
      */
     MQL_UPDATE_REPLACE,
 
     /**
      * Document model {@code UPDATE} operator, which handles new DOCUMENTS during updates
-     *
      */
     MQL_ADD_FIELDS,
 
     /**
      * Document model {@code UPDATE} operator, which handles removing DOCUMENTS during updates
-     *
      */
     MQL_UPDATE_REMOVE,
 
     /**
      * Document model {@code UPDATE} operator, which handles rename DOCUMENTS during updates
-     *
      */
     MQL_UPDATE_RENAME,
 
     /**
      * Document model {@code UPDATE} operator, which wrapes the other UPDATE operations
-     *
      */
     MQL_UPDATE,
 
     /**
      * Document model {@code $exists} operator
      */
-    MQL_EXISTS;
+    MQL_EXISTS,
+
+    /*
+     * Deserialize operator
+     */
+    DESERIALIZE,
+
+    /*
+     * CYPHER function
+     */
+    CYPHER_FUNCTION;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 

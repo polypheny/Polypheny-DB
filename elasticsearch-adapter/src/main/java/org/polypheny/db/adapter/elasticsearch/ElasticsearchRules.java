@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,9 +46,9 @@ import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptRule;
@@ -251,7 +251,7 @@ class ElasticsearchRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to an {@link ElasticsearchFilter}.
+     * Rule to convert a {@link LogicalFilter} to an {@link ElasticsearchFilter}.
      */
     private static class ElasticsearchFilterRule extends ElasticsearchConverterRule {
 
@@ -274,7 +274,7 @@ class ElasticsearchRules {
 
 
     /**
-     * Rule to convert an {@link org.polypheny.db.algebra.logical.LogicalAggregate} to an {@link ElasticsearchAggregate}.
+     * Rule to convert an {@link LogicalAggregate} to an {@link ElasticsearchAggregate}.
      */
     private static class ElasticsearchAggregateRule extends ElasticsearchConverterRule {
 
@@ -301,7 +301,7 @@ class ElasticsearchRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to an {@link ElasticsearchProject}.
+     * Rule to convert a {@link LogicalProject} to an {@link ElasticsearchProject}.
      */
     private static class ElasticsearchProjectRule extends ElasticsearchConverterRule {
 

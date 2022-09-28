@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,20 @@
 package org.polypheny.db.webui.models;
 
 
+import javax.annotation.Nullable;
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
 /**
- * Model for a schema of a DBMS
+ * Model for a namespace of the logical schema.
  */
 @Getter
 public class Schema {
 
     private String name;
-    private SchemaType type;
+    private NamespaceType type;
+    private final String store;
 
     // fields for creation
     private boolean create;
@@ -45,9 +47,17 @@ public class Schema {
      * @param name name of the schema
      * @param type type of the schema, e.g. relational
      */
-    public Schema( final String name, final SchemaType type ) {
+    public Schema( final String name, final NamespaceType type, @Nullable final String store ) {
         this.name = name;
         this.type = type;
+
+        if ( type == NamespaceType.GRAPH ) {
+            assert store != null;
+            this.store = store;
+        } else {
+            assert store == null;
+            this.store = null;
+        }
     }
 
 }

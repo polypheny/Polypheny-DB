@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -24,16 +23,16 @@ import lombok.RequiredArgsConstructor;
 
 
 @EqualsAndHashCode
-public final class CatalogDatabase implements CatalogEntity, Comparable<CatalogDatabase> {
+public final class CatalogDatabase implements CatalogObject, Comparable<CatalogDatabase> {
 
-    private static final long serialVersionUID = 4711611630126858410L;
+    private static final long serialVersionUID = -4529369849606480011L;
 
     public final long id;
     public final String name;
     public final int ownerId;
     public final String ownerName;
-    public final Long defaultSchemaId; // can be null
-    public final String defaultSchemaName; // can be null
+    public final Long defaultNamespaceId; // can be null
+    public final String defaultNamespaceName; // can be null
 
 
     public CatalogDatabase(
@@ -41,21 +40,21 @@ public final class CatalogDatabase implements CatalogEntity, Comparable<CatalogD
             @NonNull final String name,
             final int ownerId,
             @NonNull final String ownerName,
-            final Long defaultSchemaId,
-            final String defaultSchemaName ) {
+            final Long defaultNamespaceId,
+            final String defaultNamespaceName ) {
         this.id = id;
         this.name = name;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
-        this.defaultSchemaId = defaultSchemaId;
-        this.defaultSchemaName = defaultSchemaName;
+        this.defaultNamespaceId = defaultNamespaceId;
+        this.defaultNamespaceName = defaultNamespaceName;
     }
 
 
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, ownerName, defaultSchemaName };
+        return new Serializable[]{ name, ownerName, defaultNamespaceName };
     }
 
 
@@ -74,5 +73,7 @@ public final class CatalogDatabase implements CatalogEntity, Comparable<CatalogD
         public final String tableCat;
         public final String owner;
         public final String defaultSchema;
+
     }
+
 }

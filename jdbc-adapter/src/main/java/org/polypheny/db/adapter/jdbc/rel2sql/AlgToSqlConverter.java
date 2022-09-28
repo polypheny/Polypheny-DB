@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,10 +60,10 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Match;
 import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -77,23 +77,23 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.sql.sql.SqlCall;
-import org.polypheny.db.sql.sql.SqlDelete;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlInsert;
-import org.polypheny.db.sql.sql.SqlIntervalLiteral;
-import org.polypheny.db.sql.sql.SqlJoin;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.SqlMatchRecognize;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.sql.sql.SqlSetOperator;
-import org.polypheny.db.sql.sql.SqlUpdate;
-import org.polypheny.db.sql.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.sql.fun.SqlSingleValueAggFunction;
-import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlDelete;
+import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlInsert;
+import org.polypheny.db.sql.language.SqlIntervalLiteral;
+import org.polypheny.db.sql.language.SqlJoin;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlMatchRecognize;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.SqlSetOperator;
+import org.polypheny.db.sql.language.SqlUpdate;
+import org.polypheny.db.sql.language.fun.SqlRowOperator;
+import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
+import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;
 import org.polypheny.db.util.ReflectiveVisitor;
@@ -271,7 +271,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * @see #dispatch
      */
-    public Result visit( TableScan e ) {
+    public Result visit( Scan e ) {
         //final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
         return result(
                 new SqlIdentifier( e.getTable().getQualifiedName(), ParserPos.ZERO ),
@@ -349,7 +349,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final Map<String, AlgDataType> pairs = ImmutableMap.of();
         final Context context = aliasContext( pairs, false );
         SqlNode query;
-        final boolean rename = stack.size() <= 1 || !(Iterables.get( stack, 1 ).r instanceof TableModify);
+        final boolean rename = stack.size() <= 1 || !(Iterables.get( stack, 1 ).r instanceof Modify);
         final List<String> fieldNames = e.getRowType().getFieldNames();
         if ( !dialect.supportsAliasedValues() && rename ) {
             // Oracle does not support "AS t (c1, c2)". So instead of
@@ -447,7 +447,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * @see #dispatch
      */
-    public Result visit( TableModify modify ) {
+    public Result visit( Modify modify ) {
         final Map<String, AlgDataType> pairs = ImmutableMap.of();
         final Context context = aliasContext( pairs, false );
 

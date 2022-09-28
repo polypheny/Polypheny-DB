@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptRule;
@@ -61,7 +61,7 @@ import org.slf4j.Logger;
 
 
 /**
- * Planner rule that folds projections and filters into an underlying {@link org.polypheny.db.algebra.logical.LogicalValues}.
+ * Planner rule that folds projections and filters into an underlying {@link LogicalValues}.
  *
  * Returns a simplified {@code Values}, perhaps containing zero tuples if all rows are filtered away.
  *

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexRangeRef;
-import org.polypheny.db.sql.sql.SqlCall;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.sql.sql.validate.SqlValidator;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlOperatorBinding;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.util.InitializerExpressionFactory;
 
 

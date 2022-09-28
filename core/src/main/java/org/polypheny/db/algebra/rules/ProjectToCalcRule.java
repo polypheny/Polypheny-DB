@@ -36,9 +36,9 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexProgram;
@@ -47,11 +47,11 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 /**
  * Rule to convert a
- * {@link org.polypheny.db.algebra.logical.LogicalProject} to a
+ * {@link LogicalProject} to a
  * {@link LogicalCalc}
  *
  * The rule does not fire if the child is a
- * {@link org.polypheny.db.algebra.logical.LogicalProject},
+ * {@link LogicalProject},
  * {@link LogicalFilter} or
  * {@link LogicalCalc}. If it did, then the same
  * {@link LogicalCalc} would be formed via

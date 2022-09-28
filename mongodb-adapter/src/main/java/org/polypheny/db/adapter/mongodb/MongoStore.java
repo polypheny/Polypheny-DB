@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.bson.BsonBinary;
@@ -49,12 +50,14 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -74,11 +77,13 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 @AdapterProperties(
         name = "MongoDB",
         description = "MongoDB is a document-based database system.",
+        supportedNamespaceTypes = { NamespaceType.DOCUMENT, NamespaceType.RELATIONAL },
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingBoolean(name = "persistent", defaultValue = false)
 @AdapterSettingInteger(name = "port", defaultValue = 27017)
@@ -94,16 +99,25 @@ public class MongoStore extends DataStore {
     private String currentUrl;
     private final int dockerInstanceId;
 
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of();
+
+
+    @Override
+    public List<NamespaceType> getSupportedSchemaType() {
+        return ImmutableList.of( NamespaceType.RELATIONAL, NamespaceType.DOCUMENT );
+    }
+
 
     public MongoStore( int adapterId, String uniqueName, Map<String, String> settings ) {
         super( adapterId, uniqueName, settings, Boolean.parseBoolean( settings.get( "persistent" ) ) );
 
         this.port = Integer.parseInt( settings.get( "port" ) );
 
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:4.4.7", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:4.4.14", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 27017, port )
-                .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
-                .withReadyTest( this::testConnection, 20000 )
+                .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" + adapterId ) )
+                .withReadyTest( this::testConnection, 100000 )
                 .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
                 .build();
         this.host = container.getHost();
@@ -120,15 +134,21 @@ public class MongoStore extends DataStore {
         this.transactionProvider = new TransactionProvider( this.client );
         MongoDatabase db = this.client.getDatabase( "admin" );
         Document configs = new Document( "setParameter", 1 );
-        String trxLifetimeLimit;
-        if ( settings.containsKey( "trxLifetimeLimit" ) ) {
-            trxLifetimeLimit = settings.get( "trxLifetimeLimit" );
-        } else {
-            trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( "trxLifetimeLimit" );
-        }
+        String trxLifetimeLimit = getSetting( settings, "trxLifetimeLimit" );
         configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( trxLifetimeLimit ) );
         configs.put( "cursorTimeoutMillis", 6 * 600000 );
         db.runCommand( configs );
+    }
+
+
+    private String getSetting( Map<String, String> settings, String key ) {
+        String trxLifetimeLimit;
+        if ( settings.containsKey( key ) ) {
+            trxLifetimeLimit = settings.get( key );
+        } else {
+            trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( key );
+        }
+        return trxLifetimeLimit;
     }
 
 
@@ -160,7 +180,7 @@ public class MongoStore extends DataStore {
         if ( splits.length >= 2 ) {
             database = splits[0] + "_" + splits[1];
         }
-        currentSchema = new MongoSchema( database, this.client, transactionProvider );
+        currentSchema = new MongoSchema( database, this.client, transactionProvider, this );
     }
 
 
@@ -184,6 +204,12 @@ public class MongoStore extends DataStore {
             // DDL is auto-committed
             currentSchema.database.getCollection( partitionPlacement.physicalTableName ).deleteMany( new Document() );
         }
+    }
+
+
+    @Override
+    public Table createDocumentSchema( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+        return this.currentSchema.createCollection( catalogEntity, partitionPlacement );
     }
 
 
@@ -230,7 +256,7 @@ public class MongoStore extends DataStore {
         commitAll();
 
         if ( this.currentSchema == null ) {
-            createNewSchema( null, Catalog.getInstance().getSchema( catalogTable.schemaId ).getName() );
+            createNewSchema( null, Catalog.getInstance().getSchema( catalogTable.namespaceId ).getName() );
         }
 
         for ( long partitionId : partitionIds ) {
@@ -240,18 +266,50 @@ public class MongoStore extends DataStore {
             catalog.updatePartitionPlacementPhysicalNames(
                     getAdapterId(),
                     partitionId,
-                    catalogTable.getSchemaName(),
+                    catalogTable.getNamespaceName(),
                     physicalTableName );
 
             for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
                 catalog.updateColumnPlacementPhysicalNames(
                         getAdapterId(),
                         placement.columnId,
-                        catalogTable.getSchemaName(),
+                        catalogTable.getNamespaceName(),
                         physicalTableName,
                         true );
             }
         }
+    }
+
+
+    @Override
+    public void createCollection( Context prepareContext, CatalogCollection catalogCollection, long adapterId ) {
+        Catalog catalog = Catalog.getInstance();
+        commitAll();
+
+        if ( this.currentSchema == null ) {
+            createNewSchema( null, Catalog.getInstance().getSchema( catalogCollection.namespaceId ).getName() );
+        }
+
+        String physicalCollectionName = getPhysicalTableName( catalogCollection.id, adapterId );
+        this.currentSchema.database.createCollection( physicalCollectionName );
+
+        catalog.updateCollectionPartitionPhysicalNames(
+                catalogCollection.id,
+                getAdapterId(),
+                catalogCollection.getNamespaceName(),
+                this.currentSchema.database.getName(),
+                physicalCollectionName );
+    }
+
+
+    @Override
+    public void dropCollection( Context context, CatalogCollection catalogCollection ) {
+        Catalog catalog = Catalog.getInstance();
+        commitAll();
+        context.getStatement().getTransaction().registerInvolvedAdapter( this );
+        CatalogCollectionPlacement placement = catalog.getCollectionPlacement( catalogCollection.id, getAdapterId() );
+
+        this.currentSchema.database.getCollection( placement.physicalName ).drop();
     }
 
 
@@ -349,7 +407,7 @@ public class MongoStore extends DataStore {
             Document field = new Document().append( partitionPlacement.physicalTableName, 1 );
             Document filter = new Document().append( "$unset", field );
 
-            context.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( getAdapterId() ) );
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
             // DDL is auto-commit
             this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( new Document(), filter );
         }
@@ -360,47 +418,59 @@ public class MongoStore extends DataStore {
     public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        HASH_FUNCTION type = HASH_FUNCTION.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
-        switch ( type ) {
-            case SINGLE:
-                List<String> columns = catalogIndex.key.getColumnNames();
-                if ( columns.size() > 1 ) {
-                    throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
-                }
-                addCompositeIndex( catalogIndex, columns );
-                break;
+        IndexTypes type = IndexTypes.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
 
-            case DEFAULT:
-            case COMPOUND:
-                addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames() );
-                break;
+        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
+        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
+        String physicalIndexName = getPhysicalIndexName( catalogIndex );
+
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            switch ( type ) {
+                case SINGLE:
+                    List<String> columns = catalogIndex.key.getColumnNames();
+                    if ( columns.size() > 1 ) {
+                        throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
+                    }
+                    addCompositeIndex( catalogIndex, columns, partitionPlacement, physicalIndexName );
+                    break;
+
+                case DEFAULT:
+                case COMPOUND:
+                    addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames(), partitionPlacement, physicalIndexName );
+                    break;
+/*
             case MULTIKEY:
                 //array
             case GEOSPATIAL:
             case TEXT:
                 // stemd and stop words removed
             case HASHED:
-                throw new UnsupportedOperationException( "The mongodb adapter does not yet support this index" );
+                throw new UnsupportedOperationException( "The MongoDB adapter does not yet support this type of index: " + type );*/
+            }
         }
 
-        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, catalogIndex.name );
+        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
-    private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns ) {
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogIndex.key.tableId ) ) {
-            Document doc = new Document();
-            columns.forEach( name -> doc.append( name, 1 ) );
+    private String getPhysicalIndexName( CatalogIndex catalogIndex ) {
+        return "idx" + catalogIndex.key.tableId + "_" + catalogIndex.id;
+    }
 
-            IndexOptions options = new IndexOptions();
-            options.unique( catalogIndex.unique );
-            options.name( catalogIndex.name );
 
-            this.currentSchema.database
-                    .getCollection( partitionPlacement.physicalTableName )
-                    .createIndex( doc, options );
-        }
+    private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns, CatalogPartitionPlacement partitionPlacement, String physicalIndexName ) {
+        Document doc = new Document();
+
+        Pair.zip( catalogIndex.key.columnIds, columns ).forEach( p -> doc.append( getPhysicalColumnName( p.right, p.left ), 1 ) );
+
+        IndexOptions options = new IndexOptions();
+        options.unique( catalogIndex.unique );
+        options.name( physicalIndexName + "_" + partitionPlacement.partitionId );
+
+        this.currentSchema.database
+                .getCollection( partitionPlacement.physicalTableName )
+                .createIndex( doc, options );
     }
 
 
@@ -412,7 +482,7 @@ public class MongoStore extends DataStore {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.name );
+            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.physicalName + "_" + partitionPlacement.partitionId );
         }
     }
 
@@ -432,15 +502,15 @@ public class MongoStore extends DataStore {
 
     @Override
     public List<AvailableIndexMethod> getAvailableIndexMethods() {
-        return Arrays.stream( HASH_FUNCTION.values() )
-                .map( HASH_FUNCTION::asMethod )
+        return Arrays.stream( IndexTypes.values() )
+                .map( IndexTypes::asMethod )
                 .collect( Collectors.toList() );
     }
 
 
     @Override
     public AvailableIndexMethod getDefaultIndexMethod() {
-        return HASH_FUNCTION.COMPOUND.asMethod();
+        return IndexTypes.COMPOUND.asMethod();
     }
 
 
@@ -494,14 +564,14 @@ public class MongoStore extends DataStore {
     }
 
 
-    private enum HASH_FUNCTION {
+    private enum IndexTypes {
         DEFAULT,
         COMPOUND,
-        SINGLE,
-        MULTIKEY,
+        SINGLE;
+        /*MULTIKEY,
         GEOSPATIAL,
         TEXT,
-        HASHED;
+        HASHED;*/
 
 
         public AvailableIndexMethod asMethod() {

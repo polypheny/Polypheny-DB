@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public interface AlgDataTypeFactory {
      * @param clazz the Java class used to define the type
      * @return canonical Java type descriptor
      */
-    AlgDataType createJavaType( Class clazz );
+    AlgDataType createJavaType( Class<?> clazz );
 
     /**
      * Creates a cartesian product type.
@@ -278,6 +278,8 @@ public interface AlgDataTypeFactory {
      * is deprecated, we recommend that you use its base class {@link Builder}, which is not deprecated.
      */
     FieldInfoBuilder builder();
+
+    AlgDataType createPathType( List<AlgDataTypeField> pathType );
 
 
     /**

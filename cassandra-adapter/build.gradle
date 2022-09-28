@@ -45,6 +45,14 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":core:processResources")
+    dependsOn(":sql-language:processResources")
+}
+
+delombok {
+    dependsOn(":sql-language:processResources")
+}
 
 /**
  * JARs

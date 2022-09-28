@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.LinkedList;
@@ -27,7 +26,9 @@ import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
-public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
+public class CatalogKey implements CatalogObject, Comparable<CatalogKey> {
+
+    private static final long serialVersionUID = -5803762884192662540L;
 
     public final long id;
     public final long tableId;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,6 @@ public class PigAdapterTest extends AbstractPigTest {
     // Undo the %20 replacement of a space by URL
     public static final ImmutableMap<String, String> MODEL = ImmutableMap.of( "model", Sources.of( PigAdapterTest.class.getResource( "/model.json" ) ).file().getAbsolutePath() );
 
-
     // TODO MV: enable
 //    @Test
 //    public void testScanAndFilter() throws Exception {
@@ -61,7 +60,7 @@ public class PigAdapterTest extends AbstractPigTest {
 //                .query( "select * from \"t\" where \"tc0\" > 'abc'" )
 //                .explainContains( "PigToEnumerableConverter\n"
 //                        + "  PigFilter(condition=[>($0, 'abc')])\n"
-//                        + "    PigTableScan(table=[[PIG, t]])" )
+//                        + "    PigScan(table=[[PIG, t]])" )
 //                .runs()
 //                .queryContains(
 //                        pigScriptChecker( "t = LOAD '"
@@ -78,7 +77,7 @@ public class PigAdapterTest extends AbstractPigTest {
 //                .query( "select * from \"t\" where \"tc0\" > 'abc' and \"tc1\" = '3'" )
 //                .explainContains( "PigToEnumerableConverter\n"
 //                        + "  PigFilter(condition=[AND(>($0, 'abc'), =($1, '3'))])\n"
-//                        + "    PigTableScan(table=[[PIG, t]])" )
+//                        + "    PigScan(table=[[PIG, t]])" )
 //                .runs()
 //                .queryContains(
 //                        pigScriptChecker( "t = LOAD '"
@@ -95,7 +94,7 @@ public class PigAdapterTest extends AbstractPigTest {
 //                .query( "select count(\"tc1\") c from \"t\" group by \"tc0\"" )
 //                .explainContains( "PigToEnumerableConverter\n"
 //                        + "    PigAggregate(group=[{0}], C=[COUNT($1)])\n"
-//                        + "      PigTableScan(table=[[PIG, t]])" )
+//                        + "      PigScan(table=[[PIG, t]])" )
 //                .runs()
 //                .queryContains(
 //                        pigScriptChecker( "t = LOAD '"
@@ -115,7 +114,7 @@ public class PigAdapterTest extends AbstractPigTest {
 //                .query( "select count(\"tc0\") c from \"t\"" )
 //                .explainContains( "PigToEnumerableConverter\n"
 //                        + "  PigAggregate(group=[{}], C=[COUNT($0)])\n"
-//                        + "    PigTableScan(table=[[PIG, t]])" )
+//                        + "    PigScan(table=[[PIG, t]])" )
 //                .runs()
 //                .queryContains(
 //                        pigScriptChecker( "t = LOAD '"
@@ -135,7 +134,7 @@ public class PigAdapterTest extends AbstractPigTest {
 //                .query( "select * from \"t\" group by \"tc1\", \"tc0\"" )
 //                .explainContains( "PigToEnumerableConverter\n"
 //                        + "  PigAggregate(group=[{0, 1}])\n"
-//                        + "    PigTableScan(table=[[PIG, t]])" )
+//                        + "    PigScan(table=[[PIG, t]])" )
 //                .runs()
 //                .queryContains(
 //                        pigScriptChecker( "t = LOAD '"
@@ -155,7 +154,7 @@ public class PigAdapterTest extends AbstractPigTest {
 //                .query( "select count(distinct \"tc0\") c from \"t\" group by \"tc1\"" )
 //                .explainContains( "PigToEnumerableConverter\n"
 //                        + "    PigAggregate(group=[{1}], C=[COUNT(DISTINCT $0)])\n"
-//                        + "      PigTableScan(table=[[PIG, t]])" )
+//                        + "      PigScan(table=[[PIG, t]])" )
 //                .runs()
 //                .queryContains(
 //                        pigScriptChecker( "t = LOAD '"
@@ -176,8 +175,8 @@ public class PigAdapterTest extends AbstractPigTest {
 //                .query( "select * from \"t\" join \"s\" on \"tc1\"=\"sc0\"" )
 //                .explainContains( "PigToEnumerableConverter\n"
 //                        + "  PigJoin(condition=[=($1, $2)], joinType=[inner])\n"
-//                        + "    PigTableScan(table=[[PIG, t]])\n"
-//                        + "    PigTableScan(table=[[PIG, s]])" )
+//                        + "    PigScan(table=[[PIG, t]])\n"
+//                        + "    PigScan(table=[[PIG, s]])" )
 //                .runs()
 //                .queryContains(
 //                        pigScriptChecker( "t = LOAD '"
@@ -202,4 +201,5 @@ public class PigAdapterTest extends AbstractPigTest {
             assertEquals( "expected Pig script not found", strings[0], actualArray );
         };
     }
+
 }

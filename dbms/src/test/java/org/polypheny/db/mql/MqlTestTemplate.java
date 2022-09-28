@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,13 @@ public class MqlTestTemplate {
 
 
     @AfterClass
-    public static void clean() {
+    public static void tearDown() {
         dropDatabase();
+    }
+
+
+    public static void createCollection( String collection, String database ) {
+        MongoConnection.executeGetResponse( String.format( "db.createCollection( %s )", collection ), database );
     }
 
 
@@ -59,7 +64,22 @@ public class MqlTestTemplate {
     }
 
 
-    protected static void initDatabase() {
+    public static Result execute( String doc ) {
+        return MongoConnection.executeGetResponse( doc );
+    }
+
+
+    public static Result execute( String doc, String database ) {
+        return MongoConnection.executeGetResponse( doc, database );
+    }
+
+
+    public static void initDatabase() {
+        initDatabase( database );
+    }
+
+
+    public static void initDatabase( String database ) {
         MongoConnection.executeGetResponse( "use " + database );
     }
 
@@ -139,8 +159,13 @@ public class MqlTestTemplate {
     }
 
 
-    public static void insert( String json, String db ) {
-        MongoConnection.executeGetResponse( "db." + db + ".insert(" + json + ")" );
+    public static void insert( String json, String collection ) {
+        insert( json, collection, database );
+    }
+
+
+    public static void insert( String json, String collection, String database ) {
+        MongoConnection.executeGetResponse( "db." + collection + ".insert(" + json + ")", database );
     }
 
 
@@ -151,6 +176,16 @@ public class MqlTestTemplate {
 
     public static void insertMany( List<String> jsons, String db ) {
         MongoConnection.executeGetResponse( "db." + db + ".insertMany([" + String.join( ",", jsons ) + "])" );
+    }
+
+
+    public static void update( String query, String update ) {
+        update( query, update, database );
+    }
+
+
+    public static void update( String query, String update, String db ) {
+        MongoConnection.executeGetResponse( "db." + db + ".update(" + query + ", " + update + ")" );
     }
 
 
@@ -184,9 +219,9 @@ public class MqlTestTemplate {
     }
 
 
-    protected static void dropDatabase( String database ) {
+    public static void dropDatabase( String database ) {
         MongoConnection.executeGetResponse( "use " + database );
-        MongoConnection.executeGetResponse( "db.dropDatabase()" );
+        MongoConnection.executeGetResponse( "db.dropDatabase()", database );
     }
 
 }

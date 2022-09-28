@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import lombok.Getter;
 
 
 @EqualsAndHashCode
-public class CatalogPartition implements CatalogEntity {
+public class CatalogPartition implements CatalogObject {
 
-    private static final long serialVersionUID = 6187228972854325431L;
+    private static final long serialVersionUID = -1124423133579338133L;
 
     public final long id;
 

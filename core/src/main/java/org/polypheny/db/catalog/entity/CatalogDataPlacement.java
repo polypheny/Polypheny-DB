@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
@@ -37,9 +36,9 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 /**
  * Serves as a container, which holds all information related to a table entity placed on physical store.
  */
-public class CatalogDataPlacement implements CatalogEntity {
+public class CatalogDataPlacement implements CatalogObject {
 
-    private static final long serialVersionUID = 3758054726464326557L;
+    private static final long serialVersionUID = 5192378654968316873L;
     public final long tableId;
     public final int adapterId;
 
@@ -102,7 +101,7 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     public boolean hasColumnFullPlacement() {
-        return Catalog.getInstance().getTable( this.tableId ).columnIds.size() == columnPlacementsOnAdapter.size();
+        return Catalog.getInstance().getTable( this.tableId ).fieldIds.size() == columnPlacementsOnAdapter.size();
     }
 
 

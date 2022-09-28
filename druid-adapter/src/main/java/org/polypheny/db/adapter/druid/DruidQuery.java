@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,8 +72,8 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -415,7 +415,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Returns a string describing the operations inside this query.
      *
-     * For example, "sfpahol" means {@link TableScan} (s)
+     * For example, "sfpahol" means {@link Scan} (s)
      * followed by {@link Filter} (f)
      * followed by {@link Project} (p)
      * followed by {@link Aggregate} (a)
@@ -429,7 +429,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         final StringBuilder b = new StringBuilder();
         boolean flag = false;
         for ( AlgNode alg : algs ) {
-            b.append( alg instanceof TableScan ? 's'
+            b.append( alg instanceof Scan ? 's'
                     : (alg instanceof Project && flag) ? 'o'
                             : (alg instanceof Filter && flag) ? 'h'
                                     : alg instanceof Aggregate ? 'a'
@@ -458,8 +458,8 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         for ( int i = 0; i < algs.size(); i++ ) {
             final AlgNode r = algs.get( i );
             if ( i == 0 ) {
-                if ( !(r instanceof TableScan) ) {
-                    return litmus.fail( "first alg must be TableScan, was ", r );
+                if ( !(r instanceof Scan) ) {
+                    return litmus.fail( "first alg must be Scan, was ", r );
                 }
                 if ( r.getTable() != table ) {
                     return litmus.fail( "first alg must be based on table table" );
@@ -514,8 +514,8 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     }
 
 
-    public TableScan getTableScan() {
-        return (TableScan) algs.get( 0 );
+    public Scan getScan() {
+        return (Scan) algs.get( 0 );
     }
 
 
@@ -538,9 +538,9 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         for ( AlgNode alg : algs ) {
-            if ( alg instanceof TableScan ) {
-                TableScan tableScan = (TableScan) alg;
-                pw.item( "table", tableScan.getTable().getQualifiedName() );
+            if ( alg instanceof Scan ) {
+                Scan scan = (Scan) alg;
+                pw.item( "table", scan.getTable().getQualifiedName() );
                 pw.item( "intervals", intervals );
             } else if ( alg instanceof Filter ) {
                 pw.item( "filter", ((Filter) alg).getCondition() );
@@ -878,7 +878,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      *
      * @param aggCalls List of AggregateCalls to translate
      * @param aggNames List of aggregate names
-     * @param project Input project under the aggregate calls, or null if we have {@link TableScan} immediately under the {@link Aggregate}
+     * @param project Input project under the aggregate calls, or null if we have {@link Scan} immediately under the {@link Aggregate}
      * @param druidQuery Druid Query Rel
      * @return List of valid Druid {@link JsonAggregation}s, or null if any of the aggregates is not supported
      */

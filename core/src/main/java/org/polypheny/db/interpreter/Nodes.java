@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,12 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexNode;
 
@@ -84,14 +85,14 @@ public class Nodes {
         }
 
 
-        public void visit( TableScan scan ) {
+        public void visit( Scan scan ) {
             final ImmutableList<RexNode> filters = ImmutableList.of();
-            node = TableScanNode.create( this, scan, filters, null );
+            node = ScanNode.create( this, scan, filters, null );
         }
 
 
-        public void visit( Bindables.BindableTableScan scan ) {
-            node = TableScanNode.create( this, scan, scan.filters, scan.projects );
+        public void visit( BindableScan scan ) {
+            node = ScanNode.create( this, scan, scan.filters, scan.projects );
         }
 
 

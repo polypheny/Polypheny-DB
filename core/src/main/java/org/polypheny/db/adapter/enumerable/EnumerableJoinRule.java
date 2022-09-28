@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,13 @@ import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
-import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalJoin} relational expression {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link LogicalJoin} relational expression {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
 class EnumerableJoinRule extends ConverterRule {
 

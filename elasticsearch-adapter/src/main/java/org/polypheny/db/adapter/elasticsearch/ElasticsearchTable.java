@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -335,7 +335,7 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new ElasticsearchTableScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ), algOptTable, this, null );
+        return new ElasticsearchScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ), algOptTable, this, null );
     }
 
 
