@@ -171,6 +171,7 @@ public class PGInterfaceInboundCommunicationHandler {
     }
 
     public void sendNoData() {
+        //TODO(FF) wenn gnau esch das öberhaupt nötig? Wenn de client kei date scheckt --> aber wenn esch das es problem?
         PGInterfaceMessage noData = new PGInterfaceMessage(PGInterfaceHeaders.n, "0", 4, true);
         PGInterfaceServerWriter noDataWriter = new PGInterfaceServerWriter("i", noData, ctx);
         ctx.writeAndFlush(noDataWriter.writeOnByteBuf());
@@ -192,8 +193,7 @@ public class PGInterfaceInboundCommunicationHandler {
     }
 
     //for SELECT and CREATE TABLE AS
-    public void sendCommandCompleteSelect(ArrayList<String[]> data) {
-        int rowsSelected = data.size();
+    public void sendCommandCompleteSelect(int rowsSelected) {
         //send CommandComplete - SELECT rows (rows = #rows retrieved --> used for SELECT and CREATE TABLE AS commands)
         PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, "SELECT"+ String.valueOf(rowsSelected), 4, true);
         PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter("s", selectCommandComplete, ctx);
@@ -232,44 +232,39 @@ public class PGInterfaceInboundCommunicationHandler {
          */
         int noCols = data.size();   //number of rows returned --> belongs to rowDescription (?)
         String colVal = "";
-        int nbrFollowingColVal = 0; //int16 --> length of String[] --> nbr of column values that follow
+        int nbrFollowingColVal = data.get(0).length; //int16 --> length of String[] --> nbr of column values that follow
         int colValLength = 0;  //int32 --> length of one String[i] (length of actual string) (n)
         String body = "";   //Byte*n* --> the string itself String[i]
 
-        Boolean colValIsNull = false;
         PGInterfaceMessage dataRow;
         PGInterfaceServerWriter dataRowWriter;
 
         for (int i = 0; i < noCols; i++) {
             //can be 0 and -1 (= NULL col val)
-            nbrFollowingColVal = data.get(i).length;
 
-            //TODO(FF): handle the case if the column value (of the result) is NULL. Bzw. it already sends the correct reply, but you have to figure out wether the colVal is NULL!
-            if (colValIsNull) {
-                //colum value is NULL
-                //dont send any colVal
-                colValLength = -1;
-            }
+            for (int j = 0; j < nbrFollowingColVal; j++) {
 
-            else {
-                for (int j = 0; j < nbrFollowingColVal; j++) {
-                    //if colValLength -1 : nothing sent at all
-                    colVal = data.get(i)[j];
-                    colValLength = colVal.length();
+                //if colValLength -1 : nothing sent at all
+                colVal = data.get(i)[j];
 
-                    //TODO(FF)!!: fählt no § em body... --> was esch eifacher... en body, oder methode??
-                    //FIXME(FF): scheckich för jede einzelni string en DataRow???
-                    body = String.valueOf(nbrFollowingColVal) + PGInterfaceMessage.getDelimiter() + String.valueOf(colValLength)+ PGInterfaceMessage.getDelimiter()  + colVal;
-                    //body = String.valueOf(nbrFollowingColVal) + String.valueOf(colValLength) + colVal;
-                    dataRow = new PGInterfaceMessage(PGInterfaceHeaders.D, body, 4, true);
-                    dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);
-                    ctx.writeAndFlush(dataRowWriter);
+                //TODO(FF): How is null safed in polypheny exactly?? is it correctly checked?
+                if (colVal == "NULL") {
+                    colValLength = -1;
+                    //scheck kei body
+                    break;
+                }
 
-
-                    //needs to be at the end
-                    nbrFollowingColVal--;
+                else {
+                    colValLength += colVal.length();
+                    body += colVal.length() + PGInterfaceMessage.getDelimiter() + colVal + PGInterfaceMessage.getDelimiter();   //TODO(FF): + PGInterfaceMessage.getDelimiter()??
+                    //body += colVal + PGInterfaceMessage.getDelimiter();   //TODO(FF): + PGInterfaceMessage.getDelimiter()??
                 }
             }
+            //TODO(FF): do mues ergendöppis falsch laufe... wels eif gar nüt usescheckt... (doer denn halt bem server writer)
+            dataRow = new PGInterfaceMessage(PGInterfaceHeaders.D, body, colValLength, false);
+            dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);
+            ctx.writeAndFlush(dataRowWriter);
+            body = "";
         }
 
 
