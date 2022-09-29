@@ -137,7 +137,7 @@ public class PGInterfaceServerWriter {
                 //send dataRow
                 buffer.writeByte(pgMsg.getHeaderChar());
 
-                int nbrCol = (pgMsg.getMsgBody().length() - pgMsg.getMsgBody().replaceAll("g","").length())/2;
+                int nbrCol = (pgMsg.getMsgBody().length() - pgMsg.getMsgBody().replaceAll("§","").length())/2;
 
                 //should generally be not the default length, but also works with default length & length = 4
                 if (pgMsg.isDefaultLength()) {
