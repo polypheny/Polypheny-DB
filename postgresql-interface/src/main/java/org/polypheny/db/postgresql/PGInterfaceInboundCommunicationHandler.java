@@ -256,14 +256,12 @@ public class PGInterfaceInboundCommunicationHandler {
 
                 else {
                     colValLength += colVal.length();
-                    body += colVal.length() + PGInterfaceMessage.getDelimiter() + colVal + PGInterfaceMessage.getDelimiter();   //TODO(FF): + PGInterfaceMessage.getDelimiter()??
-                    //body += colVal + PGInterfaceMessage.getDelimiter();   //TODO(FF): + PGInterfaceMessage.getDelimiter()??
+                    body += colVal.length() + PGInterfaceMessage.getDelimiter() + colVal + PGInterfaceMessage.getDelimiter();
                 }
             }
-            //TODO(FF): do mues ergendöppis falsch laufe... wels eif gar nüt usescheckt... (doer denn halt bem server writer)
             dataRow = new PGInterfaceMessage(PGInterfaceHeaders.D, body, colValLength, false);
-            dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);
-            ctx.writeAndFlush(dataRowWriter);
+            dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);    //TODO(FF): Das werd nie uufgrüeft?? werom au emmer
+            ctx.writeAndFlush(dataRowWriter.writeOnByteBuf());
             body = "";
         }
 
