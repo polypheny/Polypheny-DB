@@ -137,31 +137,34 @@ public class PGInterfaceServerWriter {
                 //send dataRow
                 buffer.writeByte(pgMsg.getHeaderChar());
 
-                int[] idxDataRow = new int[3];
-                String[] dataRows = pgMsg.getMsgPart(idxDataRow);
+                int nbrCol = (pgMsg.getMsgBody().length() - pgMsg.getMsgBody().replaceAll("g","").length())/2;
 
-                int nbrFollowingColVal = 0;
-                int colValLenght = 0;
-                try {
-                    nbrFollowingColVal = Integer.parseInt(dataRows[0]);
-                    colValLenght = Integer.parseInt(dataRows[1]);
-                } catch (NumberFormatException e) {
-                    e.printStackTrace();
-                    //TODO(FF): send error-message to client
+                //should generally be not the default length, but also works with default length & length = 4
+                if (pgMsg.isDefaultLength()) {
+                    //data row does not include msg-length bytes in msg length
+                    buffer.writeInt(pgMsg.getLength()- 4 - (nbrCol*2));
+                }
+                else {
+                    buffer.writeInt(pgMsg.getLength());
                 }
 
-                //dont check for length, bcs is always the same for dataRow
-                buffer.writeInt(pgMsg.getLength() + pgMsg.getMsgBody().length() - 2);
+                buffer.writeShort(nbrCol);
 
-                buffer.writeShort(nbrFollowingColVal);
-                buffer.writeByte(0);
-                buffer.writeInt(colValLenght);
-                buffer.writeByte(0);
-                buffer.writeBytes(dataRows[2].getBytes(StandardCharsets.UTF_8));
+                //cut the last § (it is at the end) from the msgBody and set it as the new msgBody
+                String temp = pgMsg.getMsgBody().substring(0, pgMsg.getMsgBody().length() - 1);
+                pgMsg.setMsgBody(temp);
+
+                int[] idx = new int[(nbrCol*2)];
+                String[] msgParts = pgMsg.getMsgPart(idx);
+
+                for (int i = 0; i < (nbrCol*2); i++) {
+                    buffer.writeInt(Integer.parseInt(msgParts[i]));
+                    buffer.writeBytes(msgParts[i+1].getBytes(StandardCharsets.UTF_8));
+                    buffer.writeByte(0);
+                    i++;
+                }
 
                 break;
-
-
         }
         return buffer;
     }

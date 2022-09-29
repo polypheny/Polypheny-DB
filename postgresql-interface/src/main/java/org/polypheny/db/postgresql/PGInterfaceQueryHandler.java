@@ -54,11 +54,6 @@ public class PGInterfaceQueryHandler{
 
     public void start() {
         sendQueryToPolypheny();
-
-        //is 2 times inside... delete here or in sendQueryToPolypheny
-        //ArrayList<String[]> data = null;    //chonnt vo sendQueryToPolypheny zrogg, ond goht etzt es insert ine... aber
-        //aber ebe, esch dopplet wie onde
-        //sendResultToClient("INSERT", data); //TODO(FF): rechtig ufrüefe...
     }
 
     public void sendQueryToPolypheny() {
@@ -86,16 +81,17 @@ public class PGInterfaceQueryHandler{
         //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)
         //for loop zom dor alli catalogTables doregoh? - nei
         Processor sqlProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.SQL);
-        Node sqlNode = sqlProcessor.parse(query);
+        Node sqlNode = sqlProcessor.parse(query);   //go gehts fähler: (see diary)
         QueryParameters parameters = new QueryParameters( query, Catalog.SchemaType.RELATIONAL );
         if ( sqlNode.isA( Kind.DDL ) ) {
             result = sqlProcessor.prepareDdl( statement, sqlNode, parameters );
+            //TODO(FF): ene try catch block... || evtl no committe (söscht werds ned aazeigt em ui (aso allgemein, wie werds denn aazeigt em ui?)
             // exception: java.lang.RuntimeException: No primary key has been provided!
         } else {
             AlgRoot algRoot = sqlProcessor.translate(
                     statement,
                     sqlProcessor.validate(statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean()).left,
-                    new QueryParameters(query, Catalog.SchemaType.RELATIONAL));   //TODO: do nochhär crasheds: org.polypheny.db.runtime.PolyphenyDbContextException: From line 1, column 13 to line 1, column 15: Table 'lol' not found
+                    new QueryParameters(query, Catalog.SchemaType.RELATIONAL));
 
             //get PolyResult from AlgRoot - use prepareQuery from abstractQueryProcessor (example from findUsages)
             final QueryProcessor processor = statement.getQueryProcessor();
@@ -203,7 +199,7 @@ header = getHeader(result);
                 if ( o == null ) {
                     temp[counter] = null;
                 } else {
-                    switch ( header.get( counter )[0] ) {  //TODO(FF): is switch case nessecary?? if yes, get meaningfull header entry
+                    switch ( header.get( counter )[0] ) {  //TODO(FF): is switch case nessecary?? if yes, get meaningfull header entry (only handling "standard" returns
                         case "TIMESTAMP":
                             break;
                         case "DATE":
@@ -217,7 +213,7 @@ header = getHeader(result);
                             break;
                             //fall through
                         default:
-                            temp[counter] = o.toString();   //em momänt werd do no 100 aaghänkt?? --> s 1. resultat vo rows
+                            temp[counter] = o.toString();
                     }
                     if ( header.get( counter )[0].endsWith( "ARRAY" ) ) {
 
@@ -282,7 +278,7 @@ header = getHeader(result);
                 //                                                                                                                                      o.
 
 
-                if (lol == 3) {   //data.isEmpty()
+                if (lol == 3) {   //data.isEmpty() TODO(FF): das useneh, bzw usefende wenn noData etzt gnau gscheckt werd...
                     //noData
                     //communicationHandler.sendNoData();    //should only be sent when frontend sent no data (?)
                     communicationHandler.sendParseBindComplete();
@@ -318,7 +314,7 @@ header = getHeader(result);
                                 formatCode = 1;
                                 break;
                             case "VARCHAR":
-                                dataTypeSize = Integer.parseInt(head[2]);
+                                dataTypeSize = Integer.parseInt(head[2]); //TODO(FF): wennd varchar längi de type modifier esch, was esch denn dataTypeSize
                                 formatCode = 0;
                                 break;
                             case "SMALLINT":
@@ -348,9 +344,8 @@ header = getHeader(result);
                     //sendData
                     communicationHandler.sendDataRow(data);
 
-
-                    //rowsAffected = 2; //das fonktioniert met 0 ond 2 --> rein das schecke get kei fähler em frontend
-                    communicationHandler.sendCommandCompleteSelect(data);
+                    rowsAffected = data.size();
+                    communicationHandler.sendCommandCompleteSelect(rowsAffected);
                     communicationHandler.sendParseBindComplete();
                     communicationHandler.sendReadyForQuery("I");
                 }
