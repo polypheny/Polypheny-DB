@@ -48,6 +48,14 @@ sourceSets {
     }
 }
 
+delombok {
+    dependsOn(":monitoring:processResources")
+}
+
+compileJava {
+    dependsOn(":core:processResources")
+    dependsOn(":monitoring:processResources")
+}
 
 /**
  * Tests

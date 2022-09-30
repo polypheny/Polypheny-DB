@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,10 +60,10 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
@@ -90,12 +90,13 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.document.DocumentRules;
-import org.polypheny.db.sql.sql.SqlAggFunction;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.fun.SqlItemOperator;
+import org.polypheny.db.sql.language.SqlAggFunction;
+import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlFunction;
+import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -623,7 +624,7 @@ public class JdbcRules {
 
             return new JdbcFilter(
                     alg.getCluster(),
-                    alg.getTraitSet().replace( out ),
+                    alg.getTraitSet().replace( out ).replace( ModelTrait.RELATIONAL ),
                     convert( filter.getInput(), filter.getInput().getTraitSet().replace( out ) ),
                     filter.getCondition() );
         }
@@ -992,15 +993,15 @@ public class JdbcRules {
          * Creates a JdbcTableModificationRule.
          */
         private JdbcTableModificationRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( TableModify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcTableModificationRule." + out );
+            super( Modify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcTableModificationRule." + out );
         }
 
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final TableModify tableModify = call.alg( 0 );
-            if ( tableModify.getTable().unwrap( JdbcTable.class ) != null ) {
-                JdbcTable table = tableModify.getTable().unwrap( JdbcTable.class );
+            final Modify modify = call.alg( 0 );
+            if ( modify.getTable().unwrap( JdbcTable.class ) != null ) {
+                JdbcTable table = modify.getTable().unwrap( JdbcTable.class );
                 if ( out.getJdbcSchema() == table.getSchema() ) {
                     return true;
                 }
@@ -1011,7 +1012,7 @@ public class JdbcRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final TableModify modify = (TableModify) alg;
+            final Modify modify = (Modify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -1035,7 +1036,7 @@ public class JdbcRules {
     /**
      * Table-modification operator implemented in JDBC convention.
      */
-    public static class JdbcTableModify extends TableModify implements JdbcAlg {
+    public static class JdbcTableModify extends Modify implements JdbcAlg {
 
         private final Expression expression;
 
@@ -1066,6 +1067,7 @@ public class JdbcRules {
 
         @Override
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+            double cost = super.computeSelfCost( planner, mq ).getCosts();
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 

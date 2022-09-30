@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -45,7 +46,7 @@ import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.dialect.MonetdbSqlDialect;
+import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -132,6 +133,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
+        dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 
@@ -297,8 +299,9 @@ public class MonetdbStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
-            case JSON:
                 return "VARCHAR";
+            case JSON:
+                return "TEXT";
             case DATE:
                 return "DATE";
             case TIME:

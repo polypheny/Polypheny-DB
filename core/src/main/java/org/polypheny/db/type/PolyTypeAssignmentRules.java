@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,6 +195,13 @@ public class PolyTypeAssignmentRules {
         rule.add( PolyType.TIME );
         rule.add( PolyType.TIMESTAMP );
         rules.add( PolyType.TIME, rule );
+
+        // DOCUMENT is assignable from...
+        rule.clear();
+        rule.add( PolyType.VARCHAR );
+        rule.add( PolyType.ANY );
+        rule.add( PolyType.DOCUMENT );
+        rules.add( PolyType.DOCUMENT, rule );
 
         // TIME WITH LOCAL TIME ZONE is assignable from...
         rules.add( PolyType.TIME_WITH_LOCAL_TIME_ZONE, EnumSet.of( PolyType.TIME_WITH_LOCAL_TIME_ZONE ) );
@@ -425,7 +432,7 @@ public class PolyTypeAssignmentRules {
          */
         Builder() {
             this.map = new HashMap<>();
-            this.sets = CacheBuilder.newBuilder().build( CacheLoader.from( set -> Sets.immutableEnumSet( set ) ) );
+            this.sets = CacheBuilder.newBuilder().build( CacheLoader.from( Sets::immutableEnumSet ) );
         }
 
 

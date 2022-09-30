@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,18 +41,21 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * A relational expression implements the interface <code>Converter</code> to indicate that it converts a physical attribute, or {@link AlgTrait trait},
- * of a relational expression from one value to another.
+ * A relational expression implements the interface <code>Converter</code> to indicate that it converts a physical attribute,
+ * or {@link AlgTrait trait}, of a relational expression from one value to another.
  *
- * Sometimes this conversion is expensive; for example, to convert a non-distinct to a distinct object stream, we have to clone every object in the input.
+ * Sometimes this conversion is expensive; for example, to convert a non-distinct to a distinct object stream, we have to
+ * clone every object in the input.
  *
- * A converter does not change the logical expression being evaluated; after conversion, the number of rows and the values of those rows will still be the same.
- * By declaring itself to be a converter, a relational expression is telling the planner about this equivalence, and the planner groups expressions which are
- * logically equivalent but have different physical traits into groups called <code>RelSet</code>s.
+ * A converter does not change the logical expression being evaluated; after conversion, the number of rows and the values of
+ * those rows will still be the same. By declaring itself to be a converter, a relational expression is telling the planner
+ * about this equivalence, and the planner groups expressions which are logically equivalent but have different physical
+ * traits into groups called <code>RelSet</code>s.
  *
- * In principle one could devise converters which change multiple traits simultaneously (say change the sort-order and the physical location of a relational expression).
- * In which case, the method {@link #getInputTraits()} would return a {@link AlgTraitSet}. But for simplicity, this class only allows one trait to
- * be converted at a time; all other traits are assumed to be preserved.
+ * In principle one could devise converters which change multiple traits simultaneously (say change the sort-order and the
+ * physical location of a relational expression). In which case, the method {@link #getInputTraits()} would return
+ * a {@link AlgTraitSet}. But for simplicity, this class only allows one trait to be converted at a time; all other traits
+ * are assumed to be preserved.
  */
 public interface Converter extends AlgNode {
 
@@ -66,8 +69,9 @@ public interface Converter extends AlgNode {
     /**
      * Returns the definition of trait which this converter works on.
      *
-     * The input relational expression (matched by the rule) must possess this trait and have the value given by {@link #getInputTraits()}, and the traits of the output of this
-     * converter given by {@link #getTraitSet()} will have one trait altered and the other orthogonal traits will be the same.
+     * The input relational expression (matched by the rule) must possess this trait and have the value given
+     * by {@link #getInputTraits()}, and the traits of the output of this converter given by {@link #getTraitSet()} will have
+     * one trait altered and the other orthogonal traits will be the same.
      *
      * @return trait which this converter modifies
      */

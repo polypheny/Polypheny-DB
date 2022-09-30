@@ -34,11 +34,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.IndexType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -93,11 +93,11 @@ public class CatalogTest {
         CatalogDatabase database = catalog.getDatabase( "test_db" );
         assertEquals( databaseId, database.id );
 
-        long schemaId = catalog.addSchema( "test_schema", databaseId, userId, SchemaType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "test_schema", databaseId, userId, NamespaceType.RELATIONAL );
         CatalogSchema schema = catalog.getSchema( databaseId, "test_schema" );
         assertEquals( schemaId, schema.id );
 
-        long tableId = catalog.addTable( "test_table", schemaId, userId, TableType.TABLE, true );
+        long tableId = catalog.addTable( "test_table", schemaId, userId, EntityType.ENTITY, true );
         CatalogTable table = catalog.getTable( schemaId, "test_table" );
         assertEquals( tableId, table.id );
 
@@ -142,7 +142,7 @@ public class CatalogTest {
         // test adding of schema
 
         for ( String name : names ) {
-            ids.add( catalog.addSchema( name, databaseId, userId, SchemaType.RELATIONAL ) );
+            ids.add( catalog.addNamespace( name, databaseId, userId, NamespaceType.RELATIONAL ) );
         }
         assertEquals( catalog.getSchemas( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
 
@@ -151,7 +151,7 @@ public class CatalogTest {
         Long id = ids.get( 0 );
         catalog.renameSchema( id, replacedName );
         names.remove( 0 );
-        names.add( 0, replacedName );
+        names.add( 0, replacedName.toLowerCase() );
 
         assertEquals( catalog.getSchemas( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
 
@@ -170,13 +170,13 @@ public class CatalogTest {
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
 
-        long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
 
         List<String> names = new ArrayList<>( Arrays.asList( "table1", "table2", "table3", "table4", "table5" ) );
         List<Long> ids = new ArrayList<>();
 
         for ( String name : names ) {
-            ids.add( catalog.addTable( name, schemaId, userId, TableType.TABLE, true ) );
+            ids.add( catalog.addTable( name, schemaId, userId, EntityType.ENTITY, true ) );
         }
 
         // test renaming table
@@ -184,10 +184,12 @@ public class CatalogTest {
         Long tableId = ids.get( 3 );
 
         names.remove( 3 );
-        names.add( 3, newTable );
+        names.add( 3, newTable.toLowerCase() );
 
         catalog.renameTable( tableId, newTable );
-        assertEquals( names, catalog.getTables( null, null, null ).stream().sorted().map( s -> s.name ).collect( Collectors.toList() ) );
+        assertEquals(
+                names,
+                catalog.getTables( null, null, null ).stream().sorted().map( s -> s.name ).collect( Collectors.toList() ) );
 
         // test change owner
         String newUserName = "newUser";
@@ -195,7 +197,7 @@ public class CatalogTest {
         catalog.setTableOwner( tableId, newUserId );
 
         assertEquals( catalog.getTable( tableId ).ownerId, newUserId );
-        assertEquals( catalog.getTable( tableId ).ownerName, newUserName );
+        assertEquals( catalog.getUser( catalog.getTable( tableId ).ownerId ).name, newUserName );
 
         // test change primary
         List<String> columnNames = new ArrayList<>( Arrays.asList( "column1", "column2" ) );
@@ -210,9 +212,6 @@ public class CatalogTest {
 
         CatalogPrimaryKey key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
         assertEquals( key.columnIds.get( 0 ), columnId );
-
-        //catalog.deletePrimaryKey( tableId );
-        //assertNull( catalog.getTable( tableId ).primaryKey );
 
         catalog.addPrimaryKey( tableId, columnIds );
         key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
@@ -233,9 +232,9 @@ public class CatalogTest {
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
 
-        long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
+        long schemaId = catalog.addNamespace( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
 
-        long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, true );
+        long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         List<String> columnNames = new ArrayList<>( Arrays.asList( "column1", "column2", "column3", "column4", "column5" ) );
         List<Long> columnIds = new ArrayList<>();
@@ -246,7 +245,7 @@ public class CatalogTest {
 
         // test rename of column
         long columnId = columnIds.get( 0 );
-        String newColumnName = "newColumn";
+        String newColumnName = "newcolumn";
         catalog.renameColumn( columnId, newColumnName );
 
         columnNames.remove( 0 );
@@ -314,8 +313,8 @@ public class CatalogTest {
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
-        long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, true );
+        long schemaId = catalog.addNamespace( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
+        long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         long columnId = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column = catalog.getColumn( columnId );
@@ -345,8 +344,8 @@ public class CatalogTest {
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
-        long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, true );
+        long schemaId = catalog.addNamespace( "schema1", databaseId, userId, NamespaceType.RELATIONAL );
+        long tableId = catalog.addTable( "table1", schemaId, userId, EntityType.ENTITY, true );
 
         long columnId1 = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column1 = catalog.getColumn( columnId1 );
@@ -404,7 +403,7 @@ public class CatalogTest {
         }
 
         // test foreign key
-        long tableId2 = catalog.addTable( "table2", schemaId, userId, TableType.TABLE, true );
+        long tableId2 = catalog.addTable( "table2", schemaId, userId, EntityType.ENTITY, true );
         long columnId3 = catalog.addColumn( "column3", tableId2, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column3 = catalog.getColumn( columnId3 );
 

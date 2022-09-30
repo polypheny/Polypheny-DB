@@ -59,7 +59,7 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -67,22 +67,22 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.Catalog.EntityType.PrimitiveTableType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.Catalog.TableType.PrimitiveTableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogIndex.CatalogIndexColumn;
 import org.polypheny.db.catalog.entity.CatalogIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
+import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
@@ -195,7 +195,7 @@ public class DbmsMeta implements ProtobufMeta {
                         null,
                         StatementType.SELECT,
                         new ExecutionTimeMonitor(),
-                        SchemaType.RELATIONAL ) {
+                        NamespaceType.RELATIONAL ) {
                     /*@Override
                     public Enumerable<Object> enumerable( DataContext dataContext ) {
                         return Linq4j.asEnumerable( firstFrame.rows );
@@ -229,9 +229,9 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private Enumerable<Object> toEnumerable( final List<? extends CatalogEntity> entities ) {
+    private Enumerable<Object> toEnumerable( final List<? extends CatalogObject> entities ) {
         final List<Object> objects = new LinkedList<>();
-        for ( CatalogEntity entity : entities ) {
+        for ( CatalogObject entity : entities ) {
             objects.add( entity.getParameterArray() );
         }
         return Linq4j.asEnumerable( objects );
@@ -403,7 +403,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getTableTypes( ConnectionHandle {} )", ch );
             }
             final List<Object> objects = new LinkedList<>();
-            for ( TableType tt : TableType.values() ) {
+            for ( EntityType tt : EntityType.values() ) {
                 objects.add( tt.getParameterArray() );
             }
             Enumerable<Object> enumerable = Linq4j.asEnumerable( objects );
@@ -517,9 +517,9 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
-            for ( CatalogTable catalogTable : catalogTables ) {
+            for ( CatalogTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
                     final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
@@ -554,9 +554,9 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            for ( CatalogTable catalogTable : catalogTables ) {
+            for ( CatalogTable catalogTable : catalogEntities ) {
                 List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
@@ -597,9 +597,9 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            for ( CatalogTable catalogTable : catalogTables ) {
+            for ( CatalogTable catalogTable : catalogEntities ) {
                 List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
@@ -714,9 +714,9 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
-            for ( CatalogTable catalogTable : catalogTables ) {
+            for ( CatalogTable catalogTable : catalogEntities ) {
                 List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
                 catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
@@ -965,7 +965,7 @@ public class DbmsMeta implements ProtobufMeta {
             Transaction transaction = connection.getCurrentOrCreateNewTransaction();
             Processor sqlProcessor = transaction.getProcessor( QueryLanguage.SQL );
 
-            Node parsed = sqlProcessor.parse( sql );
+            Node parsed = sqlProcessor.parse( sql ).get( 0 );
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
             // JDBC driver would expect more parameter fields than there actually are in the query.
             Pair<Node, AlgDataType> validated = sqlProcessor.validate( transaction, parsed, false );
@@ -986,7 +986,7 @@ public class DbmsMeta implements ProtobufMeta {
                     null,
                     StatementType.SELECT,
                     null,
-                    SchemaType.RELATIONAL );
+                    NamespaceType.RELATIONAL );
             h.signature = signature;
             polyphenyDbStatement.setSignature( signature );
 
@@ -1230,11 +1230,11 @@ public class DbmsMeta implements ProtobufMeta {
         PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
         Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.SQL );
 
-        Node parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
 
         PolyphenyDbSignature<?> signature;
         if ( parsed.isA( Kind.DDL ) ) {
-            signature = PolyphenyDbSignature.from( sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql, SchemaType.RELATIONAL ) ) );
+            signature = PolyphenyDbSignature.from( sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql, NamespaceType.RELATIONAL ) ) );
         } else {
             Pair<Node, AlgDataType> validated = sqlProcessor.validate(
                     statementHandle.getStatement().getTransaction(),
@@ -1262,7 +1262,7 @@ public class DbmsMeta implements ProtobufMeta {
             Iterator<?> iterator = statementHandle.getSignature().enumerable( statementHandle.getStatement().getDataContext() ).iterator();
             int rowsChanged = -1;
             try {
-                rowsChanged = PolyResult.getRowsChanged( statementHandle.getStatement(), iterator, statementHandle.getStatement().getMonitoringEvent().getMonitoringType() );
+                rowsChanged = PolyImplementation.getRowsChanged( statementHandle.getStatement(), iterator, statementHandle.getStatement().getMonitoringEvent().getMonitoringType() );
             } catch ( Exception e ) {
                 log.error( "Caught exception while retrieving row count", e );
             }

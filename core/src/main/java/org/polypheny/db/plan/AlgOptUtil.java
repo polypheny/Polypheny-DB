@@ -74,16 +74,16 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.externalize.AlgXmlWriter;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
@@ -91,7 +91,7 @@ import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
 import org.polypheny.db.algebra.rules.IntersectToDistinctRule;
 import org.polypheny.db.algebra.rules.MultiJoin;
-import org.polypheny.db.algebra.rules.ProjectToWindowRule;
+import org.polypheny.db.algebra.rules.ProjectToWindowRules;
 import org.polypheny.db.algebra.rules.PruneEmptyRules;
 import org.polypheny.db.algebra.rules.UnionMergeRule;
 import org.polypheny.db.algebra.rules.UnionPullUpConstantsRule;
@@ -199,7 +199,7 @@ public abstract class AlgOptUtil {
         final Multimap<Class<? extends AlgNode>, AlgNode> nodes = AlgMetadataQuery.instance().getNodeTypes( alg );
         final List<AlgOptTable> usedTables = new ArrayList<>();
         for ( Entry<Class<? extends AlgNode>, Collection<AlgNode>> e : nodes.asMap().entrySet() ) {
-            if ( TableScan.class.isAssignableFrom( e.getKey() ) ) {
+            if ( Scan.class.isAssignableFrom( e.getKey() ) ) {
                 for ( AlgNode node : e.getValue() ) {
                     usedTables.add( node.getTable() );
                 }
@@ -1343,7 +1343,7 @@ public abstract class AlgOptUtil {
         planner.addRule( UnionMergeRule.INSTANCE );
         planner.addRule( UnionMergeRule.INTERSECT_INSTANCE );
         planner.addRule( UnionMergeRule.MINUS_INSTANCE );
-        planner.addRule( ProjectToWindowRule.PROJECT );
+        planner.addRule( ProjectToWindowRules.PROJECT );
         planner.addRule( FilterMergeRule.INSTANCE );
         planner.addRule( DateRangeRules.FILTER_INSTANCE );
         planner.addRule( IntersectToDistinctRule.INSTANCE );
@@ -2077,7 +2077,7 @@ public abstract class AlgOptUtil {
 
 
     /**
-     * Creates a new {@link MultiJoin} to reflect projection references from a {@link org.polypheny.db.algebra.logical.LogicalProject}
+     * Creates a new {@link MultiJoin} to reflect projection references from a {@link LogicalProject}
      * that is on top of the {@link MultiJoin}.
      *
      * @param multiJoin the original MultiJoin
@@ -2145,7 +2145,7 @@ public abstract class AlgOptUtil {
 
 
     /**
-     * Creates a {@link org.polypheny.db.algebra.logical.LogicalProject} that projects particular fields of its input, according to a mapping.
+     * Creates a {@link LogicalProject} that projects particular fields of its input, according to a mapping.
      */
     public static AlgNode createProject( AlgNode child, Mappings.TargetMapping mapping ) {
         return createProject( child, Mappings.asList( mapping.inverse() ) );
@@ -2321,7 +2321,7 @@ public abstract class AlgOptUtil {
      * Optimizations:
      *
      * <ul>
-     * <li>If the relational expression is a {@link LogicalCalc} or {@link org.polypheny.db.algebra.logical.LogicalProject} that is already acting as a permutation, combines the new permutation with the old;</li>
+     * <li>If the relational expression is a {@link LogicalCalc} or {@link LogicalProject} that is already acting as a permutation, combines the new permutation with the old;</li>
      * <li>If the permutation is the identity, returns the original relational expression.</li>
      * </ul>
      *

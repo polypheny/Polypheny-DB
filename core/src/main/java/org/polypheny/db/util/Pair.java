@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         } else {
             size = Math.min( ks.size(), vs.size() );
         }
-        return new AbstractList<Pair<K, V>>() {
+        return new AbstractList<>() {
             @Override
             public Pair<K, V> get( int index ) {
                 return Pair.of( ks.get( index ), vs.get( index ) );
@@ -417,6 +417,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         public void remove() {
             iterator.remove();
         }
+
     }
 
 
@@ -452,6 +453,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         public void remove() {
             iterator.remove();
         }
+
     }
 
 
@@ -488,6 +490,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         public void remove() {
             throw new UnsupportedOperationException( "remove" );
         }
+
     }
 
 
@@ -526,6 +529,7 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
             leftIterator.remove();
             rightIterator.remove();
         }
+
     }
 
 
@@ -567,6 +571,8 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         public void remove() {
             throw new UnsupportedOperationException( "remove" );
         }
+
     }
+
 }
 

@@ -53,7 +53,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
-import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.runtime.functions.Functions;
 
 
 /**
@@ -61,10 +61,10 @@ import org.polypheny.db.runtime.Functions;
  */
 class MongoEnumerator implements Enumerator<Object> {
 
-    private final Iterator<Document> cursor;
-    private final Function1<Document, Object> getter;
-    private final GridFSBucket bucket;
-    private Object current;
+    protected final Iterator<Document> cursor;
+    protected final Function1<Document, Object> getter;
+    protected final GridFSBucket bucket;
+    protected Object current;
 
 
     /**
@@ -106,7 +106,7 @@ class MongoEnumerator implements Enumerator<Object> {
     }
 
 
-    private Object handleTransforms( Object current ) {
+    protected Object handleTransforms( Object current ) {
         if ( current == null ) {
             return null;
         }
@@ -168,11 +168,7 @@ class MongoEnumerator implements Enumerator<Object> {
      * This method is needed to translate the special types back to their initial ones in Arrays,
      * for example Float is not available in MongoDB and has to be stored as Double,
      * This needs to be fixed when retrieving the arrays.
-     * Additionally for array we cannot be sure how the value is stored, as we lose this information on insert
-     *
-     * @param objects
-     * @param arrayFieldClass
-     * @return
+     * Additionally, for array we cannot be sure how the value is stored, as we lose this information on insert
      */
     static List<Object> arrayGetter( List<Object> objects, Class<?> arrayFieldClass ) {
         if ( arrayFieldClass == Float.class || arrayFieldClass == float.class ) {
@@ -280,50 +276,6 @@ class MongoEnumerator implements Enumerator<Object> {
         }
 
         return o;
-    }
-
-
-    public static class IterWrapper implements Enumerator<Object> {
-
-        private final Iterator<Object> iterator;
-        Object current;
-
-
-        public IterWrapper( Iterator<Object> iterator ) {
-            this.iterator = iterator;
-        }
-
-
-        @Override
-        public Object current() {
-            return current;
-        }
-
-
-        @Override
-        public boolean moveNext() {
-            if ( iterator.hasNext() ) {
-                current = iterator.next();
-                return true;
-            } else {
-                current = null;
-                return false;
-            }
-        }
-
-
-        @Override
-        public void reset() {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public void close() {
-            // do nothing
-            //throw new UnsupportedOperationException();
-        }
-
     }
 
 

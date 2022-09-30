@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.logical.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Convention;
 

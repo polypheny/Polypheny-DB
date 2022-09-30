@@ -65,8 +65,8 @@ TOKEN : { < COMPARATOR_LESS_THAN : "<" > }
 TOKEN : { < COMPARATOR_GREATER_THAN_OR_EQUALS : ">=" > }
 TOKEN : { < COMPARATOR_LESS_THAN_OR_EQUALS : "<=" > }
 
-TOKEN : { < TABLE_NAME : ( [ "A"-"Z", "a"-"z", "_" ] )+"."( [ "A"-"Z", "a"-"z", "_" ] )+ > }
-TOKEN : { < COLUMN_NAME : ( [ "A"-"Z", "a"-"z", "_" ] )+"."( [ "A"-"Z", "a"-"z", "_" ] )+"."( [ "A"-"Z", "a"-"z", "_" ] )+ > }
+TOKEN : { < TABLE_NAME : ( [ "A"-"Z", "a"-"z", "_", "0"-"9" ] )+"."( [ "A"-"Z", "a"-"z", "_", "0"-"9" ] )+ > }
+TOKEN : { < COLUMN_NAME : ( [ "A"-"Z", "a"-"z", "_", "0"-"9" ] )+"."( [ "A"-"Z", "a"-"z", "_", "0"-"9" ] )+"."( [ "A"-"Z", "a"-"z", "_", "0"-"9" ] )+ > }
 
 TOKEN : { < STRING_WITHOUT_DOUBLE_QUOTES : ( ~[ " ", "\t", "\n", "\r", "\f", "(", ")", "\"", "=", "<", ">", "/" ] )+ > }
 TOKEN : {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,10 +66,10 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.SortExchange;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -135,7 +135,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     }
 
 
-    public ImmutableList<AlgCollation> collations( TableScan scan, AlgMetadataQuery mq ) {
+    public ImmutableList<AlgCollation> collations( Scan scan, AlgMetadataQuery mq ) {
         return ImmutableList.copyOf( table( scan.getTable() ) );
     }
 
@@ -202,7 +202,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     /**
-     * Helper method to determine a {@link org.polypheny.db.algebra.core.TableScan}'s collation.
+     * Helper method to determine a {@link Scan}'s collation.
      */
     public static List<AlgCollation> table( AlgOptTable table ) {
         return table.getCollationList();

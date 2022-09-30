@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.util.Util;
 
 
@@ -63,7 +63,7 @@ public class JdbcImplementor extends AlgToSqlConverter {
     /**
      * @see #dispatch
      */
-    public Result visit( JdbcTableScan scan ) {
+    public Result visit( JdbcScan scan ) {
         return result( scan.jdbcTable.physicalTableName(), ImmutableList.of( Clause.FROM ), scan, null );
     }
 

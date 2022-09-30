@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailTable;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -34,27 +34,27 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public class CottontailTableModificationRule extends CottontailConverterRule {
 
     CottontailTableModificationRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( TableModify.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
+        super( Modify.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
     }
 
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
-        final TableModify tableModify = call.alg( 0 );
-        if ( tableModify.getTable().unwrap( CottontailTable.class ) == null ) {
+        final Modify modify = call.alg( 0 );
+        if ( modify.getTable().unwrap( CottontailTable.class ) == null ) {
             return false;
         }
 
-        if ( !tableModify.getTable().unwrap( CottontailTable.class ).getUnderlyingConvention().equals( this.out ) ) {
+        if ( !modify.getTable().unwrap( CottontailTable.class ).getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
-        return tableModify.getOperation() != Operation.MERGE;
+        return modify.getOperation() != Operation.MERGE;
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final TableModify modify = (TableModify) alg;
+        final Modify modify = (Modify) alg;
 
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
 

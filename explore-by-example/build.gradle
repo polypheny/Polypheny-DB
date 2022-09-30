@@ -11,6 +11,16 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+}
+
+delombok {
+    dependsOn(":core:processResources")
+}
+
 
 sourceSets {
     main {

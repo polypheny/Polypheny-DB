@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -53,7 +54,7 @@ import org.polypheny.db.util.Litmus;
 
 
 /**
- * <code>Calc</code> is an abstract base class for implementations of {@link org.polypheny.db.algebra.logical.LogicalCalc}.
+ * <code>Calc</code> is an abstract base class for implementations of {@link LogicalCalc}.
  */
 public abstract class Calc extends SingleAlg {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,12 +72,12 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.SqlDialect.CalendarPolicy;
-import org.polypheny.db.sql.sql.util.SqlString;
+import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
+import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -133,7 +133,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
+        AlgOptCost cost = super.computeSelfCost( planner, mq ).multiplyBy( .1 );
+        return cost;
     }
 
 

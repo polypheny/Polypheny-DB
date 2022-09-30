@@ -54,7 +54,9 @@ import org.polypheny.db.schema.Wrapper;
  * their table can potentially contain rolled up values. This information is used by the validator to check for illegal uses
  * of these columns.
  */
+@Getter
 public abstract class AbstractTable implements Table, Wrapper {
+
 
     @Getter
     protected Long tableId;

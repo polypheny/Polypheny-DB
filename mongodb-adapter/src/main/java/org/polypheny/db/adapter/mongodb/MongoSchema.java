@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.mongodb;
 
 
-import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
@@ -48,6 +47,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -55,6 +56,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
@@ -69,40 +71,33 @@ public class MongoSchema extends AbstractSchema {
     @Getter
     private final Convention convention = MongoAlg.CONVENTION;
 
-    private final Map<String, Table> tableMap;
+    @Getter
+    private final Map<String, Table> tableMap = new HashMap<>();
+
+    @Getter
+    private final Map<String, Table> collectionMap = new HashMap<>();
     private final MongoClient connection;
     private final TransactionProvider transactionProvider;
     @Getter
     private final GridFSBucket bucket;
+    @Getter
+    private final MongoStore store;
 
 
     /**
      * Creates a MongoDB schema.
      *
      * @param database Mongo database name, e.g. "foodmart"
-     * @param tableMap
      * @param transactionProvider
+     * @param mongoStore
      */
-    public MongoSchema( String database, Map<String, Table> tableMap, MongoClient connection, TransactionProvider transactionProvider ) {
+    public MongoSchema( String database, MongoClient connection, TransactionProvider transactionProvider, MongoStore mongoStore ) {
         super();
-        this.tableMap = tableMap;
         this.transactionProvider = transactionProvider;
         this.connection = connection;
         this.database = this.connection.getDatabase( database );
         this.bucket = GridFSBuckets.create( this.database, database );
-    }
-
-
-    /**
-     * Allows tests to inject their instance of the database.
-     *
-     * @param database existing mongo database instance
-     * @param connection
-     * @param transactionProvider
-     */
-    @VisibleForTesting
-    MongoSchema( String database, MongoClient connection, TransactionProvider transactionProvider ) {
-        this( database, new HashMap<>(), connection, transactionProvider );
+        this.store = mongoStore;
     }
 
 
@@ -111,13 +106,7 @@ public class MongoSchema extends AbstractSchema {
     }
 
 
-    @Override
-    protected Map<String, Table> getTableMap() {
-        return tableMap;
-    }
-
-
-    public MongoTable createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
+    public MongoEntity createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
@@ -126,9 +115,23 @@ public class MongoSchema extends AbstractSchema {
             AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, MongoStore.getPhysicalColumnName( catalogColumn.name, catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
         }
-        MongoTable table = new MongoTable( catalogTable, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
+        MongoEntity table = new MongoEntity( catalogTable, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
 
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
+        return table;
+    }
+
+
+    public Table createCollection( CatalogCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+
+        AlgDataType type = typeFactory.createPolyType( PolyType.DOCUMENT );
+        fieldInfo.add( "d", "d", type ).nullable( false );
+
+        MongoEntity table = new MongoEntity( catalogEntity, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, partitionPlacement.adapter, partitionPlacement );
+
+        tableMap.put( catalogEntity.name + "_" + partitionPlacement.id, table );
         return table;
     }
 

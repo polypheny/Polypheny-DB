@@ -29,17 +29,24 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartition;
@@ -84,9 +91,10 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
-
 
 public abstract class Catalog {
 
@@ -161,7 +169,8 @@ public abstract class Catalog {
     public abstract void restoreColumnPlacements( Transaction transaction );
 
     /**
-     * Restores all views and materialized views after restart
+     * On restart, all AlgNodes used in views and materialized views need to be recreated.
+     * Depending on the query language, different methods are used.
      */
     public abstract void restoreViews( Transaction transaction );
 
@@ -171,9 +180,15 @@ public abstract class Catalog {
     }
 
 
+    /**
+     * Inserts a new user,
+     * if a user with the same name already exists, it throws an error // TODO should it?
+     *
+     * @param name of the user
+     * @param password of the user
+     * @return the id of the created user
+     */
     public abstract int addUser( String name, String password );
-
-    public abstract void setUserSchema( int userId, long schemaId );
 
 
     /**
@@ -274,10 +289,10 @@ public abstract class Catalog {
      * @param name The name of the schema
      * @param databaseId The id of the associated database
      * @param ownerId The owner of this schema
-     * @param schemaType The type of this schema
+     * @param namespaceType The type of this schema
      * @return The id of the inserted schema
      */
-    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType );
+    public abstract long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType );
 
     /**
      * Checks weather a schema with the specified name exists in a database.
@@ -299,10 +314,82 @@ public abstract class Catalog {
     /**
      * Change owner of a schema
      *
-     * @param schemaId The if of the schema
+     * @param schemaId The id of the schema
      * @param ownerId Id of the new owner
      */
     public abstract void setSchemaOwner( long schemaId, long ownerId );
+
+    /**
+     * Adds a new graph to the catalog, on the same layer as schema in relational.
+     *
+     * @param databaseId Id of the graph, which is also the id of the database
+     * @param name The name of the graph
+     * @param stores The datastores on which the graph is placed
+     * @param modifiable If the graph is modifiable
+     * @param ifNotExists If the task fails when the graph already exists
+     * @param replace If the graph should replace an existing one
+     * @return The id of the newly added graph
+     */
+    public abstract long addGraph( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace );
+
+    /**
+     * Additional operations for the creation of a graph entity.
+     *
+     * @param id The predefined id of the already added graph
+     * @param stores The stores on which the graph was placed
+     * @param onlyPlacement If the substitution only creates the placements and not the entites
+     */
+    public abstract void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException;
+
+    /**
+     * Deletes an existing graph.
+     *
+     * @param id The id of the graph to delete
+     */
+    public abstract void deleteGraph( long id );
+
+    /**
+     * Returns an existing graph.
+     *
+     * @param id The id of the graph to return
+     * @return The graph entity with the provided id
+     */
+    public abstract CatalogGraphDatabase getGraph( long id );
+
+    /**
+     * Get a collection of all graphs, which match the given conditions.
+     *
+     * @param databaseId The id of the database to which the graph has to belong
+     * @param graphName The pattern to which the name has to match, null if every name is matched
+     * @return A collection of all graphs matching
+     */
+    public abstract List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName );
+
+    /**
+     * Add a new alias for a given graph.
+     *
+     * @param graphId The id of the graph to which the alias is added
+     * @param alias The alias to add
+     * @param ifNotExists If the alias should only be added if it not already exists
+     */
+    public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
+
+    /**
+     * Removes a given alias for a specific graph.
+     *
+     * @param graphId The id of the graph for which the alias is removed
+     * @param alias The alias to remove
+     * @param ifExists If the alias should only be removed if it exists
+     */
+    public abstract void removeGraphAlias( long graphId, String alias, boolean ifExists );
+
+    /**
+     * Returns the mapping of the graph used for substitution in other data models.
+     *
+     * @param graphId The id of the graph for which the mapping is requested
+     * @return The mapping for the graph
+     */
+    public abstract CatalogGraphMapping getGraphMapping( long graphId );
 
     /**
      * Delete a schema from the catalog
@@ -386,7 +473,7 @@ public abstract class Catalog {
      * Returns the table which is associated with a given partitionId
      *
      * @param partitionId to use for lookup
-     * @return CatalogTable that contains partitionId
+     * @return CatalogEntity that contains partitionId
      */
     public abstract CatalogTable getTableFromPartition( long partitionId );
 
@@ -394,36 +481,37 @@ public abstract class Catalog {
      * Adds a table to a specified schema.
      *
      * @param name The name of the table to add
-     * @param schemaId The id of the schema
+     * @param namespaceId The id of the schema
      * @param ownerId The if of the owner
-     * @param tableType The table type
+     * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable );
+    public abstract long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
+
 
     /**
      * Adds a view to a specified schema.
      *
      * @param name The name of the view to add
-     * @param schemaId The id of the schema
+     * @param namespaceId The id of the schema
      * @param ownerId The if of the owner
-     * @param tableType The table type
+     * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
+    public abstract long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
 
     /**
      * Adds a materialized view to a specified schema.
      *
      * @param name of the view to add
-     * @param schemaId id of the schema
+     * @param namespaceId id of the schema
      * @param ownerId id of the owner
-     * @param tableType type of table
+     * @param entityType type of table
      * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
      * @param algCollation relCollation used for materialized view
@@ -435,16 +523,16 @@ public abstract class Catalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
+    public abstract long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
-     * @param schemaId The id of the schema
-     * @param tableName The name to check for
+     * @param namespaceId The id of the schema
+     * @param entityName The name to check for
      * @return true if there is a table with this name, false if not.
      */
-    public abstract boolean checkIfExistsTable( long schemaId, String tableName );
+    public abstract boolean checkIfExistsEntity( long namespaceId, String entityName );
 
     /**
      * Checks if there is a table with the specified id.
@@ -452,7 +540,7 @@ public abstract class Catalog {
      * @param tableId id of the table
      * @return true if there is a table with this id, false if not.
      */
-    public abstract boolean checkIfExistsTable( long tableId );
+    public abstract boolean checkIfExistsEntity( long tableId );
 
     /**
      * Renames a table
@@ -542,7 +630,14 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId );
 
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId );
+    /**
+     * Gets a collection of placements on a specific adapter sorted by their position.
+     *
+     * @param adapterId The adapter on which the placements are placed
+     * @param tableId The id of the table of the placements
+     * @return The collection of column placements sorted
+     */
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int adapterId, long tableId );
 
     /**
      * Get column placements on a adapter. On column detail level
@@ -553,18 +648,59 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId );
 
+    /**
+     * Gets a collection of column placements for a given column.
+     *
+     * @param columnId The id of the column of requested column placements
+     * @return The collection of placements sorted
+     */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
 
+    /**
+     * Gets all column placements of a table structured by the id of the adapters.
+     *
+     * @param tableId The id of the table for the requested column placements
+     * @return The requested collection
+     */
     public abstract ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId );
 
+    /**
+     * Gets a map partition placements sorted by adapter.
+     *
+     * @param tableId The id of the table for which the partitions are returned
+     * @return The sorted partitions placements
+     */
     public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionPlacementsByAdapter( long tableId );
 
+    /**
+     * Gets the partitions groups for a given table grouped by adapters.
+     *
+     * @param tableId The table on which the partitions groups are placed
+     * @return The map sorting the partitions groups by adapter
+     */
     public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId );
 
+    /**
+     * Gets the partition group sorted by partition.
+     *
+     * @param partitionId The id of the partitions group
+     */
     public abstract long getPartitionGroupByPartition( long partitionId );
 
+    /**
+     * Gets a collection of all keys.
+     *
+     * @return The keys
+     */
     public abstract List<CatalogKey> getKeys();
 
+
+    /**
+     * Get all keys for a given table.
+     *
+     * @param tableId The id of the table for which the keys are returned
+     * @return The collection of keys
+     */
     public abstract List<CatalogKey> getTableKeys( long tableId );
 
     /**
@@ -577,7 +713,7 @@ public abstract class Catalog {
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId );
 
     /**
-     * Update type of a placement.
+     * Update the type of a placement.
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
@@ -694,7 +830,7 @@ public abstract class Catalog {
     public abstract void setColumnPosition( long columnId, int position );
 
     /**
-     * Change the data type of an column.
+     * Change the data type of a column.
      *
      * @param columnId The id of the column
      * @param type The new type of the column
@@ -822,10 +958,28 @@ public abstract class Catalog {
      */
     public abstract List<CatalogConstraint> getConstraints( long tableId );
 
+    /**
+     * Gets a collection of index for the given key.
+     *
+     * @param key The key for which the collection is returned
+     * @return The collection of indexes
+     */
     public abstract List<CatalogIndex> getIndexes( CatalogKey key );
 
+    /**
+     * Gets a collection of foreign keys for a given {@link Catalog Key}.
+     *
+     * @param key The key for which the collection is returned
+     * @return The collection foreign keys
+     */
     public abstract List<CatalogIndex> getForeignKeys( CatalogKey key );
 
+    /**
+     * Gets a collection of constraints for a given key.
+     *
+     * @param key The key for which the collection is returned
+     * @return The collection of constraints
+     */
     public abstract List<CatalogConstraint> getConstraints( CatalogKey key );
 
     /**
@@ -1085,11 +1239,11 @@ public abstract class Catalog {
     public abstract long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     /**
-     * Deletes a single partition and all references.
+     * Should only be called from mergePartitions(). Deletes a single partition and all references.
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
-     * @param partitionGroupId The partitionGroupId to be deleted
+     * @param partitionGroupId The partitionId to be deleted
      */
     public abstract void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId );
 
@@ -1234,7 +1388,7 @@ public abstract class Catalog {
     public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
     /**
-     * Get a List of all partition name belonging to a specific table
+     * Get a list of all partition name belonging to a specific table
      *
      * @param tableId Table to be queried
      * @return list of all partition names on this table
@@ -1359,10 +1513,11 @@ public abstract class Catalog {
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role );
 
     /**
-     * Checks if the planned changes are allowed in term sof placements that need to be present
+     * Checks if the planned changes are allowed in terms of placements that need to be present.
+     * Each column must be present for all partitions somewhere.
      *
      * @param tableId Table to be checked
-     * @param adapterId Adapter to be checked
+     * @param adapterId Adapter where Ids will be removed from
      * @param columnIdsToBeRemoved columns that shall be removed
      * @param partitionsIdsToBeRemoved partitions that shall be removed
      * @return true if these changes can be made to the data placement, false if not
@@ -1428,7 +1583,50 @@ public abstract class Catalog {
     protected abstract void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement );
 
     /**
-     * Removes a  DataPlacement for a given table on a specific store
+     * Adds a new placement on a given adapter for an existing graph.
+     *
+     * @param adapterId The id of the adapter on which the graph is added
+     * @param graphId The id of the graph for which a new placement is added
+     * @return The id of the new placement
+     */
+    public abstract long addGraphPlacement( int adapterId, long graphId );
+
+    /**
+     * Gets a collection of graph placements for a given adapter.
+     *
+     * @param adapterId The id of the adapter on which the placements are placed
+     * @return The collection of graph placements
+     */
+    public abstract List<CatalogGraphPlacement> getGraphPlacements( int adapterId );
+
+    /**
+     * Deletes a specific graph placement for a given graph and adapter.
+     *
+     * @param adapterId The id of the adapter on which the placement is removed
+     * @param graphId The id of the graph for which the placement is removed
+     */
+    public abstract void deleteGraphPlacement( int adapterId, long graphId );
+
+    /**
+     * Updates the physical names for a given graph.
+     *
+     * @param graphId The id of the graph to update
+     * @param adapterId The id of the adapter on which the graph to update is placed
+     * @param physicalGraphName The new physical name of the graph
+     */
+    public abstract void updateGraphPlacementPhysicalNames( long graphId, int adapterId, String physicalGraphName );
+
+    /**
+     * Gets a specific placement for a graph on a given adapter.
+     *
+     * @param graphId The id of the graph
+     * @param adapterId The id of the adapter on which the placement is placed
+     * @return The placement matching the conditions
+     */
+    public abstract CatalogGraphPlacement getGraphPlacement( long graphId, int adapterId );
+
+    /**
+     * Removes a DataPlacement for a given table on a specific store
      *
      * @param adapterId adapter where placement should be removed from
      * @param tableId table to retrieve the placement from
@@ -1496,7 +1694,7 @@ public abstract class Catalog {
     protected abstract void removePartitionsFromDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
 
     /**
-     * Updates and overrides list of associated columnPlacements & partitionPlacements for a given data placement
+     * Updates and overrides list of associated columnPlacements {@code &} partitionPlacements for a given data placement
      *
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from
@@ -1610,10 +1808,107 @@ public abstract class Catalog {
      */
     public abstract void updateMaterializedViewRefreshTime( long materializedViewId );
 
-
-    /*
+    /**
+     * Get the graph with the given id.
      *
+     * @param collectionId The id of the graph
+     * @return The requested collection
      */
+    public abstract CatalogCollection getCollection( long collectionId );
+
+    /**
+     * Get a collection of collections which match the given naming pattern.
+     *
+     * @param namespaceId The id of the namespace to which the collection belongs
+     * @param namePattern The naming pattern of the collection itself, null if all are matched
+     * @return collection of collections matching conditions
+     */
+    public abstract List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern );
+
+    /**
+     * Add a new collection with the given parameters.
+     *
+     * @param id Id of the collection to add, null if a new one needs to be generated
+     * @param name The name of the collection
+     * @param schemaId The id of the namespace to which the collection is added
+     * @param currentUserId The user, which adds the collection
+     * @param entity The type of entity of the collection
+     * @param modifiable If the collection is modifiable
+     * @return The id of the added collection
+     */
+    public abstract long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable );
+
+    /**
+     * Adds a new placement for a given collection.
+     *
+     * @param adapterId The id of the adapter on which the placement is added
+     * @param collectionId The id of the collection for which the placement is added
+     * @param placementType The type of placement
+     * @return The id of the newly added placement
+     */
+    public abstract long addCollectionPlacement( int adapterId, long collectionId, PlacementType placementType );
+
+    /**
+     * Get the mapping for the collection, which points to the substitution entities in other data models.
+     *
+     * @param id The id of the collection
+     * @return The mapping for the specific collection
+     */
+    public abstract CatalogCollectionMapping getCollectionMapping( long id );
+
+    /**
+     * Added the required additional entities for the substitutions entities on different data models.
+     *
+     * @param schemaId The id of the namespace to which the collection belongs
+     * @param name The name of the collection
+     * @param stores The stores on which the collection was added
+     * @param onlyPlacement If the substitution entities should be created fully or only the placements
+     * @return The id of the mapping
+     */
+    public abstract long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException;
+
+    /**
+     * Gets a collection containing all placements for a given adapter.
+     *
+     * @param adapterId The id of the adapter for which the collection is provided
+     * @return The collection of placements
+     */
+    public abstract List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( int adapterId );
+
+    /**
+     * Gets a specific placement for a given collection and adapter.
+     *
+     * @param collectionId The id of the collection for the placement
+     * @param adapterId The adapter on which the collection is placed
+     * @return The placement of the collection on the specified adapter
+     */
+    public abstract CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId );
+
+    /**
+     * Updates the physical name of the given collection.
+     *
+     * @param collectionId The id of the collection to change
+     * @param adapterId The id of the adapter on which the physical names of the collection are updated
+     * @param physicalNamespaceName The new namespace name
+     * @param namespaceName The namespace name
+     * @param physicalCollectionName The new physical collection name
+     */
+    public abstract void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName );
+
+    /**
+     * Delete a specific collection.
+     *
+     * @param id The id of the collection to delete
+     */
+    public abstract void deleteCollection( long id );
+
+    /**
+     * Drop a placement of a specific collection.
+     *
+     * @param id The id of the collection to drop
+     * @param adapterId The id of the adapter on which the collection is placed
+     */
+    public abstract void dropCollectionPlacement( long id, int adapterId );
 
 
     public abstract void close();
@@ -1621,8 +1916,8 @@ public abstract class Catalog {
     public abstract void clear();
 
 
-    public enum TableType {
-        TABLE( 1 ),
+    public enum EntityType {
+        ENTITY( 1 ),
         SOURCE( 2 ),
         VIEW( 3 ),
         MATERIALIZED_VIEW( 4 );
@@ -1631,7 +1926,7 @@ public abstract class Catalog {
         private final int id;
 
 
-        TableType( int id ) {
+        EntityType( int id ) {
             this.id = id;
         }
 
@@ -1641,8 +1936,8 @@ public abstract class Catalog {
         }
 
 
-        public static TableType getById( final int id ) {
-            for ( TableType t : values() ) {
+        public static EntityType getById( final int id ) {
+            for ( EntityType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
@@ -1651,8 +1946,8 @@ public abstract class Catalog {
         }
 
 
-        public static TableType getByName( final String name ) throws UnknownTableTypeException {
-            for ( TableType t : values() ) {
+        public static EntityType getByName( final String name ) throws UnknownTableTypeException {
+            for ( EntityType t : values() ) {
                 if ( t.name().equalsIgnoreCase( name ) ) {
                     return t;
                 }
@@ -1677,18 +1972,20 @@ public abstract class Catalog {
     }
 
 
-    public enum SchemaType {
+    public enum NamespaceType {
         @SerializedName("relational")
         RELATIONAL( 1 ),
         @SerializedName("document")
-        DOCUMENT( 2 );
+        DOCUMENT( 2 ),
+        @SerializedName("graph")
+        GRAPH( 3 );
 
         // GRAPH, DOCUMENT, ...
 
         private final int id;
 
 
-        SchemaType( int id ) {
+        NamespaceType( int id ) {
             this.id = id;
         }
 
@@ -1698,14 +1995,14 @@ public abstract class Catalog {
         }
 
 
-        public static SchemaType getDefault() {
-            //return (SchemaType) ConfigManager.getInstance().getConfig( "runtime/defaultSchemaModel" ).getEnum();
-            return SchemaType.RELATIONAL;
+        public static NamespaceType getDefault() {
+            //return (NamespaceType) ConfigManager.getInstance().getConfig( "runtime/defaultSchemaModel" ).getEnum();
+            return NamespaceType.RELATIONAL;
         }
 
 
-        public static SchemaType getById( final int id ) throws UnknownSchemaTypeException {
-            for ( SchemaType t : values() ) {
+        public static NamespaceType getById( final int id ) throws UnknownSchemaTypeException {
+            for ( NamespaceType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
@@ -1714,35 +2011,50 @@ public abstract class Catalog {
         }
 
 
-        public static SchemaType getByName( final String name ) throws UnknownSchemaTypeException {
-            for ( SchemaType t : values() ) {
+        public static NamespaceType getByName( final String name ) throws UnknownSchemaTypeException {
+            for ( NamespaceType t : values() ) {
                 if ( t.name().equalsIgnoreCase( name ) ) {
                     return t;
                 }
             }
             throw new UnknownSchemaTypeException( name );
         }
+
+
+        public AlgTrait getModelTrait() {
+            if ( this == NamespaceType.RELATIONAL ) {
+                return ModelTrait.RELATIONAL;
+            } else if ( this == NamespaceType.DOCUMENT ) {
+                return ModelTrait.DOCUMENT;
+            } else if ( this == NamespaceType.GRAPH ) {
+                return ModelTrait.GRAPH;
+            }
+            throw new RuntimeException( "Not found a suitable NamespaceType." );
+        }
     }
 
 
     public enum QueryLanguage {
         @SerializedName("sql")
-        SQL( SchemaType.RELATIONAL ),
+        SQL( NamespaceType.RELATIONAL ),
         @SerializedName("mql")
-        MONGO_QL( SchemaType.DOCUMENT ),
+        MONGO_QL( NamespaceType.DOCUMENT ),
         @SerializedName("cql")
-        CQL( SchemaType.RELATIONAL ),
+        CQL( NamespaceType.RELATIONAL ),
         @SerializedName("rel")
-        REL_ALG( SchemaType.RELATIONAL ),
+        REL_ALG( NamespaceType.RELATIONAL ),
         @SerializedName("pig")
-        PIG( SchemaType.RELATIONAL );
+        PIG( NamespaceType.RELATIONAL ),
+        @SerializedName("cypher")
+        CYPHER( NamespaceType.GRAPH );
+
 
         @Getter
-        private final SchemaType schemaType;
+        private final NamespaceType namespaceType;
 
 
-        QueryLanguage( SchemaType schemaType ) {
-            this.schemaType = schemaType;
+        QueryLanguage( NamespaceType namespaceType ) {
+            this.namespaceType = namespaceType;
         }
 
 
@@ -1758,6 +2070,9 @@ public abstract class Catalog {
                     return CQL;
                 case "pig":
                     return PIG;
+                case "opencypher":
+                case "cypher":
+                    return CYPHER;
             }
 
             throw new RuntimeException( "The query language seems not to be supported!" );
@@ -2065,6 +2380,11 @@ public abstract class Catalog {
         }
 
 
+        public Pattern toLowerCase() {
+            return new Pattern( pattern.toLowerCase() );
+        }
+
+
         public String toRegex() {
             return pattern.replace( "_", "(.)" ).replace( "%", "(.*)" );
         }
@@ -2083,10 +2403,10 @@ public abstract class Catalog {
      */
 
 
-    public static List<TableType> convertTableTypeList( @NonNull final List<String> stringTypeList ) throws UnknownTableTypeException {
-        final List<TableType> typeList = new ArrayList<>( stringTypeList.size() );
+    public static List<EntityType> convertTableTypeList( @NonNull final List<String> stringTypeList ) throws UnknownTableTypeException {
+        final List<EntityType> typeList = new ArrayList<>( stringTypeList.size() );
         for ( String s : stringTypeList ) {
-            typeList.add( TableType.getByName( s ) );
+            typeList.add( EntityType.getByName( s ) );
         }
         return typeList;
     }

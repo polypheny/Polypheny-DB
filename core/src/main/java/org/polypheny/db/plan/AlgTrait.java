@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,12 @@ package org.polypheny.db.plan;
 
 
 /**
- * RelTrait represents the manifestation of a relational expression trait within a trait definition. For example, a {@code CallingConvention.JAVA} is a trait of the {@link ConventionTraitDef} trait definition.
+ * AlgTrait represents the manifestation of a relational expression trait within a trait definition.
+ * For example, a {@code CallingConvention.JAVA} is a trait of the {@link ConventionTraitDef} trait definition.
  *
  * <h3><a id="EqualsHashCodeNote">Note about equals() and hashCode()</a></h3>
  *
- * If all instances of RelTrait for a particular RelTraitDef are defined in an {@code enum} and no new RelTraits can be introduced at runtime, you need not override {@link #hashCode()}
+ * If all instances of RelTrait for a particular AlgTraitDef are defined in an {@code enum} and no new RelTraits can be introduced at runtime, you need not override {@link #hashCode()}
  * and {@link #equals(Object)}. If, however, new RelTrait instances are generated at runtime (e.g. based on state external to the planner), you must implement {@link #hashCode()} and
  * {@link #equals(Object)} for proper {@link AlgTraitDef#canonize canonization} of your RelTrait objects.
  */

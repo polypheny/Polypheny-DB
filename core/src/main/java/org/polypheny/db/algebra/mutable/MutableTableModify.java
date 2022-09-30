@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ package org.polypheny.db.algebra.mutable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare;
@@ -44,7 +45,7 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Mutable equivalent of {@link org.polypheny.db.algebra.core.TableModify}.
+ * Mutable equivalent of {@link Modify}.
  */
 public class MutableTableModify extends MutableSingleAlg {
 
@@ -111,7 +112,7 @@ public class MutableTableModify extends MutableSingleAlg {
 
     @Override
     public StringBuilder digest( StringBuilder buf ) {
-        buf.append( "TableModify(table: " ).append( table.getQualifiedName() ).append( ", operation: " ).append( operation );
+        buf.append( "Modify(table: " ).append( table.getQualifiedName() ).append( ", operation: " ).append( operation );
         if ( updateColumnList != null ) {
             buf.append( ", updateColumnList: " ).append( updateColumnList );
         }

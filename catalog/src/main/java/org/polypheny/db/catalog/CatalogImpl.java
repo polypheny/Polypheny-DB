@@ -61,6 +61,9 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -68,6 +71,9 @@ import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
@@ -83,9 +89,12 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.GraphAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
+import org.polypheny.db.catalog.exceptions.UnknownCollectionPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
@@ -93,6 +102,8 @@ import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownGraphException;
+import org.polypheny.db.catalog.exceptions.UnknownGraphPlacementsException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
@@ -144,6 +155,13 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Object[], CatalogTable> tableNames;
     private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
 
+    private static BTreeMap<Long, CatalogCollection> collections;
+    private static BTreeMap<Object[], CatalogCollection> collectionNames;
+
+    private static BTreeMap<Object[], CatalogCollectionPlacement> collectionPlacements;
+
+    private static BTreeMap<Long, CatalogCollectionMapping> documentMappings;
+
     private static BTreeMap<Long, CatalogColumn> columns;
     private static BTreeMap<Object[], CatalogColumn> columnNames;
     private static BTreeMap<Object[], CatalogColumnPlacement> columnPlacements;
@@ -169,6 +187,13 @@ public class CatalogImpl extends Catalog {
     // Container Object that contains all other placements
     private static BTreeMap<Object[], CatalogDataPlacement> dataPlacements; // (AdapterId, TableId) -> CatalogDataPlacement
 
+    private static BTreeMap<Long, CatalogGraphDatabase> graphs;
+    private static BTreeMap<String, CatalogGraphDatabase> graphAliases;
+    private static BTreeMap<Object[], CatalogGraphDatabase> graphNames;
+    private static BTreeMap<Object[], CatalogGraphPlacement> graphPlacements;
+
+    private static BTreeMap<Long, CatalogGraphMapping> graphMappings;
+
     private static Long openTable;
 
     private static final AtomicInteger adapterIdBuilder = new AtomicInteger( 1 );
@@ -176,8 +201,8 @@ public class CatalogImpl extends Catalog {
     private static final AtomicInteger userIdBuilder = new AtomicInteger( 1 );
 
     private static final AtomicLong databaseIdBuilder = new AtomicLong( 1 );
-    private static final AtomicLong schemaIdBuilder = new AtomicLong( 1 );
-    private static final AtomicLong tableIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong namespaceIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong entityIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong columnIdBuilder = new AtomicLong( 1 );
 
     private static final AtomicLong partitionGroupIdBuilder = new AtomicLong( 1 );
@@ -285,7 +310,8 @@ public class CatalogImpl extends Catalog {
                     insertDefaultData();
                 }
 
-            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownAdapterException | UnknownColumnException e ) {
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException |
+                      UnknownSchemaException | UnknownAdapterException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
             if ( doInitInformationPage ) {
@@ -349,6 +375,8 @@ public class CatalogImpl extends Catalog {
             initDatabaseInfo( db );
             initSchemaInfo( db );
             initTableInfo( db );
+            initGraphInfo( db );
+            initDocumentInfo( db );
             initColumnInfo( db );
             initKeysAndConstraintsInfo( db );
             initAdapterInfo( db );
@@ -364,9 +392,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Restores all columnPlacements in the dedicated adapters
-     */
     @Override
     public void restoreColumnPlacements( Transaction transaction ) {
         AdapterManager manager = AdapterManager.getInstance();
@@ -378,7 +403,7 @@ public class CatalogImpl extends Catalog {
             CatalogTable catalogTable = getTable( c.tableId );
 
             // No column placements need to be restored if it is a view
-            if ( catalogTable.tableType != TableType.VIEW ) {
+            if ( catalogTable.entityType != EntityType.VIEW ) {
                 if ( placements.size() == 0 ) {
                     // No placements shouldn't happen
                     throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
@@ -438,18 +463,17 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * On restart, all AlgNodes used in views and materialized views need to be recreated.
-     * Depending on the query language, different methods are used.
+     * {@inheritDoc}
      */
     @Override
     public void restoreViews( Transaction transaction ) {
         Statement statement = transaction.createStatement();
 
         for ( CatalogTable c : tables.values() ) {
-            if ( c.tableType == TableType.VIEW || c.tableType == TableType.MATERIALIZED_VIEW ) {
+            if ( c.entityType == EntityType.VIEW || c.entityType == EntityType.MATERIALIZED_VIEW ) {
                 String query;
                 QueryLanguage language;
-                if ( c.tableType == TableType.VIEW ) {
+                if ( c.entityType == EntityType.VIEW ) {
                     query = ((CatalogView) c).getQuery();
                     language = ((CatalogView) c).getLanguage();
                 } else {
@@ -460,18 +484,18 @@ public class CatalogImpl extends Catalog {
                 switch ( language ) {
                     case SQL:
                         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-                        Node sqlNode = sqlProcessor.parse( query );
+                        Node sqlNode = sqlProcessor.parse( query ).get( 0 );
                         AlgRoot algRoot = sqlProcessor.translate(
                                 statement,
                                 sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
-                                new QueryParameters( query, c.getSchemaType() ) );
+                                new QueryParameters( query, c.getNamespaceType() ) );
                         nodeInfo.put( c.id, algRoot.alg );
                         algTypeInfo.put( c.id, algRoot.validatedRowType );
                         break;
 
                     case REL_ALG:
                         Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
-                        AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query, c.getSchemaType() ) ).alg;
+                        AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query, c.getNamespaceType() ) ).alg;
 
                         final AlgDataType rowType = result.getRowType();
                         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
@@ -487,18 +511,18 @@ public class CatalogImpl extends Catalog {
 
                     case MONGO_QL:
                         Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
-                        Node mqlNode = mqlProcessor.parse( query );
+                        Node mqlNode = mqlProcessor.parse( query ).get( 0 );
 
                         AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,
-                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name, SchemaType.DOCUMENT ) );
+                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name, NamespaceType.DOCUMENT ) );
                         nodeInfo.put( c.id, mqlRel.alg );
                         algTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;
                 }
-                if ( c.tableType == TableType.MATERIALIZED_VIEW ) {
-                    log.info( "Updating materialized view: {}", c.getSchemaName() + "." + c.name );
+                if ( c.entityType == EntityType.MATERIALIZED_VIEW ) {
+                    log.info( "Updating materialized view: {}", c.getNamespaceName() + "." + c.name );
                     MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
                     materializedManager.addMaterializedInfo( c.id, ((CatalogMaterializedView) c).getMaterializedCriteria() );
                     materializedManager.updateData( statement.getTransaction(), c.id );
@@ -530,9 +554,9 @@ public class CatalogImpl extends Catalog {
 
 
     private void restoreAllIdBuilders() {
-        restoreIdBuilder( schemas, schemaIdBuilder );
+        restoreIdBuilder( schemas, namespaceIdBuilder );
         restoreIdBuilder( databases, databaseIdBuilder );
-        restoreIdBuilder( tables, tableIdBuilder );
+        restoreIdBuilder( tables, entityIdBuilder );
         restoreIdBuilder( columns, columnIdBuilder );
         restoreIdBuilder( users, userIdBuilder );
         restoreIdBuilder( keys, keyIdBuilder );
@@ -582,7 +606,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * creates all needed maps for keys and constraints
+     * Creates all needed maps for keys and constraints
      *
      * keyColumns: [columnId1, columnId2,...]  keyId
      * keys: keyId  CatalogKey
@@ -602,7 +626,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * creates all needed maps for users
+     * Creates all needed maps for users
      *
      * users: userId {@code ->} CatalogUser
      * userNames: name {@code ->} CatalogUser
@@ -614,7 +638,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * initialize the column maps
+     * Initialize the column maps
      *
      * columns: columnId {@code ->} CatalogColumn
      * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} {@code ->} CatalogColumn
@@ -633,9 +657,9 @@ public class CatalogImpl extends Catalog {
     /**
      * Creates all maps needed for tables
      *
-     * tables: tableId {@code ->} CatalogTable
+     * tables: tableId {@code ->} CatalogEntity
      * tableChildren: tableId {@code ->} [columnId, columnId,..]
-     * tableNames: new Object[]{databaseId, schemaId, tableName} {@code ->} CatalogTable
+     * tableNames: new Object[]{databaseId, schemaId, tableName} {@code ->} CatalogEntity
      */
     private void initTableInfo( DB db ) {
         //noinspection unchecked
@@ -657,12 +681,34 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @SuppressWarnings("unchecked")
+    private void initGraphInfo( DB db ) {
+        graphs = db.treeMap( "graphs", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        graphNames = db.treeMap( "graphNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
+        graphPlacements = db.treeMap( "graphPlacements", new SerializerArrayTuple( Serializer.LONG, Serializer.INTEGER ), Serializer.JAVA ).createOrOpen();
+
+        graphMappings = db.treeMap( "graphMappings", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        graphAliases = db.treeMap( "graphAliases", Serializer.STRING, Serializer.JAVA ).createOrOpen();
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private void initDocumentInfo( DB db ) {
+        collections = db.treeMap( "collections", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        collectionNames = db.treeMap( "collectionNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
+
+        documentMappings = db.treeMap( "documentMappings", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+
+        collectionPlacements = db.treeMap( "collectionPlacements", new SerializerArrayTuple( Serializer.LONG, Serializer.INTEGER ), Serializer.JAVA ).createOrOpen();
+    }
+
+
     /**
-     * creates all needed maps for schemas
+     * Creates all needed maps for schemas
      *
-     * schemas: schemaId {@code ->} CatalogSchema
+     * schemas: schemaId {@code ->} CatalogNamespace
      * schemaChildren: schemaId {@code ->} [tableId, tableId, etc]
-     * schemaNames: new Object[]{databaseId, schemaName} {@code ->} CatalogSchema
+     * schemaNames: new Object[]{databaseId, schemaName} {@code ->} CatalogNamespace
      */
     private void initSchemaInfo( DB db ) {
         //noinspection unchecked
@@ -674,7 +720,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * creates maps for databases
+     * Creates maps for databases
      *
      * databases: databaseId {@code ->} CatalogDatabase
      * databaseNames: databaseName {@code ->} CatalogDatabase
@@ -723,7 +769,7 @@ public class CatalogImpl extends Catalog {
 
         long schemaId;
         if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
-            schemaId = addSchema( "public", databaseId, 1, SchemaType.getDefault() );
+            schemaId = addNamespace( "public", databaseId, 1, NamespaceType.getDefault() );
         } else {
             schemaId = getSchema( "APP", "public" ).id;
         }
@@ -741,16 +787,16 @@ public class CatalogImpl extends Catalog {
             CatalogAdapter csv = getAdapter( "hr" );
             if ( !testMode ) {
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-                    addTable( "depts", schemaId, systemId, TableType.SOURCE, false );
+                    addTable( "depts", schemaId, systemId, EntityType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-                    addTable( "emps", schemaId, systemId, TableType.SOURCE, false );
+                    addTable( "emps", schemaId, systemId, EntityType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
-                    addTable( "emp", schemaId, systemId, TableType.SOURCE, false );
+                    addTable( "emp", schemaId, systemId, EntityType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
-                    addTable( "work", schemaId, systemId, TableType.SOURCE, false );
+                    addTable( "work", schemaId, systemId, EntityType.SOURCE, false );
                     addDefaultCsvColumns( csv );
                 }
             }
@@ -879,6 +925,9 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void validateColumns() {
         CatalogValidator validator = new CatalogValidator();
@@ -891,12 +940,18 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void close() {
         db.close();
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void clear() {
         db.getAll().clear();
@@ -906,14 +961,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a database
-     *
-     * @param name The name of the database
-     * @param ownerId The owner of this database
-     * @param ownerName The name of the owner
-     * @param defaultSchemaId The id of the default schema of this database
-     * @param defaultSchemaName The name of the default schema of this database
-     * @return the id of the newly inserted database
+     * {@inheritDoc}
      */
     @Override
     public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
@@ -930,9 +978,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete a database from the catalog
-     *
-     * @param databaseId The id of the database to delete
+     * {@inheritDoc}
      */
     @Override
     public void deleteDatabase( long databaseId ) {
@@ -948,16 +994,11 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Inserts a new user,
-     * if a user with the same name already exists, it throws an error // TODO should it?
-     *
-     * @param name of the user
-     * @param password of the user
-     * @return the id of the created user
+     * {@inheritDoc}
      */
     @Override
     public int addUser( String name, String password ) {
-        CatalogUser user = new CatalogUser( userIdBuilder.getAndIncrement(), name, password, 1 );
+        CatalogUser user = new CatalogUser( userIdBuilder.getAndIncrement(), name, password );
         synchronized ( this ) {
             users.put( user.id, user );
             userNames.put( user.name, user );
@@ -967,24 +1008,8 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    @Override
-    public void setUserSchema( int userId, long schemaId ) {
-        CatalogUser user = getUser( userId );
-        CatalogUser newUser = new CatalogUser( user.id, user.name, user.password, schemaId );
-        synchronized ( this ) {
-            users.put( user.id, newUser );
-            userNames.put( user.name, newUser );
-        }
-        listeners.firePropertyChange( "user", null, user );
-    }
-
-
     /**
-     * Get all databases
-     * if pattern is specified, only the ones which confirm to it
-     *
-     * @param pattern A pattern for the database name
-     * @return List of databases
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogDatabase> getDatabases( Pattern pattern ) {
@@ -1005,11 +1030,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the database with the given name.
-     *
-     * @param databaseName The name of the database
-     * @return The database
-     * @throws UnknownDatabaseException If there is no database with this name.
+     * {@inheritDoc}
      */
     @Override
     public CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException {
@@ -1022,10 +1043,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the database with the given name.
-     *
-     * @param databaseId The id of the database
-     * @return The database
+     * {@inheritDoc}
      */
     @Override
     public CatalogDatabase getDatabase( long databaseId ) {
@@ -1038,42 +1056,30 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all schemas which fit to the specified filter pattern.
-     * <code>getSchemas(xid, null, null)</code> returns all schemas of all databases.
-     *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
-
         List<CatalogDatabase> catalogDatabases = getDatabases( databaseNamePattern );
-
         if ( catalogDatabases.size() > 0 ) {
             Stream<CatalogSchema> catalogSchemas = catalogDatabases.stream().filter( d -> databaseChildren.containsKey( d.id ) ).flatMap( d -> Objects.requireNonNull( databaseChildren.get( d.id ) ).stream() ).map( schemas::get );
 
             if ( schemaNamePattern != null ) {
-                catalogSchemas = catalogSchemas.filter( s -> s.name.matches( schemaNamePattern.toRegex() ) );
+                catalogSchemas = catalogSchemas.filter( s -> s.name.matches( schemaNamePattern.toLowerCase().toRegex() ) );
             }
             return catalogSchemas.collect( Collectors.toList() );
         }
-
         return new ArrayList<>();
     }
 
 
     /**
-     * Get all schemas of the specified database which fit to the specified filter pattern.
-     * <code>getSchemas(xid, databaseName, null)</code> returns all schemas of the database.
-     *
-     * @param databaseId The id of the database
-     * @param schemaNamePattern Pattern for the schema name. null returns all
-     * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
         if ( schemaNamePattern != null ) {
+            schemaNamePattern = schemaNamePattern.toLowerCase();
             List<CatalogSchema> list = new ArrayList<>();
             for ( CatalogSchema schema : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
                 if ( schema.name.matches( schemaNamePattern.pattern ) ) {
@@ -1088,10 +1094,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the schema with the specified id.
-     *
-     * @param schemaId The id of the schema
-     * @return The schema
+     * {@inheritDoc}
      */
     @Override
     public CatalogSchema getSchema( long schemaId ) {
@@ -1104,15 +1107,11 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the schema with the given name in the specified database.
-     *
-     * @param databaseName The name of the database
-     * @param schemaName The name of the schema
-     * @return The schema
-     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
+     * {@inheritDoc}
      */
     @Override
     public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException {
+        schemaName = schemaName.toLowerCase();
         try {
             long databaseId = getDatabase( databaseName ).id;
             return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
@@ -1123,16 +1122,12 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the schema with the given name in the specified database.
-     *
-     * @param databaseId The id of the database
-     * @param schemaName The name of the schema
-     * @return The schema
-     * @throws UnknownSchemaException If there is no schema with this name in the specified database.
+     * {@inheritDoc}
      */
     @Override
     public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
         try {
+            schemaName = schemaName.toLowerCase();
             return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseId, schemaName );
@@ -1141,19 +1136,14 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a schema in a specified database
-     *
-     * @param name The name of the schema
-     * @param databaseId The id of the associated database
-     * @param ownerId The owner of this schema
-     * @param schemaType The type of this schema
-     * @return The id of the inserted schema
+     * {@inheritDoc}
      */
     @Override
-    public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) {
+    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
+        name = name.toLowerCase();
         CatalogUser owner = getUser( ownerId );
-        long id = schemaIdBuilder.getAndIncrement();
-        CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, schemaType );
+        long id = namespaceIdBuilder.getAndIncrement();
+        CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, namespaceType, namespaceType == NamespaceType.DOCUMENT || namespaceType == NamespaceType.GRAPH );
         synchronized ( this ) {
             schemas.put( id, schema );
             schemaNames.put( new Object[]{ databaseId, name }, schema );
@@ -1162,35 +1152,30 @@ public class CatalogImpl extends Catalog {
             children.add( id );
             databaseChildren.replace( databaseId, ImmutableList.copyOf( children ) );
         }
-        listeners.firePropertyChange( "schema", null, schema );
+        listeners.firePropertyChange( "namespace", null, schema );
         return id;
     }
 
 
     /**
-     * Checks weather a schema with the specified name exists in a database.
-     *
-     * @param databaseId The if of the database
-     * @param schemaName The name of the schema to check
-     * @return True if there is a schema with this name. False if not.
+     * {@inheritDoc}
      */
     @Override
     public boolean checkIfExistsSchema( long databaseId, String schemaName ) {
+        schemaName = schemaName.toLowerCase();
         return schemaNames.containsKey( new Object[]{ databaseId, schemaName } );
     }
 
 
     /**
-     * Rename a schema
-     *
-     * @param schemaId The if of the schema to rename
-     * @param name New name of the schema
+     * {@inheritDoc}
      */
     @Override
     public void renameSchema( long schemaId, String name ) {
+        name = name.toLowerCase();
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.schemaType );
+            CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.namespaceType, false );
 
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
@@ -1205,16 +1190,13 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Change owner of a schema
-     *
-     * @param schemaId The id of the schema which gets its ownerId changed
-     * @param ownerId Id of the new owner
+     * {@inheritDoc}
      */
     @Override
     public void setSchemaOwner( long schemaId, long ownerId ) {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogSchema schema = new CatalogSchema( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.schemaType );
+            CatalogSchema schema = new CatalogSchema( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.namespaceType, false );
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
                 schemaNames.replace( new Object[]{ schema.databaseId, schema.name }, schema );
@@ -1227,9 +1209,479 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete a schema from the catalog
-     *
-     * @param schemaId The if of the schema to delete
+     * {@inheritDoc}
+     */
+    @Override
+    public long addGraph( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
+        if ( getGraphs( databaseId, new Pattern( name ) ).size() != 0 && !ifNotExists ) {
+            throw new GraphAlreadyExistsException( name );
+        }
+
+        long id = addNamespace( name, databaseId, Catalog.defaultUserId, NamespaceType.GRAPH );
+
+        CatalogGraphDatabase graph = new CatalogGraphDatabase( databaseId, id, name, Catalog.defaultUserId, modifiable, ImmutableList.of(), true );
+
+        synchronized ( this ) {
+            graphs.put( id, graph );
+            graphNames.put( new Object[]{ databaseId, name }, graph );
+        }
+
+        listeners.firePropertyChange( "graph", null, graph );
+        return id;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+        CatalogGraphDatabase graph = Objects.requireNonNull( getGraph( graphId ) );
+
+        if ( graphAliases.containsKey( alias ) ) {
+            if ( !ifNotExists ) {
+                throw new RuntimeException( "Error while creating alias: " + alias );
+            }
+            return;
+        }
+
+        synchronized ( this ) {
+            graphAliases.put( alias, graph );
+        }
+        listeners.firePropertyChange( "graphAlias", null, alias );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeGraphAlias( long graphId, String alias, boolean ifExists ) {
+        if ( !graphAliases.containsKey( alias ) ) {
+            if ( !ifExists ) {
+                throw new RuntimeException( "Error while removing alias: " + alias );
+            }
+            return;
+        }
+        synchronized ( this ) {
+            graphAliases.remove( alias );
+        }
+        listeners.firePropertyChange( "graphAlias", alias, null );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CatalogGraphMapping getGraphMapping( long graphId ) {
+        return Objects.requireNonNull( graphMappings.get( graphId ) );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException, UnknownTableException, UnknownColumnException {
+        /// --- nodes
+        // table id nodes -> id, node, labels
+        long nodesId;
+        if ( !onlyPlacement ) {
+            nodesId = addTable( "_nodes_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        } else {
+            nodesId = getTable( id, "_nodes_" ).id;
+        }
+
+        stores.forEach( store -> addDataPlacement( store.getAdapterId(), nodesId ) );
+
+        long idNodeId;
+        long labelNodeId;
+        if ( !onlyPlacement ) {
+            idNodeId = addColumn( "_id_", nodesId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            labelNodeId = addColumn( "_label_", nodesId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        } else {
+            idNodeId = getColumn( nodesId, "_id_" ).id;
+            labelNodeId = getColumn( nodesId, "_label_" ).id;
+        }
+
+        for ( DataStore s : stores ) {
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    idNodeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    labelNodeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        if ( !onlyPlacement ) {
+            addPrimaryKey( nodesId, List.of( idNodeId, labelNodeId ) );
+        }
+
+        /// --- node properties
+
+        // table id nodes -> id, node, labels
+        long nodesPropertyId;
+        if ( !onlyPlacement ) {
+            nodesPropertyId = addTable( "_n_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        } else {
+            nodesPropertyId = getTable( id, "_n_properties_" ).id;
+        }
+
+        stores.forEach( store -> addDataPlacement( store.getAdapterId(), nodesPropertyId ) );
+
+        long idNodesPropertyId;
+        long keyNodePropertyId;
+        long valueNodePropertyId;
+
+        if ( !onlyPlacement ) {
+            idNodesPropertyId = addColumn( "_id_", nodesPropertyId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            keyNodePropertyId = addColumn( "_key_", nodesPropertyId, 1, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            valueNodePropertyId = addColumn( "_value_", nodesPropertyId, 2, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+        } else {
+            idNodesPropertyId = getColumn( nodesPropertyId, "_id_" ).id;
+            keyNodePropertyId = getColumn( nodesPropertyId, "_key_" ).id;
+            valueNodePropertyId = getColumn( nodesPropertyId, "_value_" ).id;
+        }
+
+        for ( DataStore s : stores ) {
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    idNodesPropertyId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    keyNodePropertyId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    valueNodePropertyId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        if ( !onlyPlacement ) {
+            addPrimaryKey( nodesPropertyId, List.of( idNodesPropertyId, keyNodePropertyId ) );
+        }
+
+        /// --- edges
+
+        // table id relationships -> id, rel, labels
+        long edgesId;
+        if ( !onlyPlacement ) {
+            edgesId = addTable( "_edges_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        } else {
+            edgesId = getTable( id, "_edges_" ).id;
+        }
+
+        stores.forEach( store -> addDataPlacement( store.getAdapterId(), edgesId ) );
+
+        long idEdgeId;
+        long labelEdgeId;
+        long sourceEdgeId;
+        long targetEdgeId;
+
+        if ( !onlyPlacement ) {
+            idEdgeId = addColumn(
+                    "_id_",
+                    edgesId,
+                    0,
+                    PolyType.VARCHAR,
+                    null,
+                    36,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            labelEdgeId = addColumn(
+                    "_label_",
+                    edgesId,
+                    1,
+                    PolyType.VARCHAR,
+                    null,
+                    255,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            sourceEdgeId = addColumn(
+                    "_l_id_",
+                    edgesId,
+                    2,
+                    PolyType.VARCHAR,
+                    null,
+                    36,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            targetEdgeId = addColumn(
+                    "_r_id_",
+                    edgesId,
+                    3,
+                    PolyType.VARCHAR,
+                    null,
+                    36,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+        } else {
+            idEdgeId = getColumn( edgesId, "_id_" ).id;
+            labelEdgeId = getColumn( edgesId, "_label_" ).id;
+            sourceEdgeId = getColumn( edgesId, "_l_id_" ).id;
+            targetEdgeId = getColumn( edgesId, "_r_id_" ).id;
+        }
+
+        for ( DataStore store : stores ) {
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    idEdgeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    labelEdgeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    sourceEdgeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    store.getAdapterId(),
+                    targetEdgeId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        if ( !onlyPlacement ) {
+            addPrimaryKey( edgesId, Collections.singletonList( idEdgeId ) );
+        }
+
+        /// --- edge properties
+
+        // table id nodes -> id, node, labels
+        long edgesPropertyId;
+        if ( !onlyPlacement ) {
+            edgesPropertyId = addTable( "_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+        } else {
+            edgesPropertyId = getTable( id, "_properties_" ).id;
+        }
+
+        stores.forEach( store -> addDataPlacement( store.getAdapterId(), edgesPropertyId ) );
+
+        long idEdgePropertyId;
+        long keyEdgePropertyId;
+        long valueEdgePropertyId;
+
+        if ( !onlyPlacement ) {
+            idEdgePropertyId = addColumn(
+                    "_id_",
+                    edgesPropertyId,
+                    0,
+                    PolyType.VARCHAR,
+                    null,
+                    255,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            keyEdgePropertyId = addColumn(
+                    "_key_",
+                    edgesPropertyId,
+                    1,
+                    PolyType.VARCHAR,
+                    null,
+                    255,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+            valueEdgePropertyId = addColumn(
+                    "_value_",
+                    edgesPropertyId,
+                    2,
+                    PolyType.VARCHAR,
+                    null,
+                    255,
+                    null,
+                    null,
+                    null,
+                    false,
+                    Collation.getDefaultCollation() );
+        } else {
+            idEdgePropertyId = getColumn( edgesPropertyId, "_id_" ).id;
+            keyEdgePropertyId = getColumn( edgesPropertyId, "_key_" ).id;
+            valueEdgePropertyId = getColumn( edgesPropertyId, "_value_" ).id;
+        }
+
+        for ( DataStore s : stores ) {
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    idEdgePropertyId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    keyEdgePropertyId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    valueEdgePropertyId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        if ( !onlyPlacement ) {
+            addPrimaryKey( edgesPropertyId, List.of( idEdgePropertyId, keyEdgePropertyId ) );
+
+            CatalogGraphMapping mapping = new CatalogGraphMapping(
+                    id,
+                    nodesId,
+                    idNodeId,
+                    labelNodeId,
+                    nodesPropertyId,
+                    idNodesPropertyId,
+                    keyNodePropertyId,
+                    valueNodePropertyId,
+                    edgesId,
+                    idEdgeId,
+                    labelEdgeId,
+                    sourceEdgeId,
+                    targetEdgeId,
+                    edgesPropertyId,
+                    idEdgePropertyId,
+                    keyEdgePropertyId,
+                    valueEdgePropertyId );
+
+            graphMappings.put( id, mapping );
+        }
+
+    }
+
+
+    private void removeGraphLogistics( long graphId ) {
+        if ( !graphMappings.containsKey( graphId ) ) {
+            throw new UnknownGraphException( graphId );
+        }
+
+        deleteSchema( graphId );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deleteGraph( long id ) {
+        if ( !graphs.containsKey( id ) ) {
+            throw new UnknownGraphException( id );
+        }
+
+        CatalogGraphDatabase old = Objects.requireNonNull( graphs.get( id ) );
+
+        removeGraphLogistics( id );
+
+        synchronized ( this ) {
+            old.placements.forEach( a -> graphPlacements.remove( new Object[]{ old.id, a } ) );
+            graphs.remove( id );
+            graphNames.remove( new Object[]{ old.databaseId, old.name } );
+            graphMappings.remove( id );
+        }
+        listeners.firePropertyChange( "graph", old, null );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CatalogGraphDatabase getGraph( long id ) {
+        if ( !graphs.containsKey( id ) ) {
+            throw new UnknownGraphException( id );
+        }
+        return graphs.get( id );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName ) {
+        if ( graphName != null ) {
+            return ImmutableList.copyOf(
+                    Stream.concat(
+                                    graphAliases.values().stream(),
+                                    graphs.values().stream() ).filter( g -> g.name.matches( graphName.pattern.toLowerCase() ) )
+                            .collect( Collectors.toList() ) );
+        } else {
+            return ImmutableList.copyOf( graphs.values() );
+        }
+    }
+
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public void deleteSchema( long schemaId ) {
@@ -1252,12 +1704,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all tables of the specified schema which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
-     *
-     * @param schemaId The id of the schema
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern ) {
@@ -1275,13 +1722,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all tables of the specified database which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
-     *
-     * @param databaseId The id of the database
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
@@ -1304,25 +1745,26 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all tables of the specified database which fit to the specified filters.
-     * <code>
-     * ables(xid, databaseName, null, null, null)
-     * </code> returns all tables of the database.
-     *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         List<CatalogSchema> catalogSchemas = getSchemas( databaseNamePattern, schemaNamePattern );
 
         if ( catalogSchemas.size() > 0 ) {
-            Stream<CatalogTable> catalogTables = catalogSchemas.stream().filter( t -> schemaChildren.containsKey( t.id ) ).flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() ).map( tables::get );
+            Stream<CatalogTable> catalogTables = catalogSchemas.stream()
+                    .filter( t -> schemaChildren.containsKey( t.id ) )
+                    .flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() )
+                    .map( tables::get );
 
             if ( tableNamePattern != null ) {
-                catalogTables = catalogTables.filter( t -> t.name.matches( tableNamePattern.toRegex() ) );
+                catalogTables = catalogTables.filter( t -> {
+                    Pattern pattern = tableNamePattern;
+                    if ( !getSchema( t.namespaceId ).caseSensitive ) {
+                        pattern = tableNamePattern.toLowerCase();
+                    }
+                    return t.name.matches( pattern.toRegex() );
+                } );
             }
             return catalogTables.collect( Collectors.toList() );
         }
@@ -1332,10 +1774,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the table with the given id
-     *
-     * @param tableId The id of the table
-     * @return The table
+     * {@inheritDoc}
      */
     @Override
     public CatalogTable getTable( long tableId ) {
@@ -1348,17 +1787,15 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the table with the given name in the specified schema.
-     *
-     * @param schemaId The id of the schema
-     * @param tableName The name of the table
-     * @return The table
-     * @throws UnknownTableException If there is no table with this name in the specified database and schema.
+     * {@inheritDoc}
      */
     @Override
     public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException {
         try {
             CatalogSchema schema = getSchema( schemaId );
+            if ( !schema.caseSensitive ) {
+                tableName = tableName.toLowerCase();
+            }
             return Objects.requireNonNull( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( schemaId, tableName );
@@ -1367,19 +1804,17 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the table with the given name in the specified database and schema.
-     *
-     * @param databaseId The id of the database
-     * @param schemaName The name of the schema
-     * @param tableName The name of the table
-     * @return The table
-     * @throws UnknownTableException If there is no table with this name in the specified database and schema.
+     * {@inheritDoc}
      */
     @Override
     public CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
         try {
-            long schemaId = Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) ).id;
-            return Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schemaId, tableName } ) );
+            CatalogSchema schema = Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
+            if ( !schema.caseSensitive ) {
+                tableName = tableName.toLowerCase();
+            }
+
+            return Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schema.id, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( databaseId, schemaName, tableName );
         }
@@ -1387,10 +1822,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the table which is associated with a given partitionId
-     *
-     * @param partitionId to use for lookup
-     * @return CatalogTable that contians partitionId
+     * {@inheritDoc}
      */
     @Override
     public CatalogTable getTableFromPartition( long partitionId ) {
@@ -1399,20 +1831,18 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the table with the given name in the specified database and schema.
-     *
-     * @param databaseName The name of the database
-     * @param schemaName The name of the schema
-     * @param tableName The name of the table
-     * @return The table
-     * @throws UnknownTableException If there is no table with this name in the specified database and schema.
+     * {@inheritDoc}
      */
     @Override
     public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException {
         try {
             long databaseId = getDatabase( databaseName ).id;
-            long schemaId = getSchema( databaseId, schemaName ).id;
-            return Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schemaId, tableName } ) );
+            CatalogSchema schema = getSchema( databaseId, schemaName );
+            if ( !schema.caseSensitive ) {
+                tableName = tableName.toLowerCase();
+            }
+
+            return Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schema.id, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( databaseName, schemaName, tableName );
         }
@@ -1420,25 +1850,20 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a table to a specified schema.
-     *
-     * @param name The name of the table to add
-     * @param schemaId The id of the schema
-     * @param ownerId The if of the owner
-     * @param tableType The table type
-     * @param modifiable Whether the content of the table can be modified
-     * @return The id of the inserted table
+     * {@inheritDoc}
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable ) {
-        long id = tableIdBuilder.getAndIncrement();
-        CatalogSchema schema = getSchema( schemaId );
-        CatalogUser owner = getUser( ownerId );
+    public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
+        long id = entityIdBuilder.getAndIncrement();
+        CatalogSchema schema = getSchema( namespaceId );
+        if ( !schema.caseSensitive ) {
+            name = name.toLowerCase();
+        }
 
         try {
             //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
             List<Long> partitionGroupIds = new ArrayList<>();
-            partitionGroupIds.add( addPartitionGroup( id, "full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
+            partitionGroupIds.add( addPartitionGroup( id, "full", namespaceId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
             //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
             CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
 
@@ -1454,19 +1879,20 @@ public class CatalogImpl extends Catalog {
                     id,
                     name,
                     ImmutableList.of(),
-                    schemaId,
+                    namespaceId,
                     schema.databaseId,
                     ownerId,
-                    owner.name,
-                    tableType,
+                    entityType,
                     null,
                     ImmutableList.of(),
                     modifiable,
                     partitionProperty,
                     ImmutableList.of() );
 
-            updateTableLogistics( name, schemaId, id, schema, table );
-            openTable = id;
+            updateEntityLogistics( name, namespaceId, id, schema, table );
+            if ( schema.namespaceType != NamespaceType.DOCUMENT ) {
+                openTable = id;
+            }
 
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( "Error when adding table " + name, e );
@@ -1476,23 +1902,16 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a view to a specified schema.
-     *
-     * @param name The name of the view to add
-     * @param schemaId The id of the schema
-     * @param ownerId The if of the owner
-     * @param tableType The table type
-     * @param modifiable Whether the content of the table can be modified
-     * @param definition {@link AlgNode} used to create Views
-     * @param underlyingTables all tables and columns used within the view
-     * @param fieldList all columns used within the View
-     * @return The id of the inserted table
+     * {@inheritDoc}
      */
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
-        long id = tableIdBuilder.getAndIncrement();
-        CatalogSchema schema = getSchema( schemaId );
-        CatalogUser owner = getUser( ownerId );
+    public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
+        long id = entityIdBuilder.getAndIncrement();
+        CatalogSchema schema = getSchema( namespaceId );
+
+        if ( !schema.caseSensitive ) {
+            name = name.toLowerCase();
+        }
 
         PartitionProperty partitionProperty = PartitionProperty.builder()
                 .partitionType( PartitionType.NONE )
@@ -1501,68 +1920,55 @@ public class CatalogImpl extends Catalog {
                 .partitionGroupIds( ImmutableList.copyOf( new ArrayList<>() ) )
                 .build();
 
-        if ( tableType == TableType.VIEW ) {
-            CatalogView viewTable = new CatalogView(
-                    id,
-                    name,
-                    ImmutableList.of(),
-                    schemaId,
-                    schema.databaseId,
-                    ownerId,
-                    owner.name,
-                    tableType,
-                    query,//definition,
-                    null,
-                    ImmutableList.of(),
-                    modifiable,
-                    partitionProperty,
-                    algCollation,
-                    ImmutableList.of(),
-                    ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
-                            Entry::getKey,
-                            e -> ImmutableList.copyOf( e.getValue() )
-                    ) ) ),
-                    language //fieldList
-            );
-            addConnectedViews( underlyingTables, viewTable.id );
-            updateTableLogistics( name, schemaId, id, schema, viewTable );
-            algTypeInfo.put( id, fieldList );
-            nodeInfo.put( id, definition );
-        } else {
-            // Should not happen, addViewTable is only called with TableType.View
-            throw new RuntimeException( "addViewTable is only possible with TableType = VIEW" );
+        if ( entityType != EntityType.VIEW ) {
+            // Should not happen, addViewTable is only called with EntityType.View
+            throw new RuntimeException( "addViewTable is only possible with EntityType = VIEW" );
         }
+        CatalogView viewTable = new CatalogView(
+                id,
+                name,
+                ImmutableList.of(),
+                namespaceId,
+                schema.databaseId,
+                ownerId,
+                entityType,
+                query,//definition,
+                null,
+                ImmutableList.of(),
+                modifiable,
+                partitionProperty,
+                algCollation,
+                ImmutableList.of(),
+                ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
+                        Entry::getKey,
+                        e -> ImmutableList.copyOf( e.getValue() )
+                ) ) ),
+                language //fieldList
+        );
+        addConnectedViews( underlyingTables, viewTable.id );
+        updateEntityLogistics( name, namespaceId, id, schema, viewTable );
+        algTypeInfo.put( id, fieldList );
+        nodeInfo.put( id, definition );
+
         return id;
     }
 
 
     /**
-     * Adds a materialized view to a specified schema.
-     *
-     * @param name of the view to add
-     * @param schemaId id of the schema
-     * @param ownerId id of the owner
-     * @param tableType type of table
-     * @param modifiable Whether the content of the table can be modified
-     * @param definition {@link AlgNode} used to create Views
-     * @param algCollation relCollation used for materialized view
-     * @param underlyingTables all tables and columns used within the view
-     * @param fieldList all columns used within the View
-     * @param materializedCriteria Information like freshness and last updated
-     * @param query used to define materialized view
-     * @param language query language used to define materialized view
-     * @param ordered if materialized view is ordered or not
-     * @return id of the inserted materialized view
+     * {@inheritDoc}
      */
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
-        long id = tableIdBuilder.getAndIncrement();
-        CatalogSchema schema = getSchema( schemaId );
-        CatalogUser owner = getUser( ownerId );
+    public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
+        long id = entityIdBuilder.getAndIncrement();
+        CatalogSchema schema = getSchema( namespaceId );
+
+        if ( !schema.caseSensitive ) {
+            name = name.toLowerCase();
+        }
 
         // Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
         List<Long> partitionGroupIds = new ArrayList<>();
-        partitionGroupIds.add( addPartitionGroup( id, "full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
+        partitionGroupIds.add( addPartitionGroup( id, "full", namespaceId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
 
         // Get the single PartitionGroup and consequently retrieve all contained partitionIds to add them to completeList of partitionIds in the partitionProperty
         CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
@@ -1575,16 +1981,15 @@ public class CatalogImpl extends Catalog {
                 .reliesOnPeriodicChecks( false )
                 .build();
 
-        if ( tableType == TableType.MATERIALIZED_VIEW ) {
+        if ( entityType == EntityType.MATERIALIZED_VIEW ) {
             CatalogMaterializedView materializedViewTable = new CatalogMaterializedView(
                     id,
                     name,
                     ImmutableList.of(),
-                    schemaId,
+                    namespaceId,
                     schema.databaseId,
                     ownerId,
-                    owner.name,
-                    tableType,
+                    entityType,
                     query,
                     null,
                     ImmutableList.of(),
@@ -1601,13 +2006,13 @@ public class CatalogImpl extends Catalog {
                     ordered
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
-            updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
+            updateEntityLogistics( name, namespaceId, id, schema, materializedViewTable );
 
             algTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
-            // Should not happen, addViewTable is only called with TableType.View
-            throw new RuntimeException( "addMaterializedViewTable is only possible with TableType = MATERIALIZED_VIEW" );
+            // Should not happen, addViewTable is only called with EntityType.View
+            throw new RuntimeException( "addMaterializedViewTable is only possible with EntityType = MATERIALIZED_VIEW" );
         }
         return id;
     }
@@ -1616,17 +2021,17 @@ public class CatalogImpl extends Catalog {
     /**
      * Update all information after the addition of all kind of tables
      */
-    private void updateTableLogistics( String name, long schemaId, long id, CatalogSchema schema, CatalogTable table ) {
+    private void updateEntityLogistics( String name, long namespaceId, long id, CatalogSchema schema, CatalogTable entity ) {
         synchronized ( this ) {
-            tables.put( id, table );
+            tables.put( id, entity );
             tableChildren.put( id, ImmutableList.<Long>builder().build() );
-            tableNames.put( new Object[]{ schema.databaseId, schemaId, name }, table );
-            List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
+            tableNames.put( new Object[]{ schema.databaseId, namespaceId, name }, entity );
+            List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( namespaceId ) ) );
             children.add( id );
-            schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
+            schemaChildren.replace( namespaceId, ImmutableList.copyOf( children ) );
         }
 
-        listeners.firePropertyChange( "table", null, table );
+        listeners.firePropertyChange( "entity", null, entity );
     }
 
 
@@ -1643,7 +2048,7 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 tables.replace( id, table );
                 assert table != null;
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+                tableNames.replace( new Object[]{ table.databaseId, table.namespaceId, old.name }, table );
             }
             listeners.firePropertyChange( "table", old, table );
         }
@@ -1651,9 +2056,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Deletes all the dependencies of a view. This is used when deleting a view.
-     *
-     * @param catalogView view for which to delete its dependencies
+     * {@inheritDoc}
      */
     @Override
     public void deleteViewDependencies( CatalogView catalogView ) {
@@ -1666,7 +2069,7 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 tables.replace( id, table );
                 assert table != null;
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+                tableNames.replace( new Object[]{ table.databaseId, table.namespaceId, old.name }, table );
             }
             listeners.firePropertyChange( "table", old, table );
         }
@@ -1674,62 +2077,57 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Checks if there is a table with the specified name in the specified schema.
-     *
-     * @param schemaId The id of the schema
-     * @param tableName The name to check for
-     * @return true if there is a table with this name, false if not.
+     * {@inheritDoc}
      */
     @Override
-    public boolean checkIfExistsTable( long schemaId, String tableName ) {
-        CatalogSchema schema = getSchema( schemaId );
-        return tableNames.containsKey( new Object[]{ schema.databaseId, schemaId, tableName } );
+    public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
+        CatalogSchema schema = getSchema( namespaceId );
+        if ( !schema.caseSensitive ) {
+            entityName = entityName.toLowerCase();
+        }
+        return tableNames.containsKey( new Object[]{ schema.databaseId, namespaceId, entityName } );
     }
 
 
     /**
-     * Checks if there is a table with the specified id.
-     *
-     * @param tableId id of the table
-     * @return true if there is a table with this id, false if not.
+     * {@inheritDoc}
      */
     @Override
-    public boolean checkIfExistsTable( long tableId ) {
+    public boolean checkIfExistsEntity( long tableId ) {
         return tables.containsKey( tableId );
     }
 
 
     /**
-     * Renames a table
-     *
-     * @param tableId The if of the table to rename
-     * @param name New name of the table
+     * {@inheritDoc}
      */
     @Override
     public void renameTable( long tableId, String name ) {
         CatalogTable old = getTable( tableId );
+        if ( !getSchema( old.namespaceId ).caseSensitive ) {
+            name = name.toLowerCase();
+        }
+
         CatalogTable table = old.getRenamed( name );
         synchronized ( this ) {
             tables.replace( tableId, table );
-            tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
-            tableNames.put( new Object[]{ table.databaseId, table.schemaId, name }, table );
+            tableNames.remove( new Object[]{ table.databaseId, table.namespaceId, old.name } );
+            tableNames.put( new Object[]{ table.databaseId, table.namespaceId, name }, table );
         }
         listeners.firePropertyChange( "table", old, table );
     }
 
 
     /**
-     * Delete the specified table. Columns, Keys and ColumnPlacements need to be deleted before.
-     *
-     * @param tableId The id of the table to delete
+     * {@inheritDoc}
      */
     @Override
     public void deleteTable( long tableId ) {
         CatalogTable table = getTable( tableId );
-        List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( table.schemaId ) ) );
+        List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( table.namespaceId ) ) );
         children.remove( tableId );
         synchronized ( this ) {
-            schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
+            schemaChildren.replace( table.namespaceId, ImmutableList.copyOf( children ) );
 
             if ( table.partitionProperty.reliesOnPeriodicChecks ) {
                 removeTableFromPeriodicProcessing( tableId );
@@ -1737,7 +2135,7 @@ public class CatalogImpl extends Catalog {
 
             if ( table.partitionProperty.isPartitioned ) {
                 for ( Long partitionGroupId : Objects.requireNonNull( table.partitionProperty.partitionGroupIds ) ) {
-                    deletePartitionGroup( table.id, table.schemaId, partitionGroupId );
+                    deletePartitionGroup( table.id, table.namespaceId, partitionGroupId );
                 }
             }
 
@@ -1750,7 +2148,7 @@ public class CatalogImpl extends Catalog {
 
             tableChildren.remove( tableId );
             tables.remove( tableId );
-            tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
+            tableNames.remove( new Object[]{ table.databaseId, table.namespaceId, table.name } );
             flagTableForDeletion( table.id, false );
             // primary key was deleted and open table has to be closed
             if ( openTable != null && openTable == tableId ) {
@@ -1763,48 +2161,43 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Change owner of a table
-     *
-     * @param tableId The if of the table
-     * @param ownerId Id of the new owner
+     * {@inheritDoc}
      */
     @Override
     public void setTableOwner( long tableId, int ownerId ) {
         CatalogTable old = getTable( tableId );
-        CatalogUser user = getUser( ownerId );
         CatalogTable table;
 
         if ( old instanceof CatalogMaterializedView ) {
+            CatalogMaterializedView oldView = (CatalogMaterializedView) old;
             table = new CatalogMaterializedView(
                     old.id,
                     old.name,
-                    old.columnIds,
-                    old.schemaId,
+                    old.fieldIds,
+                    old.namespaceId,
                     old.databaseId,
                     ownerId,
-                    user.name,
-                    old.tableType,
-                    ((CatalogMaterializedView) old).getQuery(),
+                    old.entityType,
+                    oldView.getQuery(),
                     old.primaryKey,
                     old.dataPlacements,
                     old.modifiable,
                     old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    oldView.getAlgCollation(),
                     old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered() );
+                    oldView.getUnderlyingTables(),
+                    oldView.getLanguage(),
+                    oldView.getMaterializedCriteria(),
+                    oldView.isOrdered() );
         } else {
             table = new CatalogTable(
                     old.id,
                     old.name,
-                    old.columnIds,
-                    old.schemaId,
+                    old.fieldIds,
+                    old.namespaceId,
                     old.databaseId,
                     ownerId,
-                    user.name,
-                    old.tableType,
+                    old.entityType,
                     old.primaryKey,
                     old.dataPlacements,
                     old.modifiable,
@@ -1814,17 +2207,14 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             tables.replace( tableId, table );
-            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.namespaceId, table.name }, table );
         }
         listeners.firePropertyChange( "table", old, table );
     }
 
 
     /**
-     * Set the primary key of a table
-     *
-     * @param tableId The id of the table
-     * @param keyId The id of the key to set as primary key. Set null to set no primary key.
+     * {@inheritDoc}
      */
     @Override
     public void setPrimaryKey( long tableId, Long keyId ) {
@@ -1833,36 +2223,35 @@ public class CatalogImpl extends Catalog {
         CatalogTable table;
 
         if ( old instanceof CatalogMaterializedView ) {
+            CatalogMaterializedView oldView = (CatalogMaterializedView) old;
             table = new CatalogMaterializedView(
                     old.id,
                     old.name,
-                    old.columnIds,
-                    old.schemaId,
+                    old.fieldIds,
+                    old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
-                    old.tableType,
-                    ((CatalogMaterializedView) old).getQuery(),
+                    old.entityType,
+                    oldView.getQuery(),
                     keyId,
                     old.dataPlacements,
                     old.modifiable,
                     old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    oldView.getAlgCollation(),
                     old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered() );
+                    oldView.getUnderlyingTables(),
+                    oldView.getLanguage(),
+                    oldView.getMaterializedCriteria(),
+                    oldView.isOrdered() );
         } else {
             table = new CatalogTable(
                     old.id,
                     old.name,
-                    old.columnIds,
-                    old.schemaId,
+                    old.fieldIds,
+                    old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
-                    old.tableType,
+                    old.entityType,
                     keyId,
                     old.dataPlacements,
                     old.modifiable,
@@ -1871,7 +2260,7 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             tables.replace( tableId, table );
-            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.namespaceId, table.name }, table );
 
             if ( keyId == null ) {
                 openTable = tableId;
@@ -1885,14 +2274,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a placement for a column.
-     *
-     * @param adapterId The store on which the table should be placed on
-     * @param columnId The id of the column to be placed
-     * @param placementType The type of placement
-     * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName The table name on the adapter
-     * @param physicalColumnName The column name on the adapter
+     * {@inheritDoc}
      */
     @Override
     public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
@@ -1912,21 +2294,15 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             columnPlacements.put( new Object[]{ adapterId, columnId }, columnPlacement );
 
-            // adds this ColumnPlacement to existing DataPlacement container
+            // Adds this ColumnPlacement to existing DataPlacement container
             addColumnsToDataPlacement( adapterId, column.tableId, Arrays.asList( columnId ) );
-
         }
         listeners.firePropertyChange( "columnPlacement", null, columnPlacement );
     }
 
 
     /**
-     * Change physical names of a partition placement.
-     *
-     * @param adapterId The id of the adapter
-     * @param partitionId The id of the partition
-     * @param physicalSchemaName The physical schema name
-     * @param physicalTableName The physical table name
+     * {@inheritDoc}
      */
     @Override
     public void updatePartitionPlacementPhysicalNames( int adapterId, long partitionId, String physicalSchemaName, String physicalTableName ) {
@@ -1946,7 +2322,6 @@ public class CatalogImpl extends Catalog {
                 partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
                 listeners.firePropertyChange( "partitionPlacement", old, placement );
             }
-
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
             getPartition( partitionId );
@@ -1956,9 +2331,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Updates the last time a materialized view has been refreshed.
-     *
-     * @param materializedViewId id of the materialized view
+     * {@inheritDoc}
      */
     @Override
     public void updateMaterializedViewRefreshTime( long materializedViewId ) {
@@ -1970,12 +2343,11 @@ public class CatalogImpl extends Catalog {
         CatalogMaterializedView catalogMaterializedView = new CatalogMaterializedView(
                 old.id,
                 old.name,
-                old.columnIds,
-                old.schemaId,
+                old.fieldIds,
+                old.namespaceId,
                 old.databaseId,
                 old.ownerId,
-                old.ownerName,
-                old.tableType,
+                old.entityType,
                 old.getQuery(),
                 old.primaryKey,
                 old.dataPlacements,
@@ -1991,7 +2363,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             tables.replace( materializedViewId, catalogMaterializedView );
             tableNames.replace(
-                    new Object[]{ catalogMaterializedView.databaseId, catalogMaterializedView.schemaId, catalogMaterializedView.name },
+                    new Object[]{ catalogMaterializedView.databaseId, catalogMaterializedView.namespaceId, catalogMaterializedView.name },
                     catalogMaterializedView );
         }
         listeners.firePropertyChange( "table", old, catalogMaterializedView );
@@ -1999,18 +2371,255 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Deletes all dependent column placements
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param columnOnly If delete originates from a dropColumn
+     * {@inheritDoc}
+     */
+    @Override
+    public CatalogCollection getCollection( long id ) {
+        if ( !collections.containsKey( id ) ) {
+            throw new UnknownTableIdRuntimeException( id );
+        }
+        return Objects.requireNonNull( collections.get( id ) );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern ) {
+        if ( schemas.containsKey( namespaceId ) ) {
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( namespaceId ) );
+            if ( namePattern != null ) {
+                return Collections.singletonList( collectionNames.get( new Object[]{ schema.databaseId, namespaceId, namePattern.pattern } ) );
+            } else {
+                return new ArrayList<>( collectionNames.prefixSubMap( new Object[]{ schema.databaseId, namespaceId } ).values() );
+            }
+        }
+        return new ArrayList<>();
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
+        long collectionId = entityIdBuilder.getAndIncrement();
+        if ( id != null ) {
+            collectionId = id;
+        }
+
+        CatalogSchema namespace = getSchema( schemaId );
+        CatalogCollection collection = new CatalogCollection(
+                Catalog.defaultDatabaseId,
+                schemaId,
+                collectionId,
+                name,
+                List.of(),
+                EntityType.ENTITY,
+                null );
+
+        synchronized ( this ) {
+            collections.put( collectionId, collection );
+            collectionNames.put( new Object[]{ namespace.databaseId, schemaId, name }, collection );
+        }
+        listeners.firePropertyChange( "collection", null, entity );
+
+        return collectionId;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType placementType ) {
+        long id = partitionIdBuilder.getAndIncrement();
+        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, null, null, id );
+        CatalogCollection old = collections.get( collectionId );
+        if ( old == null ) {
+            throw new UnknownCollectionException( collectionId );
+        }
+
+        CatalogCollection collection = old.addPlacement( adapterId );
+
+        synchronized ( this ) {
+            collectionPlacements.put( new Object[]{ collectionId, adapterId }, placement );
+            collections.replace( collectionId, collection );
+            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
+        }
+        listeners.firePropertyChange( "collectionPlacement", null, placement );
+        return id;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
+        CatalogCollection old = getCollection( collectionId );
+        if ( old == null ) {
+            throw new UnknownCollectionException( collectionId );
+        }
+
+        CatalogCollectionPlacement placement = new CatalogCollectionPlacement( adapterId, collectionId, physicalCollectionName, physicalNamespaceName, old.id );
+        CatalogCollection collection = old.setPhysicalName( physicalCollectionName );
+        synchronized ( this ) {
+            collections.replace( collectionId, collection );
+            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
+            collectionPlacements.replace( new Object[]{ collectionId, adapterId }, placement );
+        }
+        listeners.firePropertyChange( "collectionPlacements", old, collection );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CatalogCollectionMapping getCollectionMapping( long id ) {
+        if ( !documentMappings.containsKey( id ) ) {
+            throw new UnknownTableIdRuntimeException( id );
+        }
+        return Objects.requireNonNull( documentMappings.get( id ) );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
+        long tableId;
+        if ( onlyPlacement ) {
+            try {
+                tableId = getTable( schemaId, name ).id;
+            } catch ( UnknownTableException e ) {
+                throw new RuntimeException( e );
+            }
+        } else {
+            tableId = addTable( name, schemaId, Catalog.defaultUserId, EntityType.ENTITY, true );
+        }
+
+        stores.forEach( store -> addDataPlacement( store.getAdapterId(), tableId ) );
+
+        long idId;
+        long dataId;
+        if ( !onlyPlacement ) {
+            idId = addColumn( "_id_", tableId, 0, PolyType.VARCHAR, null, 255, null, null, null, false, Collation.getDefaultCollation() );
+            dataId = addColumn( "_data_", tableId, 1, PolyType.JSON, null, null, null, null, null, false, Collation.getDefaultCollation() );
+        } else {
+            try {
+                idId = getColumn( tableId, "_id_" ).id;
+                dataId = getColumn( tableId, "_data_" ).id;
+            } catch ( UnknownColumnException e ) {
+                throw new RuntimeException( "Error while adding a document placement." );
+            }
+        }
+
+        for ( DataStore s : stores ) {
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    idId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+
+            addColumnPlacement(
+                    s.getAdapterId(),
+                    dataId,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        addPrimaryKey( tableId, List.of( idId, dataId ) );
+
+        if ( !onlyPlacement ) {
+            CatalogCollectionMapping mapping = new CatalogCollectionMapping( tableId, idId, dataId );
+            documentMappings.put( tableId, mapping );
+        }
+
+        return tableId;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deleteCollection( long id ) {
+        CatalogCollection collection = getCollection( id );
+
+        synchronized ( this ) {
+            collections.remove( collection.namespaceId );
+            collectionNames.remove( new Object[]{ collection.databaseId, collection.namespaceId, collection.name } );
+            collection.placements.forEach( p -> collectionPlacements.remove( new Object[]{ collection.id, p } ) );
+        }
+        listeners.firePropertyChange( "collection", null, null );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void dropCollectionPlacement( long id, int adapterId ) {
+        CatalogCollection oldCollection = Objects.requireNonNull( collections.get( id ) );
+        CatalogCollection collection = oldCollection.removePlacement( adapterId );
+
+        synchronized ( this ) {
+            collectionPlacements.remove( new Object[]{ id, adapterId } );
+            collections.replace( id, collection );
+            collectionNames.replace( new Object[]{ collection.databaseId, collection.namespaceId, collection.name }, collection );
+        }
+        listeners.firePropertyChange( "collectionPlacement", null, null );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public List<CatalogGraphPlacement> getGraphPlacements( int adapterId ) {
+        return graphPlacements.entrySet().stream().filter( e -> e.getKey()[1].equals( adapterId ) ).map( Entry::getValue ).collect( Collectors.toList() );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( int adapterId ) {
+        return collectionPlacements.values().stream().filter( p -> p.adapter == adapterId ).collect( Collectors.toList() );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId ) {
+        if ( !collectionPlacements.containsKey( new Object[]{ collectionId, adapterId } ) ) {
+            throw new UnknownCollectionPlacementException( collectionId, adapterId );
+        }
+
+        return collectionPlacements.get( new Object[]{ collectionId, adapterId } );
+    }
+
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly ) {
         CatalogTable oldTable = getTable( getColumn( columnId ).tableId );
 
         synchronized ( this ) {
-
             if ( log.isDebugEnabled() ) {
                 log.debug( "Is flagged for deletion {}", isTableFlaggedForDeletion( oldTable.id ) );
             }
@@ -2033,12 +2642,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a column placement independent of any partition.
-     * Mostly used get information about the placement itself rather than the chunk of data
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @return The specific column placement
+     * {@inheritDoc}
      */
     @Override
     public CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId ) {
@@ -2053,11 +2657,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Checks if there is a column with the specified name in the specified table.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @return true if there is a column placement, false if not.
+     * {@inheritDoc}
      */
     @Override
     public boolean checkIfExistsColumnPlacement( int adapterId, long columnId ) {
@@ -2067,11 +2667,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get column placements on a adapter. On column detail level
-     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
-     *
-     * @param adapterId The id of the adapter
-     * @return List of column placements on the specified adapter
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId ) {
@@ -2080,11 +2676,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get column placements of a specific table on a specific adapter on column detail level.
-     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
-     *
-     * @param adapterId The id of the adapter
-     * @return List of column placements of the table on the specified adapter
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterPerTable( int adapterId, long tableId ) {
@@ -2097,6 +2689,9 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int adapterId, long tableId ) {
         final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingLong( p -> p.physicalPosition );
@@ -2108,6 +2703,9 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId ) {
         return columnPlacements.values()
@@ -2117,6 +2715,9 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId ) {
         CatalogTable table = getTable( tableId );
@@ -2133,6 +2734,9 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ImmutableMap<Integer, ImmutableList<Long>> getPartitionPlacementsByAdapter( long tableId ) {
         CatalogTable table = getTable( tableId );
@@ -2149,12 +2753,18 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId ) {
         return null;
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getPartitionGroupByPartition( long partitionId ) {
         return getPartition( partitionId ).partitionGroupId;
@@ -2162,11 +2772,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * T
-     * Get all column placements of a column.
-     *
-     * @param columnId The id of the specific column
-     * @return List of column placements of specific column
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacement( long columnId ) {
@@ -2178,11 +2784,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get column placements in a specific schema on a specific adapter
-     *
-     * @param adapterId The id of the adapter
-     * @param schemaId The id of the schema
-     * @return List of column placements on this adapter and schema
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId ) {
@@ -2197,11 +2799,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Update type of a placement.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param placementType The new type of placement
+     * {@inheritDoc}
      */
     @Override
     public void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType ) {
@@ -2229,11 +2827,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Update physical position of a column placement on a specified adapter.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param position The physical position to set
+     * {@inheritDoc}
      */
     @Override
     public void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position ) {
@@ -2260,12 +2854,8 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /*
-     **
-     * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
+    /**
+     * {@inheritDoc}
      */
     @Override
     public void updateColumnPlacementPhysicalPosition( int adapterId, long columnId ) {
@@ -2293,13 +2883,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Change physical names of a placement.
-     *
-     * @param adapterId The id of the adapter
-     * @param columnId The id of the column
-     * @param physicalSchemaName The physical schema name
-     * @param physicalColumnName The physical column name
-     * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
+     * {@inheritDoc}
      */
     @Override
     public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
@@ -2327,16 +2911,13 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all columns of the specified table.
-     *
-     * @param tableId The id of the table
-     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogColumn> getColumns( long tableId ) {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            return columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values().stream().sorted( columnComparator ).collect( Collectors.toList() );
+            return columnNames.prefixSubMap( new Object[]{ table.databaseId, table.namespaceId, table.id } ).values().stream().sorted( columnComparator ).collect( Collectors.toList() );
         } catch ( NullPointerException e ) {
             return new ArrayList<>();
         }
@@ -2344,21 +2925,14 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all columns of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.
-     *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @param columnNamePattern Pattern for the column name. null returns all.
-     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) {
-        List<CatalogTable> catalogTables = getTables( databaseNamePattern, schemaNamePattern, tableNamePattern );
+        List<CatalogTable> catalogEntities = getTables( databaseNamePattern, schemaNamePattern, tableNamePattern );
 
-        if ( catalogTables.size() > 0 ) {
-            Stream<CatalogColumn> catalogColumns = catalogTables.stream().filter( t -> tableChildren.containsKey( t.id ) ).flatMap( t -> Objects.requireNonNull( tableChildren.get( t.id ) ).stream() ).map( columns::get );
+        if ( catalogEntities.size() > 0 ) {
+            Stream<CatalogColumn> catalogColumns = catalogEntities.stream().filter( t -> tableChildren.containsKey( t.id ) ).flatMap( t -> Objects.requireNonNull( tableChildren.get( t.id ) ).stream() ).map( columns::get );
 
             if ( columnNamePattern != null ) {
                 catalogColumns = catalogColumns.filter( c -> c.name.matches( columnNamePattern.toRegex() ) );
@@ -2371,10 +2945,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the column with the specified id.
-     *
-     * @param columnId The id of the column
-     * @return A CatalogColumn
+     * {@inheritDoc}
      */
     @Override
     public CatalogColumn getColumn( long columnId ) {
@@ -2387,18 +2958,16 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the column with the specified name in the specified table of the specified database and schema.
-     *
-     * @param tableId The id of the table
-     * @param columnName The name of the column
-     * @return A CatalogColumn
-     * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
+     * {@inheritDoc}
      */
     @Override
     public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
         try {
             CatalogTable table = getTable( tableId );
-            return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } ) );
+            if ( !getSchema( table.namespaceId ).caseSensitive ) {
+                columnName = columnName.toLowerCase();
+            }
+            return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.namespaceId, table.id, columnName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( tableId, columnName );
         }
@@ -2406,19 +2975,13 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the column with the specified name in the specified table of the specified database and schema.
-     *
-     * @param databaseName The name of the database
-     * @param schemaName The name of the schema
-     * @param tableName The name of the table
-     * @param columnName The name of the column
-     * @return A CatalogColumn
+     * {@inheritDoc}
      */
     @Override
     public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException {
         try {
             CatalogTable table = getTable( databaseName, schemaName, tableName );
-            return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } ) );
+            return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.namespaceId, table.id, columnName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( databaseName, schemaName, tableName, columnName );
         }
@@ -2426,21 +2989,16 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a column.
-     *
-     * @param name The name of the column
-     * @param tableId The id of the corresponding table
-     * @param position The ordinal position of the column (starting with 1)
-     * @param type The type of the column
-     * @param length The length of the field (if applicable, else null)
-     * @param scale The number of digits after the decimal point (if applicable)
-     * @param nullable Weather the column can contain null values
-     * @param collation The collation of the field (if applicable, else null)
-     * @return The id of the inserted column
+     * {@inheritDoc}
      */
     @Override
     public long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) {
         CatalogTable table = getTable( tableId );
+
+        if ( !getSchema( table.namespaceId ).caseSensitive ) {
+            name = name.toLowerCase();
+        }
+
         if ( type.getFamily() == PolyTypeFamily.CHARACTER && collation == null ) {
             throw new RuntimeException( "Collation is not allowed to be null for char types." );
         }
@@ -2455,7 +3013,7 @@ public class CatalogImpl extends Catalog {
                 id,
                 name,
                 tableId,
-                table.schemaId,
+                table.namespaceId,
                 table.databaseId,
                 position,
                 type,
@@ -2470,20 +3028,19 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             columns.put( id, column );
-            columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, name }, column );
+            columnNames.put( new Object[]{ table.databaseId, table.namespaceId, table.id, name }, column );
             List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( tableId ) ) );
             children.add( id );
             tableChildren.replace( tableId, ImmutableList.copyOf( children ) );
 
-            List<Long> columnIds = new ArrayList<>( table.columnIds );
+            List<Long> columnIds = new ArrayList<>( table.fieldIds );
             columnIds.add( id );
 
             CatalogTable updatedTable;
 
             updatedTable = table.getTableWithColumns( ImmutableList.copyOf( columnIds ) );
             tables.replace( tableId, updatedTable );
-            tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
-
+            tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.namespaceId, updatedTable.name }, updatedTable );
         }
         listeners.firePropertyChange( "column", null, column );
         return id;
@@ -2491,14 +3048,16 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Renames a column
-     *
-     * @param columnId The if of the column to rename
-     * @param name New name of the column
+     * {@inheritDoc}
      */
     @Override
     public void renameColumn( long columnId, String name ) {
         CatalogColumn old = getColumn( columnId );
+
+        if ( !getSchema( old.schemaId ).caseSensitive ) {
+            name = name.toLowerCase();
+        }
+
         CatalogColumn column = new CatalogColumn( old.id, name, old.tableId, old.schemaId, old.databaseId, old.position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, old.nullable, old.collation, old.defaultValue );
         synchronized ( this ) {
             columns.replace( columnId, column );
@@ -2510,10 +3069,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Change move the column to the specified position. Make sure, that there is no other column with this position in the table.
-     *
-     * @param columnId The id of the column for which to change the position
-     * @param position The new position of the column
+     * {@inheritDoc}
      */
     @Override
     public void setColumnPosition( long columnId, int position ) {
@@ -2528,10 +3084,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Change the data type of an column.
-     *
-     * @param columnId The id of the column
-     * @param type The new type of the column
+     * {@inheritDoc}
      */
     @Override
     public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality ) throws GenericCatalogException {
@@ -2576,10 +3129,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Change nullability of the column (weather the column allows null values).
-     *
-     * @param columnId The id of the column
-     * @param nullable True if the column should allow null values, false if not.
+     * {@inheritDoc}
      */
     @Override
     public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
@@ -2626,11 +3176,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Set the collation of a column.
-     * If the column already has the specified collation set, this method is a NoOp.
-     *
-     * @param columnId The id of the column
-     * @param collation The collation to set
+     * {@inheritDoc}
      */
     @Override
     public void setCollation( long columnId, Collation collation ) {
@@ -2664,23 +3210,17 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Checks if there is a column with the specified name in the specified table.
-     *
-     * @param tableId The id of the table
-     * @param columnName The name to check for
-     * @return true if there is a column with this name, false if not.
+     * {@inheritDoc}
      */
     @Override
     public boolean checkIfExistsColumn( long tableId, String columnName ) {
         CatalogTable table = getTable( tableId );
-        return columnNames.containsKey( new Object[]{ table.databaseId, table.schemaId, tableId, columnName } );
+        return columnNames.containsKey( new Object[]{ table.databaseId, table.namespaceId, tableId, columnName } );
     }
 
 
     /**
-     * Delete the specified column. This also deletes a default value in case there is one defined for this column.
-     *
-     * @param columnId The id of the column to delete
+     * {@inheritDoc}
      */
     @Override
     public void deleteColumn( long columnId ) {
@@ -2691,42 +3231,41 @@ public class CatalogImpl extends Catalog {
         children.remove( columnId );
 
         CatalogTable old = getTable( column.tableId );
-        List<Long> columnIds = new ArrayList<>( old.columnIds );
+        List<Long> columnIds = new ArrayList<>( old.fieldIds );
         columnIds.remove( columnId );
 
         CatalogTable table;
-        if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
+        if ( old.entityType == EntityType.MATERIALIZED_VIEW ) {
+            CatalogMaterializedView oldView = (CatalogMaterializedView) old;
             table = new CatalogMaterializedView(
                     old.id,
                     old.name,
                     ImmutableList.copyOf( columnIds ),
-                    old.schemaId,
+                    old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
-                    old.tableType,
-                    ((CatalogMaterializedView) old).getQuery(),
+                    old.entityType,
+                    oldView.getQuery(),
                     old.primaryKey,
                     old.dataPlacements,
                     old.modifiable,
                     old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    oldView.getAlgCollation(),
                     old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered()
+                    oldView.getUnderlyingTables(),
+                    oldView.getLanguage(),
+                    oldView.getMaterializedCriteria(),
+                    oldView.isOrdered()
             );
         } else {
             table = new CatalogTable(
                     old.id,
                     old.name,
                     ImmutableList.copyOf( columnIds ),
-                    old.schemaId,
+                    old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
-                    old.tableType,
+                    old.entityType,
                     old.primaryKey,
                     old.dataPlacements,
                     old.modifiable,
@@ -2742,7 +3281,7 @@ public class CatalogImpl extends Catalog {
                 deleteColumnPlacement( p.adapterId, p.columnId, false );
             }
             tables.replace( column.tableId, table );
-            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.namespaceId, table.name }, table );
 
             columns.remove( columnId );
         }
@@ -2751,13 +3290,9 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a default value for a column. If there already is a default values, it being replaced.
+     * {@inheritDoc}
      *
      * TODO: String is only a temporary solution
-     *
-     * @param columnId The id of the column
-     * @param type The type of the default value
-     * @param defaultValue The default value
      */
     @Override
     public void setDefaultValue( long columnId, PolyType type, String defaultValue ) {
@@ -2787,9 +3322,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Deletes an existing default value of a column. NoOp if there is no default value defined.
-     *
-     * @param columnId The id of the column
+     * {@inheritDoc}
      */
     @Override
     public void deleteDefaultValue( long columnId ) {
@@ -2821,10 +3354,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a specified primary key
-     *
-     * @param key The id of the primary key
-     * @return The primary key
+     * {@inheritDoc}
      */
     @Override
     public CatalogPrimaryKey getPrimaryKey( long key ) {
@@ -2837,10 +3367,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Check whether a key is a primary key
-     *
-     * @param key The id of the key
-     * @return Whether the key is a primary key
+     * {@inheritDoc}
      */
     @Override
     public boolean isPrimaryKey( long key ) {
@@ -2854,10 +3381,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a primary key to a specified table. If there is already a primary key defined for this table it is replaced.
-     *
-     * @param tableId The id of the table
-     * @param columnIds The id of key which will be part of the primary keys
+     * {@inheritDoc}
      */
     @Override
     public void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
@@ -2916,23 +3440,16 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all (imported) foreign keys of a specified table
-     *
-     * @param tableId The id of the table
-     * @return List of foreign keys
+     * {@inheritDoc}
      */
     @Override
-
     public List<CatalogForeignKey> getForeignKeys( long tableId ) {
         return foreignKeys.values().stream().filter( f -> f.tableId == tableId ).collect( Collectors.toList() );
     }
 
 
     /**
-     * Returns all foreign keys that reference the specified table (exported keys).
-     *
-     * @param tableId The id of the table
-     * @return List of foreign keys
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogForeignKey> getExportedKeys( long tableId ) {
@@ -2941,10 +3458,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all constraints of the specified table
-     *
-     * @param tableId The id of the table
-     * @return List of constraints
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogConstraint> getConstraints( long tableId ) {
@@ -2954,11 +3468,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the constraint with the specified name in the specified table.
-     *
-     * @param tableId The id of the table
-     * @param constraintName The name of the constraint
-     * @return The constraint
+     * {@inheritDoc}
      */
     @Override
     public CatalogConstraint getConstraint( long tableId, String constraintName ) throws UnknownConstraintException {
@@ -2974,11 +3484,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Return the foreign key with the specified name from the specified table
-     *
-     * @param tableId The id of the table
-     * @param foreignKeyName The name of the foreign key
-     * @return The foreign key
+     * {@inheritDoc}
      */
     @Override
     public CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException {
@@ -2994,14 +3500,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a unique foreign key constraint.
-     *
-     * @param tableId The id of the table
-     * @param columnIds The id of the columns which are part of the foreign key
-     * @param referencesIds The id of columns forming the key referenced by this key
-     * @param constraintName The name of the constraint
-     * @param onUpdate The option for updates
-     * @param onDelete The option for deletes
+     * {@inheritDoc}
      */
     @Override
     public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
@@ -3031,7 +3530,7 @@ public class CatalogImpl extends Catalog {
                                 keyId,
                                 constraintName,
                                 tableId,
-                                table.schemaId,
+                                table.namespaceId,
                                 table.databaseId,
                                 refKey.id,
                                 refKey.tableId,
@@ -3057,11 +3556,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a unique constraint.
-     *
-     * @param tableId The id of the table
-     * @param constraintName The name of the constraint
-     * @param columnIds A list of column ids
+     * {@inheritDoc}
      */
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
@@ -3086,11 +3581,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all indexes of a table
-     *
-     * @param tableId The id of the table
-     * @param onlyUnique true if only indexes for unique values are returned. false if all indexes are returned.
-     * @return List of indexes
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique ) {
@@ -3103,11 +3594,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the index with the specified name in the specified table
-     *
-     * @param tableId The id of the table
-     * @param indexName The name of the index
-     * @return The Index
+     * {@inheritDoc}
      */
     @Override
     public CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException {
@@ -3123,11 +3610,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Checks if there is an index with the specified name in the specified table.
-     *
-     * @param tableId The id of the table
-     * @param indexName The name to check for
-     * @return true if there is an index with this name, false if not.
+     * {@inheritDoc}
      */
     @Override
     public boolean checkIfExistsIndex( long tableId, String indexName ) {
@@ -3142,10 +3625,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the index with the specified id
-     *
-     * @param indexId The id of the index
-     * @return The Index
+     * {@inheritDoc}
      */
     @Override
     public CatalogIndex getIndex( long indexId ) {
@@ -3158,9 +3638,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns list of all indexes
-     *
-     * @return List of indexes
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogIndex> getIndexes() {
@@ -3169,17 +3647,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds an index over the specified columns
-     *
-     * @param tableId The id of the table
-     * @param columnIds A list of column ids
-     * @param unique Weather the index is unique
-     * @param method Name of the index method (e.g. btree_unique)
-     * @param methodDisplayName Display name of the index method (e.g. BTREE)
-     * @param location Id of the data store where the index is located (0 for Polypheny-DB itself)
-     * @param type The type of index (manual, automatic)
-     * @param indexName The name of the index
-     * @return The id of the created index
+     * {@inheritDoc}
      */
     @Override
     public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException {
@@ -3207,10 +3675,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Set physical index name.
-     *
-     * @param indexId The id of the index
-     * @param physicalName The physical name to be set
+     * {@inheritDoc}
      */
     @Override
     public void setIndexPhysicalName( long indexId, String physicalName ) {
@@ -3238,9 +3703,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete the specified index
-     *
-     * @param indexId The id of the index to drop
+     * {@inheritDoc}
      */
     @Override
     public void deleteIndex( long indexId ) {
@@ -3260,10 +3723,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
-     * If there is no primary key, this operation is a NoOp.
-     *
-     * @param tableId The id of the key to drop
+     * {@inheritDoc}
      */
     @Override
     public void deletePrimaryKey( long tableId ) throws GenericCatalogException {
@@ -3286,9 +3746,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete the specified foreign key (does not delete the referenced key).
-     *
-     * @param foreignKeyId The id of the foreign key to delete
+     * {@inheritDoc}
      */
     @Override
     public void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException {
@@ -3306,10 +3764,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete the specified constraint.
-     * For deleting foreign keys, use {@link #deleteForeignKey(long)}.
-     *
-     * @param constraintId The id of the constraint to delete
+     * {@inheritDoc}
      */
     @Override
     public void deleteConstraint( long constraintId ) throws GenericCatalogException {
@@ -3334,11 +3789,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get the user with the specified name
-     *
-     * @param userName The name of the user
-     * @return The user
-     * @throws UnknownUserException If there is no user with the specified name
+     * {@inheritDoc}
      */
     @Override
     public CatalogUser getUser( String userName ) throws UnknownUserException {
@@ -3351,10 +3802,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get the user with the specified id.
-     *
-     * @param userId The id of the user
-     * @return The user
+     * {@inheritDoc}
      */
     @Override
     public CatalogUser getUser( int userId ) {
@@ -3367,9 +3815,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get list of all adapters
-     *
-     * @return List of adapters
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogAdapter> getAdapters() {
@@ -3378,9 +3824,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get an adapter by its unique name
-     *
-     * @return The adapter
+     * {@inheritDoc}
      */
     @Override
     public CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException {
@@ -3394,9 +3838,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get an adapter by its id
-     *
-     * @return The adapter
+     * {@inheritDoc}
      */
     @Override
     public CatalogAdapter getAdapter( int adapterId ) {
@@ -3409,9 +3851,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * checks if an adapter exists
-     *
-     * @param adapterId the id of the adapter
+     * {@inheritDoc}
      */
     @Override
     public boolean checkIfExistsAdapter( int adapterId ) {
@@ -3420,21 +3860,14 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Add an adapter
-     *
-     * @param uniqueName The unique name of the adapter
-     * @param clazz The class name of the adapter
-     * @param type The type of adapter
-     * @param settings The configuration of the adapter
-     * @return The id of the newly added adapter
+     * {@inheritDoc}
      */
     @Override
     public int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
 
         int id = adapterIdBuilder.getAndIncrement();
-        Map<String, String> temp = new HashMap<>();
-        settings.forEach( temp::put );
+        Map<String, String> temp = new HashMap<>( settings );
         CatalogAdapter adapter = new CatalogAdapter( id, uniqueName, clazz, type, temp );
         synchronized ( this ) {
             adapters.put( id, adapter );
@@ -3451,10 +3884,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Update settings of an adapter
-     *
-     * @param adapterId The id of the adapter
-     * @param newSettings The new settings for the adapter
+     * {@inheritDoc}
      */
     @Override
     public void updateAdapterSettings( int adapterId, Map<String, String> newSettings ) {
@@ -3471,9 +3901,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete an adapter
-     *
-     * @param adapterId The id of the adapter to delete
+     * {@inheritDoc}
      */
     @Override
     public void deleteAdapter( int adapterId ) {
@@ -3501,9 +3929,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get list of all query interfaces
-     *
-     * @return List of query interfaces
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogQueryInterface> getQueryInterfaces() {
@@ -3512,10 +3938,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a query interface by its unique name
-     *
-     * @param uniqueName The unique name of the query interface
-     * @return The CatalogQueryInterface
+     * {@inheritDoc}
      */
     @Override
     public CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException {
@@ -3529,10 +3952,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a query interface by its id
-     *
-     * @param ifaceId The id of the query interface
-     * @return The CatalogQueryInterface
+     * {@inheritDoc}
      */
     @Override
     public CatalogQueryInterface getQueryInterface( int ifaceId ) {
@@ -3545,12 +3965,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Add a query interface
-     *
-     * @param uniqueName The unique name of the query interface
-     * @param clazz The class name of the query interface
-     * @param settings The configuration of the query interface
-     * @return The id of the newly added query interface
+     * {@inheritDoc}
      */
     @Override
     public int addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
@@ -3575,9 +3990,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete a query interface
-     *
-     * @param ifaceId The id of the query interface to delete
+     * {@inheritDoc}
      */
     @Override
     public void deleteQueryInterface( int ifaceId ) {
@@ -3600,12 +4013,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a partition to the catalog
-     *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionType partition Type of the added partition
-     * @return The id of the created partition
+     * {@inheritDoc}
      */
     @Override
     public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
@@ -3645,11 +4053,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Should only be called from mergePartitions(). Deletes a single partition and all references.
-     *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionGroupId The partitionId to be deleted
+     * {@inheritDoc}
      */
     @Override
     public void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId ) throws UnknownPartitionGroupIdRuntimeException {
@@ -3668,10 +4072,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Updates the specified partition group with the attached partitionIds
-     *
-     * @param partitionGroupId Partition Group to be updated
-     * @param partitionIds List of new partitionIds
+     * {@inheritDoc}
      */
     @Override
     public void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds ) throws UnknownPartitionGroupIdRuntimeException {
@@ -3699,10 +4100,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a partition to an already existing partition Group
-     *
-     * @param partitionGroupId Group to add to
-     * @param partitionId Partition to add
+     * {@inheritDoc}
      */
     @Override
     public void addPartitionToGroup( long partitionGroupId, Long partitionId ) {
@@ -3720,10 +4118,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Removes a partition from an already existing partition Group
-     *
-     * @param partitionGroupId Group to remove the partition from
-     * @param partitionId Partition to remove
+     * {@inheritDoc}
      */
     @Override
     public void removePartitionFromGroup( long partitionGroupId, Long partitionId ) {
@@ -3739,10 +4134,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Assign the partition to a new partitionGroup
-     *
-     * @param partitionId Partition to move
-     * @param partitionGroupId New target group to move the partition to
+     * {@inheritDoc}
      */
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
@@ -3777,10 +4169,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a partition object by its unique id
-     *
-     * @param partitionGroupId The unique id of the partition
-     * @return A catalog partition
+     * {@inheritDoc}
      */
     @Override
     public CatalogPartitionGroup getPartitionGroup( long partitionGroupId ) throws UnknownPartitionGroupIdRuntimeException {
@@ -3793,12 +4182,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a partition to the catalog
-     *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionGroupId partitionGroupId where the partition should be initially added to
-     * @return The id of the created partition
+     * {@inheritDoc}
      */
     @Override
     public long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException {
@@ -3830,11 +4214,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Deletes a single partition and all references.
-     *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionId The partitionId to be deleted
+     * {@inheritDoc}
      */
     @Override
     public void deletePartition( long tableId, long schemaId, long partitionId ) {
@@ -3853,10 +4233,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a partition object by its unique id
-     *
-     * @param partitionId The unique id of the partition
-     * @return A catalog partition
+     * {@inheritDoc}
      */
     @Override
     public CatalogPartition getPartition( long partitionId ) {
@@ -3869,10 +4246,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Retrieves a list of partitions which are associated with a specific table
-     *
-     * @param tableId Table for which partitions shall be gathered
-     * @return List of all partitions associated with that table
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartition> getPartitionsByTable( long tableId ) {
@@ -3884,13 +4258,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Effectively partitions a table with the specified partitionType
-     *
-     * @param tableId Table to be partitioned
-     * @param partitionType Partition function to apply on the table
-     * @param partitionColumnId Column used to apply the partition function on
-     * @param numPartitionGroups Explicit number of partitions
-     * @param partitionGroupIds List of ids of the catalog partitions
+     * {@inheritDoc}
      */
     @Override
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty ) {
@@ -3899,12 +4267,11 @@ public class CatalogImpl extends Catalog {
         CatalogTable table = new CatalogTable(
                 old.id,
                 old.name,
-                old.columnIds,
-                old.schemaId,
+                old.fieldIds,
+                old.namespaceId,
                 old.databaseId,
                 old.ownerId,
-                old.ownerName,
-                old.tableType,
+                old.entityType,
                 old.primaryKey,
                 old.dataPlacements,
                 old.modifiable,
@@ -3913,7 +4280,7 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             tables.replace( tableId, table );
-            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.namespaceId, old.name }, table );
 
             if ( table.partitionProperty.reliesOnPeriodicChecks ) {
                 addTableToPeriodicProcessing( tableId );
@@ -3925,10 +4292,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Merges a  partitioned table.
-     * Resets all objects and structures which were introduced by partitionTable.
-     *
-     * @param tableId Table to be merged
+     * {@inheritDoc}
      */
     @Override
     public void mergeTable( long tableId ) {
@@ -3941,7 +4305,7 @@ public class CatalogImpl extends Catalog {
         //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
         List<Long> partitionGroupIds = new ArrayList<>();
         try {
-            partitionGroupIds.add( addPartitionGroup( tableId, "full", old.schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
+            partitionGroupIds.add( addPartitionGroup( tableId, "full", old.namespaceId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
@@ -3959,12 +4323,11 @@ public class CatalogImpl extends Catalog {
         CatalogTable table = new CatalogTable(
                 old.id,
                 old.name,
-                old.columnIds,
-                old.schemaId,
+                old.fieldIds,
+                old.namespaceId,
                 old.databaseId,
                 old.ownerId,
-                old.ownerName,
-                old.tableType,
+                old.entityType,
                 old.primaryKey,
                 old.dataPlacements,
                 old.modifiable,
@@ -3973,17 +4336,14 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             tables.replace( tableId, table );
-            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.namespaceId, old.name }, table );
         }
         listeners.firePropertyChange( "table", old, table );
     }
 
 
     /**
-     * Updates partitionProperties on table
-     *
-     * @param tableId Table to be partitioned
-     * @param partitionProperty Partition properties
+     * {@inheritDoc}
      */
     @Override
     public void updateTablePartitionProperties( long tableId, PartitionProperty partitionProperty ) {
@@ -3992,12 +4352,11 @@ public class CatalogImpl extends Catalog {
         CatalogTable table = new CatalogTable(
                 old.id,
                 old.name,
-                old.columnIds,
-                old.schemaId,
+                old.fieldIds,
+                old.namespaceId,
                 old.databaseId,
                 old.ownerId,
-                old.ownerName,
-                old.tableType,
+                old.entityType,
                 old.primaryKey,
                 old.dataPlacements,
                 old.modifiable,
@@ -4006,7 +4365,7 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             tables.replace( tableId, table );
-            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.namespaceId, old.name }, table );
         }
 
         listeners.firePropertyChange( "table", old, table );
@@ -4014,10 +4373,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a List of all partitions belonging to a specific table
-     *
-     * @param tableId Table to be queried
-     * @return list of all partitions on this table
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartitionGroup> getPartitionGroups( long tableId ) {
@@ -4038,19 +4394,13 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all partitions of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
-     *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
-     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartitionGroup> getPartitionGroups( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        List<CatalogTable> catalogTables = getTables( databaseNamePattern, schemaNamePattern, tableNamePattern );
+        List<CatalogTable> catalogEntities = getTables( databaseNamePattern, schemaNamePattern, tableNamePattern );
         Stream<CatalogPartitionGroup> partitionGroupStream = Stream.of();
-        for ( CatalogTable catalogTable : catalogTables ) {
+        for ( CatalogTable catalogTable : catalogEntities ) {
             partitionGroupStream = Stream.concat( partitionGroupStream, getPartitionGroups( catalogTable.id ).stream() );
         }
         return partitionGroupStream.collect( Collectors.toList() );
@@ -4058,10 +4408,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a List of all partitions currently assigned to to a specific PartitionGroup
-     *
-     * @param partitionGroupId Table to be queried
-     * @return list of all partitions on this table
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartition> getPartitions( long partitionGroupId ) {
@@ -4082,13 +4429,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all partitions of the specified database which fit to the specified filter patterns.
-     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
-     *
-     * @param databaseNamePattern Pattern for the database name. null returns all.
-     * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
-     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
@@ -4102,10 +4443,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get a List of all partition name belonging to a specific table
-     *
-     * @param tableId Table to be queried
-     * @return list of all partition names on this table
+     * {@inheritDoc}
      */
     @Override
     public List<String> getPartitionGroupNames( long tableId ) {
@@ -4118,13 +4456,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get placements by partition. Identify the location of partitions.
-     * Essentially returns all ColumnPlacements which hold the specified partitionID.
-     *
-     * @param tableId The id of the table
-     * @param partitionGroupId The id of the partition
-     * @param columnId The id of tje column
-     * @return List of CatalogColumnPlacements
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
@@ -4140,12 +4472,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get adapters by partitionGroup. Identify the location of partitions/replicas
-     * Essentially returns all adapters which hold the specified partitionGroupId
-     *
-     * @param tableId The unique id of the table
-     * @param partitionGroupId The unique id of the partitionGroup
-     * @return List of CatalogAdapters
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId ) {
@@ -4160,16 +4487,12 @@ public class CatalogImpl extends Catalog {
             }
         }
 
-        return catalogAdapters.stream().collect( Collectors.toList() );
+        return new ArrayList<>( catalogAdapters );
     }
 
 
     /**
-     * Get all partitionGroups of a DataPlacement (identified by adapterId and tableId)
-     *
-     * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @return List of partitionIds
+     * {@inheritDoc}
      */
     @Override
     public List<Long> getPartitionGroupsOnDataPlacement( int adapterId, long tableId ) {
@@ -4181,16 +4504,12 @@ public class CatalogImpl extends Catalog {
                 )
         );
 
-        return partitionGroups.stream().collect( Collectors.toList() );
+        return new ArrayList<>( partitionGroups );
     }
 
 
     /**
-     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
-     *
-     * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @return List of partitionIds
+     * {@inheritDoc}
      */
     @Override
     public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
@@ -4199,11 +4518,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns list with the index of the partitions on this store from  0..numPartitions
-     *
-     * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @return List of partitionId Indices
+     * {@inheritDoc}
      */
     @Override
     public List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId ) {
@@ -4224,11 +4539,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a specific DataPlacement of a given table.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
+     * {@inheritDoc}
      */
     @Override
     public CatalogDataPlacement getDataPlacement( int adapterId, long tableId ) {
@@ -4237,27 +4548,20 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all DataPlacements of a given table.
-     *
-     * @param tableId table to retrieve the placements from
-     * @return List of all DataPlacements for the table
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogDataPlacement> getDataPlacements( long tableId ) {
         List<CatalogDataPlacement> catalogDataPlacements = new ArrayList<>();
 
-        getTable( tableId ).dataPlacements.forEach( adapterId ->
-                catalogDataPlacements.add( getDataPlacement( adapterId, tableId ) ) );
+        getTable( tableId ).dataPlacements.forEach( adapterId -> catalogDataPlacements.add( getDataPlacement( adapterId, tableId ) ) );
 
         return catalogDataPlacements;
     }
 
 
     /**
-     * Returns a list of all DataPlacements that contain all columns as well as all partitions
-     *
-     * @param tableId table to retrieve the list from
-     * @return list of all full DataPlacements
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogDataPlacement> getAllFullDataPlacements( long tableId ) {
@@ -4274,10 +4578,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a list of all DataPlacements that contain all columns
-     *
-     * @param tableId table to retrieve the list from
-     * @return list of all full DataPlacements
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId ) {
@@ -4294,10 +4595,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a list of all DataPlacements that contain all partitions
-     *
-     * @param tableId table to retrieve the list from
-     * @return list of all full DataPlacements
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId ) {
@@ -4314,11 +4612,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all DataPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all DataPlacements for the table that are associated with a specific role
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
@@ -4333,11 +4627,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all PartitionPlacements of a given table that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ) {
@@ -4355,12 +4645,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all PartitionPlacements of a given table with a given ID that are associated with a given role.
-     *
-     * @param tableId table to retrieve the placements from
-     * @param partitionId filter by ID
-     * @param role role to specifically filter
-     * @return List of all PartitionPlacements for the table that are associated with a specific role for a specific partitionId
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
@@ -4375,14 +4660,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Checks if the planned changes are allowed in terms of placements that need to be present.
-     * Each column must be present for all partitions somewhere
-     *
-     * @param tableId Table to be checked
-     * @param adapterId Adapter where Ids will be removed from
-     * @param columnIdsToBeRemoved columns that shall be removed
-     * @param partitionsIdsToBeRemoved partitions that shall be removed
-     * @return true if these changes can be made to the data placement, false if not
+     * {@inheritDoc}
      */
     @Override
     public boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
@@ -4391,13 +4669,15 @@ public class CatalogImpl extends Catalog {
             return true;
         }
 
+        // TODO @HENNLO Focus on PartitionPlacements that are labeled as UPTODATE nodes. The outdated nodes do not
+        //  necessarily need placement constraints
+
         CatalogTable table = getTable( tableId );
         List<CatalogDataPlacement> dataPlacements = getDataPlacements( tableId );
 
         // Checks for every column on every DataPlacement if each column is placed with all partitions
-        for ( long columnId : table.columnIds ) {
+        for ( long columnId : table.fieldIds ) {
             List<Long> partitionsToBeCheckedForColumn = table.partitionProperty.partitionIds.stream().collect( Collectors.toList() );
-
             // Check for every column if it has every partition
             for ( CatalogDataPlacement dataPlacement : dataPlacements ) {
                 // Can instantly return because we still have a full placement somewhere
@@ -4443,11 +4723,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Flags the table for deletion.
-     * This method should be executed on a partitioned table before we run a DROP TABLE statement.
-     *
-     * @param tableId table to be flagged for deletion
-     * @param flag true if it should be flagged, false if flag should be removed
+     * {@inheritDoc}
      */
     @Override
     public void flagTableForDeletion( long tableId, boolean flag ) {
@@ -4460,12 +4736,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Is used to detect if a table is flagged for deletion.
-     * Effectively checks if a drop of this table is currently in progress.
-     * This is needed to ensure that there aren't any constraints when recursively removing a table and all placements and partitions.
-     *
-     * @param tableId table to be checked
-     * @return If table is flagged for deletion or not
+     * {@inheritDoc}
      */
     @Override
     public boolean isTableFlaggedForDeletion( long tableId ) {
@@ -4474,15 +4745,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a placement for a partition.
-     *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param tableId The table for which a partition placement shall be created
-     * @param partitionId The id of a specific partition that shall create a new placement
-     * @param placementType The type of placement
-     * @param physicalSchemaName The schema name on the adapter
-     * @param physicalTableName The table name on the adapter
-     * @param role Placement role indicating how this placement is being processed
+     * {@inheritDoc}
      */
     @Override
     public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
@@ -4511,12 +4774,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a new DataPlacement for a given table on a specific store.
-     * If it already exists it simply returns the existing placement.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
+     * {@inheritDoc}
      */
     @Override
     public CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId ) {
@@ -4534,10 +4792,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Updates the list of data placements on a table
-     *
-     * @param tableId table to be updated
-     * @param newDataPlacements list of new DataPlacements that shall replace the old ones
+     * {@inheritDoc}
      */
     @Override
     public void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements ) {
@@ -4545,38 +4800,37 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable newTable;
 
-        if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
+        if ( old.entityType == EntityType.MATERIALIZED_VIEW ) {
+            CatalogMaterializedView oldView = (CatalogMaterializedView) old;
             newTable = new CatalogMaterializedView(
                     old.id,
                     old.name,
-                    old.columnIds,
-                    old.schemaId,
+                    old.fieldIds,
+                    old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
-                    old.tableType,
-                    ((CatalogMaterializedView) old).getQuery(),
+                    old.entityType,
+                    oldView.getQuery(),
                     old.primaryKey,
                     ImmutableList.copyOf( newDataPlacements ),
                     old.modifiable,
                     old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    oldView.getAlgCollation(),
                     old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered()
+                    oldView.getUnderlyingTables(),
+                    oldView.getLanguage(),
+                    oldView.getMaterializedCriteria(),
+                    oldView.isOrdered()
             );
         } else {
             newTable = new CatalogTable(
                     old.id,
                     old.name,
-                    old.columnIds,
-                    old.schemaId,
+                    old.fieldIds,
+                    old.namespaceId,
                     old.databaseId,
                     old.ownerId,
-                    old.ownerName,
-                    old.tableType,
+                    old.entityType,
                     old.primaryKey,
                     ImmutableList.copyOf( newDataPlacements ),
                     old.modifiable,
@@ -4586,16 +4840,13 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             tables.replace( tableId, newTable );
-            tableNames.replace( new Object[]{ newTable.databaseId, newTable.schemaId, newTable.name }, newTable );
+            tableNames.replace( new Object[]{ newTable.databaseId, newTable.namespaceId, newTable.name }, newTable );
         }
     }
 
 
     /**
-     * Adds a new DataPlacement for a given table on a specific store
-     *
-     * @param adapterId adapter where placement should be located
-     * @param tableId table to retrieve the placement from
+     * {@inheritDoc}
      */
     @Override
     public void addDataPlacement( int adapterId, long tableId ) {
@@ -4622,10 +4873,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Modifies a specific DataPlacement of a given table.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
+     * {@inheritDoc}
      */
     @Override
     protected void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement ) {
@@ -4643,10 +4891,107 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Removes a  DataPlacement for a given table on a specific store
-     *
-     * @param adapterId adapter where placement should be removed from
-     * @param tableId table to retrieve the placement from
+     * {@inheritDoc}
+     */
+    @Override
+    public long addGraphPlacement( int adapterId, long graphId ) {
+        long id = partitionIdBuilder.getAndIncrement();
+        CatalogGraphPlacement placement = new CatalogGraphPlacement( adapterId, graphId, null, id );
+        CatalogGraphDatabase old = graphs.get( graphId );
+        if ( old == null ) {
+            throw new UnknownGraphException( graphId );
+        }
+
+        CatalogGraphDatabase graph = old.addPlacement( adapterId );
+
+        synchronized ( this ) {
+            graphPlacements.put( new Object[]{ graph.id, adapterId }, placement );
+            graphs.replace( graph.id, graph );
+            graphNames.replace( new Object[]{ old.databaseId, graph.name }, graph );
+        }
+        listeners.firePropertyChange( "graphPlacement", null, placement );
+        return id;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateGraphPlacementPhysicalNames( long graphId, int adapterId, String physicalGraphName ) {
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
+        }
+
+        CatalogGraphPlacement old = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
+
+        CatalogGraphPlacement placement = old.replacePhysicalName( physicalGraphName );
+
+        synchronized ( this ) {
+            graphPlacements.replace( new Object[]{ graphId, adapterId }, placement );
+        }
+
+        listeners.firePropertyChange( "graphPlacement", old, placement );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deleteGraphPlacement( int adapterId, long graphId ) {
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
+        }
+        CatalogGraphPlacement placement = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
+
+        deleteGraphPlacementLogistics( placement.graphId, adapterId );
+
+        CatalogGraphDatabase old = Objects.requireNonNull( graphs.get( placement.graphId ) );
+
+        CatalogGraphDatabase graph = old.removePlacement( adapterId );
+
+        synchronized ( this ) {
+            graphPlacements.remove( new Object[]{ graphId, adapterId } );
+            graphs.replace( graphId, graph );
+            graphNames.replace( new Object[]{ Catalog.defaultDatabaseId, graph.name }, graph );
+        }
+        listeners.firePropertyChange( "graphPlacements", null, null );
+    }
+
+
+    private void deleteGraphPlacementLogistics( long graphId, int adapterId ) {
+        if ( !graphMappings.containsKey( graphId ) ) {
+            throw new UnknownGraphException( graphId );
+        }
+        CatalogGraphMapping mapping = Objects.requireNonNull( graphMappings.get( graphId ) );
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
+        }
+        CatalogGraphPlacement placement = Objects.requireNonNull( graphPlacements.get( new Object[]{ graphId, adapterId } ) );
+
+        removeSingleDataPlacementFromTable( placement.adapterId, mapping.nodesId );
+        removeSingleDataPlacementFromTable( placement.adapterId, mapping.nodesPropertyId );
+        removeSingleDataPlacementFromTable( placement.adapterId, mapping.edgesId );
+        removeSingleDataPlacementFromTable( placement.adapterId, mapping.edgesPropertyId );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CatalogGraphPlacement getGraphPlacement( long graphId, int adapterId ) {
+        if ( !graphPlacements.containsKey( new Object[]{ graphId, adapterId } ) ) {
+            throw new UnknownGraphPlacementsException( graphId, adapterId );
+        }
+
+        return graphPlacements.get( new Object[]{ graphId, adapterId } );
+    }
+
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public void removeDataPlacement( int adapterId, long tableId ) {
@@ -4686,10 +5031,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a single dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
+     * {@inheritDoc}
      */
     @Override
     protected void addSingleDataPlacementToTable( Integer adapterId, long tableId ) {
@@ -4704,10 +5046,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Removes a single dataPlacement from a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
+     * {@inheritDoc}
      */
     @Override
     protected void removeSingleDataPlacementFromTable( Integer adapterId, long tableId ) {
@@ -4722,17 +5061,13 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds columns to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param columnIds List of columnIds to add to a specific store for the table
+     * {@inheritDoc}
      */
     @Override
     protected void addColumnsToDataPlacement( int adapterId, long tableId, List<Long> columnIds ) {
         CatalogDataPlacement oldDataPlacement = addDataPlacementIfNotExists( adapterId, tableId );
 
-        Set<Long> columnPlacementsOnAdapter = oldDataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toSet() );
+        Set<Long> columnPlacementsOnAdapter = new HashSet<>( oldDataPlacement.columnPlacementsOnAdapter );
 
         // Merges new columnIds to list of already existing placements
         columnPlacementsOnAdapter.addAll( columnIds );
@@ -4742,7 +5077,7 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
                 oldDataPlacement.dataPlacementRole,
-                ImmutableList.copyOf( columnPlacementsOnAdapter.stream().collect( Collectors.toList() ) ),
+                ImmutableList.copyOf( new ArrayList<>( columnPlacementsOnAdapter ) ),
                 ImmutableList.copyOf( oldDataPlacement.getAllPartitionIds() )
         );
 
@@ -4755,11 +5090,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Remove columns from dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param columnIds List of columnIds to remove from a specific store for the table
+     * {@inheritDoc}
      */
     @Override
     protected void removeColumnsFromDataPlacement( int adapterId, long tableId, List<Long> columnIds ) {
@@ -4786,11 +5117,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds partitions to dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param partitionIds List of partitionIds to add to a specific store for the table
+     * {@inheritDoc}
      */
     @Override
     protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
@@ -4816,11 +5143,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Remove partitions from dataPlacement on a store for a specific table
-     *
-     * @param adapterId adapter id corresponding to a new DataPlacements
-     * @param tableId table to be updated
-     * @param partitionIds List of partitionIds to remove from a specific store for the table
+     * {@inheritDoc}
      */
     @Override
     protected void removePartitionsFromDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
@@ -4846,12 +5169,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Updates and overrides list of associated columnPlacements & partitionPlacements for a given data placement
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @param columnIds List of columnIds to be located on a specific store for the table
-     * @param partitionIds List of partitionIds to be located on a specific store for the table
+     * {@inheritDoc}
      */
     @Override
     public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds ) {
@@ -4874,10 +5192,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Deletes a placement for a partition.
-     *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param partitionId The id of a partition which shall be removed from that store.
+     * {@inheritDoc}
      */
     @Override
     public void deletePartitionPlacement( int adapterId, long partitionId ) {
@@ -4891,11 +5206,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a specific partition entity which is placed on a store.
-     *
-     * @param adapterId The adapter on which the requested partitions placement resides
-     * @param partitionId The id of the requested partition
-     * @return The PartitionPlacement on the specified store
+     * {@inheritDoc}
      */
     @Override
     public CatalogPartitionPlacement getPartitionPlacement( int adapterId, long partitionId ) {
@@ -4910,10 +5221,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a list of all Partition Placements which currently reside on an adapter, disregarded of the table.
-     *
-     * @param adapterId The adapter on which the requested partition placements reside
-     * @return A list of all Partition Placements, that are currently located  on that specific store
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId ) {
@@ -4922,11 +5230,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a list of all Partition Placements which currently reside on a adapter, for a specific table.
-     *
-     * @param adapterId The adapter on which the requested partition placements reside
-     * @param tableId The table for which all partition placements on a adapter should be considered
-     * @return A list of all Partition Placements, that are currently located  on that specific store for a individual table
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( int adapterId, long tableId ) {
@@ -4938,10 +5242,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns a list of all Partition Placements which are currently associated with a table.
-     *
-     * @param tableId The table on which the requested partition placements are currently associated with.
-     * @return A list of all Partition Placements, that belong to the desired table
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId ) {
@@ -4953,11 +5254,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get all Partition Placements which are associated with a individual partition Id.
-     * Identifies on which locations and how often the individual partition is placed.
-     *
-     * @param partitionId The requested partition Id
-     * @return A list of Partition Placements which are physically responsible for that partition
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogPartitionPlacement> getPartitionPlacements( long partitionId ) {
@@ -4969,9 +5266,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns all tables which are in need of special periodic treatment.
-     *
-     * @return List of tables which need to be periodically processed
+     * {@inheritDoc}
      */
     @Override
     public List<CatalogTable> getTablesForPeriodicProcessing() {
@@ -4991,9 +5286,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Registers a table to be considered for periodic processing
-     *
-     * @param tableId Id of table to be considered for periodic processing
+     * {@inheritDoc}
      */
     @Override
     public void addTableToPeriodicProcessing( long tableId ) {
@@ -5011,9 +5304,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Remove a table from periodic background processing
-     *
-     * @param tableId Id of table to be removed for periodic processing
+     * {@inheritDoc}
      */
     @Override
     public void removeTableFromPeriodicProcessing( long tableId ) {
@@ -5031,11 +5322,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Probes if a Partition Placement on a adapter for a specific partition already exists.
-     *
-     * @param adapterId Adapter on which to check
-     * @param partitionId Partition which to check
-     * @return teh response of the probe
+     * {@inheritDoc}
      */
     @Override
     public boolean checkIfExistsPartitionPlacement( int adapterId, long partitionId ) {
@@ -5044,24 +5331,36 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<CatalogKey> getTableKeys( long tableId ) {
         return keys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<CatalogIndex> getIndexes( CatalogKey key ) {
         return indexes.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
         return indexes.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<CatalogConstraint> getConstraints( CatalogKey key ) {
         return constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
@@ -5069,10 +5368,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Check whether a key is a index
-     *
-     * @param keyId The id of the key
-     * @return Whether the key is a index
+     * {@inheritDoc}
      */
     @Override
     public boolean isIndex( long keyId ) {
@@ -5081,10 +5377,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Check whether a key is a constraint
-     *
-     * @param keyId The id of the key
-     * @return Whether the key is a constraint
+     * {@inheritDoc}
      */
     @Override
     public boolean isConstraint( long keyId ) {
@@ -5093,10 +5386,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Check whether a key is a foreign key
-     *
-     * @param keyId The id of the key
-     * @return Whether the key is a foreign key
+     * {@inheritDoc}
      */
     @Override
     public boolean isForeignKey( long keyId ) {
@@ -5155,7 +5445,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             long id = keyIdBuilder.getAndIncrement();
-            CatalogKey key = new CatalogKey( id, table.id, table.schemaId, table.databaseId, columnIds, enforcementTime );
+            CatalogKey key = new CatalogKey( id, table.id, table.namespaceId, table.databaseId, columnIds, enforcementTime );
             synchronized ( this ) {
                 keys.put( id, key );
                 keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
@@ -5168,6 +5458,9 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<CatalogKey> getKeys() {
         return new ArrayList<>( keys.values() );

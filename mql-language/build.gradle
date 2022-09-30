@@ -58,10 +58,16 @@ compileJava {
     dependsOn(":sql-language:processResources")
 }
 
+delombok {
+    dependsOn(":sql-language:processResources")
+}
+
+
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java","build/generated-sources"]
+            //srcDirs = ["src/main/java","build/generated-sources"]
+            srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {

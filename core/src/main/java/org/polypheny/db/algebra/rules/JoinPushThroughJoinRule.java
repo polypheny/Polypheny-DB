@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -58,7 +58,8 @@ import org.polypheny.db.util.mapping.Mappings;
 /**
  * Rule that pushes the right input of a join into through the left input of the join, provided that the left input is also a join.
  *
- * Thus, {@code (A join B) join C} becomes {@code (A join C) join B}. The advantage of applying this rule is that it may be possible to apply conditions earlier. For instance,
+ * Thus, {@code (A join B) join C} becomes {@code (A join C) join B}. The advantage of applying this rule is that it may be
+ * possible to apply conditions earlier. For instance,
  *
  * <blockquote>
  * <pre>(sales as s join product_class as pc on true)
@@ -73,19 +74,26 @@ import org.polypheny.db.util.mapping.Mappings;
  * join product_class as pc
  * on p.product_class_id = pc.product_class_id</pre></blockquote>
  *
- * Before the rule, one join has two conditions and the other has none ({@code ON TRUE}). After the rule, each join has one condition.
+ * Before the rule, one join has two conditions and the other has none ({@code ON TRUE}). After the rule, each join
+ * has one condition.
  */
 public class JoinPushThroughJoinRule extends AlgOptRule {
 
     /**
      * Instance of the rule that works on logical joins only, and pushes to the right.
      */
-    public static final AlgOptRule RIGHT = new JoinPushThroughJoinRule( "JoinPushThroughJoinRule:right", true, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final AlgOptRule RIGHT = new JoinPushThroughJoinRule(
+            "JoinPushThroughJoinRule:right",
+            true, LogicalJoin.class,
+            AlgFactories.LOGICAL_BUILDER );
 
     /**
      * Instance of the rule that works on logical joins only, and pushes to the left.
      */
-    public static final AlgOptRule LEFT = new JoinPushThroughJoinRule( "JoinPushThroughJoinRule:left", false, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final AlgOptRule LEFT = new JoinPushThroughJoinRule(
+            "JoinPushThroughJoinRule:left",
+            false, LogicalJoin.class,
+            AlgFactories.LOGICAL_BUILDER );
 
     private final boolean right;
 
@@ -94,9 +102,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
      * Creates a JoinPushThroughJoinRule.
      */
     public JoinPushThroughJoinRule( String description, boolean right, Class<? extends Join> clazz, AlgBuilderFactory algBuilderFactory ) {
-        super(
-                operand( clazz, operand( clazz, any() ), operand( AlgNode.class, any() ) ),
-                algBuilderFactory, description );
+        super( operand( clazz, operand( clazz, any() ), operand( AlgNode.class, any() ) ), algBuilderFactory, description );
         this.right = right;
     }
 

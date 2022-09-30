@@ -16,17 +16,12 @@
 
 package org.polypheny.db.routing.routers;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionManager;
@@ -62,7 +57,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placements );
-        builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placements ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placements ) );
 
         return builders;
     }
@@ -82,7 +77,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );
-        builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placementDistribution ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placementDistribution ) );
 
         return builders;
     }
@@ -94,36 +89,6 @@ public class SimpleRouter extends AbstractDqlRouter {
             log.error( "Single build select with multiple results " );
         }
         return result.get( 0 );
-    }
-
-
-    /**
-     * Execute the table scan on the first placement of a table
-     */
-    private Map<Long, List<CatalogColumnPlacement>> selectPlacement( CatalogTable table ) {
-        // Find the adapter with the most column placements
-        int adapterIdWithMostPlacements = -1;
-        int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
-            if ( entry.getValue().size() > numOfPlacements ) {
-                adapterIdWithMostPlacements = entry.getKey();
-                numOfPlacements = entry.getValue().size();
-            }
-        }
-
-        // Take the adapter with most placements as base and add missing column placements
-        List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( long cid : table.columnIds ) {
-            if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
-                placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
-            } else {
-                placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );
-            }
-        }
-
-        return new HashMap<Long, List<CatalogColumnPlacement>>() {{
-            put( table.partitionProperty.partitionIds.get( 0 ), placementList );
-        }};
     }
 
 

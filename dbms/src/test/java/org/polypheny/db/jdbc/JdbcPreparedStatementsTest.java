@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -439,6 +439,7 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.setShort( 2, (short) 5 );
                     preparedInsert.setString( 3, "Bar" );
                     preparedInsert.execute();
+                    connection.commit();
 
                     // Update
                     PreparedStatement preparedUpdate = connection.prepareStatement( "UPDATE pstest SET tsmallint = tsmallint + ? WHERE tinteger = ?" );
@@ -446,6 +447,7 @@ public class JdbcPreparedStatementsTest {
                     preparedUpdate.setInt( 2, 1 );
                     preparedUpdate.executeUpdate();
 
+                    connection.commit();
                     // Check
                     PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tsmallint,tvarchar FROM pstest WHERE tinteger = ? OR tinteger = ? ORDER BY tinteger" );
                     preparedSelect.setInt( 1, 1 );
@@ -508,6 +510,7 @@ public class JdbcPreparedStatementsTest {
 
                     preparedInsert.executeBatch();
                     preparedUpdate.executeBatch();
+                    connection.commit();
 
                     // Check
                     PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tsmallint,tvarchar FROM pstest WHERE tinteger = ? OR tinteger = ? ORDER BY tinteger" );

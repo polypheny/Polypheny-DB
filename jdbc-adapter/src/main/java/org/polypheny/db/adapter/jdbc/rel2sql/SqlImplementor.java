@@ -55,11 +55,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.jdbc.JdbcScan;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
-import org.polypheny.db.adapter.jdbc.JdbcTableScan;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.JoinType;
@@ -67,7 +69,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -91,28 +93,28 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexWindow;
 import org.polypheny.db.rex.RexWindowBound;
-import org.polypheny.db.sql.sql.SqlAggFunction;
-import org.polypheny.db.sql.sql.SqlBasicCall;
-import org.polypheny.db.sql.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.sql.SqlCall;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.SqlDialect.IntervalParameterStrategy;
-import org.polypheny.db.sql.sql.SqlDynamicParam;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.sql.SqlJoin;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.SqlMatchRecognize;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.sql.sql.SqlSelectKeyword;
-import org.polypheny.db.sql.sql.SqlSetOperator;
-import org.polypheny.db.sql.sql.SqlWindow;
-import org.polypheny.db.sql.sql.fun.SqlCase;
-import org.polypheny.db.sql.sql.fun.SqlSumEmptyIsZeroAggFunction;
-import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.sql.language.SqlAggFunction;
+import org.polypheny.db.sql.language.SqlBasicCall;
+import org.polypheny.db.sql.language.SqlBinaryOperator;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlDialect.IntervalParameterStrategy;
+import org.polypheny.db.sql.language.SqlDynamicParam;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlIntervalQualifier;
+import org.polypheny.db.sql.language.SqlJoin;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlMatchRecognize;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlOperator;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.SqlSelectKeyword;
+import org.polypheny.db.sql.language.SqlSetOperator;
+import org.polypheny.db.sql.language.SqlWindow;
+import org.polypheny.db.sql.language.fun.SqlCase;
+import org.polypheny.db.sql.language.fun.SqlSumEmptyIsZeroAggFunction;
+import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
@@ -191,13 +193,13 @@ public abstract class SqlImplementor {
         for ( Ord<AlgNode> input : Ord.zip( alg.getInputs() ) ) {
             final Result result = visitChild( input.i, input.e );
             if ( node == null ) {
-                if ( input.getValue() instanceof JdbcTableScan ) {
+                if ( input.getValue() instanceof JdbcScan ) {
                     node = result.asSelect( ((JdbcTable) ((AlgOptTableImpl) input.getValue().getTable()).getTable()).getNodeList() );
                 } else {
                     node = result.asSelect();
                 }
             } else {
-                if ( input.getValue() instanceof JdbcTableScan ) {
+                if ( input.getValue() instanceof JdbcScan ) {
                     node = (SqlNode) operator.createCall( POS, node, result.asSelect( ((JdbcTable) ((AlgOptTableImpl) input.getValue().getTable()).getTable()).getNodeList() ) );
                 } else {
                     node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
@@ -572,6 +574,16 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createTimestamp( literal.getValueAs( TimestampString.class ), literal.getType().getPrecision(), POS );
                         case BINARY:
                             return SqlLiteral.createBinaryString( literal.getValueAs( byte[].class ), POS );
+                        case ARRAY:
+                            if ( dialect.supportsNestedArrays() ) {
+                                List<SqlNode> array = literal.getRexList().stream().map( e -> toSql( program, e ) ).collect( Collectors.toList() );
+                                return SqlLiteral.createArray( array, literal.getType(), POS );
+                            } else {
+                                return SqlLiteral.createCharString( literal.getValueAs( String.class ), POS );
+                            }
+                        case GRAPH:
+                            // node or edge
+                            return SqlLiteral.createCharString( new ByteString( literal.getValueAs( byte[].class ) ).toBase64String(), POS );
                         case ANY:
                         case NULL:
                             switch ( literal.getTypeName() ) {
@@ -1163,7 +1175,7 @@ public abstract class SqlImplementor {
             if ( needNew ) {
                 select = subSelect();
             } else {
-                if ( explicitColumnNames && alg.getInputs().size() == 1 && alg.getInput( 0 ) instanceof JdbcTableScan ) {
+                if ( explicitColumnNames && alg.getInputs().size() == 1 && alg.getInput( 0 ) instanceof JdbcScan ) {
                     select = asSelect( ((JdbcTable) ((AlgOptTableImpl) alg.getInput( 0 ).getTable()).getTable()).getNodeList() );
                 } else {
                     select = asSelect();

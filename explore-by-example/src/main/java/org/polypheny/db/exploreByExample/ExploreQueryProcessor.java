@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -46,26 +47,26 @@ import org.polypheny.db.util.Pair;
 public class ExploreQueryProcessor {
 
     private final TransactionManager transactionManager;
-    private final String databaseName;
-    private final String userName;
+    private final long databaseId;
+    private final long userId;
     private final static int DEFAULT_SIZE = 200;
 
 
-    public ExploreQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
+    public ExploreQueryProcessor( final TransactionManager transactionManager, long userId, long databaseId ) {
         this.transactionManager = transactionManager;
-        this.userName = userName;
-        this.databaseName = databaseName;
+        this.userId = userId;
+        this.databaseId = databaseId;
     }
 
 
     public ExploreQueryProcessor( final TransactionManager transactionManager, Authenticator authenticator ) {
-        this( transactionManager, "pa", "APP" );
+        this( transactionManager, Catalog.defaultUserId, Catalog.defaultDatabaseId );
     }
 
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false, "Explore-by-Example", MultimediaFlavor.FILE );
+            return transactionManager.startTransaction( userId, databaseId, false, "Explore-by-Example", MultimediaFlavor.FILE );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
@@ -113,7 +114,7 @@ public class ExploreQueryProcessor {
 
 
     private ExploreQueryResult executeSqlSelect( final Statement statement, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
-        PolyResult result;
+        PolyImplementation result;
         try {
             result = processQuery( statement, sqlSelect );
         } catch ( Throwable t ) {
@@ -160,11 +161,11 @@ public class ExploreQueryProcessor {
     }
 
 
-    private PolyResult processQuery( Statement statement, String sql ) {
-        PolyResult result;
+    private PolyImplementation processQuery( Statement statement, String sql ) {
+        PolyImplementation result;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
 
-        Node parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
 
         if ( parsed.isA( Kind.DDL ) ) {
             // explore by example should not execute any ddls

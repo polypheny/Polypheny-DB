@@ -31,6 +31,8 @@ import org.polypheny.db.languages.mql.MqlUpdate;
 import org.polypheny.db.languages.mql.MqlShowDatabase;
 import org.polypheny.db.languages.mql.MqlUseDatabase;
 import org.polypheny.db.languages.mql.MqlDropDatabase;
+import org.polypheny.db.languages.mql.MqlAddPlacement;
+import org.polypheny.db.languages.mql.MqlDeletePlacement;
 import org.polypheny.db.languages.mql.parser.MqlAbstractParserImpl;
 import org.polypheny.db.languages.mql.parser.MqlParseException;
 import org.polypheny.db.languages.ParserPos;
@@ -115,7 +117,7 @@ PARSER_END(MqlParserImpl)
                  | "\f"
 }
 
-TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
+TOKEN : /* IDENTIFIERS */ // for nested documentValues check out Document_Splits()
 {
 < USE_DB: "use db" >
 |
@@ -170,6 +172,10 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 < DELETE_ONE: "deleteOne" >
 |
 < DELETE_MANY: "deleteMany" >
+|
+< ADD_PLACEMENT: "addPlacement(" >
+|
+< DELETE_PLACEMENT: "deletePlacement(">
 |
 < CREATE_VIEW: "createView(" >
 |
@@ -464,6 +470,8 @@ MqlNode Collection_Statement(String collection):
     |
         n = Drop_Statement(collection)
     |
+        n = Modify_Placement(collection)
+    |
         n = Delete_Statement(collection)
     |
         n = Save_Statement(collection)
@@ -473,6 +481,26 @@ MqlNode Collection_Statement(String collection):
     {return n;}
 
 }
+
+MqlNode Modify_Placement(String collection):
+{
+    List<String> stores = new ArrayList();
+    String store = null;
+}
+{
+    <ADD_PLACEMENT> store=Literal() <EOB>
+    {
+        stores.add( store  );
+        return new MqlAddPlacement( getPos(), collection, stores );
+    }
+    |
+    <DELETE_PLACEMENT> store=Literal() <EOB>
+    {
+        stores.add( store );
+        return new MqlDeletePlacement( getPos(), collection, stores );
+    }
+}
+
 
 MqlNode Delete_Statement(String collection):
 {

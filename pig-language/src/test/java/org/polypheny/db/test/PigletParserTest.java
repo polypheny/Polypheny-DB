@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public class PigletParserTest {
     @Test
     public void testScan() throws ParseException {
         final String s = "A = LOAD 'EMP';";
-        final String expected = "LogicalTableScan(table=[[scott, EMP]])\n";
+        final String expected = "LogicalScan(table=[[scott, EMP]])\n";
         pig( s ).explainContains( expected );
     }
 
@@ -119,7 +119,7 @@ public class PigletParserTest {
     @Test
     public void testDump() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n" + "DUMP A;";
-        final String expected = "LogicalTableScan(table=[[scott, DEPT]])\n";
+        final String expected = "LogicalScan(table=[[scott, DEPT]])\n";
         final String out = "(10,ACCOUNTING,NEW YORK)\n"
                 + "(20,RESEARCH,DALLAS)\n"
                 + "(30,SALES,CHICAGO)\n"
@@ -143,7 +143,7 @@ public class PigletParserTest {
     @Test
     public void testForeach() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n" + "B = FOREACH A GENERATE DNAME, $2;";
-        final String expected = "LogicalProject(DNAME=[$1], LOC=[$2])\n" + "  LogicalTableScan(table=[[scott, DEPT]])\n";
+        final String expected = "LogicalProject(DNAME=[$1], LOC=[$2])\n" + "  LogicalScan(table=[[scott, DEPT]])\n";
         pig( s ).explainContains( expected );
     }
 
@@ -158,7 +158,7 @@ public class PigletParserTest {
                 + "  E = LIMIT D 3;\n"
                 + "  GENERATE E.DEPTNO, E.EMPNO;\n"
                 + "}";
-        final String expected = "LogicalProject(DNAME=[$1], LOC=[$2])\n" + "  LogicalTableScan(table=[[scott, DEPT]])\n";
+        final String expected = "LogicalProject(DNAME=[$1], LOC=[$2])\n" + "  LogicalScan(table=[[scott, DEPT]])\n";
         pig( s ).explainContains( expected );
     }
 
@@ -169,7 +169,7 @@ public class PigletParserTest {
         final String expected = ""
                 + "LogicalAggregate(group=[{7}], A=[COLLECT($8)])\n"
                 + "  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], $f8=[ROW($0, $1, $2, $3, $4, $5, $6, $7)])\n"
-                + "    LogicalTableScan(table=[[scott, EMP]])\n";
+                + "    LogicalScan(table=[[scott, EMP]])\n";
         pig( s ).explainContains( expected );
     }
 
@@ -207,7 +207,7 @@ public class PigletParserTest {
     @Test
     public void testFilter() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n" + "B = FILTER A BY DEPTNO;";
-        final String expected = "LogicalFilter(condition=[$0])\n" + "  LogicalTableScan(table=[[scott, DEPT]])\n";
+        final String expected = "LogicalFilter(condition=[$0])\n" + "  LogicalScan(table=[[scott, DEPT]])\n";
         pig( s ).explainContains( expected );
     }
 
@@ -238,7 +238,7 @@ public class PigletParserTest {
     @Test
     public void testLimit() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n" + "B = LIMIT A 3;";
-        final String expected = "LogicalSort(fetch=[3])\n" + "  LogicalTableScan(table=[[scott, DEPT]])\n";
+        final String expected = "LogicalSort(fetch=[3])\n" + "  LogicalScan(table=[[scott, DEPT]])\n";
         pig( s ).explainContains( expected );
     }
 
@@ -273,7 +273,7 @@ public class PigletParserTest {
                 + "B = ORDER A BY DEPTNO DESC, DNAME;";
         final String expected = ""
                 + "LogicalSort(sort0=[$0], sort1=[$1], dir0=[DESC], dir1=[ASC])\n"
-                + "  LogicalTableScan(table=[[scott, DEPT]])\n";
+                + "  LogicalScan(table=[[scott, DEPT]])\n";
         pig( s ).explainContains( expected );
     }
 
@@ -284,7 +284,7 @@ public class PigletParserTest {
                 + "B = ORDER A BY * DESC;";
         final String expected = ""
                 + "LogicalSort(sort0=[$0], sort1=[$1], sort2=[$2], dir0=[DESC], dir1=[DESC], dir2=[DESC])\n"
-                + "  LogicalTableScan(table=[[scott, DEPT]])\n";
+                + "  LogicalScan(table=[[scott, DEPT]])\n";
         pig( s ).explainContains( expected );
     }
 

@@ -21,17 +21,24 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
+import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.CatalogGraphMapping;
+import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartition;
@@ -70,6 +77,24 @@ import org.polypheny.db.type.PolyType;
 public abstract class MockCatalog extends Catalog {
 
     @Override
+    public void dropCollectionPlacement( long id, int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogGraphPlacement> getGraphPlacements( int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void deleteCollection( long id ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void commit() throws NoTablePrimaryKeyException {
         throw new NotImplementedException();
     }
@@ -77,12 +102,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public int addUser( String name, String password ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public void setUserSchema( int userId, long schemaId ) {
         throw new NotImplementedException();
     }
 
@@ -148,6 +167,72 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public long addGraph( long databaseId, String name, List<DataStore> stores, boolean modifiable, boolean ifNotExists, boolean replace ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void deleteGraph( long id ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void removeGraphAlias( long graphId, String alias, boolean ifNotExists ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogGraphMapping getGraphMapping( long graphId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addGraphLogistics( long id, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addGraphPlacement( int adapterId, long graphId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void deleteGraphPlacement( int adapterId, long graphId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogGraphPlacement getGraphPlacement( long graphId, int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogGraphDatabase getGraph( long id ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogGraphDatabase> getGraphs( long databaseId, Pattern graphName ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public CatalogDatabase getDatabase( long databaseId ) {
         throw new NotImplementedException();
     }
@@ -184,7 +269,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) {
+    public long addNamespace( String name, long databaseId, int ownerId, NamespaceType namespaceType ) {
         throw new NotImplementedException();
     }
 
@@ -262,19 +347,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable ) {
+    public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
+    public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
+    public long addMaterializedView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         throw new NotImplementedException();
     }
 
@@ -286,13 +371,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public boolean checkIfExistsTable( long schemaId, String tableName ) {
+    public boolean checkIfExistsEntity( long namespaceId, String entityName ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public boolean checkIfExistsTable( long tableId ) {
+    public boolean checkIfExistsEntity( long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -358,7 +443,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -419,6 +504,54 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void updateMaterializedViewRefreshTime( long materializedId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogCollection getCollection( long collectionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogCollection> getCollections( long namespaceId, Pattern namePattern ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addCollection( Long id, String name, long schemaId, int currentUserId, EntityType entity, boolean modifiable ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addCollectionPlacement( int adapterId, long collectionId, PlacementType placementType ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogCollectionMapping getCollectionMapping( long id ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long addCollectionLogistics( long schemaId, String name, List<DataStore> stores, boolean onlyPlacement ) throws GenericCatalogException {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogCollectionPlacement> getCollectionPlacementsByAdapter( int adapterId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogCollectionPlacement getCollectionPlacement( long collectionId, int adapterId ) {
         throw new NotImplementedException();
     }
 
@@ -1222,7 +1355,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public void updateGraphPlacementPhysicalNames( long id, int adapterId, String physicalGraphName ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateCollectionPartitionPhysicalNames( long collectionId, int adapterId, String physicalNamespaceName, String namespaceName, String physicalCollectionName ) {
         throw new NotImplementedException();
     }
 

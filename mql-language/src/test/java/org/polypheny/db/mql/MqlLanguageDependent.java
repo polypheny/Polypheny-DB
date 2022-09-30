@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.sql.core.SqlRegisterer;
+import org.polypheny.db.sql.SqlRegisterer;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.FamilyOperandTypeChecker;

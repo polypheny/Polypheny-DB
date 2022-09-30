@@ -37,6 +37,14 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":mql-language:processResources")
+}
+
+delombok {
+    dependsOn(":mql-language:processResources")
+}
+
 
 /**
  * JARs

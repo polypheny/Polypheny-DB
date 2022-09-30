@@ -27,27 +27,27 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
@@ -76,7 +76,7 @@ public class ViewManager {
             exprs.add( rexBuilder.makeInputRef( other, i ) );
         }
 
-        AlgNode algNode = ((LogicalViewScan) other).getAlgNode();
+        AlgNode algNode = ((LogicalRelViewScan) other).getAlgNode();
 
         if ( algNode instanceof Project && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
             return algNode;
@@ -118,7 +118,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( TableScan scan ) {
+        public AlgNode visit( Scan scan ) {
             if ( depth == 0 ) {
                 return checkNode( scan );
             }
@@ -233,7 +233,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalTableModify modify ) {
+        public AlgNode visit( LogicalModify modify ) {
             handleNodeType( modify );
             depth++;
             return modify;
@@ -251,14 +251,14 @@ public class ViewManager {
 
 
         public AlgNode checkNode( AlgNode other ) {
-            if ( other instanceof LogicalViewScan ) {
+            if ( other instanceof LogicalRelViewScan ) {
                 return expandViewNode( other );
-            } else if ( doesSubstituteOrderBy && other instanceof LogicalTableScan ) {
+            } else if ( doesSubstituteOrderBy && other instanceof LogicalScan ) {
                 if ( other.getTable() instanceof AlgOptTableImpl ) {
                     if ( other.getTable().getTable() instanceof LogicalTable ) {
                         long tableId = ((LogicalTable) ((AlgOptTableImpl) other.getTable()).getTable()).getTableId();
                         CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
-                        if ( catalogtable.tableType == TableType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
+                        if ( catalogtable.entityType == EntityType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
                             return orderMaterialized( other );
                         }
                     }
@@ -271,16 +271,16 @@ public class ViewManager {
 
         /**
          * This method sends the visitor of into the {@link AlgNode} to replace
-         * <code>LogicalViewTableScan</code> with <code>LogicalTableScan</code>
+         * <code>LogicalViewScan</code> with <code>LogicalScan</code>
          *
          * As there is the possibility for the root {@link AlgNode} to be already be a view
          * it has to start with the AlgRoot and replace the initial AlgNode
          *
          * @param logicalRoot the AlgRoot before the transformation
-         * @return the AlgRoot after replacing all <code>LogicalViewTableScan</code>s
+         * @return the AlgRoot after replacing all <code>LogicalViewScan</code>s
          */
         public AlgRoot startSubstitution( AlgRoot logicalRoot ) {
-            if ( logicalRoot.alg instanceof LogicalViewScan ) {
+            if ( logicalRoot.alg instanceof LogicalRelViewScan ) {
                 AlgNode node = checkNode( logicalRoot.alg );
                 return AlgRoot.of( node, logicalRoot.kind );
             } else {

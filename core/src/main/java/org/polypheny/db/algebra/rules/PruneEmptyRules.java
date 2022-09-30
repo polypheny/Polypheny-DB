@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,10 +53,12 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -119,7 +121,7 @@ public abstract class PruneEmptyRules {
             };
 
     /**
-     * Rule that removes empty children of a {@link org.polypheny.db.algebra.logical.LogicalMinus}.
+     * Rule that removes empty children of a {@link LogicalMinus}.
      *
      * Examples:
      *
@@ -193,7 +195,7 @@ public abstract class PruneEmptyRules {
 
 
     /**
-     * Rule that converts a {@link org.polypheny.db.algebra.logical.LogicalProject} to empty if its child is empty.
+     * Rule that converts a {@link LogicalProject} to empty if its child is empty.
      *
      * Examples:
      *
@@ -207,7 +209,7 @@ public abstract class PruneEmptyRules {
                     "PruneEmptyProject" );
 
     /**
-     * Rule that converts a {@link org.polypheny.db.algebra.logical.LogicalFilter}
+     * Rule that converts a {@link LogicalFilter}
      * to empty if its child is empty.
      *
      * <p>Examples:

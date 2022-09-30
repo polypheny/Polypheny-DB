@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.rex.RexBuilder;
@@ -109,7 +109,7 @@ class LixToAlgTranslator {
                             toRex( (FunctionExpression) call.expressions.get( 0 ), input ) );
 
                 case AS_QUERYABLE:
-                    return LogicalTableScan.create(
+                    return LogicalScan.create(
                             cluster,
                             AlgOptTableImpl.create(
                                     null,
@@ -118,7 +118,7 @@ class LixToAlgTranslator {
                                     call.targetExpression ) );
 
                 case SCHEMA_GET_TABLE:
-                    return LogicalTableScan.create(
+                    return LogicalScan.create(
                             cluster,
                             AlgOptTableImpl.create(
                                     null,

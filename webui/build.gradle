@@ -18,8 +18,8 @@ dependencies {
     implementation project(":mql-language")
     implementation project(":pig-language")
     implementation project(":cql-language")
+    implementation project(":cypher-language")
     implementation project(":monitoring")
-    implementation project(":statistic")
     implementation project(":explore-by-example")
 
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
@@ -63,6 +63,19 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":cql-language:processResources")
+    dependsOn(":cypher-language:processResources")
+    dependsOn(":explore-by-example:processResources")
+    dependsOn(":mql-language:processResources")
+    dependsOn(":pig-language:processResources")
+}
+
+processResources {
+    dependsOn(":webui:unzipUiFiles")
+    dependsOn(":pig-language:processResources")
+}
+
 
 // unzip ui files
 task unzipUiFiles(type: Copy) {
@@ -93,6 +106,7 @@ jar {
         attributes "Version": "$project.version"
     }
     from("$buildDir/webapp") // include webapp files
+    duplicatesStrategy = 'include'
 }
 java {
     //withJavadocJar()

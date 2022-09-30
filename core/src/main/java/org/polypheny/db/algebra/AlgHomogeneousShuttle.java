@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,20 +34,20 @@
 package org.polypheny.db.algebra;
 
 
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 
 
 /**
@@ -68,7 +68,7 @@ public class AlgHomogeneousShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
+    public AlgNode visit( Scan scan ) {
         return visit( (AlgNode) scan );
     }
 

@@ -95,21 +95,21 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
@@ -120,7 +120,7 @@ import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -162,62 +162,62 @@ import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.LogicalView;
+import org.polypheny.db.schema.LogicalRelView;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.sql.sql.SqlAggFunction;
-import org.polypheny.db.sql.sql.SqlBasicCall;
-import org.polypheny.db.sql.sql.SqlCall;
-import org.polypheny.db.sql.sql.SqlCallBinding;
-import org.polypheny.db.sql.sql.SqlDelete;
-import org.polypheny.db.sql.sql.SqlDynamicParam;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlInsert;
-import org.polypheny.db.sql.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.sql.SqlJoin;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.SqlMatchRecognize;
-import org.polypheny.db.sql.sql.SqlMerge;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.sql.sql.SqlNumericLiteral;
-import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.sql.sql.SqlOrderBy;
-import org.polypheny.db.sql.sql.SqlSampleSpec;
-import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.sql.sql.SqlSelectKeyword;
-import org.polypheny.db.sql.sql.SqlSetOperator;
-import org.polypheny.db.sql.sql.SqlUnnestOperator;
-import org.polypheny.db.sql.sql.SqlUpdate;
-import org.polypheny.db.sql.sql.SqlUtil;
-import org.polypheny.db.sql.sql.SqlValuesOperator;
-import org.polypheny.db.sql.sql.SqlWindow;
-import org.polypheny.db.sql.sql.SqlWith;
-import org.polypheny.db.sql.sql.SqlWithItem;
-import org.polypheny.db.sql.sql.fun.SqlCase;
-import org.polypheny.db.sql.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.sql.sql.fun.SqlInOperator;
-import org.polypheny.db.sql.sql.fun.SqlQuantifyOperator;
-import org.polypheny.db.sql.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.sql.validate.AggregatingSelectScope;
-import org.polypheny.db.sql.sql.validate.CollectNamespace;
-import org.polypheny.db.sql.sql.validate.DelegatingScope;
-import org.polypheny.db.sql.sql.validate.ListScope;
-import org.polypheny.db.sql.sql.validate.MatchRecognizeScope;
-import org.polypheny.db.sql.sql.validate.ParameterScope;
-import org.polypheny.db.sql.sql.validate.SelectScope;
-import org.polypheny.db.sql.sql.validate.SqlQualified;
-import org.polypheny.db.sql.sql.validate.SqlUserDefinedTableFunction;
-import org.polypheny.db.sql.sql.validate.SqlUserDefinedTableMacro;
-import org.polypheny.db.sql.sql.validate.SqlValidator;
-import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.sql.sql.validate.SqlValidatorNamespace;
-import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.sql.language.SqlAggFunction;
+import org.polypheny.db.sql.language.SqlBasicCall;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlCallBinding;
+import org.polypheny.db.sql.language.SqlDelete;
+import org.polypheny.db.sql.language.SqlDynamicParam;
+import org.polypheny.db.sql.language.SqlFunction;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlInsert;
+import org.polypheny.db.sql.language.SqlIntervalQualifier;
+import org.polypheny.db.sql.language.SqlJoin;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlMatchRecognize;
+import org.polypheny.db.sql.language.SqlMerge;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlNumericLiteral;
+import org.polypheny.db.sql.language.SqlOperator;
+import org.polypheny.db.sql.language.SqlOrderBy;
+import org.polypheny.db.sql.language.SqlSampleSpec;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.SqlSelectKeyword;
+import org.polypheny.db.sql.language.SqlSetOperator;
+import org.polypheny.db.sql.language.SqlUnnestOperator;
+import org.polypheny.db.sql.language.SqlUpdate;
+import org.polypheny.db.sql.language.SqlUtil;
+import org.polypheny.db.sql.language.SqlValuesOperator;
+import org.polypheny.db.sql.language.SqlWindow;
+import org.polypheny.db.sql.language.SqlWith;
+import org.polypheny.db.sql.language.SqlWithItem;
+import org.polypheny.db.sql.language.fun.SqlCase;
+import org.polypheny.db.sql.language.fun.SqlCountAggFunction;
+import org.polypheny.db.sql.language.fun.SqlInOperator;
+import org.polypheny.db.sql.language.fun.SqlQuantifyOperator;
+import org.polypheny.db.sql.language.fun.SqlRowOperator;
+import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.language.validate.AggregatingSelectScope;
+import org.polypheny.db.sql.language.validate.CollectNamespace;
+import org.polypheny.db.sql.language.validate.DelegatingScope;
+import org.polypheny.db.sql.language.validate.ListScope;
+import org.polypheny.db.sql.language.validate.MatchRecognizeScope;
+import org.polypheny.db.sql.language.validate.ParameterScope;
+import org.polypheny.db.sql.language.validate.SelectScope;
+import org.polypheny.db.sql.language.validate.SqlQualified;
+import org.polypheny.db.sql.language.validate.SqlUserDefinedTableFunction;
+import org.polypheny.db.sql.language.validate.SqlUserDefinedTableMacro;
+import org.polypheny.db.sql.language.validate.SqlValidator;
+import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
+import org.polypheny.db.sql.language.validate.SqlValidatorNamespace;
+import org.polypheny.db.sql.language.validate.SqlValidatorScope;
+import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -276,7 +276,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private final Deque<String> datasetStack = new ArrayDeque<>();
 
     /**
-     * Mapping of non-correlated sub-queries that have been converted to their equivalent constants. Used to avoid re-evaluating the sub-query if it's already been evaluated.
+     * Mapping of non-correlated sub-queries that have been converted to their equivalent constants. Used to avoid
+     * re-evaluating the sub-query if it's already been evaluated.
      */
     private final Map<SqlNode, RexNode> mapConvertedNonCorrSubqs = new HashMap<>();
 
@@ -589,8 +590,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         if ( r instanceof Delta ) {
             return requiredCollation( ((Delta) r).getInput() );
         }
-        if ( r instanceof LogicalViewScan ) {
-            return ((LogicalViewScan) r).getAlgCollation();
+        if ( r instanceof LogicalRelViewScan ) {
+            return ((LogicalRelViewScan) r).getAlgCollation();
         }
         throw new AssertionError();
     }
@@ -644,7 +645,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     /**
      * Having translated 'SELECT ... FROM ... [GROUP BY ...] [HAVING ...]', adds a relational expression to make the results unique.
      *
-     * If the SELECT clause contains duplicate expressions, adds {@link org.polypheny.db.algebra.logical.LogicalProject}s so that we are grouping on the minimal set of keys. The performance gain isn't huge, but
+     * If the SELECT clause contains duplicate expressions, adds {@link LogicalProject}s so that we are grouping on the minimal set of keys. The performance gain isn't huge, but
      * it is difficult to detect these duplicate expressions later.
      *
      * @param bb Blackboard
@@ -2110,10 +2111,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final AlgNode tableRel;
         if ( config.isConvertTableAccess() ) {
             tableRel = toAlg( table );
-        } else if ( table instanceof AlgOptTableImpl && (((AlgOptTableImpl) table).getTable()) instanceof LogicalView ) {
-            tableRel = LogicalViewScan.create( cluster, table );
+        } else if ( table instanceof AlgOptTableImpl && (((AlgOptTableImpl) table).getTable()) instanceof LogicalRelView ) {
+            tableRel = LogicalRelViewScan.create( cluster, table );
         } else {
-            tableRel = LogicalTableScan.create( cluster, table );
+            tableRel = LogicalScan.create( cluster, table );
         }
         bb.setRoot( tableRel, true );
         if ( usedDataset[0] ) {
@@ -2865,16 +2866,16 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     targetTable,
                     catalogReader,
                     source,
-                    LogicalTableModify.Operation.INSERT,
+                    LogicalModify.Operation.INSERT,
                     null,
                     null,
                     false );
         }
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 source,
-                LogicalTableModify.Operation.INSERT,
+                LogicalModify.Operation.INSERT,
                 null,
                 null,
                 false );
@@ -2956,7 +2957,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final AlgOptTable targetTable = getTargetTable( call );
         final AlgDataType targetRowType = AlgOptTableImpl.realRowType( targetTable );
         final List<AlgDataTypeField> targetFields = targetRowType.getFieldList();
-        boolean isDocument = call.getSchemaType() == SchemaType.DOCUMENT;
+        boolean isDocument = call.getSchemaType() == NamespaceType.DOCUMENT;
 
         List<RexNode> sourceExps = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
         List<String> fieldNames = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) ); // TODO DL: reevaluate and make final again?
@@ -3079,7 +3080,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         } else {
 
             boolean allowDynamic = false;
-            if ( call.getSchemaType() == SchemaType.DOCUMENT ) {
+            if ( call.getSchemaType() == NamespaceType.DOCUMENT ) {
                 allowDynamic = true;
             }
 
@@ -3138,11 +3139,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private AlgNode convertDelete( SqlDelete call ) {
         AlgOptTable targetTable = getTargetTable( call );
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 sourceRel,
-                LogicalTableModify.Operation.DELETE,
+                LogicalModify.Operation.DELETE,
                 null,
                 null,
                 false );
@@ -3173,11 +3174,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 sourceRel,
-                LogicalTableModify.Operation.UPDATE,
+                LogicalModify.Operation.UPDATE,
                 targetColumnNameList,
                 rexNodeSourceExpressionListBuilder.build(),
                 false );
@@ -3250,11 +3251,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         algBuilder.push( join ).project( projects );
 
-        return LogicalTableModify.create(
+        return LogicalModify.create(
                 targetTable,
                 catalogReader,
                 algBuilder.build(),
-                LogicalTableModify.Operation.MERGE,
+                LogicalModify.Operation.MERGE,
                 targetColumnNameList,
                 null,
                 false );

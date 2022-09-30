@@ -16,6 +16,8 @@
 
 package org.polypheny.db.docker;
 
+import static java.lang.String.format;
+
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.async.ResultCallbackTemplate;
@@ -35,6 +37,15 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import com.google.common.collect.ImmutableList;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
@@ -64,6 +76,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
  * For now, we have no way to determent if a previously created/running container with the same name
  * was created by Polypheny, so we try to reuse it.
  */
+@Slf4j
 public class DockerInstance extends DockerManager {
 
     @Getter
@@ -74,7 +87,7 @@ public class DockerInstance extends DockerManager {
     private final List<Image> availableImages = new ArrayList<>();
     private final HashMap<Integer, ImmutableList<String>> containersOnAdapter = new HashMap<>();
 
-    // as Docker does not allow two containers with the same name or which expose the same port ( ports only for running containers )
+    // As Docker does not allow two containers with the same name or which expose the same port (ports only for running containers )
     // we have to track them, so we can return correct messages to the user
     @Getter
     private final List<Integer> usedPorts = new ArrayList<>();
@@ -92,7 +105,7 @@ public class DockerInstance extends DockerManager {
         this.instanceId = instanceId;
         this.client = generateClient( this.instanceId );
 
-        dockerRunning = testDockerRunning( client );
+        dockerRunning = probeDocker( client ).isSuccessful();
         RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( dockerRunning );
 
         if ( dockerRunning ) {
@@ -116,7 +129,7 @@ public class DockerInstance extends DockerManager {
         Catalog catalog = Catalog.getInstance();
 
         outer:
-        for ( com.github.dockerjava.api.model.Container container : client.listContainersCmd().withShowAll( true ).exec() ) {// docker returns the names with a prefixed "/", so we remove it
+        for ( com.github.dockerjava.api.model.Container container : client.listContainersCmd().withShowAll( true ).exec() ) {// Docker returns the names with a prefixed "/", so we remove it
             List<String> names = Arrays
                     .stream( container.getNames() )
                     .map( cont -> cont.substring( 1 ) )
@@ -124,14 +137,13 @@ public class DockerInstance extends DockerManager {
 
             List<String> normalizedNames = names.stream().map( Container::getFromPhysicalName ).collect( Collectors.toList() );
 
-            // when we have old containers, which belonged to a non-consistent adapter we remove them
-
+            // When we have old containers, which belonged to a non-consistent adapter we remove them
             for ( String name : names ) {
                 String[] splits = name.split( "_polypheny_" );
                 if ( splits.length == 2 ) {
                     String unparsedAdapterId = splits[1];
                     boolean isTestContainer = splits[1].contains( "_test" );
-                    // if the container was annotate with "_test", it has to be deleted if a new run in testMode was started
+                    // If the container was annotated with "_test", it has to be deleted if a new run in testMode was started
                     if ( isTestContainer ) {
                         unparsedAdapterId = unparsedAdapterId.replace( "_test", "" );
                     }
@@ -139,7 +151,7 @@ public class DockerInstance extends DockerManager {
                     int adapterId = Integer.parseInt( unparsedAdapterId );
                     if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer || Catalog.resetDocker ) {
                         idsToRemove.put( container.getId(), container.getState().equalsIgnoreCase( "running" ) );
-                        // as we remove this container later we skip the name and port adding
+                        // As we remove this container later we skip the name and port adding
                         continue outer;
                     }
                 }
@@ -149,13 +161,16 @@ public class DockerInstance extends DockerManager {
             usedNames.addAll( normalizedNames );
         }
 
-        // we have to check if we accessed a mocking catalog as we don't want to remove all dockerInstance when running tests
-
+        // We have to check if we accessed a mocking catalog as we don't want to remove all dockerInstance when running tests
         idsToRemove.forEach( ( id, isRunning ) -> {
-            if ( isRunning ) {
-                client.stopContainerCmd( id ).exec();
+            try {
+                if ( isRunning ) {
+                    client.stopContainerCmd( id ).exec();
+                }
+                client.removeContainerCmd( id ).exec();
+            } catch ( Exception e ) {
+                log.warn( "Error while removing old docker container." );
             }
-            client.removeContainerCmd( id ).exec();
         } );
     }
 
@@ -193,12 +208,65 @@ public class DockerInstance extends DockerManager {
     }
 
 
-    private boolean testDockerRunning( DockerClient client ) {
+    private DockerStatus probeDocker( DockerClient client ) {
         try {
-            return null != client.infoCmd().exec();
+            if ( !dockerRunning ) {
+                refreshClient();
+            }
+
+            return new DockerStatus( instanceId, null != client.infoCmd().exec() );
         } catch ( Exception e ) {
-            return false;
+            // something wrong with the connection
+            return getCertStatus();
         }
+    }
+
+
+    private void refreshClient() {
+        this.client = generateClient( instanceId );
+    }
+
+
+    private DockerStatus getCertStatus() {
+        PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
+        if ( !dirManager.checkIfExists( "certs" ) ) {
+            return new DockerStatus(
+                    instanceId,
+                    false,
+                    "Connection certificates are not present, try restarting the Docker container." );
+        }
+
+        if ( !dirManager.checkIfExists( "certs/localhost" ) || !dirManager.checkIfExists( "certs/localhost/client" ) ) {
+            return new DockerStatus(
+                    instanceId,
+                    false,
+                    format( "Connection certificates are at the wrong location, try to clear the %s/certs folder and restart the Docker container.",
+                            dirManager.getDefaultPath().getAbsolutePath() ) );
+        }
+
+        try {
+            if ( !dirManager.checkIfExists( "certs/localhost/client/cert.pem" ) ) {
+                return new DockerStatus(
+                        instanceId,
+                        false,
+                        format( "Certificates do not exists, try to clear the %s/certs folder and restart the Docker container.",
+                                dirManager.getDefaultPath().getAbsolutePath() ) );
+            }
+            File certFile = dirManager.registerNewFile( "certs/localhost/client/cert.pem" );
+
+            String ca = Files.readString( certFile.toPath() );
+            X509Certificate cert = (X509Certificate) CertificateFactory.getInstance( "X509" ).generateCertificate( new ByteArrayInputStream( ca.getBytes() ) );
+
+            cert.checkValidity();
+
+        } catch ( CertificateNotYetValidException ex ) {
+            return new DockerStatus( instanceId, false, "Certificate is not yet valid" );
+        } catch ( CertificateExpiredException ex ) {
+            return new DockerStatus( instanceId, false, "Certificate is expired" );
+        } catch ( CertificateException | IOException ex ) {
+            return new DockerStatus( instanceId, false, ex.getMessage() );
+        }
+        return new DockerStatus( instanceId, false, "" );
     }
 
 
@@ -235,7 +303,7 @@ public class DockerInstance extends DockerManager {
             download( container.image );
         }
 
-        // we add the name and the ports to our book-keeping functions as all previous checks passed
+        // We add the name and the ports to our book-keeping functions as all previous checks passed
         // both get added above but the port is not always visible, e.g. when container is stopped
         usedPorts.addAll( container.internalExternalPortMapping.values() );
         usedNames.add( container.uniqueName );
@@ -250,12 +318,12 @@ public class DockerInstance extends DockerManager {
         registerIfAbsent( container );
 
         if ( container.getStatus() == ContainerStatus.DESTROYED ) {
-            // we got an already destroyed container which we have to recreate in Docker and call this method again
+            // We got an already destroyed container which we have to recreate in Docker and call this method again
             initialize( container ).start();
             return;
         }
 
-        // we have to check if the container is running and start it if its not
+        // We have to check if the container is running and start it if its not
         InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
         ContainerState state = containerInfo.getState();
         if ( Objects.equals( state.getStatus(), "exited" ) ) {
@@ -263,7 +331,7 @@ public class DockerInstance extends DockerManager {
         } else if ( Objects.equals( state.getStatus(), "created" ) ) {
             client.startContainerCmd( container.getPhysicalName() ).exec();
 
-            // while the container is started the underlying system is not, so we have to probe it multiple times
+            // While the container is started the underlying system is not, so we have to probe it multiple times
             waitTillStarted( container );
 
             if ( container.afterCommands.size() != 0 ) {
@@ -277,7 +345,7 @@ public class DockerInstance extends DockerManager {
 
 
     /**
-     * The container gets probed until the defined ready supplier returns true or the timout is reached
+     * The container gets probed until the defined ready supplier returns true or the timeout is reached
      *
      * @param container the container which is waited for
      */
@@ -307,14 +375,13 @@ public class DockerInstance extends DockerManager {
      * @param container the container with specifies the afterCommands and to which they are applied
      */
     private void execAfterInitCommands( Container container ) {
-
         ExecCreateCmdResponse cmd = client
                 .execCreateCmd( container.getContainerId() )
                 .withAttachStdout( true )
                 .withCmd( container.afterCommands.toArray( new String[0] ) )
                 .exec();
 
-        ResultCallbackTemplate<ResultCallback<Frame>, Frame> callback = new ResultCallbackTemplate<ResultCallback<Frame>, Frame>() {
+        ResultCallbackTemplate<ResultCallback<Frame>, Frame> callback = new ResultCallbackTemplate<>() {
             @Override
             public void onNext( Frame event ) {
 
@@ -410,9 +477,9 @@ public class DockerInstance extends DockerManager {
     protected void updateConfigs() {
         ConfigDocker newConfig = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId );
         if ( !currentConfig.equals( newConfig ) ) {
-            // something changed and we need to get a new client, which matches the new config
+            // Something changed and we need to get a new client, which matches the new config
             this.client = generateClient( instanceId );
-            this.dockerRunning = testDockerRunning( instanceId );
+            this.dockerRunning = probeDockerStatus( instanceId ).isSuccessful();
             RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( dockerRunning );
         }
         currentConfig = newConfig;
@@ -420,11 +487,11 @@ public class DockerInstance extends DockerManager {
 
 
     @Override
-    public boolean testDockerRunning( int dockerId ) {
+    public DockerStatus probeDockerStatus( int dockerId ) {
         if ( dockerId != instanceId ) {
             throw new RuntimeException( "There was a problem retrieving the correct DockerInstance" );
         }
-        return testDockerRunning( client );
+        return probeDocker( client );
     }
 
 
@@ -437,7 +504,6 @@ public class DockerInstance extends DockerManager {
 
     @Override
     public void destroy( Container container ) {
-
         // While testing the container status itself is possible, in error cases, there might be no status set.
         // Therefore, we have to test by retrieving the container again from the client.
         String status = client.inspectContainerCmd( container.getContainerId() ).exec().getState().getStatus();
@@ -460,7 +526,7 @@ public class DockerInstance extends DockerManager {
     }
 
 
-    // non-conflicting initializer for DockerManagerImpl()
+    // Non-conflicting initializer for DockerManagerImpl()
     protected DockerInstance generateNewSession( int instanceId ) {
         return new DockerInstance( instanceId );
     }

@@ -38,13 +38,15 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.excluded.MongodbExcluded;
+import org.polypheny.db.excluded.Neo4jExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @RunWith(Parameterized.class)
-@Category({ AdapterTestSuite.class, CottontailExcluded.class, FileExcluded.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, CottontailExcluded.class, FileExcluded.class, CassandraExcluded.class, Neo4jExcluded.class, MonetdbExcluded.class })
 public class ForeignKeyConstraintTest {
 
     @Parameters(name = "Create Indexes: {0}")
@@ -364,7 +366,7 @@ public class ForeignKeyConstraintTest {
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
                     connection.commit(); // todo remove when auto-commit works
-                    statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
+                    statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 3), (1, 1)" );
                     connection.commit(); // todo remove when auto-commit works
                     try {
                         statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.SemiJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -79,7 +80,7 @@ import org.polypheny.db.util.mapping.IntPair;
 /**
  * Planner rule that implements the heuristic planner for determining optimal join orderings.
  *
- * It is triggered by the pattern {@link org.polypheny.db.algebra.logical.LogicalProject} ({@link MultiJoin}).
+ * It is triggered by the pattern {@link LogicalProject} ({@link MultiJoin}).
  */
 public class LoptOptimizeJoinRule extends AlgOptRule {
 
@@ -105,10 +106,10 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
         final RexBuilder rexBuilder = multiJoinAlg.getCluster().getRexBuilder();
         final LoptSemiJoinOptimizer semiJoinOpt = new LoptSemiJoinOptimizer( call.getMetadataQuery(), multiJoin, rexBuilder );
 
-        // determine all possible semijoins
+        // Determine all possible semijoins
         semiJoinOpt.makePossibleSemiJoins( multiJoin );
 
-        // select the optimal join filters for semijoin filtering by iteratively calling chooseBestSemiJoin; chooseBestSemiJoin will
+        // Select the optimal join filters for semijoin filtering by iteratively calling chooseBestSemiJoin; chooseBestSemiJoin will
         // apply semijoins in sort order, based on the cost of scanning each factor; as it selects semijoins to apply and iterates through the
         // loop, the cost of scanning a factor will decrease in accordance with the semijoins selected
         int iterations = 0;
@@ -130,7 +131,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
 
     /**
-     * Locates all null generating factors whose outer join can be removed. The outer join can be removed if the join keys corresponding to the null generating factor are unique and no columns are projected from it.
+     * Locates all null generating factors whose outer join can be removed. The outer join can be removed if the join keys
+     * corresponding to the null generating factor are unique and no columns are projected from it.
      *
      * @param multiJoin join factors being optimized
      */
@@ -153,7 +155,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                     continue;
                 }
 
-                // setup a bitmap containing the equi-join keys corresponding to the null generating factor; both operands in the filter must be RexInputRefs and only one side corresponds to the null generating factor
+                // Setup a bitmap containing the equi-join keys corresponding to the null generating factor; both operands
+                // in the filter must be RexInputRefs and only one side corresponds to the null generating factor
                 RexNode outerJoinCond = multiJoin.getOuterJoinCond( factIdx );
                 final List<RexNode> ojFilters = new ArrayList<>();
                 AlgOptUtil.decomposeConjunction( outerJoinCond, ojFilters );
@@ -190,12 +193,14 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                     }
                 }
 
-                // See if the join keys are unique.  Because the keys are part of an equality join condition, nulls are filtered out by the join. So, it's ok if there are nulls in the join keys.
+                // See if the join keys are unique.  Because the keys are part of an equality join condition, nulls are
+                // filtered out by the join. So, it's ok if there are nulls in the join keys.
                 if ( AlgMdUtil.areColumnsDefinitelyUniqueWhenNullsFiltered( mq, multiJoin.getJoinFactor( factIdx ), joinKeys ) ) {
                     multiJoin.addRemovableOuterJoinFactor( factIdx );
 
-                    // Since we are no longer joining this factor, decrement the reference counters corresponding to the join keys from the other factors that join with
-                    // this one. Later, in the outermost loop, we'll have the opportunity to retry removing those factors.
+                    // Since we are no longer joining this factor, decrement the reference counters corresponding to the join
+                    // keys from the other factors that join with this one. Later, in the outermost loop, we'll have the
+                    // opportunity to retry removing those factors.
                     final ImmutableBitSet otherJoinKeys = otherJoinKeyBuilder.build();
                     for ( int otherKey : otherJoinKeys ) {
                         int otherFactor = multiJoin.findRef( otherKey );
@@ -215,7 +220,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
 
     /**
-     * Sets a join key if only one of the specified input references corresponds to a specified factor as determined by its field numbers. Also keeps track of the keys from the other factor.
+     * Sets a join key if only one of the specified input references corresponds to a specified factor as determined by its
+     * field numbers. Also keeps track of the keys from the other factor.
      *
      * @param joinKeys join keys to be set if a key is found
      * @param otherJoinKeys join keys for the other join factor
@@ -381,8 +387,9 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             plans.add( newProject );
         }
 
-        // Transform the selected plans; note that we wait till then the end to transform everything so any intermediate RelNodes we create are not converted to RelSubsets.
-        // The HEP planner will choose the join subtree with the best cumulative cost. Volcano planner keeps the alternative join subtrees and cost the final plan to pick the best one.
+        // Transform the selected plans; note that we wait till then the end to transform everything so any intermediate
+        // RelNodes we create are not converted to RelSubsets. The HEP planner will choose the join subtree with the best
+        // cumulative cost. Volcano planner keeps the alternative join subtrees and cost the final plan to pick the best one.
         for ( AlgNode plan : plans ) {
             call.transformTo( plan );
         }
@@ -390,7 +397,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
 
     /**
-     * Creates the topmost projection that will sit on top of the selected join ordering. The projection needs to match the original join ordering. Also, places any post-join filters on top of the project.
+     * Creates the topmost projection that will sit on top of the selected join ordering. The projection needs to match the
+     * original join ordering. Also, places any post-join filters on top of the project.
      *
      * @param multiJoin join factors being optimized
      * @param joinTree selected join ordering
@@ -414,7 +422,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
         }
 
         for ( int currFactor = 0; currFactor < nJoinFactors; currFactor++ ) {
-            // if the factor is the right factor in a removable self-join, then where possible, remap references to the right factor to the corresponding reference in the left factor
+            // If the factor is the right factor in a removable self-join, then where possible, remap references to the right
+            // factor to the corresponding reference in the left factor
             Integer leftFactor = null;
             if ( multiJoin.isRightFactorInRemovableSelfJoin( currFactor ) ) {
                 leftFactor = multiJoin.getOtherSelfJoinFactor( currFactor );
@@ -632,7 +641,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * Returns whether a {@link AlgNode} corresponds to a Join that wasn't one of the original MultiJoin input factors.
      */
     private boolean isJoinTree( AlgNode alg ) {
-        // Full outer joins were already optimized in a prior instantiation of this rule; therefore we should never see a join input that's a full outer join
+        // Full outer joins were already optimized in a prior instantiation of this rule; therefore we should never see a
+        // join input that's a full outer join
         if ( alg instanceof Join ) {
             assert ((Join) alg).getJoinType() != JoinAlgType.FULL;
             return true;
@@ -643,7 +653,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
 
     /**
-     * Adds a new factor into the current join tree. The factor is either pushed down into one of the subtrees of the join recursively, or it is added to the top of the current tree, whichever yields a better ordering.
+     * Adds a new factor into the current join tree. The factor is either pushed down into one of the subtrees of the join
+     * recursively, or it is added to the top of the current tree, whichever yields a better ordering.
      *
      * @param multiJoin join factors being optimized
      * @param semiJoinOpt optimal semijoins for each factor
@@ -670,7 +681,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                     filtersToAdd );
         }
 
-        // If the factor corresponds to a dimension table whose join we can remove, create a replacement join if the corresponding fact table is in the current join tree.
+        // If the factor corresponds to a dimension table whose join we can remove, create a replacement join if the
+        // corresponding fact table is in the current join tree.
         if ( multiJoin.getJoinRemovalFactor( factorToAdd ) != null ) {
             return createReplacementSemiJoin(
                     algBuilder,
@@ -686,8 +698,9 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             return new LoptJoinTree( semiJoinOpt.getChosenSemiJoin( factorToAdd ), factorToAdd );
         }
 
-        // Create a temporary copy of the filter list as we may need the original list to pass into addToTop().  However, if no tree was created by addToTop() because the factor being added is part of
-        // a self-join, then pass the original filter list so the added filters will still be removed from the list.
+        // Create a temporary copy of the filter list as we may need the original list to pass into addToTop(). However, if
+        // no tree was created by addToTop() because the factor being added is part of a self-join, then pass the original
+        // filter list so the added filters will still be removed from the list.
         final List<RexNode> tmpFilters = new ArrayList<>( filtersToAdd );
         LoptJoinTree topTree =
                 addToTop(
@@ -728,7 +741,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             bestTree = pushDownTree;
         } else {
             if ( costPushDown.isEqWithEpsilon( costTop ) ) {
-                // If both plans cost the same (with an allowable round-off margin of error), favor the one that passes around the wider rows further up in the tree.
+                // If both plans cost the same (with an allowable round-off margin of error), favor the one that passes around
+                // the wider rows further up in the tree.
                 if ( rowWidthCost( pushDownTree.getJoinTree() ) < rowWidthCost( topTree.getJoinTree() ) ) {
                     bestTree = pushDownTree;
                 } else {
@@ -746,15 +760,17 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
 
     /**
-     * Computes a cost for a join tree based on the row widths of the inputs into the join. Joins where the inputs have the fewest number of columns lower in the tree are better than equivalent joins where the inputs with
-     * the larger number of columns are lower in the tree.
+     * Computes a cost for a join tree based on the row widths of the inputs into the join. Joins where the inputs have the
+     * fewest number of columns lower in the tree are better than equivalent joins where the inputs with the larger number of
+     * columns are lower in the tree.
      *
      * @param tree a tree of RelNodes
      * @return the cost associated with the width of the tree
      */
     private int rowWidthCost( AlgNode tree ) {
-        // The width cost is the width of the tree itself plus the widths of its children.  Hence, skinnier rows are better when they're lower in the tree since the width of a {@link AlgNode} contributes to
-        // the cost of each LogicalJoin that appears above that AlgNode.
+        // The width cost is the width of the tree itself plus the widths of its children. Hence, skinnier rows are better
+        // when they're lower in the tree since the width of a {@link AlgNode} contributes to the cost of each LogicalJoin
+        // that appears above that AlgNode.
         int width = tree.getRowType().getFieldCount();
         if ( isJoinTree( tree ) ) {
             Join joinRel = (Join) tree;
@@ -792,7 +808,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             return null;
         }
 
-        // If there are no constraints as to which side the factor must be pushed, arbitrarily push to the left. In the case of a self-join, always push to the input that contains the other half of the self-join.
+        // If there are no constraints as to which side the factor must be pushed, arbitrarily push to the left. In the case
+        // of a self-join, always push to the input that contains the other half of the self-join.
         if ( selfJoin ) {
             BitSet selfJoinFactor = new BitSet( multiJoin.getNumJoinFactors() );
             selfJoinFactor.set( multiJoin.getOtherSelfJoinFactor( factorToAdd ) );
@@ -839,7 +856,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             right = subTree;
         }
 
-        // Adjust the join condition from the original join tree to reflect pushdown of the new factor as well as any swapping that may have been done during the pushdown.
+        // Adjust the join condition from the original join tree to reflect pushdown of the new factor as well as any swapping
+        // that may have been done during the pushdown.
         RexNode newCondition = ((Join) joinTree.getJoinTree()).getCondition();
         newCondition =
                 adjustFilter(
@@ -851,7 +869,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                         origJoinOrder,
                         joinTree.getJoinTree().getRowType().getFieldList() );
 
-        // Determine if additional filters apply as a result of adding the new factor, provided this isn't a left or right outer join; for those cases, the additional filters will be added on top of the join in createJoinSubtree.
+        // Determine if additional filters apply as a result of adding the new factor, provided this isn't a left or right
+        // outer join; for those cases, the additional filters will be added on top of the join in createJoinSubtree.
         if ( (joinType != JoinAlgType.LEFT) && (joinType != JoinAlgType.RIGHT) ) {
             RexNode condition = addFilters( multiJoin, left, -1, right, filtersToAdd, true );
             RexBuilder rexBuilder = multiJoin.getMultiJoinRel().getCluster().getRexBuilder();
@@ -893,13 +912,16 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             int factorToAdd,
             List<RexNode> filtersToAdd,
             boolean selfJoin ) {
-        // Self-joins can never be created at the top of an existing join tree because it needs to be paired directly with the other self-join factor.
+        // Self-joins can never be created at the top of an existing join tree because it needs to be paired directly with
+        // the other self-join factor.
         if ( selfJoin && isJoinTree( joinTree.getJoinTree() ) ) {
             return null;
         }
 
-        // If the factor being added is null-generating, create the join as a left outer join since it's being added to the RHS side of the join; createJoinSubTree may swap the inputs and therefore
-        // convert the left outer join to a right outer join; if the original MultiJoin was a full outer join, these should be the only factors in the join, so create the join as a full outer join.
+        // If the factor being added is null-generating, create the join as a left outer join since it's being added to the
+        // RHS side of the join; createJoinSubTree may swap the inputs and therefore convert the left outer join to a right
+        // outer join; if the original MultiJoin was a full outer join, these should be the only factors in the join, so
+        // create the join as a full outer join.
         JoinAlgType joinType;
         if ( multiJoin.getMultiJoinRel().isFullOuterJoin() ) {
             assert multiJoin.getNumJoinFactors() == 2;
@@ -935,8 +957,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
 
     /**
-     * Determines which join filters can be added to the current join tree. Note that the join filter still reflects the original join ordering. It will only be adjusted to reflect the new join
-     * ordering if the "adjust" parameter is set to true.
+     * Determines which join filters can be added to the current join tree. Note that the join filter still reflects the
+     * original join ordering. It will only be adjusted to reflect the new join ordering if the "adjust" parameter is set to true.
      *
      * @param multiJoin join factors being optimized
      * @param leftTree left subtree of the join tree
@@ -1079,7 +1101,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * <li>Then add on the number of fields in the factors that now precede this factor in the new join ordering.</li>
      * </ul>
      *
-     * If the factor is the right factor in a removable self-join and its column reference can be mapped to the left factor in the self-join, then:
+     * If the factor is the right factor in a removable self-join and its column reference can be mapped to the left factor
+     * in the self-join, then:
      *
      * <ul>
      * <li>First subtract, based on where the column reference is in the new join ordering.</li>
@@ -1087,7 +1110,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * <li>Then, finally add on the offset of the corresponding column from the left factor.</li>
      * </ul>
      *
-     * Note that this only applies if both factors in the self-join are in the join ordering. If they are, then the left factor always precedes the right factor in the join ordering.
+     * Note that this only applies if both factors in the self-join are in the join ordering. If they are, then the left
+     * factor always precedes the right factor in the join ordering.
      *
      * @param multiJoin join factors being optimized
      * @param factor the factor whose references are being adjusted
@@ -1135,11 +1159,14 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
 
     /**
-     * In the event that a dimension table does not need to be joined because of a semijoin, this method creates a join tree that consists of a projection on top of an existing join tree.
-     * The existing join tree must contain the fact table in the semijoin that allows the dimension table to be removed.
+     * In the event that a dimension table does not need to be joined because of a semijoin, this method creates a join tree
+     * that consists of a projection on top of an existing join tree. The existing join tree must contain the fact table in
+     * the semijoin that allows the dimension table to be removed.
      *
-     * The projection created on top of the join tree mimics a join of the fact and dimension tables. In order for the dimension table to have been removed, the only fields referenced from
-     * the dimension table are its dimension keys. Therefore, we can replace these dimension fields with the fields corresponding to the semijoin keys from the fact table in the projection.
+     * The projection created on top of the join tree mimics a join of the fact and dimension tables. In order for the
+     * dimension table to have been removed, the only fields referenced from the dimension table are its dimension keys.
+     * Therefore, we can replace these dimension fields with the fields corresponding to the semijoin keys from the fact
+     * table in the projection.
      *
      * @param multiJoin join factors being optimized
      * @param semiJoinOpt optimal semijoins for each factor
@@ -1192,7 +1219,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
 
     /**
-     * Creates a replacement join, projecting either dummy columns or replacement keys from the factor that doesn't actually need to be joined.
+     * Creates a replacement join, projecting either dummy columns or replacement keys from the factor that doesn't
+     * actually need to be joined.
      *
      * @param multiJoin join factors being optimized
      * @param semiJoinOpt optimal semijoins for each factor

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
@@ -67,7 +69,7 @@ import org.polypheny.db.util.mapping.Mappings;
  * RelRoot: {
  * rel: Sort($1 DESC)
  * Project(name, empno)
- * TableScan(EMP)
+ * Scan(EMP)
  * fields: [0]
  * collation: [1 DESC]
  * }
@@ -84,7 +86,7 @@ import org.polypheny.db.util.mapping.Mappings;
  * <blockquote><code>
  * RelRoot: {
  * rel: Project(name, empno)
- * TableScan(EMP)
+ * Scan(EMP)
  * fields: [(0, "n"), (0, "n2"), (1, "n")]
  * collation: []
  * }
@@ -97,7 +99,6 @@ public class AlgRoot {
     public final Kind kind;
     public final ImmutableList<Pair<Integer, String>> fields;
     public final AlgCollation collation;
-    public boolean usesDocumentModel = false;
 
 
     /**
@@ -227,6 +228,11 @@ public class AlgRoot {
         return collations != null
                 && collations.size() == 1
                 && collations.get( 0 ).equals( collation );
+    }
+
+
+    public ModelTrait getModel() {
+        return alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE );
     }
 
 }

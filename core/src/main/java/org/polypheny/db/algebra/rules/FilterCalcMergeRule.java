@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -47,7 +47,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that merges a {@link org.polypheny.db.algebra.logical.LogicalFilter} and a {@link org.polypheny.db.algebra.logical.LogicalCalc}. The result is a {@link org.polypheny.db.algebra.logical.LogicalCalc}
+ * Planner rule that merges a {@link LogicalFilter} and a {@link LogicalCalc}. The result is a {@link LogicalCalc}
  * whose filter condition is the logical AND of the two.
  *
  * @see FilterMergeRule

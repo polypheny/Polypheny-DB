@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -46,25 +46,26 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 /**
  * MultiJoinProjectTransposeRule implements the rule for pulling
- * {@link org.polypheny.db.algebra.logical.LogicalProject}s that are on top of a
+ * {@link LogicalProject}s that are on top of a
  * {@link MultiJoin} and beneath a
- * {@link org.polypheny.db.algebra.logical.LogicalJoin} so the
- * {@link org.polypheny.db.algebra.logical.LogicalProject} appears above the
- * {@link org.polypheny.db.algebra.logical.LogicalJoin}.
+ * {@link LogicalJoin} so the
+ * {@link LogicalProject} appears above the
+ * {@link LogicalJoin}.
  *
- * In the process of doing so, also save away information about the respective fields that are referenced in the expressions in the {@link org.polypheny.db.algebra.logical.LogicalProject} we're pulling up, as
- * well as the join condition, in the resultant {@link MultiJoin}s
+ * In the process of doing so, also save away information about the respective fields that are referenced in the expressions
+ * in the {@link LogicalProject} we're pulling up, as well as the join condition, in the resultant {@link MultiJoin}s
  *
  * For example, if we have the following sub-query:
  *
  * <blockquote><pre>(select X.x1, Y.y1 from X, Y where X.x2 = Y.y2 and X.x3 = 1 and Y.y3 = 2)</pre></blockquote>
  *
- * The {@link MultiJoin} associated with (X, Y) associates x1 with X and y1 with Y. Although x3 and y3 need to be read due to the filters, they are not required after the row scan has completed and therefore are not saved.
- * The join fields, x2 and y2, are also tracked separately.
+ * The {@link MultiJoin} associated with (X, Y) associates x1 with X and y1 with Y. Although x3 and y3 need to be read due
+ * to the filters, they are not required after the row scan has completed and therefore are not saved. The join fields, x2
+ * and y2, are also tracked separately.
  *
  * Note that by only pulling up projects that are on top of {@link MultiJoin}s, we preserve projections on top of row scans.
  *
- * See the superclass for details on restrictions regarding which {@link org.polypheny.db.algebra.logical.LogicalProject}s cannot be pulled.
+ * See the superclass for details on restrictions regarding which {@link LogicalProject}s cannot be pulled.
  */
 public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
 

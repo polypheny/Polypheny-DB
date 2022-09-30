@@ -21,12 +21,15 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
+@Slf4j
 public enum RuntimeConfig {
 
     APPROXIMATE_DISTINCT_COUNT(
@@ -57,7 +60,7 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN
     ), // Druid
 
-    CASE_SENSITIVE(
+    RELATIONAL_CASE_SENSITIVE(
             "runtime/caseSensitive",
             "Whether identifiers are matched case-sensitively.",
             false,
@@ -220,6 +223,13 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
+    UI_NODE_AMOUNT(
+            "ui/nodeAmount",
+            "Number of nodes in the graph data view.",
+            300,
+            ConfigType.INTEGER,
+            "uiSettingsDataViewGroup" ),
+
     UI_UPLOAD_SIZE_MB(
             "ui/uploadSizeMB",
             "Maximum size of a file upload for multimedia data in the UI, in MB. "
@@ -322,13 +332,13 @@ public enum RuntimeConfig {
             "queryParameterizationGroup" ),
 
     JOINED_TABLE_SCAN_CACHE(
-            "runtime/joinedTableScanCache",
+            "runtime/joinedScanCache",
             "Whether to use the joined table scan caching.",
             false,
             ConfigType.BOOLEAN ),
 
     JOINED_TABLE_SCAN_CACHE_SIZE(
-            "runtime/joinedTableScanCacheSize",
+            "runtime/joinedScanCacheSize",
             "Size of the joined table scan cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER ),
@@ -361,6 +371,14 @@ public enum RuntimeConfig {
             "constraintEnforcementGroup"
     ),
 
+    DEFAULT_INDEX_PLACEMENT_STRATEGY(
+            "runtime/indexPlacementStrategy",
+            "Where indexes should be placed if not explicitly specified.",
+            DefaultIndexPlacementStrategy.ALL_DATA_STORES,
+            ConfigType.ENUM,
+            "polystoreIndexGroup"
+    ),
+
     POLYSTORE_INDEXES_ENABLED(
             "runtime/polystoreIndexesEnabled",
             "Enable and maintain indexes on the polystore level.",
@@ -389,6 +407,13 @@ public enum RuntimeConfig {
             0,
             ConfigType.INTEGER,
             "processingExecutionGroup" ),
+
+    MONITORING_QUEUE_ACTIVE(
+            "runtime/monitoringQueueActive",
+            "Enables automatic monitoring of executed events in workload monitoring. If disabled no events are captured, hence the queue remains empty. This also effects routing!",
+            true,
+            ConfigType.BOOLEAN,
+            "monitoringSettingsQueueGroup" ),
 
     MONITORING_CORE_POOL_SIZE(
             "runtime/corePoolSize",
@@ -524,6 +549,19 @@ public enum RuntimeConfig {
         monitoringSettingsQueueGroup.withTitle( "Processing Queue" );
         configManager.registerWebUiPage( monitoringSettingsPage );
         configManager.registerWebUiGroup( monitoringSettingsQueueGroup );
+        MONITORING_QUEUE_ACTIVE.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                String status = c.getBoolean() ? "Enabled" : "Disabled";
+                log.warn( "{} workload monitoring", status );
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+
+            }
+        } );
 
         // Partitioning
         final WebUiPage partitionSettingsPage = new WebUiPage(

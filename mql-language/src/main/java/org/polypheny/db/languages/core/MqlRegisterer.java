@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.DeserializeFunctionOperator;
 import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Operator;
 
@@ -92,6 +93,8 @@ public class MqlRegisterer {
         register( OperatorName.MQL_GTE, new LangFunctionOperator( "MQL_GTE", Kind.GREATER_THAN_OR_EQUAL ) );
 
         register( OperatorName.MQL_JSONIFY, new LangFunctionOperator( "MQL_JSONIFY", Kind.MQL_JSONIFY ) );
+
+        register( OperatorName.DESERIALIZE, new DeserializeFunctionOperator( "DESERIALIZE_DOC" ) );
 
         isInit = true;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptRule;
@@ -269,7 +269,7 @@ public class GeodeRules {
 
 
         private GeodeFilterRule() {
-            super( operand( LogicalFilter.class, operand( GeodeTableScan.class, none() ) ), "GeodeFilterRule" );
+            super( operand( LogicalFilter.class, operand( GeodeScan.class, none() ) ), "GeodeFilterRule" );
         }
 
 
@@ -363,7 +363,7 @@ public class GeodeRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             LogicalFilter filter = call.alg( 0 );
-            GeodeTableScan scan = call.alg( 1 );
+            GeodeScan scan = call.alg( 1 );
             if ( filter.getTraitSet().contains( Convention.NONE ) ) {
                 final AlgNode converted = convert( filter, scan );
                 call.transformTo( converted );
@@ -371,7 +371,7 @@ public class GeodeRules {
         }
 
 
-        private AlgNode convert( LogicalFilter filter, GeodeTableScan scan ) {
+        private AlgNode convert( LogicalFilter filter, GeodeScan scan ) {
             final AlgTraitSet traitSet = filter.getTraitSet().replace( GeodeAlg.CONVENTION );
             return new GeodeFilter( filter.getCluster(), traitSet, convert( filter.getInput(), GeodeAlg.CONVENTION ), filter.getCondition() );
         }

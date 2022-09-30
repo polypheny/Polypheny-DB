@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.type.PolyType;
 
+
 public interface PartitionManager {
 
     /**
@@ -37,7 +38,7 @@ public interface PartitionManager {
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 
     /**
-     * Returns all placements of catalogTable and partitionIds
+     * Returns all placements of catalogEntity and partitionIds
      *
      * @param catalogTable Table to look for placements
      * @param partitionIds List of all requested partitions ids

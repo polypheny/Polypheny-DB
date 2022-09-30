@@ -46,7 +46,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -60,9 +60,9 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Implementation of {@link TableModify} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link Modify} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableTableModify extends TableModify implements EnumerableAlg {
+public class EnumerableTableModify extends Modify implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
@@ -113,7 +113,7 @@ public class EnumerableTableModify extends TableModify implements EnumerableAlg 
         Expression convertedChildExp;
         if ( !getInput().getRowType().equals( getRowType() ) ) {
             final JavaTypeFactory typeFactory = (JavaTypeFactory) getCluster().getTypeFactory();
-            final JavaRowFormat format = EnumerableTableScan.deduceFormat( table );
+            final JavaRowFormat format = EnumerableScan.deduceFormat( table );
             PhysType physType = PhysTypeImpl.of( typeFactory, table.getRowType(), format );
             List<Expression> expressionList = new ArrayList<>();
             final PhysType childPhysType = result.physType;

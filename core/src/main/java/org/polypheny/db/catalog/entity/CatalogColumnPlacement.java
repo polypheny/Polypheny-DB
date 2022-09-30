@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.entity;
 
-
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -26,9 +25,9 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
 @EqualsAndHashCode
-public class CatalogColumnPlacement implements CatalogEntity {
+public class CatalogColumnPlacement implements CatalogObject {
 
-    private static final long serialVersionUID = 3538121146945513108L;
+    private static final long serialVersionUID = -1909757888176291095L;
 
     public final long tableId;
     public final long columnId;
@@ -64,7 +63,7 @@ public class CatalogColumnPlacement implements CatalogEntity {
 
     @SneakyThrows
     public String getLogicalSchemaName() {
-        return Catalog.getInstance().getTable( tableId ).getSchemaName();
+        return Catalog.getInstance().getTable( tableId ).getNamespaceName();
     }
 
 

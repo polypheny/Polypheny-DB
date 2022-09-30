@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
+import org.polypheny.db.adapter.cassandra.CassandraScan;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
-import org.polypheny.db.adapter.cassandra.CassandraTableScan;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -53,9 +53,9 @@ public class CassandraUtils {
         while ( !innerLevel.isEmpty() ) {
             AlgNode algNode = innerLevel.pop();
             alreadyChecked.add( algNode );
-            if ( algNode instanceof CassandraTableScan ) {
+            if ( algNode instanceof CassandraScan ) {
                 if ( algNode.getConvention().equals( targetConvention ) ) {
-                    return ((CassandraTableScan) algNode).cassandraTable;
+                    return ((CassandraScan) algNode).cassandraTable;
                 }
             } else if ( algNode instanceof CassandraTableModify ) {
                 if ( algNode.getConvention().equals( targetConvention ) ) {

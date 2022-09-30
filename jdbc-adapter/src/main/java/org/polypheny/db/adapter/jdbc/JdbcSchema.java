@@ -70,8 +70,8 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.SqlDialectFactory;
+import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlDialectFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
@@ -163,7 +163,7 @@ public class JdbcSchema implements Schema {
 
         JdbcTable table = new JdbcTable(
                 this,
-                catalogTable.getSchemaName(),
+                catalogTable.getNamespaceName(),
                 catalogTable.name,
                 logicalColumnNames,
                 TableType.TABLE,

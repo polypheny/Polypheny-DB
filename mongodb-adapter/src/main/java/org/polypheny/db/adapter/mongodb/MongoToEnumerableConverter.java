@@ -51,7 +51,7 @@ import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -152,7 +152,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
                                         } ),
                                 Pair.class ) );
 
-        final Expression table = list.append( "table", mongoImplementor.table.getExpression( MongoTable.MongoQueryable.class ) );
+        final Expression table = list.append( "table", mongoImplementor.table.getExpression( MongoEntity.MongoQueryable.class ) );
 
         List<String> opList = Pair.right( mongoImplementor.list );
 

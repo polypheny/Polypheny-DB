@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
@@ -75,12 +75,12 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
                     .filter( t -> t.name.equals( getCollection() ) )
                     .findAny();
 
-            if ( !table.isPresent() ) {
+            if ( table.isEmpty() ) {
                 throw new RuntimeException( "The target for the rename is not valid." );
             }
 
             DdlManager.getInstance().renameTable( table.get(), newName, statement );
-        } catch ( DdlOnSourceException | TableAlreadyExistsException | UnknownSchemaException e ) {
+        } catch ( DdlOnSourceException | EntityAlreadyExistsException | UnknownSchemaException e ) {
             throw new RuntimeException( "The rename was not successful, due to an error: " + e.getMessage() );
         }
     }

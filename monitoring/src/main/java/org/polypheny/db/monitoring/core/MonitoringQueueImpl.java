@@ -171,7 +171,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                     for ( MonitoringDataPoint dataPoint : dataPoints ) {
                         persistentRepository.dataPoint( dataPoint );
                         // Statistics are only collected if Active Tracking is switched on
-                        if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
+                        if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() ) {
                             statisticRepository.dataPoint( dataPoint );
                         }
                     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     void setRouter( Class<? extends Router> routerClass );
 
     /**
-     * @return The physical placements of the necessary partitions: PartitionId {@code ->} List<AdapterId, CatalogColumnPlacementId>
+     * @return The physical placements of the necessary partitions: {@code PartitionId  -> List<AdapterId, CatalogColumnPlacementId>}
      */
     @Override
     Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import org.joda.time.chrono.ISOChronology;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -65,9 +65,9 @@ import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.sql.sql.SqlCall;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlSelectKeyword;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlSelectKeyword;
 import org.polypheny.db.type.PolyType;
 
 
@@ -241,8 +241,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        // ViewTableScan needed for Views
-        final LogicalTableScan scan = LogicalTableScan.create( cluster, algOptTable );
+        // ViewScan needed for Views
+        final LogicalScan scan = LogicalScan.create( cluster, algOptTable );
         return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), algOptTable, this, ImmutableList.of( scan ) );
     }
 

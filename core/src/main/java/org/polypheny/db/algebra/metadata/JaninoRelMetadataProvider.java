@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,29 +62,59 @@ import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.codehaus.commons.compiler.ISimpleCompiler;
 import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
+import org.polypheny.db.adapter.enumerable.EnumerableBatchIterator;
+import org.polypheny.db.adapter.enumerable.EnumerableConditionalExecute;
+import org.polypheny.db.adapter.enumerable.EnumerableDocumentTransformer;
 import org.polypheny.db.adapter.enumerable.EnumerableFilter;
 import org.polypheny.db.adapter.enumerable.EnumerableJoin;
+import org.polypheny.db.adapter.enumerable.EnumerableModifyCollect;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableTransformer;
+import org.polypheny.db.adapter.enumerable.EnumerableUnwind;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalWindow;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
+import org.polypheny.db.algebra.logical.common.LogicalStreamer;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
 import org.polypheny.db.config.RuntimeConfig;
@@ -142,19 +172,57 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         LogicalProject.class,
                         LogicalSort.class,
                         LogicalTableFunctionScan.class,
-                        LogicalTableModify.class,
-                        LogicalTableScan.class,
+                        LogicalModify.class,
+                        LogicalScan.class,
                         LogicalUnion.class,
                         LogicalValues.class,
                         LogicalWindow.class,
                         LogicalChi.class,
                         LogicalDelta.class,
 
+                        // Common
+                        LogicalTransformer.class,
+                        LogicalStreamer.class,
+                        LogicalContextSwitcher.class,
+                        LogicalConditionalExecute.class,
+                        LogicalConstraintEnforcer.class,
+
+                        // LPG
+                        LogicalLpgScan.class,
+                        LogicalLpgAggregate.class,
+                        LogicalLpgFilter.class,
+                        LogicalLpgMatch.class,
+                        LogicalLpgModify.class,
+                        LogicalLpgProject.class,
+                        LogicalLpgSort.class,
+                        LogicalLpgTransformer.class,
+                        LogicalLpgUnion.class,
+                        LogicalLpgUnwind.class,
+                        LogicalLpgValues.class,
+
+                        // Document
+                        LogicalDocumentScan.class,
+                        LogicalDocumentAggregate.class,
+                        LogicalDocumentFilter.class,
+                        LogicalDocumentProject.class,
+                        LogicalDocumentModify.class,
+                        LogicalDocumentSort.class,
+                        LogicalDocumentTransformer.class,
+                        LogicalDocumentValues.class,
+
+                        // Enumerable
                         EnumerableAggregate.class,
                         EnumerableFilter.class,
                         EnumerableProject.class,
                         EnumerableJoin.class,
-                        EnumerableTableScan.class ) );
+                        EnumerableScan.class,
+                        EnumerableUnwind.class,
+                        EnumerableTransformer.class,
+                        EnumerableTransformer.class,
+                        EnumerableBatchIterator.class,
+                        EnumerableConditionalExecute.class,
+                        EnumerableModifyCollect.class,
+                        EnumerableDocumentTransformer.class ) );
     }
 
 

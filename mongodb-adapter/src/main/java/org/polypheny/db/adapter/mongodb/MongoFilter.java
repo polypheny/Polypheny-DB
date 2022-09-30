@@ -71,7 +71,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.sql.fun.SqlItemOperator;
+import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.JsonBuilder;
@@ -151,12 +151,29 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonDocument value = translateFinalOr( condition );
             if ( !value.isEmpty() ) {
                 implementor.filter.add( value );
-                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", value ) ) );
+                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", getFilter( value ) ) ) );
             }
 
             if ( preProjections.size() != 0 ) {
                 implementor.preProjections.add( preProjections );
             }
+        }
+
+
+        public static BsonDocument getFilter( BsonDocument filter ) {
+            if ( filter.size() != 1 ) {
+                return filter;
+            }
+            String key = filter.keySet().iterator().next();
+            BsonValue value = filter.values().iterator().next();
+            if ( !key.equals( "$or" ) && !key.equals( "$and" ) ) {
+                return filter;
+            }
+
+            if ( !value.isArray() || value.asArray().size() != 1 ) {
+                return filter;
+            }
+            return getFilter( value.asArray().get( 0 ).asDocument() );
         }
 
 
@@ -625,28 +642,11 @@ public class MongoFilter extends Filter implements MongoAlg {
         }
 
 
-        /**
-         * Translates a {@link Kind#MQL_QUERY_VALUE } to its {"$test": true} form
-         *
-         * @param call the untranslated node
-         */
-        private String translateDocValue( RexCall call ) {
-            RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
-            RexCall names = (RexCall) call.operands.get( 1 );
-            return rowType.getFieldNames().get( parent.getIndex() )
-                    + "."
-                    + names.operands
-                    .stream()
-                    .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
-                    .collect( Collectors.joining( "." ) );
-        }
-
-
         private String getParamAsKey( RexNode node ) {
             if ( node.isA( Kind.INPUT_REF ) ) {
                 return rowType.getFieldNames().get( ((RexInputRef) node).getIndex() );
             } else {
-                return translateDocValue( (RexCall) node );
+                return MongoRules.translateDocValueAsKey( rowType, (RexCall) node, "" );
             }
         }
 
@@ -795,15 +795,15 @@ public class MongoFilter extends Filter implements MongoAlg {
             if ( left.isA( Kind.INPUT_REF ) ) {
                 l = new BsonString( "$" + getPhysicalName( (RexInputRef) left ) );
             } else if ( left.isA( Kind.MQL_QUERY_VALUE ) ) {
-                l = new BsonString( "$" + translateDocValue( (RexCall) left ) );
+                l = MongoRules.translateDocValue( rowType, (RexCall) left, "$" );
             } else {
                 return false;
             }
 
-            if ( left.isA( Kind.INPUT_REF ) ) {
+            if ( right.isA( Kind.INPUT_REF ) ) {
                 r = new BsonString( "$" + getPhysicalName( (RexInputRef) right ) );
-            } else if ( left.isA( Kind.MQL_QUERY_VALUE ) ) {
-                r = new BsonString( "$" + translateDocValue( (RexCall) right ) );
+            } else if ( right.isA( Kind.MQL_QUERY_VALUE ) ) {
+                r = MongoRules.translateDocValue( rowType, (RexCall) right, "$" );
             } else {
                 return false;
             }
@@ -1116,12 +1116,26 @@ public class MongoFilter extends Filter implements MongoAlg {
             if ( item == null ) {
                 return false;
             }
-            if ( !left.getOperands().get( 0 ).isA( Kind.INPUT_REF )
-                    || left.operands.size() != 2
-                    || !(left.operands.get( 1 ) instanceof RexCall)
-                    || !left.getOperands().get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) ) {
+            if ( !left.getOperands().get( 0 ).isA( Kind.INPUT_REF ) || left.operands.size() != 2 ) {
                 return false;
             }
+            if ( left.operands.get( 1 ) instanceof RexDynamicParam || left.operands.get( 1 ) instanceof RexCall ) {
+                if ( left.operands.get( 1 ) instanceof RexCall && left.operands.get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) && ((RexCall) left.operands.get( 1 )).operands.size() == 0 && this.tempElem != null ) {
+                    String mergedName = handleElemMatch( left );
+
+                    attachCondition( op, mergedName, item );
+                    return true;
+                }
+
+                attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left, "" ), item );
+                return true;
+            }
+
+            return false;
+            /*if ( !(left.operands.get( 1 ) instanceof RexCall) || !left.getOperands().get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) ) {
+                return false;
+            }
+
             RexInputRef parent = (RexInputRef) left.getOperands().get( 0 );
             RexCall names = (RexCall) left.operands.get( 1 );
             if ( names.isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) && names.operands.size() == 0 && this.tempElem != null ) {
@@ -1138,7 +1152,22 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
             attachCondition( op, mergedName, item );
-            return true;
+            return true;*/
+        }
+
+
+        private String handleElemMatch( RexCall left ) {
+            RexCall names = (RexCall) ((RexCall) this.tempElem).operands.get( 1 );
+            RexInputRef parent = (RexInputRef) left.getOperands().get( 0 );
+            String mergedName = rowType.getFieldNames().get( parent.getIndex() );
+
+            if ( names.operands.size() > 0 ) {
+                mergedName += "." + names.operands
+                        .stream()
+                        .map( name -> ((RexLiteral) name).getValueAs( String.class ) )
+                        .collect( Collectors.joining( "." ) );
+            }
+            return mergedName;
         }
 
 
@@ -1185,7 +1214,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 item = new BsonDynamic( (RexDynamicParam) r );
             } else if ( r instanceof RexCall ) {
                 if ( r.getKind() == Kind.MQL_QUERY_VALUE ) {
-                    item = new BsonString( "$" + translateDocValue( (RexCall) r ) );
+                    item = MongoRules.translateDocValue( rowType, (RexCall) r, "$" );
                 } else {
                     item = getArray( (RexCall) r );
                 }

@@ -54,7 +54,7 @@ task generateFmppSources {
                 outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/sql")
     }
 }
-task generateParser (type: CompileJavaccTask) {
+task generateParser(type: CompileJavaccTask) {
     dependsOn("generateFmppSources")
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]
@@ -64,12 +64,22 @@ task generateParser (type: CompileJavaccTask) {
 
 compileJava {
     dependsOn("generateParser")
+    dependsOn(":avatica-interface:processResources")
+    dependsOn(":config:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":monitoring:processResources")
+    dependsOn(":core:processResources")
+}
+
+delombok {
+    dependsOn(":avatica-interface:processResources")
 }
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java","build/generated-sources"]
+            //srcDirs = ["src/main/java","build/generated-sources"]
+            srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {

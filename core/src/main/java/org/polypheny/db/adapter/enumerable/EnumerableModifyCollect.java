@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,9 @@ public class EnumerableModifyCollect extends ModifyCollect implements Enumerable
                         ? Expressions.call( unionExp, BuiltInMethod.CONCAT.method, childExp )
                         : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType.comparer() ) );
             }
+        }
+        if ( all ) {
+            unionExp = Expressions.call( BuiltInMethod.SINGLE_SUM.method, unionExp );
         }
 
         builder.add( unionExp );

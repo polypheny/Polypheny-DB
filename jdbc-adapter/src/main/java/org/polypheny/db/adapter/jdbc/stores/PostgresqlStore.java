@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
@@ -46,7 +47,7 @@ import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -81,6 +82,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, PostgresqlSqlDialect.DEFAULT, true );
     }
+
+
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
     @Override
@@ -339,8 +344,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
-            case JSON:
                 return "VARCHAR";
+            case JSON:
+                return "TEXT";
             case DATE:
                 return "DATE";
             case TIME:

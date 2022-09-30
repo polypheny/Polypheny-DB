@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1354,9 +1354,72 @@ public enum OperatorName {
 
     MQL_GTE( LangFunctionOperator.class ),
 
-    MQL_JSONIFY( LangFunctionOperator.class );
+    MQL_JSONIFY( LangFunctionOperator.class ),
+
+    //-------------------------------------------------------------
+    //                   OPENCYPHER OPERATORS
+    //-------------------------------------------------------------
+
+    REG_EQUALS( LangFunctionOperator.class ),
+
+    STARTS_WITH( LangFunctionOperator.class ),
+
+    ENDS_WITH( LangFunctionOperator.class ),
+
+    DESERIALIZE( LangFunctionOperator.class ),
+
+    CYPHER_PATH_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_ALL_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_ANY_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_NONE_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_SINGLE_MATCH( LangFunctionOperator.class ),
+
+    DESERIALIZE_DIRECTORY( LangFunctionOperator.class ),
+
+    CYPHER_HAS_PROPERTY( LangFunctionOperator.class ),
+
+    DESERIALIZE_LIST( LangFunctionOperator.class ),
+
+    CYPHER_HAS_LABEL( LangFunctionOperator.class ),
+
+    CYPHER_NODE_MATCH( LangFunctionOperator.class ),
+
+    CYPHER_NODE_EXTRACT( LangFunctionOperator.class ),
+
+    CYPHER_EXTRACT_FROM_PATH( LangFunctionOperator.class ),
+
+    CYPHER_EXTRACT_PROPERTY( LangFunctionOperator.class ),
+
+    CYPHER_EXTRACT_ID( LangFunctionOperator.class ),
+
+    CYPHER_EXTRACT_PROPERTIES( LangFunctionOperator.class ),
+
+    CYPHER_EXTRACT_LABELS( LangFunctionOperator.class ),
+
+    CYPHER_EXTRACT_LABEL( LangFunctionOperator.class ),
+
+    CYPHER_TO_LIST( LangFunctionOperator.class ),
+
+    CYPHER_ADJUST_EDGE( LangFunctionOperator.class ),
+
+    CYPHER_SET_PROPERTY( LangFunctionOperator.class ),
+
+    CYPHER_SET_PROPERTIES( LangFunctionOperator.class ),
+
+    CYPHER_SET_LABELS( LangFunctionOperator.class ),
+
+    CYPHER_REMOVE_LABELS( LangFunctionOperator.class ),
+
+    CYPHER_REMOVE_PROPERTY( LangFunctionOperator.class ),
+
+    CYPHER_REMOVE_PROPERTIES( LangFunctionOperator.class );
 
 
+    @Getter
     private final Class<? extends Operator> clazz;
 
 

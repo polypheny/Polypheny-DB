@@ -86,6 +86,9 @@ public class FileStore extends DataStore {
 
     private final File WAL; // A folder containing the write ahead log
 
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
+
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
@@ -164,7 +167,7 @@ public class FileStore extends DataStore {
                     "unused",
                     "unused" );
 
-            for ( Long colId : catalogTable.columnIds ) {
+            for ( Long colId : catalogTable.fieldIds ) {
                 File newColumnFolder = getColumnFolder( colId, partitionId );
                 if ( !newColumnFolder.mkdir() ) {
                     throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
@@ -190,7 +193,7 @@ public class FileStore extends DataStore {
 
         for ( long partitionId : partitionIds ) {
             catalog.deletePartitionPlacement( getAdapterId(), partitionId );
-            for ( Long colId : catalogTable.columnIds ) {
+            for ( Long colId : catalogTable.fieldIds ) {
                 File f = getColumnFolder( colId, partitionId );
                 try {
                     FileUtils.deleteDirectory( f );
