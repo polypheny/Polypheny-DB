@@ -54,7 +54,7 @@ task generateFmppSources {
                 outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/sql")
     }
 }
-task generateParser(type: CompileJavaccTask) {
+task generateParser (type: CompileJavaccTask) {
     dependsOn("generateFmppSources")
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]

@@ -40,7 +40,7 @@ sourceSets {
     }
 }
 
-compileJava {
+compileJava{
     dependsOn(":csv-adapter:processResources")
 }
 
