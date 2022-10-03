@@ -58,8 +58,8 @@ public class InformationGraph extends Information {
     private int maxY;
 
     @Setter
-    private List<GraphColor> colorList = List.of( GraphColor.POLICE_BLUE, GraphColor.MIKADO_YELLOW, GraphColor.PASTEL_RED, GraphColor.TUSCAN_RED,
-            GraphColor.DARK_SEE_GREEN, GraphColor.SILVER_PINK, GraphColor.TWILIGHT_LAVENDER );
+    @SuppressWarnings("unused")
+    private List<GraphColor> colorList = List.of( GraphColor.PASTEL_RED, GraphColor.BATTERY_CHARGED_BLUE, GraphColor.MIKADO_YELLOW, GraphColor.POLICE_BLUE, GraphColor.TUSCAN_RED, GraphColor.DARK_SEE_GREEN, GraphColor.JELLY_BEAN_BLUE, GraphColor.TWILIGHT_LAVENDER, GraphColor.SILVER_PINK, GraphColor.LIME );
 
 
     /**
