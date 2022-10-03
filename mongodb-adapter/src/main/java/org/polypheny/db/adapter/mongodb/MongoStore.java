@@ -97,7 +97,7 @@ public class MongoStore extends DataStore {
     private final transient TransactionProvider transactionProvider;
     private transient MongoSchema currentSchema;
     private String currentUrl;
-    private final int dockerInstanceId;
+    private int dockerInstanceId;
 
     @Getter
     private final List<PolyType> unsupportedTypes = ImmutableList.of();
@@ -114,22 +114,30 @@ public class MongoStore extends DataStore {
 
         this.port = Integer.parseInt( settings.get( "port" ) );
 
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:4.4.14", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
-                .withMappedPort( 27017, port )
-                .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" + adapterId ) )
-                .withReadyTest( this::testConnection, 100000 )
-                .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
-                .build();
-        this.host = container.getHost();
-
-        DockerManager.getInstance().initialize( container ).start();
+        if ( deployMode == DeployMode.DOCKER ) {
+            dockerInstanceId = Integer.parseInt( settings.get( "instanceId" ) );
+            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:4.4.7", getUniqueName(), dockerInstanceId )
+                    .withMappedPort( 27017, port )
+                    .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
+                    .withReadyTest( this::testConnection, 20000 )
+                    .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
+                    .build();
+            this.host = container.getHost();
+            DockerManager.getInstance().initialize( container ).start();
+        } else if ( deployMode == DeployMode.REMOTE ) {
+            this.host = settings.get( "host" );
+        } else if ( deployMode == DeployMode.EMBEDDED ) {
+            throw new RuntimeException( "Unsupported deploy mode: " + deployMode.name() );
+        } else {
+            throw new RuntimeException( "Unknown deploy mode: " + deployMode.name() );
+        }
 
         addInformationPhysicalNames();
         enableInformationPage();
-
-        dockerInstanceId = container.getDockerInstanceId();
-
-        resetDockerConnection( RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ) );
+        ConfigDocker c = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId );
+        if ( c != null ) {
+            resetDockerConnection( c );
+        }
 
         this.transactionProvider = new TransactionProvider( this.client );
         MongoDatabase db = this.client.getDatabase( "admin" );
