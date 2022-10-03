@@ -28,7 +28,7 @@ import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.plugin.json.JsonMapper;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
@@ -180,7 +180,8 @@ public class InformationServer implements InformationObserver {
 
 
     public void getEnabledPlugins( final Context ctx ) {
-        ctx.json( Collections.singletonList( "Explore-By-Example" ) );
+        //ctx.json( Collections.singletonList( "Explore-By-Example" ) );
+        ctx.json( List.of() );
     }
 
 

@@ -26,7 +26,7 @@ public enum Adapter {
     MONGODB( "org.polypheny.db.adapter.mongodb.MongoStore" ),
     HSQLDB( "org.polypheny.db.adapter.jdbc.stores.HsqldbStore" ),
     CSV( "org.polypheny.db.adapter.csv.CsvSource" ),
-    CASSANDRA( "org.polypheny.db.adapter.cassandra.CassandraStore" ),
+    //CASSANDRA( "org.polypheny.db.adapter.cassandra.CassandraStore" ),
     MONETDB( "org.polypheny.db.adapter.jdbc.stores.MonetdbStore" ),
     COTTONTAIL( "org.polypheny.db.adapter.cottontail.CottontailStore" ),
     POSTGRESQL( "org.polypheny.db.adapter.jdbc.stores.PostgresqlStore" ),
@@ -86,11 +86,11 @@ public enum Adapter {
                 settings.put( "directory", "classpath://hr" );
                 settings.put( "maxStringLength", "255" );
                 break;
-            case CASSANDRA:
+            /*case CASSANDRA:
                 settings.put( "mode", "docker" );
                 settings.put( "instanceId", "0" );
                 settings.put( "port", "9042" );
-                break;
+                break;*/
             case MONETDB:
                 settings.put( "mode", "docker" );
                 settings.put( "instanceId", "0" );
