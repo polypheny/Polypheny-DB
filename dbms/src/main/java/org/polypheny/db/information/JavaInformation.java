@@ -18,6 +18,7 @@ package org.polypheny.db.information;
 
 
 import java.util.Arrays;
+import java.util.List;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
@@ -54,6 +55,7 @@ public class JavaInformation {
                 GraphType.DOUGHNUT,
                 new String[]{ "Current", "Maximum", "Free" }
         );
+        heapInfoGraph.colorList( List.of( GraphColor.PASTEL_RED, GraphColor.BATTERY_CHARGED_BLUE, GraphColor.LIME ) );
         im.registerInformation( heapInfoGraph );
 
         InformationTable heapInfoTable = new InformationTable(
