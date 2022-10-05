@@ -94,7 +94,6 @@ public class PGInterface extends QueryInterface {
 
     @Override
     public void run() {
-        //ToDo: Instantiate Server (open port...)
 
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
@@ -106,23 +105,11 @@ public class PGInterface extends QueryInterface {
                             ChannelPipeline channelPipeline = socketChannel.pipeline();
 
                             //Inbound
-                            //channelPipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, Integer.MAX_VALUE, 1, 4, -4, 0, true));
-                            //channelPipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 1, 4, -4, 0));
-                            //channelPipeline.addLast("DecoderText", new Decoder(Integer.MAX_VALUE, 1, 4, -4, 0));
-                            //channelPipeline.addLast("headerdecoder", new StringDecoder());
                             channelPipeline.addLast("decoder", new StringDecoder());
-
-
-                            //Outbound
-                            // only accepts bytebuf
-                            //channelPipeline.addLast("frameEncoder", new LengthFieldPrepender(4, true));
-                            //channelPipeline.addLast("headerPrepender", new HeaderPrepender());
-                            //channelPipeline.addLast("encoder", new StringEncoder());
 
                             //Handler
                             channelPipeline.addLast("handler", new PGInterfaceServerHandler(transactionManager));
-                            //channelPipeline.addLast("handler2", new ServerHandler2());
-                            //channelPipeline.addLast("handler", new ServerHandler3());
+
 
                         }
                     }).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true);

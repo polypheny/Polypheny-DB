@@ -20,6 +20,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 public class PGInterfaceServerWriter {
     String type;
@@ -202,30 +203,63 @@ public class PGInterfaceServerWriter {
         return buffer;
     }
 
-    public ByteBuf writeRowDescription(String fieldName, int objectIDTable, int attributeNoCol, int objectIDCol, int dataTypeSize, int typeModifier, int formatCode) {
+    public ByteBuf writeRowDescription(ArrayList<Object[]> valuesPerCol) {
         //I don't check for length, bcs rowDescription is always the same
         ByteBuf buffer = ctx.alloc().buffer();
+        //ByteBuf bufferTemp = ctx.alloc().buffer();
+        String fieldName;
+        int objectIDTable;
+        int attributeNoCol;
+        int objectIDCol;
+        int dataTypeSize;
+        int typeModifier;
+        int formatCode;
 
         //bytebuf.writeInt(int value) = 32-bit int
         //bytebuf.writeShort(int value) = 16-bit short integer;
 
+        int messageLength = 0;
         buffer.writeByte(pgMsg.getHeaderChar());
-        buffer.writeInt(pgMsg.getLength() + fieldName.length() + 6);
 
-        buffer.writeBytes(fieldName.getBytes(StandardCharsets.UTF_8));
-        buffer.writeByte(0);
-        buffer.writeInt(objectIDTable);
-        buffer.writeByte(0);
-        buffer.writeShort(attributeNoCol);
-        buffer.writeByte(0);
-        buffer.writeInt(objectIDCol);
-        buffer.writeByte(0);
-        buffer.writeShort(dataTypeSize);
-        buffer.writeByte(0);
-        buffer.writeInt(typeModifier);
-        buffer.writeByte(0);
-        buffer.writeShort(formatCode);
+        for (int i = 0; i<valuesPerCol.size(); i++){
+            messageLength += (6+ valuesPerCol.get(0).length);
+        }
 
+        buffer.writeInt(pgMsg.getLength() + messageLength);
+        buffer.writeShort(Integer.parseInt(pgMsg.getMsgBody()));
+        ctx.writeAndFlush(buffer);  //bes dohii schecktses ohni fählöer
+
+
+        for(Object[] oneCol : valuesPerCol) {
+            ByteBuf bufferTemp = ctx.alloc().buffer();
+            fieldName = oneCol[0].toString();
+            objectIDTable = (Integer) oneCol[1];
+            attributeNoCol = (Integer) oneCol[2];
+            objectIDCol = (Integer) oneCol[3];
+            dataTypeSize = (Integer) oneCol[4];
+            typeModifier = (Integer) oneCol[5];
+            formatCode = (Integer) oneCol[6];
+
+            //messageLength += (fieldName.length() + 6);
+
+            bufferTemp.writeBytes(fieldName.getBytes(StandardCharsets.UTF_8));
+            bufferTemp.writeByte(0);
+            bufferTemp.writeInt(objectIDTable);
+            bufferTemp.writeByte(0);
+            bufferTemp.writeShort(attributeNoCol);
+            bufferTemp.writeByte(0);
+            bufferTemp.writeInt(objectIDCol);
+            bufferTemp.writeByte(0);
+            bufferTemp.writeShort(dataTypeSize);
+            bufferTemp.writeByte(0);
+            bufferTemp.writeInt(typeModifier);
+            bufferTemp.writeByte(0);
+            bufferTemp.writeShort(formatCode);  //aber bem 4. esch denn do dezwösche en fähöer cho, vorem nöchste flushl... werom au emmer??? --> be comission
+
+            ctx.writeAndFlush(bufferTemp);  //die erste 3x gohts ohni fähler
+        }
+
+        //return buffer.writeBytes(bufferTemp);
         return buffer;
     }
 
