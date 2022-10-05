@@ -314,8 +314,10 @@ header = getHeader(result);
                                 formatCode = 1;
                                 break;
                             case "VARCHAR":
-                                dataTypeSize = Integer.parseInt(head[2]); //TODO(FF): wennd varchar längi de type modifier esch, was esch denn dataTypeSize
-                                formatCode = 0;
+                                //dataTypeSize = Integer.parseInt(head[2]); //TODO(FF): wennd varchar längi de type modifier esch, was esch denn dataTypeSize
+                                //formatCode = 0;
+                                dataTypeSize = 4;
+                                formatCode = 1;
                                 break;
                             case "SMALLINT":
                                 dataTypeSize = 2;
