@@ -215,20 +215,16 @@ public class PGInterfaceServerWriter {
         int typeModifier;
         int formatCode;
 
-        //bytebuf.writeInt(int value) = 32-bit int
-        //bytebuf.writeShort(int value) = 16-bit short integer;
-
         int messageLength = 0;
         buffer.writeByte(pgMsg.getHeaderChar());
 
         for (int i = 0; i<valuesPerCol.size(); i++){
-            messageLength += (6+ valuesPerCol.get(0).length);
+            messageLength += (6 + valuesPerCol.get(0).length);
         }
 
         buffer.writeInt(pgMsg.getLength() + messageLength);
-        buffer.writeShort(Integer.parseInt(pgMsg.getMsgBody()));
-        ctx.writeAndFlush(buffer);  //bes dohii schecktses ohni fählöer
-
+        //buffer.writeShort(Integer.parseInt(pgMsg.getMsgBody()));
+        buffer.writeShort(8);   //FIXME(FF): Si wänd do ned d number of fields, sondern wievel descriptors ich för jedes field aagebe... >( oder au ned? werom 8?????
 
         for(Object[] oneCol : valuesPerCol) {
             ByteBuf bufferTemp = ctx.alloc().buffer();
@@ -248,15 +244,15 @@ public class PGInterfaceServerWriter {
             bufferTemp.writeByte(0);
             bufferTemp.writeShort(attributeNoCol);
             bufferTemp.writeByte(0);
-            bufferTemp.writeInt(objectIDCol);
+            bufferTemp.writeInt(objectIDCol);   //objectId of datatype?
             bufferTemp.writeByte(0);
             bufferTemp.writeShort(dataTypeSize);
             bufferTemp.writeByte(0);
             bufferTemp.writeInt(typeModifier);
             bufferTemp.writeByte(0);
-            bufferTemp.writeShort(formatCode);  //aber bem 4. esch denn do dezwösche en fähöer cho, vorem nöchste flushl... werom au emmer??? --> be comission
+            bufferTemp.writeShort(formatCode);  //aber bem 4. esch denn do dezwösche en fähler cho, vorem nöchste flushl... werom au emmer??? --> be comission
 
-            ctx.writeAndFlush(bufferTemp);  //die erste 3x gohts ohni fähler
+            buffer.writeBytes(bufferTemp);  //die erste 3x gohts ohni fähler
         }
 
         //return buffer.writeBytes(bufferTemp);

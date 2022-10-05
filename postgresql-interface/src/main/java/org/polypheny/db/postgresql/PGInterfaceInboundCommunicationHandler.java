@@ -223,10 +223,6 @@ public class PGInterfaceInboundCommunicationHandler {
         PGInterfaceMessage rowDescription = new PGInterfaceMessage(PGInterfaceHeaders.T, body, 4, true);    //the length here doesn't really matter, because it is calculated seperately in writeRowDescription
         PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter("i",rowDescription, ctx);
         ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
-
-        //rowDescriptionWriter.writeRowDescription(fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode);
-        //ctx.writeAndFlush(test);
-        //ctx.writeAndFlush(rowDescriptionWriter);  //TODO(FF): glaube das bruucht mer ned??
     }
 
 
@@ -265,7 +261,7 @@ public class PGInterfaceInboundCommunicationHandler {
                     colValLength += colVal.length();
                     body += colVal.length() + PGInterfaceMessage.getDelimiter() + colVal + PGInterfaceMessage.getDelimiter();
                 }
-            }
+            }   //do gets glaubs ergendwo neu en fähler?
             dataRow = new PGInterfaceMessage(PGInterfaceHeaders.D, body, colValLength, false);
             dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);    //TODO(FF): Das werd nie uufgrüeft?? werom au emmer
             ctx.writeAndFlush(dataRowWriter.writeOnByteBuf());
