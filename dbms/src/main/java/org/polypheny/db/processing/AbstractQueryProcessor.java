@@ -19,17 +19,8 @@ package org.polypheny.db.processing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -293,8 +284,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 CatalogTable catalogTable = Catalog.getInstance().getTable(t.getTableId());
                 if(catalogTable.tableType == Catalog.TableType.VIEW) {
                     TriggerResolver triggerResolver = new TriggerResolver();
-                    final LogicalTriggerExecution logicalTriggerExecution = triggerResolver.lookupTriggers(logicalRoot);
-                    logicalRoot = AlgRoot.of(logicalTriggerExecution, logicalRoot.kind);
+                    final Optional<LogicalTriggerExecution> logicalTriggerExecution = triggerResolver.
+                            lookupTriggers(logicalRoot);
+                    if(logicalTriggerExecution.isPresent()) {
+                        logicalRoot = AlgRoot.of(logicalTriggerExecution.get(), logicalRoot.kind);
+                    }
                 }
             }
         }

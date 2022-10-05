@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTrigger;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TriggerResolver {
@@ -40,12 +41,16 @@ public class TriggerResolver {
                 .collect(Collectors.toList());
 
     }
-    public LogicalTriggerExecution lookupTriggers(AlgRoot logicalRoot) {
+    public Optional<LogicalTriggerExecution> lookupTriggers(AlgRoot logicalRoot) {
         Long tableId = logicalRoot.alg.getTable().getTable().getTableId();
         List<AlgNode> algNodes = searchTriggers(tableId)
                 .stream()
                 .map(CatalogTrigger::getDefinition)
                 .collect(Collectors.toList());
-        return LogicalTriggerExecution.create(logicalRoot.alg.getCluster(), (LogicalTableModify) logicalRoot.alg, algNodes, true);
+        if(algNodes.size() > 0) {
+        return Optional.of(LogicalTriggerExecution.create(logicalRoot.alg.getCluster(), (LogicalTableModify) logicalRoot.alg, algNodes, true));
+        } else {
+            return Optional.empty();
+        }
     }
 }
