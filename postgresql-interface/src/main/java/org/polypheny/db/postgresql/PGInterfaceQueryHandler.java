@@ -340,13 +340,14 @@ header = getHeader(result);
                         Object col[] = {fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode};
                         valuesPerCol.add(col);
                     }
+                    communicationHandler.sendParseBindComplete();
                     communicationHandler.sendRowDescription(numberOfFields, valuesPerCol);
                     //sendData
                     communicationHandler.sendDataRow(data);
 
                     rowsAffected = data.size();
                     communicationHandler.sendCommandCompleteSelect(rowsAffected);
-                    communicationHandler.sendParseBindComplete();
+
                     communicationHandler.sendReadyForQuery("I");
                 }
 

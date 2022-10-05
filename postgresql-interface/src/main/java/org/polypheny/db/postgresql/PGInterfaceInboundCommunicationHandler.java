@@ -23,32 +23,33 @@ import org.polypheny.db.transaction.TransactionManager;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+/**
+ * Manages all incoming communication, not using the netty framework
+ */
 public class PGInterfaceInboundCommunicationHandler {
     String type;
-    PGInterfaceClient client;
     ChannelHandlerContext ctx;
     TransactionManager transactionManager;
 
-    public PGInterfaceInboundCommunicationHandler (String type, PGInterfaceClient client, TransactionManager transactionManager) {
+    public PGInterfaceInboundCommunicationHandler (String type, ChannelHandlerContext ctx, TransactionManager transactionManager) {
         this.type = type;
-        this.client = client;
-        this.ctx = client.getCtx();
+        this.ctx = ctx;
         this.transactionManager = transactionManager;
     }
 
-    //ich mues ergendwie identifiziere wele client dases esch... oder muesich öberhaupt speichere was fören phase das de client denne esch...
-    //muesich das wörklech oder esches eidütig vom protokoll här? --> has gfühl chas eidütig metem protokoll handle
 
-
-    public String decideCycle(Object oMsg) {
-        String cycleState = "";
+    /**
+     * Decides in what cycle from postgres the client is (startup-phase, query-phase, etc.)
+     * @param oMsg the incoming message from the client (unchanged)
+     * @return
+     */
+    public void decideCycle(Object oMsg) {
         String msgWithZeroBits = ((String) oMsg);
         String wholeMsg = msgWithZeroBits.replace("\u0000", "");
 
-
-
+        //TODO(FF): simple query phase is not implemented
         switch (wholeMsg.substring(0, 1)) {
-            case "C":
+            case "C":   //TODO(FF):was gnau passiert do??
                 PGInterfaceMessage msg = null;
                 msg.setHeader(PGInterfaceHeaders.C);
                 //msg.setMsgBody();
@@ -64,7 +65,6 @@ public class PGInterfaceInboundCommunicationHandler {
                 break;
 
         }
-        return cycleState;
     }
 
     public void startUpPhase() {
@@ -207,15 +207,11 @@ public class PGInterfaceInboundCommunicationHandler {
     //for SELECT and CREATE TABLE AS
     public void sendCommandCompleteSelect(int rowsSelected) {
         //send CommandComplete - SELECT rows (rows = #rows retrieved --> used for SELECT and CREATE TABLE AS commands)
-        String body = "SELECT "+ String.valueOf(rowsSelected);   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
-        //"SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected)
-        PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, body, 4, true);
-        PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter("s", selectCommandComplete, ctx);
-        ByteBuf buf = selectCommandCompleteWriter.writeOnByteBuf();
-        String lol = buf.toString(Charset.defaultCharset());
-        ctx.writeAndFlush(buf);
+        String body = "SELECT"+ String.valueOf(rowsSelected);   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
+        PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, "SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected), 4, true);
+        PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter("ss", selectCommandComplete, ctx);
+        ctx.writeAndFlush(selectCommandCompleteWriter.writeOnByteBuf());
     }
-
 
 
 
@@ -227,9 +223,12 @@ public class PGInterfaceInboundCommunicationHandler {
         //ByteBuf test = ctx.alloc().buffer();
         String body = String.valueOf(numberOfFields);
         PGInterfaceMessage rowDescription = new PGInterfaceMessage(PGInterfaceHeaders.T, body, 4, true);    //the length here doesn't really matter, because it is calculated seperately in writeRowDescription
-        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter("test",rowDescription, ctx);
-        //ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
-        ctx.writeAndFlush(rowDescriptionWriter.writeOnByteBuf());
+        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter("i",rowDescription, ctx);
+        ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
+
+        //rowDescriptionWriter.writeRowDescription(fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode);
+        //ctx.writeAndFlush(test);
+        //ctx.writeAndFlush(rowDescriptionWriter);  //TODO(FF): glaube das bruucht mer ned??
     }
 
 

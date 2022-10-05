@@ -94,7 +94,6 @@ public class PGInterface extends QueryInterface {
 
     @Override
     public void run() {
-        //ToDo: Instantiate Server (open port...)
 
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
@@ -110,6 +109,7 @@ public class PGInterface extends QueryInterface {
 
                             //Handler
                             channelPipeline.addLast("handler", new PGInterfaceServerHandler(transactionManager));
+
 
                         }
                     }).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true);
