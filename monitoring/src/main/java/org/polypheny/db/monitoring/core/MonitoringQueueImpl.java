@@ -45,13 +45,14 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private final MonitoringRepository statisticRepository;
     private MonitoringThreadPoolExecutor threadPoolWorkers;
 
-    private final BlockingQueue eventQueue;
+    private final BlockingQueue<Runnable> eventQueue;
 
     private final int CORE_POOL_SIZE;
     private final int MAXIMUM_POOL_SIZE;
     private final int KEEP_ALIVE_TIME;
 
-    private boolean backgroundProcessingActive;
+    private final boolean backgroundProcessingActive;
+
 
     /**
      * Ctor which automatically will start the background task based on the given boolean
@@ -64,7 +65,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             @NonNull MonitoringRepository statisticRepository ) {
         this.persistentRepository = persistentRepository;
         this.statisticRepository = statisticRepository;
-        this.eventQueue = new LinkedBlockingQueue();
+        this.eventQueue = new LinkedBlockingQueue<>();
         this.backgroundProcessingActive = backgroundProcessingActive;
 
         this.CORE_POOL_SIZE = RuntimeConfig.MONITORING_CORE_POOL_SIZE.getInteger();
@@ -76,8 +77,12 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
             RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
 
-            threadPoolWorkers = new MonitoringThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME,
-                    TimeUnit.SECONDS, eventQueue);
+            threadPoolWorkers = new MonitoringThreadPoolExecutor(
+                    CORE_POOL_SIZE,
+                    MAXIMUM_POOL_SIZE,
+                    KEEP_ALIVE_TIME,
+                    TimeUnit.SECONDS,
+                    eventQueue );
         }
     }
 
@@ -145,13 +150,17 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * Overrides beforeExecute and afterExecute of ThreadPoolExecutor to check the number of threads
      * and logs new thread count if there is a change.
      */
-    class MonitoringThreadPoolExecutor extends ThreadPoolExecutor {
+    static class MonitoringThreadPoolExecutor extends ThreadPoolExecutor {
 
 
         private int threadCount;
 
 
-        public MonitoringThreadPoolExecutor( int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+        public MonitoringThreadPoolExecutor(
+                int corePoolSize,
+                int maximumPoolSize,
+                long keepAliveTime,
+                TimeUnit unit,
                 BlockingQueue<Runnable> workQueue ) {
             super( corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue );
             this.threadCount = this.getPoolSize();
@@ -159,7 +168,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
         @Override
-        protected void beforeExecute( Thread t, Runnable r ){
+        protected void beforeExecute( Thread t, Runnable r ) {
             if ( this.threadCount != this.getPoolSize() ) {
                 this.threadCount = this.getPoolSize();
                 if ( log.isDebugEnabled() ) {
@@ -175,20 +184,21 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         protected void afterExecute( Runnable r, Throwable t ) {
             super.afterExecute( r, t );
 
-            if ( this.threadCount != this.getPoolSize() ){
+            if ( this.threadCount != this.getPoolSize() ) {
                 this.threadCount = this.getPoolSize();
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Thread count for monitoring queue: {}", this.threadCount );
                 }
             }
         }
+
     }
 
 
     class MonitoringWorker implements Runnable {
 
         @Getter
-        private MonitoringEvent event;
+        private final MonitoringEvent event;
 
 
         public MonitoringWorker( MonitoringEvent event ) {
@@ -222,5 +232,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 }
             }
         }
+
     }
+
 }
