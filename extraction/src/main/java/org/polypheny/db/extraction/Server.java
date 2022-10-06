@@ -46,77 +46,29 @@ import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
-public class Server {
+public class Server implements Runnable {
     private final TransactionManager transactionManager;
     private final static int DEFAULT_SIZE = 200;
     private static int nextClientNumber = 1;
 
     public static Map<WsContext, Integer> listenerMap = new ConcurrentHashMap<>();
+    private final int port;
 
     public Server(int port, TransactionManager transactionManager) {
         this.transactionManager = transactionManager;
+        this.port = port;
 
-        Javalin javalin = Javalin.create().start( port );
-
-        javalin.before( ctx -> {
-            log.debug( "Schema Extraction Server received api call: {}", ctx.path() );
-        } );
-
-        // /register as listener (to get user inputs)
-        javalin.ws("/register", ws -> {
-            ws.onConnect(ctx -> {
-                int userID = nextClientNumber;
-                listenerMap.put(ctx, userID);
-                log.debug(String.valueOf(userID) + " joined schema extraction server listeners");
-                broadcastMessage("Server", "connect", (userID + " joined listeners"));
-                nextClientNumber++;
-            });
-            ws.onClose(ctx -> {
-                String userIDAsString = String.valueOf(listenerMap.get(ctx));
-                listenerMap.remove(ctx);
-                log.debug(userIDAsString + " left schema extraction server listeners");
-                broadcastMessage("Server", "disconnect", (userIDAsString + " left listeners"));
-            });
-        });
-
-        // /config (e.g. user parameters)
-        javalin.get( "/config/get", ServerControl::getCurrentConfigAsJson );
-
-        // /receive a (SQL) query from Python
-        javalin.post("/query", ctx -> {
-            String queryLanguage = ctx.formParam("querylanguage");
-            if (Objects.equals(queryLanguage, "SQL")) {
-                // Run query sent by Python
-                String query = ctx.formParam("query");
-                try {
-                    QueryResult queryResult = executeSQL(query);
-                    ctx.result(Arrays.deepToString(queryResult.data));
-                } catch (PolyphenyDbException e) {
-                    ctx.result("Malformed query" + e);
-                }
-            } else {
-                ctx.result("queryLanguage not implemented: " + queryLanguage);
-            }
-        });
-
-        log.info( "Polypheny schema extraction server is running on port {}", port );
-
-        // Periodically sent status to all clients to keep the connection open
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate(
-                () -> broadcastMessage("Server", "status", "online"),
-                0,
-                2,
-                TimeUnit.SECONDS );
     }
 
     // Sends a message from one user to all users
     public static void broadcastMessage(String sender, String topic, String message) {
         listenerMap.keySet().stream().filter(ctx -> ctx.session.isOpen()).forEach(session -> {
             session.send(
-                            "{'sender': '" + sender + "' ," +
+                    "{'sender': '" + sender + "' ," +
                             " 'topic': '" + topic + "' ," +
                             " 'message': '" + message + "'}"
+                    // make a Message class -> how to serialize a class as json in java
+
                     //new JSONObject()
                     //        .put("sender", sender)
                     //        .put("topic", topic)
@@ -167,6 +119,7 @@ public class Server {
         Statement statement = transaction.createStatement();
         try {
             result = executeSqlSelect( statement, query );
+            // Could execute multiple queries here before commit
             transaction.commit();
         } catch ( Exception | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
@@ -235,14 +188,70 @@ public class Server {
 
         if ( parsed.isA( Kind.DDL ) ) {
             // explore by example should not execute any ddls
-            throw new RuntimeException( "No DDL expected here" );
+            throw new RuntimeException("No DDL expected here");
         } else {
-            Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
-            AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate(statement.getTransaction(), parsed, false);
+            AlgRoot logicalRoot = sqlProcessor.translate(statement, validated.left, null);
 
             // Prepare
-            result = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            result = statement.getQueryProcessor().prepareQuery(logicalRoot, true);
         }
         return result;
+    }
+
+    @Override
+    public void run() {
+        Javalin javalin = Javalin.create().start(port);
+
+        javalin.before(ctx -> {
+            log.debug("Schema Extraction Server received api call: {}", ctx.path());
+        });
+
+        // /register as listener (to get user inputs)
+        javalin.ws("/register", ws -> {
+            ws.onConnect(ctx -> {
+                int userID = nextClientNumber;
+                listenerMap.put(ctx, userID);
+                log.debug(String.valueOf(userID) + " joined schema extraction server listeners");
+                broadcastMessage("Server", "connect", (userID + " joined listeners"));
+                nextClientNumber++;
+            });
+            ws.onClose(ctx -> {
+                String userIDAsString = String.valueOf(listenerMap.get(ctx));
+                listenerMap.remove(ctx);
+                log.debug(userIDAsString + " left schema extraction server listeners");
+                broadcastMessage("Server", "disconnect", (userIDAsString + " left listeners"));
+            });
+        });
+
+        // /config (e.g. user parameters)
+        javalin.get("/config/get", ServerControl::getCurrentConfigAsJson);
+
+        // /receive a (SQL) query from Python
+        javalin.post("/query", ctx -> {
+            String queryLanguage = ctx.formParam("querylanguage");
+            if (Objects.equals(queryLanguage, "SQL")) {
+                // Run query sent by Python
+                String query = ctx.formParam("query");
+                try {
+                    QueryResult queryResult = executeSQL(query);
+                    ctx.result(Arrays.deepToString(queryResult.data));
+                } catch (PolyphenyDbException e) {
+                    ctx.result("Malformed query" + e);
+                }
+            } else {
+                ctx.result("queryLanguage not implemented: " + queryLanguage);
+            }
+        });
+
+        log.info("Polypheny schema extraction server is running on port {}", port);
+
+        // Periodically sent status to all clients to keep the connection open
+        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+        exec.scheduleAtFixedRate(
+                () -> broadcastMessage("Server", "status", "online"),
+                0,
+                2,
+                TimeUnit.SECONDS);
     }
 }

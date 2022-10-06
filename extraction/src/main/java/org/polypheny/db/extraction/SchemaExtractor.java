@@ -59,6 +59,8 @@ public class SchemaExtractor {
         // Start server (for communication with Python)
         // TODO: Port number?
         Server server = new Server(20598, transactionManager);
+        Thread thread = new Thread(server);
+        thread.start();
     }
 
     /**
