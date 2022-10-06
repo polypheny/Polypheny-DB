@@ -46,6 +46,7 @@ include 'plugins:file-adapter'
 
 // other plugins
 include 'plugins:explore-by-example'
+include 'extraction'
 
 // disabled adapter plugins
 include 'plugins:pig-adapter'
