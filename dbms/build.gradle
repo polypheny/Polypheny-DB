@@ -155,6 +155,7 @@ licensee {
     allowDependency('org.glassfish.hk2', 'hk2-api', '2.6.1') { because 'Eclipse Public License v. 2.0' }
     allowDependency('org.glassfish.hk2', 'hk2-locator', '2.6.1') { because 'Eclipse Public License v. 2.0' }
     allowDependency('org.glassfish.hk2', 'hk2-utils', '2.6.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.glassfish', 'jakarta.json', '2.0.1') { because 'Eclipse Public License v. 2.0' }
 
     // transitive
     allowDependency('org.yaml', 'snakeyaml', '1.15') { because 'Apache 2.0 license' }
