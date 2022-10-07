@@ -221,8 +221,9 @@ public class PGInterfaceInboundCommunicationHandler {
         //ByteBuf test = ctx.alloc().buffer();
         String body = String.valueOf(numberOfFields);
         PGInterfaceMessage rowDescription = new PGInterfaceMessage(PGInterfaceHeaders.T, body, 4, true);    //the length here doesn't really matter, because it is calculated seperately in writeRowDescription
-        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter("i",rowDescription, ctx);
-        ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
+        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter("test",rowDescription, ctx);
+        //ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
+        ctx.writeAndFlush(rowDescriptionWriter.writeOnByteBuf());
     }
 
 
