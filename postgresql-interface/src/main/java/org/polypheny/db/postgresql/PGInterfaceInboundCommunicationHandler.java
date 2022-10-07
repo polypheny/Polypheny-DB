@@ -20,6 +20,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import org.polypheny.db.transaction.TransactionManager;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
@@ -210,7 +211,9 @@ public class PGInterfaceInboundCommunicationHandler {
         String body = "SELECT"+ String.valueOf(rowsSelected);   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
         PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, "SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected), 4, true);
         PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter("ss", selectCommandComplete, ctx);
-        ctx.writeAndFlush(selectCommandCompleteWriter.writeOnByteBuf());
+        ByteBuf buf = selectCommandCompleteWriter.writeOnByteBuf();
+        String lol = buf.toString(Charset.defaultCharset());
+        ctx.writeAndFlush(buf);
     }
 
 
@@ -299,7 +302,6 @@ public class PGInterfaceInboundCommunicationHandler {
         buf.writeInt(31);
         String lol = buf.toString(Charset.defaultCharset());
         ctx.writeAndFlush(buf);
-
 
 
     }
