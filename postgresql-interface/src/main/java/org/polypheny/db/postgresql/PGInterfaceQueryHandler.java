@@ -387,6 +387,18 @@ public class PGInterfaceQueryHandler{
         }
     }
 
+    //(SELECT empid FROM public.emps LIMIT 1) in postgres
+    /*
+1....2....T......empid...@...............D..........100C....SELECT 1.Z....I
+
+1...  .  2...  .  T ...  . .  . empid...  @  . .  . ...  . .  .  .  .  .  . ..  D ...  . .  . ...  .  1  0  0  C ...  . SELECT 1.  Z ... .  I
+1... 04 32... 04 54 ... 1e . 01 empid... 40 0c . 01 ... 17 . 04 ff ff ff ff .. 44 ... 0d . 01 ... 03 31 30 30 43 ... 0d SELECT 1. 5a ...05 49
+
+empid = 65 6d 70 69 64
+SELECT 1 = 53 45 4c 45 43 54 20 31
+(select_abst._1)
+     */
+
 
 
     //Example of server answer to simple select query (from real server)
