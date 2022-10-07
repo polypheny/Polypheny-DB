@@ -43,15 +43,15 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     private final PersistentMonitoringRepository persistentRepository;
     private final MonitoringRepository statisticRepository;
-    private ThreadPoolExecutor threadPoolWorkers;
+    private MonitoringThreadPoolExecutor threadPoolWorkers;
 
-    private final BlockingQueue eventQueue;
+    private final BlockingQueue<Runnable> eventQueue;
 
     private final int CORE_POOL_SIZE;
     private final int MAXIMUM_POOL_SIZE;
     private final int KEEP_ALIVE_TIME;
 
-    private boolean backgroundProcessingActive;
+    private final boolean backgroundProcessingActive;
 
 
     /**
@@ -65,7 +65,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             @NonNull MonitoringRepository statisticRepository ) {
         this.persistentRepository = persistentRepository;
         this.statisticRepository = statisticRepository;
-        this.eventQueue = new LinkedBlockingQueue();
+        this.eventQueue = new LinkedBlockingQueue<>();
         this.backgroundProcessingActive = backgroundProcessingActive;
 
         this.CORE_POOL_SIZE = RuntimeConfig.MONITORING_CORE_POOL_SIZE.getInteger();
@@ -77,7 +77,12 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
             RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
 
-            threadPoolWorkers = new ThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, eventQueue );
+            threadPoolWorkers = new MonitoringThreadPoolExecutor(
+                    CORE_POOL_SIZE,
+                    MAXIMUM_POOL_SIZE,
+                    KEEP_ALIVE_TIME,
+                    TimeUnit.SECONDS,
+                    eventQueue );
         }
     }
 
@@ -141,10 +146,59 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
+    /**
+     * Overrides beforeExecute and afterExecute of ThreadPoolExecutor to check the number of threads
+     * and logs new thread count if there is a change.
+     */
+    static class MonitoringThreadPoolExecutor extends ThreadPoolExecutor {
+
+
+        private int threadCount;
+
+
+        public MonitoringThreadPoolExecutor(
+                int corePoolSize,
+                int maximumPoolSize,
+                long keepAliveTime,
+                TimeUnit unit,
+                BlockingQueue<Runnable> workQueue ) {
+            super( corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue );
+            this.threadCount = this.getPoolSize();
+        }
+
+
+        @Override
+        protected void beforeExecute( Thread t, Runnable r ) {
+            if ( this.threadCount != this.getPoolSize() ) {
+                this.threadCount = this.getPoolSize();
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Thread count for monitoring queue: {}", this.threadCount );
+                }
+            }
+
+            super.beforeExecute( t, r );
+        }
+
+
+        @Override
+        protected void afterExecute( Runnable r, Throwable t ) {
+            super.afterExecute( r, t );
+
+            if ( this.threadCount != this.getPoolSize() ) {
+                this.threadCount = this.getPoolSize();
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Thread count for monitoring queue: {}", this.threadCount );
+                }
+            }
+        }
+
+    }
+
+
     class MonitoringWorker implements Runnable {
 
         @Getter
-        private MonitoringEvent event;
+        private final MonitoringEvent event;
 
 
         public MonitoringWorker( MonitoringEvent event ) {
