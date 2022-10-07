@@ -348,11 +348,17 @@ public class PGInterfaceQueryHandler{
                     communicationHandler.sendParseBindComplete();
                     communicationHandler.sendRowDescription(numberOfFields, valuesPerCol);
                     //sendData
-                    communicationHandler.sendDataRow(data);
+                    //communicationHandler.sendDataRow(data);
+                    communicationHandler.sendDataRow2(data);
 
                     rowsAffected = data.size();
                     communicationHandler.sendCommandCompleteSelect(rowsAffected);
 
+                    communicationHandler.sendReadyForQuery("I");
+                    communicationHandler.sendReadyForQuery("I");
+                    communicationHandler.sendReadyForQuery("I");
+                    communicationHandler.sendReadyForQuery("I");
+                    communicationHandler.sendReadyForQuery("I");
                     communicationHandler.sendReadyForQuery("I");
                 }
 

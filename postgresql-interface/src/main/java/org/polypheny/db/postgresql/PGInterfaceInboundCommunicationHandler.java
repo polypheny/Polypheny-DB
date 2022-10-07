@@ -20,6 +20,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import org.polypheny.db.transaction.TransactionManager;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
@@ -208,7 +209,9 @@ public class PGInterfaceInboundCommunicationHandler {
         String body = "SELECT"+ String.valueOf(rowsSelected);   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
         PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, "SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected), 4, true);
         PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter("ss", selectCommandComplete, ctx);
-        ctx.writeAndFlush(selectCommandCompleteWriter.writeOnByteBuf());
+        ByteBuf buf = selectCommandCompleteWriter.writeOnByteBuf();
+        String lol = buf.toString(Charset.defaultCharset());
+        ctx.writeAndFlush(buf);
     }
 
 
@@ -266,6 +269,9 @@ public class PGInterfaceInboundCommunicationHandler {
             dataRow = new PGInterfaceMessage(PGInterfaceHeaders.D, body, colValLength, false);
             dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);
             ctx.writeAndFlush(dataRowWriter.writeOnByteBuf());
+            ByteBuf buff = ctx.alloc().buffer();
+            //C...SELECT 6
+            buff.writeBytes("C000SELECT 6".getBytes(StandardCharsets.UTF_8));
             body = "";
         }
 
@@ -276,4 +282,25 @@ public class PGInterfaceInboundCommunicationHandler {
         ctx.close();
     }
 
+    public void sendDataRow2(ArrayList<String[]> data) {
+        ByteBuf buf = ctx.alloc().buffer();
+        // 44 00 00 00 0b 00 01 00 00 00 01 31
+        //buf.writeBytes("440000b01000131".getBytes());
+        buf.writeInt(44);
+        buf.writeInt(0);
+        buf.writeInt(0);
+        buf.writeInt(0);
+        buf.writeInt(0); //
+        buf.writeInt(0);
+        buf.writeInt(1);
+        buf.writeInt(0);
+        buf.writeInt(0);
+        buf.writeInt(0);
+        buf.writeInt(1);
+        buf.writeInt(31);
+        String lol = buf.toString(Charset.defaultCharset());
+        ctx.writeAndFlush(buf);
+
+
+    }
 }

@@ -139,8 +139,8 @@ public class PGInterfaceServerWriter {
                 //send dataRow
                 String test = "";
                 ByteBuf buffer7 = ctx.alloc().buffer();
-                //buffer7.writeByte(pgMsg.getHeaderChar());
-                buffer7.writeByte('X');
+                buffer7.writeByte(pgMsg.getHeaderChar());
+                //buffer7.writeByte('X');
                 ctx.writeAndFlush(buffer7);
                 test += pgMsg.getHeaderChar() + " | ";
 
@@ -199,7 +199,12 @@ public class PGInterfaceServerWriter {
             case "test":
                 //T.....1 lolid...40 02 . 01 ... 17 . 04 ff ff ff ff
                 buffer.writeByte(pgMsg.getHeaderChar());
-                buffer.writeBytes("00000".getBytes(StandardCharsets.UTF_8));
+                //buffer.writeBytes("00000".getBytes(StandardCharsets.UTF_8));
+                buffer.writeInt(0);
+                buffer.writeInt(0);
+                buffer.writeInt(0);
+                buffer.writeInt(0);
+                buffer.writeInt(0);
                 //buffer.writeInt(24 + "empid".length());
                 buffer.writeShort(1);
                 buffer.writeBytes("empid".getBytes(StandardCharsets.UTF_8));
