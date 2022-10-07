@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -143,22 +144,13 @@ public class StatisticCrud {
             throw new RuntimeException( "No Data available for Dashboard Diagram" );
         }
 
-        if ( selectInterval.equals( "all" ) ) {
+        if ( NumberUtils.isCreatable( selectInterval ) ) {
+            int interval = Integer.parseInt( selectInterval );
+            eachInfo = getDashboardInfo( calculateStartTime( interval, endTime ), endTime, convertIntervalMinuteToLong( interval ), queryData, dmlData );
+        } else {
             eachInfo = getDashboardInfo( startTimeAll, endTime, calculateIntervalAll( startTimeAll, endTime ), queryData, dmlData );
-
-        } else if ( selectInterval.equals( "60" ) ) {
-            eachInfo = getDashboardInfo( calculateStartTime( 60, endTime ), endTime, interval60min, queryData, dmlData );
-
-        } else if ( selectInterval.equals( "30" ) ) {
-            eachInfo = getDashboardInfo( calculateStartTime( 30, endTime ), endTime, interval60min / 2, queryData, dmlData );
-
-        } else if ( selectInterval.equals( "15" ) ) {
-            eachInfo = getDashboardInfo( calculateStartTime( 15, endTime ), endTime, interval60min / 4, queryData, dmlData );
-
-        } else if ( selectInterval.equals( "5" ) ) {
-            eachInfo = getDashboardInfo( calculateStartTime( 5, endTime ), endTime, interval60min / 12, queryData, dmlData );
-
         }
+
         ctx.json( eachInfo );
     }
 

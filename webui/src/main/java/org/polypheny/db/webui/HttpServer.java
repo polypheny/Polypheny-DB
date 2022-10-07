@@ -64,7 +64,16 @@ import org.polypheny.db.webui.models.Result;
 @Slf4j
 public class HttpServer implements Runnable {
 
+    private final TransactionManager transactionManager;
+    private final Authenticator authenticator;
+
     public static final Gson gson;
+    private final Gson gsonExpose = new GsonBuilder()
+            .excludeFieldsWithoutExposeAnnotation()
+            .enableComplexMapKeySerialization()
+            .setPrettyPrinting()
+            .create();
+
     public static final TypeAdapter<Throwable> throwableTypeAdapter;
 
 
@@ -106,49 +115,9 @@ public class HttpServer implements Runnable {
     }
 
 
-    private final TransactionManager transactionManager;
-    private final Authenticator authenticator;
-    private final Gson gsonExpose = new GsonBuilder()
-            .excludeFieldsWithoutExposeAnnotation()
-            .enableComplexMapKeySerialization()
-            .setPrettyPrinting()
-            .create();
-
-
     public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator ) {
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
-    }
-
-
-    /**
-     * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
-     * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
-     */
-    private static void enableCORS( Javalin webuiServer ) {
-        //staticFiles.header("Access-Control-Allow-Origin", "*");
-
-        webuiServer.options( "/*", ctx -> {
-            String accessControlRequestHeaders = ctx.req.getHeader( "Access-Control-Request-Headers" );
-            if ( accessControlRequestHeaders != null ) {
-                ctx.res.setHeader( "Access-Control-Allow-Headers", accessControlRequestHeaders );
-            }
-
-            String accessControlRequestMethod = ctx.req.getHeader( "Access-Control-Request-Method" );
-            if ( accessControlRequestMethod != null ) {
-                ctx.res.setHeader( "Access-Control-Allow-Methods", accessControlRequestMethod );
-            }
-
-            ctx.result( "OK" );
-        } );
-
-        webuiServer.before( ctx -> {
-            //res.header("Access-Control-Allow-Origin", "*");
-            ctx.res.setHeader( "Access-Control-Allow-Origin", "*" );
-            ctx.res.setHeader( "Access-Control-Allow-Credentials", "true" );
-            ctx.res.setHeader( "Access-Control-Allow-Headers", "*" );
-            ctx.res.setContentType( "application/json" );
-        } );
     }
 
 
@@ -405,6 +374,37 @@ public class HttpServer implements Runnable {
      */
     private void webSockets( Javalin webuiServer, Consumer<WsConfig> handler ) {
         webuiServer.ws( "/webSocket", handler );
+    }
+
+
+    /**
+     * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
+     * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
+     */
+    private static void enableCORS( Javalin webuiServer ) {
+        //staticFiles.header("Access-Control-Allow-Origin", "*");
+
+        webuiServer.options( "/*", ctx -> {
+            String accessControlRequestHeaders = ctx.req.getHeader( "Access-Control-Request-Headers" );
+            if ( accessControlRequestHeaders != null ) {
+                ctx.res.setHeader( "Access-Control-Allow-Headers", accessControlRequestHeaders );
+            }
+
+            String accessControlRequestMethod = ctx.req.getHeader( "Access-Control-Request-Method" );
+            if ( accessControlRequestMethod != null ) {
+                ctx.res.setHeader( "Access-Control-Allow-Methods", accessControlRequestMethod );
+            }
+
+            ctx.result( "OK" );
+        } );
+
+        webuiServer.before( ctx -> {
+            //res.header("Access-Control-Allow-Origin", "*");
+            ctx.res.setHeader( "Access-Control-Allow-Origin", "*" );
+            ctx.res.setHeader( "Access-Control-Allow-Credentials", "true" );
+            ctx.res.setHeader( "Access-Control-Allow-Headers", "*" );
+            ctx.res.setContentType( "application/json" );
+        } );
     }
 
 
