@@ -401,7 +401,6 @@ SELECT 1 = 53 45 4c 45 43 54 20 31
 
 
 
-
     //Example of server answer to simple select query (from real server)
     /*
     1....2....T......lolid...@...............D..........1D..........2D..........3D..........3D..........3D..........3C...
