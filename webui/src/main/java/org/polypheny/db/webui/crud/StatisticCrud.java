@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -119,28 +121,66 @@ public class StatisticCrud {
 
 
     /**
-     * Information for diagram shown on the UI dashboard.
+     * Information base on time interval for diagram shown on the UI dashboard.
      */
-    public void getDashboardDiagram( final Context ctx ) {
-        TreeMap<Timestamp, Pair<Integer, Integer>> info = new TreeMap<>();
-        TreeMap<Timestamp, Pair<Integer, Integer>> dashboardInfo = new TreeMap<>();
+    public void getDashboardDiagram( Context ctx ) {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
+        String selectInterval = request.selectInterval;
         List<QueryDataPointImpl> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class );
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
-        boolean notInserted;
-        Timestamp startTime;
+        TreeMap<Timestamp, Pair<Integer, Integer>> eachInfo = new TreeMap<>();
+
         Timestamp endTime = new Timestamp( System.currentTimeMillis() );
+        Timestamp startTimeAll;
+        long interval60min = convertIntervalMinuteToLong( 60 );
 
         if ( queryData.size() > 0 && dmlData.size() > 0 ) {
-            startTime = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
+            startTimeAll = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
         } else if ( dmlData.size() > 0 ) {
-            startTime = dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
+            startTimeAll = dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
         } else if ( queryData.size() > 0 ) {
-            startTime = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
+            startTimeAll = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
         } else {
             throw new RuntimeException( "No Data available for Dashboard Diagram" );
         }
 
-        long interval = calculateInterval( startTime, endTime );
+        if ( NumberUtils.isCreatable( selectInterval ) ) {
+            int interval = Integer.parseInt( selectInterval );
+            eachInfo = getDashboardInfo( calculateStartTime( interval, endTime ), endTime, convertIntervalMinuteToLong( interval ), queryData, dmlData );
+        } else {
+            eachInfo = getDashboardInfo( startTimeAll, endTime, calculateIntervalAll( startTimeAll, endTime ), queryData, dmlData );
+        }
+
+        ctx.json( eachInfo );
+    }
+
+
+    private long calculateIntervalAll( Timestamp startTime, Timestamp endTime ) {
+        return (endTime.getTime() - startTime.getTime()) / 10;
+    }
+
+
+    private long convertIntervalMinuteToLong( int minutes ) {
+        return TimeUnit.MINUTES.toMillis( minutes );
+    }
+
+
+    private Timestamp calculateStartTime( int intervalInMinutes, Timestamp endTime ) {
+        long startTime = endTime.getTime();
+        for ( int numberOfInterval = 10; numberOfInterval > 0; numberOfInterval-- ) {
+            startTime = startTime - convertIntervalMinuteToLong( intervalInMinutes );
+        }
+        return new Timestamp( startTime );
+    }
+
+
+    /**
+     * Information for diagram shown on the UI dashboard.
+     */
+    private TreeMap<Timestamp, Pair<Integer, Integer>> getDashboardInfo( Timestamp startTime, Timestamp endTime, long interval, List<QueryDataPointImpl> queryData, List<DmlDataPoint> dmlData ) {
+        TreeMap<Timestamp, Pair<Integer, Integer>> info = new TreeMap<>();
+        TreeMap<Timestamp, Pair<Integer, Integer>> dashboardInfo = new TreeMap<>();
+        boolean notInserted;
 
         Timestamp time = startTime;
         while ( endTime.getTime() - time.getTime() >= 0 ) {
@@ -175,13 +215,7 @@ public class StatisticCrud {
                 }
             }
         }
-
-        ctx.json( info );
-    }
-
-
-    private long calculateInterval( Timestamp startTime, Timestamp endTime ) {
-        return (endTime.getTime() - startTime.getTime()) / 10;
+        return info;
     }
 
 }
