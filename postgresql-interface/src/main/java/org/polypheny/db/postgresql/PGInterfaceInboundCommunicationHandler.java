@@ -263,7 +263,7 @@ public class PGInterfaceInboundCommunicationHandler {
                 }
             }   //do gets glaubs ergendwo neu en fähler?
             dataRow = new PGInterfaceMessage(PGInterfaceHeaders.D, body, colValLength, false);
-            dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);    //TODO(FF): Das werd nie uufgrüeft?? werom au emmer
+            dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);
             ctx.writeAndFlush(dataRowWriter.writeOnByteBuf());
             body = "";
         }

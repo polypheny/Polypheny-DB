@@ -310,14 +310,17 @@ public class PGInterfaceQueryHandler{
                                 break;
                             case "REAL":
                             case "INTEGER":
+                                objectIDCol = 32;
                                 dataTypeSize = 4;
-                                formatCode = 1;
+                                formatCode = 1; //Test with 0, normally 1 (?)
                                 break;
                             case "VARCHAR":
-                                //dataTypeSize = Integer.parseInt(head[2]); //TODO(FF): wennd varchar längi de type modifier esch, was esch denn dataTypeSize
-                                //formatCode = 0;
-                                dataTypeSize = 4;
-                                formatCode = 1;
+                                objectIDCol = 1043;
+                                typeModifier = Integer.parseInt(head[2]);
+                                dataTypeSize = Integer.parseInt(head[2]); //TODO(FF): wennd varchar längi de type modifier esch, was esch denn dataTypeSize
+                                formatCode = 0;
+                                //dataTypeSize = 4;
+                                //formatCode = 1;
                                 break;
                             case "SMALLINT":
                                 dataTypeSize = 2;
