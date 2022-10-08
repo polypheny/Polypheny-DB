@@ -16,6 +16,7 @@
 
 package org.polypheny.db.postgresql;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.commons.lang.ArrayUtils;
 import org.polypheny.db.PolyResult;
@@ -32,6 +33,8 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.*;
 
+import javax.swing.plaf.basic.BasicButtonUI;
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,8 +56,67 @@ public class PGInterfaceQueryHandler{
     }
 
     public void start() {
-        sendQueryToPolypheny();
+        hardcodeResponse();
+        //sendQueryToPolypheny();
     }
+
+    private void hardcodeResponse() {
+        ByteBuf buffer = ctx.alloc().buffer();
+        /*
+        1....2....T......empid...@...............D..........100C....SELECT 1.Z....I
+
+        1...  .  2...  .  T ...  . .  . empid...  @  . .  . ...  . .  .  .  .  .  . ..  D ...  . .  . ...  .  1  0  0  C ...  . SELECT 1.  Z ... .  I
+        1... 04 32... 04 54 ... 1e . 01 empid... 40 0c . 01 ... 17 . 04 ff ff ff ff .. 44 ... 0d . 01 ... 03 31 30 30 43 ... 0d SELECT 1. 5a ...05 49
+                           T, 0, 1,40, 1,17,0,4             D, 0d, 0, 1, 3, 100
+         */
+        int[] nbrs = {1,0,0,0,4};
+        //2
+        int[] nbrs2 = {0,0,0,4};
+        //T
+        //int[] nbrs3 = {0,0,0,1e,0,1};
+        int[] nbrs3 = {0,0,0,0,0,1};
+        //empid
+        //int[] nbrs4 = {0,0,0,40,0c,0,1,0,0,0,17,0,4,ff,ff,ff,ff,0,0};
+        int[] nbrs4 = {0,0,0,40,0,0,1,0,0,0,17,0,4,0,0,0,0,0,0};
+        //D
+        //int[] nbrs5 = {0,0,0,0d,0,1,0,0,0,3};
+        int[] nbrs5 = {0,0,0,0,0,1,0,0,0,3};
+        //100C
+        //int[] nbrs6 = {0,0,0,0d};
+        int[] nbrs6 = {0,0,0,0};
+        //SELECT 1
+        int[] nbrs7 = {0};
+        //Z
+        int[] nbrs8 = {0,0,0,5};
+        //I
+        buffer = writeIntArray(nbrs, buffer);
+        buffer.writeInt(2);
+        buffer = writeIntArray(nbrs2, buffer);
+        buffer.writeBytes("T".getBytes(StandardCharsets.UTF_8));
+        buffer = writeIntArray(nbrs3, buffer);
+        buffer.writeBytes("empid".getBytes(StandardCharsets.UTF_8));
+        buffer = writeIntArray(nbrs4, buffer);
+        buffer.writeBytes("D".getBytes(StandardCharsets.UTF_8));
+        buffer = writeIntArray(nbrs5, buffer);
+        buffer.writeBytes("100C".getBytes(StandardCharsets.UTF_8));
+        buffer = writeIntArray(nbrs6, buffer);
+        buffer.writeBytes("SELECT 1".getBytes(StandardCharsets.UTF_8));
+        buffer = writeIntArray(nbrs7, buffer);
+        buffer.writeBytes("Z".getBytes(StandardCharsets.UTF_8));
+        buffer = writeIntArray(nbrs8, buffer);
+        buffer.writeBytes("I".getBytes(StandardCharsets.UTF_8));
+
+        ctx.writeAndFlush(buffer);
+
+    }
+
+    private ByteBuf writeIntArray(int[] nbrs, ByteBuf buffer) {
+        for (int i=0; i< nbrs.length; i++) {
+            buffer.writeInt(nbrs[i]);
+        }
+        return buffer;
+    }
+
 
     public void sendQueryToPolypheny() {
         String type = ""; //query type according to answer tags
