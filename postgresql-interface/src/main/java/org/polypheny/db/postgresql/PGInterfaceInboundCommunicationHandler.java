@@ -208,9 +208,10 @@ public class PGInterfaceInboundCommunicationHandler {
     //for SELECT and CREATE TABLE AS
     public void sendCommandCompleteSelect(int rowsSelected) {
         //send CommandComplete - SELECT rows (rows = #rows retrieved --> used for SELECT and CREATE TABLE AS commands)
-        String body = "SELECT"+ String.valueOf(rowsSelected);   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
-        PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, "SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected), 4, true);
-        PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter("ss", selectCommandComplete, ctx);
+        String body = "SELECT "+ String.valueOf(rowsSelected);   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
+        //"SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected)
+        PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, body, 4, true);
+        PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter("s", selectCommandComplete, ctx);
         ByteBuf buf = selectCommandCompleteWriter.writeOnByteBuf();
         String lol = buf.toString(Charset.defaultCharset());
         ctx.writeAndFlush(buf);
