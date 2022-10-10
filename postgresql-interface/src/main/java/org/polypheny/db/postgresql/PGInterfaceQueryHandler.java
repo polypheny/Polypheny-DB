@@ -57,27 +57,51 @@ public class PGInterfaceQueryHandler{
 
     public void start() {
         hardcodeResponse();
+        //hardcodeResponse2();
         //sendQueryToPolypheny();
+    }
+
+    private void hardcodeResponse2() {
+        ByteBuf buffer = ctx.alloc().buffer();
+        int[] nbr = {1, 2};
+        buffer = writeIntArray(nbr, buffer);
+        buffer.writeByte('T');
+        buffer.writeBytes("empid".getBytes(StandardCharsets.UTF_8));
+        buffer.writeByte('@');
+        buffer.writeByte('D');
+        buffer.writeBytes("100".getBytes(StandardCharsets.UTF_8));
+        buffer.writeByte('C');
+        buffer.writeBytes("SELECT 1".getBytes(StandardCharsets.UTF_8));
+        buffer.writeByte('Z');
+        buffer.writeByte('I');
+        ctx.writeAndFlush(buffer);
+
     }
 
     private void hardcodeResponse() {
         ByteBuf buffer = ctx.alloc().buffer();
+        ByteBuf buffer2 = ctx.alloc().buffer();
         /*
         1....2....T......empid...@...............D..........100C....SELECT 1.Z....I
 
-        1...  .  2...  .  T ...  . .  . empid...  @  . .  . ...  . .  .  .  .  .  . ..  D ...  . .  . ...  .  1  0  0  C ...  . SELECT 1.  Z ... .  I
-        1... 04 32... 04 54 ... 1e . 01 empid... 40 0c . 01 ... 17 . 04 ff ff ff ff .. 44 ... 0d . 01 ... 03 31 30 30 43 ... 0d SELECT 1. 5a ...05 49
+         1 ...  .  2...  .  T ...  . .  . empid...  @  . .  . ...  . .  .  .  .  .  . ..  D ...  . .  . ...  .  1  0  0  C ...  . SELECT 1.  Z ... .  I
+        31 ... 04 32... 04 54 ... 1e . 01 empid... 40 0c . 01 ... 17 . 04 ff ff ff ff .. 44 ... 0d . 01 ... 03 31 30 30 43 ... 0d SELECT 1. 5a ...05 49
                            T, 0, 1,40, 1,17,0,4             D, 0d, 0, 1, 3, 100
          */
-        int[] nbrs = {1,0,0,0,4};
+        //ParseComplete
+        //int[] nbrs = {1,0,0,0,4};
+        int[] nbrs = {4};
+        //BindComplete
         //2
-        int[] nbrs2 = {0,0,0,4};
+        //int[] nbrs2 = {0,0,0,4};
+        int[] nbrs2 = {4};
+        //RowDescription
         //T
-        //int[] nbrs3 = {0,0,0,1e,0,1};
-        int[] nbrs3 = {0,0,0,0,0,1};
+        //int[] nbrs3 = {0,0,0,1e,0,1}; --> 1e ist short länge?? etzt schtemmt nome no d reihefolg ned...
+        int[] nbrs3 = {1};
         //empid
         //int[] nbrs4 = {0,0,0,40,0c,0,1,0,0,0,17,0,4,ff,ff,ff,ff,0,0};
-        int[] nbrs4 = {0,0,0,40,0,0,1,0,0,0,17,0,4,0,0,0,0,0,0};
+        int[] nbrs4 = {40,0,0,1,0,0,0,17,0,4,0,0,0,0,0,0};
         //D
         //int[] nbrs5 = {0,0,0,0d,0,1,0,0,0,3};
         int[] nbrs5 = {0,0,0,0,0,1,0,0,0,3};
@@ -89,21 +113,49 @@ public class PGInterfaceQueryHandler{
         //Z
         int[] nbrs8 = {0,0,0,5};
         //I
+        buffer.writeByte('1');
         buffer = writeIntArray(nbrs, buffer);
-        buffer.writeInt(2);
+        //buffer.writeInt(2);
+        buffer.writeByte('2');
         buffer = writeIntArray(nbrs2, buffer);
         buffer.writeBytes("T".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs3, buffer);
+        buffer.writeShort(0);
+        buffer.writeShort(24+"empid".length() +1);  //1e
+        buffer.writeShort(1);
+        //buffer = writeIntArray(nbrs3, buffer);
         buffer.writeBytes("empid".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs4, buffer);
+        buffer.writeInt(64);    //@
+        //buffer.writeByte(64);
+        //buffer.writeShort(12);  //1 abst. zvel zwösche 40 ond 0c
+        buffer.writeByte(12);   //0c
+        buffer.writeShort(1);
+        buffer.writeShort(0);
+        buffer.writeShort(23);  //17
+        buffer.writeShort(4);
+        //ctx.writeAndFlush(buffer);
+        //buffer = writeIntArray(nbrs4, buffer);
+        buffer.writeShort(2147483647);  //ff
+        buffer.writeShort(2147483647);
+        buffer.writeByte(0);
+        buffer.writeByte(0);
         buffer.writeBytes("D".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs5, buffer);
+        buffer.writeShort(0);
+        buffer.writeShort(13);  //0d
+        buffer.writeShort(1);
+        buffer.writeShort(0);
+        buffer.writeShort(3);
+        //buffer = writeIntArray(nbrs5, buffer);
         buffer.writeBytes("100C".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs6, buffer);
+        buffer.writeShort(0);
+        buffer.writeShort(13);
+        //buffer2 = writeIntArray(nbrs6, buffer2);
         buffer.writeBytes("SELECT 1".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs7, buffer);
+        //buffer2 = writeIntArray(nbrs7, buffer2);
+        buffer.writeByte(0);
         buffer.writeBytes("Z".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs8, buffer);
+        //buffer2 = writeIntArray(nbrs8, buffer2);
+        buffer.writeShort(0);
+        buffer.writeShort(5);
         buffer.writeBytes("I".getBytes(StandardCharsets.UTF_8));
 
         ctx.writeAndFlush(buffer);
