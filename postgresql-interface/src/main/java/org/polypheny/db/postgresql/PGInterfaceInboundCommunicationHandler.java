@@ -201,8 +201,10 @@ public class PGInterfaceInboundCommunicationHandler {
 
     public void sendCommandCompleteInsert( int rowsInserted ) {
         //send CommandComplete - insert
-        PGInterfaceMessage insertCommandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, "INSERT" + PGInterfaceMessage.getDelimiter() + "0" + PGInterfaceMessage.getDelimiter() + String.valueOf( rowsInserted ), 4, true );
-        PGInterfaceServerWriter insertCommandCompleteWriter = new PGInterfaceServerWriter( "sss", insertCommandComplete, ctx );
+        String body = "INSERT " + String.valueOf(rowsInserted);
+        //String body = "INSERT" + PGInterfaceMessage.getDelimiter() + "0" + PGInterfaceMessage.getDelimiter() + String.valueOf( rowsInserted );
+        PGInterfaceMessage insertCommandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, body, 4, true );
+        PGInterfaceServerWriter insertCommandCompleteWriter = new PGInterfaceServerWriter( "s", insertCommandComplete, ctx );
         ctx.writeAndFlush( insertCommandCompleteWriter.writeOnByteBuf() );
 
     }
@@ -219,8 +221,9 @@ public class PGInterfaceInboundCommunicationHandler {
     //for SELECT and CREATE TABLE AS
     public void sendCommandCompleteSelect( int rowsSelected ) {
         //send CommandComplete - SELECT rows (rows = #rows retrieved --> used for SELECT and CREATE TABLE AS commands)
-        String body = "SELECT " + String.valueOf( rowsSelected );   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
-        //"SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected)
+        String body = "SELECT " + String.valueOf( rowsSelected );
+        //String body = "SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected);
+        //String body = "SELECT" + PGInterfaceMessage.getDelimiter() + " " + PGInterfaceMessage.getDelimiter() + String.valueOf( rowsSelected );
         PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, body, 4, true );
         PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter( "s", selectCommandComplete, ctx );
         ByteBuf buf = selectCommandCompleteWriter.writeOnByteBuf();
