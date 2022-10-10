@@ -18,21 +18,22 @@ package org.polypheny.db.postgresql;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import org.polypheny.db.transaction.TransactionManager;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import org.polypheny.db.transaction.TransactionManager;
 
 /**
  * Manages all incoming communication, not using the netty framework
  */
 public class PGInterfaceInboundCommunicationHandler {
+
     String type;
     ChannelHandlerContext ctx;
     TransactionManager transactionManager;
 
-    public PGInterfaceInboundCommunicationHandler (String type, ChannelHandlerContext ctx, TransactionManager transactionManager) {
+
+    public PGInterfaceInboundCommunicationHandler( String type, ChannelHandlerContext ctx, TransactionManager transactionManager ) {
         this.type = type;
         this.ctx = ctx;
         this.transactionManager = transactionManager;
@@ -41,25 +42,26 @@ public class PGInterfaceInboundCommunicationHandler {
 
     /**
      * Decides in what cycle from postgres the client is (startup-phase, query-phase, etc.)
+     *
      * @param oMsg the incoming message from the client (unchanged)
      * @return
      */
-    public void decideCycle(Object oMsg) {
+    public void decideCycle( Object oMsg ) {
         String msgWithZeroBits = ((String) oMsg);
-        String wholeMsg = msgWithZeroBits.replace("\u0000", "");
+        String wholeMsg = msgWithZeroBits.replace( "\u0000", "" );
 
         //TODO(FF): simple query phase is not implemented
-        switch (wholeMsg.substring(0, 1)) {
+        switch ( wholeMsg.substring( 0, 1 ) ) {
             case "C":   //TODO(FF):was gnau passiert do??
                 PGInterfaceMessage msg = null;
-                msg.setHeader(PGInterfaceHeaders.C);
+                msg.setHeader( PGInterfaceHeaders.C );
                 //msg.setMsgBody();
                 break;
             case "r":
                 startUpPhase();
                 break;
             case "P":
-                extendedQueryPhase(wholeMsg);
+                extendedQueryPhase( wholeMsg );
                 break;
             case "X":
                 terminateConnection();
@@ -68,45 +70,47 @@ public class PGInterfaceInboundCommunicationHandler {
         }
     }
 
+
     public void startUpPhase() {
         //authenticationOk
-        PGInterfaceMessage authenticationOk = new PGInterfaceMessage(PGInterfaceHeaders.R, "0", 8, false);
-        PGInterfaceServerWriter authenticationOkWriter = new PGInterfaceServerWriter("i", authenticationOk, ctx);
-        ctx.writeAndFlush(authenticationOkWriter.writeOnByteBuf());
+        PGInterfaceMessage authenticationOk = new PGInterfaceMessage( PGInterfaceHeaders.R, "0", 8, false );
+        PGInterfaceServerWriter authenticationOkWriter = new PGInterfaceServerWriter( "i", authenticationOk, ctx );
+        ctx.writeAndFlush( authenticationOkWriter.writeOnByteBuf() );
 
         //server_version (Parameter Status message)
-        PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version§14", 4, true);
+        PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage( PGInterfaceHeaders.S, "server_version§14", 4, true );
         //PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version" + PGInterfaceMessage.getDelimiter() + "14", 4, true);
-        PGInterfaceServerWriter parameterStatusServerVsWriter = new PGInterfaceServerWriter("ss", parameterStatusServerVs, ctx);
-        ctx.writeAndFlush(parameterStatusServerVsWriter.writeOnByteBuf());
+        PGInterfaceServerWriter parameterStatusServerVsWriter = new PGInterfaceServerWriter( "ss", parameterStatusServerVs, ctx );
+        ctx.writeAndFlush( parameterStatusServerVsWriter.writeOnByteBuf() );
 
         //ReadyForQuery
-        sendReadyForQuery("I");
+        sendReadyForQuery( "I" );
     }
+
 
     public void simpleQueryPhase() {
 
     }
 
-    public void extendedQueryPhase(String incomingMsg) {
 
-        if (incomingMsg.substring(2,5).equals("SET")) {
+    public void extendedQueryPhase( String incomingMsg ) {
+
+        if ( incomingMsg.substring( 2, 5 ).equals( "SET" ) ) {
 
             sendParseBindComplete();
 
             sendParseBindComplete();
 
             //commandComplete - SET
-            PGInterfaceMessage commandCompleteSET = new PGInterfaceMessage(PGInterfaceHeaders.C, "SET", 4, true);
-            PGInterfaceServerWriter commandCompleteSETWriter = new PGInterfaceServerWriter("s", commandCompleteSET, ctx);
-            ctx.writeAndFlush(commandCompleteSETWriter.writeOnByteBuf());
+            PGInterfaceMessage commandCompleteSET = new PGInterfaceMessage( PGInterfaceHeaders.C, "SET", 4, true );
+            PGInterfaceServerWriter commandCompleteSETWriter = new PGInterfaceServerWriter( "s", commandCompleteSET, ctx );
+            ctx.writeAndFlush( commandCompleteSETWriter.writeOnByteBuf() );
 
-            sendReadyForQuery("I");
-        }
-        else {
+            sendReadyForQuery( "I" );
+        } else {
             //Query does not have ";" at the end!!
-            String query = extractQuery(incomingMsg);
-            PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler(query, ctx, this, transactionManager);
+            String query = extractQuery( incomingMsg );
+            PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler( query, ctx, this, transactionManager );
             queryHandler.start();
 
         }
@@ -114,47 +118,50 @@ public class PGInterfaceInboundCommunicationHandler {
 
     }
 
+
     /**
      * creates and sends (flushes on ctx) a readyForQuery message. Tag is choosable.
+     *
      * @param msgBody give the Tag - current transaction status indicator (possible vals: I (idle, not in transaction block),
-     *                T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended (TODO: what exactly happens in transaction blocks.)
+     * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended (TODO: what exactly happens in transaction blocks.)
      */
-    public void sendReadyForQuery(String msgBody) {
-        PGInterfaceMessage readyForQuery = new PGInterfaceMessage(PGInterfaceHeaders.Z, msgBody, 5, false);
-        PGInterfaceServerWriter readyForQueryWriter = new PGInterfaceServerWriter("c", readyForQuery, ctx);
-        ctx.writeAndFlush(readyForQueryWriter.writeOnByteBuf());
+    public void sendReadyForQuery( String msgBody ) {
+        PGInterfaceMessage readyForQuery = new PGInterfaceMessage( PGInterfaceHeaders.Z, msgBody, 5, false );
+        PGInterfaceServerWriter readyForQueryWriter = new PGInterfaceServerWriter( "c", readyForQuery, ctx );
+        ctx.writeAndFlush( readyForQueryWriter.writeOnByteBuf() );
     }
 
 
     /**
      * prepares the incoming message from the client, so it can be used in the context of polypheny
+     *
      * @param incomingMsg unchanged incoming message from the client
      * @return "normally" readable and usable query string
      */
-    public String extractQuery(String incomingMsg) {
+    public String extractQuery( String incomingMsg ) {
         String query = "";
         //cut header
-        query = incomingMsg.substring(2, incomingMsg.length()-1);
+        query = incomingMsg.substring( 2, incomingMsg.length() - 1 );
 
         //find end of query --> normally it ends with combination of BDPES (are headers, with some weird other bits in between)
         //B starts immediatelly after query --> find position of correct B and end of query is found
-        byte[] byteSequence = {66, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 68, 0, 0, 0, 6, 80, 0, 69, 0, 0, 0, 9};
-        String msgWithZeroBits = new String(byteSequence, StandardCharsets.UTF_8);
-        String endSequence = msgWithZeroBits.replace("\u0000", "");
+        byte[] byteSequence = { 66, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 68, 0, 0, 0, 6, 80, 0, 69, 0, 0, 0, 9 };
+        String msgWithZeroBits = new String( byteSequence, StandardCharsets.UTF_8 );
+        String endSequence = msgWithZeroBits.replace( "\u0000", "" );
 
-        String endOfQuery = query.substring(incomingMsg.length()-20);
+        String endOfQuery = query.substring( incomingMsg.length() - 20 );
 
-        int idx = incomingMsg.indexOf(endSequence);
-        if (idx != -1) {
-            query = query.substring(0, idx-2);
-        }
-        else {
+        int idx = incomingMsg.indexOf( endSequence );
+        if ( idx != -1 ) {
+            query = query.substring( 0, idx - 2 );
+        } else {
             //TODO(FF) something went wrong!! --> trow exception (in polypheny), send errormessage to client
             int lol = 2;
         }
 
         return query;
     }
+
 
     public void sendParseBindComplete() {
         //TODO(FF): This should work with the normal PGInterfaceServerWriter type "i" (called like in the commented out part),
@@ -173,67 +180,70 @@ public class PGInterfaceInboundCommunicationHandler {
          */
 
         ByteBuf buffer = ctx.alloc().buffer();
-        PGInterfaceMessage mockMessage = new PGInterfaceMessage(PGInterfaceHeaders.ONE, "0", 4, true);
-        PGInterfaceServerWriter headerWriter = new PGInterfaceServerWriter("i", mockMessage, ctx);
-        buffer = headerWriter.writeIntHeaderOnByteBuf('1');
+        PGInterfaceMessage mockMessage = new PGInterfaceMessage( PGInterfaceHeaders.ONE, "0", 4, true );
+        PGInterfaceServerWriter headerWriter = new PGInterfaceServerWriter( "i", mockMessage, ctx );
+        buffer = headerWriter.writeIntHeaderOnByteBuf( '1' );
         //ctx.writeAndFlush(buffer);
-        buffer.writeBytes(headerWriter.writeIntHeaderOnByteBuf('2'));
+        buffer.writeBytes( headerWriter.writeIntHeaderOnByteBuf( '2' ) );
         //buffer = headerWriter.writeIntHeaderOnByteBuf('2');
-        ctx.writeAndFlush(buffer);
+        ctx.writeAndFlush( buffer );
 
     }
+
 
     public void sendNoData() {
         //TODO(FF) wenn gnau esch das öberhaupt nötig? Wenn de client kei date scheckt --> aber wenn esch das es problem?
-        PGInterfaceMessage noData = new PGInterfaceMessage(PGInterfaceHeaders.n, "0", 4, true);
-        PGInterfaceServerWriter noDataWriter = new PGInterfaceServerWriter("i", noData, ctx);
-        ctx.writeAndFlush(noDataWriter.writeOnByteBuf());
+        PGInterfaceMessage noData = new PGInterfaceMessage( PGInterfaceHeaders.n, "0", 4, true );
+        PGInterfaceServerWriter noDataWriter = new PGInterfaceServerWriter( "i", noData, ctx );
+        ctx.writeAndFlush( noDataWriter.writeOnByteBuf() );
     }
 
-    public void sendCommandCompleteInsert(int rowsInserted) {
+
+    public void sendCommandCompleteInsert( int rowsInserted ) {
         //send CommandComplete - insert
-        PGInterfaceMessage insertCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, "INSERT" + PGInterfaceMessage.getDelimiter() + "0" + PGInterfaceMessage.getDelimiter() + String.valueOf(rowsInserted), 4, true);
-        PGInterfaceServerWriter insertCommandCompleteWriter = new PGInterfaceServerWriter("sss", insertCommandComplete, ctx);
-        ctx.writeAndFlush(insertCommandCompleteWriter.writeOnByteBuf());
+        PGInterfaceMessage insertCommandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, "INSERT" + PGInterfaceMessage.getDelimiter() + "0" + PGInterfaceMessage.getDelimiter() + String.valueOf( rowsInserted ), 4, true );
+        PGInterfaceServerWriter insertCommandCompleteWriter = new PGInterfaceServerWriter( "sss", insertCommandComplete, ctx );
+        ctx.writeAndFlush( insertCommandCompleteWriter.writeOnByteBuf() );
 
     }
+
 
     public void sendCommandCompleteCreateTable() {
         //send CommandComplete - create table
-        PGInterfaceMessage createTableCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, "CREATE TABLE", 4, true);
-        PGInterfaceServerWriter createTableCommandCompleteWriter = new PGInterfaceServerWriter("s", createTableCommandComplete, ctx);
-        ctx.writeAndFlush(createTableCommandCompleteWriter.writeOnByteBuf());
+        PGInterfaceMessage createTableCommandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, "CREATE TABLE", 4, true );
+        PGInterfaceServerWriter createTableCommandCompleteWriter = new PGInterfaceServerWriter( "s", createTableCommandComplete, ctx );
+        ctx.writeAndFlush( createTableCommandCompleteWriter.writeOnByteBuf() );
     }
+
 
     //for SELECT and CREATE TABLE AS
-    public void sendCommandCompleteSelect(int rowsSelected) {
+    public void sendCommandCompleteSelect( int rowsSelected ) {
         //send CommandComplete - SELECT rows (rows = #rows retrieved --> used for SELECT and CREATE TABLE AS commands)
-        String body = "SELECT "+ String.valueOf(rowsSelected);   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
+        String body = "SELECT " + String.valueOf( rowsSelected );   //TODO(FF): delimiter?? werom scheckts de scheiss ned????
         //"SELECT"+ PGInterfaceMessage.getDelimiter() + String.valueOf(rowsSelected)
-        PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage(PGInterfaceHeaders.C, body, 4, true);
-        PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter("s", selectCommandComplete, ctx);
+        PGInterfaceMessage selectCommandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, body, 4, true );
+        PGInterfaceServerWriter selectCommandCompleteWriter = new PGInterfaceServerWriter( "s", selectCommandComplete, ctx );
         ByteBuf buf = selectCommandCompleteWriter.writeOnByteBuf();
-        String lol = buf.toString(Charset.defaultCharset());
-        ctx.writeAndFlush(buf);
+        String lol = buf.toString( Charset.defaultCharset() );
+        ctx.writeAndFlush( buf );
     }
 
 
-
-    public void sendRowDescription(int numberOfFields, ArrayList<Object[]> valuesPerCol) {
+    public void sendRowDescription( int numberOfFields, ArrayList<Object[]> valuesPerCol ) {
         //String fieldName, int objectIDTable, int attributeNoCol, int objectIDCol, int dataTypeSize, int typeModifier, int formatCode
 
         //bytebuf.writeInt(int value) = 32-bit int
         //bytebuf.writeShort(int value) = 16-bit short integer;
         //ByteBuf test = ctx.alloc().buffer();
-        String body = String.valueOf(numberOfFields);
-        PGInterfaceMessage rowDescription = new PGInterfaceMessage(PGInterfaceHeaders.T, body, 4, true);    //the length here doesn't really matter, because it is calculated seperately in writeRowDescription
-        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter("test",rowDescription, ctx);
+        String body = String.valueOf( numberOfFields );
+        PGInterfaceMessage rowDescription = new PGInterfaceMessage( PGInterfaceHeaders.T, body, 4, true );    //the length here doesn't really matter, because it is calculated seperately in writeRowDescription
+        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter( "test", rowDescription, ctx );
         //ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
-        ctx.writeAndFlush(rowDescriptionWriter.writeOnByteBuf());
+        ctx.writeAndFlush( rowDescriptionWriter.writeOnByteBuf() );
     }
 
 
-    public void sendDataRow(ArrayList<String[]> data) {
+    public void sendDataRow( ArrayList<String[]> data ) {
         /*
         DataRow - length - nbr of col values that follow (possible 0) - then for each column the pair of fields: (int16)
                 length of the column value (not includes itself) (zero possible, -1: special case - NULL col val (no value bytes follow in the NULL case), (int32)
@@ -242,68 +252,69 @@ public class PGInterfaceInboundCommunicationHandler {
          */
         int noCols = data.size();   //number of rows returned --> belongs to rowDescription (?)
         String colVal = "";
-        int nbrFollowingColVal = data.get(0).length; //int16 --> length of String[] --> nbr of column values that follow
+        int nbrFollowingColVal = data.get( 0 ).length; //int16 --> length of String[] --> nbr of column values that follow
         int colValLength = 0;  //int32 --> length of one String[i] (length of actual string) (n)
         String body = "";   //Byte*n* --> the string itself String[i]
 
         PGInterfaceMessage dataRow;
         PGInterfaceServerWriter dataRowWriter;
 
-        for (int i = 0; i < noCols; i++) {
+        for ( int i = 0; i < noCols; i++ ) {
             //can be 0 and -1 (= NULL col val)
 
-            for (int j = 0; j < nbrFollowingColVal; j++) {
+            for ( int j = 0; j < nbrFollowingColVal; j++ ) {
 
                 //if colValLength -1 : nothing sent at all
-                colVal = data.get(i)[j];
+                colVal = data.get( i )[j];
 
                 //TODO(FF): How is null safed in polypheny exactly?? is it correctly checked?
-                if (colVal == "NULL") {
+                if ( colVal == "NULL" ) {
                     colValLength = -1;
                     //scheck kei body
                     break;
-                }
-
-                else {
+                } else {
                     colValLength += colVal.length();
                     body += colVal.length() + PGInterfaceMessage.getDelimiter() + colVal + PGInterfaceMessage.getDelimiter();
                 }
             }   //do gets glaubs ergendwo neu en fähler?
-            dataRow = new PGInterfaceMessage(PGInterfaceHeaders.D, body, colValLength, false);
-            dataRowWriter = new PGInterfaceServerWriter("dr", dataRow, ctx);
-            ctx.writeAndFlush(dataRowWriter.writeOnByteBuf());
+            dataRow = new PGInterfaceMessage( PGInterfaceHeaders.D, body, colValLength, false );
+            dataRowWriter = new PGInterfaceServerWriter( "dr", dataRow, ctx );
+            ctx.writeAndFlush( dataRowWriter.writeOnByteBuf() );
             ByteBuf buff = ctx.alloc().buffer();
             //C...SELECT 6
-            buff.writeBytes("C000SELECT 6".getBytes(StandardCharsets.UTF_8));
+            buff.writeBytes( "C000SELECT 6".getBytes( StandardCharsets.UTF_8 ) );
             body = "";
         }
 
 
     }
 
+
     public void terminateConnection() {
         ctx.close();
     }
 
-    public void sendDataRow2(ArrayList<String[]> data) {
+
+    public void sendDataRow2( ArrayList<String[]> data ) {
         ByteBuf buf = ctx.alloc().buffer();
         // 44 00 00 00 0b 00 01 00 00 00 01 31
         //buf.writeBytes("440000b01000131".getBytes());
-        buf.writeInt(44);
-        buf.writeInt(0);
-        buf.writeInt(0);
-        buf.writeInt(0);
-        buf.writeInt(0); //
-        buf.writeInt(0);
-        buf.writeInt(1);
-        buf.writeInt(0);
-        buf.writeInt(0);
-        buf.writeInt(0);
-        buf.writeInt(1);
-        buf.writeInt(31);
-        String lol = buf.toString(Charset.defaultCharset());
-        ctx.writeAndFlush(buf);
+        buf.writeInt( 44 );
+        buf.writeInt( 0 );
+        buf.writeInt( 0 );
+        buf.writeInt( 0 );
+        buf.writeInt( 0 ); //
+        buf.writeInt( 0 );
+        buf.writeInt( 1 );
+        buf.writeInt( 0 );
+        buf.writeInt( 0 );
+        buf.writeInt( 0 );
+        buf.writeInt( 1 );
+        buf.writeInt( 31 );
+        String lol = buf.toString( Charset.defaultCharset() );
+        ctx.writeAndFlush( buf );
 
 
     }
+
 }

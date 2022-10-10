@@ -25,35 +25,36 @@ public class PGInterfaceMessage {
     private boolean defaultLength;
     private static final char delimiter = '§'; //for the subparts
 
-    public PGInterfaceMessage(PGInterfaceHeaders header, String msgBody, int length, boolean defaultLength) {
+
+    public PGInterfaceMessage( PGInterfaceHeaders header, String msgBody, int length, boolean defaultLength ) {
         this.header = header;
         this.msgBody = msgBody;
         this.length = length;
         this.defaultLength = defaultLength;
     }
 
+
     public PGInterfaceHeaders getHeader() {
         return this.header;
     }
 
+
     public char getHeaderChar() {
 
         //if header is a single character
-        if (header != PGInterfaceHeaders.ONE && header != PGInterfaceHeaders.TWO && header != PGInterfaceHeaders.THREE) {
+        if ( header != PGInterfaceHeaders.ONE && header != PGInterfaceHeaders.TWO && header != PGInterfaceHeaders.THREE ) {
             String headerString = header.toString();
-            return headerString.charAt(0);
+            return headerString.charAt( 0 );
         }
         //if header is a number
         //TODO: make a nicer version of this... if you cast headerInt to char directly it returns '\u0001' and not '1'
         else {
             int headerInt = getHeaderInt();
-            if (headerInt == 1) {
+            if ( headerInt == 1 ) {
                 return '1';
-            }
-            else if (headerInt == 2) {
+            } else if ( headerInt == 2 ) {
                 return '2';
-            }
-            else if (headerInt == 3) {
+            } else if ( headerInt == 3 ) {
                 return '3';
             }
         }
@@ -61,68 +62,75 @@ public class PGInterfaceMessage {
         return 0;
     }
 
+
     public int getHeaderInt() {
         String headerString = header.toString();
-        if(headerString.equals("ONE")) {
+        if ( headerString.equals( "ONE" ) ) {
             return 1;
-        }
-        else if(headerString.equals("TWO")) {
+        } else if ( headerString.equals( "TWO" ) ) {
             return 2;
-        }
-        else if (headerString.equals("THREE")) {
+        } else if ( headerString.equals( "THREE" ) ) {
             return 3;
         }
         //TODO: if returns 0, something went wrong
         return 0;
     }
 
-    public void setHeader(PGInterfaceHeaders header) {
+
+    public void setHeader( PGInterfaceHeaders header ) {
         this.header = header;
     }
+
 
     public int getLength() {
         return this.length;
     }
 
-    public void setLength(int length) {
+
+    public void setLength( int length ) {
         this.length = length;
     }
 
-    public void setDefaultLength(boolean val) {
+
+    public void setDefaultLength( boolean val ) {
         this.defaultLength = val;
     }
+
 
     public boolean isDefaultLength() {
         return this.defaultLength;
     }
 
+
     public String getMsgBody() {
         return msgBody;
     }
 
-    public void setMsgBody(String msgBody) {
+
+    public void setMsgBody( String msgBody ) {
         this.msgBody = msgBody;
     }
 
 
-
     /**
      * gets the different subparts of a message
+     *
      * @param part the index of the requested part(s), starting at 0
      * @return a string array with each requested part
      */
-    public String[] getMsgPart(int[] part) {
-        String subStrings[] = msgBody.split(getDelimiter());
+    public String[] getMsgPart( int[] part ) {
+        String subStrings[] = msgBody.split( getDelimiter() );
         String result[] = new String[part.length];
 
-        for (int i=0; i<(part.length); i++) {
+        for ( int i = 0; i < (part.length); i++ ) {
             result[i] = subStrings[i];
         }
         return result;
     }
 
+
     public static String getDelimiter() {
-        String del = String.valueOf(delimiter);
+        String del = String.valueOf( delimiter );
         return del;
     }
 

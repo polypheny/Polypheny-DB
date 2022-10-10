@@ -18,28 +18,30 @@ package org.polypheny.db.postgresql;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import org.apache.commons.lang.ArrayUtils;
-import org.polypheny.db.PolyResult;
+import java.nio.charset.StandardCharsets;
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.List;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.*;
-import org.polypheny.db.catalog.exceptions.*;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.transaction.*;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 
-import javax.swing.plaf.basic.BasicButtonUI;
-import java.nio.charset.StandardCharsets;
-import java.sql.ResultSetMetaData;
-import java.util.ArrayList;
-import java.util.List;
+public class PGInterfaceQueryHandler {
 
-public class PGInterfaceQueryHandler{
     String query;
     ChannelHandlerContext ctx;
     PGInterfaceInboundCommunicationHandler communicationHandler;
@@ -47,7 +49,8 @@ public class PGInterfaceQueryHandler{
     int rowsAffected = 0;   //rows affected (changed/deleted/inserted/etc)
     List<List<Object>> rows;
 
-    public PGInterfaceQueryHandler (String query, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager) {
+
+    public PGInterfaceQueryHandler( String query, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
         this.query = query;
         this.ctx = ctx;
         this.communicationHandler = communicationHandler;
@@ -55,10 +58,12 @@ public class PGInterfaceQueryHandler{
         this.transactionManager = transactionManager;
     }
 
+
     public void start() {
         hardcodeResponse();
         //sendQueryToPolypheny();
     }
+
 
     private void hardcodeResponse() {
         ByteBuf buffer = ctx.alloc().buffer();
@@ -69,50 +74,51 @@ public class PGInterfaceQueryHandler{
         1... 04 32... 04 54 ... 1e . 01 empid... 40 0c . 01 ... 17 . 04 ff ff ff ff .. 44 ... 0d . 01 ... 03 31 30 30 43 ... 0d SELECT 1. 5a ...05 49
                            T, 0, 1,40, 1,17,0,4             D, 0d, 0, 1, 3, 100
          */
-        int[] nbrs = {1,0,0,0,4};
+        int[] nbrs = { 1, 0, 0, 0, 4 };
         //2
-        int[] nbrs2 = {0,0,0,4};
+        int[] nbrs2 = { 0, 0, 0, 4 };
         //T
         //int[] nbrs3 = {0,0,0,1e,0,1};
-        int[] nbrs3 = {0,0,0,0,0,1};
+        int[] nbrs3 = { 0, 0, 0, 0, 0, 1 };
         //empid
         //int[] nbrs4 = {0,0,0,40,0c,0,1,0,0,0,17,0,4,ff,ff,ff,ff,0,0};
-        int[] nbrs4 = {0,0,0,40,0,0,1,0,0,0,17,0,4,0,0,0,0,0,0};
+        int[] nbrs4 = { 0, 0, 0, 40, 0, 0, 1, 0, 0, 0, 17, 0, 4, 0, 0, 0, 0, 0, 0 };
         //D
         //int[] nbrs5 = {0,0,0,0d,0,1,0,0,0,3};
-        int[] nbrs5 = {0,0,0,0,0,1,0,0,0,3};
+        int[] nbrs5 = { 0, 0, 0, 0, 0, 1, 0, 0, 0, 3 };
         //100C
         //int[] nbrs6 = {0,0,0,0d};
-        int[] nbrs6 = {0,0,0,0};
+        int[] nbrs6 = { 0, 0, 0, 0 };
         //SELECT 1
-        int[] nbrs7 = {0};
+        int[] nbrs7 = { 0 };
         //Z
-        int[] nbrs8 = {0,0,0,5};
+        int[] nbrs8 = { 0, 0, 0, 5 };
         //I
-        buffer = writeIntArray(nbrs, buffer);
-        buffer.writeInt(2);
-        buffer = writeIntArray(nbrs2, buffer);
-        buffer.writeBytes("T".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs3, buffer);
-        buffer.writeBytes("empid".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs4, buffer);
-        buffer.writeBytes("D".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs5, buffer);
-        buffer.writeBytes("100C".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs6, buffer);
-        buffer.writeBytes("SELECT 1".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs7, buffer);
-        buffer.writeBytes("Z".getBytes(StandardCharsets.UTF_8));
-        buffer = writeIntArray(nbrs8, buffer);
-        buffer.writeBytes("I".getBytes(StandardCharsets.UTF_8));
+        buffer = writeIntArray( nbrs, buffer );
+        buffer.writeInt( 2 );
+        buffer = writeIntArray( nbrs2, buffer );
+        buffer.writeBytes( "T".getBytes( StandardCharsets.UTF_8 ) );
+        buffer = writeIntArray( nbrs3, buffer );
+        buffer.writeBytes( "empid".getBytes( StandardCharsets.UTF_8 ) );
+        buffer = writeIntArray( nbrs4, buffer );
+        buffer.writeBytes( "D".getBytes( StandardCharsets.UTF_8 ) );
+        buffer = writeIntArray( nbrs5, buffer );
+        buffer.writeBytes( "100C".getBytes( StandardCharsets.UTF_8 ) );
+        buffer = writeIntArray( nbrs6, buffer );
+        buffer.writeBytes( "SELECT 1".getBytes( StandardCharsets.UTF_8 ) );
+        buffer = writeIntArray( nbrs7, buffer );
+        buffer.writeBytes( "Z".getBytes( StandardCharsets.UTF_8 ) );
+        buffer = writeIntArray( nbrs8, buffer );
+        buffer.writeBytes( "I".getBytes( StandardCharsets.UTF_8 ) );
 
-        ctx.writeAndFlush(buffer);
+        ctx.writeAndFlush( buffer );
 
     }
 
-    private ByteBuf writeIntArray(int[] nbrs, ByteBuf buffer) {
-        for (int i=0; i< nbrs.length; i++) {
-            buffer.writeInt(nbrs[i]);
+
+    private ByteBuf writeIntArray( int[] nbrs, ByteBuf buffer ) {
+        for ( int i = 0; i < nbrs.length; i++ ) {
+            buffer.writeInt( nbrs[i] );
         }
         return buffer;
     }
@@ -123,28 +129,23 @@ public class PGInterfaceQueryHandler{
         //get result from polypheny
         Transaction transaction;
         Statement statement = null;
-        PolyResult result;
+        PolyImplementation result;
         ArrayList<String[]> data = new ArrayList<>();
         ArrayList<String[]> header = new ArrayList<>();
 
-
-
         try {
             //get transaction letze linie
-            transaction = transactionManager.startTransaction("pa", "APP", false, "Index Manager");
+            transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Index Manager" );
             statement = transaction.createStatement();
-        }
-        catch (UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e) {
+        } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
 
-
-
         //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)
         //for loop zom dor alli catalogTables doregoh? - nei
-        Processor sqlProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.SQL);
-        Node sqlNode = sqlProcessor.parse(query);   //go gehts fähler: (see diary)
-        QueryParameters parameters = new QueryParameters( query, Catalog.SchemaType.RELATIONAL );
+        Processor sqlProcessor = statement.getTransaction().getProcessor( Catalog.QueryLanguage.SQL );
+        Node sqlNode = sqlProcessor.parse( query ).get( 0 );   //go gehts fähler: (see diary)
+        QueryParameters parameters = new QueryParameters( query, Catalog.NamespaceType.RELATIONAL );
         if ( sqlNode.isA( Kind.DDL ) ) {
             result = sqlProcessor.prepareDdl( statement, sqlNode, parameters );
             //TODO(FF): ene try catch block... || evtl no committe (söscht werds ned aazeigt em ui (aso allgemein, wie werds denn aazeigt em ui?)
@@ -152,24 +153,24 @@ public class PGInterfaceQueryHandler{
         } else {
             AlgRoot algRoot = sqlProcessor.translate(
                     statement,
-                    sqlProcessor.validate(statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean()).left,
-                    new QueryParameters(query, Catalog.SchemaType.RELATIONAL));
+                    sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
+                    new QueryParameters( query, Catalog.NamespaceType.RELATIONAL ) );
 
             //get PolyResult from AlgRoot - use prepareQuery from abstractQueryProcessor (example from findUsages)
             final QueryProcessor processor = statement.getQueryProcessor();
-            result = processor.prepareQuery(algRoot, true);
+            result = processor.prepareQuery( algRoot, true );
 
         }
 
         //get type information - from crud.java
         //Type of ArrayList was DbColumn, but belongs to webUI (so I don't need it...) --> replaced it with string?
         //ArrayList<String> header = getHeader(result, query);   //descriptor för jedi col befors es resultat get (aahgehni ziile) --> de muesi no hole??
-header = getHeader(result);
+header = getHeader( result );
         //statement.executeUpdate("SELECT empid FROM public.emps");
-        
+
         //get actual result of query in array - from crud.java
-        rows = result.getRows(statement, -1);   //-1 as size valid??
-        data = computeResultData(rows, header);   //, statement.getTransaction()
+        rows = result.getRows( statement, -1 );   //-1 as size valid??
+        data = computeResultData( rows, header );   //, statement.getTransaction()
 
         //type = result.getStatementType().name();
         type = result.getStatementType().toString();
@@ -177,18 +178,20 @@ header = getHeader(result);
         //how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
 
         //handle result --> depending on query type, prepare answer message accordingly here (flush it)
-        sendResultToClient(type, data, header);
+        sendResultToClient( type, data, header );
 
     }
 
+
     /**
      * gets the information for the header
+     *
      * @param result the polyresult the additional information is needed
      * @return a list with array, where:
-     *         - array[0] = columnName
-     *         - array[1] = columnType
+     * - array[0] = columnName
+     * - array[1] = columnType
      */
-    private ArrayList<String[]> getHeader(PolyResult result) {    //(request = query)
+    private ArrayList<String[]> getHeader( PolyImplementation result ) {    //(request = query)
         ArrayList<String[]> header = new ArrayList<>();
         for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
             String columnName = metaData.getName();
@@ -244,12 +247,13 @@ header = getHeader(result);
 
              */
             //header.add( dbCol );
-            header.add(new String[]{columnName, dataType, String.valueOf(precision)});
+            header.add( new String[]{ columnName, dataType, String.valueOf( precision ) } );
         }
         return header;
     }
 
-    private ArrayList<String[]> computeResultData(List<List<Object>> rows, ArrayList<String[]> header) {
+
+    private ArrayList<String[]> computeResultData( List<List<Object>> rows, ArrayList<String[]> header ) {
         //TODO(FF): bruuch ich de header do öberhaupt? (aso em momänt ned... ) --> hanich sache wonich de chönnt/müesst bruuche?
         //ha es paar sache useglöscht... aber wahrschiinli muesmer de no meh lösche...
         ArrayList<String[]> data = new ArrayList<>();
@@ -273,7 +277,7 @@ header = getHeader(result);
                         case "SOUND":
                         case "VIDEO":
                             break;
-                            //fall through
+                        //fall through
                         default:
                             temp[counter] = o.toString();
                     }
@@ -286,13 +290,12 @@ header = getHeader(result);
             data.add( temp );
         }
 
-
         return data;
     }
 
 
-    public void sendResultToClient(String type, ArrayList<String[]> data, ArrayList<String[]> header) {
-        switch (type) {
+    public void sendResultToClient( String type, ArrayList<String[]> data, ArrayList<String[]> header ) {
+        switch ( type ) {
             case "INSERT":
                 //TODO(FF): actually do the things in polypheny --> track number of changed rows (if easy, doesnt really matter for client so far)
                 //INSERT oid rows (oid=0, rows = #rows inserted)
@@ -307,10 +310,9 @@ header = getHeader(result);
                 1....2....n....C....INSERT 0 1.Z....I
                  */
 
-
                 communicationHandler.sendParseBindComplete();
-                communicationHandler.sendCommandCompleteInsert(rowsAffected);
-                communicationHandler.sendReadyForQuery("I");
+                communicationHandler.sendCommandCompleteInsert( rowsAffected );
+                communicationHandler.sendReadyForQuery( "I" );
 
                 break;
 
@@ -319,11 +321,11 @@ header = getHeader(result);
                 //1....2....n....C....CREATE TABLE.Z....I
                 communicationHandler.sendParseBindComplete();
                 communicationHandler.sendCommandCompleteCreateTable();
-                communicationHandler.sendReadyForQuery("I");
+                communicationHandler.sendReadyForQuery( "I" );
 
                 break;
 
-            case "SELECT" : //also CREATE TABLE AS
+            case "SELECT": //also CREATE TABLE AS
                 int lol = 4;
                 ArrayList<Object[]> valuesPerCol = new ArrayList<Object[]>();
 
@@ -339,25 +341,22 @@ header = getHeader(result);
                 //For a fixed-size type, typlen is the number of bytes in the internal representation of the type. But for a variable-length type, typlen is negative
                 //                                                                                                                                      o.
 
-
-                if (lol == 3) {   //data.isEmpty() TODO(FF): das useneh, bzw usefende wenn noData etzt gnau gscheckt werd...
+                if ( lol == 3 ) {   //data.isEmpty() TODO(FF): das useneh, bzw usefende wenn noData etzt gnau gscheckt werd...
                     //noData
                     //communicationHandler.sendNoData();    //should only be sent when frontend sent no data (?)
                     communicationHandler.sendParseBindComplete();
-                    communicationHandler.sendReadyForQuery("I");
-                }
-
-                else {
+                    communicationHandler.sendReadyForQuery( "I" );
+                } else {
                     //data
                     //for loop mache för jedi reihe? --> nocheluege wies gmacht werd em ächte psql met mehrere cols & reihe
                     int numberOfFields = header.size();
 
-                    for (String[] head : header) {
+                    for ( String[] head : header ) {
 
                         fieldName = head[0];
 
                         //TODO(FF): Implement the rest of the cases
-                        switch (head[1]) {
+                        switch ( head[1] ) {
                             case "BIGINT":
                             case "DOUBLE":
                                 dataTypeSize = 8;   //8 bytes signed
@@ -378,8 +377,8 @@ header = getHeader(result);
                                 break;
                             case "VARCHAR":
                                 objectIDCol = 1043;
-                                typeModifier = Integer.parseInt(head[2]);
-                                dataTypeSize = Integer.parseInt(head[2]); //TODO(FF): wennd varchar längi de type modifier esch, was esch denn dataTypeSize
+                                typeModifier = Integer.parseInt( head[2] );
+                                dataTypeSize = Integer.parseInt( head[2] ); //TODO(FF): wennd varchar längi de type modifier esch, was esch denn dataTypeSize
                                 formatCode = 0;
                                 //dataTypeSize = 4;
                                 //formatCode = 1;
@@ -404,33 +403,32 @@ header = getHeader(result);
                         }
                         //rowDescription
                         //communicationHandler.sendRowDescription(fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode);
-                        Object col[] = {fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode};
-                        valuesPerCol.add(col);
+                        Object col[] = { fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode };
+                        valuesPerCol.add( col );
                     }
                     communicationHandler.sendParseBindComplete();
-                    communicationHandler.sendRowDescription(numberOfFields, valuesPerCol);
+                    communicationHandler.sendRowDescription( numberOfFields, valuesPerCol );
                     //sendData
                     //communicationHandler.sendDataRow(data);
-                    communicationHandler.sendDataRow2(data);
+                    communicationHandler.sendDataRow2( data );
 
                     rowsAffected = data.size();
-                    communicationHandler.sendCommandCompleteSelect(rowsAffected);
+                    communicationHandler.sendCommandCompleteSelect( rowsAffected );
 
-                    communicationHandler.sendReadyForQuery("I");
-                    communicationHandler.sendReadyForQuery("I");
-                    communicationHandler.sendReadyForQuery("I");
-                    communicationHandler.sendReadyForQuery("I");
-                    communicationHandler.sendReadyForQuery("I");
-                    communicationHandler.sendReadyForQuery("I");
+                    communicationHandler.sendReadyForQuery( "I" );
+                    communicationHandler.sendReadyForQuery( "I" );
+                    communicationHandler.sendReadyForQuery( "I" );
+                    communicationHandler.sendReadyForQuery( "I" );
+                    communicationHandler.sendReadyForQuery( "I" );
+                    communicationHandler.sendReadyForQuery( "I" );
                 }
-
 
                 //SELECT rows (rows = #rows retrieved --> used for SELECT and CREATE TABLE AS commands)
                 //1....2....T.....  lolid...@  .  . .  ... .  . .  .  .  .  .  ..D..........1D..........2D..........3D..........3D..........3D..........3C...SELECT 6.Z....I
                 //1....2....T.....1 lolid...40 02 . 01 ... 17 . 04 ff ff ff ff ..D..........1D..........2D..........3D..........3D..........3D..........3C...SELECT 6.Z....I
                 break;
 
-            case "DELETE" :
+            case "DELETE":
                 //DELETE rows (rows = #rows deleted)
                 break;
 
@@ -460,8 +458,6 @@ empid = 65 6d 70 69 64
 SELECT 1 = 53 45 4c 45 43 54 20 31
 (select_abst._1)
      */
-
-
 
     //Example of server answer to simple select query (from real server)
     /*

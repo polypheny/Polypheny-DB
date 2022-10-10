@@ -19,11 +19,22 @@ package org.polypheny.db.postgresql;
 
 import com.google.common.collect.ImmutableList;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -35,15 +46,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
-
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-
 
 
 @Slf4j
@@ -77,8 +79,7 @@ public class PGInterface extends QueryInterface {
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 
-
-    public PGInterface(TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+    public PGInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
         super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
         this.uniqueName = uniqueName;
         this.port = Integer.parseInt( settings.get( "port" ) );
@@ -97,39 +98,36 @@ public class PGInterface extends QueryInterface {
 
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
-            serverBootstrap.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
+            serverBootstrap.group( bossGroup, workerGroup )
+                    .channel( NioServerSocketChannel.class )
+                    .childHandler( new ChannelInitializer<SocketChannel>() {
                         @Override
-                        public void initChannel(SocketChannel socketChannel) throws Exception {
+                        public void initChannel( SocketChannel socketChannel ) throws Exception {
                             ChannelPipeline channelPipeline = socketChannel.pipeline();
 
                             //Inbound
-                            channelPipeline.addLast("decoder", new StringDecoder());
+                            channelPipeline.addLast( "decoder", new StringDecoder() );
 
                             //Handler
-                            channelPipeline.addLast("handler", new PGInterfaceServerHandler(transactionManager));
+                            channelPipeline.addLast( "handler", new PGInterfaceServerHandler( transactionManager ) );
 
 
                         }
-                    }).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true);
+                    } ).option( ChannelOption.SO_BACKLOG, 128 ).childOption( ChannelOption.SO_KEEPALIVE, true );
 
             // Start accepting incoming connections
-            ChannelFuture channelFuture = serverBootstrap.bind(port).sync();
+            ChannelFuture channelFuture = serverBootstrap.bind( port ).sync();
 
             // Waits until server socket is closed --> introduces bugs --> polypheny not starting (without reset) and not displaying interface correctly
             //channelFuture.channel().closeFuture().sync();
 
-
-        } catch (Exception e) {
-            log.error("Exception while starting" + INTERFACE_NAME, e);
+        } catch ( Exception e ) {
+            log.error( "Exception while starting" + INTERFACE_NAME, e );
 
         }
 
-
-        StatusService.printInfo(String.format("%s started and is listening on port %d.", INTERFACE_NAME, port ));
+        StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
     }
-
 
 
     @Override

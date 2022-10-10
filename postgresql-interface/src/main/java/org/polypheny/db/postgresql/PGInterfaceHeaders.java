@@ -25,7 +25,6 @@ package org.polypheny.db.postgresql;
 //TODO: not complete with all commands yet (especially for copy commands, extended query cycle and different authentication methods)
 public enum PGInterfaceHeaders {
 
-
     //----------------------------------------------- server to client ------------------------------------------------
 
     /**
@@ -113,7 +112,6 @@ public enum PGInterfaceHeaders {
      * Termination message - from client to server
      */
     X
-
 
 
 }
