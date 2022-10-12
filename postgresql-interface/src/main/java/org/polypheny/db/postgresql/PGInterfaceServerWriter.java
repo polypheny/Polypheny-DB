@@ -133,34 +133,24 @@ public class PGInterfaceServerWriter {
             case "dr":
                 //send dataRow
                 String test = "";
-                ByteBuf buffer7 = ctx.alloc().buffer();
-                buffer7.writeByte( pgMsg.getHeaderChar() );
-                //buffer7.writeByte('X');
-                ctx.writeAndFlush( buffer7 );
+                buffer.writeByte( pgMsg.getHeaderChar() );
                 test += pgMsg.getHeaderChar() + " | ";
-
-                ByteBuf buffer1 = ctx.alloc().buffer();
-                ByteBuf buffer2 = ctx.alloc().buffer();
-                ByteBuf buffer3 = ctx.alloc().buffer();
 
                 int nbrCol = (pgMsg.getMsgBody().length() - pgMsg.getMsgBody().replaceAll( "§", "" ).length()) / 2;
 
                 //should generally be not the default length, but also works with default length & length = 4
                 if ( pgMsg.isDefaultLength() ) {
                     //data row does not include msg-length bytes in msg length
-                    buffer1.writeInt( pgMsg.getLength() - (nbrCol * 2) );
-                    ctx.writeAndFlush( buffer1 );
+                    buffer.writeInt( pgMsg.getLength() - (nbrCol * 2) );
                     int lol = (pgMsg.getLength() - (nbrCol * 2));
                     test += lol + " | ";
                 } else {
                     //bcs it is including self
-                    buffer2.writeInt( pgMsg.getLength() + 4 );
-                    ctx.writeAndFlush( buffer2 );
+                    buffer.writeInt( pgMsg.getLength() + 4 );
                     test += pgMsg.getLength() + " | ";
                 }
 
-                buffer3.writeShort( nbrCol );  //mues das evtl au 8 sii???
-                ctx.writeAndFlush( buffer3 );
+                buffer.writeShort( nbrCol );  //mues das evtl au 8 sii???
                 test += nbrCol + " | ";
 
                 //cut the last § (it is at the end) from the msgBody and set it as the new msgBody
@@ -171,17 +161,8 @@ public class PGInterfaceServerWriter {
                 String[] msgParts = pgMsg.getMsgPart( idx );
 
                 for ( int i = 0; i < ((nbrCol * 2) - 1); i++ ) {  //i<=10? hätt etzt gseit nei
-                    ByteBuf buffer4 = ctx.alloc().buffer();
-                    ByteBuf buffer5 = ctx.alloc().buffer();
-                    ByteBuf buffer6 = ctx.alloc().buffer();
-                    buffer4.writeInt( Integer.parseInt( msgParts[i] ) ); //onde: müesst 10 schecke...
-                    ctx.writeAndFlush( buffer4 ); //2. durchgang, hier fehler chönnts
-                    buffer5.writeBytes(msgParts[i+1].getBytes(StandardCharsets.UTF_8));  //chönnt sproblem sii dases als bytes gscheckt werd? (welich vorhär int gseit ha??
-                    //buffer5.writeInt( Integer.parseInt( msgParts[i + 1] ) );  //chönnt sproblem sii dases als bytes gscheckt werd? (welich vorhär int gseit ha??
-                    ctx.writeAndFlush( buffer5 );
-                    //buffer6.writeBytes(msgParts[i+2].getBytes(StandardCharsets.UTF_8));
-                    //buffer6.writeByte( 0 );
-                    //ctx.writeAndFlush(buffer6);
+                    buffer.writeInt( Integer.parseInt( msgParts[i] ) ); //onde: müesst 10 schecke...
+                    buffer.writeBytes(msgParts[i+1].getBytes(StandardCharsets.UTF_8));  //chönnt sproblem sii dases als bytes gscheckt werd? (welich vorhär int gseit ha??
 
                     test += msgParts[i] + " | " + msgParts[i + 1] + " | ";
 
@@ -275,8 +256,8 @@ public class PGInterfaceServerWriter {
         }
 
         buffer.writeInt( pgMsg.getLength() + messageLength );
-        //buffer.writeShort(Integer.parseInt(pgMsg.getMsgBody()));
-        buffer.writeShort( 1 );   //FIXME(FF): Si wänd do ned d number of fields, sondern wievel descriptors ich för jedes field aagebe... >( oder au ned? werom 8?????
+        buffer.writeShort(Integer.parseInt(pgMsg.getMsgBody()));
+        //buffer.writeShort( 1 );   //FIXME(FF): Si wänd do ned d number of fields, sondern wievel descriptors ich för jedes field aagebe... >( oder au ned? werom 8?????
 
         for ( Object[] oneCol : valuesPerCol ) {
             ByteBuf bufferTemp = ctx.alloc().buffer();
