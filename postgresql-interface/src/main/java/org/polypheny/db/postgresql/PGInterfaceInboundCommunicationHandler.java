@@ -240,9 +240,9 @@ public class PGInterfaceInboundCommunicationHandler {
         //ByteBuf test = ctx.alloc().buffer();
         String body = String.valueOf( numberOfFields );
         PGInterfaceMessage rowDescription = new PGInterfaceMessage( PGInterfaceHeaders.T, body, 4, true );    //the length here doesn't really matter, because it is calculated seperately in writeRowDescription
-        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter( "test", rowDescription, ctx );
-        //ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
-        ctx.writeAndFlush( rowDescriptionWriter.writeOnByteBuf() );
+        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter( "i", rowDescription, ctx );
+        ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
+        //ctx.writeAndFlush( rowDescriptionWriter.writeOnByteBuf() );
     }
 
 
@@ -283,9 +283,9 @@ public class PGInterfaceInboundCommunicationHandler {
             dataRow = new PGInterfaceMessage( PGInterfaceHeaders.D, body, colValLength, false );
             dataRowWriter = new PGInterfaceServerWriter( "dr", dataRow, ctx );
             ctx.writeAndFlush( dataRowWriter.writeOnByteBuf() );
-            ByteBuf buff = ctx.alloc().buffer();
+            //ByteBuf buff = ctx.alloc().buffer();    //TODO(FF): das ergendwie no uselösche??
             //C...SELECT 6
-            buff.writeBytes( "C000SELECT 6".getBytes( StandardCharsets.UTF_8 ) );
+            //buff.writeBytes( "C000SELECT 6".getBytes( StandardCharsets.UTF_8 ) );
             body = "";
         }
 

@@ -59,9 +59,9 @@ public class PGInterfaceQueryHandler {
     }
 
     public void start() {
-        hardcodeResponse();
+        //hardcodeResponse();
         //hardcodeResponse2();
-        //sendQueryToPolypheny();
+        sendQueryToPolypheny();
     }
 
     private void hardcodeResponse2() {
@@ -117,8 +117,8 @@ public class PGInterfaceQueryHandler {
         buffer.writeShort(1);   //mues stemme --> nbr of fields?
         //buffer = writeIntArray(nbrs3, buffer);
         buffer.writeBytes("empid".getBytes(StandardCharsets.UTF_8));
-        buffer.writeByte(0);    //mues 0 sii...
-        buffer.writeInt(64);    //@ --> egal: 654, 0
+        buffer.writeByte(0);    //mues 0 sii... --> wennmers onde macht, ond int zgross esch, gets en fähler...
+        buffer.writeInt(1);    //@ --> egal: 654, 0, 1111111111
         //buffer.writeByte(64);
         buffer.writeShort(25);  //1 abst. zvel zwösche 40 ond 0c
         //buffer.writeByte(0);   //0c --> egal (mer cha au d reihefolg zwösche short ond byte wächsle
@@ -391,6 +391,7 @@ header = getHeader( result );
                 int objectIDTable = 0;   //int32 --> eig. ObjectID of table (if col can be id'd to table) --> otherwise 0                               o
                 int attributeNoCol = 0;    //int16 --> attr.no of col (if col can be id'd to table) --> otherwise 0                                     o
                 int objectIDCol = 0;    //int32 --> objectID of parameter datatype (specified in parse message (F), at the end) --> 0=unspecified       o
+                //send everything with writeBytes, if sent with writeInt it needs to be 1
                 int formatCode = 0;     //int16 --> zero(text-inhalt (values)) or one(integer) --> if returned from describe, not yet known = 0         o.
                 int typeModifier = -1;  //The value will generally be -1 for types that do not need atttypmod. --> type specific data (supplied at table creation time  o
 
@@ -418,7 +419,7 @@ header = getHeader( result );
                             case "BIGINT":
                             case "DOUBLE":
                                 dataTypeSize = 8;   //8 bytes signed
-                                formatCode = 1; //TODO(FF): esch das rechtig? wel es heisst e de doc darstellig vo Integer...
+                                formatCode = 0; //TODO(FF): esch das rechtig? wel es heisst e de doc darstellig vo Integer...
                                 break;
                             case "BOOLEAN":
                                 dataTypeSize = 1;   //TODO(FF): wär 1bit --> wie das darstelle??????
@@ -431,7 +432,7 @@ header = getHeader( result );
                             case "INTEGER":
                                 objectIDCol = 32;
                                 dataTypeSize = 4;
-                                formatCode = 1; //Test with 0, normally 1 (?)
+                                formatCode = 0; //Test with 0, normally 1 (?)
                                 break;
                             case "VARCHAR":
                                 objectIDCol = 1043;
@@ -443,11 +444,11 @@ header = getHeader( result );
                                 break;
                             case "SMALLINT":
                                 dataTypeSize = 2;
-                                formatCode = 1;
+                                formatCode = 0;
                                 break;
                             case "TINYINT":
                                 dataTypeSize = 1;
-                                formatCode = 1;
+                                formatCode = 0;
                                 break;
                             case "TIMESTAMP":
                                 break;
@@ -467,17 +468,12 @@ header = getHeader( result );
                     communicationHandler.sendParseBindComplete();
                     communicationHandler.sendRowDescription( numberOfFields, valuesPerCol );
                     //sendData
-                    //communicationHandler.sendDataRow(data);
-                    communicationHandler.sendDataRow2( data );
+                    communicationHandler.sendDataRow(data);
+                    //communicationHandler.sendDataRow2( data );
 
                     rowsAffected = data.size();
                     communicationHandler.sendCommandCompleteSelect( rowsAffected );
 
-                    communicationHandler.sendReadyForQuery( "I" );
-                    communicationHandler.sendReadyForQuery( "I" );
-                    communicationHandler.sendReadyForQuery( "I" );
-                    communicationHandler.sendReadyForQuery( "I" );
-                    communicationHandler.sendReadyForQuery( "I" );
                     communicationHandler.sendReadyForQuery( "I" );
                 }
 

@@ -176,11 +176,11 @@ public class PGInterfaceServerWriter {
                     ByteBuf buffer6 = ctx.alloc().buffer();
                     buffer4.writeInt( Integer.parseInt( msgParts[i] ) ); //onde: müesst 10 schecke...
                     ctx.writeAndFlush( buffer4 ); //2. durchgang, hier fehler chönnts
-                    //buffer5.writeBytes(msgParts[i+1].getBytes(StandardCharsets.UTF_8));  //chönnt sproblem sii dases als bytes gscheckt werd? (welich vorhär int gseit ha??
-                    buffer5.writeInt( Integer.parseInt( msgParts[i + 1] ) );  //chönnt sproblem sii dases als bytes gscheckt werd? (welich vorhär int gseit ha??
+                    buffer5.writeBytes(msgParts[i+1].getBytes(StandardCharsets.UTF_8));  //chönnt sproblem sii dases als bytes gscheckt werd? (welich vorhär int gseit ha??
+                    //buffer5.writeInt( Integer.parseInt( msgParts[i + 1] ) );  //chönnt sproblem sii dases als bytes gscheckt werd? (welich vorhär int gseit ha??
                     ctx.writeAndFlush( buffer5 );
                     //buffer6.writeBytes(msgParts[i+2].getBytes(StandardCharsets.UTF_8));
-                    buffer6.writeByte( 0 );
+                    //buffer6.writeByte( 0 );
                     //ctx.writeAndFlush(buffer6);
 
                     test += msgParts[i] + " | " + msgParts[i + 1] + " | ";
@@ -293,15 +293,15 @@ public class PGInterfaceServerWriter {
             bufferTemp.writeBytes( fieldName.getBytes( StandardCharsets.UTF_8 ) );
             bufferTemp.writeByte( 0 );
             bufferTemp.writeInt( objectIDTable );
-            bufferTemp.writeByte( 0 );
+            //bufferTemp.writeByte( 0 );
             bufferTemp.writeShort( attributeNoCol );
-            bufferTemp.writeByte( 0 );
+            //bufferTemp.writeByte( 0 );
             bufferTemp.writeInt( objectIDCol );   //objectId of datatype?
-            bufferTemp.writeByte( 0 );
+            //bufferTemp.writeByte( 0 );
             bufferTemp.writeShort( dataTypeSize );
-            bufferTemp.writeByte( 0 );
+            //bufferTemp.writeByte( 0 );
             bufferTemp.writeInt( typeModifier );
-            bufferTemp.writeByte( 0 );
+            //bufferTemp.writeByte( 0 );
             bufferTemp.writeShort( formatCode );  //aber bem 4. esch denn do dezwösche en fähler cho, vorem nöchste flushl... werom au emmer??? --> be comission
 
             buffer.writeBytes( bufferTemp );  //die erste 3x gohts ohni fähler
