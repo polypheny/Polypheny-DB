@@ -26,6 +26,13 @@ public class PGInterfaceMessage {
     private static final char delimiter = '§'; //for the subparts
 
 
+    /**
+     * Creates a PG-Message. It contains all relevant information to send a message to the client
+     * @param header What header should be sent (depends on message-type)
+     * @param msgBody The message itself
+     * @param length The length of the message (the length itself is included)
+     * @param defaultLength The length of the length sent (which is included). Length is 4
+     */
     public PGInterfaceMessage( PGInterfaceHeaders header, String msgBody, int length, boolean defaultLength ) {
         this.header = header;
         this.msgBody = msgBody;
@@ -47,7 +54,7 @@ public class PGInterfaceMessage {
             return headerString.charAt( 0 );
         }
         //if header is a number
-        //TODO: make a nicer version of this... if you cast headerInt to char directly it returns '\u0001' and not '1'
+        //TODO(FF): make a nicer version of this... if you cast headerInt to char directly it returns '\u0001' and not '1'
         else {
             int headerInt = getHeaderInt();
             if ( headerInt == 1 ) {
@@ -58,7 +65,7 @@ public class PGInterfaceMessage {
                 return '3';
             }
         }
-        //TODO: if returns 0, something went wrong
+        //TODO(FF): if returns 0, something went wrong --> inform client
         return 0;
     }
 
@@ -72,7 +79,7 @@ public class PGInterfaceMessage {
         } else if ( headerString.equals( "THREE" ) ) {
             return 3;
         }
-        //TODO: if returns 0, something went wrong
+        //TODO(FF): if returns 0, something went wrong
         return 0;
     }
 
@@ -113,7 +120,7 @@ public class PGInterfaceMessage {
 
 
     /**
-     * gets the different subparts of a message
+     * Gets the different sub-parts of a message
      *
      * @param part the index of the requested part(s), starting at 0
      * @return a string array with each requested part
@@ -129,6 +136,10 @@ public class PGInterfaceMessage {
     }
 
 
+    /**
+     * Get what delimiter is currently set
+     * @return the current delimiter as string
+     */
     public static String getDelimiter() {
         String del = String.valueOf( delimiter );
         return del;

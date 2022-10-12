@@ -60,25 +60,7 @@ public class PGInterfaceQueryHandler {
 
     public void start() {
         //hardcodeResponse();
-        //hardcodeResponse2();
         sendQueryToPolypheny();
-    }
-
-    private void hardcodeResponse2() {
-        ByteBuf buffer = ctx.alloc().buffer();
-        int[] nbr = {1, 2};
-        buffer = writeIntArray(nbr, buffer);
-        buffer.writeByte('T');
-        buffer.writeBytes("empid".getBytes(StandardCharsets.UTF_8));
-        buffer.writeByte('@');
-        buffer.writeByte('D');
-        buffer.writeBytes("100".getBytes(StandardCharsets.UTF_8));
-        buffer.writeByte('C');
-        buffer.writeBytes("SELECT 1".getBytes(StandardCharsets.UTF_8));
-        buffer.writeByte('Z');
-        buffer.writeByte('I');
-        ctx.writeAndFlush(buffer);
-
     }
 
     private void hardcodeResponse() {
@@ -169,24 +151,18 @@ public class PGInterfaceQueryHandler {
         ctx.writeAndFlush( buffer );
         ctx.writeAndFlush( buffer5 );
         //ctx.writeAndFlush( buffer4 );
-        communicationHandler.sendCommandCompleteSelect( 1 );
+        communicationHandler.sendCommandComplete( "SELECT", 1 );
         //ctx.writeAndFlush( buffer3 );
         communicationHandler.sendReadyForQuery( "I" );
 
     }
 
 
-    private ByteBuf writeIntArray( int[] nbrs, ByteBuf buffer ) {
-        for ( int i = 0; i < nbrs.length; i++ ) {
-            buffer.writeInt( nbrs[i] );
-        }
-        return buffer;
-    }
-
-
+    /**
+     * Forwards the message to Polypheny, and get result from it
+     */
     public void sendQueryToPolypheny() {
-        String type = ""; //query type according to answer tags
-        //get result from polypheny
+        String type = "";   //query type according to answer tags
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;
@@ -198,13 +174,13 @@ public class PGInterfaceQueryHandler {
             transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Index Manager" );
             statement = transaction.createStatement();
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
+            //TODO(FF): Inform client that something went wrong
             throw new RuntimeException( "Error while starting transaction", e );
         }
 
         //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)
-        //for loop zom dor alli catalogTables doregoh? - nei
         Processor sqlProcessor = statement.getTransaction().getProcessor( Catalog.QueryLanguage.SQL );
-        Node sqlNode = sqlProcessor.parse( query ).get( 0 );   //go gehts fähler: (see diary)
+        Node sqlNode = sqlProcessor.parse( query ).get( 0 );
         QueryParameters parameters = new QueryParameters( query, Catalog.NamespaceType.RELATIONAL );
         if ( sqlNode.isA( Kind.DDL ) ) {
             result = sqlProcessor.prepareDdl( statement, sqlNode, parameters );
@@ -223,41 +199,36 @@ public class PGInterfaceQueryHandler {
         }
 
         //get type information - from crud.java
-        //Type of ArrayList was DbColumn, but belongs to webUI (so I don't need it...) --> replaced it with string?
-        //ArrayList<String> header = getHeader(result, query);   //descriptor för jedi col befors es resultat get (aahgehni ziile) --> de muesi no hole??
-header = getHeader( result );
-        //statement.executeUpdate("SELECT empid FROM public.emps");
+        header = getHeader( result );
 
         //get actual result of query in array - from crud.java
-        rows = result.getRows( statement, -1 );   //-1 as size valid??
-        data = computeResultData( rows, header );   //, statement.getTransaction()
+        rows = result.getRows( statement, -1 );
+        data = computeResultData( rows, header );
 
-        //type = result.getStatementType().name();
         type = result.getStatementType().toString();
 
-        //how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
+        //TODO(FF): how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
 
-        //handle result --> depending on query type, prepare answer message accordingly here (flush it)
+        //handle result, depending on query type
         sendResultToClient( type, data, header );
 
     }
 
     /**
-     * gets the information for the header
-     * @param result the polyresult the additional information is needed
+     * Gets the information for the header - Information for each column
+     * @param result the PolyImplementation the additional information is needed for
      * @return a list with array, where:
      *         - array[0] = columnName
      *         - array[1] = columnType
+     *         - array[2] = precision
      */
-    private ArrayList<String[]> getHeader( PolyImplementation result ) {    //(request = query)
+    private ArrayList<String[]> getHeader( PolyImplementation result ) {
         ArrayList<String[]> header = new ArrayList<>();
         for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
             String columnName = metaData.getName();
-            //final String name = metaData.getName();
-            String dataType = metaData.getType().getPolyType().getTypeName();   //INTEGER, VARCHAR --> aber ergendwie ohnis (20) em header??
-            int precision = metaData.getType().getPrecision();  //sizeVarChar
+            String dataType = metaData.getType().getPolyType().getTypeName();   //INTEGER, VARCHAR
+            int precision = metaData.getType().getPrecision();  //sizeVarChar, decimal places double
             boolean nullable = metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1);
-            //Integer precision = metaData.getType().getPrecision();
 
             //For each column: If it should be filtered empty string if it should not be filtered
             /*
@@ -304,20 +275,24 @@ header = getHeader( result );
             }
 
              */
-            //header.add( dbCol );
             header.add( new String[]{ columnName, dataType, String.valueOf( precision ) } );
         }
         return header;
     }
 
 
+    /**
+     * Transforms the data into Strings. Possble to expand and change it into other datatypes
+     * @param rows The result-data as object-type
+     * @param header Header-data - additional information about the data (rows)
+     * @return the rows transformed accordingly (right now turned into a string)
+     */
     private ArrayList<String[]> computeResultData( List<List<Object>> rows, ArrayList<String[]> header ) {
         //TODO(FF): bruuch ich de header do öberhaupt? (aso em momänt ned... ) --> hanich sache wonich de chönnt/müesst bruuche?
-        //ha es paar sache useglöscht... aber wahrschiinli muesmer de no meh lösche...
         ArrayList<String[]> data = new ArrayList<>();
 
         for ( List<Object> row : rows ) {
-            String[] temp = new String[row.size()]; //temp esch au 100 --> vo resultat sälber...
+            String[] temp = new String[row.size()];
             int counter = 0;
             for ( Object o : row ) {
                 if ( o == null ) {
@@ -343,7 +318,7 @@ header = getHeader( result );
 
                     }
                 }
-                counter++;  //was macht gnau de counter? (esch etzt 1, chonnt add), rows size = 4
+                counter++;
             }
             data.add( temp );
         }
@@ -352,10 +327,16 @@ header = getHeader( result );
     }
 
 
+    /**
+     * Prepares according to the query from the client what (and how) should be sent as a response
+     * @param type Type of the query (e.g.: Select, Insert, Create Table, etc.)
+     * @param data The data that needs to be sent to the client
+     * @param header Additional information for the data
+     */
     public void sendResultToClient( String type, ArrayList<String[]> data, ArrayList<String[]> header ) {
         switch ( type ) {
             case "INSERT":
-                //TODO(FF): actually do the things in polypheny --> track number of changed rows (if easy, doesnt really matter for client so far)
+                //TODO(FF): actually do the things in polypheny --> track number of changed rows (if easy, doesnt really matter for client so far) (put it in header?) but not here, done in sendToPolypheny
                 //INSERT oid rows (oid=0, rows = #rows inserted)
                 //1....2....n....C....INSERT 0 1.Z....I
 
@@ -369,46 +350,41 @@ header = getHeader( result );
                  */
 
                 communicationHandler.sendParseBindComplete();
-                communicationHandler.sendCommandCompleteInsert( rowsAffected );
+                communicationHandler.sendCommandComplete( type, rowsAffected );
                 communicationHandler.sendReadyForQuery( "I" );
 
                 break;
 
             case "CREATE TABLE":
-                //TODO(FF) do things in polypheny (?)
+                //TODO(FF) do things in polypheny (?) --> not here, but check what to do with commits
                 //1....2....n....C....CREATE TABLE.Z....I
                 communicationHandler.sendParseBindComplete();
-                communicationHandler.sendCommandCompleteCreateTable();
+                //communicationHandler.sendCommandCompleteCreateTable();
+                communicationHandler.sendCommandComplete( type, -1 );
                 communicationHandler.sendReadyForQuery( "I" );
 
                 break;
 
-            case "SELECT": //also CREATE TABLE AS
+            case "SELECT":
                 int lol = 4;
                 ArrayList<Object[]> valuesPerCol = new ArrayList<Object[]>();
 
-                String fieldName = "";  //get field name from query? momentan no de einzig val em header                                                o
-                int objectIDTable = 0;   //int32 --> eig. ObjectID of table (if col can be id'd to table) --> otherwise 0                               o
-                int attributeNoCol = 0;    //int16 --> attr.no of col (if col can be id'd to table) --> otherwise 0                                     o
-                int objectIDCol = 0;    //int32 --> objectID of parameter datatype (specified in parse message (F), at the end) --> 0=unspecified       o
-                //send everything with writeBytes, if sent with writeInt it needs to be 1
-                int formatCode = 0;     //int16 --> zero(text-inhalt (values)) or one(integer) --> if returned from describe, not yet known = 0         o.
-                int typeModifier = -1;  //The value will generally be -1 for types that do not need atttypmod. --> type specific data (supplied at table creation time  o
+                String fieldName = "";          //string - column name (field name) (matters)
+                int objectIDTable = 0;          //int32 - ObjectID of table (if col can be id'd to table) --> otherwise 0 (doesn't matter to client while sending)
+                int attributeNoCol = 0;         //int16 - attr.no of col (if col can be id'd to table) --> otherwise 0 (doesn't matter to client while sending)
+                int objectIDColDataType = 0;    //int32 - objectID of parameter datatype --> 0 = unspecified (doesn't matter to client while sending)
+                int dataTypeSize = 0;           //int16 - size of dataType (if formatCode = 1, this needs to be set for colValLength) (doesn't matter to client while sending)
+                int typeModifier = -1;          //int32 - The value will generally be -1 (doesn't matter to client while sending)
+                int formatCode = 0;             //int16 - 0: Text | 1: Binary --> sends everything with writeBytes(formatCode = 0), if sent with writeInt it needs to be 1 (matters)
 
-                int dataTypeSize = 0;   //int16 --> polypheny website typedocumentation aaluege (real=double in polypheny) --> in postgresqlStore shauen welche grösse wie gemappt
-                //gibt methode um sql type zu holen dort --> luege wies dbms meta macht (avatica generall interface hauptklasse) --> irgendwas mit negative vals=variable width types
-                //For a fixed-size type, typlen is the number of bytes in the internal representation of the type. But for a variable-length type, typlen is negative
-                //                                                                                                                                      o.
-
-                if ( lol == 3 ) {   //data.isEmpty() TODO(FF): das useneh, bzw usefende wenn noData etzt gnau gscheckt werd...
+                if ( lol == 3 ) {   //data.isEmpty() TODO(FF): das useneh, bzw usefende wenn noData etzt gnau gscheckt werd... Verdacht: eif normal schecke, halt eif alles 0 ond kei date
                     //noData
-                    //communicationHandler.sendNoData();    //should only be sent when frontend sent no data (?)
+                    //communicationHandler.sendNoData();    //should only be sent when frontend sent no data (?) error when sent here -
                     communicationHandler.sendParseBindComplete();
                     communicationHandler.sendReadyForQuery( "I" );
                 } else {
                     //data
-                    //for loop mache för jedi reihe? --> nocheluege wies gmacht werd em ächte psql met mehrere cols & reihe
-                    int numberOfFields = header.size();
+                    int numberOfFields = header.size(); //int16 - number of fields (cols) (matters)
 
                     for ( String[] head : header ) {
 
@@ -418,8 +394,9 @@ header = getHeader( result );
                         switch ( head[1] ) {
                             case "BIGINT":
                             case "DOUBLE":
+                                //TODO(FF): head[2] is the number of decimal places, is set to 3 in standard postgres ("dismissed in beginning, not checked what it actually is")
                                 dataTypeSize = 8;   //8 bytes signed
-                                formatCode = 0; //TODO(FF): esch das rechtig? wel es heisst e de doc darstellig vo Integer...
+                                formatCode = 0;
                                 break;
                             case "BOOLEAN":
                                 dataTypeSize = 1;   //TODO(FF): wär 1bit --> wie das darstelle??????
@@ -430,17 +407,15 @@ header = getHeader( result );
                                 break;
                             case "REAL":
                             case "INTEGER":
-                                objectIDCol = 32;
+                                //objectIDColDataType = 32;
                                 dataTypeSize = 4;
-                                formatCode = 0; //Test with 0, normally 1 (?)
+                                formatCode = 0;
                                 break;
                             case "VARCHAR":
-                                objectIDCol = 1043;
+                                //objectIDColDataType = 1043;
                                 typeModifier = Integer.parseInt( head[2] );
-                                dataTypeSize = Integer.parseInt( head[2] ); //TODO(FF): wennd varchar längi de type modifier esch, was esch denn dataTypeSize
+                                dataTypeSize = Integer.parseInt( head[2] ); //TODO(FF): I just send the length of the varchar here, because the client doesn't complain.
                                 formatCode = 0;
-                                //dataTypeSize = 4;
-                                //formatCode = 1;
                                 break;
                             case "SMALLINT":
                                 dataTypeSize = 2;
@@ -460,26 +435,17 @@ header = getHeader( result );
                             case "VIDEO":
                                 break;
                         }
-                        //rowDescription
-                        //communicationHandler.sendRowDescription(fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode);
-                        Object col[] = { fieldName, objectIDTable, attributeNoCol, objectIDCol, dataTypeSize, typeModifier, formatCode };
+                        Object col[] = { fieldName, objectIDTable, attributeNoCol, objectIDColDataType, dataTypeSize, typeModifier, formatCode };
                         valuesPerCol.add( col );
                     }
                     communicationHandler.sendParseBindComplete();
                     communicationHandler.sendRowDescription( numberOfFields, valuesPerCol );
-                    //sendData
                     communicationHandler.sendDataRow(data);
-                    //communicationHandler.sendDataRow2( data );
 
                     rowsAffected = data.size();
-                    communicationHandler.sendCommandCompleteSelect( rowsAffected );
-
+                    communicationHandler.sendCommandComplete( type, rowsAffected );
                     communicationHandler.sendReadyForQuery( "I" );
                 }
-
-                //SELECT rows (rows = #rows retrieved --> used for SELECT and CREATE TABLE AS commands)
-                //1....2....T.....  lolid...@  .  . .  ... .  . .  .  .  .  .  ..D..........1D..........2D..........3D..........3D..........3D..........3C...SELECT 6.Z....I
-                //1....2....T.....1 lolid...40 02 . 01 ... 17 . 04 ff ff ff ff ..D..........1D..........2D..........3D..........3D..........3D..........3C...SELECT 6.Z....I
                 break;
 
             case "DELETE":
@@ -606,6 +572,21 @@ X....
 
 n: noData indicator
 C: CommandComplete
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+See diary for darstellung with Null (12.10.22)
+
+           r   user flufi database flufi client_encoding UTF8 DateStyle ISO TimeZone Europe/Berlin extra_float_digits 2
+
+        P   " SET extra_float_digits = 3   B           E   	    S   
+
+        P   7 SET application_name = 'PostgreSQL JDBC Driver'   B           E   	    S   
+
+        P   ) INSERT INTO lol(LolId) VALUES (3)    B               D      P   E    	     S     
+
+        P    SELECT LolId FROM lol    B               D     P   E    	      S     
+        P    SELECT LolId FROM lol   B           D   P E   	     S   
+
 
 
      */
