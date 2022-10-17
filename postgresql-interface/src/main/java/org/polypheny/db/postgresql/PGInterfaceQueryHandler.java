@@ -38,6 +38,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 public class PGInterfaceQueryHandler {
@@ -163,6 +164,7 @@ public class PGInterfaceQueryHandler {
      */
     public void sendQueryToPolypheny() {
         String type = "";   //query type according to answer tags
+        String commitStatus;
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;
@@ -178,39 +180,128 @@ public class PGInterfaceQueryHandler {
             throw new RuntimeException( "Error while starting transaction", e );
         }
 
-        //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)
-        Processor sqlProcessor = statement.getTransaction().getProcessor( Catalog.QueryLanguage.SQL );
-        Node sqlNode = sqlProcessor.parse( query ).get( 0 );
-        QueryParameters parameters = new QueryParameters( query, Catalog.NamespaceType.RELATIONAL );
-        if ( sqlNode.isA( Kind.DDL ) ) {
-            result = sqlProcessor.prepareDdl( statement, sqlNode, parameters );
-            //TODO(FF): ene try catch block... || evtl no committe (söscht werds ned aazeigt em ui (aso allgemein, wie werds denn aazeigt em ui?)
-            // exception: java.lang.RuntimeException: No primary key has been provided!
-        } else {
-            AlgRoot algRoot = sqlProcessor.translate(
-                    statement,
-                    sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
-                    new QueryParameters( query, Catalog.NamespaceType.RELATIONAL ) );
+        //TODO: en try catch block ine --> committe?
+        try {
+            //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)
+            Processor sqlProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.SQL);
+            Node sqlNode = sqlProcessor.parse(query).get(0);
+            QueryParameters parameters = new QueryParameters(query, Catalog.NamespaceType.RELATIONAL);
+            if (sqlNode.isA(Kind.DDL)) {
+                result = sqlProcessor.prepareDdl(statement, sqlNode, parameters);
+                type = sqlNode.getKind().name();
+                sendResultToClient( type, data, header );
 
-            //get PolyResult from AlgRoot - use prepareQuery from abstractQueryProcessor (example from findUsages)
-            final QueryProcessor processor = statement.getQueryProcessor();
-            result = processor.prepareQuery( algRoot, true );
+            } else {
+                AlgRoot algRoot = sqlProcessor.translate(
+                        statement,
+                        sqlProcessor.validate(statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean()).left,
+                        new QueryParameters(query, Catalog.NamespaceType.RELATIONAL));
 
+                //get PolyResult from AlgRoot - use prepareQuery from abstractQueryProcessor (example from findUsages)
+                final QueryProcessor processor = statement.getQueryProcessor();
+                result = processor.prepareQuery(algRoot, true);
+
+                //get type information - from crud.java
+                header = getHeader( result );
+
+                //get actual result of query in array - from crud.java
+                rows = result.getRows( statement, -1 );
+                data = computeResultData( rows, header );
+
+                //type = result.getStatementType().toString();
+                type = result.getKind().name();
+
+                //FIXME(FF): macht das senn dasmer nome dors transaction.commit() de fähler bechonnt??
+                transaction.commit();
+
+                //TODO(FF): how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
+                //TODO(Extended Queries): met dem denn values dezue tue
+                //statement.getDataContext().setParameterTypes(); //döfs erscht bem execute step mache...
+                //statement.getDataContext().setParameterValues();
+
+                //java.lang.RuntimeException: The table 'emps' is provided by a data source which does not support data modification.
+
+
+                //committe of transaction (commitAndFinish (languageCrud)
+                //transaction.commit(); (try catch --> be catch rollback
+
+
+                //handle result, depending on query type
+                sendResultToClient( type, data, header );
+
+            }
+        } catch (Throwable t) { //TransactionExeption?
+            List <PGInterfaceErrorHandler> lol = null;
+            //TODO(FF): Rollback and send error to client
+            //log.error( "Caught exception while executing query", e );
+            lol.add(new PGInterfaceErrorHandler( t ));
+            //result = new PGInterfaceErrorHandler( t ).setGeneratedQuery( query );
+            try {
+                transaction.rollback();
+                commitStatus = "Rolled back";
+            } catch (TransactionException ex) {
+                //log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
+                commitStatus = "Error while rolling back";
+            }
         }
 
-        //get type information - from crud.java
-        header = getHeader( result );
 
-        //get actual result of query in array - from crud.java
-        rows = result.getRows( statement, -1 );
-        data = computeResultData( rows, header );
 
-        type = result.getStatementType().toString();
 
-        //TODO(FF): how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
+        /*
+        //Bsp Crud.java > createTable --> wie rollbacke (?o. exceptions handle oder biedes?)
+        try {
+            int a = executeSqlUpdate( transaction, query.toString() );
+            result = new Result( a ).setGeneratedQuery( query.toString() );
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Caught exception while creating a table", e );
+            result = new Result( e ).setGeneratedQuery( query.toString() );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
+            }
+        }
 
-        //handle result, depending on query type
-        sendResultToClient( type, data, header );
+        //anders biispel us Result.java (för was??)
+        public Result( Throwable e ) {
+            this.exception = e;
+            if ( e.getMessage() != null ) {
+                this.error = e.getMessage();
+            } else {
+                this.error = e.getClass().getSimpleName();
+            }
+        }
+
+
+        //anders biispel: LanguageCrud > anyMongoQuery --> ganz onde de catch block, metem attack_error (aber was das gnau macht?)
+
+
+        //anders Biispel: LanguageCrud > commitAndFinish --> alles e chli? --> wie commite
+        executionTime = System.nanoTime() - executionTime;
+        String commitStatus;
+        try {
+            transaction.commit();
+            commitStatus = "Committed";
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception", e );
+            results.add( new Result( e ) );
+            try {
+                transaction.rollback();
+                commitStatus = "Rolled back";
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+                commitStatus = "Error while rolling back";
+            }
+        }
+
+        if ( queryAnalyzer != null ) {
+            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
+        }
+
+         */
+
 
     }
 
@@ -355,11 +446,12 @@ public class PGInterfaceQueryHandler {
 
                 break;
 
-            case "CREATE TABLE":
+            case "CREATE_TABLE":
                 //TODO(FF) do things in polypheny (?) --> not here, but check what to do with commits
                 //1....2....n....C....CREATE TABLE.Z....I
                 communicationHandler.sendParseBindComplete();
                 //communicationHandler.sendCommandCompleteCreateTable();
+                //type = "CREATE TABLE";
                 communicationHandler.sendCommandComplete( type, -1 );
                 communicationHandler.sendReadyForQuery( "I" );
 

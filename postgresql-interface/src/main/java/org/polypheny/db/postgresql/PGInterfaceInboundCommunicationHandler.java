@@ -270,12 +270,16 @@ public class PGInterfaceInboundCommunicationHandler {
             ctx.writeAndFlush( dataRowWriter.writeOnByteBuf() );
             body = "";
         }
-
-
     }
 
+
+    private void sendErrorResponse(String error) {
+
+    }
 
     public void terminateConnection() {
         ctx.close();
     }
 }
+
+
