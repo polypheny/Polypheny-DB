@@ -20,6 +20,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
+
 import org.polypheny.db.transaction.TransactionManager;
 
 /**
@@ -30,6 +32,7 @@ public class PGInterfaceInboundCommunicationHandler {
     String type;
     ChannelHandlerContext ctx;
     TransactionManager transactionManager;
+    ArrayList<String> executeStatementNames;
 
 
     public PGInterfaceInboundCommunicationHandler( String type, ChannelHandlerContext ctx, TransactionManager transactionManager ) {
@@ -102,33 +105,43 @@ public class PGInterfaceInboundCommunicationHandler {
     public void extendedQueryPhase( String incomingMsg ) {
 
         if ( incomingMsg.substring( 2, 5 ).equals( "SET" ) ) {
-
             sendParseBindComplete();
-
             sendCommandComplete("SET", -1);
-
             sendReadyForQuery( "I" );
 
-        } else {
-            //Query does not have ";" at the end!!
+        } else if (incomingMsg.substring(2, 9).equals("PREPARE")) {
+            //Prepared Statement
+            //TODO(FF): was wenn execute ned as ei message metem prepared chonnt...
+            //set name ond luege öber scho existiert... --> mues also ergendwo en liste met prepared statements speichere
+            String[] query = extractPreparedQuery( incomingMsg );
+            //check if name already exists
+            PGInterfacePreparedMessage preparedMessage = new PGInterfacePreparedMessage(query[0], query[1], ctx);
+            executeStatementNames.add(extractPreparedQueryName(query[0]));
+            //safe everything possible and necessary
+            //send: 1....2....n....C....PREPARE
+            if (!query[1].contains("§")) {  //execute was already sent
+                //check if execute name == prepare name... wenn not, break
+                //safe rest(hier?)
+                //everything ready... do stuff..
+            }
+            List<String> lol = preparedMessage.extractValues();
+
+        } else if (incomingMsg.substring(2, 9).equals("EXECUTE")) {
+            //get execute statement
+            String[] query = extractPreparedQuery( incomingMsg );
+            //check if name exists already
+            //update and safe everything necessary
+            //create executePreparedStatement?? --> mues denn au polypheny uufrüefe
+            //ond mues denn au de name weder us de lischte lösche!!!
+
+        }
+
+        else {
+            //"Normal" query
             String query = extractQuery( incomingMsg );
             PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler( query, ctx, this, transactionManager );
             queryHandler.start();
-
         }
-    }
-
-
-    /**
-     * Creates and sends (flushes on ctx) a readyForQuery message with a tag. The tag is choosable (see below for options).
-     *
-     * @param msgBody tag - current transaction status indicator (possible vals: I (idle, not in transaction block),
-     * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended (TODO: what exactly happens in transaction blocks.)
-     */
-    public void sendReadyForQuery( String msgBody ) {
-        PGInterfaceMessage readyForQuery = new PGInterfaceMessage( PGInterfaceHeaders.Z, msgBody, 5, false );
-        PGInterfaceServerWriter readyForQueryWriter = new PGInterfaceServerWriter( "c", readyForQuery, ctx );
-        ctx.writeAndFlush( readyForQueryWriter.writeOnByteBuf() );
     }
 
 
@@ -162,6 +175,52 @@ public class PGInterfaceInboundCommunicationHandler {
 
         return query;
     }
+
+
+    private String[] extractPreparedQuery(String incomingMsg) {
+        String prepareString = extractQuery(incomingMsg);
+        String executeString = "§";
+
+
+        if (incomingMsg.contains("EXECUTE")) {
+            executeString = extractExecutePart(incomingMsg);
+        }
+
+        String[] result = {prepareString, executeString};
+        return result;
+    }
+
+    private String extractExecutePart(String incomingMsg) {
+
+        int idx = incomingMsg.indexOf("EXECUTE");
+        String executeStringWithBufferStuff = incomingMsg.substring(idx, incomingMsg.length());
+        String executeString = executeStringWithBufferStuff.split("\\(")[0];
+
+        return executeString;
+    }
+
+    private String extractPreparedQueryName(String cleanedQuery) {
+
+        String startNamePlusQuery = cleanedQuery.substring(8);
+        String name = startNamePlusQuery.split("\\(")[0];
+
+        return name.replace(" ", "");
+    }
+
+
+
+    /**
+     * Creates and sends (flushes on ctx) a readyForQuery message with a tag. The tag is choosable (see below for options).
+     *
+     * @param msgBody tag - current transaction status indicator (possible vals: I (idle, not in transaction block),
+     * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended (TODO: what exactly happens in transaction blocks.)
+     */
+    public void sendReadyForQuery( String msgBody ) {
+        PGInterfaceMessage readyForQuery = new PGInterfaceMessage( PGInterfaceHeaders.Z, msgBody, 5, false );
+        PGInterfaceServerWriter readyForQueryWriter = new PGInterfaceServerWriter( "c", readyForQuery, ctx );
+        ctx.writeAndFlush( readyForQueryWriter.writeOnByteBuf() );
+    }
+
 
 
     public void sendParseBindComplete() {
