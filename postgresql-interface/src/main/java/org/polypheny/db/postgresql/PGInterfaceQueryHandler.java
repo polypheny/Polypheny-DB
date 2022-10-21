@@ -196,8 +196,8 @@ public class PGInterfaceQueryHandler {
             transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Index Manager" );
             statement = transaction.createStatement();
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
-            //TODO(FF): Inform client that something went wrong
-            //add errorhandler at the top... call simpleerrormessage here
+            //TODO(FF): stop sending stuff to client...
+            errorHandler.sendSimpleErrorMessage("Error while starting transaction" + String.valueOf(e));
             throw new RuntimeException( "Error while starting transaction", e );
         }
 
@@ -213,7 +213,6 @@ public class PGInterfaceQueryHandler {
             //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)
             Processor sqlProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.SQL);
             Node sqlNode = sqlProcessor.parse(query).get(0);
-            errorHandler.sendSimpleErrorMessage("hallo1234567890");
             QueryParameters parameters = new QueryParameters(query, Catalog.NamespaceType.RELATIONAL);
             if (sqlNode.isA(Kind.DDL)) {
                 result = sqlProcessor.prepareDdl(statement, sqlNode, parameters);
@@ -240,7 +239,6 @@ public class PGInterfaceQueryHandler {
                 //type = result.getStatementType().toString();
                 type = result.getKind().name();
 
-                //FIXME(FF): macht das senn dasmer nome dors transaction.commit() de fähler bechonnt??
                 transaction.commit();
 
 
@@ -257,14 +255,16 @@ public class PGInterfaceQueryHandler {
             }
         } catch (Throwable t) { //TransactionExeption?
             List <PGInterfaceErrorHandler> lol = null;
-            //TODO(FF): Rollback and send error to client
+            //TODO(FF): stop sending stuff to client...
             //log.error( "Caught exception while executing query", e );
             String errorMsg = t.getMessage();
+            errorHandler.sendSimpleErrorMessage(errorMsg);
             try {
                 transaction.rollback();
                 commitStatus = "Rolled back";
             } catch (TransactionException ex) {
                 //log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
+                errorHandler.sendSimpleErrorMessage("Error while rolling back");
                 commitStatus = "Error while rolling back";
             }
         }
@@ -345,7 +345,7 @@ public class PGInterfaceQueryHandler {
      * @return the rows transformed accordingly (right now turned into a string)
      */
     private ArrayList<String[]> computeResultData( List<List<Object>> rows, ArrayList<String[]> header ) {
-        //TODO(FF): bruuch ich de header do öberhaupt? (aso em momänt ned... ) --> hanich sache wonich de chönnt/müesst bruuche?
+        //TODO(FF): Implement more Datatypes
         ArrayList<String[]> data = new ArrayList<>();
 
         for ( List<Object> row : rows ) {
@@ -355,7 +355,7 @@ public class PGInterfaceQueryHandler {
                 if ( o == null ) {
                     temp[counter] = null;
                 } else {
-                    switch ( header.get( counter )[0] ) {  //TODO(FF): is switch case nessecary?? if yes, get meaningfull header entry (only handling "standard" returns
+                    switch ( header.get( counter )[0] ) {
                         case "TIMESTAMP":
                             break;
                         case "DATE":
@@ -393,7 +393,6 @@ public class PGInterfaceQueryHandler {
     public void sendResultToClient( String type, ArrayList<String[]> data, ArrayList<String[]> header ) {
         switch ( type ) {
             case "INSERT":
-                //TODO(FF): actually do the things in polypheny --> track number of changed rows (if easy, doesnt really matter for client so far) (put it in header?) but not here, done in sendToPolypheny
                 //INSERT oid rows (oid=0, rows = #rows inserted)
                 //1....2....n....C....INSERT 0 1.Z....I
 
@@ -413,18 +412,15 @@ public class PGInterfaceQueryHandler {
                 break;
 
             case "CREATE_TABLE":
-                //TODO(FF) do things in polypheny (?) --> not here, but check what to do with commits
                 //1....2....n....C....CREATE TABLE.Z....I
                 communicationHandler.sendParseBindComplete();
                 //communicationHandler.sendCommandCompleteCreateTable();
-                //type = "CREATE TABLE";
                 communicationHandler.sendCommandComplete( type, -1 );
                 communicationHandler.sendReadyForQuery( "I" );
 
                 break;
 
             case "SELECT":
-                int lol = 4;
                 ArrayList<Object[]> valuesPerCol = new ArrayList<Object[]>();
 
                 String fieldName = "";          //string - column name (field name) (matters)
@@ -435,75 +431,70 @@ public class PGInterfaceQueryHandler {
                 int typeModifier = -1;          //int32 - The value will generally be -1 (doesn't matter to client while sending)
                 int formatCode = 0;             //int16 - 0: Text | 1: Binary --> sends everything with writeBytes(formatCode = 0), if sent with writeInt it needs to be 1 (matters)
 
-                if ( lol == 3 ) {   //data.isEmpty() TODO(FF): das useneh, bzw usefende wenn noData etzt gnau gscheckt werd... Verdacht: eif normal schecke, halt eif alles 0 ond kei date
-                    //noData
-                    //communicationHandler.sendNoData();    //should only be sent when frontend sent no data (?) error when sent here -
-                    communicationHandler.sendParseBindComplete();
-                    communicationHandler.sendReadyForQuery( "I" );
-                } else {
-                    //data
-                    int numberOfFields = header.size(); //int16 - number of fields (cols) (matters)
 
-                    for ( String[] head : header ) {
+                //data
+                int numberOfFields = header.size(); //int16 - number of fields (cols) (matters)
 
-                        fieldName = head[0];
+                for ( String[] head : header ) {
 
-                        //TODO(FF): Implement the rest of the cases
-                        switch ( head[1] ) {
-                            case "BIGINT":
-                            case "DOUBLE":
-                                //TODO(FF): head[2] is the number of decimal places, is set to 3 in standard postgres ("dismissed in beginning, not checked what it actually is")
-                                dataTypeSize = 8;   //8 bytes signed
-                                formatCode = 0;
-                                break;
-                            case "BOOLEAN":
-                                dataTypeSize = 1;   //TODO(FF): wär 1bit --> wie das darstelle??????
-                                break;
-                            case "DATE":
-                                break;
-                            case "DECIMAL":
-                                break;
-                            case "REAL":
-                            case "INTEGER":
-                                //objectIDColDataType = 32;
-                                dataTypeSize = 4;
-                                formatCode = 0;
-                                break;
-                            case "VARCHAR":
-                                //objectIDColDataType = 1043;
-                                typeModifier = Integer.parseInt( head[2] );
-                                dataTypeSize = Integer.parseInt( head[2] ); //TODO(FF): I just send the length of the varchar here, because the client doesn't complain.
-                                formatCode = 0;
-                                break;
-                            case "SMALLINT":
-                                dataTypeSize = 2;
-                                formatCode = 0;
-                                break;
-                            case "TINYINT":
-                                dataTypeSize = 1;
-                                formatCode = 0;
-                                break;
-                            case "TIMESTAMP":
-                                break;
-                            case "TIME":
-                                break;
-                            case "FILE":
-                            case "IMAGE":
-                            case "SOUND":
-                            case "VIDEO":
-                                break;
-                        }
-                        Object col[] = { fieldName, objectIDTable, attributeNoCol, objectIDColDataType, dataTypeSize, typeModifier, formatCode };
-                        valuesPerCol.add( col );
+                    fieldName = head[0];
+
+                    //TODO(FF): Implement the rest of the cases - only Integer and varchar tested --> warn client?
+                    switch ( head[1] ) {
+                        case "BIGINT":
+                        case "DOUBLE":
+                            //TODO(FF): head[2] is the number of decimal places, is set to 3 in standard postgres ("dismissed in beginning, not checked what it actually is")
+                            dataTypeSize = 8;   //8 bytes signed
+                            formatCode = 0;
+                            break;
+                        case "BOOLEAN":
+                            dataTypeSize = 1;   //TODO(FF): wär 1bit --> wie das darstelle??????
+                            break;
+                        case "DATE":
+                            break;
+                        case "DECIMAL":
+                            break;
+                        case "REAL":
+                        case "INTEGER":
+                            //objectIDColDataType = 32;
+                            dataTypeSize = 4;
+                            formatCode = 0;
+                            break;
+                        case "VARCHAR":
+                            //objectIDColDataType = 1043;
+                            typeModifier = Integer.parseInt( head[2] );
+                            dataTypeSize = Integer.parseInt( head[2] ); //TODO(FF): I just send the length of the varchar here, because the client doesn't complain.
+                            formatCode = 0;
+                            break;
+                        case "SMALLINT":
+                            dataTypeSize = 2;
+                            formatCode = 0;
+                            break;
+                        case "TINYINT":
+                            dataTypeSize = 1;
+                            formatCode = 0;
+                            break;
+                        case "TIMESTAMP":
+                            break;
+                        case "TIME":
+                            break;
+                        case "FILE":
+                        case "IMAGE":
+                        case "SOUND":
+                        case "VIDEO":
+                            break;
                     }
-                    communicationHandler.sendParseBindComplete();
-                    communicationHandler.sendRowDescription( numberOfFields, valuesPerCol );
-                    communicationHandler.sendDataRow(data);
-
-                    rowsAffected = data.size();
-                    communicationHandler.sendCommandComplete( type, rowsAffected );
-                    communicationHandler.sendReadyForQuery( "I" );
+                    Object col[] = { fieldName, objectIDTable, attributeNoCol, objectIDColDataType, dataTypeSize, typeModifier, formatCode };
+                    valuesPerCol.add( col );
                 }
+                communicationHandler.sendParseBindComplete();
+                communicationHandler.sendRowDescription( numberOfFields, valuesPerCol );
+                communicationHandler.sendDataRow(data);
+
+                rowsAffected = data.size();
+                communicationHandler.sendCommandComplete( type, rowsAffected );
+                communicationHandler.sendReadyForQuery( "I" );
+
                 break;
 
             case "DELETE":

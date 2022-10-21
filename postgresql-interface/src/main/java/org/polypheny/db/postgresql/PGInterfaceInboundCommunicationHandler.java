@@ -33,12 +33,14 @@ public class PGInterfaceInboundCommunicationHandler {
     TransactionManager transactionManager;
     ArrayList<String> preparedStatementNames = new ArrayList<>();
     ArrayList<PGInterfacePreparedMessage> preparedMessages = new ArrayList<>();
+    private PGInterfaceErrorHandler errorHandler;
 
 
     public PGInterfaceInboundCommunicationHandler( String type, ChannelHandlerContext ctx, TransactionManager transactionManager ) {
         this.type = type;
         this.ctx = ctx;
         this.transactionManager = transactionManager;
+        this.errorHandler = new PGInterfaceErrorHandler(ctx);
     }
 
 
@@ -54,10 +56,6 @@ public class PGInterfaceInboundCommunicationHandler {
 
         //TODO(FF): simple query phase is not implemented
         switch ( wholeMsg.substring( 0, 1 ) ) {
-            case "C":   //TODO(FF):was gnau passiert do??
-                PGInterfaceMessage msg = null;
-                msg.setHeader( PGInterfaceHeaders.C );
-                break;
             case "r":
                 startUpPhase();
                 break;
@@ -111,8 +109,6 @@ public class PGInterfaceInboundCommunicationHandler {
 
         } else if (incomingMsg.substring(2, 9).equals("PREPARE")) {
             //Prepared Statement
-            //TODO(FF): was wenn execute ned as ei message metem prepared chonnt...
-            //set name ond luege öber scho existiert... --> mues also ergendwo en liste met prepared statements speichere
             String[] query = extractPreparedQuery( incomingMsg );
             String prepareString = query[0];
             String executeString = query[1];
@@ -138,7 +134,8 @@ public class PGInterfaceInboundCommunicationHandler {
                         executePreparedStatement(executeString, statementName);
                     } else {
                         String errorMsg = "There does not exist a prepared statement called" + statementName;
-                        //TODO(FF): send error message to client
+                        errorHandler.sendSimpleErrorMessage(errorMsg);
+                        //TODO(FF): stop sending stuff to client...
                     }
 
                 } else {
@@ -146,7 +143,8 @@ public class PGInterfaceInboundCommunicationHandler {
                 }
             } else {
                 String errorMsg = "There already exists a prepared statement with the name" + prepareStringQueryName + "which has not yet been executed";
-                //TODO(FF): send error message to client
+                errorHandler.sendSimpleErrorMessage(errorMsg);
+                //TODO(FF): stop sending stuff to client...
             }
 
             //List<String> lol = preparedMessage.extractValues();
@@ -161,7 +159,9 @@ public class PGInterfaceInboundCommunicationHandler {
                 executePreparedStatement(executeQuery, statementName);
             } else {
                 String errorMsg = "There does not exist a prepared statement called" + statementName;
-                //TODO(FF): send error message to client
+                //terminateConnection();
+                errorHandler.sendSimpleErrorMessage(errorMsg);
+                //TODO(FF): stop sending stuff to client...
             }
         }
 
@@ -209,8 +209,8 @@ public class PGInterfaceInboundCommunicationHandler {
         if ( idx != -1 ) {
             query = query.substring( 0, idx - 2 );
         } else {
-            //TODO(FF) something went wrong!! --> trow exception (in polypheny), send errormessage to client
-            int lol = 2;
+            errorHandler.sendSimpleErrorMessage("Something went wrong while extracting the query from the incoming stream");
+            //TODO(FF): stop sending stuff to client...
         }
 
         return query;
@@ -255,7 +255,7 @@ public class PGInterfaceInboundCommunicationHandler {
      * Creates and sends (flushes on ctx) a readyForQuery message with a tag. The tag is choosable (see below for options).
      *
      * @param msgBody tag - current transaction status indicator (possible vals: I (idle, not in transaction block),
-     * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended (TODO: what exactly happens in transaction blocks.)
+     * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended
      */
     public static void sendReadyForQuery(String msgBody) {
         PGInterfaceMessage readyForQuery = new PGInterfaceMessage( PGInterfaceHeaders.Z, msgBody, 5, false );
@@ -293,7 +293,6 @@ public class PGInterfaceInboundCommunicationHandler {
 
 
     public void sendNoData() {
-        //TODO(FF): not entirely sure in which case this would be needed?
         PGInterfaceMessage noData = new PGInterfaceMessage( PGInterfaceHeaders.n, "0", 4, true );
         PGInterfaceServerWriter noDataWriter = new PGInterfaceServerWriter( "i", noData, ctx );
         ctx.writeAndFlush( noDataWriter.writeIntHeaderOnByteBuf('n') );

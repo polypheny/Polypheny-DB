@@ -32,6 +32,7 @@ public class PGInterfaceServerWriter {
     String type;
     PGInterfaceMessage pgMsg;
     ChannelHandlerContext ctx;
+    PGInterfaceErrorHandler errorHandler;
 
 
     public PGInterfaceServerWriter( String type, PGInterfaceMessage pgMsg, ChannelHandlerContext ctx ) {
@@ -39,6 +40,7 @@ public class PGInterfaceServerWriter {
         this.type = type;
         this.pgMsg = pgMsg;
         this.ctx = ctx;
+        this.errorHandler = new PGInterfaceErrorHandler(ctx);
     }
 
 
@@ -85,20 +87,19 @@ public class PGInterfaceServerWriter {
                 try {
                     body = Integer.parseInt( pgMsg.getMsgBody() );
                 } catch ( NumberFormatException e ) {
-                    e.printStackTrace();
-                    //TODO(FF): send error-message to client
+                    errorHandler.sendSimpleErrorMessage("couldn't transform int to string in PGInterfaceServerWriter" + e.getMessage());
                 }
                 buffer.writeInt( body );
                 break;
 
             //write two strings (tag and message)
             case "ss":
-                buffer = writeSeveralStrings( 2 ); //TODO(FF): maybe find better solution (switch case(?))??
+                buffer = writeSeveralStrings( 2 ); //TODO(FF): maybe find better solution for strings
                 break;
 
             //write 3 strings, example, tag with three components
             case "sss":
-                buffer = writeSeveralStrings( 3 ); //TODO(FF): maybe find better solution??
+                buffer = writeSeveralStrings( 3 );
                 break;
 
             case "ssm":

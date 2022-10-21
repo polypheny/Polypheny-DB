@@ -22,7 +22,6 @@ package org.polypheny.db.postgresql;
  * There exist some special cases (as numbers as header, or no header)
  * For more information look at the Postgresql documentation: https://www.postgresql.org/docs/current/protocol-message-formats.html
  */
-//TODO(FF): not complete with all commands yet (especially for copy commands, extended query cycle and different authentication methods)
 public enum PGInterfaceHeaders {
 
     //----------------------------------------------- server to client ------------------------------------------------

@@ -26,6 +26,7 @@ import org.polypheny.db.transaction.TransactionManager;
 public class PGInterfaceServerHandler extends ChannelInboundHandlerAdapter {
 
     TransactionManager transactionManager;
+    PGInterfaceErrorHandler errorHandler;
 
 
     public PGInterfaceServerHandler( TransactionManager transactionManager ) {
@@ -45,7 +46,10 @@ public class PGInterfaceServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) {
         //cause.printStackTrace();
-        //Todo: (evtl): error: Eine vorhandene Verbindung wurde vom Remotehost geschlossen --> if client closes connection "not properly"
+        //this.errorHandler = new PGInterfaceErrorHandler(ctx);
+        //errorHandler.sendSimpleErrorMessage(cause.getMessage());
+        // I don't client would receive msg, because client already closed connection
+
         ctx.close();
     }
 

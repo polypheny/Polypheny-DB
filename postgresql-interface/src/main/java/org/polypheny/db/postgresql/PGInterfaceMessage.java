@@ -24,6 +24,7 @@ public class PGInterfaceMessage {
     private int length; //default is 4, if a different length is mentioned in protocol, this is given
     private boolean defaultLength;
     private static final char delimiter = '§'; //for the subparts
+    private PGInterfaceErrorHandler errorHandler;
 
 
     /**
@@ -65,7 +66,8 @@ public class PGInterfaceMessage {
                 return '3';
             }
         }
-        //TODO(FF): if returns 0, something went wrong --> inform client
+        //TODO(FF): if returns 0, something went wrong --> inform client (how??)
+
         return 0;
     }
 
@@ -79,7 +81,8 @@ public class PGInterfaceMessage {
         } else if ( headerString.equals( "THREE" ) ) {
             return 3;
         }
-        //TODO(FF): if returns 0, something went wrong
+        //TODO(FF): if returns 0, something went wrong (how to inform client??)
+        //TODO(FF): if returns 0, something went wrong (how to inform client??)
         return 0;
     }
 

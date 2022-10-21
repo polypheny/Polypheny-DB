@@ -138,7 +138,7 @@ public class PGInterface extends QueryInterface {
 
     @Override
     public void shutdown() {
-        //todo: end things from run()
+        //TODO(FF): end things from run() --> already done??
         workerGroup.shutdownGracefully();
         bossGroup.shutdownGracefully();
         monitoringPage.remove();
@@ -153,13 +153,13 @@ public class PGInterface extends QueryInterface {
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
-        //Todo: if settings are mutable, change it here (can make them mutable)
+        //TODO(FF): if settings are mutable, change it here (can make them mutable)
         //nothing in avatica/http interface
     }
 
 
     private class MonitoringPage {
-        //TodO: vergliiche met anderne interfaces (zeigt infos em ui aah)
+        //TODO(FF): vergliiche met anderne interfaces (zeigt infos em ui aah) --> sött glaubs ok sii??
 
         private final InformationPage informationPage;
         private final InformationGroup informationGroupRequests;
