@@ -44,6 +44,7 @@ import org.polypheny.db.transaction.TransactionManager;
 public class PGInterfaceQueryHandler {
 
     String query;
+    PGInterfacePreparedMessage preparedMessage;
     ChannelHandlerContext ctx;
     PGInterfaceInboundCommunicationHandler communicationHandler;
     private TransactionManager transactionManager;
@@ -53,6 +54,14 @@ public class PGInterfaceQueryHandler {
 
     public PGInterfaceQueryHandler( String query, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
         this.query = query;
+        this.ctx = ctx;
+        this.communicationHandler = communicationHandler;
+        Object obj = new Object();
+        this.transactionManager = transactionManager;
+    }
+
+    public PGInterfaceQueryHandler( PGInterfacePreparedMessage preparedMessage, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
+        this.preparedMessage = preparedMessage;
         this.ctx = ctx;
         this.communicationHandler = communicationHandler;
         Object obj = new Object();
@@ -215,7 +224,7 @@ public class PGInterfaceQueryHandler {
                 transaction.commit();
 
                 //TODO(FF): how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
-                //TODO(Extended Queries): met dem denn values dezue tue
+                //TODO(prepared Queries): met dem denn values dezue tue
                 //statement.getDataContext().setParameterTypes(); //döfs erscht bem execute step mache...
                 //statement.getDataContext().setParameterValues();
 
@@ -234,6 +243,7 @@ public class PGInterfaceQueryHandler {
             List <PGInterfaceErrorHandler> lol = null;
             //TODO(FF): Rollback and send error to client
             //log.error( "Caught exception while executing query", e );
+            String errorMsg = t.getMessage();
             lol.add(new PGInterfaceErrorHandler( t ));
             //result = new PGInterfaceErrorHandler( t ).setGeneratedQuery( query );
             try {

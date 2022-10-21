@@ -20,7 +20,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -32,7 +31,8 @@ public class PGInterfaceInboundCommunicationHandler {
     String type;
     ChannelHandlerContext ctx;
     TransactionManager transactionManager;
-    ArrayList<String> executeStatementNames;
+    ArrayList<String> preparedStatementNames = new ArrayList<>();
+    ArrayList<PGInterfacePreparedMessage> preparedMessages = new ArrayList<>();
 
 
     public PGInterfaceInboundCommunicationHandler( String type, ChannelHandlerContext ctx, TransactionManager transactionManager ) {
@@ -114,26 +114,55 @@ public class PGInterfaceInboundCommunicationHandler {
             //TODO(FF): was wenn execute ned as ei message metem prepared chonnt...
             //set name ond luege öber scho existiert... --> mues also ergendwo en liste met prepared statements speichere
             String[] query = extractPreparedQuery( incomingMsg );
-            //check if name already exists
-            PGInterfacePreparedMessage preparedMessage = new PGInterfacePreparedMessage(query[0], query[1], ctx);
-            executeStatementNames.add(extractPreparedQueryName(query[0]));
-            //safe everything possible and necessary
-            //send: 1....2....n....C....PREPARE
-            if (!query[1].contains("§")) {  //execute was already sent
-                //check if execute name == prepare name... wenn not, break
-                //safe rest(hier?)
-                //everything ready... do stuff..
+            String prepareString = query[0];
+            String executeString = query[1];
+            String prepareStringQueryName = extractPreparedQueryName(prepareString);
+
+            //check if name already exists --> muesi das öberhaupt?? chamer ned eif es existierends öberschriibe?
+            if (preparedStatementNames.isEmpty() || (!preparedStatementNames.contains(prepareStringQueryName))) {
+                PGInterfacePreparedMessage preparedMessage = new PGInterfacePreparedMessage(prepareStringQueryName, prepareString, ctx);
+                preparedMessage.prepareQuery();
+                preparedStatementNames.add(prepareStringQueryName);
+                preparedMessages.add(preparedMessage);
+                //safe everything possible and necessary
+                //send: 1....2....n....C....PREPARE
+                sendParseBindComplete();
+                sendNoData();
+                sendCommandComplete( "PREPARE", -1 );
+
+                if (!executeString.isEmpty()) {  //an execute statement was sent along
+                    String statementName = extractPreparedQueryName(executeString);
+
+                    //check if name exists already
+                    if (preparedStatementNames.contains(statementName)) {
+                        executePreparedStatement(executeString, statementName);
+                    } else {
+                        String errorMsg = "There does not exist a prepared statement called" + statementName;
+                        //TODO(FF): send error message to client
+                    }
+
+                } else {
+                    sendReadyForQuery( "I" );
+                }
+            } else {
+                String errorMsg = "There already exists a prepared statement with the name" + prepareStringQueryName + "which has not yet been executed";
+                //TODO(FF): send error message to client
             }
-            List<String> lol = preparedMessage.extractValues();
+
+            //List<String> lol = preparedMessage.extractValues();
 
         } else if (incomingMsg.substring(2, 9).equals("EXECUTE")) {
             //get execute statement
-            String[] query = extractPreparedQuery( incomingMsg );
-            //check if name exists already
-            //update and safe everything necessary
-            //create executePreparedStatement?? --> mues denn au polypheny uufrüefe
-            //ond mues denn au de name weder us de lischte lösche!!!
+            String executeQuery = extractQuery(incomingMsg);
+            String statementName = extractPreparedQueryName(executeQuery);
 
+            //check if name exists already
+            if (preparedStatementNames.contains(statementName)) {
+                executePreparedStatement(executeQuery, statementName);
+            } else {
+                String errorMsg = "There does not exist a prepared statement called" + statementName;
+                //TODO(FF): send error message to client
+            }
         }
 
         else {
@@ -142,6 +171,17 @@ public class PGInterfaceInboundCommunicationHandler {
             PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler( query, ctx, this, transactionManager );
             queryHandler.start();
         }
+    }
+
+    private void executePreparedStatement(String executeString, String statementName) {
+        int idx = preparedStatementNames.indexOf(statementName);
+        PGInterfacePreparedMessage preparedMessage = preparedMessages.get(idx);
+        preparedMessage.setExecuteString(executeString);
+        preparedMessage.extractAndSetValues();
+
+        PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler( preparedMessage, ctx, this, transactionManager );
+        //queryHandler.start();
+        //send commandComplete according to query type... (oder em query handler... wo au  emmer dases gscheckt werd...) ond parse bind ond ready for query...
     }
 
 
@@ -179,7 +219,7 @@ public class PGInterfaceInboundCommunicationHandler {
 
     private String[] extractPreparedQuery(String incomingMsg) {
         String prepareString = extractQuery(incomingMsg);
-        String executeString = "§";
+        String executeString = new String();
 
 
         if (incomingMsg.contains("EXECUTE")) {
@@ -194,7 +234,8 @@ public class PGInterfaceInboundCommunicationHandler {
 
         int idx = incomingMsg.indexOf("EXECUTE");
         String executeStringWithBufferStuff = incomingMsg.substring(idx, incomingMsg.length());
-        String executeString = executeStringWithBufferStuff.split("\\(")[0];
+        String executeString = executeStringWithBufferStuff.split("\\)")[0];
+        executeString = executeString + ")";
 
         return executeString;
     }
@@ -206,6 +247,7 @@ public class PGInterfaceInboundCommunicationHandler {
 
         return name.replace(" ", "");
     }
+
 
 
 
@@ -254,7 +296,7 @@ public class PGInterfaceInboundCommunicationHandler {
         //TODO(FF): not entirely sure in which case this would be needed?
         PGInterfaceMessage noData = new PGInterfaceMessage( PGInterfaceHeaders.n, "0", 4, true );
         PGInterfaceServerWriter noDataWriter = new PGInterfaceServerWriter( "i", noData, ctx );
-        ctx.writeAndFlush( noDataWriter.writeOnByteBuf() );
+        ctx.writeAndFlush( noDataWriter.writeIntHeaderOnByteBuf('n') );
     }
 
 

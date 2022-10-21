@@ -18,26 +18,28 @@ package org.polypheny.db.postgresql;
 
 import io.netty.channel.ChannelHandlerContext;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.ListIterator;
 
 public class PGInterfacePreparedMessage {
     private String name;
-    private List<String> datatype;
     private ChannelHandlerContext ctx;
     private String query;
-    private String prepareString;
+    private String wholePrepareString;
     private String executeString;
-    private List<Object> values;
+    private List<String> datatypes;
     private static final String  executeDelimiter = ", ";
 
 
-    public PGInterfacePreparedMessage(String query, String executeString, ChannelHandlerContext ctx) {
-        this.query = query;
-        this.executeString = executeString;
+    public PGInterfacePreparedMessage(String name, String wholePrepareString, ChannelHandlerContext ctx) {
+        this.name = name;
+        this.wholePrepareString = wholePrepareString;
         this.ctx = ctx;
     }
 
-    public PGInterfacePreparedMessage(ChannelHandlerContext ctx) {
+    public PGInterfacePreparedMessage(String name, ChannelHandlerContext ctx) {
+        this.name = name;
         this.ctx = ctx;
     }
 
@@ -49,13 +51,64 @@ public class PGInterfacePreparedMessage {
         this.executeString = executeString;
     }
 
+    public void setWholePrepareString(String wholePrepareString) {
+        this.wholePrepareString = wholePrepareString;
+    }
+
+    private void setDatatypes(List<String> datatypes) { this.datatypes = datatypes; }
+
     public static String getExecuteDelimiter() {return executeDelimiter;}
 
-    public List<String> extractValues() {
+    public void extractAndSetValues() {
         //us execute string - seperator: ', '
         //bool ersetze...
         //cut string at ( and ) (remove chlammere) --> denn mach eif. split, ond problem solved...
         String onlyExecuteValues = executeString.split("\\(|\\)")[1];
-        return List.of(onlyExecuteValues.split(getExecuteDelimiter()));
+        List<String> valueList = Arrays.asList(onlyExecuteValues.split(getExecuteDelimiter()));
+        setDatatypes(valueList);
     }
+
+    public void extractAndSetTypes() {
+        String types = wholePrepareString.split("\\(|\\)")[1];
+        List<String> typeList = Arrays.asList(types.split(getExecuteDelimiter()));
+
+        //replace all bool with boolean to match polypheny dt
+        if (typeList.contains("bool") || typeList.contains("BOOL")) {
+            ListIterator<String> iterator = typeList.listIterator();
+            while (iterator.hasNext()) {
+                String next = iterator.next();
+                if (next.equals("bool")) {
+                    typeList.set(iterator.nextIndex()-1, "BOOLEAN");
+                }
+            }
+        }
+        setDatatypes(typeList);
+    }
+
+    public void changeParameterSymbol() {
+
+        String[] parts = wholePrepareString.split("\\$");
+        String newPrepareString = new String();
+
+        for (int i = 1; i<parts.length; i++) {
+            newPrepareString = newPrepareString + "?" + parts[i].substring(1);
+        }
+
+        setWholePrepareString(parts[0] + newPrepareString);
+
+    }
+
+    public void extractAndSetQuery() {
+        String query = wholePrepareString.split("AS ")[1];
+        setQuery(query);
+    }
+
+    public void prepareQuery() {
+        extractAndSetTypes();
+        changeParameterSymbol();
+        extractAndSetTypes();
+        extractAndSetQuery();
+    }
+
+
 }
