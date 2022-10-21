@@ -22,9 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -43,20 +46,20 @@ import org.polypheny.db.transaction.TransactionManager;
 
 public class PGInterfaceQueryHandler {
 
-    String query;
-    PGInterfacePreparedMessage preparedMessage;
-    ChannelHandlerContext ctx;
-    PGInterfaceInboundCommunicationHandler communicationHandler;
+    private String query;
+    private PGInterfacePreparedMessage preparedMessage;
+    private Boolean preparedQueryCycle = false;
+    private ChannelHandlerContext ctx;
+    private PGInterfaceInboundCommunicationHandler communicationHandler;
     private TransactionManager transactionManager;
-    int rowsAffected = 0;   //rows affected (changed/deleted/inserted/etc)
-    List<List<Object>> rows;
+    private int rowsAffected = 0;   //rows affected (changed/deleted/inserted/etc)
+    private List<List<Object>> rows;
 
 
     public PGInterfaceQueryHandler( String query, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
         this.query = query;
         this.ctx = ctx;
         this.communicationHandler = communicationHandler;
-        Object obj = new Object();
         this.transactionManager = transactionManager;
     }
 
@@ -64,13 +67,18 @@ public class PGInterfaceQueryHandler {
         this.preparedMessage = preparedMessage;
         this.ctx = ctx;
         this.communicationHandler = communicationHandler;
-        Object obj = new Object();
         this.transactionManager = transactionManager;
+        preparedQueryCycle = true;
     }
 
     public void start() {
         //hardcodeResponse();
-        sendQueryToPolypheny();
+        if (!preparedQueryCycle) {
+            sendQueryToPolypheny();
+        } else {
+            this.query = preparedMessage.getQuery();
+        }
+
     }
 
     private void hardcodeResponse() {
@@ -189,8 +197,16 @@ public class PGInterfaceQueryHandler {
             throw new RuntimeException( "Error while starting transaction", e );
         }
 
-        //TODO: en try catch block ine --> committe?
         try {
+            if (preparedQueryCycle) {
+                //TODO(FF): how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
+                //TODO(prepared Queries): met dem denn values dezue tue
+                Map<Long, AlgDataType> types = null;
+                List<Map<Long, Object>> values = null;
+                statement.getDataContext().setParameterTypes(types); //döfs erscht bem execute step mache...
+                statement.getDataContext().setParameterValues(values);
+
+            }
             //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)
             Processor sqlProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.SQL);
             Node sqlNode = sqlProcessor.parse(query).get(0);
@@ -223,10 +239,6 @@ public class PGInterfaceQueryHandler {
                 //FIXME(FF): macht das senn dasmer nome dors transaction.commit() de fähler bechonnt??
                 transaction.commit();
 
-                //TODO(FF): how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
-                //TODO(prepared Queries): met dem denn values dezue tue
-                //statement.getDataContext().setParameterTypes(); //döfs erscht bem execute step mache...
-                //statement.getDataContext().setParameterValues();
 
                 //java.lang.RuntimeException: The table 'emps' is provided by a data source which does not support data modification.
 
@@ -254,64 +266,6 @@ public class PGInterfaceQueryHandler {
                 commitStatus = "Error while rolling back";
             }
         }
-
-
-
-
-        /*
-        //Bsp Crud.java > createTable --> wie rollbacke (?o. exceptions handle oder biedes?)
-        try {
-            int a = executeSqlUpdate( transaction, query.toString() );
-            result = new Result( a ).setGeneratedQuery( query.toString() );
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while creating a table", e );
-            result = new Result( e ).setGeneratedQuery( query.toString() );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
-            }
-        }
-
-        //anders biispel us Result.java (för was??)
-        public Result( Throwable e ) {
-            this.exception = e;
-            if ( e.getMessage() != null ) {
-                this.error = e.getMessage();
-            } else {
-                this.error = e.getClass().getSimpleName();
-            }
-        }
-
-
-        //anders biispel: LanguageCrud > anyMongoQuery --> ganz onde de catch block, metem attack_error (aber was das gnau macht?)
-
-
-        //anders Biispel: LanguageCrud > commitAndFinish --> alles e chli? --> wie commite
-        executionTime = System.nanoTime() - executionTime;
-        String commitStatus;
-        try {
-            transaction.commit();
-            commitStatus = "Committed";
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception", e );
-            results.add( new Result( e ) );
-            try {
-                transaction.rollback();
-                commitStatus = "Rolled back";
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-                commitStatus = "Error while rolling back";
-            }
-        }
-
-        if ( queryAnalyzer != null ) {
-            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
-        }
-
-         */
-
 
     }
 
