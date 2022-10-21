@@ -21,6 +21,8 @@ import io.netty.channel.ChannelHandlerContext;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 /**
  * Writes the messages that need to be sent to the client byte-wise on the buffer
@@ -33,6 +35,7 @@ public class PGInterfaceServerWriter {
 
 
     public PGInterfaceServerWriter( String type, PGInterfaceMessage pgMsg, ChannelHandlerContext ctx ) {
+        //TODO(FF): remove type from initialization and pass it through writeOnByteBuf (would be tidier - but works without problem the way it is)
         this.type = type;
         this.pgMsg = pgMsg;
         this.ctx = ctx;
@@ -238,6 +241,32 @@ public class PGInterfaceServerWriter {
             buffer.writeBytes( bufferTemp );
         }
         //String bla = buffer.toString( Charset.defaultCharset() );
+        return buffer;
+    }
+
+    public ByteBuf writeSimpleErrorMessage (LinkedHashMap<Character, String> fields) {
+        ByteBuf buffer = ctx.alloc().buffer();
+        int msgLength = 4 + 1;
+
+        for (String i : fields.values()) {
+            msgLength += ( i.length() + 1 );
+        }
+
+        buffer.writeByte( pgMsg.getHeaderChar() );
+        buffer.writeInt( msgLength );
+
+        for (String i : fields.values()) {
+            msgLength += ( i.length() + 1 );
+        }
+
+        fields.forEach((fieldType, fieldValue) -> {
+            buffer.writeByte(fieldType);
+            buffer.writeBytes(fieldValue.getBytes(StandardCharsets.UTF_8));
+            buffer.writeByte( 0 );
+        });
+
+        buffer.writeByte( 0 );
+
         return buffer;
     }
 

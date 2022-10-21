@@ -22,7 +22,7 @@ package org.polypheny.db.postgresql;
  * There exist some special cases (as numbers as header, or no header)
  * For more information look at the Postgresql documentation: https://www.postgresql.org/docs/current/protocol-message-formats.html
  */
-//TODO: not complete with all commands yet (especially for copy commands, extended query cycle and different authentication methods)
+//TODO(FF): not complete with all commands yet (especially for copy commands, extended query cycle and different authentication methods)
 public enum PGInterfaceHeaders {
 
     //----------------------------------------------- server to client ------------------------------------------------
@@ -39,7 +39,7 @@ public enum PGInterfaceHeaders {
 
     /**
      * ErrorResponse - from server to client - message is error
-     * Execute - from client to server - used in extended query cycle
+     * Execute - from client to server - used in extended query cycle - Error Field Type not in Headers
      */
     E,
 
@@ -115,16 +115,3 @@ public enum PGInterfaceHeaders {
 
 
 }
-
-
-/*
-ONE(1);
-
-    private final int value;
-
-    Headers(final int newVal) {
-        value = newVal;
-    }
-
-    public int getValue() { return value; }
- */

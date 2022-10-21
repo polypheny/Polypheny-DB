@@ -54,6 +54,7 @@ public class PGInterfaceQueryHandler {
     private TransactionManager transactionManager;
     private int rowsAffected = 0;   //rows affected (changed/deleted/inserted/etc)
     private List<List<Object>> rows;
+    private PGInterfaceErrorHandler errorHandler;
 
 
     public PGInterfaceQueryHandler( String query, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
@@ -61,6 +62,7 @@ public class PGInterfaceQueryHandler {
         this.ctx = ctx;
         this.communicationHandler = communicationHandler;
         this.transactionManager = transactionManager;
+        this.errorHandler = new PGInterfaceErrorHandler(ctx);
     }
 
     public PGInterfaceQueryHandler( PGInterfacePreparedMessage preparedMessage, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
@@ -69,6 +71,7 @@ public class PGInterfaceQueryHandler {
         this.communicationHandler = communicationHandler;
         this.transactionManager = transactionManager;
         preparedQueryCycle = true;
+        this.errorHandler = new PGInterfaceErrorHandler(ctx);
     }
 
     public void start() {
@@ -194,12 +197,12 @@ public class PGInterfaceQueryHandler {
             statement = transaction.createStatement();
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             //TODO(FF): Inform client that something went wrong
+            //add errorhandler at the top... call simpleerrormessage here
             throw new RuntimeException( "Error while starting transaction", e );
         }
 
         try {
             if (preparedQueryCycle) {
-                //TODO(FF): how to handle reusable queries?? (do i have to safe them/check if it is reusable?)
                 //TODO(prepared Queries): met dem denn values dezue tue
                 Map<Long, AlgDataType> types = null;
                 List<Map<Long, Object>> values = null;
@@ -210,6 +213,7 @@ public class PGInterfaceQueryHandler {
             //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)
             Processor sqlProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.SQL);
             Node sqlNode = sqlProcessor.parse(query).get(0);
+            errorHandler.sendSimpleErrorMessage("hallo1234567890");
             QueryParameters parameters = new QueryParameters(query, Catalog.NamespaceType.RELATIONAL);
             if (sqlNode.isA(Kind.DDL)) {
                 result = sqlProcessor.prepareDdl(statement, sqlNode, parameters);
@@ -256,8 +260,6 @@ public class PGInterfaceQueryHandler {
             //TODO(FF): Rollback and send error to client
             //log.error( "Caught exception while executing query", e );
             String errorMsg = t.getMessage();
-            lol.add(new PGInterfaceErrorHandler( t ));
-            //result = new PGInterfaceErrorHandler( t ).setGeneratedQuery( query );
             try {
                 transaction.rollback();
                 commitStatus = "Rolled back";

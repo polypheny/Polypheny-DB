@@ -29,7 +29,7 @@ import org.polypheny.db.transaction.TransactionManager;
 public class PGInterfaceInboundCommunicationHandler {
 
     String type;
-    ChannelHandlerContext ctx;
+    static ChannelHandlerContext ctx;
     TransactionManager transactionManager;
     ArrayList<String> preparedStatementNames = new ArrayList<>();
     ArrayList<PGInterfacePreparedMessage> preparedMessages = new ArrayList<>();
@@ -180,7 +180,7 @@ public class PGInterfaceInboundCommunicationHandler {
         preparedMessage.extractAndSetValues();
 
         PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler( preparedMessage, ctx, this, transactionManager );
-        //queryHandler.start();
+        queryHandler.start();
         //send commandComplete according to query type... (oder em query handler... wo au  emmer dases gscheckt werd...) ond parse bind ond ready for query...
     }
 
@@ -257,7 +257,7 @@ public class PGInterfaceInboundCommunicationHandler {
      * @param msgBody tag - current transaction status indicator (possible vals: I (idle, not in transaction block),
      * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended (TODO: what exactly happens in transaction blocks.)
      */
-    public void sendReadyForQuery( String msgBody ) {
+    public static void sendReadyForQuery(String msgBody) {
         PGInterfaceMessage readyForQuery = new PGInterfaceMessage( PGInterfaceHeaders.Z, msgBody, 5, false );
         PGInterfaceServerWriter readyForQueryWriter = new PGInterfaceServerWriter( "c", readyForQuery, ctx );
         ctx.writeAndFlush( readyForQueryWriter.writeOnByteBuf() );
