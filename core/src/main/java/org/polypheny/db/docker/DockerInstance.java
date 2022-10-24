@@ -266,7 +266,7 @@ public class DockerInstance extends DockerManager {
         } catch ( CertificateException | IOException ex ) {
             return new DockerStatus( instanceId, false, ex.getMessage() );
         }
-        return new DockerStatus( instanceId, false, "" );
+        return new DockerStatus( instanceId, true, "" );
     }
 
 

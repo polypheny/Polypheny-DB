@@ -177,8 +177,8 @@ public class PolyphenyHomeDirManager {
     public File registerNewFile( File path, String pathToFile ) {
         File file = new File( path, pathToFile
                 .replace( "//", "/" )
-                .replace( "/", "\\" )
-                .replace( "//", "\\" ) );
+                .replace( "/", File.separator )
+                .replace( "//", File.separator ) );
         if ( !file.exists() ) {
             try {
                 file.getParentFile().mkdirs();
