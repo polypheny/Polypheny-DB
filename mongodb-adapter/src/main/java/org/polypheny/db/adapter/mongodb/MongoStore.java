@@ -135,9 +135,7 @@ public class MongoStore extends DataStore {
         addInformationPhysicalNames();
         enableInformationPage();
         ConfigDocker c = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId );
-        if ( c != null ) {
-            resetDockerConnection( c );
-        }
+        resetDockerConnection( c );
 
         this.transactionProvider = new TransactionProvider( this.client );
         MongoDatabase db = this.client.getDatabase( "admin" );
@@ -169,7 +167,7 @@ public class MongoStore extends DataStore {
         MongoClientSettings mongoSettings = MongoClientSettings
                 .builder()
                 .applyToClusterSettings( builder ->
-                        builder.hosts( Collections.singletonList( new ServerAddress( c.getHost(), port ) ) )
+                        builder.hosts( Collections.singletonList( new ServerAddress( host, port ) ) )
                 )
                 .build();
 
