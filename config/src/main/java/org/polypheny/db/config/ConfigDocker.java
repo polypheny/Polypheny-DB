@@ -32,7 +32,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigDocker extends ConfigObject {
 
     public static final String DEFAULT_PROTOCOL = "tcp";
-    public static final int DEFAULT_PORT = 2376;
+    public static final int DEFAULT_PORT = 443;
 
     // SSH was introduced as a possible transport protocol for connecting to remote Docker hosts recently, it is not yet
     // supported in java-docker but can be enabled as soon as this happens
