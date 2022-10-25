@@ -311,6 +311,10 @@ public abstract class DockerManager {
         @Setter
         @Getter
         private String containerId;
+        @Getter
+        @Setter
+        private String ipAddress;
+
 
         @Getter
         private final String host;

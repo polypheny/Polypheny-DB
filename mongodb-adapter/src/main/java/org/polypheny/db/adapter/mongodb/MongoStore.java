@@ -122,8 +122,9 @@ public class MongoStore extends DataStore {
                     .withReadyTest( this::testConnection, 20000 )
                     .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
                     .build();
-            this.host = container.getHost();
-            DockerManager.getInstance().initialize( container ).start();
+            DockerManager.getInstance().initialize( container );
+            this.host = container.getIpAddress();
+            container.start();
         } else if ( deployMode == DeployMode.REMOTE ) {
             this.host = settings.get( "host" );
         } else if ( deployMode == DeployMode.EMBEDDED ) {
@@ -546,6 +547,7 @@ public class MongoStore extends DataStore {
 
     private boolean testConnection() {
         MongoClient client = null;
+        System.out.println( this.host );
         try {
             MongoClientSettings mongoSettings = MongoClientSettings
                     .builder()
