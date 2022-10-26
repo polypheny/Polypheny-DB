@@ -17,14 +17,21 @@
 package org.polypheny.db.postgres;
 
 import com.google.common.collect.ImmutableList;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
+
+import static org.junit.Assert.assertEquals;
+
 //import static org.polypheny.db.postgresql.PGInterfaceInboundCommunicationHandler.ctx;
+
 
 public class PGInterfaceIntegrationTests {
 
@@ -38,7 +45,6 @@ public class PGInterfaceIntegrationTests {
     private String ddlQuerySentByClient = "P\u0000\u0000\u0000�\u0000CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))\u0000\u0000\u0000B\u0000\u0000\u0000\f\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000D\u0000\u0000\u0000\u0006P\u0000E\u0000\u0000\u0000\t\u0000\u0000\u0000\u0000\u0001S\u0000\u0000\u0000\u0004";
             //new Object[]{"REAL'S HOWTO"};
 
-    private Connection c;
 
 
     @BeforeClass
@@ -48,50 +54,54 @@ public class PGInterfaceIntegrationTests {
         TestHelper.getInstance();
     }
 
+    @AfterClass
+    public static void stop() {
+        Properties connectionProps = new Properties();
+        connectionProps.setProperty("sslmode", "disable");
+        String url = "jdbc:postgresql://localhost:5432/";
+        try (Connection c = DriverManager.getConnection(url, connectionProps)) {
+            try(Statement statement = c.createStatement()) {
+                int status = statement.executeUpdate("DROP TABLE public.PGInterfaceTestTable");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
 
 
     @Test
-    public int testIfDDLIsExecuted() {
+    public void testIfDDLIsExecuted() throws SQLException {
 
         try {
+            Connection c = null;
+            Properties connectionProps = new Properties();
+            connectionProps.setProperty("sslmode", "disable");
+            String url = "jdbc:postgresql://localhost:5444/";
+
+            c = DriverManager.getConnection(url, connectionProps);
             Statement statement = c.createStatement();
+            int status = statement.executeUpdate("CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
 
-                /*
-                System.out.println("executing select");
-                ResultSet rs = statement.executeQuery("SELECT * FROM public.emps"); //empid, deptno, name, salary, commission
-                //ResultSet rs = statement.executeQuery("SELECT * FROM public.Album"); //AlbumId, Title, ArtistId
-                System.out.println("SQL-part executed successfully");
-
-                while (rs.next()) {
-                    int empid = rs.getInt("empid");
-                    int deptno = rs.getInt("deptno");
-                    String name = rs.getString("name");
-                    int salary = rs.getInt("salary");
-                    int commission = rs.getInt("commission");
-
-                    //System.out.printf( "AlbumId = %s , Title = %s, ArtistId = %s ", albumid,title, artistid );
-                    System.out.printf("LolId = %s \n", empid);
-                    System.out.printf("deptno = %s \n", deptno);
-                    System.out.printf("name = %s \n", name);
-                    System.out.printf("salary = %s \n", salary);
-                    System.out.printf("commission = %s \n", commission);
-                    System.out.println();
-
-                }
-
-                 */
-
-            int r = statement.executeUpdate("INSERT INTO public.Album(AlbumId, Title, ArtistId) VALUES (3, 'Lisa', 3);");
-
-            //rs.close();
             statement.close();
-            return r;
+
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return 0;
+
+
+        Properties connectionProps = new Properties();
+        connectionProps.setProperty("sslmode", "disable");
+        String url = "jdbc:postgresql://localhost:5432/";
+        try (Connection c = DriverManager.getConnection(url, connectionProps)) {
+            try(Statement statement = c.createStatement()) {
+                int status = statement.executeUpdate("CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
+                assertEquals(0, status);
+            }
+        }
     }
 
     @Test
@@ -106,31 +116,36 @@ public class PGInterfaceIntegrationTests {
         }
     }
 
-    /*
 
     @Test
-    public void testIfDDLIsExecuted() {
-        PGInterfaceInboundCommunicationHandler mockInterfaceInboundCommunicationHandler = mock(PGInterfaceInboundCommunicationHandler.class);
-        mockInterfaceInboundCommunicationHandler.decideCycle( ddlQuerySentByClient );
-
-        //TODO(FF): look if result was executed in Polypheny
+    public void testIfDMLIsExecuted() throws SQLException {
+        Properties connectionProps = new Properties();
+        connectionProps.setProperty("sslmode", "disable");
+        String url = "jdbc:postgresql://localhost:5432/";
+        try (Connection c = DriverManager.getConnection(url, connectionProps)) {
+            try(Statement statement = c.createStatement()) {
+                int status = statement.executeUpdate("INSERT INTO public.PGInterfaceTestTable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3);");
+                assertEquals(0, status);
+            }
+        }
     }
 
     @Test
-    public void testIfDMLIsExecuted() {
-        PGInterfaceInboundCommunicationHandler mockInterfaceInboundCommunicationHandler = mock(PGInterfaceInboundCommunicationHandler.class);
-        mockInterfaceInboundCommunicationHandler.decideCycle( dmlQuerySentByClient );
+    public void testIfDQLIsExecuted() throws SQLException {
+        Properties connectionProps = new Properties();
+        connectionProps.setProperty("sslmode", "disable");
+        String url = "jdbc:postgresql://localhost:5432/";
+        try (Connection c = DriverManager.getConnection(url, connectionProps)) {
+            try (Statement statement = c.createStatement()) {
+                TestHelper.checkResultSet(
+                        statement.executeQuery("SELECT * FROM PGInterfaceTestTable"),
+                        ImmutableList.of(
+                                new Object[]{1, "Franz", 1},
+                                new Object[]{2, "Hello", 2},
+                                new Object[]{3, "By", 3}));
 
-        //TODO(FF): look if result was executed in Polypheny
+            }
+        }
     }
 
-    @Test
-    public void testIfDQLIsExecuted() {
-        PGInterfaceInboundCommunicationHandler mockInterfaceInboundCommunicationHandler = mock(PGInterfaceInboundCommunicationHandler.class);
-        mockInterfaceInboundCommunicationHandler.decideCycle( dqlQuerySentByClient );
-
-        //TODO(FF): look if result was executed in Polypheny
-    }
-
-     */
 }
