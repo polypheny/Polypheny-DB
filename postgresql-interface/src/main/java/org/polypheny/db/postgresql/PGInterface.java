@@ -103,6 +103,7 @@ public class PGInterface extends QueryInterface {
                     .childHandler( new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel( SocketChannel socketChannel ) throws Exception {
+                            log.error("initChannel");
                             ChannelPipeline channelPipeline = socketChannel.pipeline();
 
                             //Inbound

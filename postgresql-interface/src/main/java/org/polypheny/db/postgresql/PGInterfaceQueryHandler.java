@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -43,7 +44,10 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
 
+
+@Slf4j
 public class PGInterfaceQueryHandler {
 
     private String query;
@@ -62,7 +66,7 @@ public class PGInterfaceQueryHandler {
         this.ctx = ctx;
         this.communicationHandler = communicationHandler;
         this.transactionManager = transactionManager;
-        this.errorHandler = new PGInterfaceErrorHandler(ctx);
+        this.errorHandler = new PGInterfaceErrorHandler(ctx, communicationHandler);
     }
 
     public PGInterfaceQueryHandler( PGInterfacePreparedMessage preparedMessage, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
@@ -71,16 +75,17 @@ public class PGInterfaceQueryHandler {
         this.communicationHandler = communicationHandler;
         this.transactionManager = transactionManager;
         preparedQueryCycle = true;
-        this.errorHandler = new PGInterfaceErrorHandler(ctx);
+        this.errorHandler = new PGInterfaceErrorHandler(ctx, communicationHandler);
     }
 
     public void start() {
         //hardcodeResponse();
-        if (!preparedQueryCycle) {
-            sendQueryToPolypheny();
-        } else {
+        if (preparedQueryCycle) {
             this.query = preparedMessage.getQuery();
         }
+        //int hash = ctx.hashCode();
+
+        sendQueryToPolypheny();
 
     }
 
@@ -204,8 +209,12 @@ public class PGInterfaceQueryHandler {
         try {
             if (preparedQueryCycle) {
                 //TODO(prepared Queries): met dem denn values dezue tue
+                AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType(PolyType.INTEGER);
+                statement.getTransaction().getTypeFactory().createPolyType(PolyType.VARCHAR, 255);
+                statement.getTransaction().getTypeFactory().createPolyType(PolyType.BOOLEAN);
+                statement.getTransaction().getTypeFactory().createPolyType(PolyType.DECIMAL, 3, 3);
                 Map<Long, AlgDataType> types = null;
-                List<Map<Long, Object>> values = null;
+                List<Map<Long, Object>> values = null;  //long index
                 statement.getDataContext().setParameterTypes(types); //döfs erscht bem execute step mache...
                 statement.getDataContext().setParameterValues(values);
 

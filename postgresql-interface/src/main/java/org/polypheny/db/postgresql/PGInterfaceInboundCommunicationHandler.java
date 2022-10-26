@@ -21,18 +21,18 @@ import io.netty.channel.ChannelHandlerContext;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.TransactionManager;
 
 /**
  * Manages all incoming communication, not using the netty framework (but being a handler in netty)
  */
+@Slf4j
 public class PGInterfaceInboundCommunicationHandler {
 
     String type;
-    static ChannelHandlerContext ctx;
+    ChannelHandlerContext ctx;
     TransactionManager transactionManager;
-    ArrayList<String> preparedStatementNames = new ArrayList<>();
-    ArrayList<PGInterfacePreparedMessage> preparedMessages = new ArrayList<>();
     private PGInterfaceErrorHandler errorHandler;
 
 
@@ -40,7 +40,7 @@ public class PGInterfaceInboundCommunicationHandler {
         this.type = type;
         this.ctx = ctx;
         this.transactionManager = transactionManager;
-        this.errorHandler = new PGInterfaceErrorHandler(ctx);
+        this.errorHandler = new PGInterfaceErrorHandler(ctx, this);
     }
 
 
@@ -48,9 +48,10 @@ public class PGInterfaceInboundCommunicationHandler {
      * Decides in what cycle from postgres the client is (startup-phase, query-phase, etc.)
      *
      * @param oMsg the incoming message from the client (unchanged)
+     * @param pgInterfaceServerHandler
      * @return
      */
-    public void decideCycle( Object oMsg ) {
+    public void decideCycle(Object oMsg, PGInterfaceServerHandler pgInterfaceServerHandler) {
         String msgWithZeroBits = ((String) oMsg);
         String wholeMsg = msgWithZeroBits.replace( "\u0000", "" );
 
@@ -60,7 +61,7 @@ public class PGInterfaceInboundCommunicationHandler {
                 startUpPhase();
                 break;
             case "P":
-                extendedQueryPhase( wholeMsg );
+                extendedQueryPhase( wholeMsg, pgInterfaceServerHandler );
                 break;
             case "X":
                 terminateConnection();
@@ -77,12 +78,12 @@ public class PGInterfaceInboundCommunicationHandler {
     public void startUpPhase() {
         //authenticationOk
         PGInterfaceMessage authenticationOk = new PGInterfaceMessage( PGInterfaceHeaders.R, "0", 8, false );
-        PGInterfaceServerWriter authenticationOkWriter = new PGInterfaceServerWriter( "i", authenticationOk, ctx );
+        PGInterfaceServerWriter authenticationOkWriter = new PGInterfaceServerWriter( "i", authenticationOk, ctx, this);
         ctx.writeAndFlush( authenticationOkWriter.writeOnByteBuf() );
 
         //server_version (Parameter Status message)
         PGInterfaceMessage parameterStatusServerVs = new PGInterfaceMessage(PGInterfaceHeaders.S, "server_version" + PGInterfaceMessage.getDelimiter() + "14", 4, true);
-        PGInterfaceServerWriter parameterStatusServerVsWriter = new PGInterfaceServerWriter( "ss", parameterStatusServerVs, ctx );
+        PGInterfaceServerWriter parameterStatusServerVsWriter = new PGInterfaceServerWriter( "ss", parameterStatusServerVs, ctx, this);
         ctx.writeAndFlush( parameterStatusServerVsWriter.writeOnByteBuf() );
 
         //ReadyForQuery
@@ -99,8 +100,9 @@ public class PGInterfaceInboundCommunicationHandler {
     /**
      * Sends necessary responses to client (without really setting anything in backend) and prepares the incoming query for usage. Continues query forward to QueryHandler
      * @param incomingMsg unchanged incoming message (transformed to string by netty)
+     * @param pgInterfaceServerHandler
      */
-    public void extendedQueryPhase( String incomingMsg ) {
+    public void extendedQueryPhase(String incomingMsg, PGInterfaceServerHandler pgInterfaceServerHandler) {
 
         if ( incomingMsg.substring( 2, 5 ).equals( "SET" ) ) {
             sendParseBindComplete();
@@ -108,6 +110,8 @@ public class PGInterfaceInboundCommunicationHandler {
             sendReadyForQuery( "I" );
 
         } else if (incomingMsg.substring(2, 9).equals("PREPARE")) {
+            ArrayList<String> preparedStatementNames = pgInterfaceServerHandler.getPreparedStatementNames();
+
             //Prepared Statement
             String[] query = extractPreparedQuery( incomingMsg );
             String prepareString = query[0];
@@ -118,8 +122,11 @@ public class PGInterfaceInboundCommunicationHandler {
             if (preparedStatementNames.isEmpty() || (!preparedStatementNames.contains(prepareStringQueryName))) {
                 PGInterfacePreparedMessage preparedMessage = new PGInterfacePreparedMessage(prepareStringQueryName, prepareString, ctx);
                 preparedMessage.prepareQuery();
-                preparedStatementNames.add(prepareStringQueryName);
-                preparedMessages.add(preparedMessage);
+                //preparedStatementNames.add(prepareStringQueryName); //proforma, aber wenni alles rechtig ersetzst sötti das eig chönne uselösche...
+                pgInterfaceServerHandler.addPreparedStatementNames(prepareStringQueryName);
+                //ctx.channel().attr(attrObj).set(prepareStringQueryName);
+                //preparedMessages.add(preparedMessage);
+                pgInterfaceServerHandler.addPreparedMessage(preparedMessage);
                 //safe everything possible and necessary
                 //send: 1....2....n....C....PREPARE
                 sendParseBindComplete();
@@ -131,7 +138,7 @@ public class PGInterfaceInboundCommunicationHandler {
 
                     //check if name exists already
                     if (preparedStatementNames.contains(statementName)) {
-                        executePreparedStatement(executeString, statementName);
+                        executePreparedStatement(executeString, statementName, pgInterfaceServerHandler);
                     } else {
                         String errorMsg = "There does not exist a prepared statement called" + statementName;
                         errorHandler.sendSimpleErrorMessage(errorMsg);
@@ -150,13 +157,15 @@ public class PGInterfaceInboundCommunicationHandler {
             //List<String> lol = preparedMessage.extractValues();
 
         } else if (incomingMsg.substring(2, 9).equals("EXECUTE")) {
+            ArrayList<String> preparedStatementNames = pgInterfaceServerHandler.getPreparedStatementNames();
+
             //get execute statement
             String executeQuery = extractQuery(incomingMsg);
             String statementName = extractPreparedQueryName(executeQuery);
 
             //check if name exists already
             if (preparedStatementNames.contains(statementName)) {
-                executePreparedStatement(executeQuery, statementName);
+                executePreparedStatement(executeQuery, statementName, pgInterfaceServerHandler);
             } else {
                 String errorMsg = "There does not exist a prepared statement called" + statementName;
                 //terminateConnection();
@@ -173,9 +182,12 @@ public class PGInterfaceInboundCommunicationHandler {
         }
     }
 
-    private void executePreparedStatement(String executeString, String statementName) {
+    private void executePreparedStatement(String executeString, String statementName, PGInterfaceServerHandler pgInterfaceServerHandler) {
+        ArrayList<String> preparedStatementNames = pgInterfaceServerHandler.getPreparedStatementNames();
+
         int idx = preparedStatementNames.indexOf(statementName);
-        PGInterfacePreparedMessage preparedMessage = preparedMessages.get(idx);
+        //PGInterfacePreparedMessage preparedMessage = preparedMessages.get(idx);
+        PGInterfacePreparedMessage preparedMessage = pgInterfaceServerHandler.getPreparedMessage(idx);
         preparedMessage.setExecuteString(executeString);
         preparedMessage.extractAndSetValues();
 
@@ -257,9 +269,9 @@ public class PGInterfaceInboundCommunicationHandler {
      * @param msgBody tag - current transaction status indicator (possible vals: I (idle, not in transaction block),
      * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended
      */
-    public static void sendReadyForQuery(String msgBody) {
+    public void sendReadyForQuery(String msgBody) {
         PGInterfaceMessage readyForQuery = new PGInterfaceMessage( PGInterfaceHeaders.Z, msgBody, 5, false );
-        PGInterfaceServerWriter readyForQueryWriter = new PGInterfaceServerWriter( "c", readyForQuery, ctx );
+        PGInterfaceServerWriter readyForQueryWriter = new PGInterfaceServerWriter( "c", readyForQuery, ctx, this);
         ctx.writeAndFlush( readyForQueryWriter.writeOnByteBuf() );
     }
 
@@ -283,7 +295,7 @@ public class PGInterfaceInboundCommunicationHandler {
 
         ByteBuf buffer = ctx.alloc().buffer();
         PGInterfaceMessage mockMessage = new PGInterfaceMessage( PGInterfaceHeaders.ONE, "0", 4, true );
-        PGInterfaceServerWriter headerWriter = new PGInterfaceServerWriter( "i", mockMessage, ctx );
+        PGInterfaceServerWriter headerWriter = new PGInterfaceServerWriter( "i", mockMessage, ctx, this);
         buffer = headerWriter.writeIntHeaderOnByteBuf( '1' );
         buffer.writeBytes( headerWriter.writeIntHeaderOnByteBuf( '2' ) );
         ctx.writeAndFlush( buffer );
@@ -294,7 +306,7 @@ public class PGInterfaceInboundCommunicationHandler {
 
     public void sendNoData() {
         PGInterfaceMessage noData = new PGInterfaceMessage( PGInterfaceHeaders.n, "0", 4, true );
-        PGInterfaceServerWriter noDataWriter = new PGInterfaceServerWriter( "i", noData, ctx );
+        PGInterfaceServerWriter noDataWriter = new PGInterfaceServerWriter( "i", noData, ctx, this);
         ctx.writeAndFlush( noDataWriter.writeIntHeaderOnByteBuf('n') );
     }
 
@@ -317,7 +329,10 @@ public class PGInterfaceInboundCommunicationHandler {
         }
 
         commandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, body, 4, true );
-        commandCompleteWriter = new PGInterfaceServerWriter( "s", commandComplete, ctx );
+        commandCompleteWriter = new PGInterfaceServerWriter( "s", commandComplete, ctx, this);
+        int hash = ctx.hashCode();
+        String lol = command + " | " + String.valueOf(hash);
+        log.error(lol);
         ctx.writeAndFlush( commandCompleteWriter.writeOnByteBuf() );
     }
 
@@ -330,7 +345,7 @@ public class PGInterfaceInboundCommunicationHandler {
     public void sendRowDescription( int numberOfFields, ArrayList<Object[]> valuesPerCol ) {
         String body = String.valueOf( numberOfFields );
         PGInterfaceMessage rowDescription = new PGInterfaceMessage( PGInterfaceHeaders.T, body, 4, true );    //the length here doesn't really matter, because it is calculated seperately in writeRowDescription
-        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter( "i", rowDescription, ctx );
+        PGInterfaceServerWriter rowDescriptionWriter = new PGInterfaceServerWriter( "i", rowDescription, ctx, this);
         ctx.writeAndFlush(rowDescriptionWriter.writeRowDescription(valuesPerCol));
     }
 
@@ -340,7 +355,7 @@ public class PGInterfaceInboundCommunicationHandler {
      * @param data data that should be sent
      */
     public void sendDataRow( ArrayList<String[]> data ) {
-        int noCols = data.size();   //number of rows returned
+        int noCols = data.size();   //number of rows returned   TODO(FF,low priority): rename every occurence
         String colVal = "";         //The value of the result
         int colValLength = 0;       //length of the colVal - can be 0 and -1 (-1= NULL is colVal)
         String body = "";           //combination of colVal and colValLength
@@ -366,7 +381,7 @@ public class PGInterfaceInboundCommunicationHandler {
                 }
             }
             dataRow = new PGInterfaceMessage( PGInterfaceHeaders.D, body, colValLength, false );
-            dataRowWriter = new PGInterfaceServerWriter( "dr", dataRow, ctx );
+            dataRowWriter = new PGInterfaceServerWriter( "dr", dataRow, ctx, this);
             ctx.writeAndFlush( dataRowWriter.writeOnByteBuf() );
             body = "";
         }

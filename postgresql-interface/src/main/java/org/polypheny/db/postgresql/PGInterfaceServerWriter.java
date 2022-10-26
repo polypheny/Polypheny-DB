@@ -18,10 +18,9 @@ package org.polypheny.db.postgresql;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import java.nio.charset.Charset;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 /**
@@ -35,12 +34,12 @@ public class PGInterfaceServerWriter {
     PGInterfaceErrorHandler errorHandler;
 
 
-    public PGInterfaceServerWriter( String type, PGInterfaceMessage pgMsg, ChannelHandlerContext ctx ) {
+    public PGInterfaceServerWriter(String type, PGInterfaceMessage pgMsg, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler) {
         //TODO(FF): remove type from initialization and pass it through writeOnByteBuf (would be tidier - but works without problem the way it is)
         this.type = type;
         this.pgMsg = pgMsg;
         this.ctx = ctx;
-        this.errorHandler = new PGInterfaceErrorHandler(ctx);
+        this.errorHandler = new PGInterfaceErrorHandler(ctx, pgInterfaceInboundCommunicationHandler);
     }
 
 

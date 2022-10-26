@@ -29,6 +29,7 @@ public class PGInterfacePreparedMessage {
     private String wholePrepareString;
     private String executeString;
     private List<String> dataTypes;
+    private List<String> data;
     private static final String  executeDelimiter = ", ";
 
 
@@ -57,11 +58,15 @@ public class PGInterfacePreparedMessage {
 
     private void setDataTypes(List<String> dataTypes) { this.dataTypes = dataTypes; }
 
+    private void setData(List<String> data) { this.data = data; }
+
     public static String getExecuteDelimiter() {return executeDelimiter;}
 
     public String getQuery() { return query;}
 
     public List<String> getDataTypes() { return dataTypes;}
+
+    public List<String> getData() { return data;}
 
     public void extractAndSetValues() {
         //us execute string - seperator: ', '
@@ -69,7 +74,7 @@ public class PGInterfacePreparedMessage {
         //cut string at ( and ) (remove chlammere) --> denn mach eif. split, ond problem solved...
         String onlyExecuteValues = executeString.split("\\(|\\)")[1];
         List<String> valueList = Arrays.asList(onlyExecuteValues.split(getExecuteDelimiter()));
-        setDataTypes(valueList);
+        setData(valueList);    //FIXME(FF): setData, ned setDataTypes
     }
 
     public void extractAndSetTypes() {

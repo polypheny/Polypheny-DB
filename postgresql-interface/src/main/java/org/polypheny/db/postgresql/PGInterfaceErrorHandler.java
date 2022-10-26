@@ -19,7 +19,6 @@ package org.polypheny.db.postgresql;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class PGInterfaceErrorHandler {
@@ -28,9 +27,10 @@ public class PGInterfaceErrorHandler {
     private Throwable exception;
     private ChannelHandlerContext ctx;
     private PGInterfaceServerWriter serverWriter;
+    private PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler;
 
 
-    public PGInterfaceErrorHandler(ChannelHandlerContext ctx) {
+    public PGInterfaceErrorHandler(ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler) {
         this.ctx = ctx;
     }
 
@@ -44,7 +44,7 @@ public class PGInterfaceErrorHandler {
         //E..._SERROR.VERROR.C42601.Msyntax error at or near "SSELECT".P1.Fscan.l.L1176.Rscanner_yyerror..Z....I
         this.errorMsg = errorMsg;
         PGInterfaceMessage pgInterfaceMessage = new PGInterfaceMessage(PGInterfaceHeaders.E, "MockBody", 4, true);
-        this.serverWriter = serverWriter = new PGInterfaceServerWriter("MockType", pgInterfaceMessage, ctx);
+        this.serverWriter = serverWriter = new PGInterfaceServerWriter("MockType", pgInterfaceMessage, ctx, pgInterfaceInboundCommunicationHandler);
 
         //FIXME(FF): An error occurs because of the errormessage on the clientside. But it doesn't really matter, because the connection would be terminated anyway and the individual message part arrives...
         LinkedHashMap<Character, String> errorFields = new LinkedHashMap<Character, String>();
@@ -62,7 +62,7 @@ public class PGInterfaceErrorHandler {
         ByteBuf buffer = serverWriter.writeSimpleErrorMessage(errorFields);
         ctx.writeAndFlush(buffer);
 
-        PGInterfaceInboundCommunicationHandler.sendReadyForQuery("I");
+        pgInterfaceInboundCommunicationHandler.sendReadyForQuery("I");
 
     }
 
