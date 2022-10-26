@@ -133,32 +133,7 @@ public class PGInterfacePreparedMessage {
             AlgDataType algDataType = transformToAlgDataType(type, statement);
             statement.getDataContext().addParameterValues(idx, algDataType, o);
         }
-        /*
-        // Add values to data context
-        //values() chonnt vo map
-        Map<Integer, List<DataContext.ParameterValue>> values = null;
 
-        for(int i=0; i<values.size(); i++) {
-            List<DataContext.ParameterValue>valFor = values.get(i);
-            List<Object> o = new ArrayList<>();
-            for(int j=0; j<valFor.size(); j++) {
-                DataContext.ParameterValue v = valFor.get(j);
-                o.add(v.getValue()); // -->the object, which is the value
-            }
-            //addParameterValues( long index, AlgDataType type, List<Object> data );
-            statement.getDataContext().addParameterValues(valFor.get(0).getIndex(), valFor.get(0).getType(), o);
-        }
-
-
-        for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
-            List<Object> o = new ArrayList<>();
-            for ( DataContext.ParameterValue v : values ) {
-                o.add( v.getValue() );
-            }
-            statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
-        }
-
-         */
     }
 
     private Object transformData(String value, String type) {

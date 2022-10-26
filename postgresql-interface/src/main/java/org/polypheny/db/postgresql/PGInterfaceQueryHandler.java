@@ -395,6 +395,10 @@ public class PGInterfaceQueryHandler {
     public void sendResultToClient( String type, ArrayList<String[]> data, ArrayList<String[]> header ) {
         switch ( type ) {
             case "INSERT":
+            case "DROP_TABLE":
+            case "TRUNCATE":
+            case "UPDATE":
+
                 //INSERT oid rows (oid=0, rows = #rows inserted)
                 //1....2....n....C....INSERT 0 1.Z....I
 
@@ -452,8 +456,6 @@ public class PGInterfaceQueryHandler {
                         case "BOOLEAN":
                             dataTypeSize = 1;   //TODO(FF): wär 1bit --> wie das darstelle??????
                             break;
-                        case "DATE":
-                            break;
                         case "DECIMAL":
                             break;
                         case "REAL":
@@ -476,14 +478,15 @@ public class PGInterfaceQueryHandler {
                             dataTypeSize = 1;
                             formatCode = 0;
                             break;
+                        case "DATE":
                         case "TIMESTAMP":
-                            break;
                         case "TIME":
-                            break;
                         case "FILE":
                         case "IMAGE":
                         case "SOUND":
                         case "VIDEO":
+                        default:
+                            errorHandler.sendSimpleErrorMessage("The DataType of the answer is not yet implemented, but there is a high chance that the query was executed in Polypheny");
                             break;
                     }
                     Object col[] = { fieldName, objectIDTable, attributeNoCol, objectIDColDataType, dataTypeSize, typeModifier, formatCode };
@@ -501,18 +504,18 @@ public class PGInterfaceQueryHandler {
 
             case "DELETE":
                 //DELETE rows (rows = #rows deleted)
-                break;
 
             case "MOVE":
                 //MOVE rows (rows = #rows the cursor's position has been changed by (??))
-                break;
 
             case "FETCH":
                 //FETCH rows (rows = #rows that have been retrieved from cursor)
-                break;
 
             case "COPY":
-                //COPY rows (rows = #rows copied --> only on PSQL 8.2 and later)
+                //COPY rows (rows = #rows copied --> only on PSQL 8.2 and later)$
+
+            default:
+                errorHandler.sendSimpleErrorMessage("Answer to client is not yet supported, but there is a high chance that the query was executed in Polypheny");
                 break;
 
         }

@@ -66,6 +66,8 @@ public class PGInterfaceInboundCommunicationHandler {
             case "X":
                 terminateConnection();
                 break;
+            default:
+                errorHandler.sendSimpleErrorMessage("The message could not be parsed by the PGInterface.");
 
         }
     }
@@ -385,11 +387,6 @@ public class PGInterfaceInboundCommunicationHandler {
             ctx.writeAndFlush( dataRowWriter.writeOnByteBuf() );
             body = "";
         }
-    }
-
-
-    private void sendErrorResponse(String error) {
-
     }
 
     public void terminateConnection() {

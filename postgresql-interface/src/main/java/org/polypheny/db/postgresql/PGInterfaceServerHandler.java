@@ -51,9 +51,10 @@ public class PGInterfaceServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) {
         //cause.printStackTrace();
+
+        // Client wouldn't receive msg, because client already closed connection
         //this.errorHandler = new PGInterfaceErrorHandler(ctx);
         //errorHandler.sendSimpleErrorMessage(cause.getMessage());
-        // I don't client would receive msg, because client already closed connection
 
         ctx.close();
     }

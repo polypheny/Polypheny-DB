@@ -16,6 +16,7 @@
 
 package org.polypheny.db.postgres;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
@@ -91,6 +92,18 @@ public class PGInterfaceIntegrationTests {
         }
 
         return 0;
+    }
+
+    @Test
+    public void basicTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ARRAY[1, 2] = ARRAY[1, 2], ARRAY[2, 4] = ARRAY[2, 3]" ),
+                        ImmutableList.of( new Object[]{ true, false } ) );
+            }
+        }
     }
 
     /*
