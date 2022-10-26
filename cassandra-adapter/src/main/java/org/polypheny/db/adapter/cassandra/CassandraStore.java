@@ -60,6 +60,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -83,6 +84,7 @@ public class CassandraStore extends DataStore {
 
     // Running embedded
     private final Cassandra embeddedCassandra;
+    private Container container;
 
     // Connection information
     private String dbHostname;
@@ -146,7 +148,8 @@ public class CassandraStore extends DataStore {
                     //.withEnvironmentVariables( Arrays.asList( "CASSANDRA_USER=" + this.dbUsername, "CASSANDRA_PASSWORD=" + this.dbPassword ) )
                     .build();
 
-            this.dbHostname = container.getHost();
+            this.container = container;
+
             this.dbKeyspace = "cassandra";
             this.dbPort = Integer.parseInt( settings.get( "port" ) );
 
@@ -510,6 +513,16 @@ public class CassandraStore extends DataStore {
 
     private boolean testDockerConnection() {
         CqlSession mySession = null;
+
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        this.dbHostname = container.getIpAddress();
+        if ( this.dbHostname == null ) {
+            return false;
+        }
+
         try {
             CqlSessionBuilder cluster = CqlSession.builder();
             cluster.withLocalDatacenter( "datacenter1" );
