@@ -62,7 +62,7 @@ public class PGInterfaceErrorHandler {
         ByteBuf buffer = serverWriter.writeSimpleErrorMessage(errorFields);
         ctx.writeAndFlush(buffer);
 
-        pgInterfaceInboundCommunicationHandler.sendReadyForQuery("I");
+        //pgInterfaceInboundCommunicationHandler.sendReadyForQuery("I");
 
     }
 

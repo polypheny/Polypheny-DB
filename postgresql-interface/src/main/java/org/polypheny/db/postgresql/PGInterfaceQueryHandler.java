@@ -207,16 +207,9 @@ public class PGInterfaceQueryHandler {
         }
 
         try {
-            if (preparedQueryCycle) {
+            if (preparedQueryCycle) {   //TODO: nome be execute döfs do ine!!
                 //TODO(prepared Queries): met dem denn values dezue tue
-                AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType(PolyType.INTEGER);
-                statement.getTransaction().getTypeFactory().createPolyType(PolyType.VARCHAR, 255);
-                statement.getTransaction().getTypeFactory().createPolyType(PolyType.BOOLEAN);
-                statement.getTransaction().getTypeFactory().createPolyType(PolyType.DECIMAL, 3, 3);
-                Map<Long, AlgDataType> types = null;
-                List<Map<Long, Object>> values = null;  //long index
-                statement.getDataContext().setParameterTypes(types); //döfs erscht bem execute step mache...
-                statement.getDataContext().setParameterValues(values);
+                preparedMessage.transformDataAndAddParameterValues(statement);
 
             }
             //get algRoot  --> use it in abstract queryProcessor (prepare query) - example from catalogImpl (461-446)

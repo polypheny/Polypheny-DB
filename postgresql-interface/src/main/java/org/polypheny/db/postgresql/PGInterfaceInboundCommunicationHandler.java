@@ -330,9 +330,9 @@ public class PGInterfaceInboundCommunicationHandler {
 
         commandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, body, 4, true );
         commandCompleteWriter = new PGInterfaceServerWriter( "s", commandComplete, ctx, this);
-        int hash = ctx.hashCode();
-        String lol = command + " | " + String.valueOf(hash);
-        log.error(lol);
+        //int hash = ctx.hashCode();
+        //String lol = command + " | " + String.valueOf(hash);
+        //log.error(lol);
         ctx.writeAndFlush( commandCompleteWriter.writeOnByteBuf() );
     }
 

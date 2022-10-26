@@ -17,10 +17,12 @@
 package org.polypheny.db.postgresql;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 
 public class PGInterfacePreparedMessage {
     private String name;
@@ -31,6 +33,8 @@ public class PGInterfacePreparedMessage {
     private List<String> dataTypes;
     private List<String> data;
     private static final String  executeDelimiter = ", ";
+    private Map<Long, AlgDataType> typesPolyphey = new HashMap<Long, AlgDataType>();
+    private List<Map<Long, Object>> valuesPolypeny = new ArrayList<Map<Long, Object>>();
 
 
     public PGInterfacePreparedMessage(String name, String wholePrepareString, ChannelHandlerContext ctx) {
@@ -117,6 +121,83 @@ public class PGInterfacePreparedMessage {
         changeParameterSymbol();
         extractAndSetTypes();
         extractAndSetQuery();
+    }
+
+    public void transformDataAndAddParameterValues (Statement statement) {
+        long idx = 0;
+        for (String type : dataTypes) {
+            List<Object> o = new ArrayList<>();
+            for (String value : data) {
+                o.add(transformData(value, type));
+            }
+            AlgDataType algDataType = transformToAlgDataType(type, statement);
+            statement.getDataContext().addParameterValues(idx, algDataType, o);
+        }
+        /*
+        // Add values to data context
+        //values() chonnt vo map
+        Map<Integer, List<DataContext.ParameterValue>> values = null;
+
+        for(int i=0; i<values.size(); i++) {
+            List<DataContext.ParameterValue>valFor = values.get(i);
+            List<Object> o = new ArrayList<>();
+            for(int j=0; j<valFor.size(); j++) {
+                DataContext.ParameterValue v = valFor.get(j);
+                o.add(v.getValue()); // -->the object, which is the value
+            }
+            //addParameterValues( long index, AlgDataType type, List<Object> data );
+            statement.getDataContext().addParameterValues(valFor.get(0).getIndex(), valFor.get(0).getType(), o);
+        }
+
+
+        for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
+            List<Object> o = new ArrayList<>();
+            for ( DataContext.ParameterValue v : values ) {
+                o.add( v.getValue() );
+            }
+            statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
+        }
+
+         */
+    }
+
+    private Object transformData(String value, String type) {
+        Object o = new Object();
+        switch (type) {
+            case "int":
+                o = Integer.valueOf(value);
+                break;
+            case "text":
+                o =  value;
+                break;
+            case "bool":
+                o =  Boolean.parseBoolean(value);
+                break;
+            case "numeric":
+                o =  Double.parseDouble(value);
+                break;
+        }
+        return o;
+    }
+
+    private AlgDataType transformToAlgDataType(String type, Statement statement) {
+        AlgDataType result = null;
+        switch (type) {
+            case "int":
+                result = statement.getTransaction().getTypeFactory().createPolyType(PolyType.INTEGER);
+                break;
+            case "text":
+                result = statement.getTransaction().getTypeFactory().createPolyType(PolyType.VARCHAR, 255); //TODO(FF): how do I know the precision?
+                break;
+            case "bool":
+                result = statement.getTransaction().getTypeFactory().createPolyType(PolyType.BOOLEAN);
+                break;
+            case "numeric":
+                result = statement.getTransaction().getTypeFactory().createPolyType(PolyType.DECIMAL, 3, 3);
+                break;
+        }
+
+        return result;
     }
 
 
