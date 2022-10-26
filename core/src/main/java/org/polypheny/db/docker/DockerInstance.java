@@ -79,6 +79,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 public class DockerInstance extends DockerManager {
 
+    public static final String DOCKER_NETWORK_NAME = "polypheny";
     @Getter
     private ConfigDocker currentConfig;
 
@@ -348,13 +349,12 @@ public class DockerInstance extends DockerManager {
 
 
     private void connectToNetwork( Container container, InspectContainerResponse containerInfo ) {
-        if ( client.listNetworksCmd().exec().stream().noneMatch( n -> n.getName().equals( "polypheny" ) ) ) {
-            client.createNetworkCmd().withName( "polypheny" ).exec();
+        if ( client.listNetworksCmd().exec().stream().noneMatch( n -> n.getName().equals( DOCKER_NETWORK_NAME ) ) ) {
+            client.createNetworkCmd().withName( DOCKER_NETWORK_NAME ).exec();
         }
-        String networkId = client.listNetworksCmd().withNameFilter( "polypheny" ).exec().stream().filter( n -> n.getName().equalsIgnoreCase( "polypheny" ) ).findFirst().orElseThrow().getId();
+        String networkId = client.listNetworksCmd().withNameFilter( DOCKER_NETWORK_NAME ).exec().stream().filter( n -> n.getName().equalsIgnoreCase( DOCKER_NETWORK_NAME ) ).findFirst().orElseThrow().getId();
         client.connectToNetworkCmd().withContainerId( containerInfo.getId() ).withNetworkId( networkId ).exec();
         container.updateIpAddress();
-        log.warn( container.getIpAddress() );
     }
 
 
