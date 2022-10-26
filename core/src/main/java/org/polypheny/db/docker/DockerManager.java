@@ -111,6 +111,9 @@ public abstract class DockerManager {
     public abstract DockerStatus probeDockerStatus( int dockerId );
 
 
+    public abstract void updateIpAddress( Container container );
+
+
     /**
      * This enum unifies the name building and provides additional information of an image
      * If one wants to add a new image it has to be added here
@@ -415,6 +418,11 @@ public abstract class DockerManager {
 
         public static String getFromPhysicalName( String physicalUniqueName ) {
             return physicalUniqueName.split( "_" )[0];
+        }
+
+
+        public void updateIpAddress() {
+            DockerManager.getInstance().updateIpAddress( this );
         }
 
     }

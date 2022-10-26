@@ -326,6 +326,8 @@ public class DockerInstance extends DockerManager {
         // We have to check if the container is running and start it if its not
         InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
 
+        connectToNetwork( container, containerInfo );
+
         ContainerState state = containerInfo.getState();
         if ( Objects.equals( state.getStatus(), "exited" ) ) {
             client.startContainerCmd( container.getPhysicalName() ).exec();
@@ -340,17 +342,26 @@ public class DockerInstance extends DockerManager {
             }
         }
 
+        container.setContainerId( containerInfo.getId() );
+        container.setStatus( ContainerStatus.RUNNING );
+    }
+
+
+    private void connectToNetwork( Container container, InspectContainerResponse containerInfo ) {
         if ( client.listNetworksCmd().exec().stream().noneMatch( n -> n.getName().equals( "polypheny" ) ) ) {
             client.createNetworkCmd().withName( "polypheny" ).exec();
         }
         String networkId = client.listNetworksCmd().withNameFilter( "polypheny" ).exec().stream().filter( n -> n.getName().equalsIgnoreCase( "polypheny" ) ).findFirst().orElseThrow().getId();
         client.connectToNetworkCmd().withContainerId( containerInfo.getId() ).withNetworkId( networkId ).exec();
-        containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
-        System.out.println( containerInfo.getNetworkSettings().getNetworks().keySet() );
-        container.setIpAddress( containerInfo.getNetworkSettings().getNetworks().get( "polypheny" ).getIpAddress() );
+        container.updateIpAddress();
+        log.warn( container.getIpAddress() );
+    }
 
-        container.setContainerId( containerInfo.getId() );
-        container.setStatus( ContainerStatus.RUNNING );
+
+    @Override
+    public void updateIpAddress( Container container ) {
+        InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
+        container.setIpAddress( containerInfo.getNetworkSettings().getNetworks().get( "polypheny" ).getIpAddress() );
     }
 
 

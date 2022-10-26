@@ -549,11 +549,15 @@ public class MongoStore extends DataStore {
 
     private boolean testConnection() {
         MongoClient client = null;
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        host = container.getIpAddress();
         if ( host == null ) {
             return false;
         }
-        host = container.getIpAddress();
-        System.out.println( host );
+
         try {
             MongoClientSettings mongoSettings = MongoClientSettings
                     .builder()
