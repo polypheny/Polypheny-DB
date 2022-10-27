@@ -17,32 +17,28 @@
 package org.polypheny.db.postgres;
 
 import com.google.common.collect.ImmutableList;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
 //import static org.polypheny.db.postgresql.PGInterfaceInboundCommunicationHandler.ctx;
 
-
+@Slf4j
 public class PGInterfaceIntegrationTests {
 
     //select: SELECT * FROM public.PGInterfaceTestTable
-    private String dqlQuerySentByClient = "P\u0000\u0000\u00001\u0000SELECT * FROM public.PGInterfaceTestTable\u0000\u0000\u0000B\u0000\u0000\u0000\f\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000D\u0000\u0000\u0000\u0006P\u0000E\u0000\u0000\u0000\t\u0000\u0000\u0000\u0000\u0000S\u0000\u0000\u0000\u0004";
 
     //insert: INSERT INTO public.PGInterfaceTestTable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3);
-    private String dmlQuerySentByClient = "P\u0000\u0000\u0000�\u0000INSERT INTO public.PGInterfaceTestTable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3)\u0000\u0000\u0000B\u0000\u0000\u0000\f\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000D\u0000\u0000\u0000\u0006P\u0000E\u0000\u0000\u0000\t\u0000\u0000\u0000\u0000\u0001S\u0000\u0000\u0000\u0004";
-
     //create table: CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))
-    private String ddlQuerySentByClient = "P\u0000\u0000\u0000�\u0000CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))\u0000\u0000\u0000B\u0000\u0000\u0000\f\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000D\u0000\u0000\u0000\u0006P\u0000E\u0000\u0000\u0000\t\u0000\u0000\u0000\u0000\u0001S\u0000\u0000\u0000\u0004";
             //new Object[]{"REAL'S HOWTO"};
 
 
@@ -51,94 +47,91 @@ public class PGInterfaceIntegrationTests {
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
+
         TestHelper.getInstance();
+
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate("ALTER INTERFACES ADD \"pgtestinterface\" USING 'org.polypheny.db.postgresql.PGInterface' WITH '{\"port\":\"5433\"}'");
+            }
+        }
+
+        //ALTER INTERFACES ADD "sdf" USING 'org.polypheny.db.postgresql.PGInterface' WITH '{"port":"5433"}'
     }
 
     @AfterClass
-    public static void stop() {
-        Properties connectionProps = new Properties();
-        connectionProps.setProperty("sslmode", "disable");
-        String url = "jdbc:postgresql://localhost:5432/";
-        try (Connection c = DriverManager.getConnection(url, connectionProps)) {
-            try(Statement statement = c.createStatement()) {
-                int status = statement.executeUpdate("DROP TABLE public.PGInterfaceTestTable");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    public static void stop() throws SQLException {
 
-    }
-
-
-
-    @Test
-    public void testIfDDLIsExecuted() throws SQLException {
-
-        try {
-            Connection c = null;
-            Properties connectionProps = new Properties();
-            connectionProps.setProperty("sslmode", "disable");
-            String url = "jdbc:postgresql://localhost:5444/";
-
-            c = DriverManager.getConnection(url, connectionProps);
-            Statement statement = c.createStatement();
-            int status = statement.executeUpdate("CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
-
-            statement.close();
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-
-        Properties connectionProps = new Properties();
-        connectionProps.setProperty("sslmode", "disable");
-        String url = "jdbc:postgresql://localhost:5432/";
-        try (Connection c = DriverManager.getConnection(url, connectionProps)) {
-            try(Statement statement = c.createStatement()) {
-                int status = statement.executeUpdate("CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
-                assertEquals(0, status);
+        try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
+            Connection connection = psqlJdbcConnection.getConnection();
+            try(Statement statement = connection.createStatement()) {
+                statement.executeUpdate("DROP TABLE public.pginterfacetesttable");
+                //statement.executeUpdate( "ALTER INTERFACES DROP pgtestinerface" );
             }
         }
     }
 
-    @Test
-    public void basicTest() throws SQLException {
-        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ARRAY[1, 2] = ARRAY[1, 2], ARRAY[2, 4] = ARRAY[2, 3]" ),
-                        ImmutableList.of( new Object[]{ true, false } ) );
-            }
-        }
-    }
+
 
 
     @Test
     public void testIfDMLIsExecuted() throws SQLException {
-        Properties connectionProps = new Properties();
-        connectionProps.setProperty("sslmode", "disable");
-        String url = "jdbc:postgresql://localhost:5432/";
-        try (Connection c = DriverManager.getConnection(url, connectionProps)) {
-            try(Statement statement = c.createStatement()) {
-                int status = statement.executeUpdate("INSERT INTO public.PGInterfaceTestTable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3);");
-                assertEquals(0, status);
+
+        try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
+            Connection connection = psqlJdbcConnection.getConnection();
+            try(Statement statement = connection.createStatement()) {
+                statement.executeUpdate("CREATE TABLE pginterfacetesttable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
+                statement.executeUpdate("INSERT INTO pginterfacetesttable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3);");
+                ResultSet rs = statement.executeQuery("SELECT * FROM pginterfacetesttable;");
+
+                TestHelper.checkResultSet(
+                        rs,
+                        ImmutableList.of(
+                                new Object[]{1, "Franz", 1},
+                                new Object[]{2, "Hello", 2},
+                                new Object[]{3, "By", 3})
+                );
             }
         }
     }
 
+
+/*
+
+ @Test
+    public void testIfDDLIsExecuted() throws SQLException {
+
+        try(Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
+            CatalogTable catalogTable = Catalog.getInstance().getTable(Catalog.getInstance().getSchema(Catalog.defaultDatabaseId, "public").id , "PGInterfaceTestTable");
+            assertEquals(catalogTable.name, "pginterfacetesttable");
+        } catch (UnknownTableException e) {
+            e.printStackTrace();
+        } catch (UnknownSchemaException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+    @Test
+    public void testIfDMLIsExecuted() throws SQLException {
+
+        try(Statement statement = c.createStatement()) {
+            int status = statement.executeUpdate("INSERT INTO public.PGInterfaceTestTable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3);");
+            assertEquals(0, status);
+        }
+
+    }
+
     @Test
     public void testIfDQLIsExecuted() throws SQLException {
-        Properties connectionProps = new Properties();
-        connectionProps.setProperty("sslmode", "disable");
-        String url = "jdbc:postgresql://localhost:5432/";
         try (Connection c = DriverManager.getConnection(url, connectionProps)) {
             try (Statement statement = c.createStatement()) {
                 TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT * FROM PGInterfaceTestTable"),
+                        statement.executeQuery("SELECT * FROM PGInterfaceTestTable;"),
                         ImmutableList.of(
                                 new Object[]{1, "Franz", 1},
                                 new Object[]{2, "Hello", 2},
@@ -146,6 +139,47 @@ public class PGInterfaceIntegrationTests {
 
             }
         }
+    }
+
+ */
+
+
+    public static class PsqlJdbcConnection implements AutoCloseable {
+
+        private final static String dbHost = "localhost";
+        private final static int port = 5433;
+
+        private final Connection conn;
+
+
+        public PsqlJdbcConnection(boolean autoCommit ) throws SQLException {
+            try {
+                Class.forName( "org.postgresql.Driver" );
+            } catch ( ClassNotFoundException e ) {
+                log.error( "PostgreSQL JDBC Driver not found", e );
+            }
+            final String url = "jdbc:postgresql://" + dbHost + ":" + port + "/";
+            log.debug( "Connecting to database @ {}", url );
+
+            Properties connectionProps = new Properties();
+            connectionProps.setProperty("sslmode", "disable");
+            conn = DriverManager.getConnection(url, connectionProps);
+
+            //conn.setAutoCommit( autoCommit );
+        }
+
+
+        public Connection getConnection() {
+            return conn;
+        }
+
+
+        @Override
+        public void close() throws SQLException {
+            //conn.commit();
+            conn.close();
+        }
+
     }
 
 }

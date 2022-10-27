@@ -429,6 +429,7 @@ public class PGInterfaceQueryHandler {
             case "SELECT":
                 ArrayList<Object[]> valuesPerCol = new ArrayList<Object[]>();
 
+                //More info about these variables in javadoc for PGInterfaceServerWriter > writeRowDescription
                 String fieldName = "";          //string - column name (field name) (matters)
                 int objectIDTable = 0;          //int32 - ObjectID of table (if col can be id'd to table) --> otherwise 0 (doesn't matter to client while sending)
                 int attributeNoCol = 0;         //int16 - attr.no of col (if col can be id'd to table) --> otherwise 0 (doesn't matter to client while sending)
@@ -452,33 +453,37 @@ public class PGInterfaceQueryHandler {
                             //TODO(FF): head[2] is the number of decimal places, is set to 3 in standard postgres ("dismissed in beginning, not checked what it actually is")
                             dataTypeSize = 8;   //8 bytes signed
                             formatCode = 0;
+                            objectIDColDataType = 20;
                             break;
                         case "BOOLEAN":
                             dataTypeSize = 1;   //TODO(FF): wär 1bit --> wie das darstelle??????
+                            objectIDColDataType = 16;
                             break;
                         case "DECIMAL":
                             break;
                         case "REAL":
                         case "INTEGER":
-                            //objectIDColDataType = 32;
+                            objectIDColDataType = 23;
                             dataTypeSize = 4;
                             formatCode = 0;
                             break;
                         case "VARCHAR":
-                            //objectIDColDataType = 1043;
+                            objectIDColDataType = 1043;
                             typeModifier = Integer.parseInt( head[2] );
                             dataTypeSize = Integer.parseInt( head[2] ); //TODO(FF): I just send the length of the varchar here, because the client doesn't complain.
                             formatCode = 0;
                             break;
                         case "SMALLINT":
+                            objectIDColDataType = 21;
                             dataTypeSize = 2;
                             formatCode = 0;
                             break;
                         case "TINYINT":
+                            objectIDColDataType = 21;   //is the same oID as for int2
                             dataTypeSize = 1;
                             formatCode = 0;
                             break;
-                        case "DATE":
+                        case "DATE":            //I did not find a list online for all OID's --> more info in javadoc of PGInterfaceServerWriter > writeRowDescripton
                         case "TIMESTAMP":
                         case "TIME":
                         case "FILE":

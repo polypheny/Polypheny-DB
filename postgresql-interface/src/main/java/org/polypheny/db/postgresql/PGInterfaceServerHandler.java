@@ -18,6 +18,7 @@ package org.polypheny.db.postgresql;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.TransactionManager;
 
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 /**
  * Forwards the message from the "netty flow" to the internal structure
  */
+@Slf4j
 public class PGInterfaceServerHandler extends ChannelInboundHandlerAdapter {
 
     TransactionManager transactionManager;
@@ -56,6 +58,7 @@ public class PGInterfaceServerHandler extends ChannelInboundHandlerAdapter {
         //this.errorHandler = new PGInterfaceErrorHandler(ctx);
         //errorHandler.sendSimpleErrorMessage(cause.getMessage());
 
+        //log.error(cause.getMessage());
         ctx.close();
     }
 

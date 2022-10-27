@@ -16,7 +16,10 @@
 
 package org.polypheny.db.postgresql;
 
+import lombok.extern.slf4j.Slf4j;
+
 //message sent by client and server (connection-level)
+@Slf4j
 public class PGInterfaceMessage {
 
     private PGInterfaceHeaders header;

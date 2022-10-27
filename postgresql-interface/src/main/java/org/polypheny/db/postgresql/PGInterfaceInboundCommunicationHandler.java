@@ -55,20 +55,21 @@ public class PGInterfaceInboundCommunicationHandler {
         String msgWithZeroBits = ((String) oMsg);
         String wholeMsg = msgWithZeroBits.replace( "\u0000", "" );
 
-        //TODO(FF): simple query phase is not implemented
-        switch ( wholeMsg.substring( 0, 1 ) ) {
-            case "r":
-                startUpPhase();
-                break;
-            case "P":
-                extendedQueryPhase( wholeMsg, pgInterfaceServerHandler );
-                break;
-            case "X":
-                terminateConnection();
-                break;
-            default:
-                errorHandler.sendSimpleErrorMessage("The message could not be parsed by the PGInterface.");
 
+        //TODO(FF): simple query phase is not implemented
+        if ( wholeMsg.substring( 2, 6 ).contains("user") ) {
+            startUpPhase();
+        }
+
+        else if ( wholeMsg.substring( 0, 1 ).equals("P") ) {
+            extendedQueryPhase( wholeMsg, pgInterfaceServerHandler );
+        }
+
+        else if ( wholeMsg.substring( 0, 1 ).equals("X") ) {
+            terminateConnection();
+        }
+        else {
+            errorHandler.sendSimpleErrorMessage("The message could not be parsed by the PGInterface.");
         }
     }
 

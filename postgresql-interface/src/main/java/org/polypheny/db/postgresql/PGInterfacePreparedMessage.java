@@ -17,6 +17,7 @@
 package org.polypheny.db.postgresql;
 
 import io.netty.channel.ChannelHandlerContext;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Statement;
@@ -24,6 +25,7 @@ import org.polypheny.db.type.PolyType;
 
 import java.util.*;
 
+@Slf4j
 public class PGInterfacePreparedMessage {
     private String name;
     private ChannelHandlerContext ctx;

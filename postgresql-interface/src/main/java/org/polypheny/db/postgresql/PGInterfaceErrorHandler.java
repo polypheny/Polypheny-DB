@@ -18,9 +18,11 @@ package org.polypheny.db.postgresql;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedHashMap;
 
+@Slf4j
 public class PGInterfaceErrorHandler {
 
     private String errorMsg;
