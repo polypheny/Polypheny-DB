@@ -79,7 +79,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 public class DockerInstance extends DockerManager {
 
-    public static final String DOCKER_NETWORK_NAME = "polypheny";
+    public static final String DOCKER_NETWORK_NAME = "bridge";
     @Getter
     private ConfigDocker currentConfig;
 
@@ -361,7 +361,7 @@ public class DockerInstance extends DockerManager {
     @Override
     public void updateIpAddress( Container container ) {
         InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
-        container.setIpAddress( containerInfo.getNetworkSettings().getNetworks().get( "polypheny" ).getIpAddress() );
+        container.setIpAddress( containerInfo.getNetworkSettings().getNetworks().get( DOCKER_NETWORK_NAME ).getIpAddress() );
     }
 
 
