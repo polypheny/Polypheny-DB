@@ -393,6 +393,12 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "polystoreIndexGroup" ),
 
+    IN_DOCKER(
+            "docker/inDocker",
+            "If the current Polypheny instance is running in a dedicated Docker container.",
+            false,
+            ConfigType.BOOLEAN ),
+
     DOCKER_INSTANCES(
             "runtime/dockerInstances",
             "Configure different docker instances, which can be used to place adapters on.",
