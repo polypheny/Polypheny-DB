@@ -27,6 +27,7 @@ import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.PullImageResultCallback;
+import com.github.dockerjava.api.exception.InternalServerErrorException;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
@@ -295,6 +296,20 @@ public class DockerInstance extends DockerManager {
     }
 
 
+    private void unregister( Container container ) {
+        usedPorts.removeAll( container.internalExternalPortMapping.values() );
+        usedNames.remove( container.uniqueName );
+        if ( !availableContainers.containsKey( container.uniqueName ) ) {
+            return;
+        }
+        availableContainers.remove( container.uniqueName );
+
+        List<String> containers = new ArrayList<>( containersOnAdapter.get( container.adapterId ) );
+        containers.remove( container.uniqueName );
+        containersOnAdapter.put( container.adapterId, ImmutableList.copyOf( containers ) );
+    }
+
+
     @Override
     public Container initialize( Container container ) {
         if ( !usedNames.contains( container.uniqueName ) ) {
@@ -333,9 +348,9 @@ public class DockerInstance extends DockerManager {
 
         ContainerState state = containerInfo.getState();
         if ( Objects.equals( state.getStatus(), "exited" ) ) {
-            client.startContainerCmd( container.getPhysicalName() ).exec();
+            startContainerSafely( container );
         } else if ( Objects.equals( state.getStatus(), "created" ) ) {
-            client.startContainerCmd( container.getPhysicalName() ).exec();
+            startContainerSafely( container );
 
             // While the container is started the underlying system is not, so we have to probe it multiple times
             waitTillStarted( container );
@@ -368,6 +383,28 @@ public class DockerInstance extends DockerManager {
 
         InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
         container.setIpAddress( containerInfo.getNetworkSettings().getNetworks().get( DOCKER_NETWORK_NAME ).getIpAddress() );
+    }
+
+
+    /**
+     * While the DockerInstance knows the parameters of the corresponding Docker application
+     * there still can be other application on the system, which lead to a fail
+     * therefore the start of the container has to be handled correctly if something goes wrong
+     *
+     * @param container The container to start
+     */
+    private void startContainerSafely( Container container ) {
+        try {
+            client.startContainerCmd( container.getPhysicalName() ).exec();
+        } catch ( InternalServerErrorException e ) {
+            unregister( container );
+            if ( container.getStatus() == ContainerStatus.INIT ) {
+                // this container was freshly created, so we remove it that it can be tried again
+                client.removeContainerCmd( container.getPhysicalName() ).exec();
+            }
+            throw new RuntimeException( "The specified port is likely already used by another application in the system. "
+                    + "The adapter was not created." );
+        }
     }
 
 
