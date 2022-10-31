@@ -20,8 +20,13 @@ import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -39,8 +44,6 @@ public class PGInterfaceIntegrationTests {
 
     //insert: INSERT INTO public.PGInterfaceTestTable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3);
     //create table: CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))
-            //new Object[]{"REAL'S HOWTO"};
-
 
 
     @BeforeClass
@@ -66,21 +69,40 @@ public class PGInterfaceIntegrationTests {
         try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
             Connection connection = psqlJdbcConnection.getConnection();
             try(Statement statement = connection.createStatement()) {
-                statement.executeUpdate("DROP TABLE public.pginterfacetesttable");
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
                 //statement.executeUpdate( "ALTER INTERFACES DROP pgtestinerface" );
             }
         }
     }
 
 
-
-
     @Test
-    public void testIfDMLIsExecuted() throws SQLException {
+    public void testIfDDLIsExecuted() throws SQLException {
 
         try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
             Connection connection = psqlJdbcConnection.getConnection();
             try(Statement statement = connection.createStatement()) {
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
+                statement.executeUpdate("CREATE TABLE pginterfacetesttable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
+                CatalogTable catalogTable = Catalog.getInstance().getTable(Catalog.getInstance().getSchema(Catalog.defaultDatabaseId, "public").id , "PGInterfaceTestTable");
+                assertEquals(catalogTable.name, "pginterfacetesttable");
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
+            } catch (UnknownTableException e) {
+                e.printStackTrace();
+            } catch (UnknownSchemaException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    @Test
+    public void testIfDMLandDDLandDQLIsExecuted() throws SQLException {
+
+        try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
+            Connection connection = psqlJdbcConnection.getConnection();
+            try(Statement statement = connection.createStatement()) {
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
                 statement.executeUpdate("CREATE TABLE pginterfacetesttable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
                 statement.executeUpdate("INSERT INTO pginterfacetesttable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3);");
                 ResultSet rs = statement.executeQuery("SELECT * FROM pginterfacetesttable;");
@@ -92,27 +114,75 @@ public class PGInterfaceIntegrationTests {
                                 new Object[]{2, "Hello", 2},
                                 new Object[]{3, "By", 3})
                 );
+
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
+            }
+        }
+    }
+
+    @Test
+    @Ignore
+    public void testIfPreparedAndExecuteInOneWithTextIsExecuted() throws SQLException {
+
+        try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
+            Connection connection = psqlJdbcConnection.getConnection();
+            try(Statement statement = connection.createStatement()) {
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
+                statement.executeUpdate("CREATE TABLE pginterfacetesttable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
+
+                //ResultSet rss = statement.executeQuery("PREPARE lol (int) AS SELECT empid FROM public.emps WHERE empid = $1; EXECUTE lol (100);");
+                statement.executeUpdate("PREPARE testPrepare (int, text, int) AS INSERT INTO pginterfacetesttable(PkIdTest, VarcharTest, IntTest) VALUES ($1, $2, $3);");
+                ResultSet rs = statement.executeQuery("EXECUTE testPrepare (1, 'Franz', 1);");
+
+                TestHelper.checkResultSet(
+                        rs,
+                        ImmutableList.of(
+                                new Object[]{1, "Franz", 1})
+                );
+
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
+            }
+        }
+    }
+
+    @Test
+    @Ignore
+    public void testIfPreparedAndExecuteInOneNoTextIsExecuted() throws SQLException {
+
+        try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
+            Connection connection = psqlJdbcConnection.getConnection();
+            try(Statement statement = connection.createStatement()) {
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
+                statement.executeUpdate("CREATE TABLE pginterfacetesttable(PkIdTest INTEGER NOT NULL,PRIMARY KEY (PkIdTest))");
+
+                //public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+                //        if ( parameterTypes.containsKey( index ) ) {
+                //            throw new RuntimeException( "There are already values assigned to this index" );
+                //        }
+                //ResultSet rss = statement.executeQuery("PREPARE lol (int) AS SELECT empid FROM public.emps WHERE empid = $1; EXECUTE lol (100);");
+                statement.executeUpdate("PREPARE testPrepare2 (int, int) AS INSERT INTO pginterfacetesttable(PkIdTest, IntTest) VALUES ($1);");
+                ResultSet rs = statement.executeQuery("EXECUTE testPrepare2 (1);");
+
+                TestHelper.checkResultSet(
+                        rs,
+                        ImmutableList.of(
+                                new Object[]{1})
+                );
+
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
             }
         }
     }
 
 
+
+
+
 /*
-
- @Test
-    public void testIfDDLIsExecuted() throws SQLException {
-
-        try(Statement statement = connection.createStatement()) {
-            statement.executeUpdate("CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
-            CatalogTable catalogTable = Catalog.getInstance().getTable(Catalog.getInstance().getSchema(Catalog.defaultDatabaseId, "public").id , "PGInterfaceTestTable");
-            assertEquals(catalogTable.name, "pginterfacetesttable");
-        } catch (UnknownTableException e) {
-            e.printStackTrace();
-        } catch (UnknownSchemaException e) {
-            e.printStackTrace();
-        }
-    }
-
+prepared:
+//PreparedStatement pst = c.prepareStatement("SELECT empid FROM public.emps WHERE empid = ?;");
+            //pst.setInt(1, 100);
+            //pst.execute();
 
 
 

@@ -80,7 +80,7 @@ public class PGInterfacePreparedMessage {
         //cut string at ( and ) (remove chlammere) --> denn mach eif. split, ond problem solved...
         String onlyExecuteValues = executeString.split("\\(|\\)")[1];
         List<String> valueList = Arrays.asList(onlyExecuteValues.split(getExecuteDelimiter()));
-        setData(valueList);    //FIXME(FF): setData, ned setDataTypes
+        setData(valueList);
     }
 
     public void extractAndSetTypes() {

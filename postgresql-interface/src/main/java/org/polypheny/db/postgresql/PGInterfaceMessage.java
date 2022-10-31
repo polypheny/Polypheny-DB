@@ -106,11 +106,6 @@ public class PGInterfaceMessage {
     }
 
 
-    public void setDefaultLength( boolean val ) {
-        this.defaultLength = val;
-    }
-
-
     public boolean isDefaultLength() {
         return this.defaultLength;
     }
