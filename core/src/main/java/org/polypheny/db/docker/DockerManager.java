@@ -316,7 +316,7 @@ public abstract class DockerManager {
         private String containerId;
         @Getter
         @Setter
-        private String ipAddress = RuntimeConfig.IN_DOCKER.getBoolean() ? null : "localhost";
+        private String ipAddress = RuntimeConfig.USE_DOCKER_NETWORK.getBoolean() ? null : "localhost";
 
 
         @Getter

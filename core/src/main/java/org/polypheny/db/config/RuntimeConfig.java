@@ -393,9 +393,9 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "polystoreIndexGroup" ),
 
-    IN_DOCKER(
-            "docker/inDocker",
-            "If the current Polypheny instance is running in a dedicated Docker container.",
+    USE_DOCKER_NETWORK(
+            "docker/useDockerNetwork",
+            "If Polypheny should use the container network to communicate with the container.",
             false,
             ConfigType.BOOLEAN ),
 

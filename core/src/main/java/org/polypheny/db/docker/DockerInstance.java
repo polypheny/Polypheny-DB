@@ -327,7 +327,7 @@ public class DockerInstance extends DockerManager {
         // We have to check if the container is running and start it if its not
         InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
 
-        if ( RuntimeConfig.IN_DOCKER.getBoolean() ) {
+        if ( RuntimeConfig.USE_DOCKER_NETWORK.getBoolean() ) {
             connectToNetwork( container, containerInfo );
         }
 
@@ -362,7 +362,7 @@ public class DockerInstance extends DockerManager {
 
     @Override
     public void updateIpAddress( Container container ) {
-        if ( !RuntimeConfig.IN_DOCKER.getBoolean() ) {
+        if ( !RuntimeConfig.USE_DOCKER_NETWORK.getBoolean() ) {
             return;
         }
 

@@ -136,7 +136,6 @@ public class Neo4jStore extends DataStore {
      * Test if a connection to the provided Neo4j database is possible.
      */
     private boolean testConnection() {
-
         if ( container == null ) {
             return false;
         }
