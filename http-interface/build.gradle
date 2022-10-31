@@ -8,7 +8,9 @@ dependencies {
     implementation project(":cypher-language")
     implementation project(":webui")
 
-    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude group: 'org.slf4j'
+    } // Apache 2.0
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
     implementation group: "commons-codec", name: "commons-codec", version: commons_codec_version
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC

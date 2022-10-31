@@ -23,16 +23,18 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.json.JsonMapper;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import io.javalin.websocket.WsConfig;
+import jakarta.servlet.ServletException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.net.SocketException;
 import java.nio.charset.Charset;
 import java.util.function.Consumer;
-import javax.servlet.ServletException;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService;
@@ -124,23 +126,27 @@ public class HttpServer implements Runnable {
     @Override
     public void run() {
         JsonMapper gsonMapper = new JsonMapper() {
+
             @NotNull
             @Override
-            public String toJsonString( @NotNull Object obj ) {
+            public <T> T fromJsonString( @NotNull String json, @NotNull Type targetType ) {
+                return gson.fromJson( json, targetType );
+            }
+
+
+            @NotNull
+            @Override
+            public String toJsonString( @NotNull Object obj, @NotNull Type type ) {
                 return gson.toJson( obj );
             }
 
-
-            @NotNull
-            @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
-                return gson.fromJson( json, targetClass );
-            }
         };
         Javalin server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
-            config.enableCorsForAllOrigins();
-            config.addStaticFiles( staticFileConfig -> {
+            config.plugins.enableCors( cors -> {
+                cors.add( CorsPluginConfig::anyHost );
+            } );
+            config.staticFiles.add( staticFileConfig -> {
                 staticFileConfig.directory = "webapp/";
             } );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
@@ -385,14 +391,14 @@ public class HttpServer implements Runnable {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 
         webuiServer.options( "/*", ctx -> {
-            String accessControlRequestHeaders = ctx.req.getHeader( "Access-Control-Request-Headers" );
+            String accessControlRequestHeaders = ctx.req().getHeader( "Access-Control-Request-Headers" );
             if ( accessControlRequestHeaders != null ) {
-                ctx.res.setHeader( "Access-Control-Allow-Headers", accessControlRequestHeaders );
+                ctx.res().setHeader( "Access-Control-Allow-Headers", accessControlRequestHeaders );
             }
 
-            String accessControlRequestMethod = ctx.req.getHeader( "Access-Control-Request-Method" );
+            String accessControlRequestMethod = ctx.req().getHeader( "Access-Control-Request-Method" );
             if ( accessControlRequestMethod != null ) {
-                ctx.res.setHeader( "Access-Control-Allow-Methods", accessControlRequestMethod );
+                ctx.res().setHeader( "Access-Control-Allow-Methods", accessControlRequestMethod );
             }
 
             ctx.result( "OK" );
@@ -400,10 +406,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.before( ctx -> {
             //res.header("Access-Control-Allow-Origin", "*");
-            ctx.res.setHeader( "Access-Control-Allow-Origin", "*" );
-            ctx.res.setHeader( "Access-Control-Allow-Credentials", "true" );
-            ctx.res.setHeader( "Access-Control-Allow-Headers", "*" );
-            ctx.res.setContentType( "application/json" );
+            ctx.res().setHeader( "Access-Control-Allow-Origin", "*" );
+            ctx.res().setHeader( "Access-Control-Allow-Credentials", "true" );
+            ctx.res().setHeader( "Access-Control-Allow-Headers", "*" );
+            ctx.res().setContentType( "application/json" );
         } );
     }
 

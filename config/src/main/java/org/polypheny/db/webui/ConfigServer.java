@@ -20,7 +20,8 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.javalin.Javalin;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.json.JsonMapper;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -47,21 +48,23 @@ public class ConfigServer implements ConfigListener {
         JsonMapper gsonMapper = new JsonMapper() {
             @NotNull
             @Override
-            public String toJsonString( @NotNull Object obj ) {
-                return gson.toJson( obj );
+            public <T> T fromJsonString( @NotNull String json, @NotNull Type targetType ) {
+                return gson.fromJson( json, targetType );
             }
 
 
             @NotNull
             @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
-                return gson.fromJson( json, targetClass );
+            public String toJsonString( @NotNull Object obj, @NotNull Type type ) {
+                return gson.toJson( obj );
             }
         };
 
         Javalin http = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
-            config.enableCorsForAllOrigins();
+            config.plugins.enableCors( cors -> {
+                cors.add( CorsPluginConfig::anyHost );
+            } );
         } ).start( port );
 
         // Needs to be called before route mapping!
