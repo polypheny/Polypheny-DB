@@ -121,8 +121,7 @@ public class PGInterfaceIntegrationTests {
     }
 
     @Test
-    @Ignore
-    public void testIfPreparedAndExecuteInOneWithTextIsExecuted() throws SQLException {
+    public void testPreparedAndExecuteInTwoParts() throws SQLException {
 
         try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
             Connection connection = psqlJdbcConnection.getConnection();
@@ -132,7 +131,33 @@ public class PGInterfaceIntegrationTests {
 
                 //ResultSet rss = statement.executeQuery("PREPARE lol (int) AS SELECT empid FROM public.emps WHERE empid = $1; EXECUTE lol (100);");
                 statement.executeUpdate("PREPARE testPrepare (int, text, int) AS INSERT INTO pginterfacetesttable(PkIdTest, VarcharTest, IntTest) VALUES ($1, $2, $3);");
-                ResultSet rs = statement.executeQuery("EXECUTE testPrepare (1, 'Franz', 1);");
+                statement.executeUpdate("EXECUTE testPrepare (1, 'Franz', 1);");
+                ResultSet rs = statement.executeQuery("SELECT * FROM pginterfacetesttable;");
+
+                TestHelper.checkResultSet(
+                        rs,
+                        ImmutableList.of(
+                                new Object[]{1, "Franz", 1})
+                );
+
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
+            }
+        }
+    }
+
+
+    @Test
+    public void testPreparedAndExecuteInOnePart() throws SQLException {
+
+        try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
+            Connection connection = psqlJdbcConnection.getConnection();
+            try(Statement statement = connection.createStatement()) {
+                statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
+                statement.executeUpdate("CREATE TABLE pginterfacetesttable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))");
+
+                //ResultSet rss = statement.executeQuery("PREPARE lol (int) AS SELECT empid FROM public.emps WHERE empid = $1; EXECUTE lol (100);");
+                statement.executeUpdate("PREPARE testPrepare (int, text, int) AS INSERT INTO pginterfacetesttable(PkIdTest, VarcharTest, IntTest) VALUES ($1, $2, $3); EXECUTE testPrepare (1, 'Franz', 1);");
+                ResultSet rs = statement.executeQuery("SELECT * FROM pginterfacetesttable;");
 
                 TestHelper.checkResultSet(
                         rs,
@@ -147,71 +172,30 @@ public class PGInterfaceIntegrationTests {
 
     @Test
     @Ignore
-    public void testIfPreparedAndExecuteInOneNoTextIsExecuted() throws SQLException {
+    public void testPreparedUsingJdbc() throws SQLException {
+        //TODO(FF): Prepared Statements using JDBC not yet supported from PGInterface --> read inserted values from bind command (which is not done currently)
 
         try ( PsqlJdbcConnection psqlJdbcConnection = new PsqlJdbcConnection(false) ) {
             Connection connection = psqlJdbcConnection.getConnection();
             try(Statement statement = connection.createStatement()) {
                 statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
-                statement.executeUpdate("CREATE TABLE pginterfacetesttable(PkIdTest INTEGER NOT NULL,PRIMARY KEY (PkIdTest))");
+                statement.executeUpdate("CREATE TABLE pginterfacetesttable(PkIdTest INTEGER NOT NULL, IntTest INTEGER,PRIMARY KEY (PkIdTest))");
 
-                //public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
-                //        if ( parameterTypes.containsKey( index ) ) {
-                //            throw new RuntimeException( "There are already values assigned to this index" );
-                //        }
-                //ResultSet rss = statement.executeQuery("PREPARE lol (int) AS SELECT empid FROM public.emps WHERE empid = $1; EXECUTE lol (100);");
-                statement.executeUpdate("PREPARE testPrepare2 (int, int) AS INSERT INTO pginterfacetesttable(PkIdTest, IntTest) VALUES ($1);");
-                ResultSet rs = statement.executeQuery("EXECUTE testPrepare2 (1);");
+                PreparedStatement pst = connection.prepareStatement("INSERT INTO pginterfacetesttable(PkIdTest, IntTest) VALUES (?, ?)");
+                pst.setInt(1, 100);
+                pst.execute();
+                ResultSet rs = statement.executeQuery("SELECT * FROM pginterfacetesttable;");
 
                 TestHelper.checkResultSet(
                         rs,
                         ImmutableList.of(
-                                new Object[]{1})
+                                new Object[]{1, 100})
                 );
 
                 statement.executeUpdate("DROP TABLE IF EXISTS public.pginterfacetesttable");
             }
         }
     }
-
-
-
-
-
-/*
-prepared:
-//PreparedStatement pst = c.prepareStatement("SELECT empid FROM public.emps WHERE empid = ?;");
-            //pst.setInt(1, 100);
-            //pst.execute();
-
-
-
-    @Test
-    public void testIfDMLIsExecuted() throws SQLException {
-
-        try(Statement statement = c.createStatement()) {
-            int status = statement.executeUpdate("INSERT INTO public.PGInterfaceTestTable(PkIdTest, VarcharTest, IntTest) VALUES (1, 'Franz', 1), (2, 'Hello', 2), (3, 'By', 3);");
-            assertEquals(0, status);
-        }
-
-    }
-
-    @Test
-    public void testIfDQLIsExecuted() throws SQLException {
-        try (Connection c = DriverManager.getConnection(url, connectionProps)) {
-            try (Statement statement = c.createStatement()) {
-                TestHelper.checkResultSet(
-                        statement.executeQuery("SELECT * FROM PGInterfaceTestTable;"),
-                        ImmutableList.of(
-                                new Object[]{1, "Franz", 1},
-                                new Object[]{2, "Hello", 2},
-                                new Object[]{3, "By", 3}));
-
-            }
-        }
-    }
-
- */
 
 
     public static class PsqlJdbcConnection implements AutoCloseable {

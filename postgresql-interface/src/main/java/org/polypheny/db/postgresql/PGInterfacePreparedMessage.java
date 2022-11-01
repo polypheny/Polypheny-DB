@@ -129,11 +129,14 @@ public class PGInterfacePreparedMessage {
         long idx = 0;
         for (String type : dataTypes) {
             List<Object> o = new ArrayList<>();
-            for (String value : data) {
-                o.add(transformData(value, type));
-            }
+            String value = data.get((int) idx);
+            o.add(transformData(value, type));
+            //for (String value : data) {
+              //  o.add(transformData(value, type));  //goht dor alli values e data dore, ond phaltet aber de gliichi typ bii vom 1. mol...
+            //}
             AlgDataType algDataType = transformToAlgDataType(type, statement);
             statement.getDataContext().addParameterValues(idx, algDataType, o);
+            idx ++;
         }
 
     }
@@ -145,7 +148,14 @@ public class PGInterfacePreparedMessage {
                 o = Integer.valueOf(value);
                 break;
             case "text":
-                o =  value;
+                String pureValue = value;
+                if (value.charAt(0) == '\'') {
+                    pureValue = value.substring(1);
+                    if(value.charAt(value.length()-1) == '\'') {
+                        pureValue = pureValue.substring(0, pureValue.length() - 1);
+                    }
+                }
+                o =  pureValue;
                 break;
             case "bool":
                 o =  Boolean.parseBoolean(value);
