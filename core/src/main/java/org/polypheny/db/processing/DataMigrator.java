@@ -76,15 +76,16 @@ public interface DataMigrator {
             List<Long> targetPartitionIds );
 
     /**
-     * Currently used to to transfer data if unpartitioned is about to be partitioned.
+     * Currently used to transfer data if unpartitioned is about to be partitioned.
      * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, Map, List)}   } instead
      *
-     * @param transaction Transactional scope
-     * @param store Target Store where data should be migrated to
+     * @param transaction   Transactional scope
+     * @param store         Target Store where data should be migrated to
      * @param sourceColumns Columns to be merged
-     * @param targetColumn New column to be added
+     * @param targetColumn  New column to be added
+     * @param joinString
      */
-    void mergeColumns( Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn );
+    void mergeColumns(Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString);
 
     AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
@@ -92,7 +93,7 @@ public interface DataMigrator {
     void executeQuery( List<CatalogColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
     // is used within mergeColumns
-    void executeMergeQuery( List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+    void executeMergeQuery( List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
     AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 

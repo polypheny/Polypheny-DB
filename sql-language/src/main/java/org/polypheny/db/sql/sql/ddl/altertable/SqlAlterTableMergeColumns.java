@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -54,7 +53,8 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
 
     private final SqlIdentifier table;
     private final SqlNodeList columnsToMerge;
-    private final SqlIdentifier newColumnName; // Can be null
+    private final SqlIdentifier targetColumnName;
+    private final SqlNode joinString;
     private final SqlDataTypeSpec type;
     private final boolean nullable;
     private final SqlNode defaultValue;
@@ -63,14 +63,16 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
             ParserPos pos,
             SqlIdentifier table,
             SqlNodeList columnsToMerge,
-            SqlIdentifier newColumnName,
+            SqlIdentifier targetColumnName,
+            SqlNode joinString,
             SqlDataTypeSpec type,
             boolean nullable,
             SqlNode defaultValue) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnsToMerge = columnsToMerge;
-        this.newColumnName = newColumnName;
+        this.targetColumnName = targetColumnName;
+        this.joinString = joinString;
         this.type = type;
         this.nullable = nullable;
         this.defaultValue = defaultValue;
@@ -103,9 +105,9 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
             writer.keyword( "DEFAULT" );
             defaultValue.unparse( writer, leftPrec, rightPrec );
         }
-        if ( newColumnName != null ) {
+        if ( targetColumnName != null ) {
             writer.keyword( "AFTER" );
-            newColumnName.unparse( writer, leftPrec, rightPrec );
+            targetColumnName.unparse( writer, leftPrec, rightPrec );
         }
     }
 
@@ -124,12 +126,14 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
         }
 
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
+        String joinString = this.joinString == null ? "" : this.joinString.toString();
 
         try {
             DdlManager.getInstance().mergeColumns(
                     catalogTable,
                     columnsToMerge.getList().stream().map( Node::toString ).collect( Collectors.toList()),
-                    newColumnName.getSimple(),
+                    targetColumnName.getSimple(),
+                    joinString,
                     ColumnTypeInformation.fromDataTypeSpec( type ),
                     nullable,
                     defaultValue,
@@ -137,7 +141,7 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnsToMerge.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( ColumnAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( newColumnName.getPos(), RESOURCE.columnExists( newColumnName.getSimple() ) );
+            throw CoreUtil.newContextException( targetColumnName.getPos(), RESOURCE.columnExists( targetColumnName.getSimple() ) );
         } catch ( ColumnNotExistsException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }

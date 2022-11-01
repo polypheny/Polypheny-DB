@@ -200,6 +200,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier physicalName;
     final SqlIdentifier partitionType;
     final SqlIdentifier partitionColumn;
+    final SqlNode joinString;
     List<Integer> partitionList = new ArrayList<Integer>();
     int partitionIndex = 0;
     int numPartitionGroups = 0;
@@ -654,8 +655,10 @@ SqlAlterTable SqlAlterTable(Span s) :
     |
         <MERGE> <COLUMNS>
             columnList = ParenthesizedSimpleIdentifierList()
-        <IN>
+        <INTO>
             name = SimpleIdentifier()
+        <WITH>
+            joinString = Literal()
             type = DataType()
             (
                 <NULL> { nullable = true; }
@@ -673,7 +676,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                 { defaultValue = null; }
             )
             {
-                return new SqlAlterTableMergeColumns(s.end(this), table, columnList, name, type, nullable, defaultValue);
+                return new SqlAlterTableMergeColumns(s.end(this), table, columnList, name, joinString, type, nullable, defaultValue);
             }
     )
 }

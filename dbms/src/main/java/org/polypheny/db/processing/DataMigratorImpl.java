@@ -17,17 +17,9 @@
 package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
@@ -223,7 +215,7 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public void executeMergeQuery(List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
+    public void executeMergeQuery(List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
             PolyResult result;
             if ( isMaterializedView ) {
@@ -245,7 +237,7 @@ public class DataMigratorImpl implements DataMigrator {
             //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
 
-            Map<Long, Integer> sourceColMapping = new HashMap<>();
+            Map<Long, Integer> sourceColMapping = new LinkedHashMap<>();
             for ( CatalogColumn catalogColumn : sourceColumns ) {
                 int i = 0;
                 for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
@@ -269,7 +261,7 @@ public class DataMigratorImpl implements DataMigrator {
             int i = 0;
             while ( sourceIterator.hasNext() ) {
                 List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
-                Map<Long, List<Object>> values = new HashMap<>();
+                Map<Long, List<Object>> values = new LinkedHashMap<>();
 
                 for ( List<Object> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : sourceColMapping.entrySet() ) {
@@ -299,7 +291,7 @@ public class DataMigratorImpl implements DataMigrator {
                         } else {
                             int j = 0;
                             for (Object value : mergedValueList) {
-                                mergedValueList.set( j, ( (String) value).concat( " " + v.getValue().get( j++ ) ) );
+                                mergedValueList.set(j, ((String) value).concat(joinString + v.getValue().get(j++)));
                             }
                         }
                     }
@@ -790,7 +782,7 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public void mergeColumns( Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn ) {
+    public void mergeColumns(Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString) {
         CatalogTable table = Catalog.getInstance().getTable( sourceColumns.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
@@ -822,7 +814,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
         AlgRoot targetAlg = buildUpdateStatement( targetStatement, Collections.singletonList( targetColumnPlacement ), table.partitionProperty.partitionIds.get( 0 ) );
 
-        executeMergeQuery( primaryKeyList, selectColumnList, targetColumn, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
+        executeMergeQuery( primaryKeyList, selectColumnList, targetColumn, joinString, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
     }
 
 }

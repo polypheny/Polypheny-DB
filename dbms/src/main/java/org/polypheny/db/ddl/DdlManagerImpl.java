@@ -125,6 +125,7 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.schema.PolySchemaBuilder;
+import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
@@ -564,17 +565,17 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
     }
 
-    public void mergeColumns( CatalogTable catalogTable, List<String> sourceColumnNames, String targetColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
+    public void mergeColumns(CatalogTable catalogTable, List<String> sourceColumnNames, String newColumnName, String joinString, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
 
-        if ( catalog.checkIfExistsColumn( catalogTable.id, targetColumnName ) ) {
-            throw new ColumnAlreadyExistsException( targetColumnName, catalogTable.name );
+        if ( catalog.checkIfExistsColumn( catalogTable.id, newColumnName) ) {
+            throw new ColumnAlreadyExistsException(newColumnName, catalogTable.name );
         }
 
         CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, sourceColumnNames.get( sourceColumnNames.size()-1 ) );
         int position = updateAdjacentPositions( catalogTable, null, afterColumn );
 
         long columnId = catalog.addColumn(
-                targetColumnName,
+                newColumnName,
                 catalogTable.id,
                 position,
                 type.type,
@@ -591,6 +592,11 @@ public class DdlManagerImpl extends DdlManager {
         addDefaultValue( defaultValue, columnId );
         CatalogColumn addedColumn = catalog.getColumn  ( columnId );
 
+        // Remove quotes from joinString
+        if ( joinString.startsWith( "'" ) ) {
+            joinString = joinString.substring( 1, joinString.length() - 1 );
+        }
+
         // Ask router on which stores this column shall be placed
         List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -600,7 +606,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( String columnName : sourceColumnNames ) {
             sourceCatalogColumns.add( catalog.getColumn( catalogTable.id, columnName ) );
         }
-        CatalogColumn targetCatalogColumn = catalog.getColumn( catalogTable.id, targetColumnName );
+        CatalogColumn targetCatalogColumn = catalog.getColumn( catalogTable.id, newColumnName);
 
         // Add column on underlying data stores and insert default value
         for ( DataStore store : stores ) {
@@ -614,7 +620,7 @@ public class DdlManagerImpl extends DdlManager {
             );//Not a valid partitionID --> placeholder
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
             // Call migrator
-            dataMigrator.mergeColumns( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), sourceCatalogColumns, targetCatalogColumn);
+            dataMigrator.mergeColumns( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), sourceCatalogColumns, targetCatalogColumn, joinString);
 
             for ( CatalogColumn sourceCatalogColumn : sourceCatalogColumns ) {
                 catalog.deleteColumn( sourceCatalogColumn.id );

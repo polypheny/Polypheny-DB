@@ -1778,8 +1778,8 @@ public class Crud implements InformationObserver {
                 Arrays.stream( request.sourceColumns )
                         .map( s -> "\"" + s.name + "\"")
                         .collect( Collectors.joining(", "));
-        String query = String.format( "ALTER TABLE %s MERGE COLUMNS (%s) IN \"%s\" %s %s",
-                tableId, listOfColumnsToMerge, newColumn.name, as, dataType );
+        String query = String.format( "ALTER TABLE %s MERGE COLUMNS (%s) INTO \"%s\" WITH '%s' %s %s",
+                tableId, listOfColumnsToMerge, newColumn.name, request.joinString, as, dataType );
 
         //we don't want precision, scale etc. for source columns
         if ( newColumn.as == null ) {
