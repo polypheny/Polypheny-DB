@@ -139,10 +139,10 @@ licensee {
         because "removed on release branches"
     }
     allowDependency('com.github.jnr', 'jnr-posix', '3.0.50') { because 'removed on release branches' }
-    allowDependency('org.ow2.asm', 'asm', '7.1') { because 'removed on release branches' }
+    /*allowDependency('org.ow2.asm', 'asm', '7.1') { because 'removed on release branches' }
     allowDependency('org.ow2.asm', 'asm-analysis', '7.1') { because 'removed on release branches' }
     allowDependency('org.ow2.asm', 'asm-commons', '7.1') { because 'removed on release branches' }
-    allowDependency('org.ow2.asm', 'asm-tree', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-tree', '7.1') { because 'removed on release branches' }*/
     allowDependency('org.ow2.asm', 'asm-util', '7.1') { because 'removed on release branches' }
     // END
 
@@ -170,11 +170,11 @@ licensee {
     allowDependency('net.java.dev.jna', 'jna-platform', '5.8.0') { because 'Apache 2.0 license' }
     allowDependency('jakarta.xml.bind', 'jakarta.xml.bind-api', '2.3.2') { because 'Eclipse Distribution License 1.0' }
     allowDependency('org.postgresql', 'postgresql', '42.2.19') { because 'BSD 2-Clause' }
-    allowDependency('org.ow2.asm', 'asm', '5.0.3') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-analysis', '5.0.3') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-commons', '5.0.3') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-tree', '5.0.3') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-util', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm', '9.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-analysis', '9.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-commons', '9.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-tree', '9.3') { because 'BSD 3-Clause' }
+    //allowDependency('org.ow2.asm', 'asm-util', '9.3') { because 'BSD 3-Clause' }
     allowDependency('org.codehaus.janino', 'janino', '3.0.11') { because 'BSD 3-Clause' }
     allowDependency('org.codehaus.janino', 'commons-compiler', '3.0.11') { because 'BSD 3-Clause' }
     allowDependency('com.google.re2j', 're2j', '1.5') { because 'BSD 3-Clause' }
@@ -184,6 +184,7 @@ licensee {
 
     // Category B
     allow('EPL-1.0')
+    allow('EPL-2.0')
     allow('MPL-1.1')
     allow('MPL-2.0')
     allowUrl('http://www.eclipse.org/legal/epl-2.0') // EPL 2.0
@@ -192,7 +193,8 @@ licensee {
     allowUrl('https://www.eclipse.org/legal/epl-v20.html') // EPL 2.0
     allowUrl('https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.txt') // EPL 2.0
 
-    allowDependency('jakarta.annotation', 'jakarta.annotation-api', '1.3.5') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('jakarta.annotation', 'jakarta.annotation-api', '2.1.1') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('jakarta.transaction', 'jakarta.transaction-api', '2.0.0') { because 'Eclipse Public License v. 2.0' }
     allowDependency('jakarta.ws.rs', 'jakarta.ws.rs-api', '2.1.6') { because 'Eclipse Public License v. 2.0' }
     allowDependency('com.github.jnr', 'jnr-posix', '3.0.47') { because 'Eclipse Public License v. 2.0' }
     allowDependency('jakarta.activation', 'jakarta.activation-api', '1.2.1') { because 'Eclipse Public License v. 2.0' }
