@@ -22,6 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedHashMap;
 
+/**
+ * Writes and sends error messages to the client
+ */
 @Slf4j
 public class PGInterfaceErrorHandler {
 
@@ -32,23 +35,36 @@ public class PGInterfaceErrorHandler {
     private PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler;
 
 
+    /**
+     * Creates a error handler that can send error messages to the client
+     * @param ctx Is needed to send the error message to the designated client
+     * @param pgInterfaceInboundCommunicationHandler Is needed to create PGInterfaceServerWriter to be able to send a error message
+     */
     public PGInterfaceErrorHandler(ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler) {
         this.ctx = ctx;
+        this.pgInterfaceInboundCommunicationHandler = pgInterfaceInboundCommunicationHandler;
     }
 
+    /**
+     * Sends a simple error message to the client. The severity and other error fields are all fixed.
+     * @param errorMsg The message you want to send
+     */
     public void sendSimpleErrorMessage (String errorMsg) {
-        //E...n S ERROR. V ERROR. C 42P01. M relation "public.hihi" does not exist. P 15. F parse_relation. c. L 1360. R parserOpenTable. . Z....I
-        //E...x S ERROR. V ERROR. C 42P01. M relation "public.hihi" does not exist. P 15. F parse_relation. c. L 1360. R parserOpenTable. . Z....I
-        //header, length, severity, severity (gl wie vorher), SQLSTATE code, Message, (Position, File, column name?, Line, Routine, zerobyte as field) freiwillig
-        //42P01 - undefined_table$
-        //0A000 - feature_not_supported
+        //Notes on how error messages are sent:
+        /*
+        E...n S ERROR. V ERROR. C 42P01. M relation "public.hihi" does not exist. P 15. F parse_relation. c. L 1360. R parserOpenTable. . Z....I
+        E...x S ERROR. V ERROR. C 42P01. M relation "public.hihi" does not exist. P 15. F parse_relation. c. L 1360. R parserOpenTable. . Z....I
+        header, length, severity, severity (gl wie vorher), SQLSTATE code, Message, (Position, File, column name?, Line, Routine, zerobyte as field) freiwillig
+        42P01 - undefined_table$
+        0A000 - feature_not_supported
+        E..._SERROR.VERROR.C42601.Msyntax error at or near "SSELECT".P1.Fscan.l.L1176.Rscanner_yyerror..Z....I
+         */
 
-        //E..._SERROR.VERROR.C42601.Msyntax error at or near "SSELECT".P1.Fscan.l.L1176.Rscanner_yyerror..Z....I
         this.errorMsg = errorMsg;
         PGInterfaceMessage pgInterfaceMessage = new PGInterfaceMessage(PGInterfaceHeaders.E, "MockBody", 4, true);
-        this.serverWriter = serverWriter = new PGInterfaceServerWriter("MockType", pgInterfaceMessage, ctx, pgInterfaceInboundCommunicationHandler);
+        this.serverWriter = new PGInterfaceServerWriter("MockType", pgInterfaceMessage, ctx, pgInterfaceInboundCommunicationHandler);
 
-        //FIXME(FF): An error occurs because of the errormessage on the clientside. But it doesn't really matter, because the connection would be terminated anyway and the individual message part arrives...
+        //TODO(FF): An error occurs because of the errormessage on the clientside. It doesn't really matter, because the connection would be terminated anyway and the message itself arrives...
         LinkedHashMap<Character, String> errorFields = new LinkedHashMap<Character, String>();
         errorFields.put('S', "ERROR");
         errorFields.put('V', "ERROR");
@@ -64,17 +80,5 @@ public class PGInterfaceErrorHandler {
         ByteBuf buffer = serverWriter.writeSimpleErrorMessage(errorFields);
         ctx.writeAndFlush(buffer);
 
-        //pgInterfaceInboundCommunicationHandler.sendReadyForQuery("I");
-
     }
-
-
-    /*
-    this.exception = e;
-        if ( e.getMessage() != null ) {
-            this.errorMsg = e.getMessage();
-        } else {
-            this.errorMsg = e.getClass().getSimpleName();
-        }
-     */
 }

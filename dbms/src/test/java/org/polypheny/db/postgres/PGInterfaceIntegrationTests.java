@@ -37,6 +37,9 @@ import static org.junit.Assert.assertEquals;
 
 //import static org.polypheny.db.postgresql.PGInterfaceInboundCommunicationHandler.ctx;
 
+/**
+ * Tests the implementation of the PGInterface --> simulates a client that connects via JDBC
+ */
 @Slf4j
 public class PGInterfaceIntegrationTests {
 
@@ -46,6 +49,10 @@ public class PGInterfaceIntegrationTests {
     //create table: CREATE TABLE public.PGInterfaceTestTable(PkIdTest INTEGER NOT NULL, VarcharTest VARCHAR(255), IntTest INTEGER,PRIMARY KEY (PkIdTest))
 
 
+    /**
+     * starts an instance of Polypheny and creates a PGInterface, as it does not exist per default
+     * @throws SQLException
+     */
     @BeforeClass
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
@@ -60,9 +67,12 @@ public class PGInterfaceIntegrationTests {
             }
         }
 
-        //ALTER INTERFACES ADD "sdf" USING 'org.polypheny.db.postgresql.PGInterface' WITH '{"port":"5433"}'
     }
 
+    /**
+     * Cleans up after the tests
+     * @throws SQLException
+     */
     @AfterClass
     public static void stop() throws SQLException {
 
@@ -76,6 +86,10 @@ public class PGInterfaceIntegrationTests {
     }
 
 
+    /**
+     * Test that executes the ddl command CREATE and checks within the database if a table was created
+     * @throws SQLException
+     */
     @Test
     public void testIfDDLIsExecuted() throws SQLException {
 
@@ -96,6 +110,10 @@ public class PGInterfaceIntegrationTests {
     }
 
 
+    /**
+     * This test executes several SQL-commands via the client, it creates a table, inserts and selects from it. The returned values from the select are tested
+     * @throws SQLException
+     */
     @Test
     public void testIfDMLandDDLandDQLIsExecuted() throws SQLException {
 
@@ -120,6 +138,10 @@ public class PGInterfaceIntegrationTests {
         }
     }
 
+    /**
+     * Tests if a prepared statement is correctly executed if the PREPARE and EXECUTE statement are sent seperately
+     * @throws SQLException
+     */
     @Test
     public void testPreparedAndExecuteInTwoParts() throws SQLException {
 
@@ -146,6 +168,10 @@ public class PGInterfaceIntegrationTests {
     }
 
 
+    /**
+     * Tests if a prepared statement is correctly executed if the PREPARE and EXECUTE statement are sent together
+     * @throws SQLException
+     */
     @Test
     public void testPreparedAndExecuteInOnePart() throws SQLException {
 
@@ -170,6 +196,10 @@ public class PGInterfaceIntegrationTests {
         }
     }
 
+    /**
+     * This feature is not yet supported, but it tests if prepared statement are executed correctly using the JDBC framework
+     * @throws SQLException
+     */
     @Test
     @Ignore
     public void testPreparedUsingJdbc() throws SQLException {
@@ -198,6 +228,9 @@ public class PGInterfaceIntegrationTests {
     }
 
 
+    /**
+     * Creates a connection via Postgres-JDBC, autocommit is always enabled, and sslmode disabled
+     */
     public static class PsqlJdbcConnection implements AutoCloseable {
 
         private final static String dbHost = "localhost";

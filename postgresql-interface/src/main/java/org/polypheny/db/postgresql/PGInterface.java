@@ -48,6 +48,9 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
 
+/**
+ * First point of contact for the PGInterface, setting changes from the UI are handled here
+ */
 @Slf4j
 public class PGInterface extends QueryInterface {
 
@@ -93,6 +96,9 @@ public class PGInterface extends QueryInterface {
     }
 
 
+    /**
+     * Creates a netty server and its channelPipeline
+     */
     @Override
     public void run() {
 

@@ -103,6 +103,11 @@ public enum PGInterfaceHeaders {
     //some messages with no header (StartUpMessage, CancelREquest, and some authentication requests)
 
     /**
+     * Parse - contains query in the extended query cycle
+     */
+    P,
+
+    /**
      * Simple Query -  from client to server - used in simple query cycle
      */
     Q,

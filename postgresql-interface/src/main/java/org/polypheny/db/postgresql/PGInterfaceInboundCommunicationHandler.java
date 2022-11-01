@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.TransactionManager;
 
 /**
- * Manages all incoming communication, not using the netty framework (but being a handler in netty)
+ * Manages all incoming communication, not a handler from netty, but called by one
  */
 @Slf4j
 public class PGInterfaceInboundCommunicationHandler {
@@ -45,16 +45,13 @@ public class PGInterfaceInboundCommunicationHandler {
 
 
     /**
-     * Decides in what cycle from postgres the client is (startup-phase, query-phase, etc.)
-     *
-     * @param oMsg the incoming message from the client (unchanged)
-     * @param pgInterfaceServerHandler
-     * @return
+     * Decides in what cycle (from postgres message flow) the client is: startup-phase, query-phase, etc.
+     * @param oMsg the incoming message from the client (unchanged) - whole message is interpreted as a string from the netty decoder
+     * @param pgInterfaceServerHandler is needed to access the saved prepared statements for a connection
      */
     public void decideCycle(Object oMsg, PGInterfaceServerHandler pgInterfaceServerHandler) {
         String msgWithZeroBits = ((String) oMsg);
         String wholeMsg = msgWithZeroBits.replace( "\u0000", "" );
-
 
         //TODO(FF): simple query phase is not implemented
         if ( wholeMsg.substring( 2, 6 ).contains("user") ) {
@@ -66,17 +63,21 @@ public class PGInterfaceInboundCommunicationHandler {
         }
 
         else if ( wholeMsg.substring( 0, 1 ).equals("X") ) {
+            //TODO(FF): (low prio, bcs everything works as inteded, but) seems to never be reached, instead in PGInterfaceServerHandler the exception is reached... maybe client closes connection and netty realizes this and stops handler
             terminateConnection();
         }
+        else if ( wholeMsg.substring( 0, 1 ).equals("Q")) {
+            simpleQueryPhase();
+        }
         else {
-            errorHandler.sendSimpleErrorMessage("The message could not be parsed by the PGInterface.");
+            errorHandler.sendSimpleErrorMessage("The incoming message could not be parsed by the PGInterface.");
         }
     }
 
 
     /**
      * Performs necessary steps on the first connection with the client (mostly sends necessary replies, but doesn't really set anything on the server side).
-     * Sends authenticationOk (without checking authentication), sets server version, sends readyForQuery
+     * Sends authenticationOk (without checking authentication), sets server version 14 (required from jdbc), sends readyForQuery
      */
     public void startUpPhase() {
         //authenticationOk
@@ -94,25 +95,34 @@ public class PGInterfaceInboundCommunicationHandler {
     }
 
 
+    /**
+     * Handles the steps if we are in the simple query phase.
+     */
     public void simpleQueryPhase() {
         //TODO(FF): (low priority) The simple query phase is handled a bit differently than the extended query phase. The most important difference is that the simple query phase accepts several queries at once and sends some different response messages (e.g. no parse/bindComplete).
         //Several queries seperated with ";"
+
+        errorHandler.sendSimpleErrorMessage("The simple query phase is not implemented in the PostgreSQL Interface");
+
     }
 
 
     /**
+     * Handles the steps if we are in the extended query phase.
      * Sends necessary responses to client (without really setting anything in backend) and prepares the incoming query for usage. Continues query forward to QueryHandler
      * @param incomingMsg unchanged incoming message (transformed to string by netty)
-     * @param pgInterfaceServerHandler
+     * @param pgInterfaceServerHandler is needed to access the saved prepared statements for a connection
      */
     public void extendedQueryPhase(String incomingMsg, PGInterfaceServerHandler pgInterfaceServerHandler) {
 
         if ( incomingMsg.substring( 2, 5 ).equals( "SET" ) ) {
+            //TODO(FF): actually handle the SET commands (e.g. SET extra_float_digits = 3)
             sendParseBindComplete();
             sendCommandComplete("SET", -1);
             sendReadyForQuery( "I" );
 
         } else if (incomingMsg.substring(2, 9).equals("PREPARE")) {
+            //TODO(FF): Hanlde prepared statements sent via JDBC framework - they don't contain the PREPARE and EXECUTE commands (don't necessarily handle it here)
             ArrayList<String> preparedStatementNames = pgInterfaceServerHandler.getPreparedStatementNames();
 
             //Prepared Statement
@@ -121,22 +131,22 @@ public class PGInterfaceInboundCommunicationHandler {
             String executeString = query[1];
             String prepareStringQueryName = extractPreparedQueryName(prepareString);
 
-            //check if name already exists --> muesi das öberhaupt?? chamer ned eif es existierends öberschriibe?
+            //check if name already exists
             if (preparedStatementNames.isEmpty() || (!preparedStatementNames.contains(prepareStringQueryName))) {
                 PGInterfacePreparedMessage preparedMessage = new PGInterfacePreparedMessage(prepareStringQueryName, prepareString, ctx);
                 preparedMessage.prepareQuery();
-                //preparedStatementNames.add(prepareStringQueryName); //proforma, aber wenni alles rechtig ersetzst sötti das eig chönne uselösche...
+
+                //safe prepared messages for the connection
                 pgInterfaceServerHandler.addPreparedStatementNames(prepareStringQueryName);
-                //ctx.channel().attr(attrObj).set(prepareStringQueryName);
-                //preparedMessages.add(preparedMessage);
                 pgInterfaceServerHandler.addPreparedMessage(preparedMessage);
-                //safe everything possible and necessary
-                //send: 1....2....n....C....PREPARE
+
+                //send response to "prepare" query
                 sendParseBindComplete();
                 sendNoData();
                 sendCommandComplete( "PREPARE", -1 );
 
-                if (!executeString.isEmpty()) {  //an execute statement was sent along
+                //check if an execute statement was sent along
+                if (!executeString.isEmpty()) {
                     String statementName = extractPreparedQueryName(executeString);
 
                     //check if name exists already
@@ -145,7 +155,6 @@ public class PGInterfaceInboundCommunicationHandler {
                     } else {
                         String errorMsg = "There does not exist a prepared statement called" + statementName;
                         errorHandler.sendSimpleErrorMessage(errorMsg);
-                        //TODO(FF): stop sending stuff to client...
                     }
 
                 } else {
@@ -154,10 +163,8 @@ public class PGInterfaceInboundCommunicationHandler {
             } else {
                 String errorMsg = "There already exists a prepared statement with the name" + prepareStringQueryName + "which has not yet been executed";
                 errorHandler.sendSimpleErrorMessage(errorMsg);
-                //TODO(FF): stop sending stuff to client...
             }
 
-            //List<String> lol = preparedMessage.extractValues();
 
         } else if (incomingMsg.substring(2, 9).equals("EXECUTE")) {
             ArrayList<String> preparedStatementNames = pgInterfaceServerHandler.getPreparedStatementNames();
@@ -171,9 +178,7 @@ public class PGInterfaceInboundCommunicationHandler {
                 executePreparedStatement(executeQuery, statementName, pgInterfaceServerHandler);
             } else {
                 String errorMsg = "There does not exist a prepared statement called" + statementName;
-                //terminateConnection();
                 errorHandler.sendSimpleErrorMessage(errorMsg);
-                //TODO(FF): stop sending stuff to client...
             }
         }
 
@@ -185,18 +190,23 @@ public class PGInterfaceInboundCommunicationHandler {
         }
     }
 
+    /**
+     * Starts a query handler with the information that the query right now is a prepared query
+     * @param executeString The string which contains the execute query
+     * @param statementName The name of the prepared statement
+     * @param pgInterfaceServerHandler is needed to access the saved prepared statements for a connection
+     */
     private void executePreparedStatement(String executeString, String statementName, PGInterfaceServerHandler pgInterfaceServerHandler) {
         ArrayList<String> preparedStatementNames = pgInterfaceServerHandler.getPreparedStatementNames();
 
+        // get corresponding prepared message
         int idx = preparedStatementNames.indexOf(statementName);
-        //PGInterfacePreparedMessage preparedMessage = preparedMessages.get(idx);
         PGInterfacePreparedMessage preparedMessage = pgInterfaceServerHandler.getPreparedMessage(idx);
         preparedMessage.setExecuteString(executeString);
         preparedMessage.extractAndSetValues();
 
         PGInterfaceQueryHandler queryHandler = new PGInterfaceQueryHandler( preparedMessage, ctx, this, transactionManager );
         queryHandler.start();
-        //send commandComplete according to query type... (oder em query handler... wo au  emmer dases gscheckt werd...) ond parse bind ond ready for query...
     }
 
 
@@ -225,13 +235,18 @@ public class PGInterfaceInboundCommunicationHandler {
             query = query.substring( 0, idx - 2 );
         } else {
             errorHandler.sendSimpleErrorMessage("Something went wrong while extracting the query from the incoming stream");
-            //TODO(FF): stop sending stuff to client...
+            //TODO(FF): does it continue to send stuff to the client? (even though he doesn't receives it anymore?)
         }
 
         return query;
     }
 
 
+    /**
+     * extracts the prepared query from the incoming string (cuts all other information/buffer things)
+     * @param incomingMsg the message from the client
+     * @return a list of 2 strings. the first element is the prepared query, the second element is empty (if not sent along) or contains the execute query
+     */
     private String[] extractPreparedQuery(String incomingMsg) {
         String prepareString = extractQuery(incomingMsg);
         String executeString = new String();
@@ -245,6 +260,11 @@ public class PGInterfaceInboundCommunicationHandler {
         return result;
     }
 
+    /**
+     * Extracts the execute query if it was sent along with the prepare query
+     * @param incomingMsg the incoming message from the client
+     * @return returns the execute query
+     */
     private String extractExecutePart(String incomingMsg) {
 
         int idx = incomingMsg.indexOf("EXECUTE");
@@ -255,6 +275,11 @@ public class PGInterfaceInboundCommunicationHandler {
         return executeString;
     }
 
+    /**
+     * Extracts the name of the prepared query (also of the execute query)
+     * @param cleanedQuery the prepared/execute query without remains from the buffer (zeros in between etc)
+     * @return the name of the prepare statement as a string
+     */
     private String extractPreparedQueryName(String cleanedQuery) {
 
         String startNamePlusQuery = cleanedQuery.substring(8);
@@ -264,13 +289,11 @@ public class PGInterfaceInboundCommunicationHandler {
     }
 
 
-
-
     /**
      * Creates and sends (flushes on ctx) a readyForQuery message with a tag. The tag is choosable (see below for options).
      *
      * @param msgBody tag - current transaction status indicator (possible vals: I (idle, not in transaction block),
-     * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended
+     * T (in transaction block), E (in failed transaction block, queries will be rejected until block is ended)
      */
     public void sendReadyForQuery(String msgBody) {
         PGInterfaceMessage readyForQuery = new PGInterfaceMessage( PGInterfaceHeaders.Z, msgBody, 5, false );
@@ -279,7 +302,9 @@ public class PGInterfaceInboundCommunicationHandler {
     }
 
 
-
+    /**
+     * creates and sends a parseComplete and a bindComplete message to the client.
+     */
     public void sendParseBindComplete() {
         //TODO(FF): This should work with the normal PGInterfaceServerWriter type "i" (called like in the commented out part),
         // but it does not --> roundabout solution that works, but try to figure out what went wrong...
@@ -306,7 +331,9 @@ public class PGInterfaceInboundCommunicationHandler {
     }
 
 
-
+    /**
+     * creates and sends the noData message to the client
+     */
     public void sendNoData() {
         PGInterfaceMessage noData = new PGInterfaceMessage( PGInterfaceHeaders.n, "0", 4, true );
         PGInterfaceServerWriter noDataWriter = new PGInterfaceServerWriter( "i", noData, ctx, this);
@@ -317,7 +344,7 @@ public class PGInterfaceInboundCommunicationHandler {
     /**
      * Sends CommandComplete to client, with choosable command type
      * @param command which command is completed (no space afterwards, space is added here)
-     * @param rowsAffected number of rows affected (if it is not necessary to send a number, put -1)
+     * @param rowsAffected number of rows affected (if it is not necessary to send a number, put -1, (0 is also possible))
      */
     public void sendCommandComplete( String command, int rowsAffected ) {
         String body = "";
@@ -333,9 +360,6 @@ public class PGInterfaceInboundCommunicationHandler {
 
         commandComplete = new PGInterfaceMessage( PGInterfaceHeaders.C, body, 4, true );
         commandCompleteWriter = new PGInterfaceServerWriter( "s", commandComplete, ctx, this);
-        //int hash = ctx.hashCode();
-        //String lol = command + " | " + String.valueOf(hash);
-        //log.error(lol);
         ctx.writeAndFlush( commandCompleteWriter.writeOnByteBuf() );
     }
 
@@ -390,6 +414,10 @@ public class PGInterfaceInboundCommunicationHandler {
         }
     }
 
+
+    /**
+     * Closes the ctx, so nothing more can be sent to the client
+     */
     public void terminateConnection() {
         ctx.close();
     }
