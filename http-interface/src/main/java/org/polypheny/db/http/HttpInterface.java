@@ -23,7 +23,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.json.JsonMapper;
+import io.javalin.plugin.bundled.CorsPluginConfig;
+import java.lang.reflect.Type;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -99,20 +101,23 @@ public class HttpInterface extends QueryInterface {
         JsonMapper gsonMapper = new JsonMapper() {
             @NotNull
             @Override
-            public String toJsonString( @NotNull Object obj ) {
-                return HttpServer.gson.toJson( obj );
+            public <T> T fromJsonString( @NotNull String json, @NotNull Type targetType ) {
+                return HttpServer.gson.fromJson( json, targetType );
             }
 
 
             @NotNull
             @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
-                return HttpServer.gson.fromJson( json, targetClass );
+            public String toJsonString( @NotNull Object obj, @NotNull Type type ) {
+                return HttpServer.gson.toJson( obj );
             }
+
         };
         server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
-            config.enableCorsForAllOrigins();
+            config.plugins.enableCors( cors -> {
+                cors.add( CorsPluginConfig::anyHost );
+            } );
         } ).start( port );
         server.exception( Exception.class, ( e, ctx ) -> {
             log.warn( "Caught exception in the HTTP interface", e );
