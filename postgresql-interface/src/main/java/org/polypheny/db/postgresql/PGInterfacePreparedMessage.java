@@ -18,7 +18,6 @@ package org.polypheny.db.postgresql;
 
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -30,26 +29,27 @@ import java.util.*;
  */
 @Slf4j
 public class PGInterfacePreparedMessage {
-    private String name;
-    private ChannelHandlerContext ctx;
+    private static final String executeDelimiter = ", ";
+    private final String name;
+    private final ChannelHandlerContext ctx;
+    private final Map<Long, AlgDataType> typesPolyphey = new HashMap<Long, AlgDataType>();
+    private final List<Map<Long, Object>> valuesPolypeny = new ArrayList<Map<Long, Object>>();
     private String query;
     private String wholePrepareString;
     private String executeString;
     private List<String> dataTypes;
     private List<String> data;
-    private static final String  executeDelimiter = ", ";
-    private Map<Long, AlgDataType> typesPolyphey = new HashMap<Long, AlgDataType>();
-    private List<Map<Long, Object>> valuesPolypeny = new ArrayList<Map<Long, Object>>();
     private PGInterfaceErrorHandler errorHandler;
 
 
     /**
      * Creates the message itself
-     * @param name name of the prepared statement
+     *
+     * @param name               name of the prepared statement
      * @param wholePrepareString the string which contains the prepared statement
-     * @param ctx channelHandlerContext from the current connection
+     * @param ctx                channelHandlerContext from the current connection
      */
-    public PGInterfacePreparedMessage(String name, String wholePrepareString, ChannelHandlerContext ctx) {
+    public PGInterfacePreparedMessage( String name, String wholePrepareString, ChannelHandlerContext ctx ) {
         this.name = name;
         this.wholePrepareString = wholePrepareString;
         this.ctx = ctx;
@@ -57,100 +57,118 @@ public class PGInterfacePreparedMessage {
 
     /**
      * Creates the message itself
+     *
      * @param name name of the prepared statement
-     * @param ctx channelHandlerContext from the current connection
+     * @param ctx  channelHandlerContext from the current connection
      */
-    public PGInterfacePreparedMessage(String name, ChannelHandlerContext ctx) {
+    public PGInterfacePreparedMessage( String name, ChannelHandlerContext ctx ) {
         this.name = name;
         this.ctx = ctx;
     }
 
     /**
-     * Sets the query itself (without prepare etc)
-     * @param query The "pure" query
+     * The delimiter that seperates the values in the execute query
+     *
+     * @return a string sequence which is the delimiter in the execute query
      */
-    public void setQuery(String query) {
-        this.query = query;
+    public static String getExecuteDelimiter() {
+        return executeDelimiter;
     }
 
     /**
      * the "whole" execute query
+     *
      * @param executeString execute query
      */
-    public void setExecuteString(String executeString) {
+    public void setExecuteString( String executeString ) {
         this.executeString = executeString;
     }
 
     /**
      * the "whole" prepare query
+     *
      * @param wholePrepareString prepare query
      */
-    public void setWholePrepareString(String wholePrepareString) {
+    public void setWholePrepareString( String wholePrepareString ) {
         this.wholePrepareString = wholePrepareString;
     }
 
     /**
-     * the data types from the prepare query
-     * @param dataTypes a list if all types (in the right order) from the prepare query
-     */
-    private void setDataTypes(List<String> dataTypes) { this.dataTypes = dataTypes; }
-
-    /**
-     * The values that will be inserted into the prepare query
-     * @param data the values that will be inserted into the prepare query as string (since they arrive as string from the connection)
-     */
-    private void setData(List<String> data) { this.data = data; }
-
-    /**
-     * The delimiter that seperates the values in the execute query
-     * @return a string sequence which is the delimiter in the execute query
-     */
-    public static String getExecuteDelimiter() {return executeDelimiter;}
-
-    /**
      * The "pure" query (without prepare etc.)
+     *
      * @return the query itself (without prepare etc.)
      */
-    public String getQuery() { return query;}
+    public String getQuery() {
+        return query;
+    }
 
-    public List<String> getDataTypes() { return dataTypes;}
+    /**
+     * Sets the query itself (without prepare etc)
+     *
+     * @param query The "pure" query
+     */
+    public void setQuery( String query ) {
+        this.query = query;
+    }
+
+    public List<String> getDataTypes() {
+        return dataTypes;
+    }
+
+    /**
+     * the data types from the prepare query
+     *
+     * @param dataTypes a list if all types (in the right order) from the prepare query
+     */
+    private void setDataTypes( List<String> dataTypes ) {
+        this.dataTypes = dataTypes;
+    }
 
     /**
      * Gets the values from the execute query
+     *
      * @return values from the execute query as string
      */
-    public List<String> getData() { return data;}
+    public List<String> getData() {
+        return data;
+    }
+
+    /**
+     * The values that will be inserted into the prepare query
+     *
+     * @param data the values that will be inserted into the prepare query as string (since they arrive as string from the connection)
+     */
+    private void setData( List<String> data ) {
+        this.data = data;
+    }
 
     /**
      * From the execute string it extracts the values that will be inserted into the prepare query, sets these values in the message
      */
     public void extractAndSetValues() {
-        //us execute string - seperator: ', '
-        //bool ersetze...
-        //cut string at ( and ) (remove chlammere) --> denn mach eif. split, ond problem solved...
-        String onlyExecuteValues = executeString.split("\\(|\\)")[1];
-        List<String> valueList = Arrays.asList(onlyExecuteValues.split(getExecuteDelimiter()));
-        setData(valueList);
+        String onlyExecuteValues = executeString.split( "\\(|\\)" )[1];
+        List<String> valueList = Arrays.asList( onlyExecuteValues.split( getExecuteDelimiter() ) );
+        setData( valueList );
     }
 
     /**
      * From the prepare string it extracts the data types for the values to be inserted, sets these in the message
      */
     public void extractAndSetTypes() {
-        String types = wholePrepareString.split("\\(|\\)")[1];
-        List<String> typeList = Arrays.asList(types.split(getExecuteDelimiter()));
+        String types = wholePrepareString.split( "\\(|\\)" )[1];
+        List<String> typeList = Arrays.asList( types.split( getExecuteDelimiter() ) );
 
         //replace all bool with boolean to match polypheny dt
-        if (typeList.contains("bool") || typeList.contains("BOOL")) {
+        if ( typeList.contains( "bool" ) || typeList.contains( "BOOL" ) ) {
             ListIterator<String> iterator = typeList.listIterator();
-            while (iterator.hasNext()) {
+            while ( iterator.hasNext() ) {
                 String next = iterator.next();
-                if (next.equals("bool")) {
-                    typeList.set(iterator.nextIndex()-1, "BOOLEAN");
+                if ( next.equals( "bool" ) ) {
+                    typeList.set( iterator.nextIndex() - 1, "BOOLEAN" );
                 }
             }
         }
-        setDataTypes(typeList);
+        setDataTypes( typeList );
     }
 
     /**
@@ -158,14 +176,14 @@ public class PGInterfacePreparedMessage {
      */
     public void changeParameterSymbol() {
 
-        String[] parts = wholePrepareString.split("\\$");
-        String newPrepareString = new String();
+        String[] parts = wholePrepareString.split( "\\$" );
+        String newPrepareString = "";
 
-        for (int i = 1; i<parts.length; i++) {
-            newPrepareString = newPrepareString + "?" + parts[i].substring(1);
+        for ( int i = 1; i < parts.length; i++ ) {
+            newPrepareString = newPrepareString + "?" + parts[i].substring( 1 );
         }
 
-        setWholePrepareString(parts[0] + newPrepareString);
+        setWholePrepareString( parts[0] + newPrepareString );
 
     }
 
@@ -173,8 +191,8 @@ public class PGInterfacePreparedMessage {
      * extracts the "pure" query from the prepared string (so the query itself without anything else), sets it in this message
      */
     public void extractAndSetQuery() {
-        String query = wholePrepareString.split("AS ")[1];
-        setQuery(query);
+        String query = wholePrepareString.split( "AS " )[1];
+        setQuery( query );
     }
 
     /**
@@ -189,31 +207,24 @@ public class PGInterfacePreparedMessage {
 
     /**
      * Sets the parameter values (the datatype and the value) to the data context, so polypheny can process the prepared query
+     *
      * @param statement the statement that was created from the query
      */
-    public void transformDataAndAddParameterValues (Statement statement) {
+    public void transformDataAndAddParameterValues( Statement statement ) {
         long idx = 0;
-        //TODO(FF): It doesn't work yet to insert several values (query below) --> tried 2 variants below, but both give same error (see bolow below)
-        // (PREPARE lol (int, text, int) AS INSERT INTO pginterfacetesttable VALUES ($1, $2, $3), ($4, $5, $6); EXECUTE lol (4, 'HALLO', 4, 5, 'x', 5);
-        //java.lang.RuntimeException: While executing SQL [INSERT INTO "PUBLIC"."tab5_part1004" ("_EXPR$0", "_EXPR$1", "_EXPR$2")
-        //SELECT CAST(? AS INTEGER), CAST(? AS VARCHAR(255)), CAST(? AS INTEGER)
-        //FROM (VALUES  (0)) AS "t" ("ZERO")
-        //UNION ALL
-        //SELECT CAST(? AS INTEGER), CAST(? AS VARCHAR(255)), CAST(? AS INTEGER)
-        //FROM (VALUES  (0)) AS "t" ("ZERO")] on JDBC sub-schema
 
         //if o is as long as the number of data types
-        for (String type : dataTypes) {
+        for ( String type : dataTypes ) {
             List<Object> o = new ArrayList<>();
-            for (int i = 0; i<data.size(); i++) {
-                if (i%dataTypes.size() == (int) idx) {
-                    String value = data.get(i);
-                    o.add(transformData(value, type));
+            for ( int i = 0; i < data.size(); i++ ) {
+                if ( i % dataTypes.size() == ( int ) idx ) {
+                    String value = data.get( i );
+                    o.add( transformData( value, type ) );
                 }
             }
-            AlgDataType algDataType = transformToAlgDataType(type, statement);
-            statement.getDataContext().addParameterValues(idx, algDataType, o);
-            idx ++;
+            AlgDataType algDataType = transformToAlgDataType( type, statement );
+            statement.getDataContext().addParameterValues( idx, algDataType, o );
+            idx++;
         }
 
         /*
@@ -234,35 +245,36 @@ public class PGInterfacePreparedMessage {
 
     /**
      * Transforms the data from a string into the correct format
+     *
      * @param value the value that needs to be transformed
-     * @param type the type the value needs to be transformed into
+     * @param type  the type the value needs to be transformed into
      * @return returns the transformed value as an object
      */
-    private Object transformData(String value, String type) {
+    private Object transformData( String value, String type ) {
         Object o = new Object();
-        switch (type) {
+        switch ( type ) {
             //TODO(FF): implement more data types
             case "int":
-                o = Integer.valueOf(value);
+                o = Integer.valueOf( value );
                 break;
             case "text":
                 String pureValue = value;
-                if (value.charAt(0) == '\'') {
-                    pureValue = value.substring(1);
-                    if(value.charAt(value.length()-1) == '\'') {
-                        pureValue = pureValue.substring(0, pureValue.length() - 1);
+                if ( value.charAt( 0 ) == '\'' ) {
+                    pureValue = value.substring( 1 );
+                    if ( value.charAt( value.length() - 1 ) == '\'' ) {
+                        pureValue = pureValue.substring( 0, pureValue.length() - 1 );
                     }
                 }
-                o =  pureValue;
+                o = pureValue;
                 break;
             case "bool":
-                o =  Boolean.parseBoolean(value);
+                o = Boolean.parseBoolean( value );
                 break;
             case "numeric":
-                o =  Double.parseDouble(value);
+                o = Double.parseDouble( value );
                 break;
             default:
-                errorHandler.sendSimpleErrorMessage("data type from from the prepared query is not yet supported by the postgres interface (transform data)");
+                errorHandler.sendSimpleErrorMessage( "data type from from the prepared query is not yet supported by the postgres interface (transform data)" );
                 break;
         }
         return o;
@@ -270,28 +282,29 @@ public class PGInterfacePreparedMessage {
 
     /**
      * creates a AlgDataType according to the corresponding data type
-     * @param type the type you want a AlgDataType for (types are the pgTypes)
+     *
+     * @param type      the type you want a AlgDataType for (types are the pgTypes)
      * @param statement needed to create the AlgDataType
      * @return returns the corresponding AlgDataType to the input type
      */
-    private AlgDataType transformToAlgDataType(String type, Statement statement) {
+    private AlgDataType transformToAlgDataType( String type, Statement statement ) {
         AlgDataType result = null;
-        switch (type) {
+        switch ( type ) {
             //TODO(FF): implement more data types
             case "int":
-                result = statement.getTransaction().getTypeFactory().createPolyType(PolyType.INTEGER);
+                result = statement.getTransaction().getTypeFactory().createPolyType( PolyType.INTEGER );
                 break;
             case "text":
-                result = statement.getTransaction().getTypeFactory().createPolyType(PolyType.VARCHAR, 255); //TODO(FF): how do I know the precision?
+                result = statement.getTransaction().getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ); //TODO(FF): how do I know the precision?
                 break;
             case "bool":
-                result = statement.getTransaction().getTypeFactory().createPolyType(PolyType.BOOLEAN);
+                result = statement.getTransaction().getTypeFactory().createPolyType( PolyType.BOOLEAN );
                 break;
             case "numeric":
-                result = statement.getTransaction().getTypeFactory().createPolyType(PolyType.DECIMAL, 3, 3);
+                result = statement.getTransaction().getTypeFactory().createPolyType( PolyType.DECIMAL, 3, 3 );
                 break;
             default:
-                errorHandler.sendSimpleErrorMessage("data type from from the prepared query is not yet supported by the postgres interface (create AlgDataType)");
+                errorHandler.sendSimpleErrorMessage( "data type from from the prepared query is not yet supported by the postgres interface (create AlgDataType)" );
                 break;
         }
 

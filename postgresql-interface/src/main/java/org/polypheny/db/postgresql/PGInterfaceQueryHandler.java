@@ -16,19 +16,11 @@
 
 package org.polypheny.db.postgresql;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import java.nio.charset.StandardCharsets;
-import java.sql.ResultSetMetaData;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -45,6 +37,10 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * Handles all queries from the extended query cycle - "sends" them to polypheny and processes answer
@@ -55,12 +51,12 @@ public class PGInterfaceQueryHandler {
     private String query;
     private PGInterfacePreparedMessage preparedMessage;
     private Boolean preparedQueryCycle = false;
-    private ChannelHandlerContext ctx;
-    private PGInterfaceInboundCommunicationHandler communicationHandler;
-    private TransactionManager transactionManager;
+    private final ChannelHandlerContext ctx;
+    private final PGInterfaceInboundCommunicationHandler communicationHandler;
+    private final TransactionManager transactionManager;
     private int rowsAffected = 0;   //rows affected (changed/deleted/inserted/etc)
     private List<List<Object>> rows;
-    private PGInterfaceErrorHandler errorHandler;
+    private final PGInterfaceErrorHandler errorHandler;
 
 
     public PGInterfaceQueryHandler( String query, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
@@ -68,7 +64,7 @@ public class PGInterfaceQueryHandler {
         this.ctx = ctx;
         this.communicationHandler = communicationHandler;
         this.transactionManager = transactionManager;
-        this.errorHandler = new PGInterfaceErrorHandler(ctx, communicationHandler);
+        this.errorHandler = new PGInterfaceErrorHandler( ctx, communicationHandler );
     }
 
     public PGInterfaceQueryHandler( PGInterfacePreparedMessage preparedMessage, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler communicationHandler, TransactionManager transactionManager ) {
@@ -77,14 +73,14 @@ public class PGInterfaceQueryHandler {
         this.communicationHandler = communicationHandler;
         this.transactionManager = transactionManager;
         preparedQueryCycle = true;
-        this.errorHandler = new PGInterfaceErrorHandler(ctx, communicationHandler);
+        this.errorHandler = new PGInterfaceErrorHandler( ctx, communicationHandler );
     }
 
     /**
      * Depending on how the PGInterfaceQueryHandler was created, it sets the query and starts the process of "sending" the query to polypheny
      */
     public void start() {
-        if (preparedQueryCycle) {
+        if ( preparedQueryCycle ) {
             this.query = preparedMessage.getQuery();
         }
         sendQueryToPolypheny();
@@ -110,34 +106,34 @@ public class PGInterfaceQueryHandler {
             statement = transaction.createStatement();
         } catch ( UnknownDatabaseException | GenericCatalogException | UnknownUserException | UnknownSchemaException e ) {
             //TODO(FF): will it continue to send things to the client?
-            errorHandler.sendSimpleErrorMessage("Error while starting transaction" + String.valueOf(e));
+            errorHandler.sendSimpleErrorMessage( "Error while starting transaction" + e );
             throw new RuntimeException( "Error while starting transaction", e );
         }
 
         try {
-            if (preparedQueryCycle) {
-                preparedMessage.transformDataAndAddParameterValues(statement);
+            if ( preparedQueryCycle ) {
+                preparedMessage.transformDataAndAddParameterValues( statement );
             }
 
             //get algRoot
-            Processor sqlProcessor = statement.getTransaction().getProcessor(Catalog.QueryLanguage.SQL);
-            Node sqlNode = sqlProcessor.parse(query).get(0);
-            QueryParameters parameters = new QueryParameters(query, Catalog.NamespaceType.RELATIONAL);
+            Processor sqlProcessor = statement.getTransaction().getProcessor( Catalog.QueryLanguage.SQL );
+            Node sqlNode = sqlProcessor.parse( query ).get( 0 );
+            QueryParameters parameters = new QueryParameters( query, Catalog.NamespaceType.RELATIONAL );
 
-            if (sqlNode.isA(Kind.DDL)) {
-                result = sqlProcessor.prepareDdl(statement, sqlNode, parameters);
+            if ( sqlNode.isA( Kind.DDL ) ) {
+                result = sqlProcessor.prepareDdl( statement, sqlNode, parameters );
                 type = sqlNode.getKind().name();
                 sendResultToClient( type, data, header );
 
             } else {
                 AlgRoot algRoot = sqlProcessor.translate(
                         statement,
-                        sqlProcessor.validate(statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean()).left,
-                        new QueryParameters(query, Catalog.NamespaceType.RELATIONAL));
+                        sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
+                        new QueryParameters( query, Catalog.NamespaceType.RELATIONAL ) );
 
                 //get PolyResult from AlgRoot
                 final QueryProcessor processor = statement.getQueryProcessor();
-                result = processor.prepareQuery(algRoot, true);
+                result = processor.prepareQuery( algRoot, true );
 
                 //get type information
                 header = getHeader( result );
@@ -155,17 +151,17 @@ public class PGInterfaceQueryHandler {
                 sendResultToClient( type, data, header );
             }
 
-        } catch (Throwable t) {
-            List <PGInterfaceErrorHandler> lol = null;
+        } catch ( Throwable t ) {
+            List<PGInterfaceErrorHandler> lol = null;
 
             //TODO(FF): will continue to send things to client after this?
             String errorMsg = t.getMessage();
-            errorHandler.sendSimpleErrorMessage(errorMsg);
+            errorHandler.sendSimpleErrorMessage( errorMsg );
             try {
                 transaction.rollback();
                 commitStatus = "Rolled back";
-            } catch (TransactionException ex) {
-                errorHandler.sendSimpleErrorMessage("Error while rolling back");
+            } catch ( TransactionException ex ) {
+                errorHandler.sendSimpleErrorMessage( "Error while rolling back" );
                 commitStatus = "Error while rolling back";
             }
         }
@@ -174,11 +170,12 @@ public class PGInterfaceQueryHandler {
 
     /**
      * Gets the information for the header - Information for each column
+     *
      * @param result the PolyImplementation the additional information is needed for
      * @return a list with array, where:
-     *         - array[0] = columnName
-     *         - array[1] = columnType
-     *         - array[2] = precision
+     * - array[0] = columnName
+     * - array[1] = columnType
+     * - array[2] = precision
      */
     private ArrayList<String[]> getHeader( PolyImplementation result ) {
         ArrayList<String[]> header = new ArrayList<>();
@@ -204,7 +201,8 @@ public class PGInterfaceQueryHandler {
 
     /**
      * Transforms the data into Strings. Possible to expand and change it into other datatypes
-     * @param rows The result-data as object-type
+     *
+     * @param rows   The result-data as object-type
      * @param header Header-data - additional information about the data (rows)
      * @return the rows transformed accordingly (right now turned into a string)
      */
@@ -250,8 +248,9 @@ public class PGInterfaceQueryHandler {
 
     /**
      * Prepares according to the query from the client what (and how) should be sent as a response
-     * @param type Type of the query (e.g.: Select, Insert, Create Table, etc.)
-     * @param data The data that needs to be sent to the client
+     *
+     * @param type   Type of the query (e.g.: Select, Insert, Create Table, etc.)
+     * @param data   The data that needs to be sent to the client
      * @param header Additional information for the data
      */
     public void sendResultToClient( String type, ArrayList<String[]> data, ArrayList<String[]> header ) {
@@ -348,15 +347,15 @@ public class PGInterfaceQueryHandler {
                         case "SOUND":
                         case "VIDEO":
                         default:
-                            errorHandler.sendSimpleErrorMessage("The DataType of the answer is not yet implemented, but there is a high chance that the query was executed in Polypheny");
+                            errorHandler.sendSimpleErrorMessage( "The DataType of the answer is not yet implemented, but there is a high chance that the query was executed in Polypheny" );
                             break;
                     }
-                    Object col[] = { fieldName, objectIDTable, attributeNoCol, objectIDColDataType, dataTypeSize, typeModifier, formatCode };
+                    Object[] col = { fieldName, objectIDTable, attributeNoCol, objectIDColDataType, dataTypeSize, typeModifier, formatCode };
                     valuesPerCol.add( col );
                 }
                 communicationHandler.sendParseBindComplete();
                 communicationHandler.sendRowDescription( numberOfFields, valuesPerCol );
-                communicationHandler.sendDataRow(data);
+                communicationHandler.sendDataRow( data );
 
                 rowsAffected = data.size();
                 communicationHandler.sendCommandComplete( type, rowsAffected );
@@ -377,7 +376,7 @@ public class PGInterfaceQueryHandler {
                 //COPY rows (rows = #rows copied --> only on PSQL 8.2 and later)$
 
             default:
-                errorHandler.sendSimpleErrorMessage("Answer to client is not yet supported, but there is a high chance that the query was executed in Polypheny");
+                errorHandler.sendSimpleErrorMessage( "Answer to client is not yet supported, but there is a high chance that the query was executed in Polypheny" );
                 break;
 
         }

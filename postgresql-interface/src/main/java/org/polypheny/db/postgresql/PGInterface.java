@@ -19,22 +19,11 @@ package org.polypheny.db.postgresql;
 
 import com.google.common.collect.ImmutableList;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -47,6 +36,14 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 
 /**
  * First point of contact for the PGInterface, setting changes from the UI are handled here
@@ -54,12 +51,12 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public class PGInterface extends QueryInterface {
 
-    @SuppressWarnings("WeakerAccess")
+    @SuppressWarnings( "WeakerAccess" )
     public static final String INTERFACE_NAME = "Postgresql Interface";
-    @SuppressWarnings("WeakerAccess")
+    @SuppressWarnings( "WeakerAccess" )
     // TODO: Update description text
     public static final String INTERFACE_DESCRIPTION = "PostgreSQL-based query interface - in development";
-    @SuppressWarnings("WeakerAccess")
+    @SuppressWarnings( "WeakerAccess" )
     public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new QueryInterfaceSettingInteger( "port", false, true, false, 5432 )
             // new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 ),
@@ -92,7 +89,7 @@ public class PGInterface extends QueryInterface {
         }
         // Add information page
         monitoringPage = new MonitoringPage();
-        this.transactionManager = transactionManager;
+        PGInterface.transactionManager = transactionManager;
     }
 
 

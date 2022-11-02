@@ -38,29 +38,31 @@ public class PGInterfaceServerWriter {
 
     /**
      * creates a server writer, writes response to client on byteBuf
-     * @param type what type of message should be written (in method writeOnByteBuf)
-     *             possible types are:
-     *             - s: write 1 string
-     *             - c: write a char (or number) - writeByte
-     *             - i: writes an int32
-     *             - ss: writes a message with two strings (the strings are safed as one in the msgBody of the pgMsg and are seperated by the delimiter)
-     *             - sss: same as above, but with three strings
-     *             - dr: write dataRow - writes the message dataRow to the client
-     * @param pgMsg The message object that contains all necessary information to send it to the client
-     * @param ctx channelHandlerContext specific to the connection
+     *
+     * @param type                                   what type of message should be written (in method writeOnByteBuf)
+     *                                               possible types are:
+     *                                               - s: write 1 string
+     *                                               - c: write a char (or number) - writeByte
+     *                                               - i: writes an int32
+     *                                               - ss: writes a message with two strings (the strings are safed as one in the msgBody of the pgMsg and are seperated by the delimiter)
+     *                                               - sss: same as above, but with three strings
+     *                                               - dr: write dataRow - writes the message dataRow to the client
+     * @param pgMsg                                  The message object that contains all necessary information to send it to the client
+     * @param ctx                                    channelHandlerContext specific to the connection
      * @param pgInterfaceInboundCommunicationHandler
      */
-    public PGInterfaceServerWriter(String type, PGInterfaceMessage pgMsg, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler) {
+    public PGInterfaceServerWriter( String type, PGInterfaceMessage pgMsg, ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler ) {
         //TODO(FF): remove type from initialization and pass it through writeOnByteBuf (would be tidier - but works without problem the way it is)
         this.type = type;
         this.pgMsg = pgMsg;
         this.ctx = ctx;
-        this.errorHandler = new PGInterfaceErrorHandler(ctx, pgInterfaceInboundCommunicationHandler);
+        this.errorHandler = new PGInterfaceErrorHandler( ctx, pgInterfaceInboundCommunicationHandler );
     }
 
 
     /**
      * Handles different cases of writing things on the buffer (e.g. strings, int, etc. (see in PGInterfaceServerWriter constructor))
+     *
      * @return The buffer with the message written on it
      */
     public ByteBuf writeOnByteBuf() {
@@ -102,7 +104,7 @@ public class PGInterfaceServerWriter {
                 try {
                     body = Integer.parseInt( pgMsg.getMsgBody() );
                 } catch ( NumberFormatException e ) {
-                    errorHandler.sendSimpleErrorMessage("couldn't transform int to string in PGInterfaceServerWriter" + e.getMessage());
+                    errorHandler.sendSimpleErrorMessage( "couldn't transform int to string in PGInterfaceServerWriter" + e.getMessage() );
                 }
                 buffer.writeInt( body );
                 break;
@@ -147,7 +149,7 @@ public class PGInterfaceServerWriter {
                 for ( int i = 0; i < ((nbrCol * 2) - 1); i++ ) {
 
                     buffer.writeInt( Integer.parseInt( msgParts[i] ) );
-                    buffer.writeBytes(msgParts[i+1].getBytes(StandardCharsets.UTF_8));
+                    buffer.writeBytes( msgParts[i + 1].getBytes( StandardCharsets.UTF_8 ) );
                     i++;
 
                 }
@@ -159,6 +161,7 @@ public class PGInterfaceServerWriter {
 
     /**
      * If there are several Strings that need to be written on the buffer (for example message and tag(s)) - The Strings are in the msgBody, seperated by the delimiter
+     *
      * @param nbrStrings How many elements are in the msgBody (seperated by the delimiter)
      * @return The buffer with the message written on it
      */
@@ -186,6 +189,7 @@ public class PGInterfaceServerWriter {
 
     /**
      * If the header is a number and not a letter, use this method to write the message (messages with a number as headers don't have a msgBody)
+     *
      * @param header The header you want to write on the buffer
      * @return The buffer with the message written on it
      */
@@ -203,14 +207,15 @@ public class PGInterfaceServerWriter {
 
     /**
      * Special case: write the rowDescription
+     *
      * @param valuesPerCol The values that are needed to be sent in the rowDescription:
-     *         String fieldName:    string - column name (field name) (matters)
-     *         int objectIDTable:   int32 - ObjectID of table (if col can be id'd to table) --> otherwise 0 (doesn't matter to client while sending)
-     *         int attributeNoCol:  int16 - attr.no of col (if col can be id'd to table) --> otherwise 0 (doesn't matter to client while sending)
-     *         int objectIDCol:     int32 - objectID of parameter datatype --> 0 = unspecified (doesn't matter to client while sending, but maybe later) - see comment where this method is called from
-     *         int dataTypeSize:    int16 - size of dataType (if formatCode = 1, this needs to be set for colValLength) (doesn't matter to client while sending)
-     *         int typeModifier:    int32 - The value will generally be -1 (doesn't matter to client while sending)
-     *         int formatCode:      int16 - 0: Text | 1: Binary --> sends everything with writeBytes(formatCode = 0), if sent with writeInt it needs to be 1 (matters)
+     *                     String fieldName:    string - column name (field name) (matters)
+     *                     int objectIDTable:   int32 - ObjectID of table (if col can be id'd to table) --> otherwise 0 (doesn't matter to client while sending)
+     *                     int attributeNoCol:  int16 - attr.no of col (if col can be id'd to table) --> otherwise 0 (doesn't matter to client while sending)
+     *                     int objectIDCol:     int32 - objectID of parameter datatype --> 0 = unspecified (doesn't matter to client while sending, but maybe later) - see comment where this method is called from
+     *                     int dataTypeSize:    int16 - size of dataType (if formatCode = 1, this needs to be set for colValLength) (doesn't matter to client while sending)
+     *                     int typeModifier:    int32 - The value will generally be -1 (doesn't matter to client while sending)
+     *                     int formatCode:      int16 - 0: Text | 1: Binary --> sends everything with writeBytes(formatCode = 0), if sent with writeInt it needs to be 1 (matters)
      * @return The buffer with the message written on it
      */
     public ByteBuf writeRowDescription( ArrayList<Object[]> valuesPerCol ) {
@@ -233,17 +238,17 @@ public class PGInterfaceServerWriter {
         }
 
         buffer.writeInt( pgMsg.getLength() + messageLength );
-        buffer.writeShort(Integer.parseInt(pgMsg.getMsgBody()));
+        buffer.writeShort( Integer.parseInt( pgMsg.getMsgBody() ) );
 
         for ( Object[] oneCol : valuesPerCol ) {
             ByteBuf bufferTemp = ctx.alloc().buffer();
             fieldName = oneCol[0].toString();
-            objectIDTable = (Integer) oneCol[1];
-            attributeNoCol = (Integer) oneCol[2];
-            objectIDCol = (Integer) oneCol[3];
-            dataTypeSize = (Integer) oneCol[4];
-            typeModifier = (Integer) oneCol[5];
-            formatCode = (Integer) oneCol[6];
+            objectIDTable = ( Integer ) oneCol[1];
+            attributeNoCol = ( Integer ) oneCol[2];
+            objectIDCol = ( Integer ) oneCol[3];
+            dataTypeSize = ( Integer ) oneCol[4];
+            typeModifier = ( Integer ) oneCol[5];
+            formatCode = ( Integer ) oneCol[6];
 
             bufferTemp.writeBytes( fieldName.getBytes( StandardCharsets.UTF_8 ) );
             bufferTemp.writeByte( 0 );
@@ -260,26 +265,26 @@ public class PGInterfaceServerWriter {
         return buffer;
     }
 
-    public ByteBuf writeSimpleErrorMessage (LinkedHashMap<Character, String> fields) {
+    public ByteBuf writeSimpleErrorMessage( LinkedHashMap<Character, String> fields ) {
         ByteBuf buffer = ctx.alloc().buffer();
         int msgLength = 4 + 1;
 
-        for (String i : fields.values()) {
-            msgLength += ( i.length() + 1 );
+        for ( String i : fields.values() ) {
+            msgLength += (i.length() + 1);
         }
 
         buffer.writeByte( pgMsg.getHeaderChar() );
         buffer.writeInt( msgLength );
 
-        for (String i : fields.values()) {
-            msgLength += ( i.length() + 1 );
+        for ( String i : fields.values() ) {
+            msgLength += (i.length() + 1);
         }
 
-        fields.forEach((fieldType, fieldValue) -> {
-            buffer.writeByte(fieldType);
-            buffer.writeBytes(fieldValue.getBytes(StandardCharsets.UTF_8));
+        fields.forEach( ( fieldType, fieldValue ) -> {
+            buffer.writeByte( fieldType );
+            buffer.writeBytes( fieldValue.getBytes( StandardCharsets.UTF_8 ) );
             buffer.writeByte( 0 );
-        });
+        } );
 
         buffer.writeByte( 0 );
 

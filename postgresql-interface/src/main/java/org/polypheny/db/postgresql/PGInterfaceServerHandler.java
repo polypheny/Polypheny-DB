@@ -42,6 +42,7 @@ public class PGInterfaceServerHandler extends ChannelInboundHandlerAdapter {
 
     /**
      * What the handler acutally does - it calls the logic to handle the incoming message
+     *
      * @param ctx unique for connection
      * @param msg incoming message decoded (to string) from decoder
      */
@@ -60,22 +61,25 @@ public class PGInterfaceServerHandler extends ChannelInboundHandlerAdapter {
 
     /**
      * adds a name of a prepared statement to the list of names (each name should be unique)
+     *
      * @param name of the prepared statemnt
      */
-    public void addPreparedStatementNames(String name) {
-        preparedStatementNames.add(name);
+    public void addPreparedStatementNames( String name ) {
+        preparedStatementNames.add( name );
     }
 
     /**
      * adds a prepared message (contains info about the prepared message) to the list of prepared messages. The prepared messages are in the same order as the names in the list of names
+     *
      * @param preparedMessage you want to add to the list
      */
-    public void addPreparedMessage(PGInterfacePreparedMessage preparedMessage) {
-        preparedMessages.add(preparedMessage);
+    public void addPreparedMessage( PGInterfacePreparedMessage preparedMessage ) {
+        preparedMessages.add( preparedMessage );
     }
 
     /**
      * returns the list of all names from the prepared statements (each name should be unique)
+     *
      * @return
      */
     public ArrayList<String> getPreparedStatementNames() {
@@ -84,11 +88,12 @@ public class PGInterfaceServerHandler extends ChannelInboundHandlerAdapter {
 
     /**
      * gets a prepared message from the list of prepared messages. The prepared messages are in the same order as the names in the list of names
+     *
      * @param idx the index of the message you want to return
      * @return the message from the list at index idx
      */
-    public PGInterfacePreparedMessage getPreparedMessage(int idx) {
-        return preparedMessages.get(idx);
+    public PGInterfacePreparedMessage getPreparedMessage( int idx ) {
+        return preparedMessages.get( idx );
     }
 
 }

@@ -28,28 +28,30 @@ import java.util.LinkedHashMap;
 @Slf4j
 public class PGInterfaceErrorHandler {
 
+    private final ChannelHandlerContext ctx;
+    private final PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler;
     private String errorMsg;
     private Throwable exception;
-    private ChannelHandlerContext ctx;
     private PGInterfaceServerWriter serverWriter;
-    private PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler;
 
 
     /**
      * Creates a error handler that can send error messages to the client
-     * @param ctx Is needed to send the error message to the designated client
+     *
+     * @param ctx                                    Is needed to send the error message to the designated client
      * @param pgInterfaceInboundCommunicationHandler Is needed to create PGInterfaceServerWriter to be able to send a error message
      */
-    public PGInterfaceErrorHandler(ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler) {
+    public PGInterfaceErrorHandler( ChannelHandlerContext ctx, PGInterfaceInboundCommunicationHandler pgInterfaceInboundCommunicationHandler ) {
         this.ctx = ctx;
         this.pgInterfaceInboundCommunicationHandler = pgInterfaceInboundCommunicationHandler;
     }
 
     /**
      * Sends a simple error message to the client. The severity and other error fields are all fixed.
+     *
      * @param errorMsg The message you want to send
      */
-    public void sendSimpleErrorMessage (String errorMsg) {
+    public void sendSimpleErrorMessage( String errorMsg ) {
         //Notes on how error messages are sent:
         /*
         E...n S ERROR. V ERROR. C 42P01. M relation "public.hihi" does not exist. P 15. F parse_relation. c. L 1360. R parserOpenTable. . Z....I
@@ -61,24 +63,24 @@ public class PGInterfaceErrorHandler {
          */
 
         this.errorMsg = errorMsg;
-        PGInterfaceMessage pgInterfaceMessage = new PGInterfaceMessage(PGInterfaceHeaders.E, "MockBody", 4, true);
-        this.serverWriter = new PGInterfaceServerWriter("MockType", pgInterfaceMessage, ctx, pgInterfaceInboundCommunicationHandler);
+        PGInterfaceMessage pgInterfaceMessage = new PGInterfaceMessage( PGInterfaceHeaders.E, "MockBody", 4, true );
+        this.serverWriter = new PGInterfaceServerWriter( "MockType", pgInterfaceMessage, ctx, pgInterfaceInboundCommunicationHandler );
 
         //TODO(FF): An error occurs because of the errormessage on the clientside. It doesn't really matter, because the connection would be terminated anyway and the message itself arrives...
         LinkedHashMap<Character, String> errorFields = new LinkedHashMap<Character, String>();
-        errorFields.put('S', "ERROR");
-        errorFields.put('V', "ERROR");
-        errorFields.put('C', "0A000");
-        errorFields.put('M', errorMsg);
-        errorFields.put('P', "notImplemented");
-        errorFields.put('F', "polypheny");
-        errorFields.put('c', "");
-        errorFields.put('L', "1360");
-        errorFields.put('R', "parserOpenTable");
+        errorFields.put( 'S', "ERROR" );
+        errorFields.put( 'V', "ERROR" );
+        errorFields.put( 'C', "0A000" );
+        errorFields.put( 'M', errorMsg );
+        errorFields.put( 'P', "notImplemented" );
+        errorFields.put( 'F', "polypheny" );
+        errorFields.put( 'c', "" );
+        errorFields.put( 'L', "1360" );
+        errorFields.put( 'R', "parserOpenTable" );
 
 
-        ByteBuf buffer = serverWriter.writeSimpleErrorMessage(errorFields);
-        ctx.writeAndFlush(buffer);
+        ByteBuf buffer = serverWriter.writeSimpleErrorMessage( errorFields );
+        ctx.writeAndFlush( buffer );
 
     }
 }

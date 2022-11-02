@@ -25,19 +25,20 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PGInterfaceMessage {
 
+    private static final char delimiter = '§'; //for the subparts
+    private final boolean defaultLength;
     private PGInterfaceHeaders header;
     private String msgBody;
     private int length; //default is 4, if a different length is mentioned in protocol, this is given
-    private boolean defaultLength;
-    private static final char delimiter = '§'; //for the subparts
     private PGInterfaceErrorHandler errorHandler;
 
 
     /**
      * Creates a PG-Message. It contains all relevant information to send a message to the client
-     * @param header What header should be sent (depends on message-type)
-     * @param msgBody The message itself
-     * @param length The length of the message (the length itself is included)
+     *
+     * @param header        What header should be sent (depends on message-type)
+     * @param msgBody       The message itself
+     * @param length        The length of the message (the length itself is included)
      * @param defaultLength The length of the length sent (which is included). Length is 4
      */
     public PGInterfaceMessage( PGInterfaceHeaders header, String msgBody, int length, boolean defaultLength ) {
@@ -47,18 +48,32 @@ public class PGInterfaceMessage {
         this.defaultLength = defaultLength;
     }
 
+    /**
+     * Get what delimiter is currently set
+     *
+     * @return the current delimiter as string
+     */
+    public static String getDelimiter() {
+        String del = String.valueOf( delimiter );
+        return del;
+    }
 
     /**
      * get the header of the message
+     *
      * @return PGInterfaceHeader of the message
      */
     public PGInterfaceHeaders getHeader() {
         return this.header;
     }
 
+    public void setHeader( PGInterfaceHeaders header ) {
+        this.header = header;
+    }
 
     /**
      * returns the PGInterfaceHeader of the Message as a char
+     *
      * @return PGInterfaceHeader as a char
      */
     public char getHeaderChar() {
@@ -81,15 +96,15 @@ public class PGInterfaceMessage {
             }
         }
         //TODO(FF): does it continue to send things to the client after the error message?
-        errorHandler.sendSimpleErrorMessage("PGInterface>PGInterfaceMessage>getHeaderChar: This should never be reached.");
+        errorHandler.sendSimpleErrorMessage( "PGInterface>PGInterfaceMessage>getHeaderChar: This should never be reached." );
 
         return 0;
     }
 
-
     /**
      * Changes the three headers that are a number and not a letter into a number (they are safed as a string in the PGInterfaceHeaders)
-     * @return 1,2 or 3 - headers which are numbers
+     *
+     * @return 1, 2 or 3 - headers which are numbers
      */
     public int getHeaderInt() {
         String headerString = header.toString();
@@ -101,60 +116,54 @@ public class PGInterfaceMessage {
             return 3;
         }
         //TODO(FF): does it continue to send things to the client after the error message?
-        errorHandler.sendSimpleErrorMessage("PGInterface>PGInterfaceMessage>getHeaderInt: This should never be reached.");
+        errorHandler.sendSimpleErrorMessage( "PGInterface>PGInterfaceMessage>getHeaderInt: This should never be reached." );
         return 0;
     }
 
-
-    public void setHeader( PGInterfaceHeaders header ) {
-        this.header = header;
-    }
-
-
     /**
      * the length that should be set in the message to the client (default is 4)
+     *
      * @return length of the message
      */
     public int getLength() {
         return this.length;
     }
 
-
     /**
      * set the length of the message to the client (the default is set to 4)
+     *
      * @param length length you want to set as the message length
      */
     public void setLength( int length ) {
         this.length = length;
     }
 
-
     /**
      * if the message has the default length (4)
+     *
      * @return whether the message has the default length
      */
     public boolean isDefaultLength() {
         return this.defaultLength;
     }
 
-
     /**
      * The content of the message that will be sent to the client, can contain several "sub" messages (message fields) which are seperated by the delimiter
+     *
      * @return message to the client
      */
     public String getMsgBody() {
         return msgBody;
     }
 
-
     /**
      * Set the content of the message that will be sent to the client, can contain several "sub" messages (message fields) which are seperated by the delimiter
+     *
      * @param msgBody message to the client
      */
     public void setMsgBody( String msgBody ) {
         this.msgBody = msgBody;
     }
-
 
     /**
      * Gets the different sub-parts of a message, which are seperated by the delimiter
@@ -163,23 +172,13 @@ public class PGInterfaceMessage {
      * @return a string array with each requested part
      */
     public String[] getMsgPart( int[] part ) {
-        String subStrings[] = msgBody.split( getDelimiter() );
-        String result[] = new String[part.length];
+        String[] subStrings = msgBody.split( getDelimiter() );
+        String[] result = new String[part.length];
 
         for ( int i = 0; i < (part.length); i++ ) {
             result[i] = subStrings[i];
         }
         return result;
-    }
-
-
-    /**
-     * Get what delimiter is currently set
-     * @return the current delimiter as string
-     */
-    public static String getDelimiter() {
-        String del = String.valueOf( delimiter );
-        return del;
     }
 
 }
