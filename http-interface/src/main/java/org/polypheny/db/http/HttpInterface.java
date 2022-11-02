@@ -23,9 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.json.JsonMapper;
-import io.javalin.plugin.bundled.CorsPluginConfig;
-import java.lang.reflect.Type;
+import io.javalin.plugin.json.JsonMapper;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -101,23 +99,21 @@ public class HttpInterface extends QueryInterface {
         JsonMapper gsonMapper = new JsonMapper() {
             @NotNull
             @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Type targetType ) {
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
                 return HttpServer.gson.fromJson( json, targetType );
             }
 
 
             @NotNull
             @Override
-            public String toJsonString( @NotNull Object obj, @NotNull Type type ) {
+            public String toJsonString( @NotNull Object obj ) {
                 return HttpServer.gson.toJson( obj );
             }
 
         };
         server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
-            config.plugins.enableCors( cors -> {
-                cors.add( CorsPluginConfig::anyHost );
-            } );
+            config.enableCorsForAllOrigins();
         } ).start( port );
         server.exception( Exception.class, ( e, ctx ) -> {
             log.warn( "Caught exception in the HTTP interface", e );
