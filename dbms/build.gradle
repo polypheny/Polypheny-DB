@@ -115,33 +115,6 @@ licenseReport {
 
 
 licensee {
-    //
-    // Ignore these dependencies, remove on release branches!
-    // START
-    ignoreDependencies('nz.ac.waikato.cms.weka') {
-        transitive = true
-        because "removed on release branches"
-    }
-    ignoreDependencies('com.datastax.oss') {
-        transitive = true
-        because "removed on release branches"
-    }
-    ignoreDependencies('com.github.nosan') {
-        transitive = true
-        because "removed on release branches"
-    }
-    ignoreDependencies('org.mariadb.jdbc') {
-        transitive = true
-        because "removed on release branches"
-    }
-    ignoreDependencies('org.apache.cassandra') {
-        transitive = true
-        because "removed on release branches"
-    }
-    allowDependency('com.github.jnr', 'jnr-posix', '3.0.50') { because 'removed on release branches' }
-    allowDependency('org.ow2.asm', 'asm-util', '7.1') { because 'removed on release branches' }
-    // END
-
     allow('Apache-2.0')
     allow('MIT')
     allow('BSD-2-Clause')
@@ -166,10 +139,11 @@ licensee {
     allowDependency('net.java.dev.jna', 'jna-platform', '5.8.0') { because 'Apache 2.0 license' }
     allowDependency('jakarta.xml.bind', 'jakarta.xml.bind-api', '2.3.2') { because 'Eclipse Distribution License 1.0' }
     allowDependency('org.postgresql', 'postgresql', '42.2.19') { because 'BSD 2-Clause' }
-    allowDependency('org.ow2.asm', 'asm', '7.1') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-analysis', '7.1') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-commons', '7.1') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-tree', '7.1') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-analysis', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-commons', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-tree', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-util', '5.0.3') { because 'BSD 3-Clause' }
     allowDependency('org.codehaus.janino', 'janino', '3.0.11') { because 'BSD 3-Clause' }
     allowDependency('org.codehaus.janino', 'commons-compiler', '3.0.11') { because 'BSD 3-Clause' }
     allowDependency('com.google.re2j', 're2j', '1.5') { because 'BSD 3-Clause' }
