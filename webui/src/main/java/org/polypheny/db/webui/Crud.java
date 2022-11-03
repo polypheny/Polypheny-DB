@@ -145,8 +145,6 @@ import org.polypheny.db.cypher.cypher2alg.CypherQueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.exploreByExample.Explore;
-import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -186,7 +184,6 @@ import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
-import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.ForeignKey;
 import org.polypheny.db.webui.models.HubMeta;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
@@ -210,16 +207,12 @@ import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
-import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
-import org.polypheny.db.webui.models.requests.ExploreData;
-import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
-import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
@@ -920,7 +913,7 @@ public class Crud implements InformationObserver {
      * return possibly interesting Data to User
      */
     public void classifyData( final Context ctx ) {
-        ClassifyAllData classifyAllData = ctx.bodyAsClass( ClassifyAllData.class );
+        /*ClassifyAllData classifyAllData = ctx.bodyAsClass( ClassifyAllData.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
 
         boolean isConvertedToSql = isClassificationToSql();
@@ -964,7 +957,7 @@ public class Crud implements InformationObserver {
             result.setConvertedToSql( isConvertedToSql );
             ctx.json( result );
         }
-
+*/
     }
 
 
@@ -972,7 +965,7 @@ public class Crud implements InformationObserver {
      * For pagination within the Explore-by-Example table
      */
     public void getExploreTables( final Context ctx ) {
-        ExploreTables exploreTables = ctx.bodyAsClass( ExploreTables.class );
+        /*ExploreTables exploreTables = ctx.bodyAsClass( ExploreTables.class );
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
@@ -1049,7 +1042,7 @@ public class Crud implements InformationObserver {
             result.setClassifiedData( paginationData );
         }
         ctx.json( result );
-
+*/
     }
 
 
@@ -1057,7 +1050,7 @@ public class Crud implements InformationObserver {
      * Creates the initial query for the Explore-by-Example process
      */
     public void createInitialExploreQuery( final Context ctx ) {
-        QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
+        /*QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
 
         Result result;
@@ -1094,7 +1087,7 @@ public class Crud implements InformationObserver {
         result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
         result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
 
-        ctx.json( result );
+        ctx.json( result );*/
     }
 
 
@@ -1102,7 +1095,7 @@ public class Crud implements InformationObserver {
      * Start Classification, classifies the initial dataset, to show what would be within the final result set
      */
     public void exploration( final Context ctx ) {
-        ExploreData exploreData = ctx.bodyAsClass( ExploreData.class );
+        /*ExploreData exploreData = ctx.bodyAsClass( ExploreData.class );
 
         String[] dataType = new String[exploreData.header.length + 1];
         for ( int i = 0; i < exploreData.header.length; i++ ) {
@@ -1113,7 +1106,7 @@ public class Crud implements InformationObserver {
         ExploreManager e = ExploreManager.getInstance();
         Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType );
 
-        ctx.json( new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() ) );
+        ctx.json( new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() ) );*/
     }
 
 

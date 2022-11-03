@@ -31,7 +31,7 @@ dependencies {
     implementation project(":cypher-language")
     implementation project(":pig-language")
     implementation project(":cql-language")
-    implementation project(":cassandra-adapter")
+    //implementation project(":cassandra-adapter")
     implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")
     implementation project(":ethereum-adapter")
@@ -44,7 +44,7 @@ dependencies {
     implementation project(":avatica-interface")
     implementation project(":http-interface")
     implementation project(":rest-interface")
-    implementation project(":explore-by-example")
+    //implementation project(":explore-by-example")
     implementation project(":monitoring")
 
     ////// Logging
@@ -213,12 +213,12 @@ licensee {
 
 compileJava {
     dependsOn(":avatica-interface:processResources")
-    dependsOn(":cassandra-adapter:processResources")
+    //dependsOn(":cassandra-adapter:processResources")
     dependsOn(":catalog:processResources")
     dependsOn(":cql-language:processResources")
     dependsOn(":csv-adapter:processResources")
     dependsOn(":ethereum-adapter:processResources")
-    dependsOn(":explore-by-example:processResources")
+    //dependsOn(":explore-by-example:processResources")
     dependsOn(":file-adapter:processResources")
     dependsOn(":http-interface:processResources")
     dependsOn(":jdbc-adapter:processResources")

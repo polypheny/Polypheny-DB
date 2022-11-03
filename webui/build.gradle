@@ -20,7 +20,7 @@ dependencies {
     implementation project(":cql-language")
     implementation project(":cypher-language")
     implementation project(":monitoring")
-    implementation project(":explore-by-example")
+    //implementation project(":explore-by-example")
 
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
@@ -68,7 +68,7 @@ sourceSets {
 compileJava {
     dependsOn(":cql-language:processResources")
     dependsOn(":cypher-language:processResources")
-    dependsOn(":explore-by-example:processResources")
+    //dependsOn(":explore-by-example:processResources")
     dependsOn(":mql-language:processResources")
     dependsOn(":pig-language:processResources")
 }
