@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -247,7 +247,7 @@ public class RestResult {
                 zipOut.close();
                 fos.close();
                 ctx.contentType( "application/octet-stream" );
-                //ctx.res.setContentType( "application/octet-stream" );
+                //ctx.res().setContentType( "application/octet-stream" );
                 ctx.res.setHeader( "Content-Disposition", "attachment; filename=result.zip" );
                 os = ctx.res.getOutputStream();
                 FileInputStream fis = new FileInputStream( zipFile );

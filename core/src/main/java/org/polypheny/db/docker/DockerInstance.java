@@ -27,6 +27,7 @@ import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.PullImageResultCallback;
+import com.github.dockerjava.api.exception.InternalServerErrorException;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
@@ -79,6 +80,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 public class DockerInstance extends DockerManager {
 
+    public static final String DOCKER_NETWORK_NAME = "bridge";
     @Getter
     private ConfigDocker currentConfig;
 
@@ -266,7 +268,7 @@ public class DockerInstance extends DockerManager {
         } catch ( CertificateException | IOException ex ) {
             return new DockerStatus( instanceId, false, ex.getMessage() );
         }
-        return new DockerStatus( instanceId, false, "" );
+        return new DockerStatus( instanceId, true, "" );
     }
 
 
@@ -291,6 +293,20 @@ public class DockerInstance extends DockerManager {
                 containersOnAdapter.put( container.adapterId, ImmutableList.copyOf( containerNames ) );
             }
         }
+    }
+
+
+    private void unregister( Container container ) {
+        usedPorts.removeAll( container.internalExternalPortMapping.values() );
+        usedNames.remove( container.uniqueName );
+        if ( !availableContainers.containsKey( container.uniqueName ) ) {
+            return;
+        }
+        availableContainers.remove( container.uniqueName );
+
+        List<String> containers = new ArrayList<>( containersOnAdapter.get( container.adapterId ) );
+        containers.remove( container.uniqueName );
+        containersOnAdapter.put( container.adapterId, ImmutableList.copyOf( containers ) );
     }
 
 
@@ -325,11 +341,16 @@ public class DockerInstance extends DockerManager {
 
         // We have to check if the container is running and start it if its not
         InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
+
+        if ( RuntimeConfig.USE_DOCKER_NETWORK.getBoolean() ) {
+            connectToNetwork( container, containerInfo );
+        }
+
         ContainerState state = containerInfo.getState();
         if ( Objects.equals( state.getStatus(), "exited" ) ) {
-            client.startContainerCmd( container.getPhysicalName() ).exec();
+            startContainerSafely( container );
         } else if ( Objects.equals( state.getStatus(), "created" ) ) {
-            client.startContainerCmd( container.getPhysicalName() ).exec();
+            startContainerSafely( container );
 
             // While the container is started the underlying system is not, so we have to probe it multiple times
             waitTillStarted( container );
@@ -341,6 +362,49 @@ public class DockerInstance extends DockerManager {
 
         container.setContainerId( containerInfo.getId() );
         container.setStatus( ContainerStatus.RUNNING );
+    }
+
+
+    private void connectToNetwork( Container container, InspectContainerResponse containerInfo ) {
+        if ( client.listNetworksCmd().exec().stream().noneMatch( n -> n.getName().equals( DOCKER_NETWORK_NAME ) ) ) {
+            client.createNetworkCmd().withName( DOCKER_NETWORK_NAME ).exec();
+        }
+        String networkId = client.listNetworksCmd().withNameFilter( DOCKER_NETWORK_NAME ).exec().stream().filter( n -> n.getName().equalsIgnoreCase( DOCKER_NETWORK_NAME ) ).findFirst().orElseThrow().getId();
+        client.connectToNetworkCmd().withContainerId( containerInfo.getId() ).withNetworkId( networkId ).exec();
+        container.updateIpAddress();
+    }
+
+
+    @Override
+    public void updateIpAddress( Container container ) {
+        if ( !RuntimeConfig.USE_DOCKER_NETWORK.getBoolean() ) {
+            return;
+        }
+
+        InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
+        container.setIpAddress( containerInfo.getNetworkSettings().getNetworks().get( DOCKER_NETWORK_NAME ).getIpAddress() );
+    }
+
+
+    /**
+     * While the DockerInstance knows the parameters of the corresponding Docker application
+     * there still can be other application on the system, which lead to a fail
+     * therefore the start of the container has to be handled correctly if something goes wrong
+     *
+     * @param container The container to start
+     */
+    private void startContainerSafely( Container container ) {
+        try {
+            client.startContainerCmd( container.getPhysicalName() ).exec();
+        } catch ( InternalServerErrorException e ) {
+            unregister( container );
+            if ( container.getStatus() == ContainerStatus.INIT ) {
+                // this container was freshly created, so we remove it that it can be tried again
+                client.removeContainerCmd( container.getPhysicalName() ).exec();
+            }
+            throw new RuntimeException( "The specified port is likely already used by another application in the system. "
+                    + "The adapter was not created." );
+        }
     }
 
 
@@ -419,7 +483,9 @@ public class DockerInstance extends DockerManager {
                 .withName( Container.getPhysicalUniqueName( container ) )
                 .withCmd( container.initCommands )
                 .withEnv( container.envCommands )
-                .withHostConfig( new HostConfig().withPortBindings( bindings ) );
+                .withHostConfig( new HostConfig()
+                        .withPublishAllPorts( true )
+                        .withPortBindings( bindings ) );
 
         CreateContainerResponse response = cmd.exec();
         container.setContainerId( response.getId() );

@@ -393,6 +393,12 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "polystoreIndexGroup" ),
 
+    USE_DOCKER_NETWORK(
+            "docker/useDockerNetwork",
+            "If Polypheny should use the container network to communicate with the container.",
+            false,
+            ConfigType.BOOLEAN ),
+
     DOCKER_INSTANCES(
             "runtime/dockerInstances",
             "Configure different docker instances, which can be used to place adapters on.",

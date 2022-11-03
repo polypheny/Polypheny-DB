@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -70,6 +71,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     private String host;
     private String database;
     private String username;
+    private Container container;
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -85,7 +87,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .withReadyTest( this::testConnection, 15000 )
                 .build();
 
-        host = container.getHost();
+        this.container = container;
         database = "monetdb";
         username = "monetdb";
 
@@ -329,6 +331,16 @@ public class MonetdbStore extends AbstractJdbcStore {
     private boolean testConnection() {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
+
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        this.host = container.getIpAddress();
+        if ( this.host == null ) {
+            return false;
+        }
+
         try {
             connectionFactory = createConnectionFactory();
 

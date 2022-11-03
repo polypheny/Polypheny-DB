@@ -99,16 +99,17 @@ public class HttpInterface extends QueryInterface {
         JsonMapper gsonMapper = new JsonMapper() {
             @NotNull
             @Override
-            public String toJsonString( @NotNull Object obj ) {
-                return HttpServer.gson.toJson( obj );
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
+                return HttpServer.gson.fromJson( json, targetType );
             }
 
 
             @NotNull
             @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
-                return HttpServer.gson.fromJson( json, targetClass );
+            public String toJsonString( @NotNull Object obj ) {
+                return HttpServer.gson.toJson( obj );
             }
+
         };
         server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );

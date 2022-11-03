@@ -16,6 +16,8 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import static java.lang.String.format;
+
 import com.google.common.collect.ImmutableList;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,6 +59,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -82,6 +85,7 @@ public class Neo4jStore extends DataStore {
     private final int port;
     private final String user;
     private final Session session;
+    private final Container container;
     private Driver db;
     private final String pass;
     private final AuthToken auth;
@@ -92,6 +96,7 @@ public class Neo4jStore extends DataStore {
     private NeoGraph currentGraph;
 
     private final TransactionProvider transactionProvider;
+    private String host;
 
 
     public Neo4jStore( int adapterId, String uniqueName, Map<String, String> settings ) {
@@ -105,15 +110,15 @@ public class Neo4jStore extends DataStore {
 
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "neo4j:4.4-community", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 7687, port )
-                .withEnvironmentVariable( String.format( "NEO4J_AUTH=%s/%s", user, pass ) )
+                .withEnvironmentVariable( format( "NEO4J_AUTH=%s/%s", user, pass ) )
                 .withReadyTest( this::testConnection, 50000 )
                 .build();
-
+        this.container = container;
         DockerManager.getInstance().initialize( container ).start();
 
         if ( this.db == null ) {
             try {
-                this.db = GraphDatabase.driver( new URI( "bolt://localhost:" + port ), auth );
+                this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
             } catch ( URISyntaxException e ) {
                 throw new RuntimeException( "Error while restoring the Neo4j database." );
             }
@@ -131,8 +136,17 @@ public class Neo4jStore extends DataStore {
      * Test if a connection to the provided Neo4j database is possible.
      */
     private boolean testConnection() {
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        this.host = container.getIpAddress();
+        if ( this.host == null ) {
+            return false;
+        }
+
         try {
-            this.db = GraphDatabase.driver( new URI( "bolt://localhost:" + port ), auth );
+            this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
         } catch ( URISyntaxException e ) {
             throw new RuntimeException( "Error while initiating the neo4j adapter." );
         }
@@ -216,7 +230,7 @@ public class Neo4jStore extends DataStore {
             catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    String.format( "MATCH (n:%s) DELETE n", partitionPlacement.physicalTableName ) );
+                    format( "MATCH (n:%s) DELETE n", partitionPlacement.physicalTableName ) );
         }
     }
 
@@ -235,7 +249,7 @@ public class Neo4jStore extends DataStore {
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             if ( catalogColumn.defaultValue != null ) {
-                executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format(
+                executeDdlTrx( context.getStatement().getTransaction().getXid(), format(
                         "MATCH (n:%s) SET n += {%s:%s}",
                         getPhysicalEntityName( catalogColumn.schemaId, catalogColumn.tableId, partitionPlacement.partitionId ),
                         getPhysicalFieldName( catalogColumn.id ),
@@ -283,7 +297,7 @@ public class Neo4jStore extends DataStore {
                 throw new RuntimeException( "Default values are not supported for array types" );
             }
 
-            return String.format( "'%s'", value );
+            return format( "'%s'", value );
         }
         return null;
     }
@@ -295,7 +309,7 @@ public class Neo4jStore extends DataStore {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    String.format( "MATCH (n:%s) REMOVE n.%s", partitionPlacement.physicalTableName, columnPlacement.physicalColumnName ) );
+                    format( "MATCH (n:%s) REMOVE n.%s", partitionPlacement.physicalTableName, columnPlacement.physicalColumnName ) );
         }
     }
 
@@ -332,9 +346,9 @@ public class Neo4jStore extends DataStore {
 
     private void addCompositeIndex( PolyXid xid, CatalogIndex catalogIndex, List<Long> columnIds, CatalogPartitionPlacement partitionPlacement, String physicalIndexName ) {
         String fields = columnIds.stream()
-                .map( id -> String.format( "n.%s", getPhysicalFieldName( id ) ) )
+                .map( id -> format( "n.%s", getPhysicalFieldName( id ) ) )
                 .collect( Collectors.joining( ", " ) );
-        executeDdlTrx( xid, String.format(
+        executeDdlTrx( xid, format(
                 "CREATE INDEX %s FOR (n:%s) on (%s)",
                 physicalIndexName + "_" + partitionPlacement.partitionId,
                 getPhysicalEntityName( catalogIndex.key.schemaId, catalogIndex.key.tableId, partitionPlacement.partitionId ),
@@ -353,7 +367,7 @@ public class Neo4jStore extends DataStore {
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    String.format( "DROP INDEX %s", catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
+                    format( "DROP INDEX %s", catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
         }
     }
 
@@ -419,7 +433,7 @@ public class Neo4jStore extends DataStore {
         for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    String.format( "MATCH (n:%s) DETACH DELETE n", partitionPlacement.physicalTableName ) );
+                    format( "MATCH (n:%s) DETACH DELETE n", partitionPlacement.physicalTableName ) );
         }
     }
 
@@ -435,7 +449,7 @@ public class Neo4jStore extends DataStore {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         executeDdlTrx(
                 context.getStatement().getTransaction().getXid(),
-                String.format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( graphPlacement.graphId ) ) );
+                format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( graphPlacement.graphId ) ) );
     }
 
 
@@ -484,27 +498,27 @@ public class Neo4jStore extends DataStore {
 
 
     public static String getPhysicalEntityName( long namespaceId, long entityId, long partitionId ) {
-        return String.format( "n_%d_entity_%d_%d", namespaceId, entityId, partitionId );
+        return format( "n_%d_entity_%d_%d", namespaceId, entityId, partitionId );
     }
 
 
     public static String getPhysicalNamespaceName( long id ) {
-        return String.format( "namespace_%d", id );
+        return format( "namespace_%d", id );
     }
 
 
     public static String getPhysicalFieldName( long id ) {
-        return String.format( "field_%d", id );
+        return format( "field_%d", id );
     }
 
 
     private static String getPhysicalGraphName( long id ) {
-        return String.format( "graph_%d", id );
+        return format( "graph_%d", id );
     }
 
 
     private static String getMappingLabel( long id ) {
-        return String.format( "___n_%d___", id );
+        return format( "___n_%d___", id );
     }
 
 

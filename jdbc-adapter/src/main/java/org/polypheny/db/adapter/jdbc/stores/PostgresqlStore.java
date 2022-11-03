@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -77,6 +78,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private String host;
     private String database;
     private String username;
+    private Container container;
 
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -90,13 +92,13 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public ConnectionFactory deployDocker( int instanceId ) {
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:13.2", getUniqueName(), instanceId )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:14", getUniqueName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariable( "POSTGRES_PASSWORD=" + settings.get( "password" ) )
                 .withReadyTest( this::testConnection, 15000 )
                 .build();
 
-        host = container.getHost();
+        this.container = container;
         database = "postgres";
         username = "postgres";
 
@@ -374,6 +376,16 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private boolean testConnection() {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
+
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        this.host = container.getIpAddress();
+        if ( this.host == null ) {
+            return false;
+        }
+
         try {
             connectionFactory = createConnectionFactory();
 

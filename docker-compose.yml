@@ -5,7 +5,7 @@ services:
         restart: unless-stopped
         container_name: polypheny-connector
         ports:
-            - 2376:443
+            - "2376:443"
         environment:
             - CREATE_CERTS_WITH_PW=supersecret
             - CERT_HOSTNAME=localhost

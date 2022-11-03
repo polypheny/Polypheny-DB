@@ -117,18 +117,20 @@ public class HttpRestServer extends QueryInterface {
     @Override
     public void run() {
         JsonMapper gsonMapper = new JsonMapper() {
+
+            @NotNull
+            @Override
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
+                return gson.fromJson( json, targetType );
+            }
+
+
             @NotNull
             @Override
             public String toJsonString( @NotNull Object obj ) {
                 return gson.toJson( obj );
             }
 
-
-            @NotNull
-            @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
-                return gson.fromJson( json, targetClass );
-            }
         };
         restServer = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );

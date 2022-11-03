@@ -97,6 +97,12 @@ public class DockerManagerImpl extends DockerManager {
 
 
     @Override
+    public void updateIpAddress( Container container ) {
+        dockerInstances.get( container.getDockerInstanceId() ).updateIpAddress( container );
+    }
+
+
+    @Override
     public void stop( Container container ) {
         dockerInstances.get( container.getDockerInstanceId() ).stop( container );
     }

@@ -68,6 +68,7 @@ import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -91,8 +92,9 @@ import org.polypheny.db.util.Pair;
 @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
 public class MongoStore extends DataStore {
 
-    private final String host;
+    private String host;
     private final int port;
+    private Container container;
     private transient MongoClient client;
     private final transient TransactionProvider transactionProvider;
     private transient MongoSchema currentSchema;
@@ -122,8 +124,9 @@ public class MongoStore extends DataStore {
                     .withReadyTest( this::testConnection, 20000 )
                     .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
                     .build();
-            this.host = container.getHost();
+            this.container = container;
             DockerManager.getInstance().initialize( container ).start();
+            this.host = container.getIpAddress();
         } else if ( deployMode == DeployMode.REMOTE ) {
             this.host = settings.get( "host" );
         } else if ( deployMode == DeployMode.EMBEDDED ) {
@@ -135,9 +138,7 @@ public class MongoStore extends DataStore {
         addInformationPhysicalNames();
         enableInformationPage();
         ConfigDocker c = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId );
-        if ( c != null ) {
-            resetDockerConnection( c );
-        }
+        resetDockerConnection( c );
 
         this.transactionProvider = new TransactionProvider( this.client );
         MongoDatabase db = this.client.getDatabase( "admin" );
@@ -169,7 +170,7 @@ public class MongoStore extends DataStore {
         MongoClientSettings mongoSettings = MongoClientSettings
                 .builder()
                 .applyToClusterSettings( builder ->
-                        builder.hosts( Collections.singletonList( new ServerAddress( c.getHost(), port ) ) )
+                        builder.hosts( Collections.singletonList( new ServerAddress( host, port ) ) )
                 )
                 .build();
 
@@ -548,6 +549,15 @@ public class MongoStore extends DataStore {
 
     private boolean testConnection() {
         MongoClient client = null;
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        host = container.getIpAddress();
+        if ( host == null ) {
+            return false;
+        }
+
         try {
             MongoClientSettings mongoSettings = MongoClientSettings
                     .builder()

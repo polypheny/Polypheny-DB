@@ -124,25 +124,25 @@ public class HttpServer implements Runnable {
     @Override
     public void run() {
         JsonMapper gsonMapper = new JsonMapper() {
+
+            @NotNull
+            @Override
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
+                return gson.fromJson( json, targetType );
+            }
+
+
             @NotNull
             @Override
             public String toJsonString( @NotNull Object obj ) {
                 return gson.toJson( obj );
             }
 
-
-            @NotNull
-            @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
-                return gson.fromJson( json, targetClass );
-            }
         };
         Javalin server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
             config.enableCorsForAllOrigins();
-            config.addStaticFiles( staticFileConfig -> {
-                staticFileConfig.directory = "webapp/";
-            } );
+            config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
         Crud crud = new Crud(
