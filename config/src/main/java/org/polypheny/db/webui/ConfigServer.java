@@ -64,8 +64,6 @@ public class ConfigServer implements ConfigListener {
             config.enableCorsForAllOrigins();
         } ).start( port );
 
-        // Needs to be called before route mapping!
-        //enableCORS( http );
         http.ws( "/configWebSocket", new ConfigWebsocket() );
         configRoutes( http );
     }
