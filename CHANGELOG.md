@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.8.1 (November 3, 2022)
+
+* Fixing support for Java 19
+* Fix an issue with the status handling for Docker containers that lead to the wrong status of a container being reported
+* Extend connection options for Docker containers
+
+
 ## 0.8.0 (October 23, 2022)
 
 * Add support for the labeled property graph data model
