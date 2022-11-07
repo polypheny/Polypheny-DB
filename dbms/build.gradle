@@ -18,6 +18,10 @@ plugins {
     id "com.github.johnrengelman.shadow" version "$shadow_plugin_version"
 }
 
+run {
+    systemProperty 'pf4j.pluginsDir', '../build/plugins'
+}
+
 apply plugin: "app.cash.licensee"
 apply plugin: "com.jaredsburrows.license"
 
@@ -46,6 +50,9 @@ dependencies {
     implementation project(":rest-interface")
     implementation project(":explore-by-example")
     implementation project(":monitoring")
+
+    ////// SLF4J
+    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
 
     ////// Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
@@ -319,4 +326,23 @@ shadowDistTar {
 
 shadowDistZip {
     dependsOn(jar)
+}
+
+task uberjar(type: Jar, dependsOn: ['compileJava']) {
+    duplicatesStrategy = 'include'
+    zip64 true
+    from configurations.runtimeClasspath.asFileTree.files.collect {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        zipTree(it)
+    }
+    from files(sourceSets.main.output.classesDirs)
+    from files(sourceSets.main.resources)
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+
+    archiveBaseName = "${project.name}-plugin-demo"
+    archiveClassifier = "uberjar"
 }

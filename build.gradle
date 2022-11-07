@@ -151,6 +151,13 @@ allprojects {
 
 }
 
+// plugin location
+ext.pluginsDir = rootProject.buildDir.path + '/plugins'
+
+build {
+    dependsOn(":dbms:uberjar")
+}
+
 
 idea {
     project {
