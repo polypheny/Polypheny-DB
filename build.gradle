@@ -80,6 +80,10 @@ allprojects {
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
     }
 
+    dependencies {
+        ////// SLF4J
+        implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+    }
 
     tasks.withType(Javadoc) {
         if (JavaVersion.current().isJava9Compatible()) {

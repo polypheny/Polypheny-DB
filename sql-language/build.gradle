@@ -30,11 +30,14 @@ dependencies {
 
     api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
 
+    ////// SLF4J
+    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
     implementation(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart"); exclude(group: "org.slf4j") }  // Apache 2.0
 
     // --- Test Compile ---
-    testImplementation project(path: ":core", configuration: "tests" )
+    testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":avatica-interface", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version

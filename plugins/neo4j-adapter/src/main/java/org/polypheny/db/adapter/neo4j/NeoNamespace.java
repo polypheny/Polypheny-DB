@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
+import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -56,7 +57,7 @@ public class NeoNamespace extends AbstractSchema {
         this.store = neo4jStore;
         this.id = namespaceId;
         this.rootSchemaRetrieval = expression;
-        this.physicalName = Neo4jStore.getPhysicalNamespaceName( id );
+        this.physicalName = Neo4jPlugin.getPhysicalNamespaceName( id );
         this.session = graph.session();
         this.transactionProvider = transactionProvider;
     }
@@ -77,11 +78,11 @@ public class NeoNamespace extends AbstractSchema {
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
-            fieldInfo.add( catalogColumn.name, Neo4jStore.getPhysicalFieldName( catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
+            fieldInfo.add( catalogColumn.name, Neo4jPlugin.getPhysicalFieldName( catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
         }
 
         return new NeoEntity(
-                Neo4jStore.getPhysicalEntityName( combinedTable.namespaceId, combinedTable.id, partitionPlacement.partitionId ),
+                Neo4jPlugin.getPhysicalEntityName( combinedTable.namespaceId, combinedTable.id, partitionPlacement.partitionId ),
                 AlgDataTypeImpl.proto( fieldInfo.build() ),
                 combinedTable.id );
     }

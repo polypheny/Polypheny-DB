@@ -28,8 +28,7 @@ include 'rest-interface'
 include 'cottontail-adapter'
 include 'ethereum-adapter'
 
-include 'plugins'
-include 'plugins:neo4j-adapter'
-
 include 'dbms'
 
+include 'plugins'
+include 'plugins:neo4j-adapter'

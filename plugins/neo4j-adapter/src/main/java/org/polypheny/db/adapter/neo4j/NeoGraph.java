@@ -37,6 +37,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
