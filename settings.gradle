@@ -16,7 +16,6 @@ include 'mongodb-adapter'
 include 'http-interface'
 include 'file-adapter'
 include 'jdbc-adapter'
-include 'neo4j-adapter'
 include 'pig-adapter'
 include 'avatica-interface'
 include 'webui'
@@ -29,5 +28,8 @@ include 'rest-interface'
 include 'cottontail-adapter'
 include 'ethereum-adapter'
 
+include 'plugins'
+include 'plugins:neo4j-adapter'
 
 include 'dbms'
+

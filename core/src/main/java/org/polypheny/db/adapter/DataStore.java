@@ -26,6 +26,7 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
@@ -41,7 +42,7 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
 @Slf4j
-public abstract class DataStore extends Adapter {
+public abstract class DataStore extends Adapter implements ExtensionPoint {
 
     @Getter
     private final boolean persistent;
