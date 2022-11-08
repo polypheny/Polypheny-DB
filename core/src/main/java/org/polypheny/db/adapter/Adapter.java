@@ -264,7 +264,7 @@ public abstract class Adapter {
     @Getter
     private final int adapterId;
     @Getter
-    private final String uniqueName;
+    private final String adapterName;
 
     protected final Map<String, String> settings;
 
@@ -274,7 +274,7 @@ public abstract class Adapter {
     private ConfigListener listener;
 
 
-    public Adapter( int adapterId, String uniqueName, Map<String, String> settings ) {
+    public Adapter( int adapterId, String adapterName, Map<String, String> settings ) {
         this.properties = getClass().getAnnotation( AdapterProperties.class );
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
             throw new RuntimeException( "The used adapter does not annotate its properties correctly." );
@@ -288,12 +288,12 @@ public abstract class Adapter {
         this.deployMode = DeployMode.fromString( settings.get( "mode" ) );
 
         this.adapterId = adapterId;
-        this.uniqueName = uniqueName;
+        this.adapterName = adapterName;
         // Make sure the settings are actually valid
         this.validateSettings( settings, true );
         this.settings = settings;
 
-        informationPage = new InformationPage( uniqueName );
+        informationPage = new InformationPage( adapterName );
         informationGroups = new ArrayList<>();
         informationElements = new ArrayList<>();
 
@@ -301,11 +301,6 @@ public abstract class Adapter {
         if ( deployMode == DeployMode.DOCKER ) {
             this.listener = attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
         }
-    }
-
-
-    public String getAdapterName() {
-        return properties.name();
     }
 
 

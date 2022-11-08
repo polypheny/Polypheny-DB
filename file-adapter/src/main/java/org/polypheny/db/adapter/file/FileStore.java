@@ -469,7 +469,7 @@ public class FileStore extends DataStore {
 
     @Override
     public void shutdown() {
-        log.info( "Shutting down file store '{}'", getUniqueName() );
+        log.info( "Shutting down file store '{}'", getAdapterName() );
         removeInformationPage();
         try {
             FileHelper.deleteDirRecursively( rootDir );

@@ -697,7 +697,7 @@ public class LanguageCrud {
                 CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
                 Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 p.addAdapter( new Placement.GraphStore(
-                        adapter.getUniqueName(),
+                        adapter.getAdapterName(),
                         adapter.getAdapterName(),
                         catalog.getGraphPlacements( adapterId ),
                         adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) );
@@ -746,7 +746,7 @@ public class LanguageCrud {
         for ( Integer adapterId : collection.placements ) {
             Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
             List<CatalogCollectionPlacement> placements = catalog.getCollectionPlacementsByAdapter( adapterId );
-            placement.addAdapter( new DocumentStore( adapter.getUniqueName(), adapter.getAdapterName(), placements, adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
+            placement.addAdapter( new DocumentStore( adapter.getAdapterName(), adapter.getAdapterName(), placements, adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
         }
 
         context.json( placement );

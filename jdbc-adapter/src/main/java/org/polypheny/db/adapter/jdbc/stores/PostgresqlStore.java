@@ -107,7 +107,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public ConnectionFactory deployDocker( int instanceId ) {
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:14", getUniqueName(), instanceId )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:14", getAdapterName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariable( "POSTGRES_PASSWORD=" + settings.get( "password" ) )
                 .withReadyTest( this::testConnection, 15000 )

@@ -1999,7 +1999,7 @@ public class Crud implements InformationObserver {
                     String[] arr = new String[5];
                     arr[0] = "";
                     arr[1] = String.join( ", ", fif.getColumnNames() );
-                    arr[2] = store.getUniqueName();
+                    arr[2] = store.getAdapterName();
                     arr[3] = fif.methodDisplayName;
                     arr[4] = "FUNCTIONAL";
                     data.add( arr );
@@ -2129,7 +2129,7 @@ public class Crud implements InformationObserver {
                 for ( CatalogColumnPlacement placement : pkPlacements ) {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                     p.addAdapter( new RelationalStore(
-                            adapter.getUniqueName(),
+                            adapter.getAdapterName(),
                             adapter.getAdapterName(),
                             catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
                             catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
@@ -2427,7 +2427,7 @@ public class Crud implements InformationObserver {
             if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
                 return false;
             }
-            return dataPlacements.stores.stream().anyMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) );
+            return dataPlacements.stores.stream().anyMatch( ( dp ) -> dp.uniqueName.equals( s.getAdapterName() ) );
         } ).toArray( DataStore[]::new ) ).getAsJsonArray();
         if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
             JsonObject pdbFakeStore = new JsonObject();
@@ -2558,7 +2558,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s', '%s' WITH '%s'", a.uniqueName, a.adapterName, a.adapterType, Crud.gson.toJson( settings ) );
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.uniqueName, a.adapterName, a.adapterType, Crud.gson.toJson( settings ) );
         Transaction transaction = getTransaction();
         try {
             int numRows = executeSqlUpdate( transaction, query );

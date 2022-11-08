@@ -136,7 +136,7 @@ public class Qfs extends DataSource {
     protected void reloadSettings( List<String> updatedSettings ) {
         init( settings );
         InformationManager im = InformationManager.getInstance();
-        im.getInformation( getUniqueName() + "-rootDir" ).unwrap( InformationText.class ).setText( settings.get( "rootDir" ) );
+        im.getInformation( getAdapterName() + "-rootDir" ).unwrap( InformationText.class ).setText( settings.get( "rootDir" ) );
     }
 
 
@@ -196,8 +196,8 @@ public class Qfs extends DataSource {
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         //name, extension, path, mime, canExecute, canRead, canWrite, size, lastModified
-        String physSchemaName = getUniqueName();
-        String physTableName = getUniqueName();
+        String physSchemaName = getAdapterName();
+        String physTableName = getAdapterName();
         List<ExportedColumn> columns = new ArrayList<>();
 
         columns.add( new ExportedColumn(
@@ -265,7 +265,7 @@ public class Qfs extends DataSource {
         ) );
 
         Map<String, List<ExportedColumn>> out = new HashMap<>();
-        out.put( getUniqueName(), columns );
+        out.put( getAdapterName(), columns );
         return out;
     }
 

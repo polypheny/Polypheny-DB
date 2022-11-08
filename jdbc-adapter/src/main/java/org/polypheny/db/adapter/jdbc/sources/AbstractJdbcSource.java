@@ -70,7 +70,7 @@ public abstract class AbstractJdbcSource extends DataSource {
 
 
     protected void registerInformationPage() {
-        JdbcUtils.addInformationPoolSize( informationPage, informationGroups, informationElements, connectionFactory, getUniqueName() );
+        JdbcUtils.addInformationPoolSize( informationPage, informationGroups, informationElements, connectionFactory, getAdapterName() );
         addInformationPhysicalNames();
         enableInformationPage();
     }
@@ -147,7 +147,7 @@ public abstract class AbstractJdbcSource extends DataSource {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
             return connectionFactory.getConnectionHandler( xid ).prepare();
         } else {
-            log.warn( "There is no connection to prepare (Unique name: {}, XID: {})! Returning true.", getUniqueName(), xid );
+            log.warn( "There is no connection to prepare (Unique name: {}, XID: {})! Returning true.", getAdapterName(), xid );
             return true;
         }
     }
@@ -159,7 +159,7 @@ public abstract class AbstractJdbcSource extends DataSource {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
             connectionFactory.getConnectionHandler( xid ).commit();
         } else {
-            log.warn( "There is no connection to commit (Unique name: {}, XID: {})!", getUniqueName(), xid );
+            log.warn( "There is no connection to commit (Unique name: {}, XID: {})!", getAdapterName(), xid );
         }
     }
 
@@ -170,7 +170,7 @@ public abstract class AbstractJdbcSource extends DataSource {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
             connectionFactory.getConnectionHandler( xid ).rollback();
         } else {
-            log.warn( "There is no connection to rollback (Unique name: {}, XID: {})!", getUniqueName(), xid );
+            log.warn( "There is no connection to rollback (Unique name: {}, XID: {})!", getAdapterName(), xid );
         }
     }
 

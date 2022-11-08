@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.prepare.Context;
@@ -99,14 +100,19 @@ public abstract class DataSource extends Adapter {
         return ( src, typeOfSrc, context ) -> {
             JsonObject jsonSource = new JsonObject();
             jsonSource.addProperty( "adapterId", src.getAdapterId() );
-            jsonSource.addProperty( "uniqueName", src.getUniqueName() );
+            //jsonSource.addProperty( "uniqueName", src.getAdapterName() );
             jsonSource.addProperty( "adapterName", src.getAdapterName() );
             jsonSource.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
             jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
-            jsonSource.addProperty( "type", src.getClass().getCanonicalName() );
+            jsonSource.addProperty( "type", src.getAdapterType().name() );
             return jsonSource;
         };
+    }
+
+
+    private AdapterType getAdapterType() {
+        return AdapterType.SOURCE;
     }
 
 }

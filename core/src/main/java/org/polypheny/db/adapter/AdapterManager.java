@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019-2022 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
@@ -240,7 +256,7 @@ public class AdapterManager {
             }
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
-        adapterByName.put( instance.getUniqueName(), instance );
+        adapterByName.put( instance.getAdapterName(), instance );
         adapterById.put( instance.getAdapterId(), instance );
 
         return instance;
@@ -265,7 +281,7 @@ public class AdapterManager {
 
         // Remove store from maps
         adapterById.remove( adapterInstance.getAdapterId() );
-        adapterByName.remove( adapterInstance.getUniqueName() );
+        adapterByName.remove( adapterInstance.getAdapterName() );
 
         // Delete store from catalog
         Catalog.getInstance().deleteAdapter( catalogAdapter.id );
@@ -281,7 +297,7 @@ public class AdapterManager {
             for ( CatalogAdapter adapter : adapters ) {
                 Constructor<?> ctor = org.polypheny.db.catalog.Adapter.fromString( adapter.adapterName ).getClazz().getConstructor( int.class, String.class, Map.class );
                 Adapter instance = (Adapter) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
-                adapterByName.put( instance.getUniqueName(), instance );
+                adapterByName.put( instance.getAdapterName(), instance );
                 adapterById.put( instance.getAdapterId(), instance );
             }
         } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {

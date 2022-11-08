@@ -247,7 +247,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     continue;
                 }
 
-                final String schemaName = buildAdapterSchemaName( adapter.getUniqueName(), graph.name, placement.physicalName );
+                final String schemaName = buildAdapterSchemaName( adapter.getAdapterName(), graph.name, placement.physicalName );
 
                 adapter.createGraphNamespace( rootSchema, schemaName, graph.id );
                 SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentGraphNamespace(), schemaName, NamespaceType.GRAPH, graph.caseSensitive ).plus();

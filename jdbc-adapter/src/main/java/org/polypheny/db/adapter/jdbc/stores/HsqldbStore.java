@@ -101,7 +101,7 @@ public class HsqldbStore extends AbstractJdbcStore {
                 trxSettings += ";hsqldb.default_table_type=cached";
             }
             if ( settings.get( "type" ).equals( "Memory" ) ) {
-                dataSource.setUrl( "jdbc:hsqldb:mem:" + getUniqueName() + trxSettings );
+                dataSource.setUrl( "jdbc:hsqldb:mem:" + getAdapterName() + trxSettings );
             } else {
                 File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/hsqldb/" + getAdapterId() );
                 dataSource.setUrl( "jdbc:hsqldb:file:" + path + trxSettings );
@@ -207,7 +207,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             // TODO MV: Find better solution then generating random XID
             connectionFactory.getOrCreateConnectionHandler( PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) ) ).execute( "SHUTDOWN" );
         } catch ( SQLException | ConnectionHandlerException e ) {
-            log.warn( "Exception while shutting down {}", getUniqueName(), e );
+            log.warn( "Exception while shutting down {}", getAdapterName(), e );
         }
         super.shutdown();
     }

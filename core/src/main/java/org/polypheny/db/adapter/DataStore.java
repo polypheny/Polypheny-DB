@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -230,15 +231,20 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         return ( src, typeOfSrc, context ) -> {
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
-            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
+            //jsonStore.addProperty( "uniqueName", src.getAdapterName() );
             jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
-            jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
+            jsonStore.addProperty( "type", src.getAdapterType().name() );
             jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
             jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
+    }
+
+
+    private AdapterType getAdapterType() {
+        return AdapterType.STORE;
     }
 
 }
