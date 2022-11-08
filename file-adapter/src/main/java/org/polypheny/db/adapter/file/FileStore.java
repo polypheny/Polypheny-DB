@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.file;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import java.io.BufferedReader;
@@ -42,6 +43,7 @@ import org.apache.commons.lang.SystemUtils;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -69,6 +71,15 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         description = "An adapter that stores all data as files. It is especially suitable for multimedia collections.",
         usedModes = DeployMode.EMBEDDED)
 public class FileStore extends DataStore {
+
+    static {
+        Map<String, String> settings = ImmutableMap.of(
+                "mode", "embedded"
+        );
+
+        Adapter.addAdapter( FileStore.class, "FILE", settings );
+    }
+
 
     // Standards
     public static final Charset CHARSET = StandardCharsets.UTF_8;

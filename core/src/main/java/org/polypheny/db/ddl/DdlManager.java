@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -122,11 +123,12 @@ public abstract class DdlManager {
     /**
      * Adds a new adapter (data store or data source)
      *
-     * @param adapterName unique name of the newly created adapter
-     * @param clazzName class to be used for creating the adapter instance
+     * @param uniqueName unique name of the newly created adapter
+     * @param adapterName name of adapter, which is used to create the adapter
+     * @param adapterType the specific {@link AdapterType} for the adapter to create
      * @param config configuration for the adapter
      */
-    public abstract void addAdapter( String adapterName, String clazzName, Map<String, String> config );
+    public abstract void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config );
 
     /**
      * Drop an adapter

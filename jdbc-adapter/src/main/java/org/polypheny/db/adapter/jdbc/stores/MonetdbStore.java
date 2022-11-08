@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,6 +36,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -67,6 +69,19 @@ import org.polypheny.db.type.PolyTypeFamily;
 @AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
 public class MonetdbStore extends AbstractJdbcStore {
+
+    static {
+        Map<String, String> settings = ImmutableMap.of(
+                "mode", "docker",
+                "instanceId", "0",
+                "password", "polypheny",
+                "maxConnections", "25",
+                "port", "5000"
+        );
+
+        Adapter.addAdapter( MonetdbStore.class, "MONETDB", settings );
+    }
+
 
     private String host;
     private String database;

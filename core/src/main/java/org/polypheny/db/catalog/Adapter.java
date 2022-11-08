@@ -21,103 +21,32 @@ import java.util.Locale;
 import java.util.Map;
 import lombok.Getter;
 
-public enum Adapter {
+public class Adapter {
 
-    MONGODB( "org.polypheny.db.adapter.mongodb.MongoStore" ),
-    HSQLDB( "org.polypheny.db.adapter.jdbc.stores.HsqldbStore" ),
-    CSV( "org.polypheny.db.adapter.csv.CsvSource" ),
-    CASSANDRA( "org.polypheny.db.adapter.cassandra.CassandraStore" ),
-    MONETDB( "org.polypheny.db.adapter.jdbc.stores.MonetdbStore" ),
-    COTTONTAIL( "org.polypheny.db.adapter.cottontail.CottontailStore" ),
-    POSTGRESQL( "org.polypheny.db.adapter.jdbc.stores.PostgresqlStore" ),
-    NEO4J( "org.polypheny.db.adapter.neo4j.Neo4jStore" ),
-    FILE( "org.polypheny.db.adapter.file.FileStore" );
-
+    private static final Map<String, Adapter> register = new HashMap<>();
     @Getter
-    private final String path;
+    private final Map<String, String> defaultSettings;
+
     @Getter
     private final Class<?> clazz;
+    @Getter
+    private final String adapterName;
 
 
-    Adapter( String path ) {
-        this.path = path;
-        try {
-            this.clazz = Class.forName( path );
-        } catch ( ClassNotFoundException e ) {
-            throw new RuntimeException( "The supplied store name was not recognized: " + path );
-        }
+    public Adapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
+        this.adapterName = adapterName;
+        this.clazz = clazz;
+        this.defaultSettings = defaultSettings;
     }
 
 
-    public static Adapter fromString( String storeName ) {
-        return Adapter.valueOf( storeName.toUpperCase( Locale.ROOT ) );
+    public static Adapter fromString( String adapterName ) {
+        return register.get( adapterName.toUpperCase( Locale.ROOT ) );
     }
 
 
-    public Map<String, String> getDefaultSettings() {
-        Map<String, String> settings = new HashMap<>();
-        switch ( this ) {
-
-            case MONGODB:
-                settings.put( "persistent", "true" );
-                settings.put( "port", "27017" );
-                settings.put( "type", "mongo" );
-                settings.put( "instanceId", "0" );
-                settings.put( "mode", "docker" );
-                settings.put( "trxLifetimeLimit", "1209600" );
-                break;
-            case NEO4J:
-                settings.put( "persistent", "true" );
-                settings.put( "port", "7687" );
-                settings.put( "mode", "docker" );
-                settings.put( "instanceId", "0" );
-                settings.put( "type", "neo4j" );
-                break;
-            case HSQLDB:
-                settings.put( "type", "Memory" );
-                settings.put( "mode", "embedded" );
-                settings.put( "tableType", "Memory" );
-                settings.put( "maxConnections", "25" );
-                settings.put( "trxControlMode", "mvcc" );
-                settings.put( "trxIsolationLevel", "read_committed" );
-                break;
-            case CSV:
-                settings.put( "mode", "embedded" );
-                settings.put( "directory", "classpath://hr" );
-                settings.put( "maxStringLength", "255" );
-                break;
-            case CASSANDRA:
-                settings.put( "mode", "docker" );
-                settings.put( "instanceId", "0" );
-                settings.put( "port", "9042" );
-                break;
-            case MONETDB:
-                settings.put( "mode", "docker" );
-                settings.put( "instanceId", "0" );
-                settings.put( "password", "polypheny" );
-                settings.put( "maxConnections", "25" );
-                settings.put( "port", "5000" );
-                break;
-            case COTTONTAIL:
-                settings.put( "mode", "embedded" );
-                settings.put( "database", "cottontail" );
-                settings.put( "port", "1865" );
-                settings.put( "engine", "MAPDB" );
-                settings.put( "host", "localhost" );
-                break;
-            case POSTGRESQL:
-                settings.put( "mode", "docker" );
-                settings.put( "password", "polypheny" );
-                settings.put( "instanceId", "0" );
-                settings.put( "port", "3306" );
-                settings.put( "maxConnections", "25" );
-                break;
-            case FILE:
-                settings.put( "mode", "embedded" );
-                break;
-        }
-
-        return settings;
+    public static void addAdapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
+        register.put( adapterName.toUpperCase(), new Adapter( clazz, adapterName.toUpperCase(), defaultSettings ) );
     }
 
 }

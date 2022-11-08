@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.mongodb;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
@@ -92,6 +93,20 @@ import org.polypheny.db.util.Pair;
 @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
 public class MongoStore extends DataStore {
 
+    static {
+        Map<String, String> settings = ImmutableMap.copyOf( Map.of(
+                "persistent", "true",
+                "port", "27017",
+                "type", "mongo",
+                "instanceId", "0",
+                "mode", "docker",
+                "trxLifetimeLimit", "1209600"
+        ) );
+
+        Adapter.addAdapter( MongoStore.class, "MONGODB", settings );
+    }
+
+
     private String host;
     private final int port;
     private Container container;
@@ -155,7 +170,7 @@ public class MongoStore extends DataStore {
         if ( settings.containsKey( key ) ) {
             trxLifetimeLimit = settings.get( key );
         } else {
-            trxLifetimeLimit = Adapter.MONGODB.getDefaultSettings().get( key );
+            trxLifetimeLimit = Adapter.fromString( "MONGODB" ).getDefaultSettings().get( key );
         }
         return trxLifetimeLimit;
     }

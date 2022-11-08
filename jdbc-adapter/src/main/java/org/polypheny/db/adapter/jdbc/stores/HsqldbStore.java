@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -33,6 +34,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -64,6 +66,20 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterSettingList(name = "trxIsolationLevel", options = { "read_committed", "serializable" })
 @AdapterSettingList(name = "type", options = { "Memory", "File" })
 public class HsqldbStore extends AbstractJdbcStore {
+
+    public static void register() {
+        Map<String, String> settings = ImmutableMap.copyOf( Map.of(
+                "type", "Memory",
+                "mode", "embedded",
+                "tableType", "Memory",
+                "maxConnections", "25",
+                "trxControlMode", "mvcc",
+                "trxIsolationLevel", "read_committed"
+        ) );
+
+        Adapter.addAdapter( HsqldbStore.class, "HSQLDB", settings );
+    }
+
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );

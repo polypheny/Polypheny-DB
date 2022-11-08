@@ -778,10 +778,10 @@ public class CatalogImpl extends Catalog {
         // init adapters
         if ( adapterNames.size() == 0 ) {
             // Deploy default store
-            addAdapter( "hsqldb", defaultStore.getPath(), AdapterType.STORE, defaultStore.getDefaultSettings() );
+            addAdapter( "hsqldb", defaultStore.getAdapterName(), AdapterType.STORE, defaultStore.getDefaultSettings() );
 
             // Deploy default CSV view
-            addAdapter( "hr", defaultSource.getPath(), AdapterType.SOURCE, defaultSource.getDefaultSettings() );
+            addAdapter( "hr", defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource.getDefaultSettings() );
 
             // init schema
             CatalogAdapter csv = getAdapter( "hr" );
@@ -3863,12 +3863,12 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
+    public int addAdapter( String uniqueName, String adapterName, AdapterType type, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
 
         int id = adapterIdBuilder.getAndIncrement();
         Map<String, String> temp = new HashMap<>( settings );
-        CatalogAdapter adapter = new CatalogAdapter( id, uniqueName, clazz, type, temp );
+        CatalogAdapter adapter = new CatalogAdapter( id, uniqueName, adapterName, type, temp );
         synchronized ( this ) {
             adapters.put( id, adapter );
             adapterNames.put( uniqueName, adapter );
@@ -3891,7 +3891,7 @@ public class CatalogImpl extends Catalog {
         CatalogAdapter old = getAdapter( adapterId );
         Map<String, String> temp = new HashMap<>();
         newSettings.forEach( temp::put );
-        CatalogAdapter adapter = new CatalogAdapter( old.id, old.uniqueName, old.adapterClazz, old.type, temp );
+        CatalogAdapter adapter = new CatalogAdapter( old.id, old.uniqueName, old.adapterName, old.type, temp );
         synchronized ( this ) {
             adapters.put( adapter.id, adapter );
             adapterNames.put( adapter.uniqueName, adapter );

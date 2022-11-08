@@ -2558,7 +2558,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, Crud.gson.toJson( settings ) );
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s', '%s' WITH '%s'", a.uniqueName, a.adapterName, a.adapterType, Crud.gson.toJson( settings ) );
         Transaction transaction = getTransaction();
         try {
             int numRows = executeSqlUpdate( transaction, query );

@@ -37,6 +37,7 @@ import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.github.nosan.embedded.cassandra.EmbeddedCassandraFactory;
 import com.github.nosan.embedded.cassandra.api.Cassandra;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -81,6 +83,17 @@ import org.polypheny.db.type.PolyType;
 @AdapterSettingString(name = "username", defaultValue = "cassandra", position = 3, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingString(name = "password", defaultValue = "cassandra", position = 4, appliesTo = DeploySetting.REMOTE)
 public class CassandraStore extends DataStore {
+
+    static {
+        Map<String, String> settings = ImmutableMap.of(
+                "mode", "docker",
+                "instanceId", "0",
+                "port", "9042"
+        );
+
+        Adapter.addAdapter( CassandraStore.class, "CASSANDRA", settings );
+    }
+
 
     // Running embedded
     private final Cassandra embeddedCassandra;

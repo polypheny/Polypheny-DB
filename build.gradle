@@ -82,7 +82,9 @@ allprojects {
 
     dependencies {
         ////// SLF4J
-        implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+        implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+            exclude group: "org.slf4j"
+        }
     }
 
     tasks.withType(Javadoc) {

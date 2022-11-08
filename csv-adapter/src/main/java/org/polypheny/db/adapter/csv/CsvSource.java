@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.csv;
 
 
+import com.google.common.collect.ImmutableMap;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +38,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -62,6 +64,17 @@ import org.polypheny.db.util.Sources;
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class CsvSource extends DataSource {
+
+    public static void register() {
+        Map<String, String> settings = ImmutableMap.of(
+                "mode", "embedded",
+                "directory", "classpath://hr",
+                "maxStringLength", "255"
+        );
+
+        Adapter.addAdapter( CsvSource.class, "CSV", settings );
+    }
+
 
     private URL csvDir;
     private CsvSchema currentSchema;

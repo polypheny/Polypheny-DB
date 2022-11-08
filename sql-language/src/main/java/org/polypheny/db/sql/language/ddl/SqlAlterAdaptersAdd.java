@@ -24,6 +24,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -49,12 +50,14 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
     private final SqlNode uniqueName;
     private final SqlNode adapterName;
     private final SqlNode config;
+    private final SqlNode adapterType;
 
 
-    public SqlAlterAdaptersAdd( ParserPos pos, SqlNode uniqueName, SqlNode adapterName, SqlNode config ) {
+    public SqlAlterAdaptersAdd( ParserPos pos, SqlNode uniqueName, SqlNode adapterName, SqlNode adapterType, SqlNode config ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
         this.adapterName = Objects.requireNonNull( adapterName );
+        this.adapterType = Objects.requireNonNull( adapterType );
         this.config = Objects.requireNonNull( config );
     }
 
@@ -79,6 +82,8 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         uniqueName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "USING" );
         adapterName.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "," );
+        adapterType.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "WITH" );
         config.unparse( writer, leftPrec, rightPrec );
     }
@@ -93,6 +98,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         DdlManager.getInstance().addAdapter(
                 removeQuotationMarks( uniqueName.toString() ),
                 removeQuotationMarks( adapterName.toString() ),
+                AdapterType.valueOf( removeQuotationMarks( adapterType.toString() ) ),
                 configMap );
     }
 

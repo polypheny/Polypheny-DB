@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.neo4j;
 import static java.lang.String.format;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Time;
@@ -49,6 +50,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -89,6 +91,32 @@ public class Neo4jPlugin extends Plugin {
     }
 
 
+    @Override
+    public void start() {
+        System.out.println( "started plugin" );
+        ImmutableMap<String, String> settings = ImmutableMap.of(
+                "persistent", "true",
+                "port", "7687",
+                "mode", "docker",
+                "instanceId", "0",
+                "type", "neo4j" );
+
+        Adapter.addAdapter( Neo4jStore.class, "NEO4J", settings );
+    }
+
+
+    @Override
+    public void stop() {
+        System.out.println( "stopped plugin" );
+    }
+
+
+    @Override
+    public void delete() {
+        System.out.println( "deleted plugin" );
+    }
+
+
     public static String getPhysicalEntityName( long namespaceId, long entityId, long partitionId ) {
         return format( "n_%d_entity_%d_%d", namespaceId, entityId, partitionId );
     }
@@ -122,6 +150,7 @@ public class Neo4jPlugin extends Plugin {
             supportedNamespaceTypes = { NamespaceType.GRAPH, NamespaceType.RELATIONAL })
     @AdapterSettingInteger(name = "port", defaultValue = 7687)
     public static class Neo4jStore extends DataStore {
+
 
         @Getter
         private final List<PolyType> unsupportedTypes = ImmutableList.of();

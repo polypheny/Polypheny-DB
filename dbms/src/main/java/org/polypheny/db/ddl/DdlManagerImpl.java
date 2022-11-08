@@ -230,9 +230,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addAdapter( String adapterName, String clazzName, Map<String, String> config ) {
-        adapterName = adapterName.toLowerCase();
-        Adapter adapter = AdapterManager.getInstance().addAdapter( clazzName, adapterName, config );
+    public void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config ) {
+        uniqueName = uniqueName.toLowerCase();
+        Adapter adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, config );
         if ( adapter instanceof DataSource ) {
             Map<String, List<ExportedColumn>> exportedColumns;
             try {

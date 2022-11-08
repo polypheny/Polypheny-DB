@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.cottontail;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.annotations.Expose;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
@@ -41,6 +42,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -99,6 +101,19 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 @AdapterSettingString(name = "database", defaultValue = "cottontail", position = 3)
 @AdapterSettingList(name = "engine", options = { "MAPDB", "HARE" }, position = 4)
 public class CottontailStore extends DataStore {
+
+    static {
+        Map<String, String> settings = ImmutableMap.of(
+                "mode", "embedded",
+                "database", "cottontail",
+                "port", "1865",
+                "engine", "MAPDB",
+                "host", "localhost"
+        );
+
+        Adapter.addAdapter( CottontailStore.class, "COTTONTAIL", settings );
+    }
+
 
     // Running embedded
     private final boolean isEmbedded;

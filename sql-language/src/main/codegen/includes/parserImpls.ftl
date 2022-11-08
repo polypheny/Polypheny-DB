@@ -726,14 +726,15 @@ SqlAlterAdaptersAdd SqlAlterAdaptersAdd(Span s) :
 {
     final SqlNode uniqueName;
     final SqlNode adapterName;
+    final SqlNode adapterType;
     final SqlNode config;
 }
 {
     <ADAPTERS> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR) <COMMA> adapterType = Expression(ExprContext.ACCEPT_NONCURSOR)
     <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
     {
-        return new SqlAlterAdaptersAdd(s.end(this), uniqueName, adapterName, config);
+        return new SqlAlterAdaptersAdd(s.end(this), uniqueName, adapterName, adapterType, config);
     }
 }
 

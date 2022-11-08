@@ -37,7 +37,9 @@ import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.csv.CsvSource;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.adapter.jdbc.stores.HsqldbStore;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -233,7 +235,8 @@ public class PolyphenyDb {
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
         if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().checkIfExists( applicationConfPath ) ) {
-            ConfigManager.getInstance().setApplicationConfFile( new File( applicationConfPath ) );
+            ConfigManager.getInstance();
+            ConfigManager.setApplicationConfFile( new File( applicationConfPath ) );
         }
 
         class ShutdownHelper implements Runnable {
@@ -273,7 +276,7 @@ public class PolyphenyDb {
 
             public void join( final long millis ) throws InterruptedException {
                 synchronized ( joinOnNotStartedLock ) {
-                    while ( alreadyRunning == false ) {
+                    while ( !alreadyRunning ) {
                         joinOnNotStartedLock.wait( 0 );
                     }
                 }
@@ -443,6 +446,9 @@ public class PolyphenyDb {
 
 
     public void loadPlugins() {
+        HsqldbStore.register();
+        CsvSource.register();
+
         // create the plugin manager
         final PluginManager pluginManager = new DefaultPluginManager() {
             @Override
@@ -464,7 +470,7 @@ public class PolyphenyDb {
         // start (active/resolved) the plugins
         pluginManager.startPlugins();
 
-        log.info( "Plugindirectory: " );
+        log.info( "Plugin Directory: " );
         log.info( "\t" + System.getProperty( "pf4j.pluginsDir", "plugins" ) + "\n" );
 
         // retrieves the extensions for Greeting extension point
@@ -494,7 +500,7 @@ public class PolyphenyDb {
         }
 
         // stop the plugins
-        pluginManager.stopPlugins();
+        //pluginManager.stopPlugins();
         /*
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
