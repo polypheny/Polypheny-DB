@@ -1827,7 +1827,7 @@ public class Crud implements InformationObserver {
                 .stream( request.sourceColumns )
                 .map( c -> c.defaultValue )
                 .filter(s -> s != null && !s.isEmpty())
-                .collect( Collectors.joining(" "));
+                .collect( Collectors.joining(request.joinString));
 
         if ( defaultValue != null && !defaultValue.equals( "" ) ) {
             query = query + " DEFAULT " + String.format( "'%s'", defaultValue );
