@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -86,8 +87,16 @@ public class AlgJson {
     public static final List<String> PACKAGES =
             ImmutableList.of(
                     "org.polypheny.db.algebra.",
+                    "org.polypheny.db.algebra.common.",
+                    "org.polypheny.db.algebra.relational.",
+                    "org.polypheny.db.algebra.document.",
+                    "org.polypheny.db.algebra.lpg.",
                     "org.polypheny.db.algebra.core.",
                     "org.polypheny.db.algebra.logical.",
+                    "org.polypheny.db.algebra.logical.lpg.",
+                    "org.polypheny.db.algebra.logical.document.",
+                    "org.polypheny.db.algebra.logical.relational.",
+                    "org.polypheny.db.algebra.logical.common.",
                     "org.polypheny.db.adapter.cassandra.",
                     "org.polypheny.db.adapter.cottontail.",
                     "org.polypheny.db.adapter.cottontail.algebra.",
@@ -95,8 +104,17 @@ public class AlgJson {
                     "org.polypheny.db.adapter.mongodb.MongoRules$",
                     "org.polypheny.db.adapter.file.algebra.",
                     "org.polypheny.db.adapter.enumerable.",
+                    "org.polypheny.db.adapter.enumerable.lpg.",
+                    "org.polypheny.db.adapter.enumerable.document.",
+                    "org.polypheny.db.adapter.enumerable.common.",
                     "org.polypheny.db.adapter.jdbc.",
                     "org.polypheny.db.adapter.jdbc.JdbcRules$",
+                    "org.polypheny.db.adapter.neo4j.",
+                    "org.polypheny.db.adapter.neo4j.rules.graph.",
+                    "org.polypheny.db.adapter.neo4j.rules.NeoGraphRules$",
+                    "org.polypheny.db.adapter.neo4j.rules.relational.",
+                    "org.polypheny.db.adapter.neo4j.rules.NeoRules$",
+                    "org.polypheny.db.adapter.neo4j.NeoRules$",
                     "org.polypheny.db.interpreter.Bindables$" );
 
 
@@ -133,7 +151,7 @@ public class AlgJson {
 
 
     /**
-     * Converts a type name to a class. E.g. {@code getClass("LogicalProject")} returns {@link org.polypheny.db.algebra.logical.LogicalProject}.class.
+     * Converts a type name to a class. E.g. {@code getClass("LogicalProject")} returns {@link LogicalProject}.class.
      */
     public Class typeNameToClass( String type ) {
         if ( !type.contains( "." ) ) {

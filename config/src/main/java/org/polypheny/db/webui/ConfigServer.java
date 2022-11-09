@@ -47,15 +47,15 @@ public class ConfigServer implements ConfigListener {
         JsonMapper gsonMapper = new JsonMapper() {
             @NotNull
             @Override
-            public String toJsonString( @NotNull Object obj ) {
-                return gson.toJson( obj );
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
+                return gson.fromJson( json, targetType );
             }
 
 
             @NotNull
             @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
-                return gson.fromJson( json, targetClass );
+            public String toJsonString( @NotNull Object obj ) {
+                return gson.toJson( obj );
             }
         };
 
@@ -64,8 +64,6 @@ public class ConfigServer implements ConfigListener {
             config.enableCorsForAllOrigins();
         } ).start( port );
 
-        // Needs to be called before route mapping!
-        //enableCORS( http );
         http.ws( "/configWebSocket", new ConfigWebsocket() );
         configRoutes( http );
     }

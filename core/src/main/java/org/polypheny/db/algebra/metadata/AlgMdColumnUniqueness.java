@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,10 +50,10 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -88,7 +88,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
     }
 
 
-    public Boolean areColumnsUnique( TableScan alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
+    public Boolean areColumnsUnique( Scan alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
         return alg.getTable().isKey( columns );
     }
 
@@ -327,7 +327,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
             if ( alg2 instanceof Aggregate
                     || alg2 instanceof Filter
                     || alg2 instanceof Values
-                    || alg2 instanceof TableScan
+                    || alg2 instanceof Scan
                     || simplyProjects( alg2, columns ) ) {
                 try {
                     final Boolean unique = mq.areColumnsUnique( alg2, columns, ignoreNulls );

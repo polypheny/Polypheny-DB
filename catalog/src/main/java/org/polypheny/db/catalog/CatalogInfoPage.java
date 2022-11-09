@@ -45,7 +45,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationManager infoManager;
     private final Catalog catalog;
     private final InformationTable databaseInformation;
-    private final InformationTable schemaInformation;
+    private final InformationTable namespaceInformation;
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
     private final InformationTable indexInformation;
@@ -64,10 +64,10 @@ public class CatalogInfoPage implements PropertyChangeListener {
         infoManager.addPage( page );
 
         this.adapterInformation = addCatalogInformationTable( page, "Adapters", 5, Arrays.asList( "ID", "Name", "Type" ), 0 );
-        this.databaseInformation = addCatalogInformationTable( page, "Databases", 1, Arrays.asList( "ID", "Name", "Default SchemaID" ), 0 );
-        this.schemaInformation = addCatalogInformationTable( page, "Schemas", 2, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ), 0 );
-        this.tableInformation = addCatalogInformationTable( page, "Tables", 3, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "Type", "PartitionType", "PartitionGroups" ), 0 );
-        this.columnInformation = addCatalogInformationTable( page, "Columns", 4, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID", "Placements" ), 0 );
+        this.databaseInformation = addCatalogInformationTable( page, "Databases", 1, Arrays.asList( "ID", "Name", "Default NamespaceID" ), 0 );
+        this.namespaceInformation = addCatalogInformationTable( page, "Namespaces", 2, Arrays.asList( "ID", "Name", "DatabaseID", "NamespaceType", "Case-sensitive" ), 0 );
+        this.tableInformation = addCatalogInformationTable( page, "Tables", 3, Arrays.asList( "ID", "Name", "DatabaseID", "NamespaceID", "Type", "PartitionType", "PartitionGroups" ), 0 );
+        this.columnInformation = addCatalogInformationTable( page, "Columns", 4, Arrays.asList( "ID", "Name", "DatabaseID", "NamespaceID", "TableID", "Placements" ), 0 );
         this.indexInformation = addCatalogInformationTable( page, "Indexes", 6, Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ), 0 );
         this.partitionGroupInformation = addCatalogInformationTable( page, "Partition Groups", 7, Arrays.asList( "ID", "Name", "TableID", "# Partitions" ), 0 );
         this.partitionInformation = addCatalogInformationTable( page, "Partitions", 8, Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ), 0 );
@@ -143,7 +143,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
 
     private void resetCatalogInformation() {
         databaseInformation.reset();
-        schemaInformation.reset();
+        namespaceInformation.reset();
         tableInformation.reset();
         columnInformation.reset();
         adapterInformation.reset();
@@ -160,13 +160,13 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 adapterInformation.addRow( s.id, s.uniqueName, s.type );
             } );
             catalog.getDatabases( null ).forEach( d -> {
-                databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );
+                databaseInformation.addRow( d.id, d.name, d.defaultNamespaceId );
             } );
             catalog.getSchemas( null, null ).forEach( s -> {
-                schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
+                namespaceInformation.addRow( s.id, s.name, s.databaseId, s.namespaceType, s.caseSensitive );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
-                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.tableType, t.partitionProperty.partitionType.toString(), t.partitionProperty.partitionGroupIds.size() );
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.namespaceId, t.entityType, t.partitionProperty.partitionType.toString(), t.partitionProperty.partitionGroupIds.size() );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 String placements = catalog.getColumnPlacement( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );

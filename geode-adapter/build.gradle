@@ -41,6 +41,22 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":csv-adapter:processResources")
+}
+
+delombok {
+    dependsOn(":csv-adapter:processResources")
+}
+
+javadoc {
+    dependsOn(":csv-adapter:processResources")
+}
+
+compileTestJava {
+    dependsOn(":csv-adapter:processResources")
+}
+
 
 /**
  * JARs

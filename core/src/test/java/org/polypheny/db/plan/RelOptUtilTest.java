@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.prepare.ContextImpl;
@@ -66,7 +66,7 @@ public class RelOptUtilTest {
     private static Frameworks.ConfigBuilder config() {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( false )
-                .add( "scott", new ReflectiveSchema( new ScottSchema() ), SchemaType.RELATIONAL );
+                .add( "scott", new ReflectiveSchema( new ScottSchema() ), NamespaceType.RELATIONAL );
 
         return Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )

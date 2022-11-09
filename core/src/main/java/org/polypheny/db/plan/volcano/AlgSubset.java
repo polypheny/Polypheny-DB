@@ -63,11 +63,13 @@ import org.slf4j.Logger;
 
 
 /**
- * Subset of an equivalence class where all algational expressions have the same physical properties.
+ * Subset of an equivalence class where all algebra expressions have the same physical properties.
  *
- * Physical properties are instances of the {@link AlgTraitSet}, and consist of traits such as calling convention and collation (sort-order).
+ * Physical properties are instances of the {@link AlgTraitSet}, and consist of traits such as calling convention and
+ * collation (sort-order).
  *
- * For some traits, a algational expression can have more than one instance. For example, R can be sorted on both [X] and [Y, Z]. In which case, R would belong to the sub-sets for [X] and [Y, Z]; and also the leading edges [Y] and [].
+ * For some traits, a algebra expression can have more than one instance. For example, R can be sorted on both [X]
+ * and [Y, Z]. In which case, R would belong to the sub-sets for [X] and [Y, Z]; and also the leading edges [Y] and [].
  *
  * @see AlgNode
  * @see AlgSet
@@ -253,7 +255,7 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     /**
-     * Returns a list of algational expressions one of whose children is this subset. The elements of the list are distinct.
+     * Returns a list of algebra expressions one of whose children is this subset. The elements of the list are distinct.
      */
     public Collection<AlgNode> getParentRels() {
         final Set<AlgNode> list = new LinkedHashSet<>();
@@ -344,7 +346,7 @@ public class AlgSubset extends AbstractAlgNode {
         ++timestamp;
 
         if ( !activeSet.add( this ) ) {
-            // This subset is already in the chain being propagated to. This means that the graph is cyclic, and therefore the cost of this algational expression - not this subset - must be infinite.
+            // This subset is already in the chain being propagated to. This means that the graph is cyclic, and therefore the cost of this algebra expression - not this subset - must be infinite.
             LOGGER.trace( "cyclic: {}", this );
             return;
         }

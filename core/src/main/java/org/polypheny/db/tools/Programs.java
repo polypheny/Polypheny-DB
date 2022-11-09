@@ -52,11 +52,12 @@ import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.CalcMergeRule;
+import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
-import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.FilterScanRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
@@ -68,10 +69,10 @@ import org.polypheny.db.algebra.rules.MultiJoinOptimizeBushyRule;
 import org.polypheny.db.algebra.rules.ProjectCalcMergeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
-import org.polypheny.db.algebra.rules.SemiJoinRule;
+import org.polypheny.db.algebra.rules.ScanRule;
+import org.polypheny.db.algebra.rules.SemiJoinRules;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SubQueryRemoveRule;
-import org.polypheny.db.algebra.rules.TableScanRule;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.NoneToBindableConverterRule;
@@ -128,6 +129,7 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
+                    EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_BATCH_ITERATOR_RULE,
                     EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,
@@ -146,16 +148,17 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
-                    SemiJoinRule.PROJECT,
-                    SemiJoinRule.JOIN,
-                    TableScanRule.INSTANCE,
+                    SemiJoinRules.PROJECT,
+                    SemiJoinRules.JOIN,
+                    ScanRule.INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
-                    FilterTableScanRule.INSTANCE,
+                    FilterScanRule.INSTANCE,
                     FilterProjectTransposeRule.INSTANCE,
                     FilterJoinRule.FILTER_ON_JOIN,
                     AggregateExpandDistinctAggregatesRule.INSTANCE,
+                    DocumentAggregateToAggregateRule.INSTANCE,
                     AggregateReduceFunctionsRule.INSTANCE,
                     FilterAggregateTransposeRule.INSTANCE,
                     JoinCommuteRule.INSTANCE,

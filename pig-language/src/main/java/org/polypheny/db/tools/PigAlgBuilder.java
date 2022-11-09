@@ -40,7 +40,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -203,7 +203,7 @@ public class PigAlgBuilder extends AlgBuilder {
             return lastAlias;
         } else {
             AlgNode top = peek();
-            if ( top instanceof TableScan ) {
+            if ( top instanceof Scan ) {
                 return Util.last( top.getTable().getQualifiedName() );
             } else {
                 return null;

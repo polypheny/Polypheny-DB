@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,36 +44,36 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.sql.SqlAggFunction;
-import org.polypheny.db.sql.sql.SqlCall;
-import org.polypheny.db.sql.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlIntervalLiteral;
-import org.polypheny.db.sql.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.sql.SqlJdbcFunctionCall;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.sql.sql.SqlNumericLiteral;
-import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.sql.sql.fun.OracleSqlOperatorTable;
-import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.sql.fun.SqlBetweenOperator;
-import org.polypheny.db.sql.sql.fun.SqlCase;
-import org.polypheny.db.sql.sql.fun.SqlDatetimeSubtractionOperator;
-import org.polypheny.db.sql.sql.fun.SqlExtractFunction;
-import org.polypheny.db.sql.sql.fun.SqlItemOperator;
-import org.polypheny.db.sql.sql.fun.SqlLiteralChainOperator;
-import org.polypheny.db.sql.sql.fun.SqlMapValueConstructor;
-import org.polypheny.db.sql.sql.fun.SqlMultisetQueryConstructor;
-import org.polypheny.db.sql.sql.fun.SqlMultisetValueConstructor;
-import org.polypheny.db.sql.sql.fun.SqlOverlapsOperator;
-import org.polypheny.db.sql.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.sql.fun.SqlSequenceValueOperator;
-import org.polypheny.db.sql.sql.fun.SqlTrimFunction;
-import org.polypheny.db.sql.sql.validate.SqlValidator;
-import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.sql.language.SqlAggFunction;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlDataTypeSpec;
+import org.polypheny.db.sql.language.SqlFunction;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlIntervalLiteral;
+import org.polypheny.db.sql.language.SqlIntervalQualifier;
+import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlNumericLiteral;
+import org.polypheny.db.sql.language.SqlOperator;
+import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
+import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlBetweenOperator;
+import org.polypheny.db.sql.language.fun.SqlCase;
+import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
+import org.polypheny.db.sql.language.fun.SqlExtractFunction;
+import org.polypheny.db.sql.language.fun.SqlItemOperator;
+import org.polypheny.db.sql.language.fun.SqlLiteralChainOperator;
+import org.polypheny.db.sql.language.fun.SqlMapValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlMultisetQueryConstructor;
+import org.polypheny.db.sql.language.fun.SqlMultisetValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlOverlapsOperator;
+import org.polypheny.db.sql.language.fun.SqlRowOperator;
+import org.polypheny.db.sql.language.fun.SqlSequenceValueOperator;
+import org.polypheny.db.sql.language.fun.SqlTrimFunction;
+import org.polypheny.db.sql.language.validate.SqlValidator;
+import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter.Blackboard;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -682,6 +682,10 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         } else {
             type = rexBuilder.deriveReturnType( op, exprs );
         }
+        if ( type.getPolyType() == PolyType.ARRAY ) {
+            return rexBuilder.makeArray( type, RexUtil.flatten( exprs, op ) );
+        }
+
         return rexBuilder.makeCall( type, op, RexUtil.flatten( exprs, op ) );
     }
 

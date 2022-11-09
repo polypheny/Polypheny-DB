@@ -40,8 +40,8 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.SqlLiteral;
+import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 
@@ -124,7 +124,7 @@ public abstract class AbstractJdbcStore extends DataStore {
     @Override
     public void createTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.getSchemaName() );
+        qualifiedNames.add( catalogTable.getNamespaceName() );
         qualifiedNames.add( catalogTable.name );
 
         List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id );
@@ -221,8 +221,10 @@ public abstract class AbstractJdbcStore extends DataStore {
 
 
     protected void createColumnDefinition( CatalogColumn catalogColumn, StringBuilder builder ) {
-        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType == PolyType.ARRAY ) {
             // Returns e.g. TEXT if arrays are not supported
+            builder.append( getTypeString( PolyType.ARRAY ) );
+        } else if ( catalogColumn.collectionsType == PolyType.MAP ) {
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
             builder.append( " " ).append( getTypeString( catalogColumn.type ) );

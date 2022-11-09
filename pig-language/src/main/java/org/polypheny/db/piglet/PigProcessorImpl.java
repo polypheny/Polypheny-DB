@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.polypheny.db.piglet;
 
+import com.google.common.collect.ImmutableList;
 import java.io.StringReader;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgRoot;
@@ -42,7 +44,7 @@ public class PigProcessorImpl extends Processor {
 
 
     @Override
-    public Node parse( String query ) {
+    public List<? extends Node> parse( String query ) {
         this.query = query;
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
@@ -67,7 +69,7 @@ public class PigProcessorImpl extends Processor {
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyPIG statement ... done. [{}]", stopWatch );
         }
-        return parsed;
+        return ImmutableList.of( parsed );
     }
 
 

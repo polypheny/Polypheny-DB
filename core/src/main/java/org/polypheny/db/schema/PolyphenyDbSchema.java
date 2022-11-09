@@ -16,7 +16,6 @@
 
 package org.polypheny.db.schema;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
@@ -27,9 +26,10 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.NameMap;
 
 
 public interface PolyphenyDbSchema {
@@ -41,8 +41,6 @@ public interface PolyphenyDbSchema {
     void setCache( boolean cache );
 
     TableEntry add( String tableName, Table table );
-
-    TableEntry add( String tableName, Table table, ImmutableList<String> sqls );
 
     TypeEntry add( String name, AlgProtoDataType type );
 
@@ -57,9 +55,9 @@ public interface PolyphenyDbSchema {
     /**
      * Adds a child schema of this schema.
      */
-    PolyphenyDbSchema add( String name, Schema schema, SchemaType type );
+    PolyphenyDbSchema add( String name, Schema schema, NamespaceType type );
 
-    TableEntry getTable( String tableName, boolean caseSensitive );
+    TableEntry getTable( String tableName );
 
     String getName();
 
@@ -101,6 +99,8 @@ public interface PolyphenyDbSchema {
     @Experimental
     boolean removeType( String name );
 
+    NameMap<TableEntry> getTableMap();
+
 
     /**
      * Entry in a schema, such as a table or sub-schema.
@@ -138,12 +138,9 @@ public interface PolyphenyDbSchema {
      */
     abstract class TableEntry extends Entry {
 
-        public final ImmutableList<String> sqls;
 
-
-        public TableEntry( PolyphenyDbSchema schema, String name, ImmutableList<String> sqls ) {
+        public TableEntry( PolyphenyDbSchema schema, String name ) {
             super( schema, name );
-            this.sqls = Objects.requireNonNull( sqls );
         }
 
 
@@ -193,8 +190,8 @@ public interface PolyphenyDbSchema {
         /**
          * Creates a TableEntryImpl.
          */
-        public TableEntryImpl( PolyphenyDbSchema schema, String name, Table table, ImmutableList<String> sqls ) {
-            super( schema, name, sqls );
+        public TableEntryImpl( PolyphenyDbSchema schema, String name, Table table ) {
+            super( schema, name );
             this.table = Objects.requireNonNull( table );
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.document.DocumentFilter;
+import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.mql.mql.MqlTest;
 import org.polypheny.db.mql.mql2alg.Mql2AlgTest;
@@ -41,7 +42,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
-
+@Ignore // this test is an extreme time sink, use integration tests
 public class Mql2AlgFindTest extends Mql2AlgTest {
 
 
@@ -58,7 +59,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
     @Test
     public void testEmptyMatch() {
         AlgRoot root = translate( find( "" ) );
-        assertTrue( root.alg instanceof TableScan );
+        assertTrue( root.alg instanceof DocumentScan );
     }
 
 
@@ -387,11 +388,11 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
     public void testEmptyProjection() {
         AlgRoot root = translate( find( "", "" ) );
 
-        assertTrue( root.alg instanceof TableScan );
+        assertTrue( root.alg instanceof DocumentScan );
 
-        TableScan scan = (TableScan) root.alg;
-        assertTrue( scan.getRowType().getFieldNames().contains( "_id" ) );
-        assertTrue( scan.getRowType().getFieldNames().contains( "_data" ) );
+        DocumentScan scan = (DocumentScan) root.alg;
+        //assertTrue( scan.getRowType().getFieldNames().contains( "_id" ) );
+        assertTrue( scan.getRowType().getFieldNames().contains( "d" ) );
     }
 
 
@@ -612,10 +613,10 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
 
 
     private RexCall getConditionTestFilter( AlgRoot root ) {
-        assertTrue( root.alg instanceof Filter );
-        Filter filter = ((Filter) root.alg);
-        assertTrue( filter.getInput() instanceof TableScan );
-        return (RexCall) filter.getCondition();
+        assertTrue( root.alg instanceof DocumentFilter );
+        DocumentFilter filter = ((DocumentFilter) root.alg);
+        assertTrue( filter.getInput() instanceof DocumentScan );
+        return (RexCall) filter.condition;
     }
 
 
@@ -638,9 +639,9 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
 
         assertEquals( 2, jsonValue.operands.size() );
         assertEquals( Kind.INPUT_REF, jsonValue.operands.get( 0 ).getKind() );
-        assertEquals( 1, ((RexInputRef) jsonValue.operands.get( 0 )).getIndex() );
+        assertEquals( 0, ((RexInputRef) jsonValue.operands.get( 0 )).getIndex() );
 
-        RexCall array = assertRexCall( jsonValue, 1 );
+        RexCall array = assertRexCall( jsonValue, 0 );
 
         List<String> keys = Arrays.asList( key.split( "\\." ) );
 

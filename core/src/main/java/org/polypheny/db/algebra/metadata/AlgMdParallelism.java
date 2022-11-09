@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.metadata;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Parallelism;
 import org.polypheny.db.util.BuiltInMethod;
@@ -80,7 +80,7 @@ public class AlgMdParallelism implements MetadataHandler<BuiltInMetadata.Paralle
     }
 
 
-    public Boolean isPhaseTransition( TableScan alg, AlgMetadataQuery mq ) {
+    public Boolean isPhaseTransition( Scan alg, AlgMetadataQuery mq ) {
         return true;
     }
 

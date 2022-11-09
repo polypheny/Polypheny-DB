@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import lombok.RequiredArgsConstructor;
 
 
 @EqualsAndHashCode
-public class CatalogQueryInterface implements CatalogEntity {
+public class CatalogQueryInterface implements CatalogObject {
 
-    private static final long serialVersionUID = 4913728890561284443L;
+    private static final long serialVersionUID = 7212289724539530050L;
 
     public final int id;
     public final String name;
@@ -55,5 +55,7 @@ public class CatalogQueryInterface implements CatalogEntity {
     public static class PrimitiveCatalogQueryInterface {
 
         public final String name;
+
     }
+
 }

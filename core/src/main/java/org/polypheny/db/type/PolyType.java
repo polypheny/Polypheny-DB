@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -289,6 +289,36 @@ public enum PolyType {
             Types.OTHER,
             PolyTypeFamily.MAP ),
 
+    DOCUMENT(
+            PrecScale.NO_NO,
+            false,
+            Types.OTHER,
+            PolyTypeFamily.DOCUMENT ),
+
+    GRAPH(
+            PrecScale.NO_NO,
+            true,
+            Types.JAVA_OBJECT,
+            PolyTypeFamily.GRAPH ),
+
+    NODE(
+            PrecScale.NO_NO,
+            true,
+            Types.JAVA_OBJECT,
+            PolyTypeFamily.GRAPH ),
+
+    EDGE(
+            PrecScale.NO_NO,
+            true,
+            Types.JAVA_OBJECT,
+            PolyTypeFamily.GRAPH ),
+
+    PATH(
+            PrecScale.NO_NO,
+            true,
+            Types.JAVA_OBJECT,
+            PolyTypeFamily.GRAPH ),
+
     DISTINCT(
             PrecScale.NO_NO,
             false,
@@ -417,6 +447,14 @@ public enum PolyType {
     public static final List<PolyType> STRING_TYPES = combine( CHAR_TYPES, BINARY_TYPES );
 
     public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+
+    public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY );
+
+    public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, EDGE );
+
+    public static final List<PolyType> COLLECTION_TYPES = ImmutableList.of( ARRAY );
+
+    public static final List<PolyType> OBJECT_TYPES = ImmutableList.of( MAP, GRAPH, NODE, EDGE );
 
     public static final Set<PolyType> YEAR_INTERVAL_TYPES =
             Sets.immutableEnumSet(

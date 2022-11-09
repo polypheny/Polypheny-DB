@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public class AlgBuildTestHelper extends CqlTestHelper {
                     Catalog catalog = Catalog.getInstance();
 
                     for ( TableIndex tableIndex : tableIndices ) {
-                        for ( Long columnId : tableIndex.catalogTable.columnIds ) {
+                        for ( Long columnId : tableIndex.catalogTable.fieldIds ) {
                             CatalogColumn column = catalog.getColumn( columnId );
                             columnNames.add( tableIndex.fullyQualifiedName + "." + column.name );
                             RexInputRef inputRef = rexBuilder.makeInputRef( algBuilder.peek(), inputRefs.size() );

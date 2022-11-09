@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -55,6 +56,7 @@ public class ConfigManager {
     private static final String DEFAULT_CONFIGURATION_DIRECTORY_NAME = "config";
 
     public static boolean memoryMode = true; // If true, then changes are saved in-memory only and will be lost after restart.
+    public static boolean resetCatalogOnStartup = false; // If true, no changes a read from an existing config file
 
     private static boolean usesExternalConfigFile = false;
 
@@ -189,17 +191,26 @@ public class ConfigManager {
     private com.typesafe.config.Config parseConfigObject( String configKey, Object updatedValue ) {
         com.typesafe.config.Config modifiedConfig;
         if ( updatedValue instanceof Collection ) {
-            Map<String, Object> myList = new HashMap<>();
-            for ( Object value : (Collection) updatedValue ) {
-                if ( (value instanceof ConfigDocker) ) {
+            Map<String, Object> myMap = new HashMap<>();
+            List<String> myList = new ArrayList<>();
+            for ( Object value : (Collection<?>) updatedValue ) {
+                if ( value instanceof ConfigDocker ) {
                     Map<String, String> settingsMap = ((ConfigDocker) value).getSettings();
-                    myList.put( ((ConfigObject) value).getKey(), settingsMap );
+                    myMap.put( ((ConfigObject) value).getKey(), settingsMap );
+                } else if ( value instanceof Class ) {
+                    String v = ((Class<?>) value).getName();
+                    myList.add( v );
                 }
             }
-            modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myList ) );
+            if ( myMap.size() > 0 ) {
+                modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myMap ) );
+            } else {
+                modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myList ) );
+            }
         } else if ( updatedValue instanceof Enum ) {
-            // Enums pose problems, insertion is possible with this but retrieval after restart is not
             modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( ((Enum<?>) updatedValue).name() ) );
+        } else if ( updatedValue instanceof Class ) {
+            modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( ((Class<?>) updatedValue).getName() ) );
         } else {
             modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
         }
@@ -285,16 +296,20 @@ public class ConfigManager {
         if ( this.configs.containsKey( config.getKey() ) ) {
             throw new ConfigRuntimeException( "Cannot register two configuration elements with the same key: " + config.getKey() );
         } else {
-            if ( !(memoryMode && !usesExternalConfigFile) ) {
-                // Check if the config file contains this key and if so set the value to the one defined in the config file
-                if ( configFile.hasPath( config.getKey() ) ) {
-                    config.setValueFromFile( configFile );
+            try {
+                if ( !(memoryMode && !usesExternalConfigFile) && !resetCatalogOnStartup ) {
+                    // Check if the config file contains this key and if so set the value to the one defined in the config file
+                    if ( configFile.hasPath( config.getKey() ) ) {
+                        config.setValueFromFile( configFile );
+                    }
                 }
-            }
-            this.configs.put( config.getKey(), config );
+                this.configs.put( config.getKey(), config );
 
-            // Observe every registered config that if config is changed Manager gets notified and can persist the changed config
-            config.addObserver( new ConfigManagerListener() );
+                // Observe every registered config that if config is changed, the manager gets notified and can persist the changes
+                config.addObserver( new ConfigManagerListener() );
+            } catch ( Exception e ) {
+                throw new ConfigRuntimeException( "Error while registering config: " + config.getKey() );
+            }
         }
     }
 
@@ -420,7 +435,11 @@ public class ConfigManager {
         @Override
         public void onConfigChange( Config c ) {
             if ( !memoryMode ) {
-                INSTANCE.persistConfigValue( c.getKey(), c.getPlainValueObject() );
+                try {
+                    INSTANCE.persistConfigValue( c.getKey(), c.getPlainValueObject() );
+                } catch ( Throwable t ) {
+                    log.error( "Unable to persist configuration", t );
+                }
             }
         }
 

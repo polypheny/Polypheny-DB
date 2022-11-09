@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -41,11 +42,12 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.dialect.MonetdbSqlDialect;
+import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -69,6 +71,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     private String host;
     private String database;
     private String username;
+    private Container container;
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -84,7 +87,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .withReadyTest( this::testConnection, 15000 )
                 .build();
 
-        host = container.getHost();
+        this.container = container;
         database = "monetdb";
         username = "monetdb";
 
@@ -132,6 +135,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
+        dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 
@@ -297,8 +301,9 @@ public class MonetdbStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
-            case JSON:
                 return "VARCHAR";
+            case JSON:
+                return "TEXT";
             case DATE:
                 return "DATE";
             case TIME:
@@ -326,6 +331,16 @@ public class MonetdbStore extends AbstractJdbcStore {
     private boolean testConnection() {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
+
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        this.host = container.getIpAddress();
+        if ( this.host == null ) {
+            return false;
+        }
+
         try {
             connectionFactory = createConnectionFactory();
 

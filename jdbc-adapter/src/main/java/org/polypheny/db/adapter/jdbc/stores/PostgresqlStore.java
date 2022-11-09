@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
@@ -42,11 +43,12 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -76,6 +78,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private String host;
     private String database;
     private String username;
+    private Container container;
 
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -83,15 +86,19 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
+
+
     @Override
     public ConnectionFactory deployDocker( int instanceId ) {
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:13.2", getUniqueName(), instanceId )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:14", getUniqueName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariable( "POSTGRES_PASSWORD=" + settings.get( "password" ) )
                 .withReadyTest( this::testConnection, 15000 )
                 .build();
 
-        host = container.getHost();
+        this.container = container;
         database = "postgres";
         username = "postgres";
 
@@ -339,8 +346,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
-            case JSON:
                 return "VARCHAR";
+            case JSON:
+                return "TEXT";
             case DATE:
                 return "DATE";
             case TIME:
@@ -368,6 +376,16 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private boolean testConnection() {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
+
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        this.host = container.getIpAddress();
+        if ( this.host == null ) {
+            return false;
+        }
+
         try {
             connectionFactory = createConnectionFactory();
 

@@ -34,23 +34,41 @@
 package org.polypheny.db.algebra;
 
 
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 
 
 /**
@@ -58,7 +76,7 @@ import org.polypheny.db.algebra.logical.LogicalValues;
  */
 public interface AlgShuttle {
 
-    AlgNode visit( TableScan scan );
+    AlgNode visit( Scan scan );
 
     AlgNode visit( TableFunctionScan scan );
 
@@ -86,9 +104,45 @@ public interface AlgShuttle {
 
     AlgNode visit( LogicalExchange exchange );
 
-    AlgNode visit( LogicalTableModify modify );
+    AlgNode visit( LogicalModify modify );
 
     AlgNode visit( LogicalConditionalExecute lce );
+
+    AlgNode visit( LogicalLpgModify modify );
+
+    AlgNode visit( LogicalLpgScan scan );
+
+    AlgNode visit( LogicalLpgValues values );
+
+    AlgNode visit( LogicalLpgFilter filter );
+
+    AlgNode visit( LogicalLpgMatch match );
+
+    AlgNode visit( LogicalLpgProject project );
+
+    AlgNode visit( LogicalLpgAggregate aggregate );
+
+    AlgNode visit( LogicalLpgSort sort );
+
+    AlgNode visit( LogicalLpgUnwind unwind );
+
+    AlgNode visit( LogicalLpgTransformer transformer );
+
+    AlgNode visit( LogicalDocumentModify modify );
+
+    AlgNode visit( LogicalDocumentAggregate aggregate );
+
+    AlgNode visit( LogicalDocumentFilter filter );
+
+    AlgNode visit( LogicalDocumentProject project );
+
+    AlgNode visit( LogicalDocumentScan scan );
+
+    AlgNode visit( LogicalDocumentSort sort );
+
+    AlgNode visit( LogicalDocumentTransformer transformer );
+
+    AlgNode visit( LogicalDocumentValues values );
 
     AlgNode visit( LogicalConstraintEnforcer constraintEnforcer );
 

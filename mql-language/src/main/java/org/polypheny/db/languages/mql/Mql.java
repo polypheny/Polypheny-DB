@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,9 @@ public class Mql {
             Type.DROP,
             Type.USE_DATABASE,
             Type.DROP_DATABASE,
-            Type.RENAME_COLLECTION );
+            Type.RENAME_COLLECTION,
+            Type.ADD_PLACEMENT,
+            Type.DELETE_PLACEMENT );
     static List<Type> DQL = Arrays.asList(
             Type.SELECT,
             Type.FIND,
@@ -79,6 +81,8 @@ public class Mql {
         COUNT,
         CREATE_VIEW,
         CREATE_COLLECTION,
+        ADD_PLACEMENT,
+        DELETE_PLACEMENT,
         DROP_DATABASE,
         DELETE,
         DROP,

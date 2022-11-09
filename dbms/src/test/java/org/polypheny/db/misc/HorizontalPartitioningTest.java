@@ -1186,7 +1186,7 @@ public class HorizontalPartitioningTest {
                     CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
 
                     // Check how many columnPlacements are added to the one DataPlacement
-                    Assert.assertEquals( table.columnIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
+                    Assert.assertEquals( table.fieldIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
                     Assert.assertEquals( partitionsToCreate, dataPlacement.getAllPartitionIds().size() );

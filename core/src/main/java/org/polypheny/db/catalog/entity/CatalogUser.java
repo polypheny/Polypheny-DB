@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,30 +20,22 @@ package org.polypheny.db.catalog.entity;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode
-public final class CatalogUser implements CatalogEntity, Comparable<CatalogUser> {
+public final class CatalogUser implements CatalogObject, Comparable<CatalogUser> {
 
-    private static final long serialVersionUID = -3456842618158263847L;
+    private static final long serialVersionUID = 5022567585804699491L;
 
     public final int id;
     public final String name;
     public final String password;
-    public final long defaultSchema;
 
 
-    public CatalogUser( final int id, final String name, final String password, long defaultSchema ) {
+    public CatalogUser( final int id, final String name, final String password ) {
         this.id = id;
         this.name = name;
         this.password = password;
-        this.defaultSchema = defaultSchema;
-    }
-
-
-    public CatalogSchema getDefaultSchema() {
-        return Catalog.getInstance().getSchema( defaultSchema );
     }
 
 

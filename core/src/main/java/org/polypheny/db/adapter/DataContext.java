@@ -44,6 +44,8 @@ public interface DataContext {
 
     ParameterExpression ROOT = Expressions.parameter( Modifier.FINAL, DataContext.class, "root" );
 
+    ParameterExpression INITIAL_ROOT = Expressions.parameter( Modifier.FINAL, DataContext.class, "initialRoot" );
+
     /**
      * Returns a sub-schema with a given name, or null.
      */
@@ -76,14 +78,6 @@ public interface DataContext {
 
     void addParameterValues( long index, AlgDataType type, List<Object> data );
 
-    default void addSingleValue( long index, AlgDataType type, Object data ) {
-        throw new UnsupportedOperationException();
-    }
-
-    default long getMaxParameterIndex() {
-        throw new UnsupportedOperationException();
-    }
-
     AlgDataType getParameterType( long index );
 
     List<Map<Long, Object>> getParameterValues();
@@ -105,6 +99,25 @@ public interface DataContext {
         return getParameterValues().get( 0 ).get( index );
     }
 
+    default boolean isMixedModel() {
+        return false;
+    }
+
+    default void setMixedModel( boolean isMixedModel ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default DataContext switchContext() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void addContext() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void resetContext() {
+        throw new UnsupportedOperationException();
+    }
 
     @Data
     class ParameterValue {
@@ -263,7 +276,7 @@ public interface DataContext {
 
         @Override
         public void setParameterTypes( Map<Long, AlgDataType> types ) {
-
+            //empty on purpose
         }
 
     }

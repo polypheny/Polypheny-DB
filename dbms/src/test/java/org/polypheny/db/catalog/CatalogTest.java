@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,8 +158,8 @@ public class CatalogTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
-            final Object[] table1 = new Object[]{ "APP", "schema1", "table1", "TABLE", "", null, null, null, null, null, "pa" };
-            final Object[] table2 = new Object[]{ "APP", "schema1", "table2", "TABLE", "", null, null, null, null, null, "pa" };
+            final Object[] table1 = new Object[]{ "APP", "schema1", "table1", "ENTITY", "", null, null, null, null, null, "pa" };
+            final Object[] table2 = new Object[]{ "APP", "schema1", "table2", "ENTITY", "", null, null, null, null, null, "pa" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getTables( "APP", "schema1", null, null ),

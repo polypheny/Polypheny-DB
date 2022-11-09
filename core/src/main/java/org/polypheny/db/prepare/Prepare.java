@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,8 +48,8 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -74,6 +74,7 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.Holder;
@@ -149,7 +150,7 @@ public abstract class Prepare {
         final AlgVisitor visitor = new AlgVisitor() {
             @Override
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
-                if ( node instanceof TableScan ) {
+                if ( node instanceof Scan ) {
                     final AlgOptCluster cluster = node.getCluster();
                     final ToAlgContext context = () -> cluster;
                     final AlgNode r = node.getTable().toAlg( context );
@@ -293,19 +294,19 @@ public abstract class Prepare {
     }
 
 
-    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
+    protected LogicalModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
         if ( !isDml ) {
             return null;
         }
         switch ( Kind ) {
             case INSERT:
-                return LogicalTableModify.Operation.INSERT;
+                return LogicalModify.Operation.INSERT;
             case DELETE:
-                return LogicalTableModify.Operation.DELETE;
+                return LogicalModify.Operation.DELETE;
             case MERGE:
-                return LogicalTableModify.Operation.MERGE;
+                return LogicalModify.Operation.MERGE;
             case UPDATE:
-                return LogicalTableModify.Operation.UPDATE;
+                return LogicalModify.Operation.UPDATE;
             default:
                 return null;
         }
@@ -368,6 +369,10 @@ public abstract class Prepare {
 
         @Override
         PreparingTable getTable( List<String> names );
+
+        AlgOptTable getCollection( List<String> names );
+
+        Graph getGraph( String name );
 
         ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();
 
@@ -467,7 +472,7 @@ public abstract class Prepare {
 
 
         @Override
-        public LogicalTableModify.Operation getTableModOp() {
+        public LogicalModify.Operation getTableModOp() {
             return null;
         }
 
@@ -500,7 +505,7 @@ public abstract class Prepare {
          * Returns the table modification operation corresponding to this statement if it is a table modification statement;
          * otherwise null.
          */
-        LogicalTableModify.Operation getTableModOp();
+        LogicalModify.Operation getTableModOp();
 
         /**
          * Returns a list describing, for each result field, the origin of the field as a 4-element list
@@ -533,7 +538,7 @@ public abstract class Prepare {
         protected final AlgDataType parameterRowType;
         protected final AlgDataType rowType;
         protected final boolean isDml;
-        protected final LogicalTableModify.Operation tableModOp;
+        protected final LogicalModify.Operation tableModOp;
         protected final List<List<String>> fieldOrigins;
         protected final List<AlgCollation> collations;
 
@@ -544,7 +549,7 @@ public abstract class Prepare {
                 List<List<String>> fieldOrigins,
                 List<AlgCollation> collations,
                 AlgNode rootRel,
-                LogicalTableModify.Operation tableModOp,
+                LogicalModify.Operation tableModOp,
                 boolean isDml ) {
             this.rowType = Objects.requireNonNull( rowType );
             this.parameterRowType = Objects.requireNonNull( parameterRowType );
@@ -563,7 +568,7 @@ public abstract class Prepare {
 
 
         @Override
-        public LogicalTableModify.Operation getTableModOp() {
+        public LogicalModify.Operation getTableModOp() {
             return tableModOp;
         }
 

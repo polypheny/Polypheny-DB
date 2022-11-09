@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.core.SqlLanguagelDependant;
-import org.polypheny.db.sql.core.TestFixture;
+import org.polypheny.db.sql.SqlLanguagelDependant;
+import org.polypheny.db.sql.TestFixture;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 

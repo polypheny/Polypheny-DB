@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,10 @@ public abstract class DockerManager {
      */
     protected abstract void updateConfigs();
 
-    public abstract boolean testDockerRunning( int dockerId );
+    public abstract DockerStatus probeDockerStatus( int dockerId );
+
+
+    public abstract void updateIpAddress( Container container );
 
 
     /**
@@ -311,6 +314,10 @@ public abstract class DockerManager {
         @Setter
         @Getter
         private String containerId;
+        @Getter
+        @Setter
+        private String ipAddress = RuntimeConfig.USE_DOCKER_NETWORK.getBoolean() ? null : "localhost";
+
 
         @Getter
         private final String host;
@@ -411,6 +418,11 @@ public abstract class DockerManager {
 
         public static String getFromPhysicalName( String physicalUniqueName ) {
             return physicalUniqueName.split( "_" )[0];
+        }
+
+
+        public void updateIpAddress() {
+            DockerManager.getInstance().updateIpAddress( this );
         }
 
     }

@@ -347,6 +347,8 @@ SqlAlterTable SqlAlterTable(Span s) :
                 (
                     <CASCADE> { onUpdate = "CASCADE"; }
                 |
+                    <NONE> { onUpdate = "NONE"; }
+                |
                     <RESTRICT> { onUpdate = "RESTRICT"; }
                 |
                     <SET> <NULL> { onUpdate = "SET NULL"; }
@@ -360,6 +362,8 @@ SqlAlterTable SqlAlterTable(Span s) :
                 <ON> <DELETE>
                 (
                     <CASCADE> { onDelete = "CASCADE"; }
+                |
+                    <NONE> { onDelete = "NONE"; }
                 |
                     <RESTRICT> { onDelete = "RESTRICT"; }
                 |

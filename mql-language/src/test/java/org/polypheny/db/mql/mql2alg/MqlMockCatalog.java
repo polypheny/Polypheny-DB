@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.mql2alg;
+package org.polypheny.db.mql.mql2alg;
 
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -25,13 +25,13 @@ public class MqlMockCatalog extends MockCatalog {
 
     @Override
     public CatalogSchema getSchema( long schemaId ) {
-        return new CatalogSchema( 1, "private", 0, 0, "tester", SchemaType.DOCUMENT );
+        return new CatalogSchema( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT, true );
     }
 
 
     @Override
     public CatalogUser getUser( int userId ) {
-        return new CatalogUser( 0, "name", "name", 1 );
+        return new CatalogUser( 0, "name", "name" );
     }
 
 }

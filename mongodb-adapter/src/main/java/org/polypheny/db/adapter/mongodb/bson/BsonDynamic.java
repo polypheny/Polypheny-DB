@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
 import org.bson.BsonString;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.type.PolyType;
 
@@ -31,13 +32,19 @@ public class BsonDynamic extends BsonDocument {
     private final String polyTypeName;
     private boolean isRegex = false;
     private boolean isFunc = false;
+    private boolean isValue = false;
+    private String key = "";
 
 
     public BsonDynamic( RexDynamicParam rexNode ) {
-        this( rexNode.getIndex(),
-                rexNode.getType().getPolyType() == PolyType.ARRAY
-                        ? rexNode.getType().getComponentType().getPolyType().getTypeName()
-                        : rexNode.getType().getPolyType().getTypeName() );
+        this( rexNode.getIndex(), getTypeString( rexNode.getType() ) );
+    }
+
+
+    private static String getTypeString( AlgDataType type ) {
+        return type.getPolyType() != PolyType.ARRAY
+                ? type.getPolyType().getTypeName()
+                : "ARRAY$" + getTypeString( type.getComponentType() );
     }
 
 
@@ -49,6 +56,8 @@ public class BsonDynamic extends BsonDocument {
         append( "_type", new BsonString( polyTypeName ) );
         append( "_reg", new BsonBoolean( false ) );
         append( "_func", new BsonBoolean( false ) );
+        append( "_isVal", new BsonBoolean( false ) );
+        append( "_key", new BsonString( "" ) );
     }
 
 
@@ -62,6 +71,15 @@ public class BsonDynamic extends BsonDocument {
     public BsonDynamic setIsFunc( boolean isFunc ) {
         this.isFunc = isFunc;
         append( "_func", new BsonBoolean( isFunc ) );
+        return this;
+    }
+
+
+    public BsonDynamic setIsValue( boolean isValue, String key ) {
+        this.isValue = isValue;
+        this.key = key;
+        append( "_isVal", new BsonBoolean( isValue ) );
+        append( "_key", new BsonString( key ) );
         return this;
     }
 

@@ -53,6 +53,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -97,6 +99,8 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
     protected final Function1<String, RexToLixTranslator.InputGetter> allCorrelateVariables = this::getCorrelVariableGetter;
 
+    private int contextCounter = -1;
+
 
     public EnumerableAlgImplementor( RexBuilder rexBuilder, Map<String, Object> internalParameters ) {
         super( rexBuilder );
@@ -109,6 +113,11 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
             assert child == parent.getInputs().get( ordinal );
         }
         return child.implement( this, prefer );
+    }
+
+
+    public int increaseContext() {
+        return ++contextCounter;
     }
 
 
@@ -147,7 +156,13 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                                         Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET.method, Expressions.constant( input.name ) ),
                                         input.type ) ) );
 
-        final BlockStatement block = Expressions.block( Iterables.concat( stashed, result.block.statements ) );
+        BlockStatement block = Expressions.block( Iterables.concat( stashed, result.block.statements ) );
+        if ( contextCounter < 0 ) {
+            // If the context was not set by ContextSwitcher we only need the initial one
+            Statement assign = Expressions.declare( Modifier.FINAL, DataContext.ROOT, DataContext.INITIAL_ROOT );
+            block = Expressions.block( Stream.concat( Stream.of( assign ), block.statements.stream() ).collect( Collectors.toList() ) );
+        }
+
         // add values
         for ( Entry<ParameterExpression, Object> entry : nodes.entrySet() ) {
             memberDeclarations.add( Expressions.fieldDecl( Modifier.PRIVATE, entry.getKey(), Expressions.constant( entry.getValue() ) ) );
@@ -158,7 +173,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                         Modifier.PUBLIC,
                         Enumerable.class,
                         BuiltInMethod.BINDABLE_BIND.method.getName(),
-                        Expressions.list( DataContext.ROOT ),
+                        Expressions.list( DataContext.INITIAL_ROOT ),
                         block ) );
         memberDeclarations.add(
                 Expressions.methodDecl(

@@ -144,7 +144,7 @@ public class RestTest {
         data.add( "data", array );
 
         return Unirest.post( "{protocol}://{host}:{port}/restapi/v1/res/" + table )
-                .header( "Content-Type", "application/json" )
+                .header( "Content-ExpressionType", "application/json" )
                 .body( data );
     }
 
@@ -156,7 +156,7 @@ public class RestTest {
         data.add( "data", array );
 
         RequestBodyEntity request = Unirest.patch( "{protocol}://{host}:{port}/restapi/v1/res/" + table )
-                .header( "Content-Type", "application/json" )
+                .header( "Content-ExpressionType", "application/json" )
                 .body( data );
 
         for ( Map.Entry<String, String> entry : where.entrySet() ) {
@@ -169,7 +169,7 @@ public class RestTest {
 
     private static HttpRequest<?> buildRestDelete( String table, Map<String, String> where ) {
         HttpRequest<?> request = Unirest.delete( "{protocol}://{host}:{port}/restapi/v1/res/" + table )
-                .header( "Content-Type", "application/json" );
+                .header( "Content-ExpressionType", "application/json" );
 
         for ( Map.Entry<String, String> entry : where.entrySet() ) {
             request.queryString( entry.getKey(), entry.getValue() );

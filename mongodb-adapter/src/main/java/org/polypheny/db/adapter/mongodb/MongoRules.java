@@ -62,21 +62,27 @@ import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Documents;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.core.document.DocumentModify;
+import org.polypheny.db.algebra.core.document.DocumentSort;
+import org.polypheny.db.algebra.core.document.DocumentValues;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -100,8 +106,8 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.document.DocumentRules;
-import org.polypheny.db.sql.sql.fun.SqlDatetimePlusOperator;
-import org.polypheny.db.sql.sql.fun.SqlDatetimeSubtractionOperator;
+import org.polypheny.db.sql.language.fun.SqlDatetimePlusOperator;
+import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Pair;
@@ -131,7 +137,13 @@ public class MongoRules {
             MongoFilterRule.INSTANCE,
             MongoProjectRule.INSTANCE,
             MongoAggregateRule.INSTANCE,
-            MongoTableModificationRule.INSTANCE
+            MongoTableModificationRule.INSTANCE,
+            MongoDocumentSortRule.INSTANCE,
+            MongoDocumentFilterRule.INSTANCE,
+            MongoDocumentProjectRule.INSTANCE,
+            MongoDocumentAggregateRule.INSTANCE,
+            MongoDocumentsRule.INSTANCE,
+            MongoDocumentModificationRule.INSTANCE
     };
 
 
@@ -227,6 +239,32 @@ public class MongoRules {
         return name.startsWith( "$" )
                 ? "_" + maybeFix( name.substring( 2 ) )
                 : maybeFix( name );
+    }
+
+
+    public static String translateDocValueAsKey( AlgDataType rowType, RexCall call, String prefix ) {
+        BsonValue value = translateDocValue( rowType, call, prefix );
+        return value.isString() ? value.asString().getValue() : value.asDocument().toJson();
+    }
+
+
+    public static BsonValue translateDocValue( AlgDataType rowType, RexCall call, String prefix ) {
+        RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
+
+        if ( call.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
+            return new BsonDynamic( (RexDynamicParam) call.operands.get( 1 ) ).setIsValue( true, prefix + rowType.getFieldNames().get( parent.getIndex() ) );
+        }
+        RexCall names = (RexCall) call.operands.get( 1 );
+        if ( names.operands.size() == 0 ) {
+            return new BsonString( prefix + rowType.getFieldNames().get( parent.getIndex() ) );
+        }
+
+        return new BsonString( prefix + rowType.getFieldNames().get( parent.getIndex() )
+                + "."
+                + names.operands
+                .stream()
+                .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
+                .collect( Collectors.joining( "." ) ) );
     }
 
 
@@ -437,8 +475,7 @@ public class MongoRules {
                 array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
             } else if ( call.isA( Kind.MQL_QUERY_VALUE ) ) {
-                return RexToMongoTranslator.translateDocValue( implementor.getStaticRowType(), call );
-
+                return translateDocValueAsKey( implementor.getStaticRowType(), call, "$" );
             } else if ( call.isA( Kind.MQL_ITEM ) ) {
                 RexNode leftPre = call.operands.get( 0 );
                 String left = leftPre.accept( this );
@@ -479,18 +516,6 @@ public class MongoRules {
                 return call.operands.get( 0 ).accept( this );
             }
             return null;
-        }
-
-
-        public static String translateDocValue( AlgDataType rowType, RexCall call ) {
-            RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
-            RexCall names = (RexCall) call.operands.get( 1 );
-            return "\"$" + rowType.getFieldNames().get( parent.getIndex() )
-                    + "."
-                    + names.operands
-                    .stream()
-                    .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
-                    .collect( Collectors.joining( "." ) ) + "\"";
         }
 
 
@@ -557,8 +582,35 @@ public class MongoRules {
     }
 
 
+    private static class MongoDocumentSortRule extends MongoConverterRule {
+
+        public static final MongoDocumentSortRule INSTANCE = new MongoDocumentSortRule();
+
+
+        private MongoDocumentSortRule() {
+            super( DocumentSort.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoDocumentSortRule" );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final DocumentSort sort = (DocumentSort) alg;
+
+            final AlgTraitSet traitSet = sort.getTraitSet().replace( out );
+            return new MongoSort(
+                    alg.getCluster(),
+                    traitSet,
+                    convert( sort.getInput(), out ),
+                    sort.collation,
+                    sort.offset,
+                    sort.fetch );
+        }
+
+    }
+
+
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link MongoFilter}.
+     * Rule to convert a {@link LogicalFilter} to a {@link MongoFilter}.
      */
     private static class MongoFilterRule extends MongoConverterRule {
 
@@ -589,8 +641,37 @@ public class MongoRules {
     }
 
 
+    private static class MongoDocumentFilterRule extends MongoConverterRule {
+
+        private static final MongoDocumentFilterRule INSTANCE = new MongoDocumentFilterRule();
+
+
+        private MongoDocumentFilterRule() {
+            super(
+                    LogicalDocumentFilter.class,
+                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
+                    Convention.NONE,
+                    MongoAlg.CONVENTION,
+                    "MongoDocumentFilterRule" );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
+            final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
+            return new MongoFilter(
+                    alg.getCluster(),
+                    traitSet,
+                    convert( filter.getInput(), out ),
+                    filter.condition );
+        }
+
+    }
+
+
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link MongoProject}.
+     * Rule to convert a {@link LogicalProject} to a {@link MongoProject}.
      */
     private static class MongoProjectRule extends MongoConverterRule {
 
@@ -617,6 +698,37 @@ public class MongoRules {
                     traitSet,
                     convert( project.getInput(), out ),
                     project.getProjects(),
+                    project.getRowType() );
+        }
+
+    }
+
+
+    private static class MongoDocumentProjectRule extends MongoConverterRule {
+
+        private static final MongoDocumentProjectRule INSTANCE = new MongoDocumentProjectRule();
+
+
+        private MongoDocumentProjectRule() {
+            super(
+                    LogicalDocumentProject.class,
+                    project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
+                            && !containsIncompatible( project ),
+                    Convention.NONE,
+                    MongoAlg.CONVENTION,
+                    "MongoDocumentProjectRule" );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalDocumentProject project = (LogicalDocumentProject) alg;
+            final AlgTraitSet traitSet = project.getTraitSet().replace( out );
+            return new MongoProject(
+                    project.getCluster(),
+                    traitSet,
+                    convert( project.getInput(), out ),
+                    project.projects,
                     project.getRowType() );
         }
 
@@ -685,16 +797,7 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             Values values = (Values) alg;
-            if ( values.getModel() == SchemaType.DOCUMENT ) {
-                Documents documents = (Documents) alg;
-                return new MongoDocuments(
-                        alg.getCluster(),
-                        alg.getRowType(),
-                        documents.getDocumentTuples(),
-                        alg.getTraitSet().replace( out ),
-                        values.getTuples()
-                );
-            }
+
             return new MongoValues(
                     values.getCluster(),
                     values.getRowType(),
@@ -720,16 +823,37 @@ public class MongoRules {
     }
 
 
-    public static class MongoDocuments extends Values implements MongoAlg {
+    public static class MongoDocumentsRule extends MongoConverterRule {
+
+        private static final MongoDocumentsRule INSTANCE = new MongoDocumentsRule();
 
 
-        private final ImmutableList<BsonValue> documentTuples;
+        private MongoDocumentsRule() {
+            super( DocumentValues.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoDocumentRule." + MongoAlg.CONVENTION );
+        }
 
 
-        public MongoDocuments( AlgOptCluster cluster, AlgDataType defaultRowType, ImmutableList<BsonValue> documentTuples, AlgTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-            super( cluster, defaultRowType, normalizedTuples, traitSet );
-            //this.tuples = normalizedTuples;
-            this.documentTuples = documentTuples;
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            DocumentValues documentValues = (DocumentValues) alg;
+            return new MongoDocuments(
+                    alg.getCluster(),
+                    alg.getRowType(),
+                    documentValues.getDocumentTuples(),
+                    alg.getTraitSet().replace( out )
+            );
+
+
+        }
+
+    }
+
+
+    public static class MongoDocuments extends DocumentValues implements MongoAlg {
+
+
+        public MongoDocuments( AlgOptCluster cluster, AlgDataType defaultRowType, ImmutableList<BsonValue> documentTuples, AlgTraitSet traitSet ) {
+            super( cluster, traitSet, defaultRowType, documentTuples );
         }
 
 
@@ -747,11 +871,11 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, MongoTableModificationRule::mongoSupported, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
+            super( Modify.class, MongoTableModificationRule::mongoSupported, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
         }
 
 
-        private static boolean mongoSupported( TableModify modify ) {
+        private static boolean mongoSupported( Modify modify ) {
             if ( !modify.isInsert() ) {
                 return true;
             }
@@ -769,7 +893,7 @@ public class MongoRules {
 
 
             @Override
-            public AlgNode visit( TableScan scan ) {
+            public AlgNode visit( Scan scan ) {
                 supported = false;
                 return super.visit( scan );
             }
@@ -788,17 +912,17 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final TableModify modify = (TableModify) alg;
+            final Modify modify = (Modify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
             }
-            if ( modify.getTable().unwrap( MongoTable.class ) == null ) {
+            if ( modify.getTable().unwrap( MongoEntity.class ) == null ) {
                 return null;
             }
 
             final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
-            return new MongoTableModify(
+            return new MongoEntityModify(
                     modify.getCluster(),
                     traitSet,
                     modify.getTable(),
@@ -813,14 +937,51 @@ public class MongoRules {
     }
 
 
-    private static class MongoTableModify extends TableModify implements MongoAlg {
+    private static class MongoDocumentModificationRule extends MongoConverterRule {
+
+        private static final MongoDocumentModificationRule INSTANCE = new MongoDocumentModificationRule();
+
+
+        MongoDocumentModificationRule() {
+            super( DocumentModify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoCollectionModificationRule." + MongoAlg.CONVENTION );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final DocumentModify modify = (DocumentModify) alg;
+            final ModifiableTable modifiableCollection = modify.getCollection().unwrap( ModifiableTable.class );
+            if ( modifiableCollection == null ) {
+                return null;
+            }
+            if ( modify.getCollection().unwrap( MongoEntity.class ) == null ) {
+                return null;
+            }
+
+            final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
+            return new MongoEntityModify(
+                    modify.getCluster(),
+                    traitSet,
+                    modify.getCollection(),
+                    modify.getCatalogReader(),
+                    AlgOptRule.convert( modify.getInput(), traitSet ),
+                    modify.operation,
+                    modify.getKeys(),
+                    modify.getUpdates(),
+                    true );
+        }
+
+    }
+
+
+    private static class MongoEntityModify extends Modify implements MongoAlg {
 
 
         private final GridFSBucket bucket;
         private Implementor implementor;
 
 
-        protected MongoTableModify(
+        protected MongoEntityModify(
                 AlgOptCluster cluster,
                 AlgTraitSet traitSet,
                 AlgOptTable table,
@@ -831,7 +992,7 @@ public class MongoRules {
                 List<RexNode> sourceExpressionList,
                 boolean flattened ) {
             super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
-            this.bucket = table.unwrap( MongoTable.class ).getMongoSchema().getBucket();
+            this.bucket = table.unwrap( MongoEntity.class ).getMongoSchema().getBucket();
         }
 
 
@@ -843,7 +1004,7 @@ public class MongoRules {
 
         @Override
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new MongoTableModify(
+            return new MongoEntityModify(
                     getCluster(),
                     traitSet,
                     getTable(),
@@ -862,10 +1023,10 @@ public class MongoRules {
             Table preTable = table.getTable();
             this.implementor = implementor;
 
-            if ( !(preTable instanceof MongoTable) ) {
+            if ( !(preTable instanceof MongoEntity) ) {
                 throw new RuntimeException( "There seems to be a problem with the correct costs for one of stores." );
             }
-            implementor.mongoTable = (MongoTable) preTable;
+            implementor.mongoEntity = (MongoEntity) preTable;
             implementor.table = table;
             implementor.setOperation( this.getOperation() );
 
@@ -891,7 +1052,7 @@ public class MongoRules {
                     int pos = 0;
                     BsonDocument doc = new BsonDocument();
                     List<BsonDocument> docDocs = new ArrayList<>();
-                    GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
+                    GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
                     for ( RexNode el : getSourceExpressionList() ) {
                         if ( el.isA( Kind.LITERAL ) ) {
                             doc.append(
@@ -1090,7 +1251,7 @@ public class MongoRules {
             implementor.operations = documents.documentTuples
                     .stream()
                     .filter( BsonValue::isDocument )
-                    .map( BsonValue::asDocument )
+                    .map( d -> new BsonDocument( "d", d.asDocument() ) )
                     .collect( Collectors.toList() );
         }
 
@@ -1106,7 +1267,7 @@ public class MongoRules {
                 } else if ( operand instanceof RexCall ) {
                     array.add( visitCall( implementor, (RexCall) operand, ((RexCall) operand).op.getKind(), type ) );
                 } else if ( operand.getKind() == Kind.LITERAL ) {
-                    array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValueAs( BsonUtil.getClassFromType( type ) ), type, implementor.mongoTable.getMongoSchema().getBucket() ) );
+                    array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValueAs( BsonUtil.getClassFromType( type ) ), type, implementor.mongoEntity.getMongoSchema().getBucket() ) );
                 } else if ( operand.getKind() == Kind.DYNAMIC_PARAM ) {
                     array.add( new BsonDynamic( (RexDynamicParam) operand ) );
                 } else {
@@ -1135,15 +1296,23 @@ public class MongoRules {
 
 
         private void handlePreparedInsert( Implementor implementor, MongoProject input ) {
-            if ( !(input.getInput() instanceof MongoValues) && input.getInput().getRowType().getFieldList().size() == 1 ) {
+            if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getRowType().getFieldList().size() == 1 ) {
                 return;
             }
 
             BsonDocument doc = new BsonDocument();
-            CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
-            GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
+            CatalogTable catalogTable = implementor.mongoEntity.getCatalogTable();
+            GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
+            //noinspection AssertWithSideEffects
             assert input.getRowType().getFieldCount() == this.getTable().getRowType().getFieldCount();
-            Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
+            Map<Integer, String> physicalMapping;
+            if ( input.getInput() instanceof MongoValues ) {
+                physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
+            } else if ( input.getInput() instanceof MongoDocuments ) {
+                physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), implementor.mongoEntity.getCatalogCollection() );
+            } else {
+                throw new RuntimeException( "Mapping for physical mongo fields not found" );
+            }
 
             implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
 
@@ -1179,10 +1348,17 @@ public class MongoRules {
         }
 
 
+        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogCollection catalogCollection ) {
+            Map<Integer, String> map = new HashMap<>();
+            map.put( 0, "d" );
+            return map;
+        }
+
+
         private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogTable catalogTable ) {
             Map<Integer, String> map = new HashMap<>();
             List<String> names = catalogTable.getColumnNames();
-            List<Long> ids = catalogTable.columnIds;
+            List<Long> ids = catalogTable.fieldIds;
             int pos = 0;
             for ( String name : Pair.left( fieldList ) ) {
                 map.put( pos, MongoStore.getPhysicalColumnName( name, ids.get( names.indexOf( name ) ) ) );
@@ -1195,7 +1371,7 @@ public class MongoRules {
         private String getPhysicalName( MongoProject input, CatalogTable catalogTable, int pos ) {
             String logicalName = input.getRowType().getFieldNames().get( pos );
             int index = catalogTable.getColumnNames().indexOf( logicalName );
-            return MongoStore.getPhysicalColumnName( logicalName, catalogTable.columnIds.get( index ) );
+            return MongoStore.getPhysicalColumnName( logicalName, catalogTable.fieldIds.get( index ) );
         }
 
 
@@ -1218,8 +1394,8 @@ public class MongoRules {
 
         private void handleDirectInsert( Implementor implementor, MongoValues values ) {
             List<BsonDocument> docs = new ArrayList<>();
-            CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
-            GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
+            CatalogTable catalogTable = implementor.mongoEntity.getCatalogTable();
+            GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
 
             AlgDataType valRowType = rowType;
 
@@ -1228,7 +1404,7 @@ public class MongoRules {
             }
 
             List<String> columnNames = catalogTable.getColumnNames();
-            List<Long> columnIds = catalogTable.columnIds;
+            List<Long> columnIds = catalogTable.fieldIds;
             for ( ImmutableList<RexLiteral> literals : values.tuples ) {
                 BsonDocument doc = new BsonDocument();
                 int pos = 0;
@@ -1254,7 +1430,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert an {@link org.polypheny.db.algebra.logical.LogicalAggregate}
+     * Rule to convert an {@link LogicalAggregate}
      * to an {@link MongoAggregate}.
      */
     private static class MongoAggregateRule extends MongoConverterRule {
@@ -1263,8 +1439,13 @@ public class MongoRules {
 
 
         private MongoAggregateRule() {
-            super( LogicalAggregate.class, r -> true, Convention.NONE, MongoAlg.CONVENTION,
+            super( LogicalAggregate.class, MongoAggregateRule::supported, Convention.NONE, MongoAlg.CONVENTION,
                     "MongoAggregateRule" );
+        }
+
+
+        private static boolean supported( LogicalAggregate aggregate ) {
+            return aggregate.getAggCallList().stream().noneMatch( AggregateCall::isDistinct );
         }
 
 
@@ -1282,6 +1463,40 @@ public class MongoRules {
                         agg.getGroupSet(),
                         agg.getGroupSets(),
                         agg.getAggCallList() );
+            } catch ( InvalidAlgException e ) {
+                LOGGER.warn( e.toString() );
+                return null;
+            }
+        }
+
+    }
+
+
+    private static class MongoDocumentAggregateRule extends MongoConverterRule {
+
+        public static final AlgOptRule INSTANCE = new MongoDocumentAggregateRule();
+
+
+        private MongoDocumentAggregateRule() {
+            super( LogicalDocumentAggregate.class, r -> true, Convention.NONE, MongoAlg.CONVENTION,
+                    "MongoDocumentAggregateRule" );
+        }
+
+
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalDocumentAggregate agg = (LogicalDocumentAggregate) alg;
+            final AlgTraitSet traitSet =
+                    agg.getTraitSet().replace( out );
+            try {
+                return new MongoAggregate(
+                        alg.getCluster(),
+                        traitSet,
+                        convert( agg.getInput(), traitSet.simplify() ),
+                        agg.indicator,
+                        agg.groupSet,
+                        agg.groupSets,
+                        agg.aggCalls );
             } catch ( InvalidAlgException e ) {
                 LOGGER.warn( e.toString() );
                 return null;

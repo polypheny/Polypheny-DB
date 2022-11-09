@@ -31,13 +31,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer.EnforcementInformation;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -52,7 +52,8 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.processing.ConstraintEnforcer;
+import org.polypheny.db.processing.ConstraintEnforceAttacher;
+import org.polypheny.db.processing.CypherProcessorImpl;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
@@ -177,9 +178,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         if ( !catalogTables.isEmpty() ) {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
-            List<EnforcementInformation> infos = ConstraintEnforcer
+            List<EnforcementInformation> infos = ConstraintEnforceAttacher
                     .getConstraintAlg( catalogTables, statement, EnforcementTime.ON_COMMIT );
-            List<PolyResult> results = infos
+            List<PolyImplementation> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );
             List<List<List<Object>>> rows = results.stream().map( r -> r.getRows( statement, -1 ) ).filter( r -> r.size() != 0 ).collect( Collectors.toList() );
@@ -283,6 +284,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 return new MqlProcessorImpl();
             case PIG:
                 return new PigProcessorImpl();
+            case CYPHER:
+                return new CypherProcessorImpl();
             default:
                 throw new RuntimeException( "This language seems to not be supported!" );
         }
@@ -349,7 +352,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     /**
      * Used to specify if a TX was started using freshness tolerance levels and
      * therefore allows the usage of outdated replicas.
-     *
+     * <p>
      * If this is active no DML operations are possible for this TX.
      * If however a DML operation was already executed by this TX.
      * This TX can now support no more freshness-related queries.

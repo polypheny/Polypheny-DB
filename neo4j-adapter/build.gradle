@@ -1,0 +1,76 @@
+group "org.polypheny"
+
+
+dependencies {
+    implementation project(":core")
+    implementation project(":sql-language")
+
+    implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: neo4j_version // Apache 2.0
+    //implementation group: "org.neo4j", name: "neo4j", version: neo4j_version // GPL 3.0 maybe remove later, for development
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":sql-language:processResources")
+}
+
+delombok {
+    dependsOn(":sql-language:processResources")
+}
+
+
+/**
+ * Tests
+ */
+test {
+    include "**/MongoAdapterTest.class"
+    maxHeapSize = "2g" // Increase heap size (default is 512MB)
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}

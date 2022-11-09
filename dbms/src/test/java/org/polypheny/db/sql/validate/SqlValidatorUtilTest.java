@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlTestFactory;
-import org.polypheny.db.sql.sql.utils.SqlTester;
-import org.polypheny.db.sql.sql.utils.SqlValidatorTester;
-import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlTestFactory;
+import org.polypheny.db.sql.language.utils.SqlTester;
+import org.polypheny.db.sql.language.utils.SqlValidatorTester;
+import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
+import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.ValidatorUtil;

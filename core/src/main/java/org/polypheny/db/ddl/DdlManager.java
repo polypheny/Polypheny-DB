@@ -20,6 +20,7 @@ package org.polypheny.db.ddl;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -27,15 +28,16 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -77,19 +79,6 @@ public abstract class DdlManager {
     public static DdlManager INSTANCE = null;
 
 
-    public enum Language {
-        SQL( 1 ),
-        MQL( 2 );
-
-        private final int id;
-
-
-        Language( int id ) {
-            this.id = id;
-        }
-    }
-
-
     /**
      * Sets a new DdlManager and returns it.
      *
@@ -128,7 +117,7 @@ public abstract class DdlManager {
      * @param ifNotExists whether to silently ignore if the schema does already exist
      * @param replace whether the replace a existing schema
      */
-    public abstract void createSchema( String name, long databaseId, SchemaType type, int userId, boolean ifNotExists, boolean replace ) throws SchemaAlreadyExistsException;
+    public abstract long createNamespace( String name, long databaseId, NamespaceType type, int userId, boolean ifNotExists, boolean replace ) throws NamespaceAlreadyExistsException;
 
     /**
      * Adds a new adapter (data store or data source)
@@ -163,7 +152,7 @@ public abstract class DdlManager {
      * @param oldName the old name current name of the schema
      * @param databaseId the id of the database the schema belongs to
      */
-    public abstract void renameSchema( String newName, String oldName, long databaseId ) throws SchemaAlreadyExistsException, UnknownSchemaException;
+    public abstract void renameSchema( String newName, String oldName, long databaseId ) throws NamespaceAlreadyExistsException, UnknownSchemaException;
 
     /**
      * Adds a column to an existing source table
@@ -226,10 +215,22 @@ public abstract class DdlManager {
      * @param columnNames logical names of all columns on which to create the index
      * @param indexName name of the index
      * @param isUnique whether the index is unique
-     * @param location instance of the data store on which to create the index; null for creating a polystore index
+     * @param location instance of the data store on which to create the index; if null, default strategy is being used
      * @param statement the initial query statement
      */
     public abstract void addIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException;
+
+    /**
+     * Adds an index located in Polypheny to a table
+     *
+     * @param catalogTable the table to which an index should be added
+     * @param indexMethodName name of the indexMethod; can be null
+     * @param columnNames logical names of all columns on which to create the index
+     * @param indexName name of the index
+     * @param isUnique whether the index is unique
+     * @param statement the initial query statement
+     */
+    public abstract void addPolyphenyIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException;
 
     /**
      * Adds new column placements to a table
@@ -242,7 +243,6 @@ public abstract class DdlManager {
      * @param statement the query statement
      */
     public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
-
 
     /**
      * Adds a new primary key to a table
@@ -437,7 +437,7 @@ public abstract class DdlManager {
      * @param newTableName the new name for the table
      * @param statement the used statement
      */
-    public abstract void renameTable( CatalogTable catalogTable, String newTableName, Statement statement ) throws TableAlreadyExistsException;
+    public abstract void renameTable( CatalogTable catalogTable, String newTableName, Statement statement ) throws EntityAlreadyExistsException;
 
     /**
      * Rename a column of a table (changing the logical name of the column)
@@ -448,6 +448,8 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void renameColumn( CatalogTable catalogTable, String columnName, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException, ColumnNotExistsException;
+
+    public abstract void removeGraphDatabase( long graphId, boolean ifExists, Statement statement );
 
     /**
      * Create a new table
@@ -461,7 +463,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void createTable( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
      * Create a new view
@@ -471,7 +473,7 @@ public abstract class DdlManager {
      * @param algNode the algNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException;
 
 
     /**
@@ -482,15 +484,18 @@ public abstract class DdlManager {
      * @param algRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
+    public abstract void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws EntityAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
 
+    public abstract void createCollection( long schemaId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException;
+
+    public abstract void addCollectionPlacement( long namespaceId, String name, List<DataStore> stores, Statement statement );
 
     /**
      * Add new partitions for the column
      *
      * @param partitionInfo the information concerning the partition
      */
-    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore> stores, Statement statement ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException, UnknownDatabaseException, UnknownTableException, TransactionException, UnknownSchemaException, UnknownUserException, UnknownKeyException;
 
     /**
      * Removes partitioning from Table
@@ -498,7 +503,7 @@ public abstract class DdlManager {
      * @param catalogTable teh table to be merged
      * @param statement the used Statement
      */
-    public abstract void removePartitioning( CatalogTable catalogTable, Statement statement );
+    public abstract void removePartitioning( CatalogTable catalogTable, Statement statement ) throws UnknownDatabaseException, GenericCatalogException, UnknownTableException, TransactionException, UnknownSchemaException, UnknownUserException, UnknownKeyException;
 
     /**
      * Adds a new constraint to a table
@@ -564,7 +569,7 @@ public abstract class DdlManager {
     public abstract void dropFunction();
 
     /**
-     * Set a option
+     * Set an option
      */
     public abstract void setOption();
 
@@ -574,11 +579,31 @@ public abstract class DdlManager {
     public abstract void refreshView( Statement statement, Long materializedId );
 
 
+    public abstract long createGraph( long databaseId, String namespaceName, boolean modifiable, @Nullable List<DataStore> stores, boolean ifNotExists, boolean replace, Statement statement );
+
+    public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
+
+    public abstract void removeGraphAlias( long graphId, String alias, boolean ifNotExists );
+
+
+    public abstract void replaceGraphAlias( long graphId, String oldAlias, String alias );
+
+
+    public abstract long addGraphPlacement( long graphId, List<DataStore> stores, boolean onlyPlacement, Statement statement );
+
+    public abstract void removeGraphDatabasePlacement( long graphId, DataStore dataStores, Statement statement );
+
+
+    public abstract void dropCollection( CatalogCollection catalogCollection, Statement statement );
+
+    public abstract void dropCollectionPlacement( long namespaceId, CatalogCollection collection, List<DataStore> dataStores, Statement statement );
+
+
     /**
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
-    public static class ColumnInformation {
+    public static class FieldInformation {
 
         public final String name;
         public final ColumnTypeInformation typeInformation;
@@ -587,7 +612,7 @@ public abstract class DdlManager {
         public final int position;
 
 
-        public ColumnInformation( String name, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, int position ) {
+        public FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, int position ) {
             this.name = name;
             this.typeInformation = typeInformation;
             this.collation = collation;
@@ -733,6 +758,11 @@ public abstract class DdlManager {
             return node.toString();
         }
 
+    }
+
+
+    public enum DefaultIndexPlacementStrategy {
+        POLYPHENY, ONE_DATA_STORE, ALL_DATA_STORES
     }
 
 }

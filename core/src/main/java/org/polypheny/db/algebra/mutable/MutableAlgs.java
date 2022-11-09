@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,24 +49,24 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sample;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalWindow;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepAlgVertex;
@@ -249,7 +249,7 @@ public abstract class MutableAlgs {
             }
             case TABLE_MODIFY:
                 final MutableTableModify modify = (MutableTableModify) node;
-                return LogicalTableModify.create(
+                return LogicalModify.create(
                         modify.table,
                         modify.catalogReader,
                         fromMutable( modify.getInput(), algBuilder ),
@@ -323,8 +323,8 @@ public abstract class MutableAlgs {
             return toMutable(
                     Util.first( ((AlgSubset) alg).getBest(), ((AlgSubset) alg).getOriginal() ) );
         }
-        if ( alg instanceof TableScan ) {
-            return MutableScan.of( (TableScan) alg );
+        if ( alg instanceof Scan ) {
+            return MutableScan.of( (Scan) alg );
         }
         if ( alg instanceof Values ) {
             return MutableValues.of( (Values) alg );
@@ -374,8 +374,8 @@ public abstract class MutableAlgs {
             final MutableAlg input = toMutable( window.getInput() );
             return MutableWindow.of( window.getRowType(), input, window.groups, window.getConstants() );
         }
-        if ( alg instanceof TableModify ) {
-            final TableModify modify = (TableModify) alg;
+        if ( alg instanceof Modify ) {
+            final Modify modify = (Modify) alg;
             final MutableAlg input = toMutable( modify.getInput() );
             return MutableTableModify.of(
                     modify.getRowType(),

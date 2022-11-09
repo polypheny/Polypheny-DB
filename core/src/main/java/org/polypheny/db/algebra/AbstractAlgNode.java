@@ -63,6 +63,8 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -144,7 +146,7 @@ public abstract class AbstractAlgNode implements AlgNode {
         if ( getInputs().equals( inputs ) && traitSet == getTraitSet() ) {
             return this;
         }
-        throw new AssertionError( "Relational expression should override copy. Class=[" + getClass() + "]; traits=[" + getTraitSet() + "]; desired traits=[" + traitSet + "]" );
+        throw new AssertionError( "Algebra expression should override copy. Class=[" + getClass() + "]; traits=[" + getTraitSet() + "]; desired traits=[" + traitSet + "]" );
     }
 
 
@@ -218,7 +220,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
     protected AlgDataType deriveRowType() {
         // This method is only called if rowType is null, so you don't NEED to implement it if rowType is always set.
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "The rowType could not be derived." );
     }
 
 
@@ -321,6 +323,10 @@ public abstract class AbstractAlgNode implements AlgNode {
      * @return Plan writer for fluent-explain pattern
      */
     public AlgWriter explainTerms( AlgWriter pw ) {
+        ModelTrait trait = getTraitSet().getTrait( ModelTraitDef.INSTANCE );
+        if ( trait != null ) {
+            return pw.item( "model", trait.getDataModel().name() );
+        }
         return pw;
     }
 
@@ -357,7 +363,7 @@ public abstract class AbstractAlgNode implements AlgNode {
         String tempDigest = computeDigest();
         assert tempDigest != null : "computeDigest() should be non-null";
 
-        this.desc = "rel#" + id + ":" + tempDigest;
+        this.desc = "alg#" + id + ":" + tempDigest;
         this.digest = tempDigest;
         return this.digest;
     }

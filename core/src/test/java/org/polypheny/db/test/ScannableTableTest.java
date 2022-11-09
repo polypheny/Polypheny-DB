@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ public class ScannableTableTest {
 //        final StringBuilder buf = new StringBuilder();
 //        final Table table = new BeatlesFilterableTable( buf, true );
 //        final String explain = "PLAN=EnumerableInterpreter\n"
-//                + "  BindableTableScan(table=[[s, beatles]], filters=[[=($0, 4)]])";
+//                + "  BindableScan(table=[[s, beatles]], filters=[[=($0, 4)]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles", table ) )
 //                .query( "select * from \"s\".\"beatles\" where \"i\" = 4" )
@@ -134,7 +134,7 @@ public class ScannableTableTest {
 //        final StringBuilder buf = new StringBuilder();
 //        final Table table = new BeatlesFilterableTable( buf, false );
 //        final String explain = "PLAN=EnumerableInterpreter\n"
-//                + "  BindableTableScan(table=[[s, beatles2]], filters=[[=($0, 4)]])";
+//                + "  BindableScan(table=[[s, beatles2]], filters=[[=($0, 4)]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles2", table ) )
 //                .query( "select * from \"s\".\"beatles2\" where \"i\" = 4" )
@@ -152,7 +152,7 @@ public class ScannableTableTest {
 //        final StringBuilder buf = new StringBuilder();
 //        final Table table = new BeatlesProjectableFilterableTable( buf, true );
 //        final String explain = "PLAN=EnumerableInterpreter\n"
-//                + "  BindableTableScan(table=[[s, beatles]], filters=[[=($0, 4)]], projects=[[1]])";
+//                + "  BindableScan(table=[[s, beatles]], filters=[[=($0, 4)]], projects=[[1]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles", table ) )
 //                .query( "select \"j\" from \"s\".\"beatles\" where \"i\" = 4" )
@@ -168,7 +168,7 @@ public class ScannableTableTest {
 //        final StringBuilder buf = new StringBuilder();
 //        final Table table = new BeatlesProjectableFilterableTable( buf, false );
 //        final String explain = "PLAN=EnumerableInterpreter\n"
-//                + "  BindableTableScan(table=[[s, beatles2]], filters=[[=($0, 4)]], projects=[[1]]";
+//                + "  BindableScan(table=[[s, beatles2]], filters=[[=($0, 4)]], projects=[[1]]";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles2", table ) )
 //                .query( "select \"j\" from \"s\".\"beatles2\" where \"i\" = 4" )
@@ -186,7 +186,7 @@ public class ScannableTableTest {
 //        final StringBuilder buf = new StringBuilder();
 //        final Table table = new BeatlesProjectableFilterableTable( buf, true );
 //        final String explain = "PLAN=EnumerableInterpreter\n"
-//                + "  BindableTableScan(table=[[s, beatles]], filters=[[=($0, 4)]], projects=[[2, 1]]";
+//                + "  BindableScan(table=[[s, beatles]], filters=[[=($0, 4)]], projects=[[2, 1]]";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles", table ) )
 //                .query( "select \"k\",\"j\" from \"s\".\"beatles\" where \"i\" = 4" )
@@ -204,7 +204,7 @@ public class ScannableTableTest {
 //        final StringBuilder buf = new StringBuilder();
 //        final Table table = new BeatlesProjectableFilterableTable( buf, false );
 //        final String explain = "PLAN=EnumerableInterpreter\n"
-//                + "  BindableTableScan(table=[[s, beatles]], filters=[[>($2, 1941)]], projects=[[0, 2]])";
+//                + "  BindableScan(table=[[s, beatles]], filters=[[>($2, 1941)]], projects=[[0, 2]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles", table ) )
 //                .query( "select \"i\",\"k\" from \"s\".\"beatles\" where \"k\" > 1941" )
@@ -223,7 +223,7 @@ public class ScannableTableTest {
 //        final StringBuilder buf = new StringBuilder();
 //        final Table table = new BeatlesProjectableFilterableTable( buf, false );
 //        final String explain = "PLAN=EnumerableInterpreter\n"
-//                + "  BindableTableScan(table=[[s, beatles2]], filters=[[=($0, 4)]], projects=[[2]])";
+//                + "  BindableScan(table=[[s, beatles2]], filters=[[=($0, 4)]], projects=[[2]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles2", table ) )
 //                .query( "select \"k\" from \"s\".\"beatles2\" where \"i\" = 4" )
@@ -239,7 +239,7 @@ public class ScannableTableTest {
 //        final Table table = new BeatlesProjectableFilterableTable( buf, false );
 //        final String explain = "PLAN=EnumerableAggregate(group=[{}], M=[MAX($0)])\n"
 //                + "  EnumerableInterpreter\n"
-//                + "    BindableTableScan(table=[[s, beatles]], filters=[[>($0, 1)]], projects=[[2]])";
+//                + "    BindableScan(table=[[s, beatles]], filters=[[>($0, 1)]], projects=[[2]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles", table ) )
 //                .query( "select max(\"k\") as m from \"s\".\"beatles\" where \"i\" > 1" )
@@ -259,7 +259,7 @@ public class ScannableTableTest {
 //        final String explain = "PLAN="
 //                + "EnumerableAggregate(group=[{0}], C=[COUNT()])\n"
 //                + "  EnumerableInterpreter\n"
-//                + "    BindableTableScan(table=[[s, beatles]], filters=[[>($2, 1900)]], projects=[[0]])";
+//                + "    BindableScan(table=[[s, beatles]], filters=[[>($2, 1900)]], projects=[[0]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles", table ) )
 //                .query( sql )
@@ -281,7 +281,7 @@ public class ScannableTableTest {
 //                + "EnumerableAggregate(group=[{0}], C=[COUNT()])\n"
 //                + "  EnumerableAggregate(group=[{0, 1}])\n"
 //                + "    EnumerableInterpreter\n"
-//                + "      BindableTableScan(table=[[s, beatles]], filters=[[=($2, 1940)]], projects=[[2, 0]])";
+//                + "      BindableScan(table=[[s, beatles]], filters=[[=($2, 1940)]], projects=[[2, 0]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles", table ) )
 //                .query( sql )
@@ -298,7 +298,7 @@ public class ScannableTableTest {
 //        final StringBuilder buf = new StringBuilder();
 //        final Table table = new BeatlesProjectableFilterableTable( buf, false );
 //        final String explain = "PLAN=EnumerableInterpreter\n"
-//                + "  BindableTableScan(table=[[s, beatles2]], filters=[[>($2, 1941)]], projects=[[2]])";
+//                + "  BindableScan(table=[[s, beatles2]], filters=[[>($2, 1941)]], projects=[[2]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles2", table ) )
 //                .query( "select \"k\" from \"s\".\"beatles2\" where \"k\" > 1941" )
@@ -318,7 +318,7 @@ public class ScannableTableTest {
 //        final Table table = new BeatlesProjectableFilterableTable( buf, true );
 //        final String explain = "PLAN=EnumerableCalc(expr#0..2=[{inputs}], expr#3=[3], k=[$t2], j=[$t1], i=[$t0], EXPR$3=[$t3])\n"
 //                + "  EnumerableInterpreter\n"
-//                + "    BindableTableScan(table=[[s, beatles]])";
+//                + "    BindableScan(table=[[s, beatles]])";
 //        PolyphenyDbAssert.that()
 //                .with( newSchema( "s", "beatles", table ) )
 //                .query( "select \"k\",\"j\",\"i\",3 from \"s\".\"beatles\"" )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.OperatorBinding;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.sql.sql.util.ListSqlOperatorTable;
+import org.polypheny.db.sql.language.SqlFunction;
+import org.polypheny.db.sql.language.SqlOperator;
+import org.polypheny.db.sql.language.util.ListSqlOperatorTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 

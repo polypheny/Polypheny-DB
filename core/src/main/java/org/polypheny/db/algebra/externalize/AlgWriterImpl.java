@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -215,13 +215,19 @@ public class AlgWriterImpl implements AlgWriter {
 
     private boolean checkInputsPresentInExplain( AlgNode node ) {
         int i = 0;
-        if ( values.size() > 0 && values.get( 0 ).left.equals( "subset" ) ) {
+        if ( values.size() > i && values.get( i ).left.equals( "subset" ) ) {
             ++i;
         }
+
+        if ( values.size() > i && (values.get( i ).left.equals( "model" )) ) {
+            ++i;
+        }
+
         for ( AlgNode input : node.getInputs() ) {
             assert values.get( i ).right == input;
             ++i;
         }
+
         return true;
     }
 

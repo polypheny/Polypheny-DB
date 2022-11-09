@@ -25,17 +25,18 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
+
 public class CatalogView extends CatalogTable {
 
-    private static final long serialVersionUID = -4453089531698670528L;
+    private static final long serialVersionUID = -4771308114962700515L;
 
     @Getter
     protected final ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
@@ -54,8 +55,7 @@ public class CatalogView extends CatalogTable {
             long schemaId,
             long databaseId,
             int ownerId,
-            String ownerName,
-            TableType tableType,
+            EntityType entityType,
             String query,
             Long primaryKey,
             ImmutableList<Integer> dataPlacements,
@@ -65,7 +65,7 @@ public class CatalogView extends CatalogTable {
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, dataPlacements,
+        super( id, name, columnIds, schemaId, databaseId, ownerId, entityType, primaryKey, dataPlacements,
                 modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
@@ -79,12 +79,11 @@ public class CatalogView extends CatalogTable {
         return new CatalogView(
                 id,
                 name,
-                columnIds,
-                schemaId,
+                fieldIds,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,
@@ -102,12 +101,11 @@ public class CatalogView extends CatalogTable {
         return new CatalogView(
                 id,
                 newName,
-                columnIds,
-                schemaId,
+                fieldIds,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,
@@ -126,11 +124,10 @@ public class CatalogView extends CatalogTable {
                 id,
                 name,
                 newColumnIds,
-                schemaId,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 query,
                 primaryKey,
                 dataPlacements,
@@ -164,8 +161,8 @@ public class CatalogView extends CatalogTable {
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
             prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster );
         }
-        if ( viewLogicalRoot instanceof LogicalViewScan ) {
-            prepareView( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), algOptCluster );
+        if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
+            prepareView( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algOptCluster );
         }
     }
 
