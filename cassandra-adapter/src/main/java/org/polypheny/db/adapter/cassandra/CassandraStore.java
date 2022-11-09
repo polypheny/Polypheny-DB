@@ -154,7 +154,7 @@ public class CassandraStore extends DataStore {
             this.dbUsername = "cassandra";
             this.dbPassword = "cassandra";
 
-            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "bitnami/cassandra:3.11", getAdapterName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "bitnami/cassandra:3.11", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                     .withMappedPort( 9042, Integer.parseInt( settings.get( "port" ) ) )
                     // cassandra can take quite some time to start
                     .withReadyTest( this::testDockerConnection, 80000 )
@@ -504,7 +504,7 @@ public class CassandraStore extends DataStore {
         try {
             this.session.close();
         } catch ( RuntimeException e ) {
-            log.warn( "Exception while shutting down {}", getAdapterName(), e );
+            log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
 
         if ( deployMode == DeployMode.EMBEDDED ) {
@@ -513,7 +513,7 @@ public class CassandraStore extends DataStore {
             DockerInstance.getInstance().destroyAll( getAdapterId() );
         }
 
-        log.info( "Shut down Cassandra store: {}", this.getAdapterName() );
+        log.info( "Shut down Cassandra store: {}", this.getUniqueName() );
     }
 
 
@@ -552,7 +552,7 @@ public class CassandraStore extends DataStore {
                 try {
                     mySession.close();
                 } catch ( RuntimeException e ) {
-                    log.warn( "Exception while shutting test connection down {}", getAdapterName(), e );
+                    log.warn( "Exception while shutting test connection down {}", getUniqueName(), e );
                 }
                 return true;
             }
@@ -564,7 +564,7 @@ public class CassandraStore extends DataStore {
             try {
                 mySession.close();
             } catch ( RuntimeException e ) {
-                log.warn( "Exception while shutting test connection down {}", getAdapterName(), e );
+                log.warn( "Exception while shutting test connection down {}", getUniqueName(), e );
             }
         }
 

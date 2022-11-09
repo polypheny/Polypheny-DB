@@ -114,7 +114,7 @@ public abstract class SqlDdl extends SqlCall {
         if ( adapterInstance instanceof DataStore ) {
             return (DataStore) adapterInstance;
         } else if ( adapterInstance instanceof DataSource ) {
-            throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.ddlOnDataSource( adapterInstance.getAdapterName() ) );
+            throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
         } else {
             throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
         }
@@ -130,7 +130,7 @@ public abstract class SqlDdl extends SqlCall {
         if ( adapterInstance instanceof DataStore ) {
             return (DataStore) adapterInstance;
         } else if ( adapterInstance instanceof DataSource ) {
-            throw CoreUtil.newContextException( pos, RESOURCE.ddlOnDataSource( adapterInstance.getAdapterName() ) );
+            throw CoreUtil.newContextException( pos, RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
         } else {
             throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
         }

@@ -100,9 +100,9 @@ public abstract class DataSource extends Adapter {
         return ( src, typeOfSrc, context ) -> {
             JsonObject jsonSource = new JsonObject();
             jsonSource.addProperty( "adapterId", src.getAdapterId() );
-            //jsonSource.addProperty( "uniqueName", src.getAdapterName() );
+            jsonSource.addProperty( "uniqueName", src.getUniqueName() );
             jsonSource.addProperty( "adapterName", src.getAdapterName() );
-            jsonSource.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
+            jsonSource.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings( src.getClass() ), src.getCurrentSettings() ) ) );
             jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonSource.addProperty( "type", src.getAdapterType().name() );

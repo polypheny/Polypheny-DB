@@ -16,14 +16,26 @@
 
 package org.polypheny.db.catalog;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
 public class Adapter {
 
-    private static final Map<String, Adapter> register = new HashMap<>();
+    public static Map<String, Adapter> REGISTER;
+
+
+    static {
+        REGISTER = new ConcurrentHashMap<>();
+        System.out.println( "init" );
+    }
+
+
     @Getter
     private final Map<String, String> defaultSettings;
 
@@ -31,22 +43,30 @@ public class Adapter {
     private final Class<?> clazz;
     @Getter
     private final String adapterName;
+    @Getter
+    private final AdapterType adapterType;
 
 
     public Adapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
         this.adapterName = adapterName;
         this.clazz = clazz;
         this.defaultSettings = defaultSettings;
+        this.adapterType = DataStore.class.isAssignableFrom( clazz ) ? AdapterType.STORE : AdapterType.SOURCE;
     }
 
 
     public static Adapter fromString( String adapterName ) {
-        return register.get( adapterName.toUpperCase( Locale.ROOT ) );
+        return REGISTER.get( adapterName.toUpperCase( Locale.ROOT ) );
     }
 
 
     public static void addAdapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
-        register.put( adapterName.toUpperCase(), new Adapter( clazz, adapterName.toUpperCase(), defaultSettings ) );
+        REGISTER.put( adapterName.toUpperCase(), new Adapter( clazz, adapterName.toUpperCase(), defaultSettings ) );
+    }
+
+
+    public static List<Adapter> getAdapters( AdapterType adapterType ) {
+        return REGISTER.values().stream().filter( a -> a.adapterType == adapterType ).collect( Collectors.toList() );
     }
 
 }

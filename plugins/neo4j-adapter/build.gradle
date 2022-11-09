@@ -3,11 +3,10 @@ group "org.polypheny"
 
 dependencies {
     compileOnly project(":core")
-    implementation project(":sql-language")
+    compileOnly project(":sql-language")
     compileOnly project(':dbms')
 
     implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: neo4j_version // Apache 2.0
-    //implementation group: "org.neo4j", name: "neo4j", version: neo4j_version // GPL 3.0 maybe remove later, for development
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

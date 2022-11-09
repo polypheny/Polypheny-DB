@@ -60,11 +60,11 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
         usedModes = DeployMode.EMBEDDED,
         supportedNamespaceTypes = { NamespaceType.RELATIONAL })
-@AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1)
+@AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1, defaultValue = "Memory")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
-@AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" })
-@AdapterSettingList(name = "trxIsolationLevel", options = { "read_committed", "serializable" })
-@AdapterSettingList(name = "type", options = { "Memory", "File" })
+@AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" }, defaultValue = "mvcc")
+@AdapterSettingList(name = "trxIsolationLevel", options = { "read_committed", "serializable" }, defaultValue = "read_committed")
+@AdapterSettingList(name = "type", options = { "Memory", "File" }, defaultValue = "Memory")
 public class HsqldbStore extends AbstractJdbcStore {
 
     public static void register() {
@@ -101,7 +101,7 @@ public class HsqldbStore extends AbstractJdbcStore {
                 trxSettings += ";hsqldb.default_table_type=cached";
             }
             if ( settings.get( "type" ).equals( "Memory" ) ) {
-                dataSource.setUrl( "jdbc:hsqldb:mem:" + getAdapterName() + trxSettings );
+                dataSource.setUrl( "jdbc:hsqldb:mem:" + getUniqueName() + trxSettings );
             } else {
                 File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/hsqldb/" + getAdapterId() );
                 dataSource.setUrl( "jdbc:hsqldb:file:" + path + trxSettings );
@@ -207,7 +207,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             // TODO MV: Find better solution then generating random XID
             connectionFactory.getOrCreateConnectionHandler( PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) ) ).execute( "SHUTDOWN" );
         } catch ( SQLException | ConnectionHandlerException e ) {
-            log.warn( "Exception while shutting down {}", getAdapterName(), e );
+            log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
         super.shutdown();
     }

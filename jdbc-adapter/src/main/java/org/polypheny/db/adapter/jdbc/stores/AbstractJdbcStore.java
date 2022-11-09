@@ -101,7 +101,7 @@ public abstract class AbstractJdbcStore extends DataStore {
 
 
     protected void registerJdbcInformation() {
-        JdbcUtils.addInformationPoolSize( informationPage, informationGroups, informationElements, connectionFactory, getAdapterName() );
+        JdbcUtils.addInformationPoolSize( informationPage, informationGroups, informationElements, connectionFactory, getUniqueName() );
         addInformationPhysicalNames();
         enableInformationPage();
     }
@@ -134,11 +134,11 @@ public abstract class AbstractJdbcStore extends DataStore {
             String physicalTableName = getPhysicalTableName( catalogTable.id, partitionId );
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getAdapterName(), qualifiedNames, physicalTableName );
+                log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
             }
             StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
             if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                log.info( "{} on store {}", query.toString(), this.getAdapterName() );
+                log.info( "{} on store {}", query.toString(), this.getUniqueName() );
             }
             executeUpdate( query, context );
 
@@ -330,7 +330,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                     .append( dialect.quoteIdentifier( physicalTableName ) );
 
             if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                log.info( "{} from store {}", builder.toString(), this.getAdapterName() );
+                log.info( "{} from store {}", builder.toString(), this.getUniqueName() );
             }
             executeUpdate( builder, context );
         }
@@ -385,7 +385,7 @@ public abstract class AbstractJdbcStore extends DataStore {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
             return connectionFactory.getConnectionHandler( xid ).prepare();
         } else {
-            log.warn( "There is no connection to prepare (Uniquename: {}, XID: {})! Returning true.", getAdapterName(), xid );
+            log.warn( "There is no connection to prepare (Uniquename: {}, XID: {})! Returning true.", getUniqueName(), xid );
             return true;
         }
     }
@@ -397,7 +397,7 @@ public abstract class AbstractJdbcStore extends DataStore {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
             connectionFactory.getConnectionHandler( xid ).commit();
         } else {
-            log.warn( "There is no connection to commit (Uniquename: {}, XID: {})!", getAdapterName(), xid );
+            log.warn( "There is no connection to commit (Uniquename: {}, XID: {})!", getUniqueName(), xid );
         }
     }
 
@@ -408,7 +408,7 @@ public abstract class AbstractJdbcStore extends DataStore {
         if ( connectionFactory.hasConnectionHandler( xid ) ) {
             connectionFactory.getConnectionHandler( xid ).rollback();
         } else {
-            log.warn( "There is no connection to rollback (Uniquename: {}, XID: {})!", getAdapterName(), xid );
+            log.warn( "There is no connection to rollback (Uniquename: {}, XID: {})!", getUniqueName(), xid );
         }
     }
 
@@ -420,7 +420,7 @@ public abstract class AbstractJdbcStore extends DataStore {
             removeInformationPage();
             connectionFactory.close();
         } catch ( SQLException e ) {
-            log.warn( "Exception while shutting down {}", getAdapterName(), e );
+            log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
     }
 

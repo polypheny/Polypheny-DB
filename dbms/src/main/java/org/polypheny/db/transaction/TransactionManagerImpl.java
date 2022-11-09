@@ -65,7 +65,7 @@ public class TransactionManagerImpl implements TransactionManager {
                     k.toString().hashCode(),
                     v.getNumberOfStatements(),
                     v.isAnalyze(),
-                    v.getInvolvedAdapters().stream().map( Adapter::getAdapterName ).collect( Collectors.joining( ", " ) ),
+                    v.getInvolvedAdapters().stream().map( Adapter::getUniqueName ).collect( Collectors.joining( ", " ) ),
                     v.getOrigin() ) );
         } );
     }

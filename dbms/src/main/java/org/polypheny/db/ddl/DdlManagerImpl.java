@@ -659,7 +659,7 @@ public class DdlManagerImpl extends DdlManager {
                         }
                         if ( hasAllColumns ) {
                             DataStore loc = (DataStore) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
-                            String name = indexName + "_" + loc.getAdapterName();
+                            String name = indexName + "_" + loc.getUniqueName();
                             String nameSuffix = "";
                             int counter = 0;
                             while ( catalog.checkIfExistsIndex( catalogTable.id, name + nameSuffix ) ) {
@@ -809,7 +809,7 @@ public class DdlManagerImpl extends DdlManager {
             // Abort if a manual partitionList has been specified even though the data placement has already been partitioned
             if ( isDataPlacementPartitioned ) {
                 throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
-                        + dataStore.getAdapterName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
+                        + dataStore.getUniqueName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
             }
 
             log.debug( "Table is partitioned and concrete partitionList has been specified " );
@@ -827,7 +827,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( isDataPlacementPartitioned ) {
                 throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
-                        + dataStore.getAdapterName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
+                        + dataStore.getUniqueName() + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );
             }
 
             List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getPartitionGroups( tableId );

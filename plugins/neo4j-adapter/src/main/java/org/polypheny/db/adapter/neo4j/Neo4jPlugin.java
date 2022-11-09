@@ -43,6 +43,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
@@ -101,7 +102,9 @@ public class Neo4jPlugin extends Plugin {
                 "instanceId", "0",
                 "type", "neo4j" );
 
-        Adapter.addAdapter( Neo4jStore.class, "NEO4J", settings );
+        //Adapter.addAdapter( Neo4jStore.class, "NEO4J", settings );
+
+        Adapter.REGISTER.put( "NEO4J", new Adapter( Neo4jStore.class, "NEO4J", settings ) );
     }
 
 
@@ -149,7 +152,12 @@ public class Neo4jPlugin extends Plugin {
             usedModes = { DeployMode.DOCKER },
             supportedNamespaceTypes = { NamespaceType.GRAPH, NamespaceType.RELATIONAL })
     @AdapterSettingInteger(name = "port", defaultValue = 7687)
+    @Extension
     public static class Neo4jStore extends DataStore {
+
+        static {
+            System.out.println( "static neo" );
+        }
 
 
         @Getter
@@ -181,7 +189,7 @@ public class Neo4jPlugin extends Plugin {
             this.user = "neo4j";
             this.auth = AuthTokens.basic( "neo4j", this.pass );
 
-            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "neo4j:4.4-community", getAdapterName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "neo4j:4.4-community", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                     .withMappedPort( 7687, port )
                     .withEnvironmentVariable( format( "NEO4J_AUTH=%s/%s", user, pass ) )
                     .withReadyTest( this::testConnection, 50000 )

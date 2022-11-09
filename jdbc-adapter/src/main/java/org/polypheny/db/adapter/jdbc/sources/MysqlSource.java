@@ -80,7 +80,7 @@ public class MysqlSource extends AbstractJdbcSource {
             removeInformationPage();
             connectionFactory.close();
         } catch ( SQLException e ) {
-            log.warn( "Exception while shutting down {}", getAdapterName(), e );
+            log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
     }
 

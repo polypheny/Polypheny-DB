@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Constructor;
@@ -31,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
@@ -45,7 +43,6 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
-import org.reflections.Reflections;
 
 public class AdapterManager {
 
@@ -141,26 +138,18 @@ public class AdapterManager {
 
 
     public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
-        Reflections reflections = new Reflections( "org.polypheny.db" );
-        Set<Class> classes;
-        if ( adapterType == AdapterType.STORE ) {
-            classes = ImmutableSet.copyOf( reflections.getSubTypesOf( DataStore.class ) );
-        } else if ( adapterType == AdapterType.SOURCE ) {
-            classes = ImmutableSet.copyOf( reflections.getSubTypesOf( DataSource.class ) );
-        } else {
-            throw new RuntimeException( "Unknown adapter type: " + adapterType );
-        }
+        List<org.polypheny.db.catalog.Adapter> adapters = org.polypheny.db.catalog.Adapter.getAdapters( adapterType );
+
         List<AdapterInformation> result = new LinkedList<>();
 
-        //noinspection unchecked
-        for ( Class<DataStore> clazz : classes ) {
+        for ( org.polypheny.db.catalog.Adapter adapter : adapters ) {
             // Exclude abstract classes
-            if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
+            if ( !Modifier.isAbstract( adapter.getClazz().getModifiers() ) ) {
                 Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
 
-                AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
+                AdapterProperties properties = adapter.getClazz().getAnnotation( AdapterProperties.class );
                 if ( properties == null ) {
-                    throw new RuntimeException( clazz.getSimpleName() + " does not annotate the adapter correctly" );
+                    throw new RuntimeException( adapter.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
                 }
 
                 // Used to evaluate which mode is used when deploying the adapter
@@ -183,8 +172,8 @@ public class AdapterManager {
                 settings.put( "default", new ArrayList<>() );
 
                 // Merge annotated AdapterSettings into settings
-                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) );
-                annotatedSettings.forEach( settings::put );
+                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( adapter.getClazz().getAnnotations(), adapter.getClazz().getAnnotation( AdapterProperties.class ) );
+                settings.putAll( annotatedSettings );
 
                 // If the adapter uses docker add the dynamic docker setting
                 if ( settings.containsKey( "docker" ) ) {
@@ -203,7 +192,7 @@ public class AdapterManager {
                                     .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." ) );
                 }
 
-                result.add( new AdapterInformation( properties.name(), properties.description(), clazz, settings ) );
+                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings ) );
             }
         }
 
@@ -224,9 +213,9 @@ public class AdapterManager {
         AdapterType adapterType;
         try {
             //Class<?> clazz = Class.forName( clazzName );
-            org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( uniqueName );
+            org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName );
             Class<?> clazz = adapter.getClazz();
-            ctor = org.polypheny.db.catalog.Adapter.fromString( uniqueName ).getClazz().getConstructor( int.class, String.class, Map.class );
+            ctor = clazz.getConstructor( int.class, String.class, Map.class );
 
             // Determine adapter type
             if ( DataStore.class.isAssignableFrom( clazz ) ) {
@@ -256,7 +245,7 @@ public class AdapterManager {
             }
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
-        adapterByName.put( instance.getAdapterName(), instance );
+        adapterByName.put( instance.getUniqueName(), instance );
         adapterById.put( instance.getAdapterId(), instance );
 
         return instance;
@@ -281,7 +270,7 @@ public class AdapterManager {
 
         // Remove store from maps
         adapterById.remove( adapterInstance.getAdapterId() );
-        adapterByName.remove( adapterInstance.getAdapterName() );
+        adapterByName.remove( adapterInstance.getUniqueName() );
 
         // Delete store from catalog
         Catalog.getInstance().deleteAdapter( catalogAdapter.id );
@@ -297,7 +286,7 @@ public class AdapterManager {
             for ( CatalogAdapter adapter : adapters ) {
                 Constructor<?> ctor = org.polypheny.db.catalog.Adapter.fromString( adapter.adapterName ).getClazz().getConstructor( int.class, String.class, Map.class );
                 Adapter instance = (Adapter) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
-                adapterByName.put( instance.getAdapterName(), instance );
+                adapterByName.put( instance.getUniqueName(), instance );
                 adapterById.put( instance.getAdapterId(), instance );
             }
         } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
@@ -311,7 +300,7 @@ public class AdapterManager {
 
         public final String name;
         public final String description;
-        public final Class clazz;
+        public final AdapterType type;
         public final Map<String, List<AbstractAdapterSetting>> settings;
 
 
@@ -320,7 +309,7 @@ public class AdapterManager {
                 JsonObject jsonStore = new JsonObject();
                 jsonStore.addProperty( "name", src.name );
                 jsonStore.addProperty( "description", src.description );
-                jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
+                jsonStore.addProperty( "type", src.type.name() );
                 jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
                 return jsonStore;
             };

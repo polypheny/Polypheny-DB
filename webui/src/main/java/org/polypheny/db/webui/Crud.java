@@ -1999,7 +1999,7 @@ public class Crud implements InformationObserver {
                     String[] arr = new String[5];
                     arr[0] = "";
                     arr[1] = String.join( ", ", fif.getColumnNames() );
-                    arr[2] = store.getAdapterName();
+                    arr[2] = store.getUniqueName();
                     arr[3] = fif.methodDisplayName;
                     arr[4] = "FUNCTIONAL";
                     data.add( arr );
@@ -2129,8 +2129,8 @@ public class Crud implements InformationObserver {
                 for ( CatalogColumnPlacement placement : pkPlacements ) {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                     p.addAdapter( new RelationalStore(
-                            adapter.getAdapterName(),
-                            adapter.getAdapterName(),
+                            adapter.getUniqueName(),
+                            adapter.getUniqueName(),
                             catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
                             catalog.getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
                             table.partitionProperty.numPartitionGroups,
@@ -2427,7 +2427,7 @@ public class Crud implements InformationObserver {
             if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
                 return false;
             }
-            return dataPlacements.stores.stream().anyMatch( ( dp ) -> dp.uniqueName.equals( s.getAdapterName() ) );
+            return dataPlacements.stores.stream().anyMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) );
         } ).toArray( DataStore[]::new ) ).getAsJsonArray();
         if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
             JsonObject pdbFakeStore = new JsonObject();
@@ -3794,7 +3794,7 @@ public class Crud implements InformationObserver {
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
                                     newLink.delete();//delete to override
                                     Path added;
-                                    if ( f.isDirectory() && transaction.getInvolvedAdapters().stream().anyMatch( a -> a.getAdapterName().equals( "QFS" ) ) ) {
+                                    if ( f.isDirectory() && transaction.getInvolvedAdapters().stream().anyMatch( a -> a.getUniqueName().equals( "QFS" ) ) ) {
                                         added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
                                     } else if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
                                         added = Files.createLink( newLink.toPath(), f.toPath() );

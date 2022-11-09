@@ -731,7 +731,8 @@ SqlAlterAdaptersAdd SqlAlterAdaptersAdd(Span s) :
 }
 {
     <ADAPTERS> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR) <AS> adapterType = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <AS> adapterType = Expression(ExprContext.ACCEPT_NONCURSOR)
     <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
     {
         return new SqlAlterAdaptersAdd(s.end(this), uniqueName, adapterName, adapterType, config);

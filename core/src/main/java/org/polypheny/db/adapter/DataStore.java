@@ -231,10 +231,10 @@ public abstract class DataStore extends Adapter implements ExtensionPoint {
         return ( src, typeOfSrc, context ) -> {
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
-            //jsonStore.addProperty( "uniqueName", src.getAdapterName() );
-            jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
+            jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings( src.getClass() ), src.getCurrentSettings() ) ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
+            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
             jsonStore.addProperty( "type", src.getAdapterType().name() );
             jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
             jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );

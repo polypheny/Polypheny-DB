@@ -25,6 +25,7 @@ import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.csv.CsvSource;
@@ -451,12 +453,14 @@ public class PolyphenyDb {
 
         // create the plugin manager
         final PluginManager pluginManager = new DefaultPluginManager() {
+
+
             @Override
             protected CompoundPluginDescriptorFinder createPluginDescriptorFinder() {
                 return new CompoundPluginDescriptorFinder()
                         // Demo is using the Manifest file
                         // PropertiesPluginDescriptorFinder is commented out just to avoid error log
-                        //.add(new PropertiesPluginDescriptorFinder())
+                        //.add( new PropertiesPluginDescriptorFinder() );
                         .add( new ManifestPluginDescriptorFinder() );
             }
         };
@@ -465,7 +469,7 @@ public class PolyphenyDb {
         pluginManager.loadPlugins();
 
         // enable a disabled plugin
-//        pluginManager.enablePlugin("welcome-plugin");
+        // pluginManager.enablePlugin("welcome-plugin");
 
         // start (active/resolved) the plugins
         pluginManager.startPlugins();
@@ -477,26 +481,26 @@ public class PolyphenyDb {
         List<DataStore> stores = pluginManager.getExtensions( DataStore.class );
         log.info( String.format( "Found %d extensions for extension point '%s'", stores.size(), DataStore.class.getName() ) );
         for ( DataStore store : stores ) {
-            log.info( ">>> " + store.getAdapterName() );
-            // openWindow(greeting);
+            log.info( ">>> " + store.getUniqueName() );
         }
 
         // // print extensions from classpath (non plugin)
-        // logger.info(String.format("Extensions added by classpath:"));
-        // Set<String> extensionClassNames = pluginManager.getExtensionClassNames(null);
-        // for (String extension : extensionClassNames) {
-        //     logger.info("   " + extension);
-        // }
+        log.info( String.format( "Extensions added by classpath:" ) );
+        Set<String> extensionClassNames = pluginManager.getExtensionClassNames( null );
+        for ( String extension : extensionClassNames ) {
+            log.info( "   " + extension );
+        }
 
         // print extensions for each started plugin
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
         for ( PluginWrapper plugin : startedPlugins ) {
             String pluginId = plugin.getDescriptor().getPluginId();
+
             log.info( String.format( "Extensions added by plugin '%s':", pluginId ) );
-            // extensionClassNames = pluginManager.getExtensionClassNames(pluginId);
-            // for (String extension : extensionClassNames) {
-            //     logger.info("   " + extension);
-            // }
+            pluginManager.getExtensionClasses( pluginId ).stream().filter( DataStore.class::isAssignableFrom ).map( d -> (Class<DataStore>) d ).forEach( d -> {
+                Adapter.addAdapter( d, d.getAnnotation( AdapterProperties.class ).name(), org.polypheny.db.adapter.Adapter.getDefaultSettings( d ) );
+            } );
+            pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) );
         }
 
         // stop the plugins
