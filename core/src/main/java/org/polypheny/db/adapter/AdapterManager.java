@@ -163,6 +163,7 @@ public class AdapterManager {
                                         true,
                                         Collections.singletonList( "default" ),
                                         Collections.singletonList( DeploySetting.DEFAULT ),
+                                        "default",
                                         0 ) ) );
 
                 // Add empty list for each available mode
@@ -200,7 +201,7 @@ public class AdapterManager {
     }
 
 
-    public Adapter addAdapter( String adapterName, String uniqueName, Map<String, String> settings ) {
+    public Adapter addAdapter( String adapterName, String uniqueName, AdapterType adapterType, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new RuntimeException( "There is already an adapter with this unique name" );
@@ -210,21 +211,11 @@ public class AdapterManager {
         }
 
         Constructor<?> ctor;
-        AdapterType adapterType;
         try {
             //Class<?> clazz = Class.forName( clazzName );
-            org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName );
+            org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName, adapterType );
             Class<?> clazz = adapter.getClazz();
             ctor = clazz.getConstructor( int.class, String.class, Map.class );
-
-            // Determine adapter type
-            if ( DataStore.class.isAssignableFrom( clazz ) ) {
-                adapterType = AdapterType.STORE;
-            } else if ( DataSource.class.isAssignableFrom( clazz ) ) {
-                adapterType = AdapterType.SOURCE;
-            } else {
-                throw new RuntimeException( "Unknown type of adapter! Specified class is neither implementing DataStore nor DataSource." );
-            }
         } catch ( NoSuchMethodException e ) {
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
@@ -284,7 +275,7 @@ public class AdapterManager {
         try {
             List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
             for ( CatalogAdapter adapter : adapters ) {
-                Constructor<?> ctor = org.polypheny.db.catalog.Adapter.fromString( adapter.adapterName ).getClazz().getConstructor( int.class, String.class, Map.class );
+                Constructor<?> ctor = org.polypheny.db.catalog.Adapter.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( int.class, String.class, Map.class );
                 Adapter instance = (Adapter) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
                 adapterByName.put( instance.getUniqueName(), instance );
                 adapterById.put( instance.getAdapterId(), instance );

@@ -652,12 +652,10 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
 
         private final String type = "Integer";
-        public final Integer defaultValue;
 
 
         public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
             super( name, canBeNull, required, modifiable, modes, defaultValue.toString(), position );
-            this.defaultValue = defaultValue;
         }
 
 
@@ -675,7 +673,7 @@ public abstract class Adapter {
 
         @Override
         public String getValue() {
-            return defaultValue.toString();
+            return defaultValue;
         }
 
     }
@@ -684,12 +682,10 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingString extends AbstractAdapterSetting {
 
         private final String type = "String";
-        public final String defaultValue;
 
 
         public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
             super( name, canBeNull, required, modifiable, modes, defaultValue, position );
-            this.defaultValue = defaultValue;
         }
 
 
@@ -716,12 +712,10 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
 
         private final String type = "Boolean";
-        public final boolean defaultValue;
 
 
         public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position ) {
             super( name, canBeNull, required, modifiable, modes, String.valueOf( defaultValue ), position );
-            this.defaultValue = defaultValue;
         }
 
 
@@ -739,7 +733,7 @@ public abstract class Adapter {
 
         @Override
         public String getValue() {
-            return Boolean.toString( defaultValue );
+            return defaultValue;
         }
 
     }
@@ -750,17 +744,12 @@ public abstract class Adapter {
 
         private final String type = "List";
         public List<String> options;
-        @Setter
-        String defaultValue;
         public boolean dynamic = false;
 
 
         public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, String defaultValue, int position ) {
             super( name, canBeNull, required, modifiable, modes, defaultValue, position );
             this.options = options;
-            if ( options.size() > 0 ) {
-                this.defaultValue = options.get( 0 );
-            }
         }
 
 
@@ -842,9 +831,6 @@ public abstract class Adapter {
             if ( boundConfig != null ) {
                 options = boundConfig.getList( clazz ).stream().map( ( el ) -> String.valueOf( el.id ) ).collect( Collectors.toList() );
                 alias = boundConfig.getList( clazz ).stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
-                if ( options.size() > 0 ) {
-                    this.defaultValue = options.get( 0 );
-                }
             }
         }
 
@@ -926,7 +912,7 @@ public abstract class Adapter {
                 case "List":
                     List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
                     String defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
-                    out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>(), defaultValue, position ).setDefaultValue( defaultValue );
+                    out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>(), defaultValue, position );
                     break;
                 case "Directory":
                     String directory = context.deserialize( jsonObject.get( "directory" ), String.class );

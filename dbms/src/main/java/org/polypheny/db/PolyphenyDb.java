@@ -24,27 +24,35 @@ import com.github.rvesse.airline.annotations.OptionType;
 import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
+import org.pf4j.DefaultPluginLoader;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.ManifestPluginDescriptorFinder;
+import org.pf4j.PluginClassLoader;
+import org.pf4j.PluginDescriptor;
+import org.pf4j.PluginLoader;
 import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.csv.CsvSource;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.adapter.jdbc.sources.MonetdbSource;
+import org.polypheny.db.adapter.jdbc.sources.PostgresqlSource;
 import org.polypheny.db.adapter.jdbc.stores.HsqldbStore;
+import org.polypheny.db.adapter.jdbc.stores.MonetdbStore;
+import org.polypheny.db.adapter.jdbc.stores.PostgresqlStore;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -326,7 +334,7 @@ public class PolyphenyDb {
 
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
-        StatisticsManager.setAndGetInstance( new StatisticsManagerImpl( statisticQueryProcessor ) );
+        StatisticsManager.setAndGetInstance( new StatisticsManagerImpl<>( statisticQueryProcessor ) );
 
         // Initialize MaterializedViewManager
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
@@ -339,8 +347,8 @@ public class PolyphenyDb {
             Catalog.memoryCatalog = memoryCatalog;
             Catalog.testMode = testMode;
             Catalog.resetDocker = resetDocker;
-            Catalog.defaultStore = Adapter.fromString( defaultStoreName );
-            Catalog.defaultSource = Adapter.fromString( defaultSourceName );
+            Catalog.defaultStore = Adapter.fromString( defaultStoreName, AdapterType.STORE );
+            Catalog.defaultSource = Adapter.fromString( defaultSourceName, AdapterType.SOURCE );
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
@@ -449,10 +457,22 @@ public class PolyphenyDb {
 
     public void loadPlugins() {
         HsqldbStore.register();
-        CsvSource.register();
-
+        PostgresqlStore.register();
+        PostgresqlSource.register();
+        MonetdbSource.register();
+        MonetdbStore.register();
         // create the plugin manager
         final PluginManager pluginManager = new DefaultPluginManager() {
+            @Override
+            protected PluginLoader createPluginLoader() {
+                return new DefaultPluginLoader( this ) {
+                    @Override
+                    protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
+                        // we load the existing applications classes first, then the dependencies and then the plugin
+                        return new PluginClassLoader( pluginManager, pluginDescriptor, getClass().getClassLoader(), ClassLoadingStrategy.ADP );
+                    }
+                };
+            }
 
 
             @Override
@@ -484,35 +504,15 @@ public class PolyphenyDb {
             log.info( ">>> " + store.getUniqueName() );
         }
 
-        // // print extensions from classpath (non plugin)
-        log.info( String.format( "Extensions added by classpath:" ) );
-        Set<String> extensionClassNames = pluginManager.getExtensionClassNames( null );
-        for ( String extension : extensionClassNames ) {
-            log.info( "   " + extension );
-        }
-
         // print extensions for each started plugin
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
         for ( PluginWrapper plugin : startedPlugins ) {
             String pluginId = plugin.getDescriptor().getPluginId();
 
             log.info( String.format( "Extensions added by plugin '%s':", pluginId ) );
-            pluginManager.getExtensionClasses( pluginId ).stream().filter( DataStore.class::isAssignableFrom ).map( d -> (Class<DataStore>) d ).forEach( d -> {
-                Adapter.addAdapter( d, d.getAnnotation( AdapterProperties.class ).name(), org.polypheny.db.adapter.Adapter.getDefaultSettings( d ) );
-            } );
             pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) );
         }
 
-        // stop the plugins
-        //pluginManager.stopPlugins();
-        /*
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                pluginManager.stopPlugins();
-            }
-        });
-        */
     }
 
 }

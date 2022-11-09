@@ -35,14 +35,14 @@ dependencies {
     implementation project(":cypher-language")
     implementation project(":pig-language")
     implementation project(":cql-language")
-    implementation project(":cassandra-adapter")
-    implementation project(":cottontail-adapter")
-    implementation project(":csv-adapter")
-    implementation project(":ethereum-adapter")
-    implementation project(":file-adapter")
+    // implementation project(":cassandra-adapter")
+    // implementation project(":cottontail-adapter")
+    // implementation project(":csv-adapter")
+    // implementation project(":ethereum-adapter")
+    // implementation project(":file-adapter")
     implementation project(":jdbc-adapter")
     // implementation project(":plugins:neo4j-adapter")
-    implementation project(":mongodb-adapter")
+    // implementation project(":mongodb-adapter")
     implementation project(":catalog")
     implementation project(":webui")
     implementation project(":avatica-interface")
@@ -62,7 +62,8 @@ dependencies {
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
     implementation group: "org.apache.commons", name: "commons-math3", version: commons_math_version  // Apache 2.0
-    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
+    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version
+    implementation 'org.jetbrains:annotations:20.1.0'// ISC
 
 
     // --- Test Compile ---
@@ -220,23 +221,23 @@ licensee {
 
 compileJava {
     dependsOn(":avatica-interface:processResources")
-    dependsOn(":cassandra-adapter:processResources")
+    // dependsOn(":cassandra-adapter:processResources")
     dependsOn(":catalog:processResources")
     dependsOn(":cql-language:processResources")
-    dependsOn(":csv-adapter:processResources")
-    dependsOn(":ethereum-adapter:processResources")
+    // dependsOn(":csv-adapter:processResources")
+    // dependsOn(":ethereum-adapter:processResources")
     dependsOn(":explore-by-example:processResources")
-    dependsOn(":file-adapter:processResources")
+    // dependsOn(":file-adapter:processResources")
     dependsOn(":http-interface:processResources")
     dependsOn(":jdbc-adapter:processResources")
-    dependsOn(":mongodb-adapter:processResources")
+    // dependsOn(":mongodb-adapter:processResources")
     dependsOn(":mql-language:processResources")
     dependsOn(":pig-language:processResources")
     // dependsOn(":neo4j-adapter:processResources")
     dependsOn(":rest-interface:processResources")
     dependsOn(":webui:processResources")
     dependsOn(":http-interface:compileTestJava")
-    dependsOn(":cottontail-adapter:compileTestKotlin")
+    // dependsOn(":cottontail-adapter:compileTestKotlin")
 }
 
 compileTestJava {

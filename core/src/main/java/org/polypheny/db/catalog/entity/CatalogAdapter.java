@@ -46,7 +46,7 @@ public class CatalogAdapter implements CatalogObject {
     public String getAdapterTypeName() {
         if ( adapterTypeName == null ) {
             // General settings are provided by the annotations of the adapter class
-            AdapterProperties annotations = Adapter.fromString( adapterName ).getClazz().getAnnotation( AdapterProperties.class );
+            AdapterProperties annotations = Adapter.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
             this.adapterTypeName = annotations.name();
         }
         return adapterTypeName;

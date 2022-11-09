@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.jdbc.sources;
 
 
+import com.google.common.collect.ImmutableMap;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -51,7 +53,7 @@ import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
         description = "Password to be used for authenticating at the remote instance.")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
         description = "Maximum number of concurrent JDBC connections.")
-@AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" },
+@AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
         description = "Which level of transaction isolation should be used.")
 @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
         description = "List of tables which should be imported. The names must to be separated by a comma.")
@@ -65,6 +67,19 @@ public class PostgresqlSource extends AbstractJdbcSource {
                 "org.postgresql.Driver",
                 PostgresqlSqlDialect.DEFAULT,
                 false );
+    }
+
+
+    public static void register() {
+        Map<String, String> settings = ImmutableMap.of(
+                "mode", "docker",
+                "password", "polypheny",
+                "instanceId", "0",
+                "port", "3306",
+                "maxConnections", "25"
+        );
+
+        Adapter.addAdapter( PostgresqlSource.class, "POSTGRESQL", settings );
     }
 
 

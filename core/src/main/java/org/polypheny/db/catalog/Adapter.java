@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -51,17 +50,27 @@ public class Adapter {
         this.adapterName = adapterName;
         this.clazz = clazz;
         this.defaultSettings = defaultSettings;
-        this.adapterType = DataStore.class.isAssignableFrom( clazz ) ? AdapterType.STORE : AdapterType.SOURCE;
+        this.adapterType = getAdapterType( clazz );
     }
 
 
-    public static Adapter fromString( String adapterName ) {
-        return REGISTER.get( adapterName.toUpperCase( Locale.ROOT ) );
+    private static AdapterType getAdapterType( Class<?> clazz ) {
+        return DataStore.class.isAssignableFrom( clazz ) ? AdapterType.STORE : AdapterType.SOURCE;
+    }
+
+
+    public static Adapter fromString( String adapterName, AdapterType adapterType ) {
+        return REGISTER.get( adapterName.toUpperCase() + "_" + adapterType );
     }
 
 
     public static void addAdapter( Class<?> clazz, String adapterName, Map<String, String> defaultSettings ) {
-        REGISTER.put( adapterName.toUpperCase(), new Adapter( clazz, adapterName.toUpperCase(), defaultSettings ) );
+        REGISTER.put( getKey( clazz, adapterName ), new Adapter( clazz, adapterName.toUpperCase(), defaultSettings ) );
+    }
+
+
+    private static String getKey( Class<?> clazz, String adapterName ) {
+        return adapterName.toUpperCase() + "_" + getAdapterType( clazz );
     }
 
 

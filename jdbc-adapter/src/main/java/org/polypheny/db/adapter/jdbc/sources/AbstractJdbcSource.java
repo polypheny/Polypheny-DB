@@ -28,6 +28,7 @@ import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
@@ -46,7 +47,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcSource extends DataSource {
+public abstract class AbstractJdbcSource extends DataSource implements ExtensionPoint {
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;

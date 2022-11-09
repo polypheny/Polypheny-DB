@@ -70,7 +70,18 @@ import org.polypheny.db.type.PolyTypeFamily;
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
 public class MonetdbStore extends AbstractJdbcStore {
 
-    static {
+    private String host;
+    private String database;
+    private String username;
+    private Container container;
+
+
+    public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
+    }
+
+
+    public static void register() {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "docker",
                 "instanceId", "0",
@@ -80,17 +91,6 @@ public class MonetdbStore extends AbstractJdbcStore {
         );
 
         Adapter.addAdapter( MonetdbStore.class, "MONETDB", settings );
-    }
-
-
-    private String host;
-    private String database;
-    private String username;
-    private Container container;
-
-
-    public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
     }
 
 

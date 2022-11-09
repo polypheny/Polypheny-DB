@@ -77,18 +77,6 @@ import org.polypheny.db.type.PolyTypeFamily;
         description = "Maximum number of concurrent JDBC connections.")
 public class PostgresqlStore extends AbstractJdbcStore {
 
-    static {
-        Map<String, String> settings = ImmutableMap.of(
-                "mode", "docker",
-                "password", "polypheny",
-                "instanceId", "0",
-                "port", "3306",
-                "maxConnections", "25"
-        );
-
-        Adapter.addAdapter( PostgresqlStore.class, "POSTGRESQL", settings );
-    }
-
 
     private String host;
     private String database;
@@ -103,6 +91,19 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Getter
     private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
+
+
+    public static void register() {
+        Map<String, String> settings = ImmutableMap.of(
+                "mode", "docker",
+                "password", "polypheny",
+                "instanceId", "0",
+                "port", "3306",
+                "maxConnections", "25"
+        );
+
+        Adapter.addAdapter( PostgresqlStore.class, "POSTGRESQL", settings );
+    }
 
 
     @Override

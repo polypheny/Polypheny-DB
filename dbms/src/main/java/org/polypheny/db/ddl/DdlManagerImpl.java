@@ -232,7 +232,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config ) {
         uniqueName = uniqueName.toLowerCase();
-        Adapter adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, config );
+        Adapter adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, config );
         if ( adapter instanceof DataSource ) {
             Map<String, List<ExportedColumn>> exportedColumns;
             try {

@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.jdbc.sources;
 
 
+import com.google.common.collect.ImmutableMap;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -53,6 +55,19 @@ public class MonetdbSource extends AbstractJdbcSource {
 
     public MonetdbSource( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
+    }
+
+
+    public static void register() {
+        Map<String, String> settings = ImmutableMap.of(
+                "mode", "docker",
+                "instanceId", "0",
+                "password", "polypheny",
+                "maxConnections", "25",
+                "port", "5000"
+        );
+
+        Adapter.addAdapter( MonetdbSource.class, "MONETDB", settings );
     }
 
 
