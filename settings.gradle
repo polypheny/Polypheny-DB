@@ -16,17 +16,13 @@ include 'monitoring'
 include 'explore-by-example'
 include 'rest-interface'
 
-include 'druid-adapter'
-include 'elasticsearch-adapter'
-include 'html-adapter'
-include 'geode-adapter'
-include 'pig-adapter'
 include 'jdbc-adapter'
-
 
 include 'dbms'
 
 include 'plugins'
+
+// adapters plugins
 include 'plugins:neo4j-adapter'
 include 'plugins:cottontail-adapter'
 include 'plugins:ethereum-adapter'
@@ -35,3 +31,10 @@ include 'plugins:csv-adapter'
 include 'plugins:mysql-adapter'
 include 'plugins:mongodb-adapter'
 include 'plugins:file-adapter'
+
+// disabled adapter plugins
+include 'plugins:pig-adapter'
+include 'plugins:html-adapter'
+include 'plugins:druid-adapter'
+include 'plugins:elasticsearch-adapter'
+include 'plugins:geode-adapter'
