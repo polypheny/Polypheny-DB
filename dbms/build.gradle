@@ -45,7 +45,7 @@ dependencies {
     // implementation project(":mongodb-adapter")
     implementation project(":catalog")
     implementation project(":webui")
-    implementation project(":avatica-interface")
+    // implementation project("plugins:avatica-interface")
     implementation project(":http-interface")
     implementation project(":rest-interface")
     implementation project(":explore-by-example")
@@ -69,7 +69,7 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":sql-language", configuration: "tests")
-    testImplementation project(path: ":avatica-interface", configuration: "tests")
+    // testImplementation project(path: "plugins:interfaces:avatica-interface", configuration: "tests")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
@@ -220,7 +220,7 @@ licensee {
 }
 
 compileJava {
-    dependsOn(":avatica-interface:processResources")
+    // dependsOn(":avatica-interface:processResources")
     // dependsOn(":cassandra-adapter:processResources")
     dependsOn(":catalog:processResources")
     dependsOn(":cql-language:processResources")

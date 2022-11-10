@@ -102,9 +102,7 @@ public class Neo4jPlugin extends Plugin {
                 "instanceId", "0",
                 "type", "neo4j" );
 
-        //Adapter.addAdapter( Neo4jStore.class, "NEO4J", settings );
-
-        Adapter.REGISTER.put( "NEO4J", new Adapter( Neo4jStore.class, "NEO4J", settings ) );
+        Adapter.addAdapter( Neo4jStore.class, "NEO4J", settings );
     }
 
 
@@ -154,11 +152,6 @@ public class Neo4jPlugin extends Plugin {
     @AdapterSettingInteger(name = "port", defaultValue = 7687)
     @Extension
     public static class Neo4jStore extends DataStore {
-
-        static {
-            System.out.println( "static neo" );
-        }
-
 
         @Getter
         private final List<PolyType> unsupportedTypes = ImmutableList.of();

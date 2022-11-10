@@ -805,12 +805,6 @@ public class CatalogImpl extends Catalog {
         ////////////////////////
         // init query interfaces
         if ( queryInterfaceNames.size() == 0 ) {
-            // Add JDBC interface
-            Map<String, String> jdbcSettings = new HashMap<>();
-            jdbcSettings.put( "port", "20591" );
-            jdbcSettings.put( "serialization", "PROTOBUF" );
-            addQueryInterface( "avatica", "org.polypheny.db.avatica.AvaticaInterface", jdbcSettings );
-
             // Add REST interface
             Map<String, String> restSettings = new HashMap<>();
             restSettings.put( "port", "8089" );

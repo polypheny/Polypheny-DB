@@ -24,7 +24,7 @@ buildscript {
 dependencies {
     implementation project(":core")
     implementation project(":monitoring")
-    implementation project(":avatica-interface")
+    // implementation project(":avatica-interface")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
@@ -38,7 +38,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":avatica-interface", configuration: "tests")
+    // testImplementation project(path: ":avatica-interface", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
@@ -67,7 +67,7 @@ task generateParser (type: CompileJavaccTask) {
 
 compileJava {
     dependsOn("generateParser")
-    dependsOn(":avatica-interface:processResources")
+    // dependsOn(":avatica-interface:processResources")
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
     dependsOn(":monitoring:processResources")
@@ -75,7 +75,7 @@ compileJava {
 }
 
 delombok {
-    dependsOn(":avatica-interface:processResources")
+    // dependsOn(":avatica-interface:processResources")
 }
 
 sourceSets {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.avatica;
+package org.polypheny.db.languages;
 
 import java.util.Iterator;
 import org.apache.calcite.avatica.Meta;

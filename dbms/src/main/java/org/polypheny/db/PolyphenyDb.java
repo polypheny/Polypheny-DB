@@ -318,7 +318,6 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
-        loadPlugins();
         /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
             try {
                 httpServerDispatcher.stop();
@@ -331,6 +330,8 @@ public class PolyphenyDb {
 
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
+
+        loadPlugins();
 
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );

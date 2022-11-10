@@ -26,13 +26,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
 public class Adapter {
 
-    public static Map<String, Adapter> REGISTER;
-
-
-    static {
-        REGISTER = new ConcurrentHashMap<>();
-        System.out.println( "init" );
-    }
+    private static final Map<String, Adapter> REGISTER = new ConcurrentHashMap<>();
 
 
     @Getter

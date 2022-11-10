@@ -24,10 +24,11 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.pf4j.ExtensionPoint;
 import org.polypheny.db.transaction.TransactionManager;
 
 
-public abstract class QueryInterface implements Runnable {
+public abstract class QueryInterface implements Runnable, ExtensionPoint {
 
     protected final transient TransactionManager transactionManager;
     protected final transient Authenticator authenticator;

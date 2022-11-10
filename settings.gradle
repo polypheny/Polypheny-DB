@@ -7,7 +7,6 @@ include 'pig-language'
 include 'cql-language'
 include 'cypher-language'
 include 'http-interface'
-include 'avatica-interface'
 include 'webui'
 include 'catalog'
 include 'config'
@@ -21,6 +20,9 @@ include 'jdbc-adapter'
 include 'dbms'
 
 include 'plugins'
+
+// interface plugins
+include 'plugins:avatica-interface'
 
 // adapters plugins
 include 'plugins:neo4j-adapter'

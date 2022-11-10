@@ -18,7 +18,6 @@ package org.polypheny.db.iface;
 
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -30,7 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -38,13 +37,14 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.transaction.TransactionManager;
-import org.reflections.Reflections;
 
 
 @Slf4j
 public class QueryInterfaceManager {
 
     private static QueryInterfaceManager INSTANCE;
+
+    private static Map<String, Class<? extends QueryInterface>> REGISTER = new ConcurrentHashMap<>();
 
     private final Map<Integer, QueryInterface> interfaceById = new HashMap<>();
     private final Map<String, QueryInterface> interfaceByName = new HashMap<>();
@@ -79,6 +79,11 @@ public class QueryInterfaceManager {
     }
 
 
+    public static void addInterfaceType( Class<? extends QueryInterface> clazz ) {
+        REGISTER.put( clazz.getCanonicalName(), clazz );
+    }
+
+
     public QueryInterface getQueryInterface( int id ) {
         return interfaceById.get( id );
     }
@@ -90,12 +95,9 @@ public class QueryInterfaceManager {
 
 
     public List<QueryInterfaceInformation> getAvailableQueryInterfaceTypes() {
-        Reflections reflections = new Reflections( "org.polypheny.db" );
-        Set<Class> classes = ImmutableSet.copyOf( reflections.getSubTypesOf( QueryInterface.class ) );
         List<QueryInterfaceInformation> result = new LinkedList<>();
         try {
-            //noinspection unchecked
-            for ( Class<QueryInterface> clazz : classes ) {
+            for ( Class<? extends QueryInterface> clazz : REGISTER.values() ) {
                 // Exclude abstract classes
                 if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
                     String name = (String) clazz.getDeclaredField( "INTERFACE_NAME" ).get( null );
