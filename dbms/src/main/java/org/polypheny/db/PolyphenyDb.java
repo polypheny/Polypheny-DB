@@ -31,8 +31,10 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
+import org.pf4j.CompoundPluginLoader;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.DefaultPluginManager;
+import org.pf4j.JarPluginLoader;
 import org.pf4j.ManifestPluginDescriptorFinder;
 import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
@@ -63,8 +65,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.exploreByExample.ExploreManager;
-import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
@@ -330,7 +330,7 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
-        loadPlugins();
+        loadPlugins( authenticator );
 
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
@@ -401,10 +401,6 @@ public class PolyphenyDb {
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
 
-        final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
-        ExploreManager explore = ExploreManager.getInstance();
-        explore.setExploreQueryProcessor( exploreQueryProcessor );
-
         // Add config and monitoring test page for UI testing
         if ( testMode ) {
             new UiTestingConfigPage();
@@ -456,7 +452,7 @@ public class PolyphenyDb {
     }
 
 
-    public void loadPlugins() {
+    public void loadPlugins( Authenticator authenticator ) {
         HsqldbStore.register();
         PostgresqlStore.register();
         PostgresqlSource.register();
@@ -464,15 +460,20 @@ public class PolyphenyDb {
         MonetdbStore.register();
         // create the plugin manager
         final PluginManager pluginManager = new DefaultPluginManager() {
+
+
             @Override
             protected PluginLoader createPluginLoader() {
-                return new DefaultPluginLoader( this ) {
-                    @Override
-                    protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
-                        // we load the existing applications classes first, then the dependencies and then the plugin
-                        return new PluginClassLoader( pluginManager, pluginDescriptor, getClass().getClassLoader(), ClassLoadingStrategy.ADP );
-                    }
-                };
+                return new CompoundPluginLoader()
+                        .add( new DefaultPluginLoader( this ) {
+                            @Override
+                            protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
+                                // we load the existing applications classes first, then the dependencies and then the plugin
+                                return new PluginClassLoader( pluginManager, pluginDescriptor, getClass().getClassLoader(), ClassLoadingStrategy.ADP );
+                            }
+                        } )
+                        .add( new JarPluginLoader( this ) )
+                        .add( new DefaultPluginLoader( this ), this::isNotDevelopment );
             }
 
 
@@ -514,7 +515,8 @@ public class PolyphenyDb {
             pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) );
         }
 
-
+        // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); does not work with ADP
+        // exceptions.forEach( e -> e.initExtension( transactionManager, authenticator ) );
     }
 
 

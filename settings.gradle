@@ -11,7 +11,6 @@ include 'catalog'
 include 'config'
 include 'information'
 include 'monitoring'
-include 'explore-by-example'
 
 include 'jdbc-adapter'
 
@@ -33,6 +32,9 @@ include 'plugins:csv-adapter'
 include 'plugins:mysql-adapter'
 include 'plugins:mongodb-adapter'
 include 'plugins:file-adapter'
+
+// other plugins
+include 'plugins:explore-by-example'
 
 // disabled adapter plugins
 include 'plugins:pig-adapter'

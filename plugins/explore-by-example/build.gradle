@@ -3,8 +3,10 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
+    implementation project(":webui")
 
     implementation group: 'nz.ac.waikato.cms.weka', name: 'weka-stable', version: weka_version  // GPL 3.0
+    compileOnly(group: "io.javalin", name: "javalin", version: javalin_version) // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -15,10 +17,12 @@ compileJava {
     dependsOn(":config:processResources")
     dependsOn(":core:processResources")
     dependsOn(":information:processResources")
+    dependsOn(":webui:processResources")
 }
 
 delombok {
     dependsOn(":core:processResources")
+    dependsOn(":webui:processResources")
 }
 
 

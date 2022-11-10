@@ -23,6 +23,8 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
+import io.javalin.http.Context;
+import io.javalin.http.HandlerType;
 import io.javalin.plugin.json.JsonMapper;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
@@ -31,6 +33,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.servlet.ServletException;
 import lombok.extern.slf4j.Slf4j;
@@ -115,6 +118,21 @@ public class HttpServer implements Runnable {
     }
 
 
+    private static HttpServer INSTANCE = null;
+
+
+    public static HttpServer getInstance() {
+        if ( INSTANCE == null ) {
+            throw new RuntimeException( "HttpServer is not yet created." );
+        }
+        return INSTANCE;
+    }
+
+
+    private Javalin server;
+    private Crud crud;
+
+
     public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator ) {
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
@@ -139,13 +157,13 @@ public class HttpServer implements Runnable {
             }
 
         };
-        Javalin server = Javalin.create( config -> {
+        this.server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
             config.enableCorsForAllOrigins();
             config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
-        Crud crud = new Crud(
+        this.crud = new Crud(
                 transactionManager,
                 Catalog.defaultUserId,
                 Catalog.defaultDatabaseId );
@@ -169,6 +187,8 @@ public class HttpServer implements Runnable {
         crudRoutes( server, crud );
 
         StatusService.printInfo( String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
+
+        INSTANCE = this;
     }
 
 
@@ -209,13 +229,13 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/batchUpdate", crud::batchUpdate );
 
-        webuiServer.post( "/classifyData", crud::classifyData );
+        // webuiServer.post( "/classifyData", crud::classifyData );
 
-        webuiServer.post( "/getExploreTables", crud::getExploreTables );
+        // webuiServer.post( "/getExploreTables", crud::getExploreTables );
 
-        webuiServer.post( "/createInitialExploreQuery", crud::createInitialExploreQuery );
+        // webuiServer.post( "/createInitialExploreQuery", crud::createInitialExploreQuery );
 
-        webuiServer.post( "/exploration", crud::exploration );
+        // webuiServer.post( "/exploration", crud::exploration );
 
         webuiServer.post( "/allStatistics", ( ctx ) -> crud.statisticCrud.getStatistics( ctx, gsonExpose ) );
 
@@ -341,6 +361,30 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
+    }
+
+
+    public void addRoute( String route, BiConsumer<Context, Crud> action, HandlerType type ) {
+        log.info( "Added route: {}", route );
+        switch ( type ) {
+            case GET:
+                server.get( route, r -> action.accept( r, crud ) );
+            case POST:
+                server.post( route, r -> action.accept( r, crud ) );
+            case PUT:
+                server.put( route, r -> action.accept( r, crud ) );
+            case DELETE:
+                server.delete( route, r -> action.accept( r, crud ) );
+            case PATCH:
+            case HEAD:
+            case TRACE:
+            case CONNECT:
+            case OPTIONS:
+            case BEFORE:
+            case AFTER:
+            case INVALID:
+                throw new UnsupportedOperationException( "This server handler is not supported." );
+        }
     }
 
 

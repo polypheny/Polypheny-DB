@@ -48,7 +48,7 @@ dependencies {
     // implementation project("plugins:avatica-interface")
     // implementation project(":http-interface")
     // implementation project(":rest-interface")
-    implementation project(":explore-by-example")
+    // implementation project(":explore-by-example")
     implementation project(":monitoring")
 
     ////// SLF4J
@@ -226,7 +226,7 @@ compileJava {
     dependsOn(":cql-language:processResources")
     // dependsOn(":csv-adapter:processResources")
     // dependsOn(":ethereum-adapter:processResources")
-    dependsOn(":explore-by-example:processResources")
+    // dependsOn(":explore-by-example:processResources")
     // dependsOn(":file-adapter:processResources")
     // dependsOn(":http-interface:processResources")
     dependsOn(":jdbc-adapter:processResources")

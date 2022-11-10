@@ -145,8 +145,6 @@ import org.polypheny.db.cypher.cypher2alg.CypherQueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.exploreByExample.Explore;
-import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -186,7 +184,6 @@ import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
-import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.ForeignKey;
 import org.polypheny.db.webui.models.HubMeta;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
@@ -210,16 +207,12 @@ import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
-import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
-import org.polypheny.db.webui.models.requests.ExploreData;
-import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
-import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
@@ -912,208 +905,6 @@ public class Crud implements InformationObserver {
         queryAnalyzer.addGroup( g3 );
         InformationText text3 = new InformationText( g3, commitStatus );
         queryAnalyzer.registerInformation( text3 );
-    }
-
-
-    /**
-     * Gets the classified Data from User
-     * return possibly interesting Data to User
-     */
-    public void classifyData( final Context ctx ) {
-        ClassifyAllData classifyAllData = ctx.bodyAsClass( ClassifyAllData.class );
-        ExploreManager exploreManager = ExploreManager.getInstance();
-
-        boolean isConvertedToSql = isClassificationToSql();
-
-        Explore explore = exploreManager.classifyData( classifyAllData.id, classifyAllData.classified, isConvertedToSql );
-
-        if ( isConvertedToSql ) {
-            Transaction transaction = getTransaction();
-            Statement statement = transaction.createStatement();
-            Result result;
-
-            try {
-                result = executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
-                transaction.commit();
-            } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
-                log.error( "Caught exception while executing a query from the console", e );
-                result = new Result( e ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rollback", ex );
-                }
-            }
-
-            result.setExplorerId( explore.getId() );
-            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
-
-            result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setConvertedToSql( isConvertedToSql );
-
-            ctx.json( result );
-        } else {
-            Result result = new Result( classifyAllData.header, Arrays.copyOfRange( explore.getData(), 0, 10 ) );
-
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setExplorerId( explore.getId() );
-
-            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
-            result.setHighestPage( (int) Math.ceil( (double) explore.getData().length / getPageSize() ) );
-            result.setConvertedToSql( isConvertedToSql );
-            ctx.json( result );
-        }
-
-    }
-
-
-    /**
-     * For pagination within the Explore-by-Example table
-     */
-    public void getExploreTables( final Context ctx ) {
-        ExploreTables exploreTables = ctx.bodyAsClass( ExploreTables.class );
-        Transaction transaction = getTransaction();
-        Statement statement = transaction.createStatement();
-
-        Result result;
-        ExploreManager exploreManager = ExploreManager.getInstance();
-        Explore explore = exploreManager.getExploreInformation( exploreTables.id );
-        String[][] paginationData;
-
-        String query = explore.getSqlStatement() + " OFFSET " + ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize());
-
-        if ( !explore.isConvertedToSql() && !explore.isClassificationPossible() ) {
-            int tablesize = explore.getData().length;
-
-            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
-                paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
-            } else {
-                paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize()) );
-            }
-            result = new Result( exploreTables.columns, paginationData );
-            result.setClassificationInfo( "NoClassificationPossible" );
-            result.setExplorerId( explore.getId() );
-
-            result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
-            result.setHighestPage( (int) Math.ceil( (double) tablesize / getPageSize() ) );
-
-            ctx.json( result );
-        }
-
-        try {
-            result = executeSqlSelect( statement, exploreTables, query );
-        } catch ( QueryExecutionException e ) {
-            log.error( "Caught exception while fetching a table", e );
-            result = new Result( "Could not fetch table " + exploreTables.tableId );
-            try {
-                transaction.rollback();
-                ctx.status( 500 ).json( result );
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
-
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception while committing transaction", e );
-        }
-        result.setExplorerId( explore.getId() );
-        result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
-        int tableSize = explore.getTableSize();
-
-        result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
-
-        if ( !explore.isClassificationPossible() ) {
-            result.setClassificationInfo( "NoClassificationPossible" );
-        } else {
-            result.setClassificationInfo( "ClassificationPossible" );
-        }
-        result.setIncludesClassificationInfo( explore.isDataAfterClassification );
-
-        if ( explore.isDataAfterClassification ) {
-            int tablesize = explore.getDataAfterClassification().size();
-            List<String[]> paginationDataList;
-            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
-                paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
-            } else {
-                paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize()) );
-            }
-
-            paginationData = new String[paginationDataList.size()][];
-            for ( int i = 0; i < paginationDataList.size(); i++ ) {
-                paginationData[i] = paginationDataList.get( i );
-            }
-
-            result.setClassifiedData( paginationData );
-        }
-        ctx.json( result );
-
-    }
-
-
-    /**
-     * Creates the initial query for the Explore-by-Example process
-     */
-    public void createInitialExploreQuery( final Context ctx ) {
-        QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
-        ExploreManager exploreManager = ExploreManager.getInstance();
-
-        Result result;
-
-        Explore explore = exploreManager.createSqlQuery( null, queryExplorationRequest.query );
-        if ( explore.getDataType() == null ) {
-            ctx.status( 400 ).json( new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" ) );
-            return;
-        }
-
-        Transaction transaction = getTransaction( queryExplorationRequest.analyze, true, transactionManager, userId, databaseId, "Explore-by-Example" );
-        Statement statement = transaction.createStatement();
-        try {
-            String query = explore.getSqlStatement();
-            result = executeSqlSelect( statement, queryExplorationRequest, query, false ).setGeneratedQuery( query );
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            result = new Result( e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", ex );
-            }
-        }
-
-        result.setExplorerId( explore.getId() );
-        if ( !explore.isClassificationPossible() ) {
-            result.setClassificationInfo( "NoClassificationPossible" );
-
-        } else {
-            result.setClassificationInfo( "ClassificationPossible" );
-        }
-        result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
-        result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
-
-        ctx.json( result );
-    }
-
-
-    /**
-     * Start Classification, classifies the initial dataset, to show what would be within the final result set
-     */
-    public void exploration( final Context ctx ) {
-        ExploreData exploreData = ctx.bodyAsClass( ExploreData.class );
-
-        String[] dataType = new String[exploreData.header.length + 1];
-        for ( int i = 0; i < exploreData.header.length; i++ ) {
-            dataType[i] = exploreData.header[i].dataType;
-        }
-        dataType[exploreData.header.length] = "VARCHAR";
-
-        ExploreManager e = ExploreManager.getInstance();
-        Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType );
-
-        ctx.json( new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() ) );
     }
 
 
@@ -3638,12 +3429,12 @@ public class Crud implements InformationObserver {
     /**
      * Execute a select statement with default limit
      */
-    private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
+    public Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
         return executeSqlSelect( statement, request, sqlSelect, false );
     }
 
 
-    private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
+    public Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
         PolyImplementation result;
         List<List<Object>> rows;
         boolean hasMoreRows;
@@ -3995,13 +3786,8 @@ public class Crud implements InformationObserver {
     /**
      * Get the number of rows that should be displayed in one page in the data view
      */
-    private int getPageSize() {
+    public int getPageSize() {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
-    }
-
-
-    private boolean isClassificationToSql() {
-        return RuntimeConfig.EXPLORE_BY_EXAMPLE_TO_SQL.getBoolean();
     }
 
 

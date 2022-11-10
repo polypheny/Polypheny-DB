@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.processing;
 
+import org.pf4j.ExtensionPoint;
+import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.transaction.TransactionManager;
 
-import org.polypheny.db.webui.models.DbColumn;
+public interface TransactionExtension extends ExtensionPoint {
 
+    void initExtension( TransactionManager manager, Authenticator authenticator );
 
-public class ClassifyAllData extends UIRequest {
-
-    public Integer id;
-    public DbColumn[] header;
-    public String[][] classified;
-    /**
-     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
-     */
-    public boolean analyze;
-    public int cPage;
 }
