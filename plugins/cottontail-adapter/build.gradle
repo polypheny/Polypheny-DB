@@ -35,7 +35,11 @@ delombok {
 }
 
 inspectClassesForKotlinIC {
-    // dependsOn(":cottontail-adapter:compileTestKotlin")
+    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
+}
+
+plugin {
+    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }
 
 
@@ -72,7 +76,7 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
     }
-    //dependsOn(":cottontail-adapter:compileTestKotlin")
+    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 
 }
 java {
@@ -81,5 +85,5 @@ java {
 }
 
 javadoc {
-    // dependsOn(":cottontail-adapter:compileTestKotlin")
+    dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
 }

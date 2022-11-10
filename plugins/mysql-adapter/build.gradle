@@ -44,10 +44,16 @@ sourceSets {
 compileJava {
     dependsOn(":core:processResources")
     dependsOn(":sql-language:processResources")
+    dependsOn(":jdbc-adapter:processResources")
+}
+
+compileTestJava {
+    dependsOn(":jdbc-adapter:processResources")
 }
 
 delombok {
     dependsOn(":sql-language:processResources")
+    dependsOn(":jdbc-adapter:processResources")
 }
 
 /**
@@ -63,4 +69,8 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
+}
+
+javadoc {
+    dependsOn(":jdbc-adapter:processResources")
 }

@@ -39,12 +39,12 @@ sourceSets {
     }
 }
 
-compileJava{
-    // dependsOn(":csv-adapter:processResources")
+compileJava {
+    dependsOn(":core:processResources")
 }
 
 delombok {
-    // dependsOn(":csv-adapter:processResources")
+    dependsOn(":core:processResources")
 }
 
 compileTestJava {
@@ -76,5 +76,5 @@ java {
 }
 
 javadoc {
-    // dependsOn(":csv-adapter:processResources")
+    dependsOn(":core:processResources")
 }

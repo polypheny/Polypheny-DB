@@ -6,14 +6,12 @@ include 'mql-language'
 include 'pig-language'
 include 'cql-language'
 include 'cypher-language'
-include 'http-interface'
 include 'webui'
 include 'catalog'
 include 'config'
 include 'information'
 include 'monitoring'
 include 'explore-by-example'
-include 'rest-interface'
 
 include 'jdbc-adapter'
 
@@ -23,6 +21,8 @@ include 'plugins'
 
 // interface plugins
 include 'plugins:avatica-interface'
+include 'plugins:rest-interface'
+include 'plugins:http-interface'
 
 // adapters plugins
 include 'plugins:neo4j-adapter'

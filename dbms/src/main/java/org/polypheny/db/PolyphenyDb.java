@@ -42,7 +42,6 @@ import org.pf4j.PluginWrapper;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.jdbc.sources.MonetdbSource;
 import org.polypheny.db.adapter.jdbc.sources.PostgresqlSource;
@@ -353,6 +352,7 @@ public class PolyphenyDb {
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
+            loadDefaults();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
@@ -499,11 +499,11 @@ public class PolyphenyDb {
         log.info( "\t" + System.getProperty( "pf4j.pluginsDir", "plugins" ) + "\n" );
 
         // retrieves the extensions for Greeting extension point
-        List<DataStore> stores = pluginManager.getExtensions( DataStore.class );
+        /*List<DataStore> stores = pluginManager.getExtensions( DataStore.class );
         log.info( String.format( "Found %d extensions for extension point '%s'", stores.size(), DataStore.class.getName() ) );
         for ( DataStore store : stores ) {
             log.info( ">>> " + store.getUniqueName() );
-        }
+        }*/
 
         // print extensions for each started plugin
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
@@ -514,6 +514,12 @@ public class PolyphenyDb {
             pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) );
         }
 
+
+    }
+
+
+    public void loadDefaults() {
+        Catalog.getInstance().restoreInterfacesIfNecessary();
     }
 
 }

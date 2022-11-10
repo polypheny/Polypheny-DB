@@ -4,8 +4,7 @@ group "org.polypheny"
 dependencies {
     implementation project(":core")
 
-    implementation (group: "org.apache.geode", name: "geode-core", version: geode_core_version ){ exclude(group: "org.apache.logging.log4j") }  // Apache 2.0
-
+    implementation(group: "org.apache.geode", name: "geode-core", version: geode_core_version) { exclude(group: "org.apache.logging.log4j") }  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -41,15 +40,15 @@ sourceSets {
 }
 
 compileJava {
-    // dependsOn(":csv-adapter:processResources")
+    dependsOn(":core:processResources")
 }
 
 delombok {
-    // dependsOn(":csv-adapter:processResources")
+    dependsOn(":core:processResources")
 }
 
 javadoc {
-    // dependsOn(":csv-adapter:processResources")
+    dependsOn(":core:processResources")
 }
 
 compileTestJava {

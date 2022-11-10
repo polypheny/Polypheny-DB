@@ -118,6 +118,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -802,28 +803,28 @@ public class CatalogImpl extends Catalog {
             }
         }
 
-        ////////////////////////
-        // init query interfaces
-        if ( queryInterfaceNames.size() == 0 ) {
-            // Add REST interface
-            Map<String, String> restSettings = new HashMap<>();
-            restSettings.put( "port", "8089" );
-            restSettings.put( "maxUploadSizeMb", "10000" );
-            addQueryInterface( "rest", "org.polypheny.db.restapi.HttpRestServer", restSettings );
-
-            // Add HTTP interface
-            Map<String, String> httpSettings = new HashMap<>();
-            httpSettings.put( "port", "13137" );
-            httpSettings.put( "maxUploadSizeMb", "10000" );
-            addQueryInterface( "http", "org.polypheny.db.http.HttpInterface", httpSettings );
-        }
-
         try {
             commit();
         } catch ( NoTablePrimaryKeyException e ) {
             throw new RuntimeException( e );
         }
 
+    }
+
+
+    @Override
+    public void restoreInterfacesIfNecessary() {
+        ////////////////////////
+        // init query interfaces
+        if ( queryInterfaceNames.size() == 0 ) {
+            QueryInterfaceManager.getREGISTER().values().forEach( i -> addQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
+
+            try {
+                commit();
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( e );
+            }
+        }
     }
 
 

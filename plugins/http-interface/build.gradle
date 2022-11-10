@@ -1,0 +1,69 @@
+group "org.polypheny"
+
+
+dependencies {
+    implementation project(":core")
+    implementation project(":sql-language")
+    implementation project(":mql-language")
+    implementation project(":cypher-language")
+    implementation project(":webui")
+
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
+    implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version // Apache 2.0
+    implementation group: "commons-codec", name: "commons-codec", version: commons_codec_version // Apache 2.0
+    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
+
+    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+}
+
+compileJava {
+    dependsOn(":cypher-language:processResources")
+    dependsOn(":mql-language:processResources")
+    dependsOn(":webui:processResources")
+    //dependsOn(":csv-adapter:processResources")
+}
+
+
+delombok {
+    // dependsOn(":csv-adapter:processResources")
+    dependsOn(":webui:processResources")
+}
+
+javadoc {
+    dependsOn(":plugins:http-interface:compileTestJava")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+    dependsOn(compileTestJava)
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}

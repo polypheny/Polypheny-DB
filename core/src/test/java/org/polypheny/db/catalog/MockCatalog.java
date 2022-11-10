@@ -1371,4 +1371,10 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+
+    @Override
+    public void restoreInterfacesIfNecessary() {
+        throw new NotImplementedException();
+    }
+
 }

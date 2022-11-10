@@ -46,8 +46,8 @@ dependencies {
     implementation project(":catalog")
     implementation project(":webui")
     // implementation project("plugins:avatica-interface")
-    implementation project(":http-interface")
-    implementation project(":rest-interface")
+    // implementation project(":http-interface")
+    // implementation project(":rest-interface")
     implementation project(":explore-by-example")
     implementation project(":monitoring")
 
@@ -228,20 +228,20 @@ compileJava {
     // dependsOn(":ethereum-adapter:processResources")
     dependsOn(":explore-by-example:processResources")
     // dependsOn(":file-adapter:processResources")
-    dependsOn(":http-interface:processResources")
+    // dependsOn(":http-interface:processResources")
     dependsOn(":jdbc-adapter:processResources")
     // dependsOn(":mongodb-adapter:processResources")
     dependsOn(":mql-language:processResources")
     dependsOn(":pig-language:processResources")
     // dependsOn(":neo4j-adapter:processResources")
-    dependsOn(":rest-interface:processResources")
+    // dependsOn(":rest-interface:processResources")
     dependsOn(":webui:processResources")
-    dependsOn(":http-interface:compileTestJava")
+    // dependsOn(":http-interface:compileTestJava")
     // dependsOn(":cottontail-adapter:compileTestKotlin")
 }
 
 compileTestJava {
-    dependsOn(":http-interface:compileTestJava")
+    // dependsOn(":http-interface:compileTestJava")
 }
 
 

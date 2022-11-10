@@ -33,7 +33,6 @@ import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.StatusService;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -57,12 +56,11 @@ public class AvaticaInterfacePlugin extends Plugin {
 
     @Override
     public void start() {
-        QueryInterfaceManager.addInterfaceType( AvaticaInterface.class );
         // Add JDBC interface
-        Map<String, String> jdbcSettings = new HashMap<>();
-        jdbcSettings.put( "port", "20591" );
-        jdbcSettings.put( "serialization", "PROTOBUF" );
-        Catalog.getInstance().addQueryInterface( "avatica", AvaticaInterface.class.getName(), jdbcSettings );
+        Map<String, String> settings = new HashMap<>();
+        settings.put( "port", "20591" );
+        settings.put( "serialization", "PROTOBUF" );
+        QueryInterfaceManager.addInterfaceType( "avatica", AvaticaInterface.class, settings );
     }
 
 

@@ -158,6 +158,11 @@ public abstract class Catalog {
 
 
     /**
+     * Restores all interfaces if none are present
+     */
+    public abstract void restoreInterfacesIfNecessary();
+
+    /**
      * Validates that all columns have a valid placement,
      * else deletes them.
      */
