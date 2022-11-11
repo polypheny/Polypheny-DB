@@ -24,32 +24,13 @@ import com.github.rvesse.airline.annotations.OptionType;
 import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
-import java.nio.file.Path;
-import java.util.List;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.pf4j.ClassLoadingStrategy;
-import org.pf4j.CompoundPluginDescriptorFinder;
-import org.pf4j.CompoundPluginLoader;
-import org.pf4j.DefaultPluginLoader;
-import org.pf4j.DefaultPluginManager;
-import org.pf4j.JarPluginLoader;
-import org.pf4j.ManifestPluginDescriptorFinder;
-import org.pf4j.PluginClassLoader;
-import org.pf4j.PluginDescriptor;
-import org.pf4j.PluginLoader;
-import org.pf4j.PluginManager;
-import org.pf4j.PluginWrapper;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
-import org.polypheny.db.adapter.jdbc.sources.MonetdbSource;
-import org.polypheny.db.adapter.jdbc.sources.PostgresqlSource;
-import org.polypheny.db.adapter.jdbc.stores.HsqldbStore;
-import org.polypheny.db.adapter.jdbc.stores.MonetdbStore;
-import org.polypheny.db.adapter.jdbc.stores.PostgresqlStore;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -81,6 +62,7 @@ import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
 import org.polypheny.db.processing.TransactionExtension;
@@ -94,6 +76,7 @@ import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.HttpServer.HandlerType;
 import org.polypheny.db.webui.InformationServer;
 import org.polypheny.db.webui.UiTestingConfigPage;
 import org.polypheny.db.webui.UiTestingMonitoringPage;
@@ -331,7 +314,7 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
-        loadPlugins( authenticator );
+        PolyPluginManager.init();
 
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
@@ -404,6 +387,7 @@ public class PolyphenyDb {
 
         // hand parameters to extensions
         TransactionExtension.REGISTER.forEach( e -> e.initExtension( transactionManager, authenticator ) );
+        httpServer.addRoute( "/getEnabledPlugins", ( r, c ) -> PolyPluginManager.REGISTER, Object.class, HandlerType.GET );
 
         // Add config and monitoring test page for UI testing
         if ( testMode ) {
@@ -453,67 +437,6 @@ public class PolyphenyDb {
         if ( trayMenu ) {
             TrayGui.getInstance().shutdown();
         }
-    }
-
-
-    public void loadPlugins( Authenticator authenticator ) {
-        HsqldbStore.register();
-        PostgresqlStore.register();
-        PostgresqlSource.register();
-        MonetdbSource.register();
-        MonetdbStore.register();
-        // create the plugin manager
-        final PluginManager pluginManager = new DefaultPluginManager() {
-
-            @Override
-            protected PluginLoader createPluginLoader() {
-                return new CompoundPluginLoader()
-                        .add( new DefaultPluginLoader( this ) {
-                            @Override
-                            protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
-                                // we load the existing applications classes first, then the dependencies and then the plugin
-                                return new PluginClassLoader( pluginManager, pluginDescriptor, getClass().getClassLoader(), ClassLoadingStrategy.ADP );
-                            }
-                        } )
-                        .add( new JarPluginLoader( this ) )
-                        .add( new DefaultPluginLoader( this ), this::isNotDevelopment );
-            }
-
-
-            @Override
-            protected CompoundPluginDescriptorFinder createPluginDescriptorFinder() {
-                return new CompoundPluginDescriptorFinder()
-                        // Demo is using the Manifest file
-                        // PropertiesPluginDescriptorFinder is commented out just to avoid error log
-                        //.add( new PropertiesPluginDescriptorFinder() );
-                        .add( new ManifestPluginDescriptorFinder() );
-            }
-        };
-
-        // load the plugins
-        pluginManager.loadPlugins();
-
-        // enable a disabled plugin
-        // pluginManager.enablePlugin("welcome-plugin");
-
-        // start (active/resolved) the plugins
-        pluginManager.startPlugins();
-
-        log.info( "Plugin Directory: " );
-        log.info( "\t" + System.getProperty( "pf4j.pluginsDir", "plugins" ) + "\n" );
-
-        // print extensions for each started plugin
-        List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
-        for (
-                PluginWrapper plugin : startedPlugins ) {
-            String pluginId = plugin.getDescriptor().getPluginId();
-
-            log.info( String.format( "Extensions added by plugin '%s':", pluginId ) );
-            pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) );
-        }
-
-        // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); // does not work with ADP
-
     }
 
 

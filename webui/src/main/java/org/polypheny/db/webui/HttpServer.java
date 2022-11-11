@@ -24,7 +24,6 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.http.HandlerType;
 import io.javalin.plugin.json.JsonMapper;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
@@ -34,6 +33,7 @@ import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.servlet.ServletException;
 import lombok.extern.slf4j.Slf4j;
@@ -361,10 +361,12 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
+        // webuiServer.get( "/getEnabledPlugins", crud::getEnabledPlugins );
+
     }
 
 
-    public void addRoute( String route, BiConsumer<Context, Crud> action, HandlerType type ) {
+    public void addSerializedRoute( String route, BiConsumer<Context, Crud> action, HandlerType type ) {
         log.info( "Added route: {}", route );
         switch ( type ) {
             case GET:
@@ -379,16 +381,13 @@ public class HttpServer implements Runnable {
             case DELETE:
                 server.delete( route, r -> action.accept( r, crud ) );
                 break;
-            case PATCH:
-            case HEAD:
-            case TRACE:
-            case CONNECT:
-            case OPTIONS:
-            case BEFORE:
-            case AFTER:
-            case INVALID:
-                throw new UnsupportedOperationException( "This server handler is not supported." );
         }
+    }
+
+
+    public <T> void addRoute( String route, BiFunction<T, Crud, Object> action, Class<T> requestClass, HandlerType type ) {
+        BiConsumer<Context, Crud> func = ( r, c ) -> r.json( action.apply( r.bodyAsClass( requestClass ), crud ) );
+        addSerializedRoute( route, func, type );
     }
 
 
@@ -455,5 +454,12 @@ public class HttpServer implements Runnable {
         } );
     }
 
+
+    public enum HandlerType {
+        POST,
+        GET,
+        PUT,
+        DELETE
+    }
 
 }

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.exploreByExample;
 
-import io.javalin.http.HandlerType;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -25,6 +24,7 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.HttpServer.HandlerType;
 
 public class ExploreByExamplePlugin extends Plugin {
 
@@ -63,10 +63,10 @@ public class ExploreByExamplePlugin extends Plugin {
             explore.setExploreQueryProcessor( exploreQueryProcessor );
 
             HttpServer server = HttpServer.getInstance();
-            server.addRoute( "/classifyData", explore::classifyData, HandlerType.POST );
-            server.addRoute( "/getExploreTables", explore::getExploreTables, HandlerType.POST );
-            server.addRoute( "/createInitialExploreQuery", explore::createInitialExploreQuery, HandlerType.POST );
-            server.addRoute( "/exploration", explore::exploration, HandlerType.POST );
+            server.addSerializedRoute( "/classifyData", explore::classifyData, HandlerType.POST );
+            server.addSerializedRoute( "/getExploreTables", explore::getExploreTables, HandlerType.POST );
+            server.addSerializedRoute( "/createInitialExploreQuery", explore::createInitialExploreQuery, HandlerType.POST );
+            server.addSerializedRoute( "/exploration", explore::exploration, HandlerType.POST );
         }
 
     }

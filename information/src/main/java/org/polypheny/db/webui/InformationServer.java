@@ -25,10 +25,8 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
-import io.javalin.http.Context;
 import io.javalin.plugin.json.JsonMapper;
 import java.io.IOException;
-import java.util.Collections;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
@@ -175,12 +173,6 @@ public class InformationServer implements InformationObserver {
             ctx.result( "" );
         } );
 
-        http.get( "/getEnabledPlugins", this::getEnabledPlugins );
-    }
-
-
-    public void getEnabledPlugins( final Context ctx ) {
-        ctx.json( Collections.singletonList( "Explore-By-Example" ) );
     }
 
 
