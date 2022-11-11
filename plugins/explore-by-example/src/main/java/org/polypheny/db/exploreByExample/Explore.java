@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -146,7 +147,7 @@ public class Explore {
             name = name.replace( "\"", "" ); // remove quotes
             if ( exploreQueryResult.name.get( i ).startsWith( name ) ) {
                 String type = exploreQueryResult.typeInfo.get( i );
-                if ( Arrays.asList( "VARCHAR", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "DECIMAL", "JSON" ).contains( type ) ) {
+                if ( Stream.of( "VARCHAR", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "DECIMAL", "JSON" ).anyMatch( type::contains ) || type.contains( "VARCHAR" ) ) {
                     dataType[i] = exploreQueryResult.typeInfo.get( i );
                     nameAndType.put( fullNames[i], dataType[i] );
                 } else {

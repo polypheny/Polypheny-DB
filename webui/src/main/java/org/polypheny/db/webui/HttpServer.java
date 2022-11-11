@@ -369,12 +369,16 @@ public class HttpServer implements Runnable {
         switch ( type ) {
             case GET:
                 server.get( route, r -> action.accept( r, crud ) );
+                break;
             case POST:
                 server.post( route, r -> action.accept( r, crud ) );
+                break;
             case PUT:
                 server.put( route, r -> action.accept( r, crud ) );
+                break;
             case DELETE:
                 server.delete( route, r -> action.accept( r, crud ) );
+                break;
             case PATCH:
             case HEAD:
             case TRACE:

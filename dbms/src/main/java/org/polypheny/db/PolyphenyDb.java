@@ -83,6 +83,7 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
+import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -401,6 +402,9 @@ public class PolyphenyDb {
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
 
+        // hand parameters to extensions
+        TransactionExtension.REGISTER.forEach( e -> e.initExtension( transactionManager, authenticator ) );
+
         // Add config and monitoring test page for UI testing
         if ( testMode ) {
             new UiTestingConfigPage();
@@ -461,7 +465,6 @@ public class PolyphenyDb {
         // create the plugin manager
         final PluginManager pluginManager = new DefaultPluginManager() {
 
-
             @Override
             protected PluginLoader createPluginLoader() {
                 return new CompoundPluginLoader()
@@ -499,24 +502,18 @@ public class PolyphenyDb {
         log.info( "Plugin Directory: " );
         log.info( "\t" + System.getProperty( "pf4j.pluginsDir", "plugins" ) + "\n" );
 
-        // retrieves the extensions for Greeting extension point
-        /*List<DataStore> stores = pluginManager.getExtensions( DataStore.class );
-        log.info( String.format( "Found %d extensions for extension point '%s'", stores.size(), DataStore.class.getName() ) );
-        for ( DataStore store : stores ) {
-            log.info( ">>> " + store.getUniqueName() );
-        }*/
-
         // print extensions for each started plugin
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
-        for ( PluginWrapper plugin : startedPlugins ) {
+        for (
+                PluginWrapper plugin : startedPlugins ) {
             String pluginId = plugin.getDescriptor().getPluginId();
 
             log.info( String.format( "Extensions added by plugin '%s':", pluginId ) );
             pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) );
         }
 
-        // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); does not work with ADP
-        // exceptions.forEach( e -> e.initExtension( transactionManager, authenticator ) );
+        // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); // does not work with ADP
+
     }
 
 

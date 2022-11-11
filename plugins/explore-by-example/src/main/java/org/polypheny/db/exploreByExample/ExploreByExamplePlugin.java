@@ -42,7 +42,7 @@ public class ExploreByExamplePlugin extends Plugin {
 
     @Override
     public void start() {
-        log.warn( ExploreStarter.class.getName() );
+        TransactionExtension.REGISTER.add( new ExploreStarter() );
     }
 
 

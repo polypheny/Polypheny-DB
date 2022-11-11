@@ -16,11 +16,15 @@
 
 package org.polypheny.db.processing;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.TransactionManager;
 
 public interface TransactionExtension extends ExtensionPoint {
+
+    List<TransactionExtension> REGISTER = new ArrayList<>();
 
     void initExtension( TransactionManager manager, Authenticator authenticator );
 
