@@ -12,11 +12,11 @@ include 'config'
 include 'information'
 include 'monitoring'
 
-include 'jdbc-adapter'
-
 include 'dbms'
 
 include 'plugins'
+
+include 'plugins:jdbc-adapter-framework'
 
 // interface plugins
 include 'plugins:avatica-interface'

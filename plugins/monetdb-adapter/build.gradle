@@ -3,8 +3,8 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":jdbc-adapter")
     implementation project(":sql-language")
+    implementation project(":plugins:jdbc-adapter-framework")
 
     // JDBC Drivers
     implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version  // HSQLDB License (BSD-style)
@@ -47,16 +47,16 @@ sourceSets {
 compileJava {
     dependsOn(":core:processResources")
     dependsOn(":sql-language:processResources")
-    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
 compileTestJava {
-    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
 delombok {
     dependsOn(":sql-language:processResources")
-    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
 /**
@@ -75,5 +75,5 @@ java {
 }
 
 javadoc {
-    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }

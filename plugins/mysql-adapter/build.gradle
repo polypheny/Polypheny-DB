@@ -4,7 +4,7 @@ group "org.polypheny"
 dependencies {
     implementation project(":core")
     implementation project(":sql-language")
-    implementation project(":jdbc-adapter")
+    implementation project(":plugins:jdbc-adapter-framework")
 
     // JDBC Drivers
     implementation group: "org.mariadb.jdbc", name: "mariadb-java-client", version: mariadb_version // LGPL 2.1
@@ -44,16 +44,16 @@ sourceSets {
 compileJava {
     dependsOn(":core:processResources")
     dependsOn(":sql-language:processResources")
-    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
 compileTestJava {
-    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
 delombok {
     dependsOn(":sql-language:processResources")
-    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
 /**
@@ -72,5 +72,5 @@ java {
 }
 
 javadoc {
-    dependsOn(":jdbc-adapter:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
