@@ -33,11 +33,6 @@ import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.jdbc.sources.MonetdbSource;
-import org.polypheny.db.adapter.jdbc.sources.PostgresqlSource;
-import org.polypheny.db.adapter.jdbc.stores.HsqldbStore;
-import org.polypheny.db.adapter.jdbc.stores.MonetdbStore;
-import org.polypheny.db.adapter.jdbc.stores.PostgresqlStore;
 
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
@@ -46,12 +41,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     public static void init() {
-        HsqldbStore.register();
-        PostgresqlStore.register();
-        PostgresqlSource.register();
-        MonetdbSource.register();
-        MonetdbStore.register();
-
         // create the plugin manager
         final PluginManager pluginManager = new PolyPluginManager();
 
@@ -75,7 +64,7 @@ public class PolyPluginManager extends DefaultPluginManager {
             String pluginId = plugin.getDescriptor().getPluginId();
 
             log.info( String.format( "Extensions added by plugin '%s':", pluginId ) );
-            pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) );
+            // pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) ); // takes forever
         }
         // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); // does not work with ADP
     }

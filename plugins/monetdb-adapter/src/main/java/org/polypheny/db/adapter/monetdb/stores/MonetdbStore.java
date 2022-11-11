@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.jdbc.stores;
+package org.polypheny.db.adapter.monetdb.stores;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -36,7 +35,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -80,18 +79,6 @@ public class MonetdbStore extends AbstractJdbcStore {
         super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
     }
 
-
-    public static void register() {
-        Map<String, String> settings = ImmutableMap.of(
-                "mode", "docker",
-                "instanceId", "0",
-                "password", "polypheny",
-                "maxConnections", "25",
-                "port", "5000"
-        );
-
-        Adapter.addAdapter( MonetdbStore.class, "MONETDB", settings );
-    }
 
 
     @Override

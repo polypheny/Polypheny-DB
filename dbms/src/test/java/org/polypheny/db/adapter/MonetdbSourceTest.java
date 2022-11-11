@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class MonetdbSourceTest extends AbstractSourceTest {
                 settings.put( "port", "" );
                 settings.put( "tables", "public.auction,public.bid,public.category,public.picture,public.user" );
                 Gson gson = new Gson();
-                statement.executeUpdate( "ALTER ADAPTERS ADD monetdbunit USING 'org.polypheny.db.adapter.jdbc.sources.MonetdbSource' WITH '" + gson.toJson( settings ) + "'" );
+                statement.executeUpdate( "ALTER ADAPTERS ADD monetdbunit USING 'org.polypheny.db.adapter.monetdb.sources.MonetdbSource' WITH '" + gson.toJson( settings ) + "'" );
             }
         }
     }

@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,7 +36,6 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
-import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -94,15 +92,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     public static void register() {
-        Map<String, String> settings = ImmutableMap.of(
-                "mode", "docker",
-                "password", "polypheny",
-                "instanceId", "0",
-                "port", "3306",
-                "maxConnections", "25"
-        );
 
-        Adapter.addAdapter( PostgresqlStore.class, "POSTGRESQL", settings );
     }
 
 

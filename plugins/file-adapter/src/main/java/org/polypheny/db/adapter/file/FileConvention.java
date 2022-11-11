@@ -34,7 +34,7 @@ public class FileConvention extends Convention.Impl {
     private final FileSchema fileSchema;
     /**
      * Whether the query is a modification (insert, update, delete) or a select query.
-     * Needed for the {@see org.polypheny.db.adapter.file.alg.FileRules.FileUnionRule}
+     * Needed for the org.polypheny.db.adapter.file.alg.FileRules.FileUnionRule
      */
     @Getter
     @Setter
