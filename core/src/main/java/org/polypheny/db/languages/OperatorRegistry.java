@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ public class OperatorRegistry {
         // we register a new map for each language per default
         // the general operators are registered for null
         registry.put( null, new HashMap<>() );
-        for ( QueryLanguage language : QueryLanguage.values() ) {
+        for ( QueryLanguage language : QueryLanguage.getLanguages() ) {
             registry.put( language, new HashMap<>() );
         }
     }

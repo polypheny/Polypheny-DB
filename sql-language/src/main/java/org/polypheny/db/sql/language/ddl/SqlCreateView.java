@@ -123,7 +123,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 
-        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
         AlgRoot algRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
@@ -148,7 +148,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                     placementType,
                     columns,
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
-                    Catalog.QueryLanguage.SQL );
+                    Catalog.QueryLanguage.from( "sql" ) );
         } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {

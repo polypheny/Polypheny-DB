@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.rex;
@@ -1531,7 +1514,7 @@ public class RexBuilder {
     public RexCall makeLpgExtract( String key ) {
         return new RexCall(
                 typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
-                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_PROPERTY ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTY ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ), makeLiteral( key ) ) );
     }
 
@@ -1539,7 +1522,7 @@ public class RexBuilder {
     public RexCall makeLpgGetId() {
         return new RexCall(
                 typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
-                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_ID ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_ID ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
     }
 
@@ -1547,7 +1530,7 @@ public class RexBuilder {
     public RexCall makeLpgPropertiesExtract() {
         return new RexCall(
                 typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
-                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_PROPERTIES ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTIES ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
     }
 
@@ -1555,7 +1538,7 @@ public class RexBuilder {
     public RexCall makeLpgLabels() {
         return new RexCall(
                 typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_EXTRACT_LABELS ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_LABELS ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
     }
 

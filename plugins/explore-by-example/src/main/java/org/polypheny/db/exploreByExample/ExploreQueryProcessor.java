@@ -163,7 +163,7 @@ public class ExploreQueryProcessor {
 
     private PolyImplementation processQuery( Statement statement, String sql ) {
         PolyImplementation result;
-        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
 
         Node parsed = sqlProcessor.parse( sql ).get( 0 );
 

@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.prepare;
@@ -305,7 +288,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         } catch ( NodeParseException e ) {
             throw new RuntimeException( "parse failed", e );
         }
-        final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
+        final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.from( "sql" ), context, catalogReader );
         Node sqlNode1 = validator.validate( sqlNode );
         if ( convert ) {
             return convert_( context, sql, analyze, fail, catalogReader, validator, sqlNode1 );
@@ -581,7 +564,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         NamespaceType.RELATIONAL );
             }
 
-            final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
+            final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.from( "sql" ), context, catalogReader );
             validator.setIdentifierExpansion( true );
             validator.setDefaultNullCollation( config.defaultNullCollation() );
 
@@ -912,7 +895,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         @Override
         protected NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config ) {
             final AlgOptCluster cluster = prepare.createCluster( planner, rexBuilder );
-            return LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, validator, catalogReader, cluster, convertletTable, config );
+            return LanguageManager.getInstance().createToRelConverter( QueryLanguage.from( "sql" ), validator, catalogReader, cluster, convertletTable, config );
         }
 
 
@@ -929,7 +912,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         protected Validator createSqlValidator( CatalogReader catalogReader ) {
-            return LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, (PolyphenyDbCatalogReader) catalogReader );
+            return LanguageManager.getInstance().createValidator( QueryLanguage.from( "sql" ), context, (PolyphenyDbCatalogReader) catalogReader );
         }
 
 

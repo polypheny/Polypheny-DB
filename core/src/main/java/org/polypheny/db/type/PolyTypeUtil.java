@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.type;
@@ -859,7 +842,7 @@ public abstract class PolyTypeUtil {
 
         // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
         assert typeName != null;
-        Identifier typeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, typeName.name(), ParserPos.ZERO );
+        Identifier typeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.from( "sql" ), typeName.name(), ParserPos.ZERO );
 
         String charSetName = null;
 
@@ -874,7 +857,7 @@ public abstract class PolyTypeUtil {
 
         if ( typeName.allowsScale() ) {
             return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.SQL,
+                    QueryLanguage.from( "sql" ),
                     typeIdentifier,
                     type.getPrecision(),
                     type.getScale(),
@@ -883,7 +866,7 @@ public abstract class PolyTypeUtil {
                     ParserPos.ZERO );
         } else if ( typeName.allowsPrec() ) {
             return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.SQL,
+                    QueryLanguage.from( "sql" ),
                     typeIdentifier,
                     type.getPrecision(),
                     -1,
@@ -892,9 +875,9 @@ public abstract class PolyTypeUtil {
                     ParserPos.ZERO );
         } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
             ArrayType arrayType = (ArrayType) type;
-            Identifier componentTypeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
+            Identifier componentTypeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.from( "sql" ), arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
             return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.SQL,
+                    QueryLanguage.from( "sql" ),
                     typeIdentifier,
                     componentTypeIdentifier,
                     arrayType.getComponentType().getPrecision(),
@@ -907,7 +890,7 @@ public abstract class PolyTypeUtil {
                     ParserPos.ZERO );
         } else {
             return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.SQL,
+                    QueryLanguage.from( "sql" ),
                     typeIdentifier,
                     -1,
                     -1,

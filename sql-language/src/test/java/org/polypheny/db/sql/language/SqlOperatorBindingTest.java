@@ -34,7 +34,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlLanguagelDependant;
+import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 
@@ -42,7 +42,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 /**
  * Unit tests for {@link RexProgram} and {@link RexProgramBuilder}.
  */
-public class SqlOperatorBindingTest extends SqlLanguagelDependant {
+public class SqlOperatorBindingTest extends SqlLanguageDependant {
 
     private RexBuilder rexBuilder;
     private AlgDataType integerDataType;

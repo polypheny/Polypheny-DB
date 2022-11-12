@@ -149,7 +149,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
         PlacementType placementType = store.size() > 0 ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
-        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
         AlgRoot algRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate(
@@ -197,7 +197,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
                     columns,
                     materializedCriteria,
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
-                    Catalog.QueryLanguage.SQL,
+                    Catalog.QueryLanguage.from( "sql" ),
                     ifNotExists,
                     ordered );
         } catch ( EntityAlreadyExistsException e ) {

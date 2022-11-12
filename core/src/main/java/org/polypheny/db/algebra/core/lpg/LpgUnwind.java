@@ -66,7 +66,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
         RexNode ref = input.getCluster().getRexBuilder().makeInputRef( field.getType(), field.getIndex() );
         // we wrap the field in a to-list operation, which wraps single values as list, leaves lists and replaces null with an empty list
         AlgDataType arrayType = input.getCluster().getTypeFactory().createArrayType( ref.getType(), -1 );
-        ref = input.getCluster().getRexBuilder().makeCall( arrayType, OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_TO_LIST ), List.of( ref ) );
+        ref = input.getCluster().getRexBuilder().makeCall( arrayType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_TO_LIST ), List.of( ref ) );
         return new LogicalLpgProject( input.getCluster(), input.getTraitSet(), input, Collections.singletonList( ref ), Collections.singletonList( field.getName() ) );
     }
 

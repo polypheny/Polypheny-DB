@@ -40,7 +40,7 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlLanguagelDependant;
+import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -49,7 +49,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Tests for {@link AlgToSqlConverter} on a schema that has nested structures of multiple levels.
  */
-public class RelToSqlConverterStructsTest extends SqlLanguagelDependant {
+public class RelToSqlConverterStructsTest extends SqlLanguageDependant {
 
     private static final Schema SCHEMA = new Schema() {
         @Override

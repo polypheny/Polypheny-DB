@@ -30,11 +30,11 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":sql-language")
-    implementation project(":mql-language")
-    implementation project(":cypher-language")
-    implementation project(":pig-language")
-    implementation project(":cql-language")
+    // implementation project(":sql-language")
+    // implementation project(":mql-language")
+    // implementation project(":cypher-language")
+    // implementation project(":pig-language")
+    // implementation project(":cql-language")
     // implementation project(":cassandra-adapter")
     // implementation project(":cottontail-adapter")
     // implementation project(":csv-adapter")
@@ -65,10 +65,12 @@ dependencies {
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version
     implementation 'org.jetbrains:annotations:20.1.0'// ISC
 
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0 todo dl remove
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":sql-language", configuration: "tests")
+    // testImplementation project(path: ":sql-language", configuration: "tests")
     // testImplementation project(path: "plugins:interfaces:avatica-interface", configuration: "tests")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
@@ -223,7 +225,7 @@ compileJava {
     // dependsOn(":avatica-interface:processResources")
     // dependsOn(":cassandra-adapter:processResources")
     dependsOn(":catalog:processResources")
-    dependsOn(":cql-language:processResources")
+    // dependsOn(":cql-language:processResources")
     // dependsOn(":csv-adapter:processResources")
     // dependsOn(":ethereum-adapter:processResources")
     // dependsOn(":explore-by-example:processResources")
@@ -231,8 +233,8 @@ compileJava {
     // dependsOn(":http-interface:processResources")
     // dependsOn(":jdbc-adapter:processResources")
     // dependsOn(":mongodb-adapter:processResources")
-    dependsOn(":mql-language:processResources")
-    dependsOn(":pig-language:processResources")
+    // dependsOn(":mql-language:processResources")
+    // dependsOn(":pig-language:processResources")
     // dependsOn(":neo4j-adapter:processResources")
     // dependsOn(":rest-interface:processResources")
     dependsOn(":webui:processResources")

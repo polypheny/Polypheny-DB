@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.sql.DiffRepository;
-import org.polypheny.db.sql.SqlLanguagelDependant;
+import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
@@ -40,7 +40,7 @@ import org.polypheny.db.util.Litmus;
  *
  * You must provide the system property "source.dir".
  */
-public class SqlPrettyWriterTest extends SqlLanguagelDependant {
+public class SqlPrettyWriterTest extends SqlLanguageDependant {
 
     public static final String NL = System.getProperty( "line.separator" );
 

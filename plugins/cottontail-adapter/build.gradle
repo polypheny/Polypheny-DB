@@ -5,7 +5,7 @@ apply plugin: "kotlin"
 dependencies {
     implementation project(":core")
     implementation project(":sql-language")
-    implementation project(":mql-language")
+    // implementation project(":mql-language")
 
     // Cottontail DB
     implementation group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version
@@ -22,16 +22,16 @@ dependencies {
 }
 
 compileKotlin {
-    dependsOn(":mql-language:processResources")
+    // dependsOn(":mql-language:processResources")
 }
 
 compileJava {
     dependsOn(processResources)
-    dependsOn(":mql-language:processResources")
+    // dependsOn(":mql-language:processResources")
 }
 
 delombok {
-    dependsOn(":mql-language:processResources")
+    // dependsOn(":mql-language:processResources")
 }
 
 inspectClassesForKotlinIC {

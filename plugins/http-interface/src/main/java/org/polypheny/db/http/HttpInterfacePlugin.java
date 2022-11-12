@@ -27,6 +27,7 @@ import io.javalin.plugin.json.JsonMapper;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -106,7 +107,7 @@ public class HttpInterfacePlugin extends Plugin {
 
         private final MonitoringPage monitoringPage;
 
-        private Javalin server;
+        private static Javalin server;
 
 
         public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
@@ -153,21 +154,32 @@ public class HttpInterfacePlugin extends Plugin {
             } );
 
             server.routes( () -> {
-                post( "/mongo", ctx -> anyQuery( QueryLanguage.MONGO_QL, ctx ) );
-                post( "/mql", ctx -> anyQuery( QueryLanguage.MONGO_QL, ctx ) );
 
-                post( "/sql", ctx -> anyQuery( QueryLanguage.SQL, ctx ) );
+                post( "/mongo", ctx -> anyQuery( QueryLanguage.from( "mongo" ), ctx ) );
+                post( "/mql", ctx -> anyQuery( QueryLanguage.from( "mongo" ), ctx ) );
 
-                post( "/piglet", ctx -> anyQuery( QueryLanguage.PIG, ctx ) );
-                post( "/pig", ctx -> anyQuery( QueryLanguage.PIG, ctx ) );
+                //post( "/sql", ctx -> anyQuery( QueryLanguage.from( "sql" ), ctx ) );
 
-                post( "/cql", ctx -> anyQuery( QueryLanguage.CQL, ctx ) );
+                post( "/piglet", ctx -> anyQuery( QueryLanguage.from( "pig" ), ctx ) );
+                post( "/pig", ctx -> anyQuery( QueryLanguage.from( "pig" ), ctx ) );
 
-                post( "/cypher", ctx -> anyQuery( QueryLanguage.CYPHER, ctx ) );
-                post( "/opencypher", ctx -> anyQuery( QueryLanguage.CYPHER, ctx ) );
+                post( "/cql", ctx -> anyQuery( QueryLanguage.from( "cql" ), ctx ) );
+
+                post( "/cypher", ctx -> anyQuery( QueryLanguage.from( "cypher" ), ctx ) );
+                post( "/opencypher", ctx -> anyQuery( QueryLanguage.from( "cypher" ), ctx ) );
 
                 StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
             } );
+
+            addRoute( Collections.singletonList( "/sql" ), QueryLanguage.from( "sql" ) );
+        }
+
+
+        public void addRoute( List<String> routes, QueryLanguage language ) {
+            log.warn( "added http route: {}", routes );
+            for ( String route : routes ) {
+                server.post( route, ctx -> anyQuery( language, ctx ) );
+            }
         }
 
 
@@ -266,7 +278,7 @@ public class HttpInterfacePlugin extends Plugin {
                 DecimalFormat df = new DecimalFormat( "0.0", symbols );
                 statementsTable.reset();
                 for ( Map.Entry<QueryLanguage, AtomicLong> entry : statementCounters.entrySet() ) {
-                    statementsTable.addRow( entry.getKey().name(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
+                    statementsTable.addRow( entry.getKey().getSerializedName(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
                 }
             }
 

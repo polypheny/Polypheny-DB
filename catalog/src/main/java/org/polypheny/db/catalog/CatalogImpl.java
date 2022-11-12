@@ -120,10 +120,10 @@ import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -482,9 +482,9 @@ public class CatalogImpl extends Catalog {
                     language = ((CatalogMaterializedView) c).getLanguage();
                 }
 
-                switch ( language ) {
-                    case SQL:
-                        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+                switch ( language.getSerializedName() ) {
+                    case "sql":
+                        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "rel" ) );
                         Node sqlNode = sqlProcessor.parse( query ).get( 0 );
                         AlgRoot algRoot = sqlProcessor.translate(
                                 statement,
@@ -494,8 +494,8 @@ public class CatalogImpl extends Catalog {
                         algTypeInfo.put( c.id, algRoot.validatedRowType );
                         break;
 
-                    case REL_ALG:
-                        Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
+                    case "rel":
+                        Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "rel" ) );
                         AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query, c.getNamespaceType() ) ).alg;
 
                         final AlgDataType rowType = result.getRowType();
@@ -510,14 +510,14 @@ public class CatalogImpl extends Catalog {
                         algTypeInfo.put( c.id, root.validatedRowType );
                         break;
 
-                    case MONGO_QL:
-                        Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
+                    case "mongo":
+                        Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "mongo" ) );
                         Node mqlNode = mqlProcessor.parse( query ).get( 0 );
 
                         AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,
-                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name, NamespaceType.DOCUMENT ) );
+                                new ExtendedQueryParameters( query, NamespaceType.DOCUMENT, getSchema( defaultDatabaseId ).name ) );
                         nodeInfo.put( c.id, mqlRel.alg );
                         algTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;

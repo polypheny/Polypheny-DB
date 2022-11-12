@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -215,7 +198,7 @@ public class PlannerImpl implements Planner {
         ensure( State.STATE_3_PARSED );
         final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
-        this.validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.SQL, operatorTable, catalogReader, typeFactory, conformance );
+        this.validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.from( "sql" ), operatorTable, catalogReader, typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
         try {
             validatedSqlNode = validator.validate( sqlNode );
@@ -259,7 +242,7 @@ public class PlannerImpl implements Planner {
                         .trimUnusedFields( false )
                         .convertTableAccess( false )
                         .build();
-        final NodeToAlgConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, validator, createCatalogReader(), cluster, convertletTable, config );
+        final NodeToAlgConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.from( "sql" ), validator, createCatalogReader(), cluster, convertletTable, config );
         root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
         root = root.withAlg( sqlToRelConverter.flattenTypes( root.alg, true ) );
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );

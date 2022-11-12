@@ -24,11 +24,21 @@ buildscript {
 dependencies {
     implementation project(":core")
     implementation project(":monitoring")
+    implementation project(":dbms")
+    implementation project(":webui")
     // implementation project(":avatica-interface")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
     api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+
+    // web todo dl maybe remove if hub is not necessary
+    implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version  // Apache 2.0
+    implementation group: "com.konghq", name: "unirest-java", version: unirest_version  // MIT
+    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
+
 
     ////// SLF4J
     implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion

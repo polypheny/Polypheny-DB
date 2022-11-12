@@ -4,8 +4,8 @@ group "org.polypheny"
 dependencies {
     implementation project(":core")
     implementation project(":sql-language")
-    implementation project(":mql-language")
-    implementation project(":cypher-language")
+    // implementation project(":mql-language")
+    // implementation project(":cypher-language")
     implementation project(":webui")
 
     implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
@@ -35,8 +35,8 @@ sourceSets {
 }
 
 compileJava {
-    dependsOn(":cypher-language:processResources")
-    dependsOn(":mql-language:processResources")
+    // dependsOn(":cypher-language:processResources")
+    dependsOn(":sql-language:processResources")
     dependsOn(":webui:processResources")
     //dependsOn(":csv-adapter:processResources")
 }

@@ -56,7 +56,7 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Unit tests for {@link Interpreter}.
  */
-public class InterpreterTest extends SqlLanguagelDependant {
+public class InterpreterTest extends SqlLanguageDependant {
 
     private SchemaPlus rootSchema;
     private Planner planner;

@@ -33,6 +33,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -65,6 +66,7 @@ import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
+import org.polypheny.db.processing.JsonRelProcessorImpl;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
@@ -373,6 +375,13 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
+
+        // temporary add sql and rel here
+        Catalog.QueryLanguage.addQueryLanguage(
+                NamespaceType.RELATIONAL,
+                "rel",
+                null,
+                JsonRelProcessorImpl::new );
 
         // Initialize index manager
         try {

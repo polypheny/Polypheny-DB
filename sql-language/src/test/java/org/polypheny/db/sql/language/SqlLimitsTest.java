@@ -38,6 +38,10 @@ import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -198,10 +202,54 @@ public class SqlLimitsTest {
             s = o.toString();
         }
         pw.print( s );
-        SqlLiteral literal = (SqlLiteral) type.getPolyType().createLiteral( o, ParserPos.ZERO );
+        SqlLiteral literal = createLiteral( type.getPolyType(), o, ParserPos.ZERO );
         pw.print( "; as SQL: " );
         pw.print( literal.toSqlString( AnsiSqlDialect.DEFAULT ) );
         pw.println();
+    }
+
+
+    public SqlLiteral createLiteral( PolyType polyType, Object o, ParserPos pos ) {
+        switch ( polyType ) {
+            case BOOLEAN:
+                return SqlLiteral.createBoolean( (Boolean) o, pos );
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+            case BIGINT:
+            case DECIMAL:
+                return SqlLiteral.createExactNumeric( o.toString(), pos );
+            case JSON:
+            case VARCHAR:
+            case CHAR:
+                return SqlLiteral.createCharString( (String) o, pos );
+            case VARBINARY:
+            case BINARY:
+                return SqlLiteral.createBinaryString( (byte[]) o, pos );
+            case DATE:
+                return SqlLiteral.createDate(
+                        o instanceof Calendar
+                                ? DateString.fromCalendarFields( (Calendar) o )
+                                : (DateString) o,
+                        pos );
+            case TIME:
+                return SqlLiteral.createTime(
+                        o instanceof Calendar
+                                ? TimeString.fromCalendarFields( (Calendar) o )
+                                : (TimeString) o,
+                        0 /* todo */,
+                        pos );
+            case TIMESTAMP:
+                return SqlLiteral.createTimestamp(
+                        o instanceof Calendar
+                                ? TimestampString.fromCalendarFields( (Calendar) o )
+                                : (TimestampString) o,
+                        0 /* todo */,
+                        pos );
+            default:
+                throw Util.unexpected( polyType );
+        }
+
     }
 
 

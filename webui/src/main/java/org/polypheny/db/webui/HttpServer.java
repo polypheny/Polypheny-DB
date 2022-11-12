@@ -321,9 +321,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getForeignKeyActions", crud::getForeignKeyActions );
 
-        webuiServer.post( "/importDataset", crud::importDataset );
+        // webuiServer.post( "/importDataset", crud::importDataset );
 
-        webuiServer.post( "/exportTable", crud::exportTable );
+        // webuiServer.post( "/exportTable", crud::exportTable );
 
         webuiServer.get( "/getStores", crud::getStores );
 

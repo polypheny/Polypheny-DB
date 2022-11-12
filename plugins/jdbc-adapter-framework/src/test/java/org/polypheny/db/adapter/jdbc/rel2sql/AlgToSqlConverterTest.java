@@ -54,7 +54,7 @@ import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.ScottSchema;
-import org.polypheny.db.sql.SqlLanguagelDependant;
+import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.Context;
@@ -82,7 +82,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Tests for {@link AlgToSqlConverter}.
  */
-public class AlgToSqlConverterTest extends SqlLanguagelDependant {
+public class AlgToSqlConverterTest extends SqlLanguageDependant {
 
     static final Config DEFAULT_REL_CONFIG =
             NodeToAlgConverter.configBuilder()

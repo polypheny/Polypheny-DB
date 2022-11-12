@@ -77,7 +77,7 @@ public interface Parser {
      * @return A parser
      */
     static Parser create( Reader reader, ParserConfig sqlParserConfig ) {
-        return LanguageManager.getInstance().getParser( QueryLanguage.SQL, reader, sqlParserConfig );
+        return LanguageManager.getInstance().getParser( QueryLanguage.from( "sql" ), reader, sqlParserConfig );
     }
 
     Node parseQuery() throws NodeParseException;
@@ -140,7 +140,7 @@ public interface Parser {
 
 
         private ConfigBuilder() {
-            parserFactory = LanguageManager.getInstance().getFactory( QueryLanguage.SQL );
+            parserFactory = LanguageManager.getInstance().getFactory( QueryLanguage.from( "sql" ) );
         }
 
 

@@ -34,7 +34,6 @@ import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -46,7 +45,6 @@ import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.type.PolyIntervalQualifier;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -133,8 +131,6 @@ public abstract class LanguageManager {
             TimeUnit endUnit,
             int fractionalSecondPrecision,
             ParserPos zero );
-
-    public abstract Literal createLiteral( QueryLanguage language, PolyType polyType, Object o, ParserPos pos );
 
     public abstract AggFunction createMinMaxAggFunction( QueryLanguage language, Kind kind );
 

@@ -40,7 +40,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link DateRangeRules} algorithms.
  */
-public class DateRangeRulesTest extends SqlLanguagelDependant {
+public class DateRangeRulesTest extends SqlLanguageDependant {
 
     @Test
     public void testExtractYearFromDateColumn() {

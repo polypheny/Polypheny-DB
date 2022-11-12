@@ -963,7 +963,7 @@ public class DbmsMeta implements ProtobufMeta {
             polyphenyDbStatement.setPreparedQuery( sql );
 
             Transaction transaction = connection.getCurrentOrCreateNewTransaction();
-            Processor sqlProcessor = transaction.getProcessor( QueryLanguage.SQL );
+            Processor sqlProcessor = transaction.getProcessor( QueryLanguage.from( "sql" ) );
 
             Node parsed = sqlProcessor.parse( sql ).get( 0 );
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
@@ -1228,7 +1228,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
         PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
-        Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.SQL );
+        Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
 
         Node parsed = sqlProcessor.parse( sql ).get( 0 );
 

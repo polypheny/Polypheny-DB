@@ -116,7 +116,7 @@ public class Result {
      * language type of result MQL/SQL/CQL
      */
     @Setter
-    private QueryLanguage language = QueryLanguage.SQL;
+    private QueryLanguage language = QueryLanguage.from( "sql" );
 
     /**
      * Indicate that only a subset of the specified query is being displayed.
@@ -246,7 +246,7 @@ public class Result {
                 case "namespaceName":
                     namespaceName = in.nextString();
                 case "language":
-                    language = extractEnum( in, QueryLanguage::valueOf );
+                    language = QueryLanguage.from( in.nextString() );
                     break;
                 case "hasMoreRows":
                     hasMoreRows = in.nextBoolean();
@@ -444,7 +444,7 @@ public class Result {
                 out.name( "namespaceName" );
                 out.value( result.namespaceName );
                 out.name( "language" );
-                handleEnum( out, result.language );
+                out.value( result.language.getSerializedName() );
                 out.name( "hasMoreRows" );
                 out.value( result.hasMoreRows );
                 out.name( "classificationInfo" );

@@ -338,7 +338,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     @Override
     public Node validate( Node node ) {
-        if ( node.getLanguage() != QueryLanguage.SQL ) {
+        if ( node.getLanguage() != QueryLanguage.from( "sql" ) ) {
             throw new RuntimeException( "Non-SQL queries cannot be evaluated with an SQL validator" );
         }
 

@@ -49,21 +49,17 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
-import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.ConstraintEnforceAttacher;
-import org.polypheny.db.processing.CypherProcessorImpl;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
-import org.polypheny.db.processing.JsonRelProcessorImpl;
-import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.view.MaterializedViewManager;
+import org.polypheny.db.webui.crud.LanguageCrud;
 
 
 @Slf4j
@@ -275,20 +271,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // note dl, while caching the processors works in most cases,
         // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
-        switch ( language ) {
-            case SQL:
-                return new SqlProcessorImpl();
-            case REL_ALG:
-                return new JsonRelProcessorImpl();
-            case MONGO_QL:
-                return new MqlProcessorImpl();
-            case PIG:
-                return new PigProcessorImpl();
-            case CYPHER:
-                return new CypherProcessorImpl();
-            default:
-                throw new RuntimeException( "This language seems to not be supported!" );
-        }
+        return LanguageCrud.REGISTER.get( language.getSerializedName() ).processorSupplier.get();
     }
 
 

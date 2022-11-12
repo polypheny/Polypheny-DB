@@ -58,7 +58,7 @@ import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.sql.DiffTestCase;
-import org.polypheny.db.sql.SqlLanguagelDependant;
+import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlSetOption;
@@ -81,7 +81,7 @@ import org.polypheny.db.util.Util;
  *
  * To reuse this test for an extension parser, implement the {@link #parserImplFactory()} method to return the extension parser implementation.
  */
-public class SqlParserTest extends SqlLanguagelDependant {
+public class SqlParserTest extends SqlLanguageDependant {
 
     /**
      * List of reserved keywords.

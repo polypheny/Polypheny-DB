@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -280,14 +263,14 @@ public abstract class Match extends SingleAlg {
             AggFunction aggFunction = null;
             switch ( call.getKind() ) {
                 case SUM:
-                    aggFunction = LanguageManager.getInstance().createSumAggFunction( QueryLanguage.SQL, call.getType() );
+                    aggFunction = LanguageManager.getInstance().createSumAggFunction( QueryLanguage.from( "sql" ), call.getType() );
                     break;
                 case SUM0:
-                    aggFunction = LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.SQL );
+                    aggFunction = LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.from( "sql" ) );
                     break;
                 case MAX:
                 case MIN:
-                    aggFunction = LanguageManager.getInstance().createMinMaxAggFunction( QueryLanguage.SQL, call.getKind() );
+                    aggFunction = LanguageManager.getInstance().createMinMaxAggFunction( QueryLanguage.from( "sql" ), call.getKind() );
                     break;
                 case COUNT:
                     aggFunction = OperatorRegistry.getAgg( OperatorName.COUNT );
@@ -297,7 +280,7 @@ public abstract class Match extends SingleAlg {
                     break;
                 case BIT_AND:
                 case BIT_OR:
-                    aggFunction = LanguageManager.getInstance().createBitOpAggFunction( QueryLanguage.SQL, call.getKind() );
+                    aggFunction = LanguageManager.getInstance().createBitOpAggFunction( QueryLanguage.from( "sql" ), call.getKind() );
                     break;
                 default:
                     for ( RexNode rex : call.getOperands() ) {

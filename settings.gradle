@@ -1,20 +1,24 @@
 rootProject.name = 'Polypheny-DB'
 
+// core modules
 include 'core'
-include 'sql-language'
-include 'mql-language'
-include 'pig-language'
-include 'cql-language'
-include 'cypher-language'
-include 'webui'
 include 'catalog'
 include 'config'
 include 'information'
 include 'monitoring'
+include 'webui'
 
 include 'dbms'
+include 'sql-language'
 
 include 'plugins'
+
+// language plugins
+include 'plugins:mql-language'
+include 'plugins:pig-language'
+include 'plugins:cql-language'
+include 'plugins:cypher-language'
+
 
 include 'plugins:jdbc-adapter-framework'
 

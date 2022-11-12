@@ -1019,7 +1019,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         names.add( "_id_" );
         names.add( "_data_" );
-        updates.add( rexBuilder.makeCall( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_QUERY_VALUE ), List.of( RexInputRef.of( 0, query.getRowType() ), rexBuilder.makeArray( rexBuilder.getTypeFactory().createArrayType( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ), List.of( rexBuilder.makeLiteral( "_id" ) ) ) ) ) );
+        updates.add( rexBuilder.makeCall( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ), List.of( RexInputRef.of( 0, query.getRowType() ), rexBuilder.makeArray( rexBuilder.getTypeFactory().createArrayType( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ), List.of( rexBuilder.makeLiteral( "_id" ) ) ) ) ) );
         updates.add( RexInputRef.of( 0, query.getRowType() ) );
 
         return LogicalProject.create( query, updates, names );

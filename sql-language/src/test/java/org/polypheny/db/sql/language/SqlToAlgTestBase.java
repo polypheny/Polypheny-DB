@@ -68,7 +68,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.MockSqlOperatorTable;
-import org.polypheny.db.sql.SqlLanguagelDependant;
+import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
@@ -87,7 +87,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  * SQL statements to be translated can use the schema defined in {@link MockCatalogReader}; note that this is slightly different from Farrago's SALES schema. If you get a parser or validator
  * error from your test SQL, look down in the stack until you see "Caused by", which will usually tell you the real error.
  */
-public abstract class SqlToAlgTestBase extends SqlLanguagelDependant {
+public abstract class SqlToAlgTestBase extends SqlLanguageDependant {
 
     protected static final String NL = System.getProperty( "line.separator" );
 
