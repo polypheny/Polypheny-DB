@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.plan;
+package org.polypheny.db.sql;
 
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -35,15 +35,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
-import org.polypheny.db.adapter.jdbc.JdbcAlg;
-import org.polypheny.db.adapter.jdbc.JdbcConvention;
-import org.polypheny.db.adapter.jdbc.JdbcImplementor;
-import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -52,9 +46,7 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Lex;
-import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -77,6 +69,13 @@ import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.FoodmartSchema;
@@ -84,7 +83,6 @@ import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TpchSchema;
-import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
@@ -695,37 +693,6 @@ public class PlannerTest extends SqlLanguageDependant {
 
 
     /**
-     * Unit test that calls {@link Planner#transform} twice, with different rule sets, with different conventions.
-     *
-     * {@link JdbcConvention} is different from the typical convention in that it is not a singleton. Switching to a different
-     * instance causes problems unless planner state is wiped clean between calls to {@link Planner#transform}.
-     */
-    @Test
-    public void testPlanTransformWithDiffRuleSetAndConvention() throws Exception {
-        Program program0 = Programs.ofRules( FilterMergeRule.INSTANCE, EnumerableRules.ENUMERABLE_FILTER_RULE, EnumerableRules.ENUMERABLE_PROJECT_RULE );
-
-        JdbcConvention out = new JdbcConvention( null, null, "myjdbc" );
-        Program program1 = Programs.ofRules( new MockJdbcProjectRule( out ), new MockJdbcTableRule( out ) );
-
-        Planner planner = getPlanner( null, program0, program1 );
-        Node parse = planner.parse( "select T1.\"name\" from \"emps\" as T1 " );
-
-        Node validate = planner.validate( parse );
-        AlgNode convert = planner.alg( validate ).project();
-
-        AlgTraitSet traitSet0 = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-
-        AlgTraitSet traitSet1 = convert.getTraitSet().replace( out );
-
-        AlgNode transform = planner.transform( 0, traitSet0, convert );
-        AlgNode transform2 = planner.transform( 1, traitSet1, transform );
-        assertThat(
-                toString( transform2 ),
-                equalTo( "JdbcProject(model=[RELATIONAL], name=[$2])\n  MockJdbcScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
-    }
-
-
-    /**
      * Unit test that plans a query with a large number of joins.
      */
     @Test
@@ -1039,82 +1006,6 @@ public class PlannerTest extends SqlLanguageDependant {
         AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat( toString( transform ), containsString( expected ) );
-    }
-
-
-    /**
-     * Rule to convert a {@link EnumerableProject} to an {@link JdbcRules.JdbcProject}.
-     */
-    private static class MockJdbcProjectRule extends ConverterRule {
-
-        private MockJdbcProjectRule( JdbcConvention out ) {
-            super( EnumerableProject.class, EnumerableConvention.INSTANCE, out, "MockJdbcProjectRule" );
-        }
-
-
-        @Override
-        public AlgNode convert( AlgNode alg ) {
-            final EnumerableProject project = (EnumerableProject) alg;
-            return new JdbcRules.JdbcProject(
-                    alg.getCluster(),
-                    alg.getTraitSet().replace( getOutConvention() ),
-                    convert( project.getInput(), project.getInput().getTraitSet().replace( getOutConvention() ) ),
-                    project.getProjects(),
-                    project.getRowType() );
-        }
-
-    }
-
-
-    /**
-     * Rule to convert a {@link EnumerableScan} to an {@link MockJdbcScan}.
-     */
-    private class MockJdbcTableRule extends ConverterRule {
-
-        private MockJdbcTableRule( JdbcConvention out ) {
-            super( EnumerableScan.class, EnumerableConvention.INSTANCE, out, "MockJdbcTableRule" );
-        }
-
-
-        @Override
-        public AlgNode convert( AlgNode alg ) {
-            final EnumerableScan scan = (EnumerableScan) alg;
-            return new MockJdbcScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
-        }
-
-    }
-
-
-    /**
-     * Relational expression representing a "mock" scan of a table in a JDBC data source.
-     */
-    private static class MockJdbcScan extends Scan implements JdbcAlg {
-
-        MockJdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcConvention jdbcConvention ) {
-            super( cluster, cluster.traitSetOf( jdbcConvention ), table );
-        }
-
-
-        @Override
-        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new MockJdbcScan( getCluster(), table, (JdbcConvention) getConvention() );
-        }
-
-
-        @Override
-        public void register( AlgOptPlanner planner ) {
-            final JdbcConvention out = (JdbcConvention) getConvention();
-            for ( AlgOptRule rule : JdbcRules.rules( out ) ) {
-                planner.addRule( rule );
-            }
-        }
-
-
-        @Override
-        public JdbcImplementor.Result implement( JdbcImplementor implementor ) {
-            return null;
-        }
-
     }
 
 

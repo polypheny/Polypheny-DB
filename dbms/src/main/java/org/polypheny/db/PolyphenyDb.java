@@ -54,8 +54,6 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.language.LanguageManagerImpl;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
 import org.polypheny.db.monitoring.statistics.StatisticsManagerImpl;
@@ -285,9 +283,6 @@ public class PolyphenyDb {
         final ShutdownHelper sh = new ShutdownHelper();
         // shutdownHookId = addShutdownHook( "Component Terminator", sh );
 
-        final LanguageManagerImpl languageManager = new LanguageManagerImpl();
-        LanguageManager.setAndGetInstance( languageManager );
-
         // Start config server and information server
         new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
         new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
@@ -381,7 +376,8 @@ public class PolyphenyDb {
                 NamespaceType.RELATIONAL,
                 "rel",
                 null,
-                JsonRelProcessorImpl::new );
+                JsonRelProcessorImpl::new,
+                null );
 
         // Initialize index manager
         try {

@@ -280,7 +280,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
                 if ( aggCall.getAggregation().getKind() == Kind.COUNT ) {
                     newCall = AggregateCall.create( (Operator & AggFunction) LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.from( "sql" ) ), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.getName() );
                 } else {
-                    newCall = AggregateCall.create( (Operator & AggFunction) aggCall.getAggregation(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.name );
+                    newCall = AggregateCall.create( aggCall.getAggregation(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.name );
                 }
                 nonDistinctAggCallProcessedSoFar++;
             }

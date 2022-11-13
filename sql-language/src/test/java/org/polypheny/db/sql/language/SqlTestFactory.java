@@ -32,13 +32,13 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.DelegatingTypeSystem;
 import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderSimple;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.MockSqlOperatorTable;
 import org.polypheny.db.sql.language.advise.SqlAdvisor;
+import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
@@ -60,7 +60,7 @@ public class SqlTestFactory {
                     .put( "unquotedCasing", Casing.TO_UPPER )
                     .put( "caseSensitive", true )
                     .put( "conformance", ConformanceEnum.DEFAULT )
-                    .put( "operatorTable", LanguageManager.getInstance().getStdOperatorTable() )
+                    .put( "operatorTable", OracleSqlOperatorTable.instance() )
                     .build();
 
     public static final SqlTestFactory INSTANCE = new SqlTestFactory();

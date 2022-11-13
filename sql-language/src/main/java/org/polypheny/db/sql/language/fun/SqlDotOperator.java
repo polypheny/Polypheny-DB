@@ -32,7 +32,6 @@ import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlCallBinding;
-import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
@@ -141,7 +140,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
         final AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), left );
         if ( type.getPolyType() != PolyType.ROW ) {
             return false;
-        } else if ( ((SqlIdentifier) type.getSqlIdentifier()).isStar() ) {
+        } else if ( type.getSqlIdentifier().isStar() ) {
             return false;
         }
         final AlgDataType operandType = callBinding.getOperandType( 0 );

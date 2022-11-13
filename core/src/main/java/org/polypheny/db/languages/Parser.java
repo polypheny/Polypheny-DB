@@ -23,6 +23,7 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.util.Conformance;
@@ -140,7 +141,7 @@ public interface Parser {
 
 
         private ConfigBuilder() {
-            parserFactory = LanguageManager.getInstance().getFactory( QueryLanguage.from( "sql" ) );
+            parserFactory = Catalog.QueryLanguage.from( "sql" ).getFactory();
         }
 
 

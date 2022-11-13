@@ -137,6 +137,7 @@ import org.polypheny.db.sql.language.SqlWith;
 import org.polypheny.db.sql.language.SqlWithItem;
 import org.polypheny.db.sql.language.fun.SqlCase;
 import org.polypheny.db.sql.language.util.SqlShuttle;
+import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -293,7 +294,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param typeFactory Type factory
      * @param conformance Compatibility mode
      */
-    protected SqlValidatorImpl( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
+    public SqlValidatorImpl( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
         this.opTab = Objects.requireNonNull( opTab );
         this.catalogReader = Objects.requireNonNull( catalogReader );
         this.typeFactory = Objects.requireNonNull( typeFactory );
@@ -582,7 +583,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private SqlNode maybeCast( SqlNode node, AlgDataType currentType, AlgDataType desiredType ) {
         return currentType.equals( desiredType ) || (currentType.isNullable() != desiredType.isNullable() && typeFactory.createTypeWithNullability( currentType, desiredType.isNullable() ).equals( desiredType ))
                 ? node
-                : (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( ParserPos.ZERO, node, (Node) PolyTypeUtil.convertTypeToSpec( desiredType ) );
+                : (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( ParserPos.ZERO, node, (Node) SqlTypeUtil.convertTypeToSpec( desiredType ) );
     }
 
 

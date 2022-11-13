@@ -14,55 +14,55 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql;
+package org.polypheny.db.sql.language.util;
 
 import java.io.Reader;
-import java.util.Calendar;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.languages.UnsupportedLanguageOperation;
-import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.OperatorImpl;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.Context;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.FunctionParameter;
+import org.polypheny.db.schema.ScalarFunction;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.impl.ScalarFunctionImpl;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlIntervalQualifier;
-import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlBitOpAggFunction;
@@ -73,72 +73,166 @@ import org.polypheny.db.sql.language.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.language.validate.SqlUserDefinedAggFunction;
 import org.polypheny.db.sql.language.validate.SqlUserDefinedFunction;
 import org.polypheny.db.sql.language.validate.SqlUserDefinedTableFunction;
 import org.polypheny.db.sql.language.validate.SqlUserDefinedTableMacro;
 import org.polypheny.db.sql.language.validate.SqlValidator;
-import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
+import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
+import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Optionality;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 import org.slf4j.Logger;
 
-public class SqlLanguageDependant extends LanguageManager {
+public class SqlTypeUtil {
 
-    static {
-        LanguageManager.setAndGetInstance( new SqlLanguageDependant() );
-        Catalog.testMode = true;
+
+    public static Identifier createIdentifier( String name, ParserPos zero ) {
+        return new SqlIdentifier( name, zero );
     }
 
 
-    static {
-        if ( !SqlRegisterer.isInit() ) {
-            SqlRegisterer.registerOperators();
+    public Identifier getSqlIdentifier( AlgDataType type ) {
+        PolyType typeName = type.getPolyType();
+        if ( typeName == null ) {
+            return null;
         }
-        Catalog.QueryLanguage.addQueryLanguage(
-                NamespaceType.RELATIONAL,
-                "sql",
-                SqlParserImpl.FACTORY,
-                SqlProcessorImpl::new,
-                SqlValidatorImpl::new );
+        return SqlTypeUtil.createIdentifier( typeName.name(), ParserPos.ZERO );
     }
 
 
-    @Override
-    public Validator createValidator( QueryLanguage language, Context context, PolyphenyDbCatalogReader catalogReader ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return getSqlValidator( context, catalogReader );
+    /**
+     * Converts an instance of RelDataType to an instance of SqlDataTypeSpec.
+     *
+     * @param type type descriptor
+     * @return corresponding parse representation
+     */
+    public static DataTypeSpec convertTypeToSpec( AlgDataType type ) {
+        PolyType typeName = type.getPolyType();
+
+        // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
+        assert typeName != null;
+        Identifier typeIdentifier = SqlTypeUtil.createIdentifier( typeName.name(), ParserPos.ZERO );
+
+        String charSetName = null;
+
+        if ( inCharFamily( type ) ) {
+            charSetName = type.getCharset().name();
+            // TODO jvs: collation
         }
 
-        throw new UnsupportedLanguageOperation( language );
+        // REVIEW jvs: discriminate between precision/scale zero and unspecified?
+
+        // REVIEW angel: Use neg numbers to indicate unspecified precision/scale
+
+        if ( typeName.allowsScale() ) {
+            return createDataTypeSpec(
+                    typeIdentifier,
+                    type.getPrecision(),
+                    type.getScale(),
+                    charSetName,
+                    null,
+                    ParserPos.ZERO );
+        } else if ( typeName.allowsPrec() ) {
+            return createDataTypeSpec(
+                    typeIdentifier,
+                    type.getPrecision(),
+                    -1,
+                    charSetName,
+                    null,
+                    ParserPos.ZERO );
+        } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
+            ArrayType arrayType = (ArrayType) type;
+            Identifier componentTypeIdentifier = SqlTypeUtil.createIdentifier( arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
+            return createDataTypeSpec(
+                    typeIdentifier,
+                    componentTypeIdentifier,
+                    arrayType.getComponentType().getPrecision(),
+                    arrayType.getComponentType().getScale(),
+                    (int) arrayType.getDimension(),
+                    (int) arrayType.getCardinality(),
+                    charSetName,
+                    null,
+                    arrayType.isNullable(),
+                    ParserPos.ZERO );
+        } else {
+            return createDataTypeSpec(
+                    typeIdentifier,
+                    -1,
+                    -1,
+                    charSetName,
+                    null,
+                    ParserPos.ZERO );
+        }
     }
 
 
-    private PolyphenyDbSqlValidator getSqlValidator( Context context, PolyphenyDbCatalogReader catalogReader ) {
-        final OperatorTable opTab0 = context.config().fun( OperatorTable.class, OracleSqlOperatorTable.instance() );
-        final OperatorTable opTab = ChainedOperatorTable.of( opTab0, catalogReader );
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final Conformance conformance = context.config().conformance();
-        return new PolyphenyDbSqlValidator( opTab, catalogReader, typeFactory, conformance );
+    public static DataTypeSpec createDataTypeSpec(
+            Identifier typeIdentifier,
+            Identifier componentTypeIdentifier,
+            int precision,
+            int scale,
+            int dimension,
+            int cardinality,
+            String charSetName,
+            TimeZone o,
+            boolean nullable,
+            ParserPos zero ) {
+
+        return new SqlDataTypeSpec(
+                (SqlIdentifier) typeIdentifier,
+                (SqlIdentifier) componentTypeIdentifier,
+                precision,
+                scale,
+                dimension,
+                cardinality,
+                charSetName,
+                o,
+                nullable,
+                zero );
     }
 
 
-    @Override
+    public static DataTypeSpec createDataTypeSpec(
+            Identifier typeIdentifier,
+            int precision,
+            int scale,
+            String charSetName,
+            TimeZone o,
+            ParserPos pos ) {
+
+        return new SqlDataTypeSpec(
+                (SqlIdentifier) typeIdentifier,
+                precision,
+                scale,
+                charSetName,
+                o,
+                pos );
+    }
+
+
+    /**
+     * @return true if type is in SqlTypeFamily.Character
+     */
+    public static boolean inCharFamily( AlgDataType type ) {
+        return type.getFamily() == PolyTypeFamily.CHARACTER;
+    }
+
+
     public NodeToAlgConverter createToRelConverter(
             QueryLanguage language,
             Validator validator,
@@ -164,19 +258,16 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public RexConvertletTable getStandardConvertlet() {
         return StandardConvertletTable.INSTANCE;
     }
 
 
-    @Override
     public OperatorTable getStdOperatorTable() {
         return SqlStdOperatorTable.instance();
     }
 
 
-    @Override
     public Validator createPolyphenyValidator(
             QueryLanguage language,
             OperatorTable operatorTable,
@@ -191,17 +282,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
-    public ParserFactory getFactory( QueryLanguage language ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return SqlParserImpl.FACTORY;
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
     public Parser getParser( QueryLanguage language, Reader reader, ParserConfig parserConfig ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
             SqlAbstractParserImpl parser = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( reader );
@@ -212,13 +292,11 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public OperatorTable getOracleOperatorTable() {
         return OracleSqlOperatorTable.instance();
     }
 
 
-    @Override
     public Logger getLogger( QueryLanguage language, Class<AlgNode> algNodeClass ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
             return SqlToAlgConverter.SQL2REL_LOGGER;
@@ -228,7 +306,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public Identifier createIdentifier( QueryLanguage language, String name, ParserPos zero ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
             return new SqlIdentifier( name, zero );
@@ -238,59 +315,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
-    public DataTypeSpec createDataTypeSpec(
-            QueryLanguage language,
-            Identifier typeIdentifier,
-            int precision,
-            int scale,
-            String charSetName,
-            TimeZone o,
-            ParserPos pos ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlDataTypeSpec(
-                    (SqlIdentifier) typeIdentifier,
-                    precision,
-                    scale,
-                    charSetName,
-                    o,
-                    pos );
-        }
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
-    public DataTypeSpec createDataTypeSpec(
-            QueryLanguage language,
-            Identifier typeIdentifier,
-            Identifier componentTypeIdentifier,
-            int precision,
-            int scale,
-            int dimension,
-            int cardinality,
-            String charSetName,
-            TimeZone o,
-            boolean nullable,
-            ParserPos zero ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlDataTypeSpec(
-                    (SqlIdentifier) typeIdentifier,
-                    (SqlIdentifier) componentTypeIdentifier,
-                    precision,
-                    scale,
-                    dimension,
-                    cardinality,
-                    charSetName,
-                    o,
-                    nullable,
-                    zero );
-        }
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
     public IntervalQualifier createIntervalQualifier(
             QueryLanguage language,
             TimeUnit startUnit,
@@ -305,55 +329,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
-    public Literal createLiteral( QueryLanguage language, PolyType polyType, Object o, ParserPos pos ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            switch ( polyType ) {
-                case BOOLEAN:
-                    return SqlLiteral.createBoolean( (Boolean) o, pos );
-                case TINYINT:
-                case SMALLINT:
-                case INTEGER:
-                case BIGINT:
-                case DECIMAL:
-                    return SqlLiteral.createExactNumeric( o.toString(), pos );
-                case JSON:
-                case VARCHAR:
-                case CHAR:
-                    return SqlLiteral.createCharString( (String) o, pos );
-                case VARBINARY:
-                case BINARY:
-                    return SqlLiteral.createBinaryString( (byte[]) o, pos );
-                case DATE:
-                    return SqlLiteral.createDate(
-                            o instanceof Calendar
-                                    ? DateString.fromCalendarFields( (Calendar) o )
-                                    : (DateString) o,
-                            pos );
-                case TIME:
-                    return SqlLiteral.createTime(
-                            o instanceof Calendar
-                                    ? TimeString.fromCalendarFields( (Calendar) o )
-                                    : (TimeString) o,
-                            0 /* todo */,
-                            pos );
-                case TIMESTAMP:
-                    return SqlLiteral.createTimestamp(
-                            o instanceof Calendar
-                                    ? TimestampString.fromCalendarFields( (Calendar) o )
-                                    : (TimestampString) o,
-                            0 /* todo */,
-                            pos );
-                default:
-                    throw Util.unexpected( polyType );
-            }
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
     public AggFunction createMinMaxAggFunction( QueryLanguage language, Kind kind ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
             return new SqlMinMaxAggFunction( kind );
@@ -363,7 +338,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public AggFunction createSumEmptyIsZeroFunction( QueryLanguage language ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
             return new SqlSumEmptyIsZeroAggFunction();
@@ -373,7 +347,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public AggFunction createBitOpAggFunction( QueryLanguage language, Kind kind ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
             return new SqlBitOpAggFunction( kind );
@@ -383,7 +356,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public AggFunction createSumAggFunction( QueryLanguage language, AlgDataType type ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
             return new SqlSumAggFunction( type );
@@ -393,7 +365,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public Operator createFunction(
             QueryLanguage language,
             String name,
@@ -416,7 +387,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public void createIntervalTypeString( StringBuilder sb, PolyIntervalQualifier intervalQualifier ) {
         sb.append( "INTERVAL " );
         final SqlDialect dialect = AnsiSqlDialect.DEFAULT;
@@ -430,7 +400,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public Operator createUserDefinedFunction(
             QueryLanguage language,
             Identifier name,
@@ -447,7 +416,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public Operator createUserDefinedAggFunction(
             QueryLanguage language,
             Identifier name,
@@ -476,7 +444,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public Operator createUserDefinedTableMacro(
             QueryLanguage language,
             Identifier name,
@@ -493,7 +460,6 @@ public class SqlLanguageDependant extends LanguageManager {
     }
 
 
-    @Override
     public Operator createUserDefinedTableFunction(
             QueryLanguage language,
             Identifier name,
@@ -509,5 +475,99 @@ public class SqlLanguageDependant extends LanguageManager {
         throw new UnsupportedLanguageOperation( language );
     }
 
+
+    /**
+     * Converts a function to a {@link OperatorImpl}.
+     *
+     * The {@code typeFactory} argument is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
+     */
+    private static Operator toOp( AlgDataTypeFactory typeFactory, Identifier name, final Function function ) {
+        List<AlgDataType> argTypes = new ArrayList<>();
+        List<PolyTypeFamily> typeFamilies = new ArrayList<>();
+        for ( FunctionParameter o : function.getParameters() ) {
+            final AlgDataType type = o.getType( typeFactory );
+            argTypes.add( type );
+            typeFamilies.add( Util.first( type.getPolyType().getFamily(), PolyTypeFamily.ANY ) );
+        }
+        final FamilyOperandTypeChecker typeChecker = OperandTypes.family( typeFamilies, i -> function.getParameters().get( i ).isOptional() );
+        final List<AlgDataType> paramTypes = toSql( typeFactory, argTypes );
+        if ( function instanceof ScalarFunction ) {
+            return new SqlUserDefinedFunction( (SqlIdentifier) name, infer( (ScalarFunction) function ), InferTypes.explicit( argTypes ), typeChecker, paramTypes, function );
+        } else if ( function instanceof AggregateFunction ) {
+            return new SqlUserDefinedAggFunction(
+                    (SqlIdentifier) name,
+                    infer( (AggregateFunction) function ),
+                    InferTypes.explicit( argTypes ),
+                    typeChecker,
+                    (AggregateFunction) function,
+                    false,
+                    false,
+                    Optionality.FORBIDDEN,
+                    typeFactory );
+        } else if ( function instanceof TableMacro ) {
+            return new SqlUserDefinedTableMacro( (SqlIdentifier) name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableMacro) function );
+        } else if ( function instanceof TableFunction ) {
+            return new SqlUserDefinedTableFunction( (SqlIdentifier) name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableFunction) function );
+        } else {
+            throw new AssertionError( "unknown function type " + function );
+        }
+    }
+
+
+    private static PolyReturnTypeInference infer( final AggregateFunction function ) {
+        return opBinding -> {
+            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+            final AlgDataType type = function.getReturnType( typeFactory );
+            return toSql( typeFactory, type );
+        };
+    }
+
+
+    private static List<AlgDataType> toSql( final AlgDataTypeFactory typeFactory, List<AlgDataType> types ) {
+        return types.stream().map( type -> toSql( typeFactory, type ) ).collect( Collectors.toList() );
+    }
+
+
+    private static AlgDataType toSql( AlgDataTypeFactory typeFactory, AlgDataType type ) {
+        if ( type instanceof AlgDataTypeFactoryImpl.JavaType && ((AlgDataTypeFactoryImpl.JavaType) type).getJavaClass() == Object.class ) {
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
+        }
+        return JavaTypeFactoryImpl.toSql( typeFactory, type );
+    }
+
+
+    private static PolyReturnTypeInference infer( final ScalarFunction function ) {
+        return opBinding -> {
+            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+            final AlgDataType type;
+            if ( function instanceof ScalarFunctionImpl ) {
+                type = ((ScalarFunctionImpl) function).getReturnType( typeFactory, opBinding );
+            } else {
+                type = function.getReturnType( typeFactory );
+            }
+            return toSql( typeFactory, type );
+        };
+    }
+
+
+    public static void lookupOperatorOverloads( PolyphenyDbCatalogReader polyphenyDbCatalogReader, final Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
+        if ( syntax != Syntax.FUNCTION ) {
+            return;
+        }
+
+        final Predicate<Function> predicate;
+        if ( category == null ) {
+            predicate = function -> true;
+        } else if ( category.isTableFunction() ) {
+            predicate = function -> function instanceof TableMacro || function instanceof TableFunction;
+        } else {
+            predicate = function -> !(function instanceof TableMacro || function instanceof TableFunction);
+        }
+        polyphenyDbCatalogReader.getFunctionsFrom( opName.getNames() )
+                .stream()
+                .filter( predicate )
+                .map( function -> toOp( typeFactory, opName, function ) )
+                .forEachOrdered( operatorList::add );
+    }
 
 }

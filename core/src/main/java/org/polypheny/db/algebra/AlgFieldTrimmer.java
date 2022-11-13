@@ -17,6 +17,8 @@
 package org.polypheny.db.algebra;
 
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.math.BigDecimal;
@@ -51,8 +53,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -132,7 +132,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         if ( !trimResult.right.isIdentity() ) {
             throw new IllegalArgumentException();
         }
-        Logger logger = LanguageManager.getInstance().getLogger( QueryLanguage.from( "sql" ), AlgNode.class );
+        Logger logger = getLogger( AlgNode.class );
         if ( logger.isDebugEnabled() ) {
             logger.debug(
                     AlgOptUtil.dumpPlan(

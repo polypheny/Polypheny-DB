@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.NonNull;
@@ -93,8 +94,11 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.ParserFactory;
+import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.prepare.Context;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
@@ -2045,7 +2049,7 @@ public abstract class Catalog {
 
     public static class QueryLanguage {
 
-        private static List<QueryLanguage> REGISTER = new ArrayList<>();
+        private static final List<QueryLanguage> REGISTER = new ArrayList<>();
 
 
         @Getter
@@ -2056,18 +2060,21 @@ public abstract class Catalog {
         private final ParserFactory factory;
         @Getter
         private final Supplier<Processor> processorSupplier;
+        @Getter
+        private final BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier;
 
 
-        QueryLanguage( NamespaceType namespaceType, String serializedName, ParserFactory factory, Supplier<Processor> processorSupplier ) {
+        QueryLanguage( NamespaceType namespaceType, String serializedName, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier ) {
             this.namespaceType = namespaceType;
             this.serializedName = serializedName;
             this.factory = factory;
             this.processorSupplier = processorSupplier;
+            this.validatorSupplier = validatorSupplier;
         }
 
 
-        public static void addQueryLanguage( NamespaceType namespaceType, String serializedName, ParserFactory factory, Supplier<Processor> processorSupplier ) {
-            REGISTER.add( new QueryLanguage( namespaceType, serializedName, factory, processorSupplier ) );
+        public static void addQueryLanguage( NamespaceType namespaceType, String serializedName, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier ) {
+            REGISTER.add( new QueryLanguage( namespaceType, serializedName, factory, processorSupplier, validatorSupplier ) );
         }
 
 

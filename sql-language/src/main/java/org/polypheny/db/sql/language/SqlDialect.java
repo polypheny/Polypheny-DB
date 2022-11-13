@@ -48,10 +48,10 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.util.SqlBuilder;
+import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -604,7 +604,7 @@ public class SqlDialect {
             //int precision = 2024;
             type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.BINARY );
         }
-        return (SqlNode) PolyTypeUtil.convertTypeToSpec( type );
+        return (SqlNode) SqlTypeUtil.convertTypeToSpec( type );
     }
 
 

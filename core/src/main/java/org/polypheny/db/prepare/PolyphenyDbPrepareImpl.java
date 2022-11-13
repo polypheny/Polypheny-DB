@@ -288,7 +288,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         } catch ( NodeParseException e ) {
             throw new RuntimeException( "parse failed", e );
         }
-        final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.from( "sql" ), context, catalogReader );
+        final Validator validator = QueryLanguage.from( "sql" ).getValidatorSupplier().apply( context, catalogReader );
         Node sqlNode1 = validator.validate( sqlNode );
         if ( convert ) {
             return convert_( context, sql, analyze, fail, catalogReader, validator, sqlNode1 );
@@ -912,7 +912,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         protected Validator createSqlValidator( CatalogReader catalogReader ) {
-            return LanguageManager.getInstance().createValidator( QueryLanguage.from( "sql" ), context, (PolyphenyDbCatalogReader) catalogReader );
+            return QueryLanguage.from( "sql" ).getValidatorSupplier().apply( context, (PolyphenyDbCatalogReader) catalogReader );
         }
 
 

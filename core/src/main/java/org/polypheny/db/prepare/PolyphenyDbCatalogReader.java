@@ -25,46 +25,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.MonikerType;
-import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.OperatorImpl;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
-import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.ScalarFunction;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.TableFunction;
-import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.graph.Graph;
-import org.polypheny.db.schema.impl.ScalarFunctionImpl;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
-import org.polypheny.db.type.checker.OperandTypes;
-import org.polypheny.db.type.inference.InferTypes;
-import org.polypheny.db.type.inference.PolyReturnTypeInference;
-import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
 import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.NameMatchers;
-import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 
@@ -151,7 +129,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    private Collection<Function> getFunctionsFrom( List<String> names ) {
+    public Collection<Function> getFunctionsFrom( List<String> names ) {
         final List<Function> functions2 = new ArrayList<>();
         final List<List<String>> schemaNameList = new ArrayList<>();
         if ( names.size() > 1 ) {
@@ -249,127 +227,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    @Override
-    public void lookupOperatorOverloads( final Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
-        if ( syntax != Syntax.FUNCTION ) {
-            return;
-        }
-
-        final Predicate<Function> predicate;
-        if ( category == null ) {
-            predicate = function -> true;
-        } else if ( category.isTableFunction() ) {
-            predicate = function -> function instanceof TableMacro || function instanceof TableFunction;
-        } else {
-            predicate = function -> !(function instanceof TableMacro || function instanceof TableFunction);
-        }
-        getFunctionsFrom( opName.getNames() )
-                .stream()
-                .filter( predicate )
-                .map( function -> toOp( opName, function ) )
-                .forEachOrdered( operatorList::add );
-    }
-
-
-    private Operator toOp( Identifier name, final Function function ) {
-        return toOp( typeFactory, name, function );
-    }
-
-
-    /**
-     * Converts a function to a {@link OperatorImpl}.
-     *
-     * The {@code typeFactory} argument is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
-     */
-    private static Operator toOp( AlgDataTypeFactory typeFactory, Identifier name, final Function function ) {
-        List<AlgDataType> argTypes = new ArrayList<>();
-        List<PolyTypeFamily> typeFamilies = new ArrayList<>();
-        for ( FunctionParameter o : function.getParameters() ) {
-            final AlgDataType type = o.getType( typeFactory );
-            argTypes.add( type );
-            typeFamilies.add( Util.first( type.getPolyType().getFamily(), PolyTypeFamily.ANY ) );
-        }
-        final FamilyOperandTypeChecker typeChecker = OperandTypes.family( typeFamilies, i -> function.getParameters().get( i ).isOptional() );
-        final List<AlgDataType> paramTypes = toSql( typeFactory, argTypes );
-        if ( function instanceof ScalarFunction ) {
-            return LanguageManager.getInstance().createUserDefinedFunction(
-                    QueryLanguage.from( "sql" ),
-                    name,
-                    infer( (ScalarFunction) function ),
-                    InferTypes.explicit( argTypes ),
-                    typeChecker,
-                    paramTypes,
-                    function );
-        } else if ( function instanceof AggregateFunction ) {
-            return LanguageManager.getInstance().createUserDefinedAggFunction(
-                    QueryLanguage.from( "sql" ),
-                    name,
-                    infer( (AggregateFunction) function ),
-                    InferTypes.explicit( argTypes ),
-                    typeChecker,
-                    (AggregateFunction) function,
-                    false,
-                    false,
-                    Optionality.FORBIDDEN,
-                    typeFactory );
-        } else if ( function instanceof TableMacro ) {
-            return LanguageManager.getInstance().createUserDefinedTableMacro(
-                    QueryLanguage.from( "sql" ),
-                    name,
-                    ReturnTypes.CURSOR,
-                    InferTypes.explicit( argTypes ),
-                    typeChecker,
-                    paramTypes,
-                    (TableMacro) function );
-        } else if ( function instanceof TableFunction ) {
-            return LanguageManager.getInstance().createUserDefinedTableFunction(
-                    QueryLanguage.from( "sql" ),
-                    name,
-                    ReturnTypes.CURSOR,
-                    InferTypes.explicit( argTypes ),
-                    typeChecker,
-                    paramTypes,
-                    (TableFunction) function );
-        } else {
-            throw new AssertionError( "unknown function type " + function );
-        }
-    }
-
-
-    private static PolyReturnTypeInference infer( final ScalarFunction function ) {
-        return opBinding -> {
-            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-            final AlgDataType type;
-            if ( function instanceof ScalarFunctionImpl ) {
-                type = ((ScalarFunctionImpl) function).getReturnType( typeFactory, opBinding );
-            } else {
-                type = function.getReturnType( typeFactory );
-            }
-            return toSql( typeFactory, type );
-        };
-    }
-
-
-    private static PolyReturnTypeInference infer( final AggregateFunction function ) {
-        return opBinding -> {
-            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-            final AlgDataType type = function.getReturnType( typeFactory );
-            return toSql( typeFactory, type );
-        };
-    }
-
-
-    private static List<AlgDataType> toSql( final AlgDataTypeFactory typeFactory, List<AlgDataType> types ) {
-        return types.stream().map( type -> toSql( typeFactory, type ) ).collect( Collectors.toList() );
-    }
-
-
-    private static AlgDataType toSql( AlgDataTypeFactory typeFactory, AlgDataType type ) {
-        if ( type instanceof AlgDataTypeFactoryImpl.JavaType && ((AlgDataTypeFactoryImpl.JavaType) type).getJavaClass() == Object.class ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
-        }
-        return JavaTypeFactoryImpl.toSql( typeFactory, type );
-    }
 
 
     @Override

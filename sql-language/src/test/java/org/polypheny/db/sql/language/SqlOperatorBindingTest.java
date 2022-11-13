@@ -35,8 +35,8 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.SqlLanguageDependant;
+import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -61,7 +61,7 @@ public class SqlOperatorBindingTest extends SqlLanguageDependant {
     public void setUp() {
         JavaTypeFactory typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         integerDataType = typeFactory.createPolyType( PolyType.INTEGER );
-        integerType = (SqlDataTypeSpec) PolyTypeUtil.convertTypeToSpec( integerDataType );
+        integerType = (SqlDataTypeSpec) SqlTypeUtil.convertTypeToSpec( integerDataType );
         rexBuilder = new RexBuilder( typeFactory );
     }
 

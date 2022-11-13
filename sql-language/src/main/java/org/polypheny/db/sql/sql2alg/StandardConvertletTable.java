@@ -72,6 +72,7 @@ import org.polypheny.db.sql.language.fun.SqlOverlapsOperator;
 import org.polypheny.db.sql.language.fun.SqlRowOperator;
 import org.polypheny.db.sql.language.fun.SqlSequenceValueOperator;
 import org.polypheny.db.sql.language.fun.SqlTrimFunction;
+import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter.Blackboard;
@@ -1092,7 +1093,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         private SqlNode getCastedSqlNode( SqlNode argInput, AlgDataType varType, ParserPos pos, RexNode argRex ) {
             SqlNode arg;
             if ( argRex != null && !argRex.getType().equals( varType ) ) {
-                arg = (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, argInput, (Node) PolyTypeUtil.convertTypeToSpec( varType ) );
+                arg = (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, argInput, (Node) SqlTypeUtil.convertTypeToSpec( varType ) );
             } else {
                 arg = argInput;
             }
@@ -1223,7 +1224,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         private SqlNode getCastedSqlNode( SqlNode argInput, AlgDataType varType, ParserPos pos, RexNode argRex ) {
             SqlNode arg;
             if ( argRex != null && !argRex.getType().equals( varType ) ) {
-                arg = (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, argInput, (Node) PolyTypeUtil.convertTypeToSpec( varType ) );
+                arg = (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, argInput, (Node) SqlTypeUtil.convertTypeToSpec( varType ) );
             } else {
                 arg = argInput;
             }

@@ -39,12 +39,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.CallBinding;
-import org.polypheny.db.nodes.DataTypeSpec;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
@@ -828,76 +823,6 @@ public abstract class PolyTypeUtil {
             }
         }
         return nested;
-    }
-
-
-    /**
-     * Converts an instance of RelDataType to an instance of SqlDataTypeSpec.
-     *
-     * @param type type descriptor
-     * @return corresponding parse representation
-     */
-    public static DataTypeSpec convertTypeToSpec( AlgDataType type ) {
-        PolyType typeName = type.getPolyType();
-
-        // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
-        assert typeName != null;
-        Identifier typeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.from( "sql" ), typeName.name(), ParserPos.ZERO );
-
-        String charSetName = null;
-
-        if ( inCharFamily( type ) ) {
-            charSetName = type.getCharset().name();
-            // TODO jvs: collation
-        }
-
-        // REVIEW jvs: discriminate between precision/scale zero and unspecified?
-
-        // REVIEW angel: Use neg numbers to indicate unspecified precision/scale
-
-        if ( typeName.allowsScale() ) {
-            return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.from( "sql" ),
-                    typeIdentifier,
-                    type.getPrecision(),
-                    type.getScale(),
-                    charSetName,
-                    null,
-                    ParserPos.ZERO );
-        } else if ( typeName.allowsPrec() ) {
-            return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.from( "sql" ),
-                    typeIdentifier,
-                    type.getPrecision(),
-                    -1,
-                    charSetName,
-                    null,
-                    ParserPos.ZERO );
-        } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
-            ArrayType arrayType = (ArrayType) type;
-            Identifier componentTypeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.from( "sql" ), arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
-            return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.from( "sql" ),
-                    typeIdentifier,
-                    componentTypeIdentifier,
-                    arrayType.getComponentType().getPrecision(),
-                    arrayType.getComponentType().getScale(),
-                    (int) arrayType.getDimension(),
-                    (int) arrayType.getCardinality(),
-                    charSetName,
-                    null,
-                    arrayType.isNullable(),
-                    ParserPos.ZERO );
-        } else {
-            return LanguageManager.getInstance().createDataTypeSpec(
-                    QueryLanguage.from( "sql" ),
-                    typeIdentifier,
-                    -1,
-                    -1,
-                    charSetName,
-                    null,
-                    ParserPos.ZERO );
-        }
     }
 
 

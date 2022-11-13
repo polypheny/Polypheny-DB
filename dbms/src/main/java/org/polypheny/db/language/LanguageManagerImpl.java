@@ -17,7 +17,6 @@
 package org.polypheny.db.language;
 
 import java.io.Reader;
-import java.util.List;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -25,10 +24,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -45,13 +42,8 @@ import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.schema.AggregateFunction;
-import org.polypheny.db.schema.Function;
-import org.polypheny.db.schema.TableFunction;
-import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
@@ -69,44 +61,22 @@ import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
-import org.polypheny.db.sql.language.validate.SqlUserDefinedAggFunction;
-import org.polypheny.db.sql.language.validate.SqlUserDefinedFunction;
-import org.polypheny.db.sql.language.validate.SqlUserDefinedTableFunction;
-import org.polypheny.db.sql.language.validate.SqlUserDefinedTableMacro;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.type.PolyIntervalQualifier;
-import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.Optionality;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.slf4j.Logger;
 
 
 public class LanguageManagerImpl extends LanguageManager {
 
-    @Override
-    public Validator createValidator( QueryLanguage language, Context context, PolyphenyDbCatalogReader catalogReader ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return getSqlValidator( context, catalogReader );
-        }
 
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    private PolyphenyDbSqlValidator getSqlValidator( Context context, PolyphenyDbCatalogReader catalogReader ) {
-        final OperatorTable opTab0 = context.config().fun( OperatorTable.class, getInstance().getStdOperatorTable() );
-        final OperatorTable opTab = ChainedOperatorTable.of( opTab0, catalogReader );
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final Conformance conformance = context.config().conformance();
-        return new PolyphenyDbSqlValidator( opTab, catalogReader, typeFactory, conformance );
-    }
 
 
     @Override
@@ -227,35 +197,6 @@ public class LanguageManagerImpl extends LanguageManager {
     }
 
 
-    @Override
-    public DataTypeSpec createDataTypeSpec(
-            QueryLanguage language,
-            Identifier typeIdentifier,
-            Identifier componentTypeIdentifier,
-            int precision,
-            int scale,
-            int dimension,
-            int cardinality,
-            String charSetName,
-            TimeZone o,
-            boolean nullable,
-            ParserPos zero ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlDataTypeSpec(
-                    (SqlIdentifier) typeIdentifier,
-                    (SqlIdentifier) componentTypeIdentifier,
-                    precision,
-                    scale,
-                    dimension,
-                    cardinality,
-                    charSetName,
-                    o,
-                    nullable,
-                    zero );
-        }
-        throw new UnsupportedLanguageOperation( language );
-    }
-
 
     @Override
     public IntervalQualifier createIntervalQualifier(
@@ -346,86 +287,6 @@ public class LanguageManagerImpl extends LanguageManager {
         new SqlIntervalQualifier( intervalQualifier ).unparse( writer, 0, 0 );
         final String sql = writer.toString();
         sb.append( new SqlString( dialect, sql ).getSql() );
-    }
-
-
-    @Override
-    public Operator createUserDefinedFunction(
-            QueryLanguage language,
-            Identifier name,
-            PolyReturnTypeInference infer,
-            PolyOperandTypeInference explicit,
-            FamilyOperandTypeChecker typeChecker,
-            List<AlgDataType> paramTypes,
-            Function function ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlUserDefinedFunction( (SqlIdentifier) name, infer, explicit, typeChecker, paramTypes, function );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
-    public Operator createUserDefinedAggFunction(
-            QueryLanguage language,
-            Identifier name,
-            PolyReturnTypeInference infer,
-            PolyOperandTypeInference explicit,
-            FamilyOperandTypeChecker typeChecker,
-            AggregateFunction function,
-            boolean requiresOrder,
-            boolean requiresOver,
-            Optionality optionality,
-            AlgDataTypeFactory typeFactory ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlUserDefinedAggFunction(
-                    (SqlIdentifier) name,
-                    infer,
-                    explicit,
-                    typeChecker,
-                    function,
-                    requiresOrder,
-                    requiresOver,
-                    optionality,
-                    typeFactory );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
-    public Operator createUserDefinedTableMacro(
-            QueryLanguage language,
-            Identifier name,
-            PolyReturnTypeInference typeInference,
-            PolyOperandTypeInference explicit,
-            FamilyOperandTypeChecker typeChecker,
-            List<AlgDataType> paramTypes,
-            TableMacro function ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlUserDefinedTableMacro( (SqlIdentifier) name, typeInference, explicit, typeChecker, paramTypes, function );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
-    public Operator createUserDefinedTableFunction(
-            QueryLanguage language,
-            Identifier name,
-            PolyReturnTypeInference typeInference,
-            PolyOperandTypeInference explicit,
-            FamilyOperandTypeChecker typeChecker,
-            List<AlgDataType> paramTypes,
-            TableFunction function ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlUserDefinedTableFunction( (SqlIdentifier) name, typeInference, explicit, typeChecker, paramTypes, function );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
     }
 
 

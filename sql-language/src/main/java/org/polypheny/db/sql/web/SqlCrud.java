@@ -48,13 +48,19 @@ import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.operators.ChainedOperatorTable;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.sql.SqlProcessorImpl;
 import org.polypheny.db.sql.SqlRegisterer;
+import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.web.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.sql.web.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.sql.web.hub.HubMeta;
@@ -66,6 +72,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.Crud.QueryExecutionException;
 import org.polypheny.db.webui.HttpServer;
@@ -88,7 +95,8 @@ public class SqlCrud {
                 NamespaceType.RELATIONAL,
                 "sql",
                 SqlParserImpl.FACTORY,
-                SqlProcessorImpl::new );
+                SqlProcessorImpl::new,
+                SqlCrud::getSqlValidator );
 
         LanguageCrud.REGISTER.put( "sql", (
                 session,
@@ -105,6 +113,15 @@ public class SqlCrud {
         // webuiServer.post( "/importDataset", crud::importDataset );
 
         // webuiServer.post( "/exportTable", crud::exportTable );
+    }
+
+
+    private static PolyphenyDbSqlValidator getSqlValidator( org.polypheny.db.prepare.Context context, PolyphenyDbCatalogReader catalogReader ) {
+        final OperatorTable opTab0 = context.config().fun( OperatorTable.class, SqlStdOperatorTable.instance() );
+        final OperatorTable opTab = ChainedOperatorTable.of( opTab0, catalogReader );
+        final JavaTypeFactory typeFactory = context.getTypeFactory();
+        final Conformance conformance = context.config().conformance();
+        return new PolyphenyDbSqlValidator( opTab, catalogReader, typeFactory, conformance );
     }
 
 
