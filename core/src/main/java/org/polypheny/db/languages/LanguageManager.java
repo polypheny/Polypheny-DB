@@ -27,7 +27,6 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -81,8 +80,6 @@ public abstract class LanguageManager {
             PolyOperandTypeInference o,
             PolySingleOperandTypeChecker numeric,
             FunctionCategory system );
-
-    public abstract void createIntervalTypeString( StringBuilder sb, PolyIntervalQualifier intervalQualifier );
 
 
 }

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.language;
 
-import java.util.TimeZone;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -28,25 +27,18 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.languages.UnsupportedLanguageOperation;
-import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.sql.language.SqlDataTypeSpec;
-import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlIntervalQualifier;
-import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlBitOpAggFunction;
 import org.polypheny.db.sql.language.fun.SqlMinMaxAggFunction;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
 import org.polypheny.db.sql.language.fun.SqlSumEmptyIsZeroAggFunction;
-import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.language.util.SqlString;
-import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -84,29 +76,6 @@ public class LanguageManagerImpl extends LanguageManager {
 
         throw new UnsupportedLanguageOperation( language );
     }
-
-
-    @Override
-    public DataTypeSpec createDataTypeSpec(
-            QueryLanguage language,
-            Identifier typeIdentifier,
-            int precision,
-            int scale,
-            String charSetName,
-            TimeZone o,
-            ParserPos pos ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlDataTypeSpec(
-                    (SqlIdentifier) typeIdentifier,
-                    precision,
-                    scale,
-                    charSetName,
-                    o,
-                    pos );
-        }
-        throw new UnsupportedLanguageOperation( language );
-    }
-
 
 
     @Override
@@ -184,20 +153,6 @@ public class LanguageManagerImpl extends LanguageManager {
         }
 
         throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
-    public void createIntervalTypeString( StringBuilder sb, PolyIntervalQualifier intervalQualifier ) {
-        sb.append( "INTERVAL " );
-        final SqlDialect dialect = AnsiSqlDialect.DEFAULT;
-        final SqlPrettyWriter writer = new SqlPrettyWriter( dialect );
-        writer.setAlwaysUseParentheses( false );
-        writer.setSelectListItemsOnSeparateLines( false );
-        writer.setIndentation( 0 );
-        new SqlIntervalQualifier( intervalQualifier ).unparse( writer, 0, 0 );
-        final String sql = writer.toString();
-        sb.append( new SqlString( dialect, sql ).getSql() );
     }
 
 

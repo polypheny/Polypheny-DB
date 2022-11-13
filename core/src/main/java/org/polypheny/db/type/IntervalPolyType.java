@@ -50,7 +50,8 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
-        LanguageManager.getInstance().createIntervalTypeString( sb, intervalQualifier );
+        sb.append( intervalQualifier.typeName() );
+        // LanguageManager.getInstance().createIntervalTypeString( sb, intervalQualifier ); todo dl maybe change
     }
 
 
