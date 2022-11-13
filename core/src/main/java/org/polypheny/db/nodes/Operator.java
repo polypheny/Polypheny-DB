@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,9 +46,9 @@ public interface Operator {
 
     AlgDataType inferReturnType( AlgDataTypeFactory typeFactory, List<AlgDataType> operandTypes );
 
-    abstract Kind getKind();
+    Kind getKind();
 
-    abstract String getName();
+    String getName();
 
     boolean validRexOperands( int count, Litmus litmus );
 

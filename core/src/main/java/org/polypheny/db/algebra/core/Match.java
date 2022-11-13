@@ -38,8 +38,6 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -263,14 +261,19 @@ public abstract class Match extends SingleAlg {
             AggFunction aggFunction = null;
             switch ( call.getKind() ) {
                 case SUM:
-                    aggFunction = LanguageManager.getInstance().createSumAggFunction( QueryLanguage.from( "sql" ), call.getType() );
+                    // aggFunction = LanguageManager.getInstance().createSumAggFunction( QueryLanguage.from( "sql" ), call.getType() );
+                    aggFunction = OperatorRegistry.getAgg( OperatorName.SUM );
                     break;
                 case SUM0:
-                    aggFunction = LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.from( "sql" ) );
+                    // aggFunction = LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.from( "sql" ) );
+                    aggFunction = OperatorRegistry.getAgg( OperatorName.SUM0 );
                     break;
                 case MAX:
+                    aggFunction = OperatorRegistry.getAgg( OperatorName.MAX );
+                    break;
                 case MIN:
-                    aggFunction = LanguageManager.getInstance().createMinMaxAggFunction( QueryLanguage.from( "sql" ), call.getKind() );
+                    // aggFunction = LanguageManager.getInstance().createMinMaxAggFunction( QueryLanguage.from( "sql" ), call.getKind() );
+                    aggFunction = OperatorRegistry.getAgg( OperatorName.MIN );
                     break;
                 case COUNT:
                     aggFunction = OperatorRegistry.getAgg( OperatorName.COUNT );
@@ -279,8 +282,11 @@ public abstract class Match extends SingleAlg {
                     aggFunction = OperatorRegistry.getAgg( OperatorName.ANY_VALUE );
                     break;
                 case BIT_AND:
+                    aggFunction = OperatorRegistry.getAgg( OperatorName.BIT_AND );
+                    break;
                 case BIT_OR:
-                    aggFunction = LanguageManager.getInstance().createBitOpAggFunction( QueryLanguage.from( "sql" ), call.getKind() );
+                    // aggFunction = LanguageManager.getInstance().createBitOpAggFunction( QueryLanguage.from( "sql" ), call.getKind() );
+                    aggFunction = OperatorRegistry.getAgg( OperatorName.BIT_OR );
                     break;
                 default:
                     for ( RexNode rex : call.getOperands() ) {

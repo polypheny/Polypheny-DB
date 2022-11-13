@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -37,8 +36,6 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
@@ -50,8 +47,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.type.checker.OperandTypes;
-import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableBitSet.Builder;
 import org.polypheny.db.util.NumberUtil;
@@ -62,8 +57,8 @@ import org.polypheny.db.util.NumberUtil;
  */
 public class AlgMdUtil {
 
-    public static final Operator ARTIFICIAL_SELECTIVITY_FUNC =
-            LanguageManager.getInstance().createFunction(
+    public static final Operator ARTIFICIAL_SELECTIVITY_FUNC = new ArtificialSelectivityOperator();
+            /*LanguageManager.getInstance().createFunction(
                     QueryLanguage.from( "sql" ),
                     "ARTIFICIAL_SELECTIVITY",
                     Kind.OTHER_FUNCTION,
@@ -71,6 +66,14 @@ public class AlgMdUtil {
                     null,
                     OperandTypes.NUMERIC, // takes a numeric param
                     FunctionCategory.SYSTEM );
+
+                    return new SqlFunction(
+                    name,
+                    kind,
+                    returnTypeInference, // returns boolean since we'll AND it
+                    o,
+                    typeChecker, // takes a numeric param
+                    system );*/
 
 
     private AlgMdUtil() {

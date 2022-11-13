@@ -45,8 +45,6 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptRule;
@@ -278,7 +276,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
                 final int arg = bottomGroups.size() + nonDistinctAggCallProcessedSoFar;
                 final List<Integer> newArgs = ImmutableList.of( arg );
                 if ( aggCall.getAggregation().getKind() == Kind.COUNT ) {
-                    newCall = AggregateCall.create( (Operator & AggFunction) LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.from( "sql" ) ), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.getName() );
+                    newCall = AggregateCall.create( OperatorRegistry.getAgg( OperatorName.SUM0 ), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.name );
                 } else {
                     newCall = AggregateCall.create( aggCall.getAggregation(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), algBuilder.peek(), aggCall.getType(), aggCall.name );
                 }

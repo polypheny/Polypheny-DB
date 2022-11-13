@@ -18,16 +18,8 @@ package org.polypheny.db.languages;
 
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.algebra.constant.FunctionCategory;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
-import org.polypheny.db.type.inference.PolyOperandTypeInference;
-import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 /**
  * LanguageManager is responsible for providing a way of accessing objects and functions of the different available languages.
@@ -54,22 +46,7 @@ public abstract class LanguageManager {
             int fractionalSecondPrecision,
             ParserPos zero );
 
-    public abstract AggFunction createMinMaxAggFunction( QueryLanguage language, Kind kind );
 
-    public abstract AggFunction createSumEmptyIsZeroFunction( QueryLanguage language );
-
-    public abstract AggFunction createBitOpAggFunction( QueryLanguage language, Kind kind );
-
-    public abstract AggFunction createSumAggFunction( QueryLanguage language, AlgDataType type );
-
-    public abstract Operator createFunction(
-            QueryLanguage language,
-            String artificial_selectivity,
-            Kind otherFunction,
-            PolyReturnTypeInference aBoolean,
-            PolyOperandTypeInference o,
-            PolySingleOperandTypeChecker numeric,
-            FunctionCategory system );
 
 
 }
