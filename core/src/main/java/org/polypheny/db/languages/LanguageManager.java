@@ -16,7 +16,6 @@
 
 package org.polypheny.db.languages;
 
-import java.io.Reader;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -25,7 +24,6 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
@@ -54,8 +52,6 @@ public abstract class LanguageManager {
     public abstract RexConvertletTable getStandardConvertlet();
 
     public abstract OperatorTable getStdOperatorTable();
-
-    public abstract Parser getParser( QueryLanguage language, Reader reader, ParserConfig sqlParserConfig );
 
     public abstract OperatorTable getOracleOperatorTable();
 

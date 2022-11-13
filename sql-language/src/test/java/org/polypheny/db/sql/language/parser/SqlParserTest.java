@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.Node;
@@ -618,16 +619,16 @@ public class SqlParserTest extends SqlLanguageDependant {
 
 
     protected SqlParser getSqlParser( Reader source ) {
-        return (SqlParser) Parser.create(
-                source,
-                Parser
-                        .configBuilder()
-                        .setParserFactory( parserImplFactory() )
-                        .setQuoting( quoting )
-                        .setUnquotedCasing( unquotedCasing )
-                        .setQuotedCasing( quotedCasing )
-                        .setConformance( conformance )
-                        .build() );
+        ParserConfig config = Parser
+                .configBuilder()
+                .setParserFactory( parserImplFactory() )
+                .setQuoting( quoting )
+                .setUnquotedCasing( unquotedCasing )
+                .setQuotedCasing( quotedCasing )
+                .setConformance( conformance )
+                .build();
+        SqlAbstractParserImpl parser = (SqlAbstractParserImpl) config.parserFactory().getParser( source );
+        return new SqlParser( parser, config );
     }
 
 

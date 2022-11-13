@@ -70,6 +70,8 @@ import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.MockSqlOperatorTable;
 import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
+import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
@@ -79,6 +81,7 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.SourceStringReader;
 
 
 /**
@@ -715,7 +718,10 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependant {
         @Override
         public SqlNode parseQuery( String sql ) throws Exception {
             final ParserConfig sqlParserConfig = Parser.configBuilder().setConformance( getConformance() ).build();
-            Parser parser = Parser.create( sql, sqlParserConfig );
+
+            SqlAbstractParserImpl parserImpl = (SqlAbstractParserImpl) sqlParserConfig.parserFactory().getParser( new SourceStringReader( sql ) );
+
+            Parser parser = new SqlParser( parserImpl, sqlParserConfig );
             return (SqlNode) parser.parseQuery();
         }
 

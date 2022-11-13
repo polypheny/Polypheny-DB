@@ -67,6 +67,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
@@ -119,7 +120,8 @@ public class SqlProcessorImpl extends Processor {
         }
 
         try {
-            final Parser parser = Parser.create( new SourceStringReader( query ), parserConfig );
+            SqlAbstractParserImpl parserImpl = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( new SourceStringReader( query ) );
+            final Parser parser = new SqlParser( parserImpl, parserConfig );
             parsed = parser.parseStmt();
         } catch ( NodeParseException e ) {
             log.error( "Caught exception", e );

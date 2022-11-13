@@ -16,7 +16,6 @@
 
 package org.polypheny.db.language;
 
-import java.io.Reader;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -26,8 +25,6 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.Parser;
-import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.languages.UnsupportedLanguageOperation;
@@ -47,8 +44,6 @@ import org.polypheny.db.sql.language.fun.SqlMinMaxAggFunction;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
 import org.polypheny.db.sql.language.fun.SqlSumEmptyIsZeroAggFunction;
-import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
-import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.type.PolyIntervalQualifier;
@@ -72,17 +67,6 @@ public class LanguageManagerImpl extends LanguageManager {
     @Override
     public OperatorTable getStdOperatorTable() {
         return SqlStdOperatorTable.instance();
-    }
-
-
-    @Override
-    public Parser getParser( QueryLanguage language, Reader reader, ParserConfig parserConfig ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            SqlAbstractParserImpl parser = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( reader );
-            return new SqlParser( parser, parserConfig );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
     }
 
 

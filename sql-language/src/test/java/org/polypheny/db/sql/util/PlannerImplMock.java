@@ -45,6 +45,8 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
+import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
@@ -57,6 +59,7 @@ import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.util.Util;
 
 
@@ -182,6 +185,13 @@ public class PlannerImplMock implements Planner {
 
 
     @Override
+    public Node parse( String sql ) throws NodeParseException {
+        SqlAbstractParserImpl parser = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( new SourceStringReader( sql ) );
+        return new SqlParser( parser, parserConfig ).parseQuery();
+    }
+
+
+    @Override
     public Node parse( final Reader reader ) throws NodeParseException {
         switch ( state ) {
             case STATE_0_CLOSED:
@@ -189,7 +199,7 @@ public class PlannerImplMock implements Planner {
                 ready();
         }
         ensure( State.STATE_2_READY );
-        Parser parser = Parser.create( reader, parserConfig );
+        Parser parser = SqlParserMock.create( reader, parserConfig );
         Node sqlNode = parser.parseStmt();
         state = State.STATE_3_PARSED;
         return sqlNode;

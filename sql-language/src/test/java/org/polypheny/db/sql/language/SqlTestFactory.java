@@ -39,6 +39,8 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.MockSqlOperatorTable;
 import org.polypheny.db.sql.language.advise.SqlAdvisor;
 import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
+import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
+import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
@@ -105,7 +107,9 @@ public class SqlTestFactory {
 
 
     public Parser createParser( String sql ) {
-        return Parser.create( new SourceStringReader( sql ), parserConfig.get() );
+        ParserConfig config = parserConfig.get();
+        SqlAbstractParserImpl parser = (SqlAbstractParserImpl) config.parserFactory().getParser( new SourceStringReader( sql ) );
+        return new SqlParser( parser, config );
     }
 
 

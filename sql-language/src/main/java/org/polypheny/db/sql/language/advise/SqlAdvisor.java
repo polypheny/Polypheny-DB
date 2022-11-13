@@ -47,6 +47,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
 import org.polypheny.db.util.Advisor;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
+import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -496,7 +497,8 @@ public class SqlAdvisor implements Advisor {
      * @return metadata
      */
     protected SqlAbstractParserImpl.Metadata getParserMetadata() {
-        SqlParser parser = (SqlParser) Parser.create( "", parserConfig );
+        SqlAbstractParserImpl parserImpl = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( new SourceStringReader( "" ) );
+        SqlParser parser = new SqlParser( parserImpl, parserConfig );
         return parser.getMetadata();
     }
 
@@ -509,7 +511,8 @@ public class SqlAdvisor implements Advisor {
      * @throws NodeParseException if not syntactically valid
      */
     protected SqlNode parseQuery( String sql ) throws NodeParseException {
-        Parser parser = Parser.create( sql, parserConfig );
+        SqlAbstractParserImpl parserImpl = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( new SourceStringReader( sql ) );
+        Parser parser = new SqlParser( parserImpl, parserConfig );
         return (SqlNode) parser.parseStmt();
     }
 

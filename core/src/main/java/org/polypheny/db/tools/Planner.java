@@ -24,7 +24,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.SourceStringReader;
 
 
 /**
@@ -43,9 +42,9 @@ public interface Planner extends AutoCloseable {
      * @return The root node of the SQL parse tree.
      * @throws NodeParseException on parse error
      */
-    default Node parse( String sql ) throws NodeParseException {
+    Node parse( String sql ) throws NodeParseException;/* {
         return parse( new SourceStringReader( sql ) );
-    }
+    }*/
 
     /**
      * Parses and validates a SQL statement.

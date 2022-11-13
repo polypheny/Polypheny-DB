@@ -25,14 +25,18 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
+import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.SourceStringReader;
 
 
 /**
@@ -60,7 +64,11 @@ public class SqlPrettyWriterTest extends SqlLanguageDependant {
     protected SqlNode parseQuery( String sql ) {
         SqlNode node;
         try {
-            node = (SqlNode) Parser.create( sql ).parseQuery();
+            ParserConfig config = Parser.configBuilder().build();
+            SqlAbstractParserImpl parserImpl = (SqlAbstractParserImpl) config.parserFactory().getParser( new SourceStringReader( sql ) );
+            SqlParser parser = new SqlParser( parserImpl, config );
+
+            node = (SqlNode) parser.parseQuery();
         } catch ( NodeParseException e ) {
             String message = "Received error while parsing SQL '" + sql + "'; error is:" + NL + e.toString();
             throw new AssertionError( message );

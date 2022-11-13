@@ -97,7 +97,6 @@ import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -325,38 +324,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
         throw new UnsupportedOperationException();
     }
-
-
-    /**
-     * Factory method for default SQL parser.
-     */
-    protected Parser createParser( String sql ) {
-        return createParser( sql, createParserConfig() );
-    }
-
-
-    /**
-     * Factory method for SQL parser with a given configuration.
-     */
-    protected Parser createParser( String sql, Parser.ConfigBuilder parserConfig ) {
-        return Parser.create( sql, parserConfig.build() );
-    }
-
-
-    /**
-     * Factory method for SQL parser configuration.
-     */
-    protected Parser.ConfigBuilder createParserConfig() {
-        return Parser.configBuilder();
-    }
-
-
-    /**
-     * Factory method for default convertlet table.
-     */
-    /*protected RexConvertletTable createConvertletTable() {
-        return LanguageManager.getInstance().getStandardConvertlet();
-    }*/
 
 
     /**
