@@ -57,7 +57,8 @@ public class MongoLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        LanguageCrud.getCrud().languageCrud.addLanguage( "mongo", MongoLanguagePlugin::anyMongoQuery, org.polypheny.db.mql.parser.impl.MqlParserImpl.FACTORY, MqlProcessorImpl::new );
+        LanguageCrud.getCrud().languageCrud.addLanguage( "mongo", MongoLanguagePlugin::anyMongoQuery );
+        QueryLanguage.addQueryLanguage( NamespaceType.DOCUMENT, "mongo", org.polypheny.db.mql.parser.impl.MqlParserImpl.FACTORY, MqlProcessorImpl::new, null );
 
         if ( !MqlRegisterer.isInit() ) {
             MqlRegisterer.registerOperators();

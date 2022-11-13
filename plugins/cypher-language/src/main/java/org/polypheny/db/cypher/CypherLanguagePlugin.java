@@ -54,7 +54,8 @@ public class CypherLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        LanguageCrud.getCrud().languageCrud.addLanguage( "cypher", CypherLanguagePlugin::anyCypherQuery, CypherParserImpl.FACTORY, CypherProcessorImpl::new );
+        LanguageCrud.getCrud().languageCrud.addLanguage( "cypher", CypherLanguagePlugin::anyCypherQuery );
+        QueryLanguage.addQueryLanguage( NamespaceType.GRAPH, "cypher", CypherParserImpl.FACTORY, CypherProcessorImpl::new, null );
 
         if ( !CypherRegisterer.isInit() ) {
             CypherRegisterer.registerOperators();

@@ -87,7 +87,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.language.fun.SqlCountAggFunction;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -323,7 +322,7 @@ public class ConstraintEnforceAttacher {
                 } else {
                     builder.clear();
                     builder.push( input );
-                    builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) ), builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" ) );
+                    builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) ), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" ) );
                     builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                     final AlgNode innerCheck = builder.build();
                     final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
@@ -472,7 +471,7 @@ public class ConstraintEnforceAttacher {
                 builder.project( projects );
                 builder.aggregate(
                         builder.groupKey( IntStream.range( 0, projects.size() ).mapToObj( builder::field ).collect( Collectors.toList() ) ),
-                        builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" )
+                        builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" )
                 );
                 builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                 final AlgNode innerCheck = builder.build();

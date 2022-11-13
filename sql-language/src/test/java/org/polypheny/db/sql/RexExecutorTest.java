@@ -76,7 +76,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for {@link org.polypheny.db.rex.RexExecutorImpl}.
  */
-public class RexExecutorTest extends SqlLanguageDependant {
+public class RexExecutorTest {
 
     public RexExecutorTest() {
     }

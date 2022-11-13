@@ -25,6 +25,7 @@ import org.pf4j.PluginWrapper;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cql.parser.CqlParser;
 import org.polypheny.db.information.InformationManager;
@@ -57,7 +58,8 @@ public class CqlLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        LanguageCrud.getCrud().languageCrud.addLanguage( "cql", CqlLanguagePlugin::processCqlRequest, null, null );
+        LanguageCrud.getCrud().languageCrud.addLanguage( "cql", CqlLanguagePlugin::processCqlRequest );
+        QueryLanguage.addQueryLanguage( NamespaceType.RELATIONAL, "cql", null, null, null );
     }
 
 

@@ -118,7 +118,7 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
 
 
     @Override
-    public AlgDataType createSqlIntervalType( IntervalQualifier intervalQualifier ) {
+    public AlgDataType createIntervalType( IntervalQualifier intervalQualifier ) {
         AlgDataType newType = new IntervalPolyType( typeSystem, intervalQualifier, false );
         return canonize( newType );
     }

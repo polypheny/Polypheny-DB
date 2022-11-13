@@ -1653,7 +1653,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 // fake a fully-qualified call to the default constructor
                 ((SqlBasicCall) call).setOperator(
                         new SqlFunction(
-                                (SqlIdentifier) type.getSqlIdentifier(),
+                                new SqlIdentifier( type.getFieldNames(), ParserPos.ZERO ),
                                 ReturnTypes.explicit( type ),
                                 null,
                                 null,
@@ -5489,7 +5489,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         @Override
         public AlgDataType visit( IntervalQualifier intervalQualifier ) {
-            return typeFactory.createSqlIntervalType( intervalQualifier );
+            return typeFactory.createIntervalType( intervalQualifier );
         }
 
     }

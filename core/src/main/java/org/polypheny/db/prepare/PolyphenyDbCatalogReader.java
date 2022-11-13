@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
+import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.MonikerType;
+import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -227,6 +229,10 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
+    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
+        throw new UnsupportedOperationException( "This operation is not longer supported" );
+    }
 
 
     @Override

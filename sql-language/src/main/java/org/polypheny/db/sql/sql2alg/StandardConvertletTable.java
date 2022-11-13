@@ -1413,7 +1413,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             final RexNode op1 = cx.convertExpression( call.operand( 1 ) );
             final AlgDataType intervalType =
                     cx.getTypeFactory().createTypeWithNullability(
-                            cx.getTypeFactory().createSqlIntervalType( qualifier ),
+                            cx.getTypeFactory().createIntervalType( qualifier ),
                             op1.getType().isNullable() || op2.getType().isNullable() );
             final RexCall rexCall = (RexCall) rexBuilder.makeCall(
                     intervalType,

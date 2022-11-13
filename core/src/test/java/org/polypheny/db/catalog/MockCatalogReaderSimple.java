@@ -21,9 +21,12 @@ import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.InitializerExpressionFactory;
@@ -257,6 +260,12 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTablesWithRollUp( salesSchema, fixture );
         return this;
 
+    }
+
+
+    @Override
+    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
+        throw new UnsupportedOperationException( "This operation is not longer supported" );
     }
 
 }

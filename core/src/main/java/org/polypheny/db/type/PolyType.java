@@ -32,10 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.util.Util;
 
 
@@ -1143,11 +1139,6 @@ public enum PolyType {
             default:
                 throw Util.unexpected( limit );
         }
-    }
-
-
-    public Literal createLiteral( Object o, ParserPos pos ) {
-        return LanguageManager.getInstance().createLiteral( QueryLanguage.from( "sql" ), this, o, pos );
     }
 
 

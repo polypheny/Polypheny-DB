@@ -724,7 +724,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
                 SqlIntervalLiteral.IntervalValue intervalValue = (SqlIntervalLiteral.IntervalValue) value;
-                return typeFactory.createSqlIntervalType( intervalValue.getIntervalQualifier() );
+                return typeFactory.createIntervalType( intervalValue.getIntervalQualifier() );
 
             case SYMBOL:
                 return typeFactory.createPolyType( PolyType.SYMBOL );

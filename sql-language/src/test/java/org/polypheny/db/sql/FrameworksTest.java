@@ -104,7 +104,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for methods in {@link Frameworks}.
  */
-public class FrameworksTest extends SqlLanguageDependant {
+public class FrameworksTest {
 
     @Test
     public void testOptimize() {

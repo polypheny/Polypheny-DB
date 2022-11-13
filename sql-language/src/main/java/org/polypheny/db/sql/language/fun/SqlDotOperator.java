@@ -46,6 +46,7 @@ import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
+import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 
 
@@ -140,7 +141,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
         final AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), left );
         if ( type.getPolyType() != PolyType.ROW ) {
             return false;
-        } else if ( type.getSqlIdentifier().isStar() ) {
+        } else if ( Util.last( type.getFieldNames() ).equals( "" ) ) {
             return false;
         }
         final AlgDataType operandType = callBinding.getOperandType( 0 );

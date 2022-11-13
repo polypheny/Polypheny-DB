@@ -43,7 +43,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link RexImplicationChecker}.
  */
-public class RexImplicationCheckerTest extends SqlLanguageDependant {
+public class RexImplicationCheckerTest {
 
     // Simple Tests for Operators
     @Test

@@ -54,7 +54,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Unit test for {@link AlgJson}.
  */
-public class AlgWriterTest extends SqlLanguageDependant {
+public class AlgWriterTest {
 
     private static final String XX = "{\n"
             + "  \"Plan\": {\n"

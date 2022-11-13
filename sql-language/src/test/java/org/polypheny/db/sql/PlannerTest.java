@@ -109,7 +109,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link Planner}.
  */
-public class PlannerTest extends SqlLanguageDependant {
+public class PlannerTest {
 
     static {
         Catalog.testMode = true;

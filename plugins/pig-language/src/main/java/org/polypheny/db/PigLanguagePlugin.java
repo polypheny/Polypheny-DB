@@ -56,7 +56,8 @@ public class PigLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        LanguageCrud.getCrud().languageCrud.addLanguage( "pig", PigLanguagePlugin::anyPigQuery, null, PigProcessorImpl::new );
+        LanguageCrud.getCrud().languageCrud.addLanguage( "pig", PigLanguagePlugin::anyPigQuery );
+        QueryLanguage.addQueryLanguage( NamespaceType.RELATIONAL, "pig", null, PigProcessorImpl::new, null );
     }
 
 

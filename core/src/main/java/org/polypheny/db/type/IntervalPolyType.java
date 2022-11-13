@@ -22,10 +22,8 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.nodes.IntervalQualifierImpl;
 
 
 /**
@@ -57,13 +55,14 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     public IntervalQualifier getIntervalQualifier() {
-        return LanguageManager.getInstance().createIntervalQualifier(
+        return new IntervalQualifierImpl();
+        /*return LanguageManager.getInstance().createIntervalQualifier(
                 QueryLanguage.from( "sql" ),
                 intervalQualifier.timeUnitRange.startUnit,
                 intervalQualifier.startPrecision,
                 intervalQualifier.timeUnitRange.endUnit,
                 intervalQualifier.fractionalSecondPrecision,
-                ParserPos.ZERO );
+                ParserPos.ZERO );*/
     }
 
 
@@ -109,13 +108,13 @@ public class IntervalPolyType extends AbstractPolyType {
             }
         }
 
-        AlgDataType intervalType = typeFactory.createSqlIntervalType( LanguageManager.getInstance().createIntervalQualifier(
+        AlgDataType intervalType = typeFactory.createIntervalType( new IntervalQualifierImpl() /*LanguageManager.getInstance().createIntervalQualifier(
                 QueryLanguage.from( "sql" ),
                 thisStart,
                 secondPrec,
                 thisEnd,
                 fracPrec,
-                ParserPos.ZERO ) );
+                ParserPos.ZERO )*/ );
         intervalType = typeFactory.createTypeWithNullability( intervalType, nullable );
         return (IntervalPolyType) intervalType;
     }

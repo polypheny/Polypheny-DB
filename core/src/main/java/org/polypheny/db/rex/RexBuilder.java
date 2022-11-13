@@ -1087,7 +1087,7 @@ public class RexBuilder {
     public RexLiteral makeIntervalLiteral( BigDecimal v, IntervalQualifier intervalQualifier ) {
         return makeLiteral(
                 v,
-                typeFactory.createSqlIntervalType( intervalQualifier ),
+                typeFactory.createIntervalType( intervalQualifier ),
                 intervalQualifier.typeName() );
     }
 

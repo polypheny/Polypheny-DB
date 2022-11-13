@@ -59,7 +59,6 @@ import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.view.MaterializedViewManager;
-import org.polypheny.db.webui.crud.LanguageCrud;
 
 
 @Slf4j
@@ -271,7 +270,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // note dl, while caching the processors works in most cases,
         // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
-        return LanguageCrud.REGISTER.get( language.getSerializedName() ).processorSupplier.get();
+        return language.getProcessorSupplier().get();
     }
 
 

@@ -223,7 +223,7 @@ public interface AlgDataTypeFactory {
      * @param intervalQualifier contains information if it is a year-month or a day-time interval along with precision information
      * @return canonical type descriptor
      */
-    AlgDataType createSqlIntervalType( IntervalQualifier intervalQualifier );
+    AlgDataType createIntervalType( IntervalQualifier intervalQualifier );
 
     /**
      * Infers the return type of a decimal multiplication. Decimal multiplication involves at least one decimal operand and

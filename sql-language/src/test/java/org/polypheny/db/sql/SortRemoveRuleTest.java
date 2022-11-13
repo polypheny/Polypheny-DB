@@ -62,7 +62,7 @@ import org.polypheny.db.util.Util;
 /**
  * Tests the application of the {@link SortRemoveRule}.
  */
-public final class SortRemoveRuleTest extends SqlLanguageDependant {
+public final class SortRemoveRuleTest {
 
     /**
      * The default schema that is used in these tests provides tables sorted on the primary key. Due to this scan operators always come with a {@link AlgCollation} trait.
