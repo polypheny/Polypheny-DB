@@ -23,10 +23,6 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -264,16 +260,6 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
     @Override
     public PolyType getPolyType() {
         return null;
-    }
-
-
-    @Override
-    public Identifier getSqlIdentifier() {
-        PolyType typeName = getPolyType();
-        if ( typeName == null ) {
-            return null;
-        }
-        return LanguageManager.getInstance().createIdentifier( QueryLanguage.from( "sql" ), typeName.name(), ParserPos.ZERO );
     }
 
 

@@ -22,10 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
@@ -343,10 +339,10 @@ public interface AlgDataTypeFactory {
         }
 
 
-        @Override
+        /*@Override
         public FieldInfoBuilder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
             return (FieldInfoBuilder) super.add( name, physicalName, startUnit, startPrecision, endUnit, fractionalSecondPrecision );
-        }
+        }*/
 
 
         @Override
@@ -485,11 +481,11 @@ public interface AlgDataTypeFactory {
         /**
          * Adds a field with an interval type.
          */
-        public Builder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
+        /*public Builder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
             final IntervalQualifier q = LanguageManager.getInstance().createIntervalQualifier( QueryLanguage.from( "sql" ), startUnit, startPrecision, endUnit, fractionalSecondPrecision, ParserPos.ZERO );
             add( name, physicalName, typeFactory.createSqlIntervalType( q ) );
             return this;
-        }
+        }*/
 
 
         /**

@@ -53,7 +53,6 @@ import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.nodes.Call;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptSchema;
@@ -740,12 +739,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         @Override
         public PolyType getPolyType() {
             return delegate.getPolyType();
-        }
-
-
-        @Override
-        public Identifier getSqlIdentifier() {
-            return delegate.getSqlIdentifier();
         }
 
 

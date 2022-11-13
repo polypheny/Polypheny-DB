@@ -16,6 +16,8 @@
 
 package org.polypheny.db.sql;
 
+import static org.polypheny.db.sql.web.SqlCrud.fun;
+
 import java.io.Reader;
 import java.util.Calendar;
 import java.util.List;
@@ -130,7 +132,7 @@ public class SqlLanguageDependant extends LanguageManager {
 
 
     private PolyphenyDbSqlValidator getSqlValidator( Context context, PolyphenyDbCatalogReader catalogReader ) {
-        final OperatorTable opTab0 = context.config().fun( OperatorTable.class, OracleSqlOperatorTable.instance() );
+        final OperatorTable opTab0 = fun( OperatorTable.class, OracleSqlOperatorTable.instance() );
         final OperatorTable opTab = ChainedOperatorTable.of( opTab0, catalogReader );
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Conformance conformance = context.config().conformance();

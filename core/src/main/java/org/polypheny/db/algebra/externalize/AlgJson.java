@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.algebra.externalize;
@@ -37,12 +20,10 @@ package org.polypheny.db.algebra.externalize;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.avatica.AvaticaUtils;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationImpl;
 import org.polypheny.db.algebra.AlgCollations;
@@ -53,17 +34,12 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.OperatorImpl;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -386,111 +362,6 @@ public class AlgJson {
         }
     }
 
-
-    RexNode toRex( AlgInput algInput, Object o ) {
-        final AlgOptCluster cluster = algInput.getCluster();
-        final RexBuilder rexBuilder = cluster.getRexBuilder();
-        if ( o == null ) {
-            return null;
-        } else if ( o instanceof Map ) {
-            Map map = (Map) o;
-            final String op = (String) map.get( "op" );
-            final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
-            if ( op != null ) {
-                final List operands = (List) map.get( "operands" );
-                final Object jsonType = map.get( "type" );
-                final Operator operator = toOp( op, map );
-                final List<RexNode> rexOperands = toRexList( algInput, operands );
-                AlgDataType type;
-                if ( jsonType != null ) {
-                    type = toType( typeFactory, jsonType );
-                } else {
-                    type = rexBuilder.deriveReturnType( operator, rexOperands );
-                }
-                return rexBuilder.makeCall( type, operator, rexOperands );
-            }
-            final Integer input = (Integer) map.get( "input" );
-            if ( input != null ) {
-                List<AlgNode> inputNodes = algInput.getInputs();
-                int i = input;
-                for ( AlgNode inputNode : inputNodes ) {
-                    final AlgDataType rowType = inputNode.getRowType();
-                    if ( i < rowType.getFieldCount() ) {
-                        final AlgDataTypeField field = rowType.getFieldList().get( i );
-                        return rexBuilder.makeInputRef( field.getType(), input );
-                    }
-                    i -= rowType.getFieldCount();
-                }
-                throw new RuntimeException( "input field " + input + " is out of range" );
-            }
-            final String field = (String) map.get( "field" );
-            if ( field != null ) {
-                final Object jsonExpr = map.get( "expr" );
-                final RexNode expr = toRex( algInput, jsonExpr );
-                return rexBuilder.makeFieldAccess( expr, field, true );
-            }
-            final String correl = (String) map.get( "correl" );
-            if ( correl != null ) {
-                final Object jsonType = map.get( "type" );
-                AlgDataType type = toType( typeFactory, jsonType );
-                return rexBuilder.makeCorrel( type, new CorrelationId( correl ) );
-            }
-            if ( map.containsKey( "literal" ) ) {
-                final Object literal = map.get( "literal" );
-                final PolyType polyType = Util.enumVal( PolyType.class, (String) map.get( "type" ) );
-                if ( literal == null ) {
-                    return rexBuilder.makeNullLiteral( typeFactory.createPolyType( polyType ) );
-                }
-                return toRex( algInput, literal );
-            }
-            throw new UnsupportedOperationException( "cannot convert to rex " + o );
-        } else if ( o instanceof Boolean ) {
-            return rexBuilder.makeLiteral( (Boolean) o );
-        } else if ( o instanceof String ) {
-            return rexBuilder.makeLiteral( (String) o );
-        } else if ( o instanceof Number ) {
-            final Number number = (Number) o;
-            if ( number instanceof Double || number instanceof Float ) {
-                return rexBuilder.makeApproxLiteral( BigDecimal.valueOf( number.doubleValue() ) );
-            } else {
-                return rexBuilder.makeExactLiteral( BigDecimal.valueOf( number.longValue() ) );
-            }
-        } else {
-            throw new UnsupportedOperationException( "cannot convert to rex " + o );
-        }
-    }
-
-
-    private List<RexNode> toRexList( AlgInput algInput, List operands ) {
-        final List<RexNode> list = new ArrayList<>();
-        for ( Object operand : operands ) {
-            list.add( toRex( algInput, operand ) );
-        }
-        return list;
-    }
-
-
-    private Operator toOp( String op, Map<String, Object> map ) {
-        // TODO: build a map, for more efficient lookup
-        // TODO: look up based on Kind
-        final List<Operator> operatorList = LanguageManager.getInstance().getStdOperatorTable().getOperatorList();
-        for ( Operator operator : operatorList ) {
-            if ( operator.getName().equals( op ) ) {
-                return operator;
-            }
-        }
-
-        String class_ = (String) map.get( "class" );
-        if ( class_ != null ) {
-            return AvaticaUtils.instantiatePlugin( OperatorImpl.class, class_ );
-        }
-        return null;
-    }
-
-
-    AggFunction toAggregation( String agg, Map<String, Object> map ) {
-        return (AggFunction) toOp( agg, map );
-    }
 
 
     private String toJson( Operator operator ) {

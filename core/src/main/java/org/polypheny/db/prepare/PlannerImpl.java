@@ -23,12 +23,8 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.languages.NodeToAlgConverter;
-import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -54,7 +50,7 @@ import org.polypheny.db.util.Util;
  */
 public class PlannerImpl implements Planner {
 
-    private final OperatorTable operatorTable;
+    // private final OperatorTable operatorTable;
     private final ImmutableList<Program> programs;
     private final FrameworkConfig config;
 
@@ -63,9 +59,9 @@ public class PlannerImpl implements Planner {
      */
     private final ImmutableList<AlgTraitDef> traitDefs;
 
-    private final ParserConfig parserConfig;
-    private final NodeToAlgConverter.Config sqlToRelConverterConfig;
-    private final RexConvertletTable convertletTable;
+    //private final ParserConfig parserConfig;
+    //private final NodeToAlgConverter.Config sqlToRelConverterConfig;
+    //private final RexConvertletTable convertletTable;
 
     private State state;
 
@@ -93,13 +89,13 @@ public class PlannerImpl implements Planner {
     public PlannerImpl( FrameworkConfig config ) {
         this.config = config;
         this.defaultSchema = config.getDefaultSchema();
-        this.operatorTable = config.getOperatorTable();
+        // this.operatorTable = config.getOperatorTable();
         this.programs = config.getPrograms();
-        this.parserConfig = config.getParserConfig();
-        this.sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
+        // this.parserConfig = config.getParserConfig();
+        // this.sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
         this.state = State.STATE_0_CLOSED;
         this.traitDefs = config.getTraitDefs();
-        this.convertletTable = config.getConvertletTable();
+        //this.convertletTable = config.getConvertletTable();
         this.executor = config.getExecutor();
         reset();
     }
@@ -167,6 +163,12 @@ public class PlannerImpl implements Planner {
                 planner.addAlgTraitDef( def );
             }
         }
+    }
+
+
+    @Override
+    public Node parse( String sql ) throws NodeParseException {
+        throw new UnsupportedOperationException( "This operation is not longer supported and it shouldn't." );
     }
 
 

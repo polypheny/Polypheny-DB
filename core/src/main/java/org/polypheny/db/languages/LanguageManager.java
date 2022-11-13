@@ -21,10 +21,8 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
@@ -47,14 +45,6 @@ public abstract class LanguageManager {
 
         return instance;
     }
-
-    public abstract RexConvertletTable getStandardConvertlet();
-
-    public abstract OperatorTable getStdOperatorTable();
-
-    public abstract OperatorTable getOracleOperatorTable();
-
-    public abstract Identifier createIdentifier( QueryLanguage language, String name, ParserPos zero );
 
     public abstract IntervalQualifier createIntervalQualifier(
             QueryLanguage language,

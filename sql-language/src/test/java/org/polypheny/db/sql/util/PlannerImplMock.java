@@ -24,14 +24,12 @@ import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -45,12 +43,14 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
+import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -67,8 +67,6 @@ import org.polypheny.db.util.Util;
  * Implementation of {@link Planner}.
  */
 public class PlannerImplMock implements Planner {
-
-    private final OperatorTable operatorTable;
     private final ImmutableList<Program> programs;
     private final FrameworkConfig config;
 
@@ -79,7 +77,7 @@ public class PlannerImplMock implements Planner {
 
     private final ParserConfig parserConfig;
     private final NodeToAlgConverter.Config sqlToRelConverterConfig;
-    private final RexConvertletTable convertletTable;
+    //private final RexConvertletTable convertletTable;
 
     private State state;
 
@@ -107,13 +105,12 @@ public class PlannerImplMock implements Planner {
     public PlannerImplMock( FrameworkConfig config ) {
         this.config = config;
         this.defaultSchema = config.getDefaultSchema();
-        this.operatorTable = config.getOperatorTable();
         this.programs = config.getPrograms();
         this.parserConfig = config.getParserConfig();
         this.sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
         this.state = State.STATE_0_CLOSED;
         this.traitDefs = config.getTraitDefs();
-        this.convertletTable = config.getConvertletTable();
+        //this.convertletTable = config.getConvertletTable();
         this.executor = config.getExecutor();
         reset();
     }
@@ -211,7 +208,7 @@ public class PlannerImplMock implements Planner {
         ensure( State.STATE_3_PARSED );
         final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
-        this.validator = new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
+        this.validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
         try {
             validatedSqlNode = validator.validate( sqlNode );
@@ -255,7 +252,7 @@ public class PlannerImplMock implements Planner {
                         .trimUnusedFields( false )
                         .convertTableAccess( false )
                         .build();
-        final NodeToAlgConverter sqlToRelConverter = getSqlToRelConverter( (SqlValidator) validator, createCatalogReader(), cluster, (SqlRexConvertletTable) convertletTable, config );
+        final NodeToAlgConverter sqlToRelConverter = getSqlToRelConverter( (SqlValidator) validator, createCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
         root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
         root = root.withAlg( sqlToRelConverter.flattenTypes( root.alg, true ) );
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );

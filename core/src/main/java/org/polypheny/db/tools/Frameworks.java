@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -44,10 +27,8 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptSchema;
@@ -228,7 +209,7 @@ public class Frameworks {
      */
     public static class ConfigBuilder {
 
-        private RexConvertletTable convertletTable;
+        //private RexConvertletTable convertletTable;
         private OperatorTable operatorTable;
         private ImmutableList<Program> programs;
         private Context context;
@@ -246,8 +227,8 @@ public class Frameworks {
          * Creates a ConfigBuilder, initializing to defaults.
          */
         public ConfigBuilder() {
-            convertletTable = LanguageManager.getInstance().getStandardConvertlet();
-            operatorTable = LanguageManager.getInstance().getStdOperatorTable();
+            // convertletTable = LanguageManager.getInstance().getStandardConvertlet();
+            // operatorTable = LanguageManager.getInstance().getStdOperatorTable();
             programs = ImmutableList.of();
             parserConfig = ParserConfig.DEFAULT;
             sqlToRelConverterConfig = NodeToAlgConverter.Config.DEFAULT;
@@ -259,8 +240,8 @@ public class Frameworks {
          * Creates a ConfigBuilder, initializing from an existing config.
          */
         public ConfigBuilder( FrameworkConfig config ) {
-            convertletTable = config.getConvertletTable();
-            operatorTable = config.getOperatorTable();
+            //convertletTable = config.getConvertletTable();
+            // operatorTable = config.getOperatorTable();
             programs = config.getPrograms();
             context = config.getContext();
             traitDefs = config.getTraitDefs();
@@ -277,7 +258,7 @@ public class Frameworks {
         public FrameworkConfig build() {
             return new StdFrameworkConfig(
                     context,
-                    convertletTable,
+                    //convertletTable,
                     operatorTable,
                     programs,
                     traitDefs,
@@ -299,12 +280,6 @@ public class Frameworks {
 
         public ConfigBuilder executor( RexExecutor executor ) {
             this.executor = Objects.requireNonNull( executor );
-            return this;
-        }
-
-
-        public ConfigBuilder convertletTable( RexConvertletTable convertletTable ) {
-            this.convertletTable = Objects.requireNonNull( convertletTable );
             return this;
         }
 
@@ -397,7 +372,7 @@ public class Frameworks {
     public static class StdFrameworkConfig implements FrameworkConfig {
 
         private final Context context;
-        private final RexConvertletTable convertletTable;
+        //private final RexConvertletTable convertletTable;
         private final OperatorTable operatorTable;
         private final ImmutableList<Program> programs;
         private final ImmutableList<AlgTraitDef> traitDefs;
@@ -412,7 +387,7 @@ public class Frameworks {
 
         public StdFrameworkConfig(
                 Context context,
-                RexConvertletTable convertletTable,
+                //RexConvertletTable convertletTable,
                 OperatorTable operatorTable,
                 ImmutableList<Program> programs,
                 ImmutableList<AlgTraitDef> traitDefs,
@@ -424,7 +399,7 @@ public class Frameworks {
                 RexExecutor executor,
                 org.polypheny.db.prepare.Context prepareContext ) {
             this.context = context;
-            this.convertletTable = convertletTable;
+            //this.convertletTable = convertletTable;
             this.operatorTable = operatorTable;
             this.programs = programs;
             this.traitDefs = traitDefs;
@@ -481,20 +456,8 @@ public class Frameworks {
 
 
         @Override
-        public RexConvertletTable getConvertletTable() {
-            return convertletTable;
-        }
-
-
-        @Override
         public Context getContext() {
             return context;
-        }
-
-
-        @Override
-        public OperatorTable getOperatorTable() {
-            return operatorTable;
         }
 
 

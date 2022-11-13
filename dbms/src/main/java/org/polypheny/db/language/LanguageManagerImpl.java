@@ -20,62 +20,26 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.languages.UnsupportedLanguageOperation;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.SqlFunction;
-import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlIntervalQualifier;
-import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlBitOpAggFunction;
 import org.polypheny.db.sql.language.fun.SqlMinMaxAggFunction;
-import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
 import org.polypheny.db.sql.language.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
-import org.polypheny.db.util.StandardConvertletTable;
 
 
 public class LanguageManagerImpl extends LanguageManager {
 
-
-
-
-    @Override
-    public RexConvertletTable getStandardConvertlet() {
-        return StandardConvertletTable.INSTANCE;
-    }
-
-
-    @Override
-    public OperatorTable getStdOperatorTable() {
-        return SqlStdOperatorTable.instance();
-    }
-
-
-    @Override
-    public OperatorTable getOracleOperatorTable() {
-        return OracleSqlOperatorTable.instance();
-    }
-
-
-    @Override
-    public Identifier createIdentifier( QueryLanguage language, String name, ParserPos zero ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new SqlIdentifier( name, zero );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
 
 
     @Override

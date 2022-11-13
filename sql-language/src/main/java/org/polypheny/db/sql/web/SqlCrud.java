@@ -37,7 +37,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -54,11 +57,13 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.sql.SqlProcessorImpl;
 import org.polypheny.db.sql.SqlRegisterer;
+import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.web.SchemaToJsonMapper.JsonColumn;
@@ -116,8 +121,40 @@ public class SqlCrud {
     }
 
 
+    public static <T> T fun( Class<T> operatorTableClass, T defaultOperatorTable ) {
+        final String fun = PolyphenyDbConnectionProperty.FUN.wrap( new Properties() ).getString();
+        if ( fun == null || fun.equals( "" ) || fun.equals( "standard" ) ) {
+            return defaultOperatorTable;
+        }
+        final Collection<OperatorTable> tables = new LinkedHashSet<>();
+        for ( String s : fun.split( "," ) ) {
+            operatorTable( s, tables );
+        }
+        tables.add( SqlStdOperatorTable.instance() );
+        return operatorTableClass.cast( ChainedOperatorTable.of( tables.toArray( new OperatorTable[0] ) ) );
+    }
+
+
+    public static void operatorTable( String s, Collection<OperatorTable> tables ) {
+        switch ( s ) {
+            case "standard":
+                tables.add( SqlStdOperatorTable.instance() );
+                return;
+            case "oracle":
+                tables.add( OracleSqlOperatorTable.instance() );
+                return;
+            //case "spatial":
+            //    tables.add( PolyphenyDbCatalogReader.operatorTable( GeoFunctions.class.getName() ) );
+            //    return;
+            default:
+                throw new IllegalArgumentException( "Unknown operator table: " + s );
+        }
+    }
+
+
     private static PolyphenyDbSqlValidator getSqlValidator( org.polypheny.db.prepare.Context context, PolyphenyDbCatalogReader catalogReader ) {
-        final OperatorTable opTab0 = context.config().fun( OperatorTable.class, SqlStdOperatorTable.instance() );
+
+        final OperatorTable opTab0 = fun( OperatorTable.class, SqlStdOperatorTable.instance() );
         final OperatorTable opTab = ChainedOperatorTable.of( opTab0, catalogReader );
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Conformance conformance = context.config().conformance();
