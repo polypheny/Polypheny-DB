@@ -45,6 +45,7 @@ import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlLanguageDependant;
+import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -79,7 +80,7 @@ public class LexCaseSensitiveTest extends SqlLanguageDependant {
                         0,
                         null ) )
                 .build();
-        return Frameworks.getPlanner( config );
+        return new PlannerImplMock( config );
     }
 
 

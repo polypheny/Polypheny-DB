@@ -19,8 +19,6 @@ package org.polypheny.db.language;
 import java.io.Reader;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -30,7 +28,6 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.languages.UnsupportedLanguageOperation;
@@ -38,8 +35,6 @@ import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
@@ -56,16 +51,11 @@ import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.util.SqlString;
-import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
-import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
-import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.StandardConvertletTable;
-import org.polypheny.db.webui.crud.LanguageCrud;
-import org.slf4j.Logger;
 
 
 public class LanguageManagerImpl extends LanguageManager {
@@ -86,27 +76,6 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Validator createPolyphenyValidator(
-            QueryLanguage language,
-            OperatorTable operatorTable,
-            PolyphenyDbCatalogReader catalogReader,
-            JavaTypeFactory typeFactory,
-            Conformance conformance ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
-    public ParserFactory getFactory( QueryLanguage language ) {
-        return LanguageCrud.REGISTER.get( language.getSerializedName() ).factory;
-    }
-
-
-    @Override
     public Parser getParser( QueryLanguage language, Reader reader, ParserConfig parserConfig ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
             SqlAbstractParserImpl parser = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( reader );
@@ -120,16 +89,6 @@ public class LanguageManagerImpl extends LanguageManager {
     @Override
     public OperatorTable getOracleOperatorTable() {
         return OracleSqlOperatorTable.instance();
-    }
-
-
-    @Override
-    public Logger getLogger( QueryLanguage language, Class<AlgNode> algNodeClass ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return SqlToAlgConverter.SQL2REL_LOGGER;
-        }
-
-        throw new UnsupportedLanguageOperation( language );
     }
 
 

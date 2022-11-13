@@ -24,10 +24,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
 import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser;
@@ -50,7 +47,6 @@ import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -193,7 +189,7 @@ public class PlannerImpl implements Planner {
     @Override
     public Node validate( Node sqlNode ) throws ValidationException {
         ensure( State.STATE_3_PARSED );
-        final Conformance conformance = conformance();
+        /*final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
         this.validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.from( "sql" ), operatorTable, catalogReader, typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
@@ -203,7 +199,8 @@ public class PlannerImpl implements Planner {
             throw new ValidationException( e );
         }
         state = State.STATE_4_VALIDATED;
-        return validatedSqlNode;
+        return validatedSqlNode;*/
+        throw new UnsupportedOperationException( "This operation is not longer supported and it shouldn't." );
     }
 
 
@@ -219,12 +216,12 @@ public class PlannerImpl implements Planner {
     }
 
 
-    @Override
+    /*@Override
     public Pair<Node, AlgDataType> validateAndGetType( Node sqlNode ) throws ValidationException {
         final Node validatedNode = this.validate( sqlNode );
         final AlgDataType type = this.validator.getValidatedNodeType( validatedNode );
         return Pair.of( validatedNode, type );
-    }
+    }*/
 
 
     @Override

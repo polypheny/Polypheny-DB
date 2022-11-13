@@ -19,8 +19,6 @@ package org.polypheny.db.languages;
 import java.io.Reader;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -31,14 +29,10 @@ import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
-import org.polypheny.db.util.Conformance;
-import org.slf4j.Logger;
 
 /**
  * LanguageManager is responsible for providing a way of accessing objects and functions of the different available languages.
@@ -61,20 +55,9 @@ public abstract class LanguageManager {
 
     public abstract OperatorTable getStdOperatorTable();
 
-    public abstract Validator createPolyphenyValidator(
-            QueryLanguage language,
-            OperatorTable operatorTable,
-            PolyphenyDbCatalogReader catalogReader,
-            JavaTypeFactory typeFactory,
-            Conformance conformance );
-
-    public abstract ParserFactory getFactory( QueryLanguage language );
-
     public abstract Parser getParser( QueryLanguage language, Reader reader, ParserConfig sqlParserConfig );
 
     public abstract OperatorTable getOracleOperatorTable();
-
-    public abstract Logger getLogger( QueryLanguage language, Class<AlgNode> algNodeClass );
 
     public abstract Identifier createIdentifier( QueryLanguage language, String name, ParserPos zero );
 

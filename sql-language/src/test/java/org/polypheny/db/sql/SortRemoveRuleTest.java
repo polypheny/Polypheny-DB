@@ -49,6 +49,7 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schemas.HrClusteredSchema;
+import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
@@ -87,7 +88,7 @@ public final class SortRemoveRuleTest extends SqlLanguageDependant {
                         0,
                         null ) )
                 .build();
-        Planner planner = Frameworks.getPlanner( config );
+        Planner planner = new PlannerImplMock( config );
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
         AlgRoot planRoot = planner.alg( validate );

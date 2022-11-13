@@ -25,10 +25,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
 import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
@@ -48,6 +45,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
@@ -59,7 +57,6 @@ import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -204,7 +201,7 @@ public class PlannerImplMock implements Planner {
         ensure( State.STATE_3_PARSED );
         final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
-        this.validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.from( "sql" ), operatorTable, catalogReader, typeFactory, conformance );
+        this.validator = new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
         try {
             validatedSqlNode = validator.validate( sqlNode );
@@ -228,12 +225,12 @@ public class PlannerImplMock implements Planner {
     }
 
 
-    @Override
+    /*@Override
     public Pair<Node, AlgDataType> validateAndGetType( Node sqlNode ) throws ValidationException {
         final Node validatedNode = this.validate( sqlNode );
         final AlgDataType type = this.validator.getValidatedNodeType( validatedNode );
         return Pair.of( validatedNode, type );
-    }
+    }*/
 
 
     @Override

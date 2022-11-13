@@ -95,7 +95,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Interpreters;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
@@ -355,9 +354,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Factory method for default convertlet table.
      */
-    protected RexConvertletTable createConvertletTable() {
+    /*protected RexConvertletTable createConvertletTable() {
         return LanguageManager.getInstance().getStandardConvertlet();
-    }
+    }*/
 
 
     /**
