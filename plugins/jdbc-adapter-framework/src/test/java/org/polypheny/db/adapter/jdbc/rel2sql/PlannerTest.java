@@ -54,7 +54,6 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.PlannerTest.MockJdbcScan;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
@@ -157,7 +156,7 @@ public class PlannerTest {
 
 
     /**
-     * Rule to convert a {@link EnumerableScan} to an {@link org.polypheny.db.sql.PlannerTest.MockJdbcScan}.
+     * Rule to convert a {@link EnumerableScan} to an {@link MockJdbcScan}.
      */
     public static class MockJdbcTableRule extends ConverterRule {
 

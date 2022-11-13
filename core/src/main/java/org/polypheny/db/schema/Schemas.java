@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.schema;
@@ -64,7 +47,6 @@ import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepare;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.ParseResult;
 import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
 import org.polypheny.db.schema.graph.QueryableGraph;
 import org.polypheny.db.transaction.Statement;
@@ -295,7 +277,7 @@ public final class Schemas {
     /**
      * Parses and validates a SQL query. For use within Polypheny-DB only.
      */
-    public static ParseResult parse( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
+    /*public static ParseResult parse( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
         final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
         final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues = ImmutableMap.of();
         final Context context = makeContext( schema, schemaPath, null, propValues );
@@ -305,13 +287,13 @@ public final class Schemas {
         } finally {
             PolyphenyDbPrepare.Dummy.pop( context );
         }
-    }
+    }*/
 
 
     /**
      * Parses and validates a SQL query and converts to relational algebra. For use within Polypheny-DB only.
      */
-    public static PolyphenyDbPrepare.ConvertResult convert( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
+    /*public static PolyphenyDbPrepare.ConvertResult convert( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
         final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
         final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues = ImmutableMap.of();
         final Context context = makeContext( schema, schemaPath, null, propValues );
@@ -321,7 +303,7 @@ public final class Schemas {
         } finally {
             PolyphenyDbPrepare.Dummy.pop( context );
         }
-    }
+    }*/
 
 
     /**

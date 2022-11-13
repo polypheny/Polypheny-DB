@@ -29,7 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.AvaticaType;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
@@ -37,7 +36,6 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockStatement;
@@ -53,21 +51,17 @@ import org.polypheny.db.adapter.enumerable.EnumerableAlg;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
@@ -102,9 +96,7 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
-import org.polypheny.db.languages.NodeToAlgConverter.ConfigBuilder;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.RexConvertletTable;
@@ -121,8 +113,6 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.hep.HepPlanner;
-import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedExplain;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
@@ -138,7 +128,6 @@ import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -260,22 +249,22 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    @Override
+    /*@Override
     public ParseResult parse( Context context, String sql ) {
         return parse_( context, sql, false, false, false );
-    }
+    }*/
 
 
-    @Override
+    /*@Override
     public ConvertResult convert( Context context, String sql ) {
         return (ConvertResult) parse_( context, sql, true, false, false );
-    }
+    }*/
 
 
     /**
-     * Shared implementation for {@link #parse} and {@link #convert}.
+     * Shared implementation for {e} and {}.
      */
-    private ParseResult parse_( Context context, String sql, boolean convert, boolean analyze, boolean fail ) {
+    /*private ParseResult parse_( Context context, String sql, boolean convert, boolean analyze, boolean fail ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader(
                 context.getRootSchema(),
@@ -294,10 +283,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             return convert_( context, sql, analyze, fail, catalogReader, validator, sqlNode1 );
         }
         return new ParseResult( this, validator, sql, sqlNode1, validator.getValidatedNodeType( sqlNode1 ) );
-    }
+    }*/
 
 
-    private ParseResult convert_( Context context, String sql, boolean analyze, boolean fail, PolyphenyDbCatalogReader catalogReader, Validator validator, Node sqlNode1 ) {
+    /*private ParseResult convert_( Context context, String sql, boolean analyze, boolean fail, PolyphenyDbCatalogReader catalogReader, Validator validator, Node sqlNode1 ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Convention resultConvention =
                 enableBindable
@@ -325,7 +314,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
         final AlgRoot root = converter.convertQuery( sqlNode1, false, true );
         return new ConvertResult( this, validator, sql, sqlNode1, validator.getValidatedNodeType( sqlNode1 ), root );
-    }
+    }*/
 
 
     @Override
@@ -842,20 +831,20 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
-        public PreparedResult prepareQueryable( final Queryable queryable, AlgDataType resultType ) {
+        /*public PreparedResult prepareQueryable( final Queryable queryable, AlgDataType resultType ) {
             return prepare_( () -> {
                 final AlgOptCluster cluster = prepare.createCluster( planner, rexBuilder );
                 return new LixToAlgTranslator( cluster ).translate( queryable );
             }, resultType );
-        }
+        }*/
 
 
-        public PreparedResult prepareRel( final AlgNode alg ) {
+        /*public PreparedResult prepareRel( final AlgNode alg ) {
             return prepare_( () -> alg, alg.getRowType() );
-        }
+        }*/
 
 
-        private PreparedResult prepare_( Supplier<AlgNode> fn, AlgDataType resultType ) {
+        /*private PreparedResult prepare_( Supplier<AlgNode> fn, AlgDataType resultType ) {
             Class runtimeContextClass = Object.class;
             init( runtimeContextClass );
 
@@ -889,14 +878,14 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             }
 
             return implement( root );
-        }
+        }*/
 
 
-        @Override
+        /*@Override
         protected NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config ) {
             final AlgOptCluster cluster = prepare.createCluster( planner, rexBuilder );
             return LanguageManager.getInstance().createToRelConverter( QueryLanguage.from( "sql" ), validator, catalogReader, cluster, convertletTable, config );
-        }
+        }*/
 
 
         @Override

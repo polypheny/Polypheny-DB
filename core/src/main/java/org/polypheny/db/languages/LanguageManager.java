@@ -32,9 +32,7 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -58,15 +56,6 @@ public abstract class LanguageManager {
 
         return instance;
     }
-
-
-    public abstract NodeToAlgConverter createToRelConverter(
-            QueryLanguage sql,
-            Validator validator,
-            CatalogReader catalogReader,
-            AlgOptCluster cluster,
-            RexConvertletTable convertletTable,
-            NodeToAlgConverter.Config config );
 
     public abstract RexConvertletTable getStandardConvertlet();
 

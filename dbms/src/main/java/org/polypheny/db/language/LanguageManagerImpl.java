@@ -28,8 +28,6 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.NodeToAlgConverter;
-import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.ParserFactory;
@@ -41,9 +39,7 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
@@ -61,15 +57,13 @@ import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
-import org.polypheny.db.sql.language.validate.SqlValidator;
-import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
-import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.StandardConvertletTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.slf4j.Logger;
 
@@ -77,32 +71,6 @@ import org.slf4j.Logger;
 public class LanguageManagerImpl extends LanguageManager {
 
 
-
-
-    @Override
-    public NodeToAlgConverter createToRelConverter(
-            QueryLanguage language,
-            Validator validator,
-            CatalogReader catalogReader,
-            AlgOptCluster cluster,
-            RexConvertletTable convertletTable,
-            Config config ) {
-        if ( language == QueryLanguage.from( "sql" ) ) {
-            return getSqlToRelConverter( (SqlValidator) validator, catalogReader, cluster, (SqlRexConvertletTable) convertletTable, config );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    private SqlToAlgConverter getSqlToRelConverter(
-            SqlValidator validator,
-            CatalogReader catalogReader,
-            AlgOptCluster cluster,
-            SqlRexConvertletTable convertletTable,
-            Config config ) {
-        return new SqlToAlgConverter( validator, catalogReader, cluster, convertletTable, config );
-    }
 
 
     @Override

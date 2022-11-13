@@ -67,6 +67,7 @@ import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -130,7 +131,7 @@ public class AlgToSqlConverterTest extends SqlLanguageDependant {
                         0,
                         null ) )
                 .build();
-        return Frameworks.getPlanner( config );
+        return new PlannerImplMock( config );
     }
 
 

@@ -20,14 +20,12 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -64,10 +62,8 @@ import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlIntervalQualifier;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlBitOpAggFunction;
 import org.polypheny.db.sql.language.fun.SqlMinMaxAggFunction;
-import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
 import org.polypheny.db.sql.language.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
@@ -81,7 +77,6 @@ import org.polypheny.db.sql.language.validate.SqlUserDefinedTableMacro;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
-import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
@@ -258,16 +253,6 @@ public class SqlTypeUtil {
     }
 
 
-    public RexConvertletTable getStandardConvertlet() {
-        return StandardConvertletTable.INSTANCE;
-    }
-
-
-    public OperatorTable getStdOperatorTable() {
-        return SqlStdOperatorTable.instance();
-    }
-
-
     public Validator createPolyphenyValidator(
             QueryLanguage language,
             OperatorTable operatorTable,
@@ -289,11 +274,6 @@ public class SqlTypeUtil {
         }
 
         throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    public OperatorTable getOracleOperatorTable() {
-        return OracleSqlOperatorTable.instance();
     }
 
 
@@ -547,27 +527,6 @@ public class SqlTypeUtil {
             }
             return toSql( typeFactory, type );
         };
-    }
-
-
-    public static void lookupOperatorOverloads( PolyphenyDbCatalogReader polyphenyDbCatalogReader, final Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
-        if ( syntax != Syntax.FUNCTION ) {
-            return;
-        }
-
-        final Predicate<Function> predicate;
-        if ( category == null ) {
-            predicate = function -> true;
-        } else if ( category.isTableFunction() ) {
-            predicate = function -> function instanceof TableMacro || function instanceof TableFunction;
-        } else {
-            predicate = function -> !(function instanceof TableMacro || function instanceof TableFunction);
-        }
-        polyphenyDbCatalogReader.getFunctionsFrom( opName.getNames() )
-                .stream()
-                .filter( predicate )
-                .map( function -> toOp( typeFactory, opName, function ) )
-                .forEachOrdered( operatorList::add );
     }
 
 }

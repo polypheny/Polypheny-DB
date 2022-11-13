@@ -12,23 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package org.polypheny.db.prepare;
@@ -54,7 +37,6 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.NodeToAlgConverter;
-import org.polypheny.db.nodes.Explain;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
@@ -201,12 +183,12 @@ public abstract class Prepare {
     protected abstract PreparedResult implement( AlgRoot root );
 
 
-    public PreparedResult prepareSql( Node sqlQuery, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
+    /*public PreparedResult prepareSql( Node sqlQuery, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
         return prepareSql( sqlQuery, sqlQuery, runtimeContextClass, validator, needsValidation );
-    }
+    }*/
 
 
-    public PreparedResult prepareSql( Node sqlQuery, Node sqlNodeOriginal, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
+    /*public PreparedResult prepareSql( Node sqlQuery, Node sqlNodeOriginal, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
         init( runtimeContextClass );
 
         final NodeToAlgConverter.Config config =
@@ -291,7 +273,7 @@ public abstract class Prepare {
             root = root.withKind( sqlNodeOriginal.getKind() );
         }
         return implement( root );
-    }
+    }*/
 
 
     protected LogicalModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
@@ -316,7 +298,7 @@ public abstract class Prepare {
     /**
      * Protected method to allow subclasses to override construction of SqlToRelConverter.
      */
-    protected abstract NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config );
+    //protected abstract NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config );
 
     public abstract AlgNode flattenTypes( AlgNode rootRel, boolean restructure );
 
@@ -327,10 +309,10 @@ public abstract class Prepare {
      * Walks over a tree of relational expressions, replacing each {@link AlgNode} with a 'slimmed down' relational
      * expression that projects only the columns required by its consumer.
      *
-     * @param root Root of relational expression tree
+     * @param //root Root of relational expression tree
      * @return Trimmed relational expression
      */
-    protected AlgRoot trimUnusedFields( AlgRoot root ) {
+    /*protected AlgRoot trimUnusedFields( AlgRoot root ) {
         final NodeToAlgConverter.Config config = NodeToAlgConverter.configBuilder()
                 .trimUnusedFields( shouldTrim( root.alg ) )
                 .expand( THREAD_EXPAND.get() )
@@ -339,7 +321,7 @@ public abstract class Prepare {
         final boolean ordered = !root.collation.getFieldCollations().isEmpty();
         final boolean dml = Kind.DML.contains( root.kind );
         return root.withAlg( converter.trimUnusedFields( dml || ordered, root.alg ) );
-    }
+    }*/
 
 
     private boolean shouldTrim( AlgNode rootRel ) {
@@ -486,7 +468,7 @@ public abstract class Prepare {
 
 
     /**
-     * Result of a call to {@link Prepare#prepareSql}.
+     * Result of a call to {}.
      */
     public interface PreparedResult {
 

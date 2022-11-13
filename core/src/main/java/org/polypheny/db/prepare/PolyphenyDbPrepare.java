@@ -40,9 +40,9 @@ public interface PolyphenyDbPrepare {
     Function0<PolyphenyDbPrepare> DEFAULT_FACTORY = PolyphenyDbPrepareImpl::new;
     ThreadLocal<Deque<Context>> THREAD_CONTEXT_STACK = ThreadLocal.withInitial( ArrayDeque::new );
 
-    ParseResult parse( Context context, String sql );
+    //ParseResult parse( Context context, String sql );
 
-    ConvertResult convert( Context context, String sql );
+    //ConvertResult convert( Context context, String sql );
 
     /**
      * Executes a DDL statement.

@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.prepare;
+package org.polypheny.db.sql.util;
 
 
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
@@ -30,19 +31,27 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.language.validate.SqlValidator;
+import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
+import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -57,7 +66,7 @@ import org.polypheny.db.util.Util;
 /**
  * Implementation of {@link Planner}.
  */
-public class PlannerImpl implements Planner {
+public class PlannerImplMock implements Planner {
 
     private final OperatorTable operatorTable;
     private final ImmutableList<Program> programs;
@@ -93,9 +102,9 @@ public class PlannerImpl implements Planner {
 
     /**
      * Creates a planner. Not a public API; call
-     * {@link org.polypheny.db.tools.Frameworks#getPlanner} instead.
+     * {@link Frameworks#getPlanner} instead.
      */
-    public PlannerImpl( FrameworkConfig config ) {
+    public PlannerImplMock( FrameworkConfig config ) {
         this.config = config;
         this.defaultSchema = config.getDefaultSchema();
         this.operatorTable = config.getOperatorTable();
@@ -230,7 +239,7 @@ public class PlannerImpl implements Planner {
     @Override
     public AlgRoot alg( Node sql ) throws AlgConversionException {
         ensure( State.STATE_4_VALIDATED );
-        /*assert validatedSqlNode != null;
+        assert validatedSqlNode != null;
         final RexBuilder rexBuilder = createRexBuilder();
         final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
         final NodeToAlgConverter.Config config =
@@ -239,14 +248,23 @@ public class PlannerImpl implements Planner {
                         .trimUnusedFields( false )
                         .convertTableAccess( false )
                         .build();
-        final NodeToAlgConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.from( "sql" ), validator, createCatalogReader(), cluster, convertletTable, config );
+        final NodeToAlgConverter sqlToRelConverter = getSqlToRelConverter( (SqlValidator) validator, createCatalogReader(), cluster, (SqlRexConvertletTable) convertletTable, config );
         root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
         root = root.withAlg( sqlToRelConverter.flattenTypes( root.alg, true ) );
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
         root = root.withAlg( AlgDecorrelator.decorrelateQuery( root.alg, algBuilder ) );
-        state = State.STATE_5_CONVERTED;*/
-        throw new UnsupportedOperationException( "This operation is not longer possible, and shouldn't." );
-        //return root;
+        state = State.STATE_5_CONVERTED;
+        return root;
+    }
+
+
+    private SqlToAlgConverter getSqlToRelConverter(
+            SqlValidator validator,
+            CatalogReader catalogReader,
+            AlgOptCluster cluster,
+            SqlRexConvertletTable convertletTable,
+            Config config ) {
+        return new SqlToAlgConverter( validator, catalogReader, cluster, convertletTable, config );
     }
 
 
@@ -300,20 +318,20 @@ public class PlannerImpl implements Planner {
     private enum State {
         STATE_0_CLOSED {
             @Override
-            void from( PlannerImpl planner ) {
+            void from( PlannerImplMock planner ) {
                 planner.close();
             }
         },
         STATE_1_RESET {
             @Override
-            void from( PlannerImpl planner ) {
+            void from( PlannerImplMock planner ) {
                 planner.ensure( STATE_0_CLOSED );
                 planner.reset();
             }
         },
         STATE_2_READY {
             @Override
-            void from( PlannerImpl planner ) {
+            void from( PlannerImplMock planner ) {
                 STATE_1_RESET.from( planner );
                 planner.ready();
             }
@@ -326,7 +344,7 @@ public class PlannerImpl implements Planner {
         /**
          * Moves planner's state to this state. This must be a higher state.
          */
-        void from( PlannerImpl planner ) {
+        void from( PlannerImplMock planner ) {
             throw new IllegalArgumentException( "cannot move from " + planner.state + " to " + this );
         }
     }
