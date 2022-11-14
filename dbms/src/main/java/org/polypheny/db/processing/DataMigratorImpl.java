@@ -374,7 +374,7 @@ public class DataMigratorImpl implements DataMigrator {
 
                 List<Object> mergedValueList = null;
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
-                    if (v.getValue().get( 0 ) instanceof  String) {
+                    if ( !primaryKeyColumns.stream().map(c -> c.id).collect(Collectors.toList()).contains( v.getKey() ) ) {
                         if( mergedValueList == null ) {
                             mergedValueList = v.getValue();
                         } else {
