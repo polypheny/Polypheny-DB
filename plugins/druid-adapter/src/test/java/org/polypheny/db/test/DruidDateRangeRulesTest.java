@@ -34,7 +34,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlLanguageDependant;
 import org.polypheny.db.sql.TestFixture;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -44,7 +43,7 @@ import org.polypheny.db.util.Util;
  * Unit tests for {@link DateRangeRules} algorithms.
  */
 @Ignore
-public class DruidDateRangeRulesTest extends SqlLanguageDependant {
+public class DruidDateRangeRulesTest {
 
     @Test
     public void testExtractYearAndMonthFromDateColumn() {
