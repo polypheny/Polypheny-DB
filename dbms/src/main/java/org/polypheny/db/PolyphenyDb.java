@@ -410,6 +410,8 @@ public class PolyphenyDb {
             TrayGui.getInstance();
         }
 
+        PolyPluginManager.startUp();
+
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );
         RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.addObserver( tracker );

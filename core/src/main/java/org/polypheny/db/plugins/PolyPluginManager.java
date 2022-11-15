@@ -39,6 +39,8 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static List<String> REGISTER = new ArrayList<>();
 
+    public static List<Runnable> AFTER_INIT = new ArrayList<>();
+
 
     public static void init() {
         // create the plugin manager
@@ -67,6 +69,11 @@ public class PolyPluginManager extends DefaultPluginManager {
             // pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) ); // takes forever
         }
         // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); // does not work with ADP
+    }
+
+
+    public static void startUp() {
+        AFTER_INIT.forEach( Runnable::run );
     }
 
 

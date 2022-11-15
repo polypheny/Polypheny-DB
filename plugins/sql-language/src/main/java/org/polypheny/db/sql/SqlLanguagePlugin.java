@@ -41,6 +41,7 @@ import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlAsOperator;
@@ -184,13 +185,13 @@ public class SqlLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        LanguageCrud.getCrud().languageCrud.addLanguage( "sql", (
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "sql", (
                 session,
                 request,
                 transactionManager,
                 userId,
                 databaseId,
-                c ) -> Crud.anySqlQuery( request, session, c ) );
+                c ) -> Crud.anySqlQuery( request, session, c ) ) );
         QueryLanguage.addQueryLanguage( NamespaceType.RELATIONAL, "sql", SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
 
         if ( !SqlLanguagePlugin.isInit() ) {

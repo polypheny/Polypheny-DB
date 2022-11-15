@@ -32,6 +32,7 @@ import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.MqlUseDatabase;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AutomaticDdlProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -57,7 +58,7 @@ public class MongoLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        LanguageCrud.getCrud().languageCrud.addLanguage( "mongo", MongoLanguagePlugin::anyMongoQuery );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "mongo", MongoLanguagePlugin::anyMongoQuery ) );
         QueryLanguage.addQueryLanguage( NamespaceType.DOCUMENT, "mongo", org.polypheny.db.mql.parser.impl.MqlParserImpl.FACTORY, MqlProcessorImpl::new, null );
 
         if ( !MqlRegisterer.isInit() ) {

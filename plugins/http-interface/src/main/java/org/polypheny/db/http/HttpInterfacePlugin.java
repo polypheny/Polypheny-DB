@@ -176,7 +176,7 @@ public class HttpInterfacePlugin extends Plugin {
 
 
         public void addRoute( List<String> routes, QueryLanguage language ) {
-            log.warn( "added http route: {}", routes );
+            log.info( "added http route: {}", routes );
             for ( String route : routes ) {
                 server.post( route, ctx -> anyQuery( language, ctx ) );
             }

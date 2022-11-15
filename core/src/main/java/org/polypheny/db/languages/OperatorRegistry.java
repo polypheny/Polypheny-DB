@@ -72,6 +72,10 @@ public class OperatorRegistry {
      */
     public synchronized static void register( QueryLanguage language, OperatorName name, Operator operator ) {
         operator.setOperatorName( name );
+        if ( !registry.containsKey( language ) ) {
+            registry.put( language, new HashMap<>() );
+        }
+
         registry.get( language ).put( name, operator );
     }
 

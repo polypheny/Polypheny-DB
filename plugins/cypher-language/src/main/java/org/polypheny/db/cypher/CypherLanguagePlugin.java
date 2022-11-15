@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.parser.CypherParserImpl;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AutomaticDdlProcessor;
 import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.transaction.Statement;
@@ -54,7 +55,7 @@ public class CypherLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        LanguageCrud.getCrud().languageCrud.addLanguage( "cypher", CypherLanguagePlugin::anyCypherQuery );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "cypher", CypherLanguagePlugin::anyCypherQuery ) );
         QueryLanguage.addQueryLanguage( NamespaceType.GRAPH, "cypher", CypherParserImpl.FACTORY, CypherProcessorImpl::new, null );
 
         if ( !CypherRegisterer.isInit() ) {
