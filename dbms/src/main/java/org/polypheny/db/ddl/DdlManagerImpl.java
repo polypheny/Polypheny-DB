@@ -655,7 +655,23 @@ public class DdlManagerImpl extends DdlManager {
             dataMigrator.mergeColumns( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), sourceCatalogColumns, targetCatalogColumn, joinString);
 
             for ( CatalogColumn sourceCatalogColumn : sourceCatalogColumns ) {
+                // Delete column from underlying data stores
+                for ( CatalogColumnPlacement dp : catalog.getColumnPlacementsByColumn( sourceCatalogColumn.id ) ) {
+                    if ( catalogTable.entityType == EntityType.ENTITY ) {
+                        AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( statement.getPrepareContext(), dp );
+                    }
+                    catalog.deleteColumnPlacement( dp.adapterId, dp.columnId, true );
+                }
+
+                // Delete from catalog
+                List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
                 catalog.deleteColumn( sourceCatalogColumn.id );
+                if ( sourceCatalogColumn.position != columns.size() ) {
+                    // Update position of the other columns
+                    for ( int i = sourceCatalogColumn.position; i < columns.size(); i++ ) {
+                        catalog.setColumnPosition( columns.get( i ).id, i );
+                    }
+                }
             }
         }
 
