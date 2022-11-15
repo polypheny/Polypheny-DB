@@ -259,7 +259,7 @@ public class Crud implements InformationObserver {
         }
 
         try {
-            result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit );
+            result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit, this );
             result.setXid( transaction.getXid().toString() );
         } catch ( Exception e ) {
             if ( request.filter != null ) {
@@ -690,8 +690,8 @@ public class Crud implements InformationObserver {
     /**
      * Run any query coming from the SQL console
      */
-    public ArrayList<Result> anySqlQuery( final QueryRequest request, final Session session ) {
-        Transaction transaction = getTransaction( request.analyze, request.cache );
+    public static ArrayList<Result> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
+        Transaction transaction = getTransaction( request.analyze, request.cache, crud );
 
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
@@ -704,7 +704,7 @@ public class Crud implements InformationObserver {
         // and in case of auto commit of, the information is overwritten
         InformationManager queryAnalyzer = null;
         if ( request.analyze ) {
-            queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
+            queryAnalyzer = transaction.getQueryAnalyzer().observe( crud );
         }
 
         // TODO: make it possible to use pagination
@@ -731,14 +731,14 @@ public class Crud implements InformationObserver {
         for ( String query : queries ) {
             Result result;
             if ( !transaction.isActive() ) {
-                transaction = getTransaction( request.analyze, request.cache );
+                transaction = getTransaction( request.analyze, request.cache, crud );
             }
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
                 try {
                     temp = System.nanoTime();
                     transaction.commit();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction( request.analyze, request.cache );
+                    transaction = getTransaction( request.analyze, request.cache, crud );
                     results.add( new Result().setGeneratedQuery( query ) );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while committing a query from the console", e );
@@ -750,7 +750,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     transaction.rollback();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction( request.analyze, request.cache );
+                    transaction = getTransaction( request.analyze, request.cache, crud );
                     results.add( new Result().setGeneratedQuery( query ) );
                 } catch ( TransactionException e ) {
                     log.error( "Caught exception while rolling back a query from the console", e );
@@ -780,14 +780,14 @@ public class Crud implements InformationObserver {
                 }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit )
+                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit, crud )
                             .setGeneratedQuery( query )
                             .setXid( transaction.getXid().toString() );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction( request.analyze, request.cache );
+                        transaction = Crud.getTransaction( request.analyze, request.cache, crud );
                     }
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
@@ -808,14 +808,14 @@ public class Crud implements InformationObserver {
             } else {
                 try {
                     temp = System.nanoTime();
-                    int numOfRows = executeSqlUpdate( transaction, query );
+                    int numOfRows = crud.executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
 
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction( request.analyze, request.cache );
+                        transaction = getTransaction( request.analyze, request.cache, crud );
                     }
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
@@ -2572,7 +2572,7 @@ public class Crud implements InformationObserver {
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
-        Transaction transaction = getTransaction( request.analyze, request.useCache );
+        Transaction transaction = getTransaction( request.analyze, request.useCache, this );
         transaction.getQueryAnalyzer().setSession( session );
 
         Statement statement = transaction.createStatement();
@@ -3074,19 +3074,19 @@ public class Crud implements InformationObserver {
      * Execute a select statement with default limit
      */
     public Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
-        return executeSqlSelect( statement, request, sqlSelect, false );
+        return executeSqlSelect( statement, request, sqlSelect, false, this );
     }
 
 
-    public Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
+    public static Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit, Crud crud ) throws QueryExecutionException {
         PolyImplementation result;
         List<List<Object>> rows;
         boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
-            result = processQuery( statement, sqlSelect, isAnalyze );
-            rows = result.getRows( statement, noLimit ? -1 : getPageSize(), true, isAnalyze );
+            result = crud.processQuery( statement, sqlSelect, isAnalyze );
+            rows = result.getRows( statement, noLimit ? -1 : crud.getPageSize(), true, isAnalyze );
             hasMoreRows = result.hasMoreRows();
 
         } catch ( Throwable t ) {
@@ -3107,7 +3107,7 @@ public class Crud implements InformationObserver {
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogTable = catalog.getTable( this.databaseId, t[0], t[1] );
+                catalogTable = crud.catalog.getTable( crud.databaseId, t[0], t[1] );
                 entityType = catalogTable.entityType;
             } catch ( UnknownTableException e ) {
                 log.error( "Caught exception", e );
@@ -3141,8 +3141,8 @@ public class Crud implements InformationObserver {
             // Get column default values
             if ( catalogTable != null ) {
                 try {
-                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                    if ( crud.catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                        CatalogColumn catalogColumn = crud.catalog.getColumn( catalogTable.id, columnName );
                         if ( catalogColumn.defaultValue != null ) {
                             dbCol.defaultValue = catalogColumn.defaultValue.value;
                         }
@@ -3479,7 +3479,7 @@ public class Crud implements InformationObserver {
 
 
     public Transaction getTransaction() {
-        return getTransaction( false, true );
+        return getTransaction( false, true, this );
     }
 
 
@@ -3499,8 +3499,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    public Transaction getTransaction( boolean analyze, boolean useCache ) {
-        return getTransaction( analyze, useCache, transactionManager, userId, databaseId );
+    public static Transaction getTransaction( boolean analyze, boolean useCache, Crud crud ) {
+        return getTransaction( analyze, useCache, crud.transactionManager, crud.userId, crud.databaseId );
     }
 
 

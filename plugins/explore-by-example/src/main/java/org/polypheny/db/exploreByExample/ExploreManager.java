@@ -154,7 +154,7 @@ public class ExploreManager {
             Result result;
 
             try {
-                result = crud.executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
+                result = Crud.executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false, crud ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
                 transaction.commit();
             } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                 log.error( "Caught exception while executing a query from the console", e );
@@ -296,7 +296,7 @@ public class ExploreManager {
         Statement statement = transaction.createStatement();
         try {
             String query = explore.getSqlStatement();
-            result = crud.executeSqlSelect( statement, queryExplorationRequest, query, false ).setGeneratedQuery( query );
+            result = Crud.executeSqlSelect( statement, queryExplorationRequest, query, false, crud ).setGeneratedQuery( query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
             log.error( "Caught exception while executing a query from the console", e );

@@ -42,9 +42,9 @@ import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
-import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
 import org.polypheny.db.util.Advisor;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
 import org.polypheny.db.util.SourceStringReader;
@@ -270,7 +270,7 @@ public class SqlAdvisor implements Advisor {
 
 
     private String applyCasing( String value, Casing casing ) {
-        return SqlParserUtil.strip( value, null, null, null, casing );
+        return CoreUtil.strip( value, null, null, null, casing );
     }
 
 

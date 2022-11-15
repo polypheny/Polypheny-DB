@@ -3,7 +3,7 @@ group "org.polypheny"
 
 dependencies {
     compileOnly project(":core")
-    compileOnly project(":sql-language")
+    compileOnly project(":plugins:sql-language")
     compileOnly project(':dbms')
 
     implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: neo4j_version // Apache 2.0
@@ -43,11 +43,11 @@ compileJava {
     dependsOn(":config:processResources")
     dependsOn(":core:processResources")
     dependsOn(":information:processResources")
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 delombok {
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 

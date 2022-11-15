@@ -4,7 +4,7 @@ apply plugin: "kotlin"
 
 dependencies {
     implementation project(":core")
-    implementation project(":sql-language")
+    implementation project(":plugins:sql-language")
     // implementation project(":mql-language")
 
     // Cottontail DB

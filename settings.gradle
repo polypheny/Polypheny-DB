@@ -9,11 +9,11 @@ include 'monitoring'
 include 'webui'
 
 include 'dbms'
-include 'sql-language'
 
 include 'plugins'
 
 // language plugins
+include 'plugins:sql-language'
 include 'plugins:mql-language'
 include 'plugins:pig-language'
 include 'plugins:cql-language'

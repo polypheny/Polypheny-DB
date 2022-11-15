@@ -17,14 +17,10 @@
 package org.polypheny.db.mql;
 
 import org.polypheny.db.languages.core.MqlRegisterer;
-import org.polypheny.db.sql.SqlRegisterer;
 
 public class MqlLanguageDependent {
 
     static {
-        if ( !SqlRegisterer.isInit() ) {
-            SqlRegisterer.registerOperators();
-        }
         if ( !MqlRegisterer.isInit() ) {
             MqlRegisterer.registerOperators();
         }

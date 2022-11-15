@@ -33,8 +33,8 @@ public class RexBuilderTest {
 
     @BeforeClass
     public static void init() {
-        if ( !SqlRegisterer.isInit() ) {
-            SqlRegisterer.registerOperators();
+        if ( !SqlLanguagePlugin.isInit() ) {
+            SqlLanguagePlugin.registerOperators();
         }
     }
 

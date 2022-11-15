@@ -18,6 +18,7 @@ package org.polypheny.db.util;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.text.MessageFormat;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
+import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -321,6 +323,98 @@ public class CoreUtil {
             return ((Call) node).operand( 0 );
         }
         return node;
+    }
+
+
+    /**
+     * @return the character-set prefix of an sql string literal; returns null if there is none
+     */
+    public static String getCharacterSet( String s ) {
+        if ( s.charAt( 0 ) == '\'' ) {
+            return null;
+        }
+        if ( Character.toUpperCase( s.charAt( 0 ) ) == 'N' ) {
+            return SaffronProperties.INSTANCE.defaultNationalCharset().get();
+        }
+        int i = s.indexOf( "'" );
+        return s.substring( 1, i ); // skip prefixed '_'
+    }
+
+
+    /**
+     * Converts the contents of an sql quoted string literal into the corresponding Java string representation (removing leading and trailing quotes and unescaping internal doubled quotes).
+     */
+    public static String parseString( String s ) {
+        int i = s.indexOf( "'" ); // start of body
+        if ( i > 0 ) {
+            s = s.substring( i );
+        }
+        return strip( s, "'", "'", "''", Casing.UNCHANGED );
+    }
+
+
+    public static BigDecimal parseDecimal( String s ) {
+        return new BigDecimal( s );
+    }
+
+
+    public static BigDecimal parseInteger( String s ) {
+        return new BigDecimal( s );
+    }
+
+
+    /**
+     * Unquotes a quoted string, using different quotes for beginning and end.
+     */
+    public static String strip( String s, String startQuote, String endQuote, String escape, Casing casing ) {
+        if ( startQuote != null ) {
+            assert endQuote != null;
+            assert startQuote.length() == 1;
+            assert endQuote.length() == 1;
+            assert escape != null;
+            assert s.startsWith( startQuote ) && s.endsWith( endQuote ) : s;
+            s = s.substring( 1, s.length() - 1 ).replace( escape, endQuote );
+        }
+        switch ( casing ) {
+            case TO_UPPER:
+                return s.toUpperCase( Locale.ROOT );
+            case TO_LOWER:
+                return s.toLowerCase( Locale.ROOT );
+            default:
+                return s;
+        }
+    }
+
+
+    /**
+     * Trims a string for given characters from left and right. E.g. {@code trim("aBaac123AabC","abBcC")} returns {@code "123A"}.
+     */
+    public static String trim( String s, String chars ) {
+        if ( s.length() == 0 ) {
+            return "";
+        }
+
+        int start;
+        for ( start = 0; start < s.length(); start++ ) {
+            char c = s.charAt( start );
+            if ( chars.indexOf( c ) < 0 ) {
+                break;
+            }
+        }
+
+        int stop;
+        for ( stop = s.length(); stop > start; stop-- ) {
+            char c = s.charAt( stop - 1 );
+            if ( chars.indexOf( c ) < 0 ) {
+                break;
+            }
+        }
+
+        if ( start >= stop ) {
+            return "";
+        }
+
+        return s.substring( start, stop );
     }
 
 

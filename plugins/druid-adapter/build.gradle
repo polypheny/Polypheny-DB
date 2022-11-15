@@ -3,14 +3,14 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":sql-language")
+    implementation project(":plugins:sql-language")
 
     implementation group: "joda-time", name: "joda-time", version: joda_time_version  // Apache 2.0
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":sql-language", configuration: "tests")
+    testImplementation project(path: ":plugins:sql-language", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
@@ -43,15 +43,15 @@ sourceSets {
 }
 
 compileJava {
-    dependsOn(":sql-language:processResources")
+    // dependsOn(":sql-language:processResources")
 }
 
 delombok {
-    dependsOn(":sql-language:processResources")
+    // dependsOn(":sql-language:processResources")
 }
 
 javadoc {
-    dependsOn(":sql-language:processResources")
+    // dependsOn(":sql-language:processResources")
 }
 
 /**

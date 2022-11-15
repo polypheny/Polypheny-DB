@@ -122,6 +122,7 @@ data: {
             "org.polypheny.db.sql.language.parser.SqlParserUtil"
             "java.util.Map"
             "java.util.HashMap"
+            "org.polypheny.db.util.CoreUtil"
         ]
 
         # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is not a reserved keyword add it to 'nonReservedKeywords' section.

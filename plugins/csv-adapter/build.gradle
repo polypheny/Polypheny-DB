@@ -3,7 +3,7 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":sql-language")
+    implementation project(":plugins:sql-language")
 
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
@@ -44,11 +44,11 @@ compileJava {
     dependsOn(":config:processResources")
     dependsOn(":core:processResources")
     dependsOn(":information:processResources")
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 delombok {
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 

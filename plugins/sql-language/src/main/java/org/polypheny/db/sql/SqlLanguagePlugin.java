@@ -19,16 +19,29 @@ package org.polypheny.db.sql;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Properties;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.pf4j.Plugin;
+import org.pf4j.PluginWrapper;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
+import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlAsOperator;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
@@ -127,6 +140,7 @@ import org.polypheny.db.sql.language.fun.SqlRollupOperator;
 import org.polypheny.db.sql.language.fun.SqlRowOperator;
 import org.polypheny.db.sql.language.fun.SqlSequenceValueOperator;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
+import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlStringContextVariable;
 import org.polypheny.db.sql.language.fun.SqlSubstringFunction;
 import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
@@ -136,20 +150,94 @@ import org.polypheny.db.sql.language.fun.SqlTimestampAddFunction;
 import org.polypheny.db.sql.language.fun.SqlTimestampDiffFunction;
 import org.polypheny.db.sql.language.fun.SqlTranslate3Function;
 import org.polypheny.db.sql.language.fun.SqlTrimFunction;
+import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
+import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.crud.LanguageCrud;
 
-public class SqlRegisterer {
+public class SqlLanguagePlugin extends Plugin {
 
     @Getter
     @VisibleForTesting
     private static boolean isInit = false;
+
+
+    /**
+     * Constructor to be used by plugin manager for plugin instantiation.
+     * Your plugins have to provide constructor with this exact signature to
+     * be successfully loaded by manager.
+     *
+     * @param wrapper
+     */
+    public SqlLanguagePlugin( PluginWrapper wrapper ) {
+        super( wrapper );
+    }
+
+
+    @Override
+    public void start() {
+        LanguageCrud.getCrud().languageCrud.addLanguage( "sql", (
+                session,
+                request,
+                transactionManager,
+                userId,
+                databaseId,
+                c ) -> Crud.anySqlQuery( request, session, c ) );
+        QueryLanguage.addQueryLanguage( NamespaceType.RELATIONAL, "sql", SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
+
+        if ( !SqlLanguagePlugin.isInit() ) {
+            SqlLanguagePlugin.registerOperators();
+        }
+    }
+
+
+    public static PolyphenyDbSqlValidator getSqlValidator( org.polypheny.db.prepare.Context context, PolyphenyDbCatalogReader catalogReader ) {
+
+        final OperatorTable opTab0 = fun( OperatorTable.class, SqlStdOperatorTable.instance() );
+        final OperatorTable opTab = ChainedOperatorTable.of( opTab0, catalogReader );
+        final JavaTypeFactory typeFactory = context.getTypeFactory();
+        final Conformance conformance = context.config().conformance();
+        return new PolyphenyDbSqlValidator( opTab, catalogReader, typeFactory, conformance );
+    }
+
+
+    public static <T> T fun( Class<T> operatorTableClass, T defaultOperatorTable ) {
+        final String fun = PolyphenyDbConnectionProperty.FUN.wrap( new Properties() ).getString();
+        if ( fun == null || fun.equals( "" ) || fun.equals( "standard" ) ) {
+            return defaultOperatorTable;
+        }
+        final Collection<OperatorTable> tables = new LinkedHashSet<>();
+        for ( String s : fun.split( "," ) ) {
+            operatorTable( s, tables );
+        }
+        tables.add( SqlStdOperatorTable.instance() );
+        return operatorTableClass.cast( ChainedOperatorTable.of( tables.toArray( new OperatorTable[0] ) ) );
+    }
+
+
+    public static void operatorTable( String s, Collection<OperatorTable> tables ) {
+        switch ( s ) {
+            case "standard":
+                tables.add( SqlStdOperatorTable.instance() );
+                return;
+            case "oracle":
+                tables.add( OracleSqlOperatorTable.instance() );
+                return;
+            //case "spatial":
+            //    tables.add( PolyphenyDbCatalogReader.operatorTable( GeoFunctions.class.getName() ) );
+            //    return;
+            default:
+                throw new IllegalArgumentException( "Unknown operator table: " + s );
+        }
+    }
 
 
     public static void registerOperators() {

@@ -3,7 +3,7 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":sql-language")
+    implementation project(":plugins:sql-language")
 
     // JDBC Drivers
     implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version  // HSQLDB License (BSD-style)
@@ -14,7 +14,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":sql-language", configuration: "tests")
+    testImplementation project(path: ":plugins:sql-language", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 }
@@ -45,11 +45,11 @@ sourceSets {
 
 compileJava {
     dependsOn(":core:processResources")
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 delombok {
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 /**

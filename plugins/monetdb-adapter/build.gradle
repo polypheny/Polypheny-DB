@@ -3,7 +3,7 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":sql-language")
+    implementation project(":plugins:sql-language")
     implementation project(":plugins:jdbc-adapter-framework")
 
     // JDBC Drivers
@@ -15,7 +15,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":sql-language", configuration: "tests")
+    testImplementation project(path: ":plugins:sql-language", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 }
@@ -46,7 +46,7 @@ sourceSets {
 
 compileJava {
     dependsOn(":core:processResources")
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
@@ -55,7 +55,7 @@ compileTestJava {
 }
 
 delombok {
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 

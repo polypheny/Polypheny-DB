@@ -449,7 +449,7 @@ public class MongoPlugin extends Plugin {
         public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
             commitAll();
             for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
-                Document field = new Document().append( partitionPlacement.physicalTableName, 1 );
+                Document field = new Document().append( MongoStore.getPhysicalColumnName( columnPlacement.physicalColumnName, columnPlacement.columnId ), 1 );
                 Document filter = new Document().append( "$unset", field );
 
                 context.getStatement().getTransaction().registerInvolvedAdapter( this );

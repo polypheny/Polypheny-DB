@@ -3,7 +3,7 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":sql-language")
+    implementation project(":plugins:sql-language")
 
     implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version  // Apache 2.0
     implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version  // Apache 2.0
@@ -47,11 +47,11 @@ sourceSets {
 
 compileJava {
     dependsOn(":core:processResources")
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 delombok {
-    dependsOn(":sql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 /**

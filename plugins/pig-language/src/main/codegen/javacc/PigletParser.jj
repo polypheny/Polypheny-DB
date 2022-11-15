@@ -44,7 +44,7 @@ package org.polypheny.db.piglet.parser;
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.sql.language.parser.SqlParserUtil;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.piglet.Ast.*;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -80,7 +80,7 @@ void debug_message1()
 }
 
 JAVACODE String unquotedIdentifier() {
-  return SqlParserUtil.strip(getToken(0).image, null, null, null,
+  return CoreUtil.strip(getToken(0).image, null, null, null,
     Casing.UNCHANGED);
 }
 
@@ -872,7 +872,7 @@ Literal stringLiteral() :
 }
 {
   <QUOTED_STRING> {
-    s = SqlParserUtil.parseString(token.image);
+    s = CoreUtil.parseString(token.image);
     return new Literal(pos(), s);
   }
 }

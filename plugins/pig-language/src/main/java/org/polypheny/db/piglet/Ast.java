@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.sql.language.parser.SqlParserUtil;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -473,16 +473,16 @@ public class Ast {
 
             int i = s.indexOf( '.' );
             if ( (i >= 0) && ((s.length() - 1) != i) ) {
-                value = SqlParserUtil.parseDecimal( s );
+                value = CoreUtil.parseDecimal( s );
                 scale = s.length() - i - 1;
                 assert scale == value.scale() : s;
                 prec = s.length() - 1;
             } else if ( (i >= 0) && ((s.length() - 1) == i) ) {
-                value = SqlParserUtil.parseInteger( s.substring( 0, i ) );
+                value = CoreUtil.parseInteger( s.substring( 0, i ) );
                 scale = 0;
                 prec = s.length() - 1;
             } else {
-                value = SqlParserUtil.parseInteger( s );
+                value = CoreUtil.parseInteger( s );
                 scale = 0;
                 prec = s.length();
             }

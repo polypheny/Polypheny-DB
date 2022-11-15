@@ -25,7 +25,7 @@ dependencies {
     implementation project(":core")
     implementation project(":monitoring")
     implementation project(":webui")
-    implementation project(":sql-language")
+    // implementation project(":sql-language")
     implementation project(":dbms")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
@@ -58,11 +58,11 @@ compileJava {
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
     dependsOn(":monitoring:processResources")
-    dependsOn(":sql-language:processResources")
+    // dependsOn(":sql-language:processResources")
 }
 
 delombok {
-    dependsOn(":sql-language:processResources")
+    // dependsOn(":sql-language:processResources")
 }
 
 

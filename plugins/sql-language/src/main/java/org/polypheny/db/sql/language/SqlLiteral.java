@@ -802,16 +802,16 @@ public class SqlLiteral extends SqlNode implements Literal {
 
         int i = s.indexOf( '.' );
         if ( (i >= 0) && ((s.length() - 1) != i) ) {
-            value = SqlParserUtil.parseDecimal( s );
+            value = CoreUtil.parseDecimal( s );
             scale = s.length() - i - 1;
             assert scale == value.scale() : s;
             prec = s.length() - 1;
         } else if ( (i >= 0) && ((s.length() - 1) == i) ) {
-            value = SqlParserUtil.parseInteger( s.substring( 0, i ) );
+            value = CoreUtil.parseInteger( s.substring( 0, i ) );
             scale = 0;
             prec = s.length() - 1;
         } else {
-            value = SqlParserUtil.parseInteger( s );
+            value = CoreUtil.parseInteger( s );
             scale = 0;
             prec = s.length();
         }
@@ -820,7 +820,7 @@ public class SqlLiteral extends SqlNode implements Literal {
 
 
     public static SqlNumericLiteral createApproxNumeric( String s, ParserPos pos ) {
-        BigDecimal value = SqlParserUtil.parseDecimal( s );
+        BigDecimal value = CoreUtil.parseDecimal( s );
         return new SqlNumericLiteral( value, null, null, false, pos );
     }
 
