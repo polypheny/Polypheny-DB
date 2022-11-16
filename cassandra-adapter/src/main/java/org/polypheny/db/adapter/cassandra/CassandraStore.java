@@ -141,7 +141,7 @@ public class CassandraStore extends DataStore {
             this.dbUsername = "cassandra";
             this.dbPassword = "cassandra";
 
-            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "bitnami/cassandra:3.11", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "bitnami/cassandra@sha256:b875ab578d59380e2dbf5b309cc1f14ec2be12c9537e2b3eb60cc57797c8b414", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                     .withMappedPort( 9042, Integer.parseInt( settings.get( "port" ) ) )
                     // cassandra can take quite some time to start
                     .withReadyTest( this::testDockerConnection, 80000 )

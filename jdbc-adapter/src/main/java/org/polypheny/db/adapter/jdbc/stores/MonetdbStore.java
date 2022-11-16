@@ -81,7 +81,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     protected ConnectionFactory deployDocker( int dockerInstanceId ) {
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "topaztechnology/monetdb:11.37.11", getUniqueName(), dockerInstanceId )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "topaztechnology/monetdb@sha256:c956ba494172a53f1684d692f5c7af91da68210d2795fe78168d8b8bc3109d85", getUniqueName(), dockerInstanceId )
                 .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
                 .withReadyTest( this::testConnection, 15000 )
