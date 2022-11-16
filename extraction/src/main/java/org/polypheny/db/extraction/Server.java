@@ -18,15 +18,6 @@ package org.polypheny.db.extraction;
 
 import io.javalin.Javalin;
 import io.javalin.websocket.WsContext;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
@@ -47,6 +38,12 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 
 @Slf4j
 public class Server implements Runnable {
@@ -57,12 +54,13 @@ public class Server implements Runnable {
 
     public static Map<WsContext, Integer> listenerMap = new ConcurrentHashMap<>();
     private final int port;
+    private final SchemaExtractor schemaExtractorParent;
 
 
-    public Server( int port, TransactionManager transactionManager ) {
+    public Server(int port, TransactionManager transactionManager, SchemaExtractor schemaExtractorParent) {
         this.transactionManager = transactionManager;
         this.port = port;
-
+        this.schemaExtractorParent = schemaExtractorParent;
     }
 
 
@@ -93,31 +91,6 @@ public class Server implements Runnable {
         }
         return transaction;
     }
-
-//    public void commitTransaction( Transaction transaction, Statement statement ) {
-//        try {
-//            // Locks are released within commit
-//            transaction.commit();
-//        } catch ( TransactionException e ) {
-//            log.error( "Caught exception while executing a query from the console", e );
-//            try {
-//                transaction.rollback();
-//            } catch ( TransactionException ex ) {
-//                log.error( "Caught exception while rollback", e );
-//            }
-//        } finally {
-//            // Release lock
-//            statement.getQueryProcessor().unlock( statement );
-//        }
-//    }
-//
-//    private void executeQuery(Transaction transaction) {
-//        Statement statement = transaction.createStatement();
-//        statement.getQueryProcessor().lock(statement);
-//
-//        log.debug("Did something with a statement and a transaction in Schema Extraction Server.");
-//        this.commitTransaction(transaction, statement);
-//    }
 
 
     // Next three methods copypasted from explore-by-example:QueryProcessExplorer
@@ -245,25 +218,30 @@ public class Server implements Runnable {
                 // Run query sent by Python
                 String query = ctx.formParam( "query" );
                 try {
-                    QueryResult queryResult = executeSQL( query );
-                    ctx.result( Arrays.deepToString( queryResult.data ) );
-                } catch ( PolyphenyDbException e ) {
-                    ctx.result( "Malformed query" + e );
+                    QueryResult queryResult = executeSQL(query);
+                    ctx.result(Arrays.deepToString(queryResult.data));
+                } catch (PolyphenyDbException e) {
+                    ctx.result("Malformed query" + e);
                 }
             } else {
-                ctx.result( "queryLanguage not implemented: " + queryLanguage );
+                ctx.result("queryLanguage not implemented: " + queryLanguage);
             }
-        } );
+        });
 
-        log.info( "Polypheny schema extraction server is running on port {}", port );
+        javalin.post("/result", ctx -> {
+            String result_content = ctx.queryParam("results");
+            schemaExtractorParent.updateResultCode(result_content);
+        });
+
+        log.info("Polypheny schema extraction server is running on port {}", port);
 
         // Periodically sent status to all clients to keep the connection open
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         exec.scheduleAtFixedRate(
-                () -> broadcastMessage( "Server", "status", "online" ),
+                () -> broadcastMessage("Server", "status", "online"),
                 0,
                 2,
-                TimeUnit.SECONDS );
+                TimeUnit.SECONDS);
     }
 
 }

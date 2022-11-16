@@ -25,18 +25,11 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.information.InformationAction;
-import org.polypheny.db.information.InformationCode;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationText;
+import org.polypheny.db.information.*;
 import org.polypheny.db.transaction.TransactionManager;
 
 public class SchemaExtractor {
 
-    // TODO: The "PYTHON_COMMAND" needs to be system-agnostic (python3 didn't work for me)
-    public static final String PYTHON_COMMAND = "python";
     private static final SchemaExtractor INSTANCE = new SchemaExtractor();
 
     private InformationCode informationLogOutput;
@@ -61,11 +54,11 @@ public class SchemaExtractor {
     }
 
 
-    public static void startServer( TransactionManager transactionManager ) {
+    public void startServer(TransactionManager transactionManager) {
         // Start server (for communication with Python)
-        // TODO: Port number?
-        Server server = new Server( 20598, transactionManager );
-        Thread thread = new Thread( server );
+        // TODO: Port number? For now, leave as is, but give this port number to python docker container for starting
+        Server server = new Server(20598, transactionManager, this);
+        Thread thread = new Thread(server);
         thread.start();
     }
 
@@ -157,7 +150,7 @@ public class SchemaExtractor {
         InformationPage page = new InformationPage( "Schema Extraction" );
         im.addPage( page );
 
-        InformationGroup actionGroup = new InformationGroup( page, "Actio " ).setOrder( 1 );
+        InformationGroup actionGroup = new InformationGroup(page, "Action ").setOrder(1);
         im.addGroup( actionGroup );
 
         InformationText actionText = new InformationText(
@@ -187,15 +180,19 @@ public class SchemaExtractor {
         runAction.setOrder( 2 );
         im.registerInformation( runAction );
 
-        InformationGroup logGroup = new InformationGroup( page, "Log Output" ).setOrder( 2 );
-        im.addGroup( logGroup );
-        informationLogOutput = new InformationCode( logGroup, "" );
-        im.registerInformation( informationLogOutput );
+        InformationGroup logGroup = new InformationGroup(page, "Log Output").setOrder(2);
+        im.addGroup(logGroup);
+        informationLogOutput = new InformationCode(logGroup, "");
+        im.registerInformation(informationLogOutput);
 
-        InformationGroup resultGroup = new InformationGroup( page, "Result" ).setOrder( 3 );
-        im.addGroup( resultGroup );
-        informationResult = new InformationCode( resultGroup, "" );
-        im.registerInformation( informationResult );
+        InformationGroup resultGroup = new InformationGroup(page, "Result").setOrder(3);
+        im.addGroup(resultGroup);
+        informationResult = new InformationCode(resultGroup, "");
+        im.registerInformation(informationResult);
+    }
+
+    public void updateResultCode(String newResultCode) {
+        this.informationResult.updateCode(newResultCode);
     }
 
 }
