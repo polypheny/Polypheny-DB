@@ -30,8 +30,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
+
 /**
- * This class servers as a organization unit which controls all Docker containers in Polypheny.
+ * This class servers as an organization unit which controls all Docker containers in Polypheny.
  * While the callers can and should mostly interact with the underlying containers directly,
  * this instance is used to have a control layer, which allows to restore, start or shutdown multiple of
  * these instances at the same time.
