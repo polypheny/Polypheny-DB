@@ -91,14 +91,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
-    public static void register() {
-
-    }
-
-
     @Override
     public ConnectionFactory deployDocker( int instanceId ) {
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:14", getUniqueName(), instanceId )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/postgres", getUniqueName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariable( "POSTGRES_PASSWORD=" + settings.get( "password" ) )
                 .withReadyTest( this::testConnection, 15000 )
