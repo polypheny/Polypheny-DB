@@ -52,7 +52,7 @@ dependencies {
     implementation project(":monitoring")
 
     ////// SLF4J
-    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
 
     ////// Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0

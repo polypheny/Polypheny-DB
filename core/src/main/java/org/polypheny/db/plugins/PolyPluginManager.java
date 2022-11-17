@@ -33,6 +33,7 @@ import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
+import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
@@ -69,6 +70,7 @@ public class PolyPluginManager extends DefaultPluginManager {
             // pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) ); // takes forever
         }
         // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); // does not work with ADP
+
     }
 
 
@@ -86,9 +88,14 @@ public class PolyPluginManager extends DefaultPluginManager {
                         // we load the existing applications classes first, then the dependencies and then the plugin
                         return new PluginClassLoader( pluginManager, pluginDescriptor, getClass().getClassLoader(), ClassLoadingStrategy.ADP );
                     }
+
+
+                    @Override
+                    public ClassLoader loadPlugin( Path pluginPath, PluginDescriptor pluginDescriptor ) {
+                        return super.loadPlugin( pluginPath, pluginDescriptor );
+                    }
                 } )
-                .add( new JarPluginLoader( this ) )
-                .add( new DefaultPluginLoader( this ), this::isNotDevelopment );
+                .add( new JarPluginLoader( this ) );
     }
 
 
@@ -100,6 +107,8 @@ public class PolyPluginManager extends DefaultPluginManager {
                 //.add( new PropertiesPluginDescriptorFinder() );
                 .add( new ManifestPluginDescriptorFinder() );
     }
+
+
 
 
 }
