@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.monetdb.stores;
 
-
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -63,10 +62,10 @@ import org.polypheny.db.type.PolyTypeFamily;
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingString(name = "host", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
-@AdapterSettingString(name = "database", defaultValue = "polypheny", description = "JDBC port number on the remote MonetDB instance.", position = 3, appliesTo = DeploySetting.REMOTE)
-@AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 4, appliesTo = DeploySetting.REMOTE)
-@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.")
-@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
+@AdapterSettingString(name = "database", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 3, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.", position = 4, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Password to be used for authenticating at the remote instance.")
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Maximum number of concurrent connections opened by Polypheny-DB to this data store.")
 public class MonetdbStore extends AbstractJdbcStore {
 
     private String host;
