@@ -118,11 +118,10 @@ public class DockerInstance extends DockerManager {
 
     private void updateUsedValues( DockerClient client ) {
         client.listImagesCmd().exec().forEach( image -> {
-            if ( image.getRepoTags() != null ) {
-                for ( String tag : image.getRepoTags() ) {
-                    String[] splits = tag.split( ":" );
-
-                    availableImages.add( new Image( splits[0], splits[1] ) );
+            if ( image.getRepoDigests() != null ) {
+                for ( String tag : image.getRepoDigests() ) {
+                    String[] splits = tag.split( "@" );
+                    availableImages.add( new Image( splits[0], null, splits[1] ) );
                 }
             }
         } );

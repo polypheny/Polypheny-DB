@@ -118,7 +118,7 @@ public class MongoStore extends DataStore {
 
         if ( deployMode == DeployMode.DOCKER ) {
             dockerInstanceId = Integer.parseInt( settings.get( "instanceId" ) );
-            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "mongo:4.4.7", getUniqueName(), dockerInstanceId )
+            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/mongo", getUniqueName(), dockerInstanceId )
                     .withMappedPort( 27017, port )
                     .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
                     .withReadyTest( this::testConnection, 20000 )

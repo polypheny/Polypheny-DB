@@ -108,7 +108,7 @@ public class Neo4jStore extends DataStore {
         this.user = "neo4j";
         this.auth = AuthTokens.basic( "neo4j", this.pass );
 
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "neo4j:4.4-community", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/neo", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                 .withMappedPort( 7687, port )
                 .withEnvironmentVariable( format( "NEO4J_AUTH=%s/%s", user, pass ) )
                 .withReadyTest( this::testConnection, 50000 )
