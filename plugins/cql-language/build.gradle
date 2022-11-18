@@ -75,6 +75,7 @@ compileJava {
 
 delombok {
     dependsOn(":core:processResources")
+    dependsOn(":webui:processResources")
 }
 
 

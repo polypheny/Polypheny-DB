@@ -66,7 +66,7 @@ sourceSets {
 }
 
 compileJava {
-    // dependsOn(":cql-language:processResources")
+    dependsOn(":monitoring:processResources")
     // dependsOn(":cypher-language:processResources")
     // dependsOn(":explore-by-example:processResources")
     // dependsOn(":mql-language:processResources")

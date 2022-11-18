@@ -111,6 +111,8 @@ public class MongoPlugin extends Plugin {
         ) );
 
         Adapter.addAdapter( MongoStore.class, "MONGODB", settings );
+
+        log.warn( MongoStore.class.getClassLoader().getParent().getName() );
     }
 
 

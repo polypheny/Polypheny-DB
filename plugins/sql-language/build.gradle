@@ -77,7 +77,7 @@ task generateParser (type: CompileJavaccTask) {
 
 compileJava {
     dependsOn("generateParser")
-    // dependsOn(":avatica-interface:processResources")
+    dependsOn(":dbms:processResources")
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
     dependsOn(":monitoring:processResources")
@@ -85,7 +85,7 @@ compileJava {
 }
 
 delombok {
-    // dependsOn(":avatica-interface:processResources")
+    dependsOn(":dbms:processResources")
 }
 
 sourceSets {
