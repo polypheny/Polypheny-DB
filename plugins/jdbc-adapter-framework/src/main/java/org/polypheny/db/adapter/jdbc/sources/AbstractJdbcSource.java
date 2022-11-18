@@ -38,6 +38,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -89,6 +90,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
         dataSource.setUsername( settings.get( "username" ) );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
+        dataSource.setDriverClassLoader( PolyPluginManager.loader );
         switch ( settings.get( "transactionIsolation" ) ) {
             case "SERIALIZABLE":
                 dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );

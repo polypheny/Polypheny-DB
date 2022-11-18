@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
@@ -97,6 +98,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             dataSource.setMaxTotal( -1 ); // No limit for number of connections (limited by connection handler; see settings maxConnections)
             dataSource.setDefaultAutoCommit( false );
             dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_COMMITTED );
+            dataSource.setDriverClassLoader( PolyPluginManager.loader );
             return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
         }
     }

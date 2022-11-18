@@ -56,7 +56,6 @@ import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import org.reflections.Reflections;
 
 
 /**
@@ -132,8 +131,6 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 fieldCount == 1
                         ? new Class[]{ Bindable.class, Typed.class }
                         : new Class[]{ ArrayBindable.class } );
-
-        log.warn( "found: {}", new Reflections( "org.polypheny.db.adapter.mongodb" ).getSubTypesOf( Object.class ) );
 
         cbe.setParentClassLoader( PolyPluginManager.loader );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
