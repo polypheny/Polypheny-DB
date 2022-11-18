@@ -38,7 +38,7 @@ sourceSets {
 }
 
 compileJava {
-    // dependsOn(":sql-language:processResources")
+    dependsOn(":core:processResources")
 }
 
 delombok {

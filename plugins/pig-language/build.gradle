@@ -78,11 +78,11 @@ compileJava {
     dependsOn(":core:processResources")
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
-    // dependsOn(":sql-language:processResources")
+    dependsOn(":webui:processResources")
 }
 
 delombok {
-    // dependsOn(":sql-language:processResources")
+    dependsOn(":webui:processResources")
 }
 
 
@@ -107,4 +107,8 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
+}
+
+javadoc {
+    dependsOn(":webui:processResources")
 }

@@ -22,16 +22,16 @@ dependencies {
 }
 
 compileKotlin {
-    // dependsOn(":mql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 compileJava {
     dependsOn(processResources)
-    // dependsOn(":mql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 delombok {
-    // dependsOn(":mql-language:processResources")
+    dependsOn(":plugins:sql-language:processResources")
 }
 
 inspectClassesForKotlinIC {

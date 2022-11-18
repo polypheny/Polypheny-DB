@@ -238,6 +238,7 @@ compileJava {
     // dependsOn(":neo4j-adapter:processResources")
     // dependsOn(":rest-interface:processResources")
     dependsOn(":webui:processResources")
+    dependsOn(":monitoring:processResources")
     // dependsOn(":http-interface:compileTestJava")
     // dependsOn(":cottontail-adapter:compileTestKotlin")
 }

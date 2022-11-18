@@ -16,6 +16,8 @@
 
 package org.polypheny.db.plugins;
 
+import java.io.File;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,13 +88,29 @@ public class PolyPluginManager extends DefaultPluginManager {
                     @Override
                     protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
                         // we load the existing applications classes first, then the dependencies and then the plugin
-                        return new PluginClassLoader( pluginManager, pluginDescriptor, getClass().getClassLoader(), ClassLoadingStrategy.ADP );
+                        return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
                     }
 
 
                     @Override
                     public ClassLoader loadPlugin( Path pluginPath, PluginDescriptor pluginDescriptor ) {
-                        return super.loadPlugin( pluginPath, pluginDescriptor );
+                        PluginClassLoader pluginClassLoader = createPluginClassLoader(pluginPath, pluginDescriptor);
+
+                        loadClasses(pluginPath, pluginClassLoader);
+                        loadJars(pluginPath, pluginClassLoader);
+
+                        for (String directory : pluginClasspath.getClassesDirectories()) {
+                            File file = pluginPath.resolve(directory).toFile();
+                            if (file.exists() && file.isDirectory()) {
+                                try {
+                                    EnumerableInterpretable.class.getClassLoader().loadClass( file.getAbsoluteFile().getAbsolutePath() );
+                                } catch ( ClassNotFoundException e ) {
+                                    throw new RuntimeException( e );
+                                }
+                            }
+                        }
+
+                        return pluginClassLoader;
                     }
                 } )
                 .add( new JarPluginLoader( this ) );

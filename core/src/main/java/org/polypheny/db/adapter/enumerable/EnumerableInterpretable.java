@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Helper;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -71,6 +72,7 @@ import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.reflections.Reflections;
 
 
 /**
@@ -79,6 +81,7 @@ import org.polypheny.db.util.Util;
  * @see EnumerableConvention
  * @see BindableConvention
  */
+@Slf4j
 public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
 
     protected EnumerableInterpretable( AlgOptCluster cluster, AlgNode input ) {
@@ -145,19 +148,22 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 fieldCount == 1
                         ? new Class[]{ Bindable.class, Typed.class }
                         : new Class[]{ ArrayBindable.class } );
-        cbe.setParentClassLoader( EnumerableInterpretable.class.getClassLoader() );
+
+        log.warn( "found: {}", new Reflections( "org.polypheny.db.adapter.mongodb" ).getSubTypesOf( Object.class ) );
+
+        cbe.setParentClassLoader( ClassLoader.getPlatformClassLoader() );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation( true, true, true );
         }
-        return (Bindable) cbe.createInstance( new StringReader( s ) );
+        return (Bindable<?>) cbe.createInstance( new StringReader( s ) );
     }
 
 
     /**
      * Converts a bindable over scalar values into an array bindable, with each row as an array of 1 element.
      */
-    static ArrayBindable box( final Bindable bindable ) {
+    static ArrayBindable box( final Bindable<?> bindable ) {
         if ( bindable instanceof ArrayBindable ) {
             return (ArrayBindable) bindable;
         }
@@ -171,11 +177,11 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             @Override
             public Enumerable<Object[]> bind( DataContext dataContext ) {
                 final Enumerable<?> enumerable = bindable.bind( dataContext );
-                return new AbstractEnumerable<Object[]>() {
+                return new AbstractEnumerable<>() {
                     @Override
                     public Enumerator<Object[]> enumerator() {
                         final Enumerator<?> enumerator = enumerable.enumerator();
-                        return new Enumerator<Object[]>() {
+                        return new Enumerator<>() {
                             @Override
                             public Object[] current() {
                                 return new Object[]{ enumerator.current() };
