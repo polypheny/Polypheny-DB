@@ -16,8 +16,6 @@
 
 package org.polypheny.db.plugins;
 
-import java.io.File;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +33,6 @@ import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
@@ -80,6 +77,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         AFTER_INIT.forEach( Runnable::run );
     }
 
+    public static PluginClassLoader loader;
 
     @Override
     protected PluginLoader createPluginLoader() {
@@ -88,7 +86,12 @@ public class PolyPluginManager extends DefaultPluginManager {
                     @Override
                     protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
                         // we load the existing applications classes first, then the dependencies and then the plugin
-                        return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
+                        // we have to reuse the classloader else the code generation will not be able to find the added classes later on
+                        //return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
+                        if ( loader == null ) {
+                            loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
+                        }
+                        return loader;
                     }
 
 
@@ -98,17 +101,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
                         loadClasses(pluginPath, pluginClassLoader);
                         loadJars(pluginPath, pluginClassLoader);
-
-                        for (String directory : pluginClasspath.getClassesDirectories()) {
-                            File file = pluginPath.resolve(directory).toFile();
-                            if (file.exists() && file.isDirectory()) {
-                                try {
-                                    EnumerableInterpretable.class.getClassLoader().loadClass( file.getAbsoluteFile().getAbsolutePath() );
-                                } catch ( ClassNotFoundException e ) {
-                                    throw new RuntimeException( e );
-                                }
-                            }
-                        }
 
                         return pluginClassLoader;
                     }
