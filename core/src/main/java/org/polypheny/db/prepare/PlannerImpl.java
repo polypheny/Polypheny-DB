@@ -174,16 +174,6 @@ public class PlannerImpl implements Planner {
 
     @Override
     public Node parse( final Reader reader ) throws NodeParseException {
-        /*switch ( state ) {
-            case STATE_0_CLOSED:
-            case STATE_1_RESET:
-                ready();
-        }
-        ensure( State.STATE_2_READY );
-        Parser parser = Parser.create( reader, parserConfig );
-        Node sqlNode = parser.parseStmt();
-        state = State.STATE_3_PARSED;
-        return sqlNode;*/
         throw new UnsupportedOperationException( "This operation is not longer supported and it shouldn't." );
     }
 

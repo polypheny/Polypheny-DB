@@ -3,8 +3,6 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    // implementation project(":sql-language")
-    // implementation project(":mql-language")
 
     implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
 
@@ -39,10 +37,6 @@ sourceSets {
 
 compileJava {
     dependsOn(":core:processResources")
-}
-
-delombok {
-    // dependsOn(":mql-language:processResources")
 }
 
 

@@ -183,8 +183,16 @@ public class PlannerImplMock implements Planner {
 
     @Override
     public Node parse( String sql ) throws NodeParseException {
+        switch ( state ) {
+            case STATE_0_CLOSED:
+            case STATE_1_RESET:
+                ready();
+        }
         SqlAbstractParserImpl parser = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( new SourceStringReader( sql ) );
-        return new SqlParser( parser, parserConfig ).parseQuery();
+        ensure( State.STATE_2_READY );
+        Node parsed = new SqlParser( parser, parserConfig ).parseQuery();
+        state = State.STATE_3_PARSED;
+        return parsed;
     }
 
 

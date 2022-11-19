@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.mql;
+package org.polypheny.db.sql;
 
-import org.polypheny.db.languages.MongoLanguagePlugin;
-
-public class MqlLanguageDependent {
+public class SqlLanguageDependent {
 
     static {
-        MongoLanguagePlugin.startup();
+        SqlLanguagePlugin.startup();
     }
 
 }

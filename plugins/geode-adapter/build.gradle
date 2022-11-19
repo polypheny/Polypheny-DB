@@ -51,10 +51,6 @@ javadoc {
     dependsOn(":core:processResources")
 }
 
-compileTestJava {
-    // dependsOn(":csv-adapter:processResources")
-}
-
 
 /**
  * JARs

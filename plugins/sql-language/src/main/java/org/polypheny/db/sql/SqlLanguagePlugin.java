@@ -185,6 +185,11 @@ public class SqlLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
+        startup();
+    }
+
+
+    public static void startup() {
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "sql", (
                 session,
                 request,
@@ -194,8 +199,8 @@ public class SqlLanguagePlugin extends Plugin {
                 c ) -> Crud.anySqlQuery( request, session, c ) ) );
         QueryLanguage.addQueryLanguage( NamespaceType.RELATIONAL, "sql", SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
 
-        if ( !SqlLanguagePlugin.isInit() ) {
-            SqlLanguagePlugin.registerOperators();
+        if ( !isInit() ) {
+            registerOperators();
         }
     }
 

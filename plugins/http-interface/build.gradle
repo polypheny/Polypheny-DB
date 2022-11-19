@@ -35,15 +35,11 @@ sourceSets {
 }
 
 compileJava {
-    // dependsOn(":cypher-language:processResources")
-    // dependsOn(":plugins:sql-language:processResources")
     dependsOn(":webui:processResources")
-    //dependsOn(":csv-adapter:processResources")
 }
 
 
 delombok {
-    // dependsOn(":csv-adapter:processResources")
     dependsOn(":webui:processResources")
 }
 

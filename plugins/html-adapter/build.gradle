@@ -47,10 +47,6 @@ delombok {
     dependsOn(":core:processResources")
 }
 
-compileTestJava {
-    // dependsOn(":csv-adapter:processResources")
-}
-
 
 /**
  * Tests

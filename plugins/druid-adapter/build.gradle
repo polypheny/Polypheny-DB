@@ -50,10 +50,6 @@ delombok {
     dependsOn(":plugins:sql-language:processResources")
 }
 
-javadoc {
-    // dependsOn(":sql-language:processResources")
-}
-
 /**
  * Tests
  */

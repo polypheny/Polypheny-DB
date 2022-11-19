@@ -54,6 +54,8 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.SqlLanguageDependent;
+import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
@@ -61,7 +63,7 @@ import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.Util;
 
-public class PlannerTest {
+public class PlannerTest extends SqlLanguageDependent {
 
     /**
      * Unit test that calls {@link Planner#transform} twice, with different rule sets, with different conventions.
@@ -127,7 +129,7 @@ public class PlannerTest {
                         0,
                         null ) )
                 .build();
-        return Frameworks.getPlanner( config );
+        return new PlannerImplMock( config );
     }
 
 

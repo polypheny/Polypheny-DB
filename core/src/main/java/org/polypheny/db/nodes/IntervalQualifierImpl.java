@@ -16,57 +16,81 @@
 
 package org.polypheny.db.nodes;
 
+import java.util.Objects;
+import lombok.Getter;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
 
 public class IntervalQualifierImpl implements IntervalQualifier {
 
+    @Getter
+    private final TimeUnitRange timeUnitRange;
+    @Getter
+    private final int startPrecision;
+    @Getter
+    private final int fractionalSecondPrecision;
+
+
+    public IntervalQualifierImpl( TimeUnit startUnit,
+            int startPrecision,
+            TimeUnit endUnit,
+            int fractionalSecondPrecision ) {
+        if ( endUnit == startUnit ) {
+            endUnit = null;
+        }
+        this.timeUnitRange =
+                TimeUnitRange.of( Objects.requireNonNull( startUnit ), endUnit );
+        this.startPrecision = startPrecision;
+        this.fractionalSecondPrecision = fractionalSecondPrecision;
+    }
+
+
     @Override
     public PolyType typeName() {
-        return null;
+        return IntervalQualifier.getRangePolyType( timeUnitRange );
     }
 
 
     @Override
     public int getStartPrecisionPreservingDefault() {
-        return 0;
+        return startPrecision;
     }
 
 
     @Override
     public int getFractionalSecondPrecision( AlgDataTypeSystem typeSystem ) {
-        return 0;
+        if ( fractionalSecondPrecision == AlgDataType.PRECISION_NOT_SPECIFIED ) {
+            return typeName().getDefaultScale();
+        } else {
+            return fractionalSecondPrecision;
+        }
     }
 
 
     @Override
     public int getFractionalSecondPrecisionPreservingDefault() {
-        return 0;
+        return fractionalSecondPrecision;
     }
 
 
     @Override
     public boolean isSingleDatetimeField() {
-        return false;
+        return timeUnitRange.endUnit == null;
     }
 
 
     @Override
     public boolean isYearMonth() {
-        return false;
-    }
-
-
-    @Override
-    public TimeUnitRange getTimeUnitRange() {
-        return null;
+        return timeUnitRange.startUnit.yearMonth;
     }
 
 
     @Override
     public <R> R accept( NodeVisitor<R> visitor ) {
-        return null;
+        return visitor.visit( this );
     }
 
 }
