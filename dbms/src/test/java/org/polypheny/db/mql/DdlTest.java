@@ -184,7 +184,7 @@ public class DdlTest extends MqlTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
             }

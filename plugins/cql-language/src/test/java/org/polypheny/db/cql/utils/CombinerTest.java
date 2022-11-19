@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cql;
+package org.polypheny.db.cql.utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +23,16 @@ import java.util.TreeMap;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.cql.BooleanGroup;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.Combiner;
 import org.polypheny.db.cql.Combiner.CombinerType;
+import org.polypheny.db.cql.Comparator;
+import org.polypheny.db.cql.Modifier;
+import org.polypheny.db.cql.TableIndex;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.helper.AlgBuildTestHelper;
+import org.polypheny.db.cql.utils.helper.AlgBuildTestHelper;
 
 
 public class CombinerTest extends AlgBuildTestHelper {

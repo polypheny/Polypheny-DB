@@ -94,7 +94,6 @@ public class Neo4jPlugin extends Plugin {
 
     @Override
     public void start() {
-        System.out.println( "started plugin" );
         ImmutableMap<String, String> settings = ImmutableMap.of(
                 "persistent", "true",
                 "port", "7687",

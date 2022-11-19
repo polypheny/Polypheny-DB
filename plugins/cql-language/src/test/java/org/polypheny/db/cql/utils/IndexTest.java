@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cql;
+package org.polypheny.db.cql.utils;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.helper.CqlTestHelper;
+import org.polypheny.db.cql.utils.helper.CqlTestHelper;
 
 
 public class IndexTest extends CqlTestHelper {

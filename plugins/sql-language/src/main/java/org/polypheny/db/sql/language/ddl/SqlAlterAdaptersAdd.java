@@ -98,7 +98,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         DdlManager.getInstance().addAdapter(
                 removeQuotationMarks( uniqueName.toString() ),
                 removeQuotationMarks( adapterName.toString() ),
-                AdapterType.valueOf( removeQuotationMarks( adapterType.toString() ) ),
+                AdapterType.valueOf( removeQuotationMarks( adapterType.toString().toUpperCase() ) ),
                 configMap );
     }
 

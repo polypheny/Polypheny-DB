@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cql;
+package org.polypheny.db.cql.utils;
 
 import com.google.gson.JsonObject;
 import java.sql.Date;
@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.cql.helper.CqlTestHelper;
+import org.polypheny.db.cql.utils.helper.CqlTestHelper;
 
 
 @Slf4j

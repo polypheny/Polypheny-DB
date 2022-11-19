@@ -18,6 +18,7 @@ package org.polypheny.db.plugins;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -42,9 +43,14 @@ public class PolyPluginManager extends DefaultPluginManager {
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
 
+    public PolyPluginManager( String... paths ) {
+        super( Arrays.stream( paths ).map( Path::of ).collect( Collectors.toList() ) );
+    }
+
+
     public static void init() {
         // create the plugin manager
-        final PluginManager pluginManager = new PolyPluginManager();
+        final PluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins" );
 
         // load the plugins
         pluginManager.loadPlugins();
@@ -77,7 +83,9 @@ public class PolyPluginManager extends DefaultPluginManager {
         AFTER_INIT.forEach( Runnable::run );
     }
 
+
     public static PluginClassLoader loader;
+
 
     @Override
     protected PluginLoader createPluginLoader() {
@@ -97,10 +105,10 @@ public class PolyPluginManager extends DefaultPluginManager {
 
                     @Override
                     public ClassLoader loadPlugin( Path pluginPath, PluginDescriptor pluginDescriptor ) {
-                        PluginClassLoader pluginClassLoader = createPluginClassLoader(pluginPath, pluginDescriptor);
+                        PluginClassLoader pluginClassLoader = createPluginClassLoader( pluginPath, pluginDescriptor );
 
-                        loadClasses(pluginPath, pluginClassLoader);
-                        loadJars(pluginPath, pluginClassLoader);
+                        loadClasses( pluginPath, pluginClassLoader );
+                        loadJars( pluginPath, pluginClassLoader );
 
                         return pluginClassLoader;
                     }
@@ -117,8 +125,6 @@ public class PolyPluginManager extends DefaultPluginManager {
                 //.add( new PropertiesPluginDescriptorFinder() );
                 .add( new ManifestPluginDescriptorFinder() );
     }
-
-
 
 
 }

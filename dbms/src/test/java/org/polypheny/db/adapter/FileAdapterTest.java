@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public class FileAdapterTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"mm\" USING 'org.polypheny.db.adapter.file.FileStore' WITH '{mode:embedded}'" );
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"mm\" USING 'File' AS 'Store' WITH '{mode:embedded}'" );
             }
         }
     }

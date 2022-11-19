@@ -62,7 +62,7 @@ public class MonetdbSourceTest extends AbstractSourceTest {
                 settings.put( "port", "" );
                 settings.put( "tables", "public.auction,public.bid,public.category,public.picture,public.user" );
                 Gson gson = new Gson();
-                statement.executeUpdate( "ALTER ADAPTERS ADD monetdbunit USING 'org.polypheny.db.adapter.monetdb.sources.MonetdbSource' WITH '" + gson.toJson( settings ) + "'" );
+                statement.executeUpdate( "ALTER ADAPTERS ADD monetdbunit USING 'Monetdb' AS 'Source' WITH '" + gson.toJson( settings ) + "'" );
             }
         }
     }

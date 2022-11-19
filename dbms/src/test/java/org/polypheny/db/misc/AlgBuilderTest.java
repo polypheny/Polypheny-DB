@@ -63,7 +63,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.language.SqlMatchRecognize;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -2281,6 +2280,26 @@ public class AlgBuilderTest {
     }
 
 
+    public enum AfterOption {
+        SKIP_TO_NEXT_ROW( "SKIP TO NEXT ROW" ),
+        SKIP_PAST_LAST_ROW( "SKIP PAST LAST ROW" );
+
+        private final String sql;
+
+
+        AfterOption( String sql ) {
+            this.sql = sql;
+        }
+
+
+        @Override
+        public String toString() {
+            return sql;
+        }
+
+    }
+
+
     @Test
     public void testMatchRecognize() {
         // Equivalent SQL:
@@ -2349,8 +2368,7 @@ public class AlgBuilderTest {
                                 builder.literal( 0 ) ),
                         "bottom_nw" ) );
 
-        RexNode after = builder.getRexBuilder().makeFlag(
-                SqlMatchRecognize.AfterOption.SKIP_TO_NEXT_ROW );
+        RexNode after = builder.getRexBuilder().makeFlag( AfterOption.SKIP_TO_NEXT_ROW );
 
         ImmutableList.Builder<RexNode> partitionKeysBuilder = new ImmutableList.Builder<>();
         partitionKeysBuilder.add( builder.field( "deptno" ) );

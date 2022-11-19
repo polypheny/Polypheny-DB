@@ -63,7 +63,7 @@ public class VerticalPartitioningTest {
 
                 try {
                     // Deploy additional store
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
                     // Add placement
@@ -112,7 +112,7 @@ public class VerticalPartitioningTest {
 
                 try {
                     // Deploy additional store
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
                     // Add placement
@@ -181,7 +181,7 @@ public class VerticalPartitioningTest {
                     Assert.assertEquals( 1, dataPlacement.getAllPartitionIds().size() );
 
                     // ADD adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
                     // ADD FullPlacement
@@ -315,7 +315,7 @@ public class VerticalPartitioningTest {
                     CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
 
                     // ADD adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
                     // ADD FullPlacement
