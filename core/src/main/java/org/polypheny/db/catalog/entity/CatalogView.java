@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;

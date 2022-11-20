@@ -30,7 +30,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
@@ -43,6 +42,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
@@ -197,7 +197,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
                     columns,
                     materializedCriteria,
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
-                    Catalog.QueryLanguage.from( "sql" ),
+                    QueryLanguage.from( "sql" ),
                     ifNotExists,
                     ordered );
         } catch ( EntityAlreadyExistsException e ) {

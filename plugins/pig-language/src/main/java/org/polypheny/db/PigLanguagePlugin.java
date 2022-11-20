@@ -24,8 +24,9 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.piglet.PigProcessorImpl;
@@ -58,7 +59,7 @@ public class PigLanguagePlugin extends Plugin {
     @Override
     public void start() {
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "pig", PigLanguagePlugin::anyPigQuery ) );
-        QueryLanguage.addQueryLanguage( NamespaceType.RELATIONAL, "pig", null, PigProcessorImpl::new, null );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "pig", List.of( "pig", "piglet" ), null, PigProcessorImpl::new, null );
     }
 
 

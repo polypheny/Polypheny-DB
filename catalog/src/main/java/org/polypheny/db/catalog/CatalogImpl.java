@@ -119,6 +119,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.FrequencyMap;

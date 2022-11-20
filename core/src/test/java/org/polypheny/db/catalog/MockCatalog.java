@@ -63,6 +63,7 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;

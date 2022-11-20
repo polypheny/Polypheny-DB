@@ -36,8 +36,8 @@ import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.Operator;
@@ -197,7 +197,7 @@ public class SqlLanguagePlugin extends Plugin {
                 userId,
                 databaseId,
                 c ) -> Crud.anySqlQuery( request, session, c ) ) );
-        QueryLanguage.addQueryLanguage( NamespaceType.RELATIONAL, "sql", SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "sql", List.of( "sql" ), SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
 
         if ( !isInit() ) {
             registerOperators();

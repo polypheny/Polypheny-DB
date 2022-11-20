@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package org.polypheny.db.nodes;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.util.Litmus;
 
 public interface Node extends Cloneable, Visitable {

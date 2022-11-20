@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 

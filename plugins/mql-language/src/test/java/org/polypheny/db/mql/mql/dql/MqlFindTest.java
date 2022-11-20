@@ -19,7 +19,7 @@ package org.polypheny.db.mql.mql.dql;
 import java.util.Map;
 import org.bson.BsonValue;
 import org.junit.Test;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlFind;
 import org.polypheny.db.languages.mql.MqlNode;

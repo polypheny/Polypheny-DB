@@ -17,8 +17,6 @@
 package org.polypheny.db.http;
 
 
-import static io.javalin.apibuilder.ApiBuilder.post;
-
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
@@ -27,7 +25,6 @@ import io.javalin.plugin.json.JsonMapper;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,7 +40,6 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -51,6 +47,8 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.HttpServer;
@@ -154,30 +152,17 @@ public class HttpInterfacePlugin extends Plugin {
             } );
 
             server.routes( () -> {
-
-                post( "/mongo", ctx -> anyQuery( QueryLanguage.from( "mongo" ), ctx ) );
-                post( "/mql", ctx -> anyQuery( QueryLanguage.from( "mongo" ), ctx ) );
-
-                //post( "/sql", ctx -> anyQuery( QueryLanguage.from( "sql" ), ctx ) );
-
-                post( "/piglet", ctx -> anyQuery( QueryLanguage.from( "pig" ), ctx ) );
-                post( "/pig", ctx -> anyQuery( QueryLanguage.from( "pig" ), ctx ) );
-
-                post( "/cql", ctx -> anyQuery( QueryLanguage.from( "cql" ), ctx ) );
-
-                post( "/cypher", ctx -> anyQuery( QueryLanguage.from( "cypher" ), ctx ) );
-                post( "/opencypher", ctx -> anyQuery( QueryLanguage.from( "cypher" ), ctx ) );
-
                 StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
             } );
 
-            addRoute( Collections.singletonList( "/sql" ), QueryLanguage.from( "sql" ) );
+
+            LanguageCrud.REGISTER.forEach( ( key, value ) -> addRoute( QueryLanguage.from( key ) ) );
         }
 
 
-        public void addRoute( List<String> routes, QueryLanguage language ) {
-            log.info( "added http route: {}", routes );
-            for ( String route : routes ) {
+        public void addRoute( QueryLanguage language ) {
+            for ( String route : language.getOtherNames() ) {
+                log.info( "added http route: {}", route );
                 server.post( route, ctx -> anyQuery( language, ctx ) );
             }
         }
@@ -237,6 +222,14 @@ public class HttpInterfacePlugin extends Plugin {
         @Override
         protected void reloadSettings( List<String> updatedSettings ) {
 
+        }
+
+
+        @Override
+        public void languageChange() {
+            for ( QueryLanguage language : LanguageManager.getLanguages() ) {
+                addRoute( language );
+            }
         }
 
 

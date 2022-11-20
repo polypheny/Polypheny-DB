@@ -18,6 +18,8 @@ package org.polypheny.db.avatica;
 
 
 import com.google.common.collect.ImmutableList;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +68,7 @@ public class AvaticaInterfacePlugin extends Plugin {
 
     @Slf4j
     @Extension
-    public static class AvaticaInterface extends QueryInterface {
+    public static class AvaticaInterface extends QueryInterface implements PropertyChangeListener {
 
         @SuppressWarnings("WeakerAccess")
         public static final String INTERFACE_NAME = "AVATICA Interface";
@@ -109,6 +111,18 @@ public class AvaticaInterfacePlugin extends Plugin {
             } catch ( Exception e ) {
                 throw new RuntimeException( "Exception while starting " + INTERFACE_NAME, e );
             }
+
+        }
+
+        @Override
+        public void propertyChange( PropertyChangeEvent evt ) {
+
+        }
+
+
+        @Override
+        public void languageChange() {
+
         }
 
 
@@ -152,6 +166,7 @@ public class AvaticaInterfacePlugin extends Plugin {
         public String getInterfaceType() {
             return INTERFACE_NAME;
         }
+
 
     }
 

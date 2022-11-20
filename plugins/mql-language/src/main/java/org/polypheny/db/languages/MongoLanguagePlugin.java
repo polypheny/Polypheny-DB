@@ -28,7 +28,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.mql.Mql.Family;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
@@ -77,7 +76,7 @@ public class MongoLanguagePlugin extends Plugin {
 
     public static void startup() {
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "mongo", MongoLanguagePlugin::anyMongoQuery ) );
-        QueryLanguage.addQueryLanguage( NamespaceType.DOCUMENT, "mongo", org.polypheny.db.mql.parser.impl.MqlParserImpl.FACTORY, MqlProcessorImpl::new, null );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.DOCUMENT, "mongo", List.of( "mongo", "mql" ), org.polypheny.db.mql.parser.impl.MqlParserImpl.FACTORY, MqlProcessorImpl::new, null );
 
         if ( !isInit() ) {
             registerOperators();

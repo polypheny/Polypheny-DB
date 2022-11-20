@@ -376,6 +376,12 @@ public class RestInterfacePlugin extends Plugin {
 
 
         @Override
+        public void languageChange() {
+
+        }
+
+
+        @Override
         public String getInterfaceType() {
             return INTERFACE_NAME;
         }

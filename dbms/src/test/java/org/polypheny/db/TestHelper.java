@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
@@ -463,7 +464,7 @@ public class TestHelper {
 
     public static class CypherConnection extends HttpConnection {
 
-        static Gson gson = new Gson();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
 
         public static Result executeGetResponse( String query ) {

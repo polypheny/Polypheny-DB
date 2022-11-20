@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.polypheny.db.iface;
 
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,10 +27,11 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.transaction.TransactionManager;
 
 
-public abstract class QueryInterface implements Runnable, ExtensionPoint {
+public abstract class QueryInterface implements Runnable, PropertyChangeListener, ExtensionPoint {
 
     protected final transient TransactionManager transactionManager;
     protected final transient Authenticator authenticator;
@@ -61,6 +64,8 @@ public abstract class QueryInterface implements Runnable, ExtensionPoint {
         this.settings = settings;
         this.supportsDml = supportsDml;
         this.supportsDdl = supportsDdl;
+
+        LanguageManager.getINSTANCE().addObserver( this );
     }
 
 
@@ -185,5 +190,14 @@ public abstract class QueryInterface implements Runnable, ExtensionPoint {
 
     }
 
+
+    @Override
+    public void propertyChange( PropertyChangeEvent evt ) {
+        if ( evt.getPropertyName().equals( "language" ) ) {
+            languageChange();
+        }
+    }
+
+    public abstract void languageChange();
 
 }

@@ -24,9 +24,10 @@ import org.pf4j.PluginWrapper;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.parser.CypherParserImpl;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AutomaticDdlProcessor;
@@ -56,7 +57,7 @@ public class CypherLanguagePlugin extends Plugin {
     @Override
     public void start() {
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "cypher", CypherLanguagePlugin::anyCypherQuery ) );
-        QueryLanguage.addQueryLanguage( NamespaceType.GRAPH, "cypher", CypherParserImpl.FACTORY, CypherProcessorImpl::new, null );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.GRAPH, "cypher", List.of( "cypher", "opencypher" ), CypherParserImpl.FACTORY, CypherProcessorImpl::new, null );
 
         if ( !CypherRegisterer.isInit() ) {
             CypherRegisterer.registerOperators();
@@ -89,7 +90,7 @@ public class CypherLanguagePlugin extends Plugin {
             queryAnalyzer = LanguageCrud.attachAnalyzerIfSpecified( request, crud, transaction );
 
             executionTime = System.nanoTime();
-            ;
+
 
             Statement statement = transaction.createStatement();
             ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, request.database );

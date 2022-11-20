@@ -30,7 +30,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -39,6 +38,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
@@ -148,7 +148,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                     placementType,
                     columns,
                     String.valueOf( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ) ),
-                    Catalog.QueryLanguage.from( "sql" ) );
+                    QueryLanguage.from( "sql" ) );
         } catch ( EntityAlreadyExistsException e ) {
             throw CoreUtil.newContextException( name.getPos(), RESOURCE.tableExists( viewName ) );
         } catch ( GenericCatalogException | UnknownColumnException e ) {

@@ -21,10 +21,10 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 

@@ -24,12 +24,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.adapter.DataStore;
@@ -93,13 +88,9 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.languages.ParserFactory;
-import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.prepare.Context;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -2044,54 +2035,6 @@ public abstract class Catalog {
             }
             throw new RuntimeException( "Not found a suitable NamespaceType." );
         }
-    }
-
-
-    public static class QueryLanguage {
-
-        private static final List<QueryLanguage> REGISTER = new ArrayList<>();
-
-
-        @Getter
-        private final NamespaceType namespaceType;
-        @Getter
-        private final String serializedName;
-        @Getter
-        private final ParserFactory factory;
-        @Getter
-        private final Supplier<Processor> processorSupplier;
-        @Getter
-        private final BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier;
-
-
-        QueryLanguage( NamespaceType namespaceType, String serializedName, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier ) {
-            this.namespaceType = namespaceType;
-            this.serializedName = serializedName;
-            this.factory = factory;
-            this.processorSupplier = processorSupplier;
-            this.validatorSupplier = validatorSupplier;
-        }
-
-
-        public static void addQueryLanguage( NamespaceType namespaceType, String serializedName, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, PolyphenyDbCatalogReader, Validator> validatorSupplier ) {
-            REGISTER.add( new QueryLanguage( namespaceType, serializedName, factory, processorSupplier, validatorSupplier ) );
-        }
-
-
-        public static QueryLanguage from( String name ) {
-            String normalized = name.toLowerCase( Locale.ROOT );
-
-            return REGISTER.stream().filter( l -> Objects.equals( l.serializedName, normalized ) )
-                    .findFirst()
-                    .orElseThrow( () -> new RuntimeException( "The query language seems not to be supported!" ) );
-
-        }
-
-
-        public static List<QueryLanguage> getLanguages() {
-            return REGISTER;
-        }
-
     }
 
 

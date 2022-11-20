@@ -26,10 +26,11 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.cql.parser.CqlParser;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
@@ -60,7 +61,7 @@ public class CqlLanguagePlugin extends Plugin {
     @Override
     public void start() {
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "cql", CqlLanguagePlugin::processCqlRequest ) );
-        QueryLanguage.addQueryLanguage( NamespaceType.RELATIONAL, "cql", null, null, null );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "cql", List.of( "cql" ), null, null, null );
     }
 
 

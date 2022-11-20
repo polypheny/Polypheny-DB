@@ -24,6 +24,7 @@ import com.github.rvesse.airline.annotations.OptionType;
 import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
+import java.util.List;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,7 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
 import org.polypheny.db.monitoring.statistics.StatisticsManagerImpl;
@@ -372,9 +374,10 @@ public class PolyphenyDb {
         }
 
         // temporary add sql and rel here
-        Catalog.QueryLanguage.addQueryLanguage(
+        LanguageManager.getINSTANCE().addQueryLanguage(
                 NamespaceType.RELATIONAL,
                 "rel",
+                List.of("rel", "relational"),
                 null,
                 JsonRelProcessorImpl::new,
                 null );

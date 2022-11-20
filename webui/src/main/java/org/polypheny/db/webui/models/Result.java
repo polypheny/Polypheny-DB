@@ -32,7 +32,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
@@ -245,8 +245,9 @@ public class Result {
                     break;
                 case "namespaceName":
                     namespaceName = in.nextString();
+                    break;
                 case "language":
-                    language = QueryLanguage.from( in.nextString() );
+                    language = QueryLanguage.getSerializer().read( in );
                     break;
                 case "hasMoreRows":
                     hasMoreRows = in.nextBoolean();
@@ -254,7 +255,7 @@ public class Result {
                 case "classificationInfo":
                     classificationInfo = in.nextString();
                     break;
-                case "explorerInd":
+                case "explorerId":
                     explorerId = in.nextInt();
                     break;
                 case "includesClassificationInfo":
@@ -403,7 +404,7 @@ public class Result {
 
 
     public static TypeAdapter<Result> getSerializer() {
-        return new TypeAdapter<Result>() {
+        return new TypeAdapter<>() {
             final ObjectMapper mapper = new ObjectMapper();
 
 
@@ -444,7 +445,7 @@ public class Result {
                 out.name( "namespaceName" );
                 out.value( result.namespaceName );
                 out.name( "language" );
-                out.value( result.language.getSerializedName() );
+                QueryLanguage.getSerializer().write( out, result.language );
                 out.name( "hasMoreRows" );
                 out.value( result.hasMoreRows );
                 out.name( "classificationInfo" );

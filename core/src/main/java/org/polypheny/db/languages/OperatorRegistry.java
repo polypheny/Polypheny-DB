@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.Operator;
 
@@ -43,7 +42,7 @@ public class OperatorRegistry {
         // we register a new map for each language per default
         // the general operators are registered for null
         registry.put( null, new HashMap<>() );
-        for ( QueryLanguage language : QueryLanguage.getLanguages() ) {
+        for ( QueryLanguage language : LanguageManager.getLanguages() ) {
             registry.put( language, new HashMap<>() );
         }
     }
