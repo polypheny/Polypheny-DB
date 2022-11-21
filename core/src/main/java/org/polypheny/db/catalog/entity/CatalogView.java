@@ -40,8 +40,7 @@ public class CatalogView extends CatalogTable {
 
     @Getter
     protected final ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
-    @Getter
-    private final QueryLanguage language;
+    private final String language;
     @Getter
     private final AlgCollation algCollation;
     @Getter
@@ -64,12 +63,13 @@ public class CatalogView extends CatalogTable {
             AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            QueryLanguage language ) {
+            String language ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, entityType, primaryKey, dataPlacements,
                 modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
+        // mapdb cannot handle the class QueryLanguage, therefore we use the String here
         this.language = language;
     }
 
@@ -137,6 +137,11 @@ public class CatalogView extends CatalogTable {
                 connectedViews,
                 underlyingTables,
                 language );
+    }
+
+
+    public QueryLanguage getLanguage() {
+        return QueryLanguage.from( language );
     }
 
 

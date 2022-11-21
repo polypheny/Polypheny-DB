@@ -32,8 +32,7 @@ public class CatalogMaterializedView extends CatalogView {
 
     private static final long serialVersionUID = 4728996184367206274L;
 
-    @Getter
-    private final QueryLanguage language;
+    private final String language;
 
     @Getter
     private final AlgCollation algCollation;
@@ -64,7 +63,7 @@ public class CatalogMaterializedView extends CatalogView {
             AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            QueryLanguage language,
+            String language,
             MaterializedCriteria materializedCriteria,
             boolean ordered
     ) {
@@ -168,6 +167,11 @@ public class CatalogMaterializedView extends CatalogView {
     @Override
     public AlgNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
+    }
+
+
+    public QueryLanguage getLanguage() {
+        return QueryLanguage.from( language );
     }
 
 }

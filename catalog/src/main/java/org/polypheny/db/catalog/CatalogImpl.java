@@ -1939,7 +1939,7 @@ public class CatalogImpl extends Catalog {
                         Entry::getKey,
                         e -> ImmutableList.copyOf( e.getValue() )
                 ) ) ),
-                language //fieldList
+                language.getSerializedName() //fieldList
         );
         addConnectedViews( underlyingTables, viewTable.id );
         updateEntityLogistics( name, namespaceId, id, schema, viewTable );
@@ -1978,6 +1978,12 @@ public class CatalogImpl extends Catalog {
                 .build();
 
         if ( entityType == EntityType.MATERIALIZED_VIEW ) {
+            Map<Long, ImmutableList<Long>> map = new HashMap<>();
+            for ( Entry<Long, List<Long>> e : underlyingTables.entrySet() ) {
+                if ( map.put( e.getKey(), ImmutableList.copyOf( e.getValue() ) ) != null ) {
+                    throw new IllegalStateException( "Duplicate key" );
+                }
+            }
             CatalogMaterializedView materializedViewTable = new CatalogMaterializedView(
                     id,
                     name,
@@ -1993,11 +1999,8 @@ public class CatalogImpl extends Catalog {
                     partitionProperty,
                     algCollation,
                     ImmutableList.of(),
-                    ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
-                            Entry::getKey,
-                            e -> ImmutableList.copyOf( e.getValue() )
-                    ) ) ),
-                    language,
+                    ImmutableMap.copyOf( map ),
+                    language.getSerializedName(),
                     materializedCriteria,
                     ordered
             );
@@ -2182,7 +2185,7 @@ public class CatalogImpl extends Catalog {
                     oldView.getAlgCollation(),
                     old.connectedViews,
                     oldView.getUnderlyingTables(),
-                    oldView.getLanguage(),
+                    oldView.getLanguage().getSerializedName(),
                     oldView.getMaterializedCriteria(),
                     oldView.isOrdered() );
         } else {
@@ -2236,7 +2239,7 @@ public class CatalogImpl extends Catalog {
                     oldView.getAlgCollation(),
                     old.connectedViews,
                     oldView.getUnderlyingTables(),
-                    oldView.getLanguage(),
+                    oldView.getLanguage().getSerializedName(),
                     oldView.getMaterializedCriteria(),
                     oldView.isOrdered() );
         } else {
@@ -2352,7 +2355,7 @@ public class CatalogImpl extends Catalog {
                 old.getAlgCollation(),
                 old.connectedViews,
                 old.getUnderlyingTables(),
-                old.getLanguage(),
+                old.getLanguage().getSerializedName(),
                 materializedCriteria,
                 old.isOrdered() );
 
@@ -3249,7 +3252,7 @@ public class CatalogImpl extends Catalog {
                     oldView.getAlgCollation(),
                     old.connectedViews,
                     oldView.getUnderlyingTables(),
-                    oldView.getLanguage(),
+                    oldView.getLanguage().getSerializedName(),
                     oldView.getMaterializedCriteria(),
                     oldView.isOrdered()
             );
@@ -4814,7 +4817,7 @@ public class CatalogImpl extends Catalog {
                     oldView.getAlgCollation(),
                     old.connectedViews,
                     oldView.getUnderlyingTables(),
-                    oldView.getLanguage(),
+                    oldView.getLanguage().getSerializedName(),
                     oldView.getMaterializedCriteria(),
                     oldView.isOrdered()
             );

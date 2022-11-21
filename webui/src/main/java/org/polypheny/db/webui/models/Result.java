@@ -17,7 +17,6 @@
 package org.polypheny.db.webui.models;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
@@ -315,7 +314,14 @@ public class Result {
         List<String> list = new ArrayList<>();
         in.beginArray();
         while ( in.peek() != JsonToken.END_ARRAY ) {
-            list.add( in.nextString() );
+            if ( in.peek() == JsonToken.NULL ) {
+                in.nextNull();
+                list.add( null );
+            } else if ( in.peek() == JsonToken.STRING ) {
+                list.add( in.nextString() );
+            } else {
+                throw new RuntimeException( "Error while un-parsing Result." );
+            }
         }
         in.endArray();
         return list;
@@ -417,8 +423,6 @@ public class Result {
 
     public static TypeAdapter<Result> getSerializer() {
         return new TypeAdapter<>() {
-            final ObjectMapper mapper = new ObjectMapper();
-
 
             @Override
             public void write( JsonWriter out, Result result ) throws IOException {
