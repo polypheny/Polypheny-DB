@@ -313,7 +313,7 @@ public class TestHelper {
 
         public static final String MONGO_PREFIX = "/mongo";
         public static final String MONGO_DB = "test";
-        static Gson gson = new Gson();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
 
         private MongoConnection() {

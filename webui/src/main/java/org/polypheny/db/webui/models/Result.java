@@ -290,7 +290,19 @@ public class Result {
             rawData.add( list );
         }
         in.endArray();
-        return rawData.toArray( new String[0][] );
+        return toNestedArray( rawData );
+    }
+
+
+    private static String[][] toNestedArray( List<List<String>> nestedList ) {
+        String[][] array = new String[nestedList.size()][];
+        int i = 0;
+        for ( List<String> list : nestedList ) {
+            array[i] = list.toArray( new String[0] );
+            i++;
+        }
+
+        return array;
     }
 
 
