@@ -55,24 +55,25 @@ public class DdlTest extends MqlTestTemplate {
     @Test
     public void addCollectionTest() throws UnknownSchemaException {
         Catalog catalog = Catalog.getInstance();
+        String name = "testCollection";
 
         CatalogSchema namespace = catalog.getSchema( Catalog.defaultDatabaseId, database );
 
         int size = catalog.getCollections( namespace.id, null ).size();
 
-        execute( "db.createCollection(\"" + collectionName + "\")" );
+        execute( "db.createCollection(\"" + name + "\")" );
 
         assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
 
-        execute( String.format( "db.%s.drop()", collectionName ) );
+        execute( String.format( "db.%s.drop()", name ) );
 
         assertEquals( size, catalog.getCollections( namespace.id, null ).size() );
 
-        execute( "db.createCollection(\"" + collectionName + "\")" );
+        execute( "db.createCollection(\"" + name + "\")" );
 
         assertEquals( size + 1, catalog.getCollections( namespace.id, null ).size() );
 
-        execute( String.format( "db.%s.drop()", collectionName ) );
+        execute( String.format( "db.%s.drop()", name ) );
     }
 
 

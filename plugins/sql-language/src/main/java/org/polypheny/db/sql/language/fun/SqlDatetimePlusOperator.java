@@ -26,7 +26,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.sql.language.SqlCall;
-import org.polypheny.db.sql.language.SqlIntervalQualifier;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlSyntax;
 import org.polypheny.db.sql.language.SqlWriter;
@@ -59,7 +58,7 @@ public class SqlDatetimePlusOperator extends SqlSpecialOperator {
         final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final AlgDataType leftType = opBinding.getOperandType( 0 );
         final IntervalPolyType unitType = (IntervalPolyType) opBinding.getOperandType( 1 );
-        final TimeUnit timeUnit = ((SqlIntervalQualifier) unitType.getIntervalQualifier()).getStartUnit();
+        final TimeUnit timeUnit = unitType.getIntervalQualifier().getTimeUnitRange().startUnit;
         return SqlTimestampAddFunction.deduceType( typeFactory, timeUnit, unitType, leftType );
     }
 

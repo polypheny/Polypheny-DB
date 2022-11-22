@@ -2389,7 +2389,11 @@ public class CatalogImpl extends Catalog {
         if ( schemas.containsKey( namespaceId ) ) {
             CatalogSchema schema = Objects.requireNonNull( schemas.get( namespaceId ) );
             if ( namePattern != null ) {
-                return Collections.singletonList( collectionNames.get( new Object[]{ schema.databaseId, namespaceId, namePattern.pattern } ) );
+                CatalogCollection collection = collectionNames.get( new Object[]{ schema.databaseId, namespaceId, namePattern.pattern } );
+                if ( collection == null ) {
+                    return new ArrayList<>();
+                }
+                return Collections.singletonList( collection );
             } else {
                 return new ArrayList<>( collectionNames.prefixSubMap( new Object[]{ schema.databaseId, namespaceId } ).values() );
             }

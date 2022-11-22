@@ -49,7 +49,7 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
         Catalog catalog = Catalog.getInstance();
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
-        if ( catalog.getCollections( Catalog.defaultDatabaseId, new Pattern( database ) ).size() != 1 ) {
+        if ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( database ) ).size() != 1 ) {
             // dropping a document database( Polyschema ), which does not exist, which is a no-op
             return;
         }

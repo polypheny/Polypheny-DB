@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.nodes.Call;
@@ -37,6 +38,8 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Litmus;
 
 public class ArtificialSelectivityOperator implements Operator {
@@ -65,7 +68,7 @@ public class ArtificialSelectivityOperator implements Operator {
 
     @Override
     public AlgDataType inferReturnType( OperatorBinding opBinding ) {
-        return null;
+        return new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.BOOLEAN );
     }
 
 
@@ -83,19 +86,19 @@ public class ArtificialSelectivityOperator implements Operator {
 
     @Override
     public Kind getKind() {
-        return null;
+        return Kind.OTHER_FUNCTION;
     }
 
 
     @Override
     public String getName() {
-        return null;
+        return "ARTIFICIAL_SELECTIVITY";
     }
 
 
     @Override
     public boolean validRexOperands( int count, Litmus litmus ) {
-        return false;
+        return true;
     }
 
 
