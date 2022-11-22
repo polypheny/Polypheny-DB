@@ -147,13 +147,13 @@ licensee {
 
     allowDependency('com.j256.simplemagic', 'simplemagic', '1.16') { because 'ISC license' }
     allowDependency('com.adobe.xmp', 'xmpcore', '6.0.6') { because 'BSD 3-Clause' }
-    allowDependency('org.bouncycastle', 'bcpkix-jdk15on', '1.67') { because 'MIT license' }
-    allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.67') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcpkix-jdk15on', '1.64') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.64') { because 'MIT license' }
     allowDependency('org.vitrivr', 'cottontaildb', '0.13.3') { because 'MIT license' }
     allowDependency('org.vitrivr', 'cottontaildb-proto', '0.13.0') { because 'MIT license' }
     allowDependency('org.javassist', 'javassist', '3.28.0-GA') { because 'Apache 2.0 license' }
     allowDependency('org.awaitility', 'awaitility', '4.0.1') { because 'Apache 2.0 license' }
-    allowDependency('net.java.dev.jna', 'jna', '5.9.0') { because 'Apache 2.0 license' }
+    allowDependency('net.java.dev.jna', 'jna', '5.8.0') { because 'Apache 2.0 license' }
     allowDependency('net.java.dev.jna', 'jna-platform', '5.8.0') { because 'Apache 2.0 license' }
     allowDependency('jakarta.xml.bind', 'jakarta.xml.bind-api', '2.3.2') { because 'Eclipse Distribution License 1.0' }
     allowDependency('org.postgresql', 'postgresql', '42.2.19') { because 'BSD 2-Clause' }
@@ -185,7 +185,7 @@ licensee {
     allowDependency('com.github.jnr', 'jnr-posix', '3.0.47') { because 'Eclipse Public License v. 2.0' }
     allowDependency('jakarta.activation', 'jakarta.activation-api', '1.2.1') { because 'Eclipse Public License v. 2.0' }
     allowDependency('javax.annotation', 'javax.annotation-api', '1.3.2') { because 'CDDL license' }
-    allowDependency('javax.servlet', 'javax.servlet-api', '4.0.1') {
+    allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
 
