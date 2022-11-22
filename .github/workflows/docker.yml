@@ -31,7 +31,7 @@ jobs:
                 with:
                     max_attempts: 2
                     timeout_minutes: 60
-                    command: ./gradlew assemble
+                    command: ./gradlew build -x test
             -   name: Execute Docker tests
                 uses: nick-invision/retry@v2
                 with:
