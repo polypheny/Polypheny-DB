@@ -55,17 +55,11 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     public IntervalQualifier getIntervalQualifier() {
-        return new IntervalQualifierImpl( intervalQualifier.timeUnitRange.startUnit,
-                intervalQualifier.startPrecision,
-                intervalQualifier.timeUnitRange.endUnit,
-                intervalQualifier.fractionalSecondPrecision );
-        /*return LanguageManager.getInstance().createIntervalQualifier(
-                QueryLanguage.from( "sql" ),
+        return new IntervalQualifierImpl(
                 intervalQualifier.timeUnitRange.startUnit,
                 intervalQualifier.startPrecision,
                 intervalQualifier.timeUnitRange.endUnit,
-                intervalQualifier.fractionalSecondPrecision,
-                ParserPos.ZERO );*/
+                intervalQualifier.fractionalSecondPrecision );
     }
 
 
@@ -111,13 +105,13 @@ public class IntervalPolyType extends AbstractPolyType {
             }
         }
 
-        AlgDataType intervalType = typeFactory.createIntervalType( new IntervalQualifierImpl( thisStart, intervalQualifier.startPrecision, thisEnd, intervalQualifier.fractionalSecondPrecision ) /*LanguageManager.getInstance().createIntervalQualifier(
-                QueryLanguage.from( "sql" ),
-                thisStart,
-                secondPrec,
-                thisEnd,
-                fracPrec,
-                ParserPos.ZERO )*/ );
+        AlgDataType intervalType = typeFactory.createIntervalType(
+                new IntervalQualifierImpl(
+                    thisStart,
+                    intervalQualifier.startPrecision,
+                    thisEnd,
+                    intervalQualifier.fractionalSecondPrecision )
+        );
         intervalType = typeFactory.createTypeWithNullability( intervalType, nullable );
         return (IntervalPolyType) intervalType;
     }

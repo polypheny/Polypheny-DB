@@ -35,7 +35,10 @@ public class PolyIntervalQualifier {
 
 
     public static PolyIntervalQualifier fromSqlQualifier( IntervalQualifier intervalQualifier ) {
-        return new PolyIntervalQualifier( intervalQualifier.getStartPrecisionPreservingDefault(), intervalQualifier.getTimeUnitRange(), intervalQualifier.getFractionalSecondPrecisionPreservingDefault() );
+        return new PolyIntervalQualifier(
+                intervalQualifier.getStartPrecisionPreservingDefault(),
+                intervalQualifier.getTimeUnitRange(),
+                intervalQualifier.getFractionalSecondPrecisionPreservingDefault() );
     }
 
 

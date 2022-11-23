@@ -72,7 +72,18 @@ public class IntervalQualifierImpl implements IntervalQualifier {
 
     @Override
     public int getFractionalSecondPrecisionPreservingDefault() {
-        return fractionalSecondPrecision;
+        if ( useDefaultFractionalSecondPrecision() ) {
+            return AlgDataType.PRECISION_NOT_SPECIFIED;
+        } else {
+            return fractionalSecondPrecision;
+        }
+    }
+
+    /**
+     * Returns {@code true} if fractional second precision is not specified.
+     */
+    public boolean useDefaultFractionalSecondPrecision() {
+        return fractionalSecondPrecision == AlgDataType.PRECISION_NOT_SPECIFIED;
     }
 
 
