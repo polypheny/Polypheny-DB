@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui;
+package org.polypheny.db.sql.map;
 
 
 import com.google.common.collect.ImmutableList;
@@ -36,11 +36,12 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.sql.SqlLanguageDependant;
+import org.polypheny.db.sql.SqlLanguageDependent;
+import org.polypheny.db.sql.web.SchemaToJsonMapper;
 import org.polypheny.db.type.PolyType;
 
 
-public class SchemaToJsonMapperTest extends SqlLanguageDependant {
+public class SchemaToJsonMapperTest extends SqlLanguageDependent {
 
 
     private static final String mockJson = "{\"tableName\":\"stores\",\"columns\":[{\"columnName\":\"sid\",\"type\":\"INTEGER\",\"nullable\":false},{\"columnName\":\"name\",\"type\":\"VARCHAR\",\"length\":50,\"nullable\":false},{\"columnName\":\"location\",\"type\":\"VARCHAR\",\"length\":30,\"nullable\":true,\"defaultValue\":\"Basel\"}],\"primaryKeyColumnNames\":[\"sid\",\"name\"]}";
