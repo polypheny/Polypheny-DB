@@ -49,7 +49,46 @@ public class IntervalPolyType extends AbstractPolyType {
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         sb.append( intervalQualifier.typeName() );
-        // LanguageManager.getInstance().createIntervalTypeString( sb, intervalQualifier ); todo dl maybe change
+        sb.append( "INTERVAL " );
+        final String start = intervalQualifier.timeUnitRange.startUnit.name();
+        final int fractionalSecondPrecision = intervalQualifier.getFractionalSecondPrecision( typeSystem );
+        final int startPrecision = intervalQualifier.getStartPrecision( typeSystem );
+        if ( intervalQualifier.timeUnitRange.startUnit == TimeUnit.SECOND ) {
+            if ( !intervalQualifier.useDefaultFractionalSecondPrecision() ) {
+                sb.append( "(" );
+                sb.append( startPrecision );
+                sb.append( "," );
+                sb.append( intervalQualifier.getFractionalSecondPrecision( typeSystem ) );
+                sb.append( ")" );
+            } else if ( !intervalQualifier.useDefaultStartPrecision() ) {
+                sb.append( "(" );
+                sb.append( startPrecision );
+                sb.append( ")" );
+            } else {
+                sb.append( start );
+            }
+        } else {
+            if ( !intervalQualifier.useDefaultStartPrecision() ) {
+                sb.append( "(" );
+                sb.append( startPrecision );
+                sb.append( ")" );
+            } else {
+                sb.append( start );
+            }
+
+            if ( null != intervalQualifier.timeUnitRange.endUnit ) {
+                sb.append( "TO" );
+                final String end = intervalQualifier.timeUnitRange.endUnit.name();
+                if ( (TimeUnit.SECOND == intervalQualifier.timeUnitRange.endUnit) && (!intervalQualifier.useDefaultFractionalSecondPrecision()) ) {
+                    sb.append( "(" );
+                    sb.append( fractionalSecondPrecision );
+                    sb.append( ")" );
+                } else {
+                    sb.append( end );
+                }
+            }
+        }
+
     }
 
 
