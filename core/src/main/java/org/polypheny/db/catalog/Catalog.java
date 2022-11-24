@@ -489,6 +489,8 @@ public abstract class Catalog {
      */
     public abstract long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
 
+    public abstract long relocateTable(CatalogTable table, long targetNamespaceId );
+
 
     /**
      * Adds a view to a specified schema.

@@ -249,6 +249,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createTable", crud::createTable );
 
+        webuiServer.post( "/transferTable", crud::transferTable);
+
         webuiServer.post( "/createCollection", crud.languageCrud::createCollection );
 
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames );

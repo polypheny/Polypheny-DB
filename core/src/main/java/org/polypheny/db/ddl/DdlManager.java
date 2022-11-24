@@ -451,6 +451,8 @@ public abstract class DdlManager {
      */
     public abstract void createTable( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
+    public abstract void transferTable( CatalogTable table, long targetSchemaId, Statement statement ) throws EntityAlreadyExistsException;
+
     /**
      * Create a new view
      *

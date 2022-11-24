@@ -48,6 +48,12 @@ SqlAlterSchema SqlAlterSchema(Span s) :
     <SCHEMA>
     schema = CompoundIdentifier()
     (
+        <TRANSFER>
+        name = CompoundIdentifier()
+        {
+            return new SqlAlterSchemaTransferTable(s.end(this), name, schema);
+        }
+    |
         <RENAME> <TO>
         name = CompoundIdentifier()
         {

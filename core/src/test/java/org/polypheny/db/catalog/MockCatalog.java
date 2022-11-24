@@ -351,6 +351,11 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+    @Override
+    public long relocateTable(CatalogTable sourceTable, long targetNamespaceId ) {
+        throw new NotImplementedException();
+    }
+
 
     @Override
     public long addView( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
