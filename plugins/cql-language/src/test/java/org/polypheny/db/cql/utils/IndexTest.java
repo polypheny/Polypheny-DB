@@ -18,6 +18,8 @@ package org.polypheny.db.cql.utils;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.cql.ColumnIndex;
+import org.polypheny.db.cql.TableIndex;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.utils.helper.CqlTestHelper;
 

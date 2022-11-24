@@ -244,12 +244,27 @@ shadowJar {
         include("io.grpc.*")
     }
 }
+
+// due to gradle 7.6+
+configurations {
+    testClasses {
+        extendsFrom(testImplementation)
+    }
+}
+// due to gradle 7.6+
+task testJar(type: Jar) {
+    archiveClassifier.set('test')
+    from sourceSets.test.output
+}
+
 assemble.dependsOn shadowJar
 artifacts {
     //archives jar // regular jar containing only the compiled source
     archives shadowJar // fat jar which additionally contains all dependencies
     //archives sourcesJar // jar file containing the java doc files
     //archives javadocJar // jar file containing the source files
+    // due to gradle 7.6+
+    testClasses testJar
 }
 
 

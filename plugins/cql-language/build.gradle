@@ -20,6 +20,7 @@ buildscript {
 dependencies {
     implementation project(":core")
     implementation project(":webui")
+    implementation project(":dbms")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
@@ -29,7 +30,11 @@ dependencies {
     implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
 
     // --- Test Compile ---
-    testImplementation project(path: ":core", configuration: "tests")
+    // due to gradle 7.6+
+    testImplementation project(path: ':dbms', configuration: 'testClasses')
+
+    testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
+
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 
