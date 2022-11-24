@@ -2361,7 +2361,9 @@ public class DdlManagerImpl extends DdlManager {
 
             catalog.dropCollectionPlacement( collection.id, store.getAdapterId() );
 
-            removeDocumentPlacementLogistics( collection, store, statement );
+            if ( !store.getSupportedSchemaType().contains( NamespaceType.DOCUMENT ) ) {
+                removeDocumentPlacementLogistics( collection, store, statement );
+            }
         }
 
     }

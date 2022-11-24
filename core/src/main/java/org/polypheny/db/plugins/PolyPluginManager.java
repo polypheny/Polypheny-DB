@@ -61,8 +61,8 @@ public class PolyPluginManager extends DefaultPluginManager {
         // start (active/resolved) the plugins
         pluginManager.startPlugins();
 
-        log.info( "Plugin Directory: " );
-        log.info( "\t" + System.getProperty( "pf4j.pluginsDir", "plugins" ) + "\n" );
+        // log.info( "Plugin Directory: " );
+        // log.info( "\t" + System.getProperty( "pf4j.pluginsDir", "plugins" ) + "\n" );
 
         REGISTER.addAll( pluginManager.getStartedPlugins().stream().map( PluginWrapper::getPluginId ).collect( Collectors.toList() ) );
 

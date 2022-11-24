@@ -5,7 +5,6 @@ apply plugin: "kotlin"
 dependencies {
     implementation project(":core")
     implementation project(":plugins:sql-language")
-    // implementation project(":mql-language")
 
     // Cottontail DB
     implementation group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version

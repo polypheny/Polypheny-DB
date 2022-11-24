@@ -5039,7 +5039,7 @@ public class CatalogImpl extends Catalog {
     @Override
     protected void addSingleDataPlacementToTable( Integer adapterId, long tableId ) {
         CatalogTable old = getTable( tableId );
-        List<Integer> updatedPlacements = old.dataPlacements.stream().collect( Collectors.toList() );
+        List<Integer> updatedPlacements = new ArrayList<>( old.dataPlacements );
 
         if ( !updatedPlacements.contains( adapterId ) ) {
             updatedPlacements.add( adapterId );
@@ -5126,7 +5126,7 @@ public class CatalogImpl extends Catalog {
     protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
         CatalogDataPlacement oldDataPlacement = addDataPlacementIfNotExists( adapterId, tableId );
 
-        Set<Long> partitionPlacementsOnAdapter = oldDataPlacement.getAllPartitionIds().stream().collect( Collectors.toSet() );
+        Set<Long> partitionPlacementsOnAdapter = new HashSet<>( oldDataPlacement.getAllPartitionIds() );
         partitionPlacementsOnAdapter.addAll( partitionIds );
 
         CatalogDataPlacement newDataPlacement = new CatalogDataPlacement(
@@ -5135,7 +5135,7 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.placementType,
                 oldDataPlacement.dataPlacementRole,
                 oldDataPlacement.columnPlacementsOnAdapter,
-                ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) ) );
+                ImmutableList.copyOf( new ArrayList<>( partitionPlacementsOnAdapter ) ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
