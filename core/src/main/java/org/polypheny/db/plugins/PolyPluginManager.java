@@ -50,7 +50,7 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static void init() {
         // create the plugin manager
-        final PluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins" );
+        final PluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins", "../../build/plugins" );
 
         // load the plugins
         pluginManager.loadPlugins();

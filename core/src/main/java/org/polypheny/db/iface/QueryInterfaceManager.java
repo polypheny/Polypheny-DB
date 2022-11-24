@@ -83,7 +83,7 @@ public class QueryInterfaceManager {
 
 
     public static void addInterfaceType( String interfaceName, Class<? extends QueryInterface> clazz, Map<String, String> defaultSettings ) {
-        REGISTER.put( clazz.getName(), new QueryInterfaceType( clazz, interfaceName, defaultSettings ) );
+        REGISTER.put( clazz.getSimpleName(), new QueryInterfaceType( clazz, interfaceName, defaultSettings ) );
     }
 
 
@@ -123,7 +123,9 @@ public class QueryInterfaceManager {
         try {
             List<CatalogQueryInterface> interfaces = catalog.getQueryInterfaces();
             for ( CatalogQueryInterface iface : interfaces ) {
-                Class<?> clazz = REGISTER.get( iface.clazz ).clazz;
+                String[] split = iface.clazz.split( "\\$" );
+                split = split[split.length - 1].split( "\\." );
+                Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
                 Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
                 QueryInterface instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, iface.id, iface.name, iface.settings );
 
@@ -154,7 +156,9 @@ public class QueryInterfaceManager {
         QueryInterface instance;
         int ifaceId = -1;
         try {
-            Class<?> clazz = REGISTER.get( clazzName ).clazz;
+            String[] split = clazzName.split( "\\$" );
+            split = split[split.length - 1].split( "\\." );
+            Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
             Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
             ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
             instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, ifaceId, uniqueName, settings );
@@ -211,7 +215,7 @@ public class QueryInterfaceManager {
 
         public final String name;
         public final String description;
-        public final Class clazz;
+        public final Class<?> clazz;
         public final List<QueryInterfaceSetting> availableSettings;
 
 
