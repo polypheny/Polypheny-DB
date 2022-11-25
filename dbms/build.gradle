@@ -149,8 +149,6 @@ licensee {
     allowDependency('com.adobe.xmp', 'xmpcore', '6.0.6') { because 'BSD 3-Clause' }
     allowDependency('org.bouncycastle', 'bcpkix-jdk15on', '1.64') { because 'MIT license' }
     allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.64') { because 'MIT license' }
-    allowDependency('org.vitrivr', 'cottontaildb', '0.13.3') { because 'MIT license' }
-    allowDependency('org.vitrivr', 'cottontaildb-proto', '0.13.0') { because 'MIT license' }
     allowDependency('org.javassist', 'javassist', '3.28.0-GA') { because 'Apache 2.0 license' }
     allowDependency('org.awaitility', 'awaitility', '4.0.1') { because 'Apache 2.0 license' }
     allowDependency('net.java.dev.jna', 'jna', '5.8.0') { because 'Apache 2.0 license' }

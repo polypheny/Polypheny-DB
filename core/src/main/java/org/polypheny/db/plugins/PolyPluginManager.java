@@ -27,7 +27,6 @@ import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.DefaultPluginManager;
-import org.pf4j.JarPluginLoader;
 import org.pf4j.ManifestPluginDescriptorFinder;
 import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
@@ -95,25 +94,13 @@ public class PolyPluginManager extends DefaultPluginManager {
                     protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
                         // we load the existing applications classes first, then the dependencies and then the plugin
                         // we have to reuse the classloader else the code generation will not be able to find the added classes later on
-                        //return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
                         if ( loader == null ) {
                             loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
                         }
                         return loader;
                     }
-
-
-                    @Override
-                    public ClassLoader loadPlugin( Path pluginPath, PluginDescriptor pluginDescriptor ) {
-                        PluginClassLoader pluginClassLoader = createPluginClassLoader( pluginPath, pluginDescriptor );
-
-                        loadClasses( pluginPath, pluginClassLoader );
-                        loadJars( pluginPath, pluginClassLoader );
-
-                        return pluginClassLoader;
-                    }
                 } )
-                .add( new JarPluginLoader( this ) );
+                /*.add( new JarPluginLoader( this ) )*/;
     }
 
 
