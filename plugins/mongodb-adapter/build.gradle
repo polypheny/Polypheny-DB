@@ -2,8 +2,8 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":plugins:sql-language")
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 

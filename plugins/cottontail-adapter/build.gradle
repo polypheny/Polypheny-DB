@@ -3,8 +3,8 @@ group "org.polypheny"
 apply plugin: "kotlin"
 
 dependencies {
-    implementation project(":core")
-    implementation project(":plugins:sql-language")
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
 
     // Cottontail DB
     implementation group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version

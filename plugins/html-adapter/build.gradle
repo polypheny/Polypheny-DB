@@ -2,7 +2,7 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(":core")
+    compileOnly project(":core")
 
     implementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
     implementation group: "com.joestelmach", name: "natty", version: natty_version  // MIT

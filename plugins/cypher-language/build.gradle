@@ -18,9 +18,9 @@ buildscript {
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":webui")
-    implementation project(":dbms")
+    compileOnly project(":core")
+    compileOnly project(":webui")
+    compileOnly project(":dbms")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version_cypher  // BSD 2-clause
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0

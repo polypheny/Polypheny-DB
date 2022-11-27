@@ -2,8 +2,8 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":webui")
+    compileOnly project(":core")
+    compileOnly project(":webui")
 
     implementation group: 'nz.ac.waikato.cms.weka', name: 'weka-stable', version: weka_version  // GPL 3.0
     compileOnly(group: "io.javalin", name: "javalin", version: javalin_version) // Apache 2.0

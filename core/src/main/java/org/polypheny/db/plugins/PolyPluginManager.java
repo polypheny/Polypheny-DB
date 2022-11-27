@@ -94,10 +94,10 @@ public class PolyPluginManager extends DefaultPluginManager {
                     protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
                         // we load the existing applications classes first, then the dependencies and then the plugin
                         // we have to reuse the classloader else the code generation will not be able to find the added classes later on
-                        if ( loader == null ) {
+                        /*if ( loader == null ) {
                             loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
-                        }
-                        return loader;
+                        }*/
+                        return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.PDA );
                     }
                 } )
                 /*.add( new JarPluginLoader( this ) )*/;

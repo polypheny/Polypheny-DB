@@ -2,9 +2,9 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":plugins:sql-language")
-    implementation project(":plugins:jdbc-adapter-framework")
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
+    compileOnly project(":plugins:jdbc-adapter-framework")
 
     // JDBC Drivers
     implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version  // HSQLDB License (BSD-style)

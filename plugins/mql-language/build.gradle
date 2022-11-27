@@ -22,11 +22,11 @@ buildscript {
 }
 
 dependencies {
-    implementation project(":core")
-    implementation project(":monitoring")
-    implementation project(":webui")
+    compileOnly project(":core")
+    compileOnly project(":monitoring")
+    compileOnly project(":webui")
     // implementation project(":sql-language")
-    implementation project(":dbms")
+    compileOnly project(":dbms")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 

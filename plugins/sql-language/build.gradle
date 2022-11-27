@@ -22,10 +22,10 @@ buildscript {
 }
 
 dependencies {
-    implementation project(":core")
-    implementation project(":monitoring")
-    implementation project(":dbms")
-    implementation project(":webui")
+    compileOnly project(":core")
+    compileOnly project(":monitoring")
+    compileOnly project(":dbms")
+    compileOnly project(":webui")
     // implementation project(":avatica-interface")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause

@@ -2,8 +2,8 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":plugins:sql-language")
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
 
     implementation group: "joda-time", name: "joda-time", version: joda_time_version  // Apache 2.0
 
