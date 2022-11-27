@@ -46,9 +46,9 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.sql.sql.fun.SqlSingleValueAggFunction;
-import org.polypheny.db.sql.sql.fun.SqlSumAggFunction;
-import org.polypheny.db.sql.sql.fun.SqlSumEmptyIsZeroAggFunction;
+import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
+import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
+import org.polypheny.db.sql.language.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
 

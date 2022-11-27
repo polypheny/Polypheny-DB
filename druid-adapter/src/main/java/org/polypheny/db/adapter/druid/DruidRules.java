@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExtractProjectRule;
 import org.polypheny.db.algebra.rules.AggregateFilterTransposeRule;
@@ -598,7 +598,7 @@ public class DruidRules {
             filter = LogicalFilter.create( scan, filterNode );
 
             boolean addNewFilter = !filter.getCondition().isAlwaysTrue() && allHaveFilters;
-            // Assumes that Filter nodes are always right after TableScan nodes (which are always present)
+            // Assumes that Filter nodes are always right after Scan nodes (which are always present)
             int startIndex = containsFilter && addNewFilter ? 2 : 1;
 
             List<AlgNode> newNodes = constructNewNodes( query.algs, addNewFilter, startIndex, filter, project, aggregate );

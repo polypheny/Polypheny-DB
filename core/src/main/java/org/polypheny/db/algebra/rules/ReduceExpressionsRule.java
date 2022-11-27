@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,16 +45,12 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.EquiJoin;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -109,25 +105,6 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
      */
     public static final Pattern EXCLUSION_PATTERN = Pattern.compile( "Reduce(Expressions|Values)Rule.*" );
 
-    /**
-     * Singleton rule that reduces constants inside a {@link org.polypheny.db.algebra.logical.LogicalFilter}.
-     */
-    public static final ReduceExpressionsRule FILTER_INSTANCE = new FilterReduceExpressionsRule( LogicalFilter.class, true, AlgFactories.LOGICAL_BUILDER );
-
-    /**
-     * Singleton rule that reduces constants inside a {@link org.polypheny.db.algebra.logical.LogicalProject}.
-     */
-    public static final ReduceExpressionsRule PROJECT_INSTANCE = new ProjectReduceExpressionsRule( LogicalProject.class, true, AlgFactories.LOGICAL_BUILDER );
-
-    /**
-     * Singleton rule that reduces constants inside a {@link Join}.
-     */
-    public static final ReduceExpressionsRule JOIN_INSTANCE = new JoinReduceExpressionsRule( Join.class, true, AlgFactories.LOGICAL_BUILDER );
-
-    /**
-     * Singleton rule that reduces constants inside a {@link LogicalCalc}.
-     */
-    public static final ReduceExpressionsRule CALC_INSTANCE = new CalcReduceExpressionsRule( LogicalCalc.class, true, AlgFactories.LOGICAL_BUILDER );
 
     protected final boolean matchNullability;
 
@@ -136,7 +113,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
      * Rule that reduces constants inside a {@link Filter}.
      * If the condition is a constant, the filter is removed (if TRUE) or replaced with an empty {@link org.polypheny.db.algebra.core.Values} (if FALSE or NULL).
      */
-    public static class FilterReduceExpressionsRule extends ReduceExpressionsRule {
+    protected static class FilterReduceExpressionsRule extends ReduceExpressionsRule {
 
         public FilterReduceExpressionsRule( Class<? extends Filter> filterClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
             super( filterClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Filter)" );
@@ -189,10 +166,13 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
 
 
         /**
-         * For static schema systems, a filter that is always false or null can be replaced by a values operator that produces no rows, as the schema information can just be taken from the input Rel.
-         * In dynamic schema environments, the filter might have an unknown input type, in these cases they must define a system specific alternative to a Values operator, such as inserting a limit 0 instead of a filter on top of the original input.
+         * For static schema systems, a filter that is always false or null can be replaced by a values operator that
+         * produces no rows, as the schema information can just be taken from the input Rel. In dynamic schema environments,
+         * the filter might have an unknown input type, in these cases they must define a system specific alternative to a
+         * Values operator, such as inserting a limit 0 instead of a filter on top of the original input.
          *
-         * The default implementation of this method is to call {@link AlgBuilder#empty}, which for the static schema will be optimized to an empty {@link org.polypheny.db.algebra.core.Values}.
+         * The default implementation of this method is to call {@link AlgBuilder#empty}, which for the static schema will be
+         * optimized to an empty {@link org.polypheny.db.algebra.core.Values}.
          *
          * @param input alg to replace, assumes caller has already determined equivalence to Values operation for 0 records or a false filter.
          * @return equivalent but less expensive replacement rel
@@ -238,7 +218,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
     /**
      * Rule that reduces constants inside a {@link Project}.
      */
-    public static class ProjectReduceExpressionsRule extends ReduceExpressionsRule {
+    protected static class ProjectReduceExpressionsRule extends ReduceExpressionsRule {
 
         public ProjectReduceExpressionsRule( Class<? extends Project> projectClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
             super( projectClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Project)" );
@@ -269,7 +249,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
     /**
      * Rule that reduces constants inside a {@link Join}.
      */
-    public static class JoinReduceExpressionsRule extends ReduceExpressionsRule {
+    protected static class JoinReduceExpressionsRule extends ReduceExpressionsRule {
 
         public JoinReduceExpressionsRule( Class<? extends Join> joinClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
             super( joinClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Join)" );
@@ -315,7 +295,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
     /**
      * Rule that reduces constants inside a {@link Calc}.
      */
-    public static class CalcReduceExpressionsRule extends ReduceExpressionsRule {
+    protected static class CalcReduceExpressionsRule extends ReduceExpressionsRule {
 
         public CalcReduceExpressionsRule( Class<? extends Calc> calcClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
             super( calcClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Calc)" );

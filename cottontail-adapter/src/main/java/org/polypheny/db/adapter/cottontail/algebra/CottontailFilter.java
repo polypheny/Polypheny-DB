@@ -42,6 +42,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
@@ -77,7 +78,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
 
     public CottontailFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
-        super( cluster, traits, child, condition );
+        super( cluster, traits.replace( ModelTrait.RELATIONAL ), child, condition );
     }
 
 

@@ -73,6 +73,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
@@ -81,20 +82,27 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Match;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -115,7 +123,10 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
@@ -163,7 +174,7 @@ public class AlgBuilder {
     private final AlgFactories.SemiJoinFactory semiJoinFactory;
     private final AlgFactories.CorrelateFactory correlateFactory;
     private final AlgFactories.ValuesFactory valuesFactory;
-    private final AlgFactories.TableScanFactory scanFactory;
+    private final ScanFactory scanFactory;
     private final AlgFactories.MatchFactory matchFactory;
     private final AlgFactories.DocumentsFactory documentsFactory;
     private final Deque<Frame> stack = new ArrayDeque<>();
@@ -224,7 +235,7 @@ public class AlgBuilder {
                         AlgFactories.DEFAULT_VALUES_FACTORY );
         this.scanFactory =
                 Util.first(
-                        context.unwrap( AlgFactories.TableScanFactory.class ),
+                        context.unwrap( ScanFactory.class ),
                         AlgFactories.DEFAULT_TABLE_SCAN_FACTORY );
         this.matchFactory =
                 Util.first(
@@ -234,6 +245,7 @@ public class AlgBuilder {
                 Util.first(
                         context.unwrap( AlgFactories.DocumentsFactory.class ),
                         AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
+
         final RexExecutor executor =
                 Util.first(
                         context.unwrap( RexExecutor.class ),
@@ -242,6 +254,7 @@ public class AlgBuilder {
                                 RexUtil.EXECUTOR ) );
         final AlgOptPredicateList predicates = AlgOptPredicateList.EMPTY;
         this.simplifier = new RexSimplify( cluster.getRexBuilder(), predicates, executor );
+
     }
 
 
@@ -1302,7 +1315,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a {@link TableScan} of the table with a given name.
+     * Creates a {@link Scan} of the table with a given name.
      *
      * Throws if the table does not exist.
      *
@@ -1323,8 +1336,16 @@ public class AlgBuilder {
     }
 
 
+    public AlgBuilder scan( @Nonnull AlgOptTable algOptTable ) {
+        final AlgNode scan = scanFactory.createScan( cluster, algOptTable );
+        push( scan );
+        rename( algOptTable.getRowType().getFieldNames() );
+        return this;
+    }
+
+
     /**
-     * Creates a {@link TableScan} of the table with a given name.
+     * Creates a {@link Scan} of the table with a given name.
      *
      * Throws if the table does not exist.
      *
@@ -1334,6 +1355,45 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( String... tableNames ) {
         return scan( ImmutableList.copyOf( tableNames ) );
+    }
+
+
+    public AlgBuilder documentScan( AlgOptTable collection ) {
+        stack.add( new Frame( new LogicalDocumentScan( cluster, cluster.traitSet().replace( ModelTrait.DOCUMENT ), collection ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder documentProject( List<? extends RexNode> projects, List<String> names ) {
+        stack.add( new Frame( LogicalDocumentProject.create( build(), projects, names ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder lpgScan( long id ) {
+        LogicalGraph graph = new LogicalGraph( id );
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder lpgMatch( List<RexCall> matches, List<String> names ) {
+        stack.add( new Frame( new LogicalLpgMatch( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), build(), matches, names ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder lpgProject( List<? extends RexNode> projects, List<String> names ) {
+        stack.add( new Frame( new LogicalLpgProject( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), build(), projects, names ) ) );
+        return this;
+    }
+
+
+    public RexCall lpgNodeMatch( List<String> labels ) {
+        RexBuilder rexBuilder = getRexBuilder();
+        Operator op = OperatorRegistry.get( QueryLanguage.CYPHER, OperatorName.CYPHER_NODE_MATCH );
+        AlgDataType nodeType = getTypeFactory().createPolyType( PolyType.NODE );
+        return (RexCall) rexBuilder.makeCall( nodeType, op, List.of( rexBuilder.makeInputRef( peek().getRowType().getFieldList().get( 0 ).getType(), 0 ), new RexLiteral( new PolyNode( new PolyDictionary(), labels, null ), nodeType, PolyType.NODE ) ) );
     }
 
 
@@ -2169,8 +2229,8 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-        AlgNode documents = documentsFactory.createDocuments( cluster, tuples, rowType, copy( normalizedTuples ) );
+    public AlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType ) {
+        AlgNode documents = documentsFactory.createDocuments( cluster, tuples, rowType );
         push( documents );
         return this;
     }
@@ -2828,7 +2888,7 @@ public class AlgBuilder {
 
 
         private static String deriveAlias( AlgNode alg ) {
-            if ( alg instanceof TableScan ) {
+            if ( alg instanceof Scan ) {
                 final List<String> names = alg.getTable().getQualifiedName();
                 if ( !names.isEmpty() ) {
                     return Util.last( names );

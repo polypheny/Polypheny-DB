@@ -33,13 +33,18 @@ import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.document.DocumentAlg;
+import org.polypheny.db.algebra.core.document.DocumentModify;
+import org.polypheny.db.algebra.core.lpg.LpgAlg;
+import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 
 
@@ -220,10 +225,10 @@ public class EntityAccessMap {
         if ( !(table instanceof AlgOptTableImpl) ) {
             throw new RuntimeException( "Unexpected table type: " + table.getClass() );
         }
-        if ( !(((AlgOptTableImpl) table).getTable() instanceof LogicalTable) ) {
-            throw new RuntimeException( "Unexpected table type: " + ((AlgOptTableImpl) table).getTable().getClass() );
+        if ( !(table.getTable() instanceof LogicalTable) ) {
+            throw new RuntimeException( "Unexpected table type: " + table.getTable().getClass() );
         }
-        return new EntityIdentifier( ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId(), partitionId );
+        return new EntityIdentifier( table.getTable().getTableId(), partitionId, NamespaceLevel.ENTITY_LEVEL );
     }
 
 
@@ -237,15 +242,21 @@ public class EntityAccessMap {
             super.visit( p, ordinal, parent );
             AlgOptTable table = p.getTable();
             if ( table == null ) {
+                if ( p instanceof LpgAlg ) {
+                    attachGraph( (AlgNode & LpgAlg) p );
+                }
+                if ( p instanceof DocumentAlg ) {
+                    attachDocument( (AlgNode & DocumentAlg) p );
+                }
                 return;
             }
 
             Mode newAccess;
 
-            // FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
+            //  FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
             //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
             //  {@link AlgNode} interface.
-            if ( p instanceof TableModify ) {
+            if ( p instanceof Modify ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
                     extractWriteConstraints( (LogicalTable) table.getTable() );
@@ -260,8 +271,10 @@ public class EntityAccessMap {
             List<Long> relevantPartitions;
             if ( accessedPartitions.containsKey( p.getId() ) ) {
                 relevantPartitions = accessedPartitions.get( p.getId() );
-            } else {
+            } else if ( table.getTable().getTableId() != -1 ) {
                 relevantPartitions = Catalog.getInstance().getTable( table.getTable().getTableId() ).partitionProperty.partitionIds;
+            } else {
+                relevantPartitions = List.of();
             }
 
             for ( long partitionId : relevantPartitions ) {
@@ -276,6 +289,40 @@ public class EntityAccessMap {
         }
 
 
+        private <T extends AlgNode & DocumentAlg> void attachDocument( T p ) {
+            if ( p.getCollection() == null ) {
+                return;
+            }
+
+            Mode newAccess;
+            if ( p instanceof DocumentModify ) {
+                newAccess = Mode.WRITE_ACCESS;
+            } else {
+                newAccess = Mode.READ_ACCESS;
+            }
+            // as documents are using the same id space as tables this will work
+            EntityIdentifier key = new EntityIdentifier( p.getCollection().getTable().getTableId(), 0, NamespaceLevel.ENTITY_LEVEL );
+            accessMap.put( key, newAccess );
+        }
+
+
+        private void attachGraph( LpgAlg p ) {
+            if ( p.getGraph() == null ) {
+                return;
+            }
+
+            Mode newAccess;
+            if ( p instanceof LpgModify ) {
+                newAccess = Mode.WRITE_ACCESS;
+            } else {
+                newAccess = Mode.READ_ACCESS;
+            }
+            // as graph is on the namespace level in the full polyschema it is unique and can be used like this
+            EntityIdentifier key = new EntityIdentifier( p.getGraph().getId(), 0, NamespaceLevel.NAMESPACE_LEVEL );
+            accessMap.put( key, newAccess );
+        }
+
+
         /**
          * Retrieves an access map for linked tables based on foreign key constraints
          */
@@ -285,7 +332,7 @@ public class EntityAccessMap {
                 for ( long constraintPartitionIds
                         : Catalog.getInstance().getTable( constraintTable ).partitionProperty.partitionIds ) {
 
-                    EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds );
+                    EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds, NamespaceLevel.ENTITY_LEVEL );
                     if ( !accessMap.containsKey( id ) ) {
                         accessMap.put( id, Mode.READ_ACCESS );
                     }
@@ -303,6 +350,16 @@ public class EntityAccessMap {
 
         long tableId;
         long partitionId;
+        // the locking checks for an existing EntityIdentifier, which is identified, by its id an partition
+        // this is done on the entity level, the graph model defines the graph on the namespace level and this could lead to conflicts
+        // therefore we can add the level to the identifier
+        NamespaceLevel namespaceLevel;
+
+
+        enum NamespaceLevel {
+            NAMESPACE_LEVEL,
+            ENTITY_LEVEL
+        }
 
     }
 

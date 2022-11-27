@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
         } else {
             pkIds = new ArrayList<>();
         }
-        // FileTable table = new FileTable( store.getRootDir(), schemaName, catalogTable.id, columnIds, columnTypes, columnNames, store, this );
+        // FileTable table = new FileTable( store.getRootDir(), schemaName, catalogEntity.id, columnIds, columnTypes, columnNames, store, this );
         FileTranslatableTable table = new FileTranslatableTable(
                 this,
                 catalogTable.name + "_" + partitionPlacement.partitionId,

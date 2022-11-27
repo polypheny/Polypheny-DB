@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,20 +36,19 @@ package org.polypheny.db.algebra.rules;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalWindow;
+import org.polypheny.db.algebra.logical.relational.LogicalCalc;
+import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -85,10 +84,6 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
  */
 public abstract class ProjectToWindowRule extends AlgOptRule {
 
-    public static final ProjectToWindowRule INSTANCE = new CalcToWindowRule( AlgFactories.LOGICAL_BUILDER );
-
-    public static final ProjectToWindowRule PROJECT = new ProjectToLogicalProjectAndWindowRule( AlgFactories.LOGICAL_BUILDER );
-
 
     /**
      * Creates a ProjectToWindowRule.
@@ -106,7 +101,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
      * Instance of the rule that applies to a {@link Calc} that contains windowed aggregates and converts it into a mixture
      * of {@link LogicalWindow} and {@code Calc}.
      */
-    public static class CalcToWindowRule extends ProjectToWindowRule {
+    protected static class CalcToWindowRule extends ProjectToWindowRule {
 
         /**
          * Creates a CalcToWindowRule.
@@ -136,7 +131,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
      * Instance of the rule that can be applied to a {@link Project} and that produces, in turn,
      * a mixture of {@code LogicalProject} and {@link LogicalWindow}.
      */
-    public static class ProjectToLogicalProjectAndWindowRule extends ProjectToWindowRule {
+    protected static class ProjectToLogicalProjectAndWindowRule extends ProjectToWindowRule {
 
         /**
          * Creates a ProjectToWindowRule.
@@ -183,7 +178,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
                     }
                     if ( !program.projectsOnlyIdentity() ) {
                         algBuilder.project(
-                                Lists.transform( program.getProjectList(), program::expandLocalRef ),
+                                program.getProjectList().stream().map( program::expandLocalRef ).collect( Collectors.toList() ),
                                 calc.getRowType().getFieldNames() );
                     }
                     return algBuilder.build();

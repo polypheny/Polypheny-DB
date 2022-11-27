@@ -35,7 +35,7 @@ package org.polypheny.db.schema;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 
 /**
@@ -76,7 +76,7 @@ public interface SchemaPlus extends Schema {
     /**
      * Adds a schema as a sub-schema of this schema, and returns the wrapped object.
      */
-    SchemaPlus add( String name, Schema schema, SchemaType schemaType );
+    SchemaPlus add( String name, Schema schema, NamespaceType namespaceType );
 
     /**
      * Adds a table to this schema.

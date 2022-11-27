@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,8 +92,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public RoutedAlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
-        super.documents( tuples, rowType, normalizedTuples );
+    public RoutedAlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType ) {
+        super.documents( tuples, rowType );
         return this;
     }
 

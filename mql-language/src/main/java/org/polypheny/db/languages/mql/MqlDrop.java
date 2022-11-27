@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.stream.Collectors;
+import java.util.List;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -50,24 +49,18 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
         Catalog catalog = Catalog.getInstance();
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
-        try {
-            if ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( database ) ).size() != 1 ) {
-                // dropping a document database( Polyschema ), which does not exist, which is a no-op
-                return;
-            }
-
-            if ( !catalog.getTables( Catalog.defaultDatabaseId, new Pattern( database ), null )
-                    .stream()
-                    .map( name -> name.name )
-                    .collect( Collectors.toList() ).contains( getCollection() ) ) {
-                // dropping a collection, which does not exist, which is a no-op
-                return;
-            }
-            CatalogTable table = catalog.getTable( Catalog.defaultDatabaseId, database, getCollection() );
-            ddlManager.dropTable( table, statement );
-        } catch ( DdlOnSourceException | UnknownTableException e ) {
-            throw new RuntimeException( "An error occurred while dropping the database (Polypheny Schema): " + e.getMessage(), e );
+        if ( catalog.getCollections( Catalog.defaultDatabaseId, new Pattern( database ) ).size() != 1 ) {
+            // dropping a document database( Polyschema ), which does not exist, which is a no-op
+            return;
         }
+
+        CatalogSchema namespace = catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( database ) ).get( 0 );
+        List<CatalogCollection> collections = catalog.getCollections( namespace.id, new Pattern( getCollection() ) );
+        if ( collections.size() != 1 ) {
+            // dropping a collection, which does not exist, which is a no-op
+            return;
+        }
+        ddlManager.dropCollection( collections.get( 0 ), statement );
     }
 
 }

@@ -89,7 +89,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.eclipse.jetty.websocket.api.Session;
-import org.polypheny.db.PolyResult;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
@@ -110,12 +110,12 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -131,8 +131,8 @@ import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
@@ -141,6 +141,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.cypher.cypher2alg.CypherQueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
@@ -164,6 +165,7 @@ import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoCol
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.schema.graph.GraphObject;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -195,6 +197,7 @@ import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.Placement;
+import org.polypheny.db.webui.models.Placement.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.ResultType;
@@ -230,9 +233,9 @@ public class Crud implements InformationObserver {
     @Getter
     private final TransactionManager transactionManager;
     @Getter
-    private final String databaseName;
+    private final long databaseId;
     @Getter
-    private final String userName;
+    private final long userId;
 
     public final LanguageCrud languageCrud;
     public final StatisticCrud statisticCrud;
@@ -244,10 +247,10 @@ public class Crud implements InformationObserver {
      *
      * @param transactionManager The Polypheny-DB transaction manager
      */
-    Crud( final TransactionManager transactionManager, final String userName, final String databaseName ) {
+    Crud( final TransactionManager transactionManager, final long userId, final long databaseId ) {
         this.transactionManager = transactionManager;
-        this.databaseName = databaseName;
-        this.userName = userName;
+        this.databaseId = databaseId;
+        this.userId = userId;
         this.languageCrud = new LanguageCrud( this );
         this.statisticCrud = new StatisticCrud( this );
     }
@@ -303,14 +306,14 @@ public class Crud implements InformationObserver {
         // determine if it is a view or a table
         CatalogTable catalogTable;
         try {
-            catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
-            result.setSchemaType( catalogTable.getSchemaType() );
+            catalogTable = catalog.getTable( this.databaseId, t[0], t[1] );
+            result.setNamespaceType( catalogTable.getNamespaceType() );
             if ( catalogTable.modifiable ) {
                 result.setType( ResultType.TABLE );
             } else {
                 result.setType( ResultType.VIEW );
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception", e );
             return result.setError( "Could not retrieve type of Result (table/view)." );
         }
@@ -375,40 +378,42 @@ public class Crud implements InformationObserver {
             ctx.json( new ArrayList<>() );
         }
 
-        List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
+        List<CatalogSchema> schemas = catalog.getSchemas( databaseId, null );
+        // remove unwanted namespaces
+        schemas = schemas.stream().filter( s -> request.dataModels.contains( s.namespaceType ) ).collect( Collectors.toList() );
         for ( CatalogSchema schema : schemas ) {
-            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.schemaType, "", schema.schemaType == SchemaType.RELATIONAL ? "cui-layers" : "cui-folder" );
+            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, schema.namespaceType, "", getIconName( schema.namespaceType ) );
 
-            if ( request.depth > 1 ) {
+            if ( request.depth > 1 && schema.namespaceType != NamespaceType.GRAPH ) {
                 ArrayList<SidebarElement> tableTree = new ArrayList<>();
                 ArrayList<SidebarElement> viewTree = new ArrayList<>();
                 ArrayList<SidebarElement> collectionTree = new ArrayList<>();
                 List<CatalogTable> tables = catalog.getTables( schema.id, null );
                 for ( CatalogTable table : tables ) {
                     String icon = "fa fa-table";
-                    if ( table.tableType == TableType.SOURCE ) {
+                    if ( table.entityType == EntityType.SOURCE ) {
                         icon = "fa fa-plug";
-                    } else if ( table.tableType == TableType.VIEW ) {
+                    } else if ( table.entityType == EntityType.VIEW ) {
                         icon = "icon-eye";
                     }
-                    if ( table.tableType != TableType.VIEW && schema.schemaType == SchemaType.DOCUMENT ) {
+                    if ( table.entityType != EntityType.VIEW && schema.namespaceType == NamespaceType.DOCUMENT ) {
                         icon = "cui-description";
                     }
 
-                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, schema.schemaType, request.routerLinkRoot, icon );
+                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, schema.namespaceType, request.routerLinkRoot, icon );
                     if ( request.depth > 2 ) {
                         List<CatalogColumn> columns = catalog.getColumns( table.id );
                         for ( CatalogColumn column : columns ) {
-                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, schema.schemaType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
+                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, schema.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
                         }
                     }
 
                     if ( request.views ) {
-                        if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
+                        if ( table.entityType == EntityType.ENTITY || table.entityType == EntityType.SOURCE ) {
                             tableElement.setTableType( "TABLE" );
-                        } else if ( table.tableType == TableType.VIEW ) {
+                        } else if ( table.entityType == EntityType.VIEW ) {
                             tableElement.setTableType( "VIEW" );
-                        } else if ( table.tableType == TableType.MATERIALIZED_VIEW ) {
+                        } else if ( table.entityType == EntityType.MATERIALIZED_VIEW ) {
                             tableElement.setTableType( "MATERIALIZED" );
                         }
                     }
@@ -417,15 +422,32 @@ public class Crud implements InformationObserver {
                 }
 
                 if ( request.showTable ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", schema.schemaType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", schema.namespaceType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
                 } else {
                     schemaTree.addChildren( collectionTree ).setRouterLink( "" );
                 }
             }
+            if ( schema.namespaceType == NamespaceType.GRAPH ) {
+                schemaTree.setRouterLink( request.routerLinkRoot + "/" + schema.name );
+            }
+
             result.add( schemaTree );
         }
 
         ctx.json( result );
+    }
+
+
+    private String getIconName( NamespaceType namespaceType ) {
+        switch ( namespaceType ) {
+            case RELATIONAL:
+                return "cui-layers";
+            case DOCUMENT:
+                return "cui-folder";
+            case GRAPH:
+                return "cui-graph";
+        }
+        throw new UnsupportedOperationException( "Namespace type is not supported." );
     }
 
 
@@ -453,10 +475,10 @@ public class Crud implements InformationObserver {
             }
         }
 
-        List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( requestedSchema ), null );
+        List<CatalogTable> tables = catalog.getTables( databaseId, new Catalog.Pattern( requestedSchema ), null );
         ArrayList<DbTable> result = new ArrayList<>();
         for ( CatalogTable t : tables ) {
-            result.add( new DbTable( t.name, t.getSchemaName(), t.modifiable, t.tableType ) );
+            result.add( new DbTable( t.name, t.getNamespaceName(), t.modifiable, t.entityType ) );
         }
         ctx.json( result );
     }
@@ -1037,8 +1059,6 @@ public class Crud implements InformationObserver {
     public void createInitialExploreQuery( final Context ctx ) {
         QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
-        Transaction transaction = getTransaction( queryExplorationRequest.analyze, true );
-        Statement statement = transaction.createStatement();
 
         Result result;
 
@@ -1048,13 +1068,15 @@ public class Crud implements InformationObserver {
             return;
         }
 
-        String query = explore.getSqlStatement();
+        Transaction transaction = getTransaction( queryExplorationRequest.analyze, true, transactionManager, userId, databaseId, "Explore-by-Example" );
+        Statement statement = transaction.createStatement();
         try {
+            String query = explore.getSqlStatement();
             result = executeSqlSelect( statement, queryExplorationRequest, query, false ).setGeneratedQuery( query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
             log.error( "Caught exception while executing a query from the console", e );
-            result = new Result( e ).setGeneratedQuery( query );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1133,7 +1155,7 @@ public class Crud implements InformationObserver {
         Map<String, CatalogColumn> catalogColumns = getCatalogColumns( tableName, columnName );
         CatalogTable catalogTable;
         try {
-            catalogTable = catalog.getTable( databaseName, tableName, columnName );
+            catalogTable = catalog.getTable( databaseId, tableName, columnName );
             CatalogPrimaryKey pk = catalog.getPrimaryKey( catalogTable.primaryKey );
             for ( long colId : pk.columnIds ) {
                 String colName = catalog.getColumn( colId ).name;
@@ -1146,7 +1168,7 @@ public class Crud implements InformationObserver {
                     joiner.add( condition );
                 }
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException e ) {
             throw new RuntimeException( "Error while deriving PK WHERE condition", e );
         }
         return " WHERE " + joiner.toString();
@@ -1306,7 +1328,7 @@ public class Crud implements InformationObserver {
         ArrayList<DbColumn> cols = new ArrayList<>();
 
         try {
-            CatalogTable catalogTable = catalog.getTable( databaseName, t[0], t[1] );
+            CatalogTable catalogTable = catalog.getTable( databaseId, t[0], t[1] );
             ArrayList<String> primaryColumns;
             if ( catalogTable.primaryKey != null ) {
                 CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
@@ -1331,14 +1353,14 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-            if ( catalogTable.tableType == TableType.TABLE ) {
+            if ( catalogTable.entityType == EntityType.ENTITY ) {
                 result.setType( ResultType.TABLE );
-            } else if ( catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
+            } else if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
                 result.setType( ResultType.MATERIALIZED );
             } else {
                 result.setType( ResultType.VIEW );
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception while getting a column", e );
             ctx.status( 400 ).json( new Result( e ) );
             return;
@@ -1353,11 +1375,11 @@ public class Crud implements InformationObserver {
 
         CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
-        if ( catalogTable.tableType == TableType.VIEW ) {
+        if ( catalogTable.entityType == EntityType.VIEW ) {
             ImmutableMap<Long, ImmutableList<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
 
             List<DbColumn> columns = new ArrayList<>();
-            for ( Long columnIds : catalogTable.columnIds ) {
+            for ( Long columnIds : catalogTable.fieldIds ) {
                 CatalogColumn col = catalog.getColumn( columnIds );
                 columns.add( new DbColumn(
                         col.name,
@@ -1375,11 +1397,11 @@ public class Crud implements InformationObserver {
             }
             ctx.json( new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW ) );
         } else {
-            if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+            if ( catalog.getColumnPlacement( catalogTable.fieldIds.get( 0 ) ).size() != 1 ) {
                 throw new RuntimeException( "The table has an unexpected number of placements!" );
             }
 
-            int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+            int adapterId = catalog.getColumnPlacement( catalogTable.fieldIds.get( 0 ) ).get( 0 ).adapterId;
             CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
             List<String> pkColumnNames = primaryKey.getColumnNames();
             List<DbColumn> columns = new ArrayList<>();
@@ -1452,9 +1474,9 @@ public class Crud implements InformationObserver {
     void getMaterializedInfo( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
 
-        CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
+        CatalogTable catalogTable = catalog.getTable( databaseId, request.schema, request.table );
 
-        if ( catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
+        if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
             CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogTable;
 
             MaterializedCriteria materializedCriteria = catalogMaterializedView.getMaterializedCriteria();
@@ -1776,7 +1798,7 @@ public class Crud implements InformationObserver {
         Map<String, ArrayList<String>> temp = new HashMap<>();
 
         try {
-            CatalogTable catalogTable = catalog.getTable( databaseName, t[0], t[1] );
+            CatalogTable catalogTable = catalog.getTable( databaseId, t[0], t[1] );
 
             // get primary key
             if ( catalogTable.primaryKey != null ) {
@@ -1811,7 +1833,7 @@ public class Crud implements InformationObserver {
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
         }
@@ -1934,7 +1956,7 @@ public class Crud implements InformationObserver {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         Result result;
         try {
-            CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
+            CatalogTable catalogTable = catalog.getTable( databaseId, request.schema, request.table );
             List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, false );
 
             DbColumn[] header = {
@@ -1986,7 +2008,7 @@ public class Crud implements InformationObserver {
 
             result = new Result( header, data.toArray( new String[0][2] ) );
 
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
@@ -2034,13 +2056,13 @@ public class Crud implements InformationObserver {
         for ( String col : index.getColumns() ) {
             colJoiner.add( "\"" + col + "\"" );
         }
-        String onStore;
-        if ( index.getStoreUniqueName().equals( "Polypheny-DB" ) ) {
-            onStore = "";
-        } else {
-            onStore = String.format( "ON STORE \"%s\"", index.getStoreUniqueName() );
+        String store = "POLYPHENY";
+        if ( !index.getStoreUniqueName().equals( "Polypheny-DB" ) ) {
+            store = index.getStoreUniqueName();
         }
-        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner.toString(), index.getMethod(), onStore );
+        String onStore = String.format( "ON STORE \"%s\"", store );
+
+        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner, index.getMethod(), onStore );
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -2064,7 +2086,7 @@ public class Crud implements InformationObserver {
 
         CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
-        if ( catalogTable.tableType == TableType.VIEW ) {
+        if ( catalogTable.entityType == EntityType.VIEW ) {
             ImmutableMap<Long, ImmutableList<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
             Map<String, List<String>> underlyingTable = new HashMap<>();
             for ( Entry<Long, ImmutableList<Long>> entry : underlyingTableOriginal.entrySet() ) {
@@ -2094,9 +2116,9 @@ public class Crud implements InformationObserver {
         String schemaName = index.getSchema();
         String tableName = index.getTable();
         try {
-            CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.partitionProperty.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.tableType );
-            if ( table.tableType == TableType.VIEW ) {
+            CatalogTable table = catalog.getTable( databaseId, schemaName, tableName );
+            Placement p = new Placement( table.partitionProperty.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.entityType );
+            if ( table.entityType == EntityType.VIEW ) {
 
                 return p;
             } else {
@@ -2106,7 +2128,7 @@ public class Crud implements InformationObserver {
                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
                 for ( CatalogColumnPlacement placement : pkPlacements ) {
                     Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                    p.addAdapter( new Placement.Store(
+                    p.addAdapter( new RelationalStore(
                             adapter.getUniqueName(),
                             adapter.getAdapterName(),
                             catalog.getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
@@ -2116,7 +2138,7 @@ public class Crud implements InformationObserver {
                 }
                 return p;
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
         }
@@ -2191,7 +2213,7 @@ public class Crud implements InformationObserver {
                     type = FieldType.LABEL;
                     break;
                 default:
-                    throw new RuntimeException( "Unknown Field Type: " + currentColumn.getFieldType() );
+                    throw new RuntimeException( "Unknown Field ExpressionType: " + currentColumn.getFieldType() );
             }
 
             if ( type.equals( FieldType.LIST ) ) {
@@ -2643,9 +2665,9 @@ public class Crud implements InformationObserver {
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
-        List<CatalogTable> catalogTables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
-        for ( CatalogTable catalogTable : catalogTables ) {
-            if ( catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.SOURCE ) {
+        List<CatalogTable> catalogEntities = catalog.getTables( databaseId, new Catalog.Pattern( request.schema ), null );
+        for ( CatalogTable catalogTable : catalogEntities ) {
+            if ( catalogTable.entityType == EntityType.ENTITY || catalogTable.entityType == EntityType.SOURCE ) {
                 // get foreign keys
                 List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
                 for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
@@ -2665,7 +2687,7 @@ public class Crud implements InformationObserver {
                 }
 
                 // get tables with its columns
-                DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName(), catalogTable.modifiable, catalogTable.tableType );
+                DbTable table = new DbTable( catalogTable.name, catalogTable.getNamespaceName(), catalogTable.modifiable, catalogTable.entityType );
                 for ( String columnName : catalogTable.getColumnNames() ) {
                     table.addColumn( new DbColumn( columnName ) );
                 }
@@ -2807,7 +2829,7 @@ public class Crud implements InformationObserver {
         AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
-        PolyResult polyResult = statement.getQueryProcessor().prepareQuery( root, true );
+        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -2858,7 +2880,7 @@ public class Crud implements InformationObserver {
                             false,
                             false
                     );
-                } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
                     log.error( "Not possible to create Materialized View because the name is already used", e );
                     Result finalResult = new Result( e );
                     finalResult.setGeneratedQuery( "Execute logical query plan" );
@@ -2897,7 +2919,7 @@ public class Crud implements InformationObserver {
                             gson.toJson( request.topNode ),
                             Catalog.QueryLanguage.REL_ALG
                     );
-                } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
+                } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
                     log.error( "Not possible to create View because the Name is already used", e );
                     Result finalResult = new Result( e );
                     finalResult.setGeneratedQuery( "Execute logical query plan" );
@@ -2922,15 +2944,15 @@ public class Crud implements InformationObserver {
 
         List<List<Object>> rows;
         try {
-            rows = polyResult.getRows( statement, getPageSize(), true, false );
+            rows = polyImplementation.getRows( statement, getPageSize(), true, false );
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
             return new Result( e );
         }
 
-        DbColumn[] header = new DbColumn[polyResult.getRowType().getFieldCount()];
+        DbColumn[] header = new DbColumn[polyImplementation.getRowType().getFieldCount()];
         int counter = 0;
-        for ( AlgDataTypeField col : polyResult.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField col : polyImplementation.getRowType().getFieldList() ) {
             header[counter++] = new DbColumn(
                     col.getName(),
                     col.getType().getFullTypeString(),
@@ -2988,10 +3010,18 @@ public class Crud implements InformationObserver {
         Schema schema = ctx.bodyAsClass( Schema.class );
         Transaction transaction = getTransaction();
 
+        NamespaceType type = schema.getType();
+
+        if ( type == NamespaceType.GRAPH ) {
+            handleGraphDdl( schema, transaction, ctx );
+            return;
+        }
+
         // create schema
         if ( schema.isCreate() && !schema.isDrop() ) {
+
             StringBuilder query = new StringBuilder( "CREATE " );
-            if ( schema.getType() == SchemaType.DOCUMENT ) {
+            if ( schema.getType() == NamespaceType.DOCUMENT ) {
                 query.append( "DOCUMENT " );
             }
             query.append( "SCHEMA " );
@@ -3016,6 +3046,17 @@ public class Crud implements InformationObserver {
         }
         // drop schema
         else if ( !schema.isCreate() && schema.isDrop() ) {
+            if ( type == null ) {
+                List<CatalogSchema> namespaces = catalog.getSchemas( Catalog.defaultDatabaseId, new Catalog.Pattern( schema.getName() ) );
+                assert namespaces.size() == 1;
+                type = namespaces.get( 0 ).namespaceType;
+
+                if ( type == NamespaceType.GRAPH ) {
+                    handleGraphDdl( schema, transaction, ctx );
+                    return;
+                }
+            }
+
             StringBuilder query = new StringBuilder( "DROP SCHEMA " );
             query.append( "\"" ).append( schema.getName() ).append( "\"" );
             if ( schema.isCascade() ) {
@@ -3027,6 +3068,57 @@ public class Crud implements InformationObserver {
                 ctx.json( new Result( rows ) );
             } catch ( TransactionException | QueryExecutionException e ) {
                 log.error( "Caught exception while dropping a schema", e );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Could not rollback", ex );
+                }
+                ctx.json( new Result( e ) );
+            }
+        } else {
+            ctx.json( new Result( "Neither the field 'create' nor the field 'drop' was set." ) );
+        }
+    }
+
+
+    private void handleGraphDdl( Schema schema, Transaction transaction, Context ctx ) {
+        if ( schema.isCreate() && !schema.isDrop() ) {
+            Statement statement = transaction.createStatement();
+            Processor processor = transaction.getProcessor( QueryLanguage.CYPHER );
+
+            String query = String.format( "CREATE DATABASE %s", schema.getName() );
+
+            List<? extends Node> nodes = processor.parse( query );
+            CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
+            try {
+                PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
+                int rowsChanged = result.getRowsChanged( statement );
+                transaction.commit();
+                ctx.json( new Result( rowsChanged ) );
+            } catch ( TransactionException | Exception e ) {
+                log.error( "Caught exception while creating a graph namespace", e );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Could not rollback", ex );
+                }
+                ctx.json( new Result( e ) );
+            }
+        } else if ( schema.isDrop() && !schema.isCreate() ) {
+            Statement statement = transaction.createStatement();
+            Processor processor = transaction.getProcessor( QueryLanguage.CYPHER );
+
+            String query = String.format( "DROP DATABASE %s", schema.getName() );
+
+            List<? extends Node> nodes = processor.parse( query );
+            CypherQueryParameters parameters = new CypherQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
+            try {
+                PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
+                int rowsChanged = result.getRowsChanged( statement );
+                transaction.commit();
+                ctx.json( new Result( rowsChanged ) );
+            } catch ( TransactionException | Exception e ) {
+                log.error( "Caught exception while dropping a graph namespace", e );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -3077,7 +3169,7 @@ public class Crud implements InformationObserver {
     public void observePageList( final InformationPage[] pages, final String analyzerId, final Session session ) {
         ArrayList<SidebarElement> nodes = new ArrayList<>();
         for ( InformationPage page : pages ) {
-            nodes.add( new SidebarElement( page.getId(), page.getName(), SchemaType.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
+            nodes.add( new SidebarElement( page.getId(), page.getName(), NamespaceType.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
         }
         WebSocket.sendMessage( session, this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
     }
@@ -3211,7 +3303,7 @@ public class Crud implements InformationObserver {
 
     private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws QueryExecutionException {
         // create table from .json file
-        List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
+        List<CatalogTable> tablesInSchema = catalog.getTables( this.databaseId, new Catalog.Pattern( request.schema ), null );
         int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
         if ( tableAlreadyExists > 0 ) {
             return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a entity with the name '%s'", request.schema, newName ) );
@@ -3311,7 +3403,7 @@ public class Crud implements InformationObserver {
                 OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
                 FileOutputStream tableStream = new FileOutputStream( tableFile );
                 log.info( String.format( "Exporting %s.%s", request.schema, table.initialName ) );
-                CatalogTable catalogTable = catalog.getTable( this.databaseName, request.schema, table.initialName );
+                CatalogTable catalogTable = catalog.getTable( this.databaseId, request.schema, table.initialName );
 
                 catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
                 catalogWriter.flush();
@@ -3517,7 +3609,7 @@ public class Crud implements InformationObserver {
 
 
     void getDirectory( File dir, Context ctx ) {
-        ctx.header( "Content-Type", "application/zip" );
+        ctx.header( "Content-ExpressionType", "application/zip" );
         ctx.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
         String zipFileName = UUID.randomUUID().toString() + ".zip";
         File zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + zipFileName );
@@ -3552,7 +3644,7 @@ public class Crud implements InformationObserver {
 
 
     private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
-        PolyResult result;
+        PolyImplementation result;
         List<List<Object>> rows;
         boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
@@ -3575,14 +3667,14 @@ public class Crud implements InformationObserver {
             throw new QueryExecutionException( t );
         }
 
-        TableType tableType = null;
+        EntityType entityType = null;
         CatalogTable catalogTable = null;
         if ( request.tableId != null ) {
             String[] t = request.tableId.split( "\\." );
             try {
-                catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
-                tableType = catalogTable.tableType;
-            } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                catalogTable = catalog.getTable( this.databaseId, t[0], t[1] );
+                entityType = catalogTable.entityType;
+            } catch ( UnknownTableException e ) {
                 log.error( "Caught exception", e );
             }
         }
@@ -3629,11 +3721,11 @@ public class Crud implements InformationObserver {
 
         ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-        if ( tableType != null ) {
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+        if ( entityType != null ) {
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getNamespaceType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         } else {
-            //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use EntityType.SOURCE
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getNamespaceType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         }
     }
 
@@ -3674,6 +3766,11 @@ public class Crud implements InformationObserver {
                             } else {
                                 temp[counter] = o.toString();
                             }
+                            break;
+                        case "GRAPH NOT NULL":
+                        case "NODE NOT NULL":
+                        case "EDGE NOT NULL":
+                            temp[counter] = ((GraphObject) o).toJson();
                             break;
                         case "FILE":
                         case "IMAGE":
@@ -3790,6 +3887,9 @@ public class Crud implements InformationObserver {
                             temp[counter] = o.toString();
                         }
                     }
+                    if ( header.get( counter ).dataType.contains( "Path" ) ) {
+                        temp[counter] = ((GraphObject) o).toJson();
+                    }
                 }
                 counter++;
             }
@@ -3799,18 +3899,18 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyResult processQuery( Statement statement, String sql, boolean isAnalyze ) {
-        PolyResult result;
+    private PolyImplementation processQuery( Statement statement, String sql, boolean isAnalyze ) {
+        PolyImplementation result;
         if ( isAnalyze ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-        Node parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
         if ( isAnalyze ) {
             statement.getOverviewDuration().stop( "Parsing" );
         }
-        AlgRoot logicalRoot = null;
-        QueryParameters parameters = new QueryParameters( sql, SchemaType.RELATIONAL );
+        AlgRoot logicalRoot;
+        QueryParameters parameters = new QueryParameters( sql, NamespaceType.RELATIONAL );
         if ( parsed.isA( Kind.DDL ) ) {
             result = sqlProcessor.prepareDdl( statement, parsed, parameters );
         } else {
@@ -3838,7 +3938,7 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        PolyResult result;
+        PolyImplementation result;
 
         try {
             result = processQuery( statement, sqlUpdate, transaction.isAnalyze() );
@@ -3953,9 +4053,14 @@ public class Crud implements InformationObserver {
     }
 
 
-    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, String userName, String databaseName ) {
+    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
+        return getTransaction( analyze, useCache, transactionManager, userId, databaseId, "Polypheny-UI" );
+    }
+
+
+    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId, String origin ) {
         try {
-            Transaction transaction = transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
+            Transaction transaction = transactionManager.startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.FILE );
             transaction.setUseCache( useCache );
             return transaction;
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -3965,7 +4070,7 @@ public class Crud implements InformationObserver {
 
 
     public Transaction getTransaction( boolean analyze, boolean useCache ) {
-        return getTransaction( analyze, useCache, transactionManager, userName, databaseName );
+        return getTransaction( analyze, useCache, transactionManager, userId, databaseId );
     }
 
 
@@ -3974,17 +4079,17 @@ public class Crud implements InformationObserver {
      *
      * @param schemaName name of the schema
      * @param tableName name of the table
-     * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
+     * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql ExpressionType (java.sql.Types).
      */
     private Map<String, CatalogColumn> getCatalogColumns( String schemaName, String tableName ) {
         Map<String, CatalogColumn> dataTypes = new HashMap<>();
         try {
-            CatalogTable table = catalog.getTable( this.databaseName, schemaName, tableName );
+            CatalogTable table = catalog.getTable( this.databaseId, schemaName, tableName );
             List<CatalogColumn> catalogColumns = catalog.getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
                 dataTypes.put( catalogColumn.name, catalogColumn );
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception", e );
         }
         return dataTypes;
@@ -4010,7 +4115,7 @@ public class Crud implements InformationObserver {
         ctx.json( catalog
                 .getSchemas( 1, null )
                 .stream()
-                .collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getSchemaType ) ) );
+                .collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getNamespaceType ) ) );
     }
 
 
@@ -4019,8 +4124,10 @@ public class Crud implements InformationObserver {
      * it is running correctly when using the provided settings
      */
     public void testDockerInstance( final Context ctx ) {
-        String dockerId = ctx.pathParam( "dockerId" );
-        ctx.result( String.valueOf( DockerManager.getInstance().testDockerRunning( Integer.parseInt( dockerId ) ) ) );
+        String dockerIdAsString = ctx.pathParam( "dockerId" );
+        int dockerId = Integer.parseInt( dockerIdAsString );
+
+        ctx.json( DockerManager.getInstance().probeDockerStatus( dockerId ) );
     }
 
 

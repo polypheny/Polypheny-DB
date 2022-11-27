@@ -34,11 +34,22 @@ dependencies {
     testImplementation group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version  // HSQLDB License (BSD-style)
 }
 
+/**
+ * Compile Pipeline
+ */
+task generateParser(type: CompileJavaccTask) {
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: 'false', lookahead: '2']
+    inputDirectory = file('src/main/codegen/javacc')
+    outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/org/polypheny/db/piglet/parser')
+}
+
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java","build/generated-sources"]
+            //srcDirs = ["src/main/java","build/generated-sources"]
+            srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -59,17 +70,16 @@ sourceSets {
 }
 
 
-/**
- * Compile Pipeline
- */
-task generateParser (type: CompileJavaccTask) {
-    getConventionMapping().map("classpath", { configurations.javacc })
-    arguments = [static: 'false', lookahead: '2']
-    inputDirectory = file('src/main/codegen/javacc')
-    outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/org/polypheny/db/piglet/parser')
-}
 compileJava {
     dependsOn("generateParser")
+    dependsOn(":core:processResources")
+    dependsOn(":config:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":sql-language:processResources")
+}
+
+delombok {
+    dependsOn(":sql-language:processResources")
 }
 
 

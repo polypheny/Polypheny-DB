@@ -76,8 +76,10 @@ import org.polypheny.db.adapter.enumerable.BatchIteratorEnumerable;
 import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
+import org.polypheny.db.adapter.enumerable.lpg.EnumerableLpgMatch.MatchEnumerable;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
@@ -115,12 +117,14 @@ import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.Functions;
-import org.polypheny.db.runtime.Functions.FlatProductInputType;
-import org.polypheny.db.runtime.MqlFunctions;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.runtime.functions.CrossModelFunctions;
+import org.polypheny.db.runtime.functions.CypherFunctions;
+import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.runtime.functions.Functions.FlatProductInputType;
+import org.polypheny.db.runtime.functions.MqlFunctions;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
@@ -129,6 +133,11 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.graph.GraphPropertyHolder;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
 
 
@@ -136,9 +145,13 @@ import org.polypheny.db.type.PolyType;
  * Built-in methods.
  */
 public enum BuiltInMethod {
+    SWITCH_CONTEXT( DataContext.class, "switchContext" ),
     BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
-    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", Enumerable.class, Enumerable.class, List.class, List.class ),
+    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", Function0.class, Enumerable.class, List.class, List.class ),
+    TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
+    TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
+    TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
@@ -168,6 +181,7 @@ public enum BuiltInMethod {
     SLICE0( Enumerables.class, "slice0", Enumerable.class ),
     SEMI_JOIN( EnumerableDefaults.class, "semiJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class ),
     THETA_JOIN( EnumerableDefaults.class, "thetaJoin", Enumerable.class, Enumerable.class, Predicate2.class, Function2.class, boolean.class, boolean.class ),
+    SINGLE_SUM( Functions.class, "singleSum", Enumerable.class ),
     CORRELATE_JOIN( ExtendedEnumerable.class, "correlateJoin", CorrelateJoinType.class, Function1.class, Function2.class ),
     SELECT( ExtendedEnumerable.class, "select", Function1.class ),
     SELECT2( ExtendedEnumerable.class, "select", Function2.class ),
@@ -194,6 +208,7 @@ public enum BuiltInMethod {
     FUNCTION0_APPLY( Function0.class, "apply" ),
     FUNCTION1_APPLY( Function1.class, "apply", Object.class ),
     ARRAYS_AS_LIST( Arrays.class, "asList", Object[].class ),
+    MAP_OF_ENTRIES( ImmutableMap.class, "copyOf", List.class ),
     ARRAY( Functions.class, "array", Object[].class ),
     FLAT_PRODUCT( Functions.class, "flatProduct", int[].class, boolean.class, FlatProductInputType[].class ),
     LIST_N( FlatLists.class, "copyOf", Comparable[].class ),
@@ -209,6 +224,7 @@ public enum BuiltInMethod {
     AS_ENUMERABLE2( Linq4j.class, "asEnumerable", Iterable.class ),
     ENUMERABLE_TO_LIST( ExtendedEnumerable.class, "toList" ),
     AS_LIST( Primitive.class, "asList", Object.class ),
+    PAIR_OF( Pair.class, "of", Pair.class ),
     ENUMERATOR_CURRENT( Enumerator.class, "current" ),
     ENUMERATOR_MOVE_NEXT( Enumerator.class, "moveNext" ),
     ENUMERATOR_CLOSE( Enumerator.class, "close" ),
@@ -435,7 +451,34 @@ public enum BuiltInMethod {
     DOC_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
     DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class ),
     DOC_JSONIZE( MqlFunctions.class, "docJsonify", Object.class ),
-    DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class );
+    DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class ),
+    GRAPH_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),
+    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyNode.class, String.class ),
+    CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", PolyNode.class, String.class ),
+    GRAPH_NODE_MATCH( CypherFunctions.class, "nodeMatch", PolyGraph.class, PolyNode.class ),
+    GRAPH_NODE_EXTRACT( CypherFunctions.class, "nodeExtract", PolyGraph.class ),
+    GRAPH_MATCH_CTOR( MatchEnumerable.class, List.class ),
+    GRAPH_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, String.class ),
+    CYPHER_EXTRACT_PROPERTY( CypherFunctions.class, "extractProperty", GraphPropertyHolder.class, String.class ),
+
+    CYPHER_EXTRACT_PROPERTIES( CypherFunctions.class, "extractProperties", GraphPropertyHolder.class ),
+
+    CYPHER_EXTRACT_ID( CypherFunctions.class, "extractId", GraphPropertyHolder.class ),
+    CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),
+    CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),
+    CYPHER_TO_LIST( CypherFunctions.class, "toList", Object.class ),
+    CYPHER_ADJUST_EDGE( CypherFunctions.class, "adjustEdge", PolyEdge.class, PolyNode.class, PolyNode.class ),
+    CYPHER_SET_PROPERTY( CypherFunctions.class, "setProperty", GraphPropertyHolder.class, String.class, String.class ),
+    CYPHER_SET_PROPERTIES( CypherFunctions.class, "setProperties", GraphPropertyHolder.class, List.class, List.class, boolean.class ),
+    CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, boolean.class ),
+    CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
+    CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
+    SPLIT_GRAPH_MODIFY( CrossModelFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class ),
+
+    X_MODEL_TABLE_TO_NODE( CrossModelFunctions.class, "tableToNodes", Enumerable.class, String.class, List.class ),
+    X_MODEL_MERGE_NODE_COLLECTIONS( CrossModelFunctions.class, "mergeNodeCollections", List.class ),
+    X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, String.class ),
+    X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class );
 
     public final Method method;
     public final Constructor constructor;

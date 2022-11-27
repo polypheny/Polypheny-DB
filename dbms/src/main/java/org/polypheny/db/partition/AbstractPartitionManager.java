@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     // Returns the Index of the partition where to place the object
     protected final Catalog catalog = Catalog.getInstance();
 
+
     // Returns the Index of the partition where to place the object
     @Override
     public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
@@ -68,7 +69,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 CatalogPartition catalogPartition = catalog.getPartition( partitionId );
                 List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
-                for ( long columnId : catalogTable.columnIds ) {
+                for ( long columnId : catalogTable.fieldIds ) {
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
                     ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
                     if ( !ccps.isEmpty() ) {

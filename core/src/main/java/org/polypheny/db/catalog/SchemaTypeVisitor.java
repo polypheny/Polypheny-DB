@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -30,14 +30,14 @@ import org.polypheny.db.schema.Table;
 
 public class SchemaTypeVisitor extends AlgShuttleImpl {
 
-    private final List<SchemaType> schemaTypes = new ArrayList<>();
+    private final List<NamespaceType> namespaceTypes = new ArrayList<>();
 
 
-    public SchemaType getSchemaTypes() {
-        if ( schemaTypes.stream().allMatch( s -> s == SchemaType.RELATIONAL ) ) {
-            return SchemaType.RELATIONAL;
-        } else if ( schemaTypes.stream().allMatch( s -> s == SchemaType.DOCUMENT ) ) {
-            return SchemaType.DOCUMENT;
+    public NamespaceType getSchemaTypes() {
+        if ( namespaceTypes.stream().allMatch( s -> s == NamespaceType.RELATIONAL ) ) {
+            return NamespaceType.RELATIONAL;
+        } else if ( namespaceTypes.stream().allMatch( s -> s == NamespaceType.DOCUMENT ) ) {
+            return NamespaceType.DOCUMENT;
         } else {
             //mixed
             return null;
@@ -46,7 +46,7 @@ public class SchemaTypeVisitor extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
+    public AlgNode visit( Scan scan ) {
         try {
             List<String> names = scan.getTable().getQualifiedName();
             CatalogSchema schema;
@@ -67,7 +67,7 @@ public class SchemaTypeVisitor extends AlgShuttleImpl {
                     throw new RuntimeException( "The used table did not use a full name." );
                 }
             }
-            schemaTypes.add( schema.getSchemaType() );
+            namespaceTypes.add( schema.getNamespaceType() );
         } catch ( UnknownSchemaException | UnknownDatabaseException e ) {
             throw new RuntimeException( "There was an error on retrieval of the data model." );
         }

@@ -33,8 +33,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
 import org.polypheny.db.util.NameSet;
@@ -51,16 +58,19 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     @Getter
     private final AbstractPolyphenyDbSchema parent;
     @Getter
+    private final boolean caseSensitive;
+    @Getter
     @Setter
     public Schema schema;
     @Getter
     public final String name;
     @Getter
-    public final SchemaType schemaType;
+    public final NamespaceType namespaceType;
 
     /**
      * Tables explicitly defined in this schema. Does not include tables in {@link #schema}.
      */
+    @Getter
     protected final NameMap<TableEntry> tableMap;
     protected final NameMultimap<FunctionEntry> functionMap;
     protected final NameMap<TypeEntry> typeMap;
@@ -74,7 +84,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             AbstractPolyphenyDbSchema parent,
             Schema schema,
             String name,
-            SchemaType type,
+            NamespaceType type,
+            boolean caseSensitive,
             NameMap<PolyphenyDbSchema> subSchemaMap,
             NameMap<TableEntry> tableMap,
             NameMap<TypeEntry> typeMap,
@@ -85,7 +96,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         this.parent = parent;
         this.schema = schema;
         this.name = name;
-        this.schemaType = type;
+        this.namespaceType = type;
         if ( tableMap == null ) {
             this.tableMap = new NameMap<>();
         } else {
@@ -112,6 +123,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             this.typeMap = Objects.requireNonNull( typeMap );
         }
         this.path = path;
+        this.caseSensitive = caseSensitive;
     }
 
 
@@ -122,13 +134,13 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      */
     public static PolyphenyDbSchema createRootSchema( String name ) {
         final Schema schema = new RootSchema();
-        return new SimplePolyphenyDbSchema( null, schema, name, SchemaType.getDefault() );
+        return new SimplePolyphenyDbSchema( null, schema, name, NamespaceType.getDefault(), false );
     }
 
 
     /**
      * Returns a sub-schema with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
-     * not explicitly by a call to {@link #add(String, Schema, SchemaType)}), or null.
+     * not explicitly by a call to {@link #add(String, Schema, NamespaceType)}), or null.
      */
     protected abstract PolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive );
 
@@ -136,7 +148,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * Returns a table with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
      * not explicitly by a call to {@link #add(String, Table)}), or null.
      */
-    protected abstract TableEntry getImplicitTable( String tableName, boolean caseSensitive );
+    protected abstract TableEntry getImplicitTable( String tableName );
 
     /**
      * Returns a type with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
@@ -192,7 +204,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * Creates a TableEntryImpl with no SQLs.
      */
     protected TableEntryImpl tableEntry( String name, Table table ) {
-        return new TableEntryImpl( this, name, table, ImmutableList.of() );
+        return new TableEntryImpl( this, name, table );
     }
 
 
@@ -209,16 +221,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      */
     @Override
     public TableEntry add( String tableName, Table table ) {
-        return add( tableName, table, ImmutableList.of() );
-    }
-
-
-    /**
-     * Defines a table within this schema.
-     */
-    @Override
-    public TableEntry add( String tableName, Table table, ImmutableList<String> sqls ) {
-        final TableEntryImpl entry = new TableEntryImpl( this, tableName, table, sqls );
+        final TableEntryImpl entry = new TableEntryImpl( this, tableName, table );
         tableMap.put( tableName, entry );
         return entry;
     }
@@ -299,12 +302,28 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * Returns a table with the given name. Does not look for views.
      */
     @Override
-    public final TableEntry getTable( String tableName, boolean caseSensitive ) {
+    public final TableEntry getTable( String originalTableName ) {
+        String tableName = caseSensitive ? originalTableName : originalTableName.toLowerCase();
         // Check explicit tables.
         for ( Map.Entry<String, TableEntry> entry : tableMap.range( tableName, caseSensitive ).entrySet() ) {
             return entry.getValue();
         }
-        return getImplicitTable( tableName, caseSensitive );
+        TableEntry table = getImplicitTable( originalTableName );
+
+        if ( table != null ) {
+            return table;
+        } else if ( namespaceType == NamespaceType.GRAPH ) {
+            // label table for cross model queries
+            final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+            final Builder fieldInfo = typeFactory.builder();
+            fieldInfo.add( new AlgDataTypeFieldImpl( "id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ) );
+            fieldInfo.add( new AlgDataTypeFieldImpl( "properties", 1, typeFactory.createPolyType( PolyType.VARCHAR, 2064 ) ) );
+            fieldInfo.add( new AlgDataTypeFieldImpl( "labels", 2, typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ) ) );
+
+            return new TableEntryImpl( this, tableName, new LogicalTable( -1, name, tableName, List.of(), List.of(), AlgDataTypeImpl.proto( fieldInfo.build() ), NamespaceType.GRAPH ) );
+        }
+        return null;
     }
 
 
@@ -334,7 +353,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Schema, SchemaType)})
+     * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Schema, NamespaceType)})
      * and implicit (defined using {@link Schema#getSubSchemaNames()} and {@link Schema#getSubSchema(String)}).
      */
     @Override
@@ -543,7 +562,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
         @Override
         public Table getTable( String name ) {
-            final TableEntry entry = AbstractPolyphenyDbSchema.this.getTable( name, true );
+            final TableEntry entry = AbstractPolyphenyDbSchema.this.getTable( name );
             return entry == null ? null : entry.getTable();
         }
 
@@ -593,8 +612,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
         @Override
-        public SchemaPlus add( String name, Schema schema, SchemaType schemaType ) {
-            final PolyphenyDbSchema polyphenyDbSchema = AbstractPolyphenyDbSchema.this.add( name, schema, schemaType );
+        public SchemaPlus add( String name, Schema schema, NamespaceType namespaceType ) {
+            final PolyphenyDbSchema polyphenyDbSchema = AbstractPolyphenyDbSchema.this.add( name, schema, namespaceType );
             return polyphenyDbSchema.plus();
         }
 

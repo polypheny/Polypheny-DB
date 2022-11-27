@@ -30,11 +30,18 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 
+task generateParser(type: CompileJavaccTask) {
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false"]
+    inputDirectory = file("src/main/codegen")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/cql/parser")
+}
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java", "build/generated-sources"]
+            // srcDirs = ["src/main/java", "build/generated-sources"]
+            srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -55,15 +62,15 @@ sourceSets {
 }
 
 
-task generateParser(type: CompileJavaccTask) {
-    getConventionMapping().map("classpath", { configurations.javacc })
-    arguments = [static: "false"]
-    inputDirectory = file("src/main/codegen")
-    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/cql/parser")
-}
-
 compileJava {
     dependsOn("generateParser")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":config:processResources")
+}
+
+delombok {
+    dependsOn(":core:processResources")
 }
 
 
@@ -71,7 +78,7 @@ compileJava {
  * JavaDoc
  */
 javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
+    if (JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption("html5", true)
     }
     // suppress most of the warnings

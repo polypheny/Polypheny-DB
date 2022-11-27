@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,8 @@ import org.polypheny.db.plan.AlgTraitSet;
 /**
  * Abstract base class for relational expressions with a single input.
  * <p>
- * It is not required that single-input relational expressions use this class as a base class. However, default implementations of methods make life easier.
+ * It is not required that single-input relational expressions use this class as a base class. However, default
+ * implementations of methods make life easier.
  */
 public abstract class SingleAlg extends AbstractAlgNode {
 

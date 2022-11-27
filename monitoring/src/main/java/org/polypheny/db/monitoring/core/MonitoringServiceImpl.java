@@ -79,6 +79,12 @@ public class MonitoringServiceImpl implements MonitoringService {
         return monitoringQueue.getNumberOfElementsInQueue();
     }
 
+    @Override
+    public long getNumberOfElementsInQueue() {
+        return monitoringQueue.getNumberOfElementsInQueue();
+    }
+
+
     /**
      * Removes all data points for given monitoring persistent type.
      *

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ public class GeodeZipsTest extends AbstractGeodeTest {
 //                        + "  GeodeAggregate(group=[{1}], po=[SUM($0)])\n"
 //                        + "    GeodeProject(pop=[CAST($3):INTEGER], state=[CAST($4):VARCHAR(2) CHARACTER SET"
 //                        + " \"ISO-8859-1\" COLLATE \"ISO-8859-1$en_US$primary\"])\n"
-//                        + "      GeodeTableScan(table=[[geode, zips]])\n" );
+//                        + "      GeodeScan(table=[[geode, zips]])\n" );
 //    }
 //
 //
@@ -111,7 +111,7 @@ public class GeodeZipsTest extends AbstractGeodeTest {
 //                .returnsCount( 51 )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{4}], po=[SUM($3)])\n"
-//                        + "    GeodeTableScan(table=[[geode, zips]])\n" );
+//                        + "    GeodeScan(table=[[geode, zips]])\n" );
 //    }
 //
 //
@@ -122,7 +122,7 @@ public class GeodeZipsTest extends AbstractGeodeTest {
 //                .returnsCount( 51 )
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeAggregate(group=[{4}], po=[SUM($3)])\n"
-//                        + "    GeodeTableScan(table=[[geode, zips]])\n" );
+//                        + "    GeodeScan(table=[[geode, zips]])\n" );
 //    }
 //
 //
@@ -147,11 +147,11 @@ public class GeodeZipsTest extends AbstractGeodeTest {
 //                        + "      GeodeToEnumerableConverter\n"
 //                        + "        GeodeProject(_id=[$0], _id0=[CAST($0):VARCHAR CHARACTER SET "
 //                        + "\"ISO-8859-1\" COLLATE \"ISO-8859-1$en_US$primary\"])\n"
-//                        + "          GeodeTableScan(table=[[geode, zips]])\n"
+//                        + "          GeodeScan(table=[[geode, zips]])\n"
 //                        + "      GeodeToEnumerableConverter\n"
 //                        + "        GeodeProject(_id0=[CAST($0):VARCHAR CHARACTER SET \"ISO-8859-1\" COLLATE "
 //                        + "\"ISO-8859-1$en_US$primary\"])\n"
-//                        + "          GeodeTableScan(table=[[geode, zips]])\n" );
+//                        + "          GeodeScan(table=[[geode, zips]])\n" );
 //    }
 //
 //
@@ -163,7 +163,7 @@ public class GeodeZipsTest extends AbstractGeodeTest {
 //                .explainContains( "PLAN=GeodeToEnumerableConverter\n"
 //                        + "  GeodeProject(lat=[ITEM($2, 0)], lon=[ITEM($2, 1)])\n"
 //                        + "    GeodeSort(fetch=[1])\n"
-//                        + "      GeodeTableScan(table=[[geode, zips]])\n" );
+//                        + "      GeodeScan(table=[[geode, zips]])\n" );
 //    }
 //
 //
@@ -177,7 +177,7 @@ public class GeodeZipsTest extends AbstractGeodeTest {
 //                        + "  GeodeProject(lat=[ITEM($2, 0)], lon=[ITEM($2, 1)])\n"
 //                        + "    GeodeSort(fetch=[1])\n"
 //                        + "      GeodeFilter(condition=[<(ITEM($2, 0), 0)])\n"
-//                        + "        GeodeTableScan(table=[[geode, zips]])\n" )
+//                        + "        GeodeScan(table=[[geode, zips]])\n" )
 //                .queryContains( GeodeAssertions.query( "SELECT loc[0] AS lat, loc[1] AS lon FROM /zips WHERE loc[0] < 0 LIMIT 1" ) );
 //
 //        polyphenyDbAssert()
@@ -187,7 +187,7 @@ public class GeodeZipsTest extends AbstractGeodeTest {
 //                        + "  GeodeProject(lat=[ITEM($2, 0)], lon=[ITEM($2, 1)])\n"
 //                        + "    GeodeSort(fetch=[1])\n"
 //                        + "      GeodeFilter(condition=[>(ITEM($2, 0), 0)])\n"
-//                        + "        GeodeTableScan(table=[[geode, zips]])\n" )
+//                        + "        GeodeScan(table=[[geode, zips]])\n" )
 //                .queryContains( GeodeAssertions.query( "SELECT loc[0] AS lat, loc[1] AS lon FROM /zips WHERE loc[0] > 0 LIMIT 1" ) );
 //    }
 //

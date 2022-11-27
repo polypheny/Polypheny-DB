@@ -1,8 +1,25 @@
+/*
+ * Copyright 2019-2022 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
 import java.io.File;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +34,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -25,7 +43,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.dialect.HsqldbSqlDialect;
+import org.polypheny.db.sql.language.dialect.HsqldbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -38,7 +56,8 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterProperties(
         name = "HSQLDB",
         description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
-        usedModes = DeployMode.EMBEDDED)
+        usedModes = DeployMode.EMBEDDED,
+        supportedNamespaceTypes = { NamespaceType.RELATIONAL })
 @AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
 @AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" })
@@ -75,6 +94,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             dataSource.setPassword( "" );
             dataSource.setMaxTotal( -1 ); // No limit for number of connections (limited by connection handler; see settings maxConnections)
             dataSource.setDefaultAutoCommit( false );
+            dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_COMMITTED );
             return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
         }
     }
@@ -209,7 +229,6 @@ public class HsqldbStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
-            case JSON:
                 return "VARCHAR";
             case DATE:
                 return "DATE";
@@ -218,6 +237,11 @@ public class HsqldbStore extends AbstractJdbcStore {
             case TIMESTAMP:
                 return "TIMESTAMP";
             case ARRAY:
+                return "LONGVARCHAR";
+            case JSON:
+            case NODE:
+            case EDGE:
+            case DOCUMENT:
                 return "LONGVARCHAR";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );

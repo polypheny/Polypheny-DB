@@ -39,11 +39,11 @@ import java.util.Set;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptNode;
@@ -342,7 +342,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     }
 
     /**
-     * To check if a RelNode includes a ViewTableScan
+     * To check if a RelNode includes a ViewScan
      */
     default boolean hasView() {
         return false;
@@ -350,28 +350,28 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Expands node
-     * If a part of RelNode is a LogicalViewTableScan it is replaced
+     * If a part of RelNode is a LogicalViewScan it is replaced
      * Else recursively hands call down if view in deeper level
      */
     default void tryExpandView( AlgNode input ) {
-        if ( input instanceof LogicalViewScan ) {
-            input = ((LogicalViewScan) input).expandViewNode();
+        if ( input instanceof LogicalRelViewScan ) {
+            input = ((LogicalRelViewScan) input).expandViewNode();
         } else {
             input.tryExpandView( input );
         }
     }
 
     default AlgNode tryParentExpandView( AlgNode input ) {
-        if ( input instanceof LogicalViewScan ) {
-            return ((LogicalViewScan) input).expandViewNode();
+        if ( input instanceof LogicalRelViewScan ) {
+            return ((LogicalRelViewScan) input).expandViewNode();
         } else {
             input.tryExpandView( input );
             return input;
         }
     }
 
-    default SchemaType getModel() {
-        return SchemaType.RELATIONAL;
+    default NamespaceType getModel() {
+        return NamespaceType.RELATIONAL;
     }
 
     /**

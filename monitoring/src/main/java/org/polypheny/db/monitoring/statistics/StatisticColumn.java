@@ -86,7 +86,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
         this.columnType = columnType;
 
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsTable( tableId ) ) {
+        if ( catalog.checkIfExistsEntity( tableId ) ) {
             this.schema = catalog.getSchema( schemaId ).name;
             this.table = catalog.getTable( tableId ).name;
             this.column = catalog.getColumn( columnId ).name;

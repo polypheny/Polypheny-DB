@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -279,8 +279,8 @@ public class RequestParser {
         int columnOffset = 0;
         for ( CatalogTable table : tables ) {
             tableOffsets.put( table.id, columnOffset );
-            validColumns.addAll( table.columnIds );
-            columnOffset += table.columnIds.size();
+            validColumns.addAll( table.fieldIds );
+            columnOffset += table.fieldIds.size();
         }
 
         List<RequestColumn> columns;
@@ -308,7 +308,7 @@ public class RequestParser {
         List<RequestColumn> columns = new ArrayList<>();
         long internalPosition = 0L;
         for ( CatalogTable table : tables ) {
-            for ( long columnId : table.columnIds ) {
+            for ( long columnId : table.fieldIds ) {
                 CatalogColumn column = this.catalog.getColumn( columnId );
                 int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
                 RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, true );

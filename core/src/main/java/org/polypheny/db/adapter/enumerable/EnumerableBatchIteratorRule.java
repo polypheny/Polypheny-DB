@@ -19,9 +19,10 @@ package org.polypheny.db.adapter.enumerable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalBatchIterator;
+import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
+
 
 public class EnumerableBatchIteratorRule extends ConverterRule {
 

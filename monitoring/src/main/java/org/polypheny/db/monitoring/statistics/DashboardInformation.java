@@ -21,7 +21,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
@@ -52,10 +52,10 @@ public class DashboardInformation {
     private long numberOfPendingEvents;
 
     @Getter
-    private final Map<String, AdapterType> availableAdapter = new HashMap<>();
+    private final Map<String, Pair<String, AdapterType>> availableAdapter = new HashMap<>();
 
     @Getter
-    private final Map<Long, Pair<String, SchemaType>> availableSchemas = new HashMap<>();
+    private final Map<Long, Pair<String, NamespaceType>> availableSchemas = new HashMap<>();
 
     @Getter
     private boolean catalogPersistent;
@@ -67,6 +67,7 @@ public class DashboardInformation {
         this.numberOfQueries = 0;
         this.numberOfWorkloads = 0;
         this.numberOfPendingEvents = 0;
+
         updatePolyphenyStatistic();
     }
 
@@ -78,11 +79,12 @@ public class DashboardInformation {
         this.numberOfQueries = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class ).size();
         this.numberOfWorkloads = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size();
         this.numberOfPendingEvents = MonitoringServiceProvider.getInstance().getNumberOfElementsInQueue();
+
         catalog.getAdapters().forEach( v -> {
-            this.availableAdapter.put( v.uniqueName, v.type );
+            this.availableAdapter.put( v.uniqueName, Pair.of( v.getAdapterTypeName(), v.type ) );
         } );
         catalog.getSchemas( null, null ).forEach( v -> {
-            availableSchemas.put( v.id, new Pair<>( v.name, v.schemaType ) );
+            availableSchemas.put( v.id, Pair.of( v.name, v.namespaceType ) );
         } );
     }
 

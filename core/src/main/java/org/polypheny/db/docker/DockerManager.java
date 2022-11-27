@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
+
 /**
- * This class servers as a organization unit which controls all Docker containers in Polypheny.
+ * This class servers as an organization unit which controls all Docker containers in Polypheny.
  * While the callers can and should mostly interact with the underlying containers directly,
  * this instance is used to have a control layer, which allows to restore, start or shutdown multiple of
  * these instances at the same time.
@@ -108,7 +109,10 @@ public abstract class DockerManager {
      */
     protected abstract void updateConfigs();
 
-    public abstract boolean testDockerRunning( int dockerId );
+    public abstract DockerStatus probeDockerStatus( int dockerId );
+
+
+    public abstract void updateIpAddress( Container container );
 
 
     /**
@@ -121,12 +125,19 @@ public abstract class DockerManager {
         @Getter
         private final String name;
         @Getter
-        @Setter
-        private String version;
+        private final String versionNumber;
+        @Getter
+        private final String versionHash;
 
 
         public String getFullName() {
-            return this.name + ":" + this.version;
+            if ( versionNumber != null ) {
+                return this.name + ":" + this.versionNumber;
+            } else if ( versionHash != null ) {
+                return this.name + "@" + this.versionHash;
+            } else {
+                return this.name + ":latest";
+            }
         }
 
 
@@ -134,26 +145,42 @@ public abstract class DockerManager {
         public boolean equals( Object obj ) {
             if ( obj instanceof Image ) {
                 Image image = (Image) obj;
-                return name.equals( image.name ) && version.equals( image.version );
+                boolean eqVersionHash = true;
+                if ( versionHash != null && image.versionHash != null ) {
+                    eqVersionHash = versionHash.equals( image.versionHash );
+                }
+                boolean eqVersionNumber = true;
+                if ( versionNumber != null && image.versionNumber != null ) {
+                    eqVersionNumber = versionNumber.equals( image.versionNumber );
+                }
+                return name.equals( image.name ) && eqVersionNumber && eqVersionHash;
             }
             return false;
         }
 
 
-        Image( String name, String version ) {
+        Image( String name, String versionNumber, String versionHash ) {
             this.name = name;
-            this.version = version;
+            this.versionNumber = versionNumber;
+            this.versionHash = versionHash;
         }
 
 
         Image( String name ) {
-            if ( name.contains( ":" ) ) {
+            if ( name.contains( "@" ) ) {
+                String[] splits = name.split( "@" );
+                this.name = splits[0];
+                this.versionHash = splits[1];
+                this.versionNumber = null;
+            } else if ( name.contains( ":" ) ) {
                 String[] splits = name.split( ":" );
                 this.name = splits[0];
-                this.version = splits[1];
+                this.versionNumber = splits[1];
+                this.versionHash = null;
             } else {
                 this.name = name;
-                this.version = "latest";
+                this.versionHash = null;
+                this.versionNumber = null;
             }
         }
 
@@ -249,19 +276,6 @@ public abstract class DockerManager {
 
 
         /**
-         * Change the used image version
-         *
-         * @param version the new version of the image
-         * @return the builder
-         */
-        public ContainerBuilder withImageVersion( String version ) {
-            image.setVersion( version );
-
-            return this;
-        }
-
-
-        /**
          * This allows to specify commands which are executed when the container and the underlying system have started
          *
          * @param commands the collection of commands to execute
@@ -311,6 +325,10 @@ public abstract class DockerManager {
         @Setter
         @Getter
         private String containerId;
+        @Getter
+        @Setter
+        private String ipAddress = RuntimeConfig.USE_DOCKER_NETWORK.getBoolean() ? null : "localhost";
+
 
         @Getter
         private final String host;
@@ -411,6 +429,11 @@ public abstract class DockerManager {
 
         public static String getFromPhysicalName( String physicalUniqueName ) {
             return physicalUniqueName.split( "_" )[0];
+        }
+
+
+        public void updateIpAddress() {
+            DockerManager.getInstance().updateIpAddress( this );
         }
 
     }

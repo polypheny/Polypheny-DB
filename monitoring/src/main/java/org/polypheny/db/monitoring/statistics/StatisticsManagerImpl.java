@@ -44,16 +44,16 @@ import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -159,12 +159,12 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     @Override
     public void updateTableName( CatalogTable catalogTable, String newName ) {
-        if ( statisticSchemaMap.containsKey( catalogTable.schemaId ) && statisticSchemaMap.get( catalogTable.schemaId ).containsKey( catalogTable.id ) ) {
-            Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogTable.schemaId ).get( catalogTable.id );
+        if ( statisticSchemaMap.containsKey( catalogTable.namespaceId ) && statisticSchemaMap.get( catalogTable.namespaceId ).containsKey( catalogTable.id ) ) {
+            Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogTable.namespaceId ).get( catalogTable.id );
             for ( Entry<Long, StatisticColumn<T>> columnInfo : columnsInformation.entrySet() ) {
                 StatisticColumn<T> statisticColumn = columnInfo.getValue();
                 statisticColumn.updateTableName( newName );
-                statisticSchemaMap.get( catalogTable.schemaId ).get( catalogTable.id ).put( columnInfo.getKey(), statisticColumn );
+                statisticSchemaMap.get( catalogTable.namespaceId ).get( catalogTable.id ).put( columnInfo.getKey(), statisticColumn );
             }
         }
         if ( tableStatistic.containsKey( catalogTable.id ) ) {
@@ -194,7 +194,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private Transaction getTransaction() {
         Transaction transaction;
         try {
-            transaction = statisticQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
+            transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Statistic Manager" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
@@ -282,7 +282,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         log.debug( "Reevaluate Row Count." );
 
         statisticQueryInterface.getAllTable().forEach( table -> {
-            int rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( table.schemaId, table.id, null, null ), NodeType.ROW_COUNT_TABLE ) );
+            int rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( table.namespaceId, table.id, null, null ), NodeType.ROW_COUNT_TABLE ) );
             updateRowCountPerTable( table.id, rowCount, "SET-ROW-COUNT" );
         } );
     }
@@ -302,8 +302,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         if ( statisticQueryInterface == null ) {
             return;
         }
-        if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
-            deleteTable( Catalog.getInstance().getTable( tableId ).schemaId, tableId );
+        if ( Catalog.getInstance().checkIfExistsEntity( tableId ) ) {
+            deleteTable( Catalog.getInstance().getTable( tableId ).namespaceId, tableId );
 
             List<QueryResult> res = statisticQueryInterface.getAllColumns( tableId );
 
@@ -337,7 +337,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn<T> reevaluateColumn( QueryResult column ) {
-        if ( !Catalog.getInstance().checkIfExistsTable( column.getTableId() )
+        if ( !Catalog.getInstance().checkIfExistsEntity( column.getTableId() )
                 && !Catalog.getInstance().checkIfExistsColumn( column.getTableId(), column.getColumn() ) ) {
             return null;
         }
@@ -523,7 +523,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     private StatisticQueryResult prepareNode( QueryResult queryResult, NodeType nodeType ) {
         StatisticQueryResult statisticQueryColumn = null;
-        if ( Catalog.getInstance().checkIfExistsTable( queryResult.getTableId() ) ) {
+        if ( Catalog.getInstance().checkIfExistsEntity( queryResult.getTableId() ) ) {
             AlgNode queryNode = getQueryNode( queryResult, nodeType );
             //queryNode = getQueryNode( queryResult, nodeType );
             statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
@@ -540,7 +540,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
         AlgNode queryNode;
-        LogicalTableScan tableScan = getLogicalTableScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );
+        LogicalScan tableScan = getLogicalScan( queryResult.getSchema(), queryResult.getTable(), reader, cluster );
         switch ( nodeType ) {
             case MIN:
             case MAX:
@@ -565,16 +565,16 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * Gets a tableScan for a given table.
      */
-    private LogicalTableScan getLogicalTableScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
+    private LogicalScan getLogicalScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
         AlgOptTable relOptTable = reader.getTable( Arrays.asList( schema, table ) );
-        return LogicalTableScan.create( cluster, relOptTable );
+        return LogicalScan.create( cluster, relOptTable );
     }
 
 
     /**
      * Queries the database with an aggregate query, to get the min value or max value.
      */
-    private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
+    private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, Scan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -624,7 +624,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
-    private AlgNode getUniqueValues( QueryResult queryResult, TableScan tableScan, RexBuilder rexBuilder ) {
+    private AlgNode getUniqueValues( QueryResult queryResult, Scan tableScan, RexBuilder rexBuilder ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -652,10 +652,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     /**
      * Gets the amount of entries for a column
-     *
-     * @return
      */
-    private AlgNode getColumnCount( QueryResult queryResult, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
+    private AlgNode getColumnCount( QueryResult queryResult, Scan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -678,10 +676,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     /**
      * Gets the amount of entries for a table.
-     *
-     * @return
      */
-    private AlgNode getTableCount( TableScan tableScan, AlgOptCluster cluster ) {
+    private AlgNode getTableCount( Scan tableScan, AlgOptCluster cluster ) {
         AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
         return LogicalAggregate.create(
                 tableScan,
@@ -813,9 +809,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             } ) ) );
 
             tableStatistic.forEach( ( k, v ) -> {
-                tableInformation.addRow( v.getTable(), v.getSchemaType(), v.getNumberOfRows() );
+                tableInformation.addRow( v.getTable(), v.getNamespaceType(), v.getNumberOfRows() );
 
-                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getTableType() != TableType.MATERIALIZED_VIEW ) {
+                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getEntityType() != EntityType.MATERIALIZED_VIEW ) {
                     tableSelectInformation.addRow(
                             v.getTable(),
                             v.getCalls().getNumberOfSelects(),
@@ -850,7 +846,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private void workQueue() {
         while ( !this.tablesToUpdate.isEmpty() ) {
             long tableId = this.tablesToUpdate.poll();
-            if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
+            if ( Catalog.getInstance().checkIfExistsEntity( tableId ) ) {
                 reevaluateTable( tableId );
             }
             tableStatistic.remove( tableId );
@@ -886,7 +882,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Override
     public void tablesToUpdate( long tableId, Map<Long, List<Object>> changedValues, String type, long schemaId ) {
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsTable( tableId ) ) {
+        if ( catalog.checkIfExistsEntity( tableId ) ) {
             switch ( type ) {
                 case "INSERT":
                     handleInsert( tableId, changedValues, schemaId, catalog );
@@ -915,10 +911,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     private void handleTruncate( long tableId, long schemaId, Catalog catalog ) {
         CatalogTable catalogTable = catalog.getTable( tableId );
-        for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
-            PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
-            QueryResult queryResult = new QueryResult( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
-            if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
+        for ( int i = 0; i < catalogTable.fieldIds.size(); i++ ) {
+            PolyType polyType = catalog.getColumn( catalogTable.fieldIds.get( i ) ).type;
+            QueryResult queryResult = new QueryResult( schemaId, catalogTable.id, catalogTable.fieldIds.get( i ), polyType );
+            if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.fieldIds.get( i ) ) != null ) {
                 StatisticColumn<T> statisticColumn = createNewStatisticColumns( polyType, queryResult );
                 if ( statisticColumn != null ) {
                     put( queryResult, statisticColumn );
@@ -943,7 +939,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     private void handleInsert( long tableId, Map<Long, List<Object>> changedValues, long schemaId, Catalog catalog ) {
         CatalogTable catalogTable = catalog.getTable( tableId );
-        List<Long> columns = catalogTable.columnIds;
+        List<Long> columns = catalogTable.fieldIds;
         if ( this.statisticSchemaMap.get( schemaId ) != null ) {
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ) != null ) {
                 for ( int i = 0; i < columns.size(); i++ ) {
@@ -970,7 +966,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private void addInserts( Map<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
         for ( int i = 0; i < columns.size(); i++ ) {
             PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
-            QueryResult queryResult = new QueryResult( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
+            QueryResult queryResult = new QueryResult( catalogTable.namespaceId, catalogTable.id, columns.get( i ), polyType );
             addNewColumnStatistics( changedValues, i, polyType, queryResult );
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -62,12 +62,13 @@ import org.polypheny.db.util.Pair;
 /**
  * Planner rule that removes constant keys from an {@link org.polypheny.db.algebra.core.Aggregate}.
  *
- * Constant fields are deduced using {@link AlgMetadataQuery#getPulledUpPredicates(AlgNode)}; the input does not need to be a {@link org.polypheny.db.algebra.core.Project}.
+ * Constant fields are deduced using {@link AlgMetadataQuery#getPulledUpPredicates(AlgNode)}; the input does not need to be
+ * a {@link org.polypheny.db.algebra.core.Project}.
  *
  * This rules never removes the last column, because {@code Aggregate([])} returns 1 row even if its input is empty.
  *
- * Since the transformed relational expression has to match the original relational expression, the constants are placed in a projection above the reduced aggregate. If those constants are not used, another rule will remove
- * them from the project.
+ * Since the transformed relational expression has to match the original relational expression, the constants are placed in
+ * a projection above the reduced aggregate. If those constants are not used, another rule will remove them from the project.
  */
 public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
 

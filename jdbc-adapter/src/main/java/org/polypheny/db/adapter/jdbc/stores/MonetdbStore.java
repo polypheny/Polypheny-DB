@@ -16,8 +16,8 @@
 
 package org.polypheny.db.adapter.jdbc.stores;
 
-
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -41,11 +41,12 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.sql.dialect.MonetdbSqlDialect;
+import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -60,15 +61,16 @@ import org.polypheny.db.type.PolyTypeFamily;
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingString(name = "host", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
-@AdapterSettingString(name = "database", defaultValue = "polypheny", description = "JDBC port number on the remote MonetDB instance.", position = 3, appliesTo = DeploySetting.REMOTE)
-@AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 4, appliesTo = DeploySetting.REMOTE)
-@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.")
-@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
+@AdapterSettingString(name = "database", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 3, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.", position = 4, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Password to be used for authenticating at the remote instance.")
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Maximum number of concurrent connections opened by Polypheny-DB to this data store.")
 public class MonetdbStore extends AbstractJdbcStore {
 
     private String host;
     private String database;
     private String username;
+    private Container container;
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -78,13 +80,13 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     protected ConnectionFactory deployDocker( int dockerInstanceId ) {
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "topaztechnology/monetdb:11.37.11", getUniqueName(), dockerInstanceId )
+        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/monet", getUniqueName(), dockerInstanceId )
                 .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
                 .withReadyTest( this::testConnection, 15000 )
                 .build();
 
-        host = container.getHost();
+        this.container = container;
         database = "monetdb";
         username = "monetdb";
 
@@ -132,6 +134,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
+        dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 
@@ -297,8 +300,9 @@ public class MonetdbStore extends AbstractJdbcStore {
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
-            case JSON:
                 return "VARCHAR";
+            case JSON:
+                return "TEXT";
             case DATE:
                 return "DATE";
             case TIME:
@@ -326,6 +330,16 @@ public class MonetdbStore extends AbstractJdbcStore {
     private boolean testConnection() {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
+
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        this.host = container.getIpAddress();
+        if ( this.host == null ) {
+            return false;
+        }
+
         try {
             connectionFactory = createConnectionFactory();
 

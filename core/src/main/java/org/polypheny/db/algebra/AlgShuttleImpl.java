@@ -39,23 +39,41 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalExchange;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -109,7 +127,7 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
+    public AlgNode visit( Scan scan ) {
         return scan;
     }
 
@@ -187,7 +205,7 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( LogicalTableModify modify ) {
+    public AlgNode visit( LogicalModify modify ) {
         return visitChildren( modify );
     }
 
@@ -195,6 +213,114 @@ public class AlgShuttleImpl implements AlgShuttle {
     @Override
     public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
         return visitChildren( enforcer );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgModify modify ) {
+        return visitChildren( modify );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgScan scan ) {
+        return scan;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgValues values ) {
+        return values;
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgFilter filter ) {
+        return visitChildren( filter );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgMatch match ) {
+        return visitChildren( match );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgProject project ) {
+        return visitChildren( project );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgAggregate aggregate ) {
+        return visitChildren( aggregate );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgSort sort ) {
+        return visitChildren( sort );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgUnwind unwind ) {
+        return visitChildren( unwind );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalLpgTransformer transformer ) {
+        return visitChildren( transformer );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentModify modify ) {
+        return visitChildren( modify );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentAggregate aggregate ) {
+        return visitChildren( aggregate );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentFilter filter ) {
+        return visitChildren( filter );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentProject project ) {
+        return visitChildren( project );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentScan scan ) {
+        return visitChildren( scan );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentSort sort ) {
+        return visitChildren( sort );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentTransformer transformer ) {
+        return visitChildren( transformer );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalDocumentValues values ) {
+        return visitChildren( values );
     }
 
 

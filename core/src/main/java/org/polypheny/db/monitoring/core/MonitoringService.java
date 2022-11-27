@@ -81,6 +81,14 @@ public interface MonitoringService {
 
 
     /**
+     * Return current number of pending monitoring evens in the queue.
+     *
+     * @return number of pending events in the queue;
+     */
+    long getNumberOfElementsInQueue();
+
+
+    /**
      * Removes all data points for given monitoring persistent type.
      *
      * @param dataPointClass specific datapoint class of interest to remove

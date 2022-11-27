@@ -806,7 +806,7 @@ EXPR$0
 SELECT ST_Buffer(
  ST_GeomFromText('POINT(100 90)'),
  50, 'quad_segs=8');
-at org.polypheny.db.runtime.GeoFunctions.todo
+at org.polypheny.db.runtime.functions.GeoFunctions.todo
 !error GeoFunctions
 
 # ST_BUFFER(geom, bufferSize, quadSegs) variant - not implemented
@@ -814,7 +814,7 @@ at org.polypheny.db.runtime.GeoFunctions.todo
 SELECT ST_Buffer(
  ST_GeomFromText('POINT(100 90)'),
  50, 2);
-at org.polypheny.db.runtime.GeoFunctions.todo
+at org.polypheny.db.runtime.functions.GeoFunctions.todo
 !error GeoFunctions
 !}
 

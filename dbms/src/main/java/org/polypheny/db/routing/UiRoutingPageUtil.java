@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ import org.polypheny.db.transaction.Statement;
  */
 public class UiRoutingPageUtil {
 
-    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, AlgNode optimalRelNode, InformationManager queryAnalyzer ) {
-        addPhysicalPlanPage( optimalRelNode, queryAnalyzer );
+    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, AlgNode optimalAlgNode, InformationManager queryAnalyzer ) {
+        addPhysicalPlanPage( optimalAlgNode, queryAnalyzer );
 
         InformationPage page = queryAnalyzer.getPage( "routing" );
         if ( page == null ) {
@@ -99,7 +99,7 @@ public class UiRoutingPageUtil {
                     CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getPartitionPlacement( p.left, k );
                     CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogColumnPlacement.columnId );
                     table.addRow(
-                            catalogTable.getSchemaName() + "." + catalogTable.name,
+                            catalogTable.getNamespaceName() + "." + catalogTable.name,
                             catalogColumn.name,
                             catalogPartitionGroup.partitionGroupName + " --> " + catalogPartition.id,
                             catalogPartitionPlacement.adapterUniqueName,

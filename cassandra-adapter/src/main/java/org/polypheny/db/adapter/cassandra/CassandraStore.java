@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
@@ -59,6 +60,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -82,6 +84,7 @@ public class CassandraStore extends DataStore {
 
     // Running embedded
     private final Cassandra embeddedCassandra;
+    private Container container;
 
     // Connection information
     private String dbHostname;
@@ -99,6 +102,10 @@ public class CassandraStore extends DataStore {
 
     private final CqlSession session;
     private CassandraSchema currentSchema;
+
+    @Getter
+    // Apparently this cannot be static according to lombok even if it should create a non-static getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
     public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {
@@ -134,14 +141,15 @@ public class CassandraStore extends DataStore {
             this.dbUsername = "cassandra";
             this.dbPassword = "cassandra";
 
-            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "bitnami/cassandra:3.11", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/cassandra", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                     .withMappedPort( 9042, Integer.parseInt( settings.get( "port" ) ) )
                     // cassandra can take quite some time to start
                     .withReadyTest( this::testDockerConnection, 80000 )
                     //.withEnvironmentVariables( Arrays.asList( "CASSANDRA_USER=" + this.dbUsername, "CASSANDRA_PASSWORD=" + this.dbPassword ) )
                     .build();
 
-            this.dbHostname = container.getHost();
+            this.container = container;
+
             this.dbKeyspace = "cassandra";
             this.dbPort = Integer.parseInt( settings.get( "port" ) );
 
@@ -323,7 +331,7 @@ public class CassandraStore extends DataStore {
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-//        public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+//        public void dropColumn( Context context, CatalogCombinedTable catalogEntity, CatalogColumn catalogColumn ) {
 //        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getStatement().getTransaction().getCatalog(), this.getStoreId() );
 
         CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( columnPlacement.tableId ).partitionProperty.partitionIds.get( 0 ) );
@@ -505,6 +513,16 @@ public class CassandraStore extends DataStore {
 
     private boolean testDockerConnection() {
         CqlSession mySession = null;
+
+        if ( container == null ) {
+            return false;
+        }
+        container.updateIpAddress();
+        this.dbHostname = container.getIpAddress();
+        if ( this.dbHostname == null ) {
+            return false;
+        }
+
         try {
             CqlSessionBuilder cluster = CqlSession.builder();
             cluster.withLocalDatacenter( "datacenter1" );

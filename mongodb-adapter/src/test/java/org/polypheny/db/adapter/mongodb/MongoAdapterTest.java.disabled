@@ -125,7 +125,7 @@ public class MongoAdapterTest implements SchemaFactory {
         Objects.requireNonNull( collection, "collection" );
 
         if ( collection.count() > 0 ) {
-            // delete any existing documents (run from a clean set)
+            // delete any existing documentValues (run from a clean set)
             collection.deleteMany( new BsonDocument() );
         }
 
@@ -181,7 +181,7 @@ public class MongoAdapterTest implements SchemaFactory {
                 .explainContains( "PLAN=MongoToEnumerableConverter\n"
                         + "  MongoSort(sort0=[$4], dir0=[ASC])\n"
                         + "    MongoProject(CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)], LONGITUDE=[CAST(ITEM(ITEM($0, 'loc'), 0)):FLOAT], LATITUDE=[CAST(ITEM(ITEM($0, 'loc'), 1)):FLOAT], POP=[CAST(ITEM($0, 'pop')):INTEGER], STATE=[CAST(ITEM($0, 'state')):VARCHAR(2)], ID=[CAST(ITEM($0, '_id')):VARCHAR(5)])\n"
-                        + "      MongoTableScan(table=[[mongo_raw, zips]])" );
+                        + "      MongoScan(table=[[mongo_raw, zips]])" );
     }
 
 
@@ -258,7 +258,7 @@ public class MongoAdapterTest implements SchemaFactory {
                         + "  MongoSort(sort0=[$4], sort1=[$5], dir0=[ASC], dir1=[ASC])\n"
                         + "    MongoProject(CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)], LONGITUDE=[CAST(ITEM(ITEM($0, 'loc'), 0)):FLOAT], LATITUDE=[CAST(ITEM(ITEM($0, 'loc'), 1)):FLOAT], POP=[CAST(ITEM($0, 'pop')):INTEGER], STATE=[CAST(ITEM($0, 'state')):VARCHAR(2)], ID=[CAST(ITEM($0, '_id')):VARCHAR(5)])\n"
                         + "      MongoFilter(condition=[AND(=(CAST(ITEM($0, 'city')):VARCHAR(20), 'SPRINGFIELD'), >=(CAST(ITEM($0, '_id')):VARCHAR(5), '70000'))])\n"
-                        + "        MongoTableScan(table=[[mongo_raw, zips]])" );
+                        + "        MongoScan(table=[[mongo_raw, zips]])" );
     }
 
 
@@ -287,10 +287,10 @@ public class MongoAdapterTest implements SchemaFactory {
                 .explainContains( "PLAN=EnumerableUnion(all=[true])\n"
                         + "  MongoToEnumerableConverter\n"
                         + "    MongoProject(product_id=[CAST(ITEM($0, 'product_id')):DOUBLE])\n"
-                        + "      MongoTableScan(table=[[_foodmart, sales_fact_1997]])\n"
+                        + "      MongoScan(table=[[_foodmart, sales_fact_1997]])\n"
                         + "  MongoToEnumerableConverter\n"
                         + "    MongoProject(product_id=[CAST(ITEM($0, 'product_id')):DOUBLE])\n"
-                        + "      MongoTableScan(table=[[_foodmart, sales_fact_1998]])" )
+                        + "      MongoScan(table=[[_foodmart, sales_fact_1998]])" )
                 .limit( 2 )
                 .returns( MongoAssertions.checkResultUnordered( "product_id=337", "product_id=1512" ) );
     }
@@ -335,7 +335,7 @@ public class MongoAdapterTest implements SchemaFactory {
                 .explainContains( "PLAN=MongoToEnumerableConverter\n"
                         + "  MongoProject(warehouse_id=[CAST(ITEM($0, 'warehouse_id')):DOUBLE], warehouse_state_province=[CAST(ITEM($0, 'warehouse_state_province')):VARCHAR(20)])\n"
                         + "    MongoFilter(condition=[=(CAST(ITEM($0, 'warehouse_state_province')):VARCHAR(20), 'CA')])\n"
-                        + "      MongoTableScan(table=[[mongo_raw, warehouse]])" )
+                        + "      MongoScan(table=[[mongo_raw, warehouse]])" )
                 .returns(
                         MongoAssertions.checkResultUnordered(
                                 "warehouse_id=6; warehouse_state_province=CA",
@@ -421,7 +421,7 @@ public class MongoAdapterTest implements SchemaFactory {
                 .returns( String.format( Locale.ROOT, "EXPR$0=%d\n", ZIPS_SIZE ) )
                 .explainContains( "PLAN=MongoToEnumerableConverter\n"
                         + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
-                        + "    MongoTableScan(table=[[mongo_raw, zips]])" )
+                        + "    MongoScan(table=[[mongo_raw, zips]])" )
                 .queryContains( mongoChecker( "{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}" ) );
     }
 
@@ -692,7 +692,7 @@ public class MongoAdapterTest implements SchemaFactory {
                 .explainContains( "PLAN=MongoToEnumerableConverter\n"
                         + "  MongoProject(STATE=[CAST(ITEM($0, 'state')):VARCHAR(2)], CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)])\n"
                         + "    MongoFilter(condition=[=(CAST(ITEM($0, 'state')):VARCHAR(2), 'CA')])\n"
-                        + "      MongoTableScan(table=[[mongo_raw, zips]])" );
+                        + "      MongoScan(table=[[mongo_raw, zips]])" );
     }
 
 

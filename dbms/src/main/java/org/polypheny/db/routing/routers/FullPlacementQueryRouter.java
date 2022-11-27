@@ -64,7 +64,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
-                newBuilder.push( super.buildJoinedTableScan( statement, cluster, placementCombination ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, placementCombination ) );
                 newBuilders.add( newBuilder );
             }
         }
@@ -113,7 +113,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
         }

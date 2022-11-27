@@ -39,9 +39,9 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
@@ -216,7 +216,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         for ( Long id : connectedViews ) {
             CatalogTable view = catalog.getTable( id );
-            if ( view.tableType == TableType.MATERIALIZED_VIEW ) {
+            if ( view.entityType == EntityType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
                     int numberUpdated = materializedCriteria.getTimesUpdated();
@@ -276,8 +276,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         try {
             Transaction transaction = getTransactionManager().startTransaction(
-                    catalogTable.ownerName,
-                    catalog.getDatabase( catalogTable.databaseId ).name,
+                    catalogTable.ownerId,
+                    catalogTable.databaseId,
                     false,
                     "Materialized View" );
 
@@ -290,7 +290,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
                 idAccessMap.addAll( accessMap.getAccessedEntityPair() );
                 LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
-
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }
@@ -344,7 +343,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
 
         List<Integer> ids = new ArrayList<>();
-        if ( catalog.checkIfExistsTable( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
+        if ( catalog.checkIfExistsEntity( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
             CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( materializedId );
             for ( int id : catalogMaterializedView.dataPlacements ) {
                 ids.add( id );
@@ -465,8 +464,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
             prepareNode( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster, algCollation );
         }
-        if ( viewLogicalRoot instanceof LogicalViewScan ) {
-            prepareNode( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), algOptCluster, algCollation );
+        if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
+            prepareNode( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algOptCluster, algCollation );
         }
     }
 

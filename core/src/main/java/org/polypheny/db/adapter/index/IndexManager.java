@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +151,9 @@ public class IndexManager {
 
     public void restoreIndexes() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
         for ( final CatalogIndex index : Catalog.getInstance().getIndexes() ) {
-            addIndex( index );
+            if ( index.location == 0 ) {
+                addIndex( index );
+            }
         }
     }
 
@@ -188,7 +190,7 @@ public class IndexManager {
         indexByName.put( name, index );
         final Transaction tx = statement != null
                 ? statement.getTransaction()
-                : transactionManager.startTransaction( "pa", "APP", false, "Index Manager" );
+                : transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Index Manager" );
         try {
             index.rebuild( tx );
             if ( statement == null ) {

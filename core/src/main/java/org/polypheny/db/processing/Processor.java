@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 package org.polypheny.db.processing;
 
 
-import org.polypheny.db.PolyResult;
+import java.util.List;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
@@ -43,14 +44,14 @@ import org.polypheny.db.util.Pair;
 
 public abstract class Processor {
 
-    public abstract Node parse( String query );
+    public abstract List<? extends Node> parse( String query );
 
     public abstract Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
     public abstract AlgRoot translate( Statement statement, Node query, QueryParameters parameters );
 
 
-    public PolyResult prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+    public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         if ( parsed instanceof ExecutableStatement ) {
             try {
                 // Acquire global schema lock
@@ -71,13 +72,13 @@ public abstract class Processor {
     }
 
 
-    PolyResult getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
+    PolyImplementation getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
         ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();
-        return new PolyResult(
+        return new PolyImplementation(
                 null,
-                parameters.getSchemaType(),
+                parameters.getNamespaceType(),
                 new ExecutionTimeMonitor(),
                 null,
                 Kind.CREATE_SCHEMA, // technically correct, maybe change

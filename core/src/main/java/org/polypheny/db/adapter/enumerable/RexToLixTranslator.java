@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.avatica.util.ByteString;
@@ -79,7 +80,10 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.schema.graph.PolyEdge;
+import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
@@ -808,6 +812,22 @@ public class RexToLixTranslator {
                 value2 = literal.getValueAs( Enum.class );
                 javaClass = value2.getClass();
                 break;
+            case ARRAY:
+                AlgDataType componentType;
+                if ( type.getComponentType() != null ) {
+                    componentType = type.getComponentType();
+                } else {
+                    componentType = type;
+                }
+                value2 = ((List<RexLiteral>) literal.getValueAs( List.class )).stream().map( e -> translateLiteral( e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
+                javaClass = List.class;
+                break;
+            case EDGE:
+                return literal.getValueAs( PolyEdge.class ).getAsExpression();
+            case NODE:
+                return literal.getValueAs( PolyNode.class ).getAsExpression();
+            case PATH:
+                return literal.getValueAs( PolyPath.class ).getAsExpression();
             default:
                 final Primitive primitive = Primitive.ofBoxOr( javaClass );
                 final Comparable value = literal.getValueAs( Comparable.class );

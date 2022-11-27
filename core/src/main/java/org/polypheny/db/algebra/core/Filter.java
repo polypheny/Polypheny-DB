@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.config.RuntimeConfig;
@@ -60,7 +61,7 @@ import org.polypheny.db.util.Litmus;
  *
  * If the condition allows nulls, then a null value is treated the same as false.
  *
- * @see org.polypheny.db.algebra.logical.LogicalFilter
+ * @see LogicalFilter
  */
 public abstract class Filter extends SingleAlg {
 

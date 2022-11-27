@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgInput;
+import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -198,6 +199,12 @@ public abstract class Values extends AbstractAlgNode {
         return this.getClass().getSimpleName() + "$" +
                 rowType.toString() + "$" +
                 (tuples != null ? tuples.stream().map( t -> t.stream().map( RexLiteral::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) ).collect( Collectors.joining( "$" ) ) : "") + "&";
+    }
+
+
+    @Override
+    public void childrenAccept( AlgVisitor visitor ) {
+        // empty on purpose
     }
 
 }

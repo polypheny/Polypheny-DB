@@ -18,7 +18,6 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -32,20 +31,28 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.PolyResult;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
@@ -57,17 +64,103 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.RoutingManager;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
+import org.polypheny.db.schema.graph.PolyGraph;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
 
 
 @Slf4j
 public class DataMigratorImpl implements DataMigrator {
+
+    @Override
+    public void copyGraphData( CatalogGraphDatabase target, Transaction transaction, Integer existingAdapterId, CatalogAdapter to ) {
+        Statement statement = transaction.createStatement();
+
+        AlgBuilder builder = AlgBuilder.create( statement );
+
+        LogicalLpgScan scan = (LogicalLpgScan) builder.lpgScan( target.id ).build();
+
+        AlgNode routed = RoutingManager.getInstance().getFallbackRouter().handleGraphScan( scan, statement, existingAdapterId );
+
+        AlgRoot algRoot = AlgRoot.of( routed, Kind.SELECT );
+
+        AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
+                AlgBuilder.create( statement, algRoot.alg.getCluster() ),
+                algRoot.alg.getCluster().getRexBuilder(),
+                algRoot.alg::getCluster,
+                true );
+        algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
+
+        PolyImplementation result = statement.getQueryProcessor().prepareQuery(
+                algRoot,
+                algRoot.alg.getCluster().getTypeFactory().builder().build(),
+                true,
+                false,
+                false );
+
+        final Enumerable<Object> enumerable = result.enumerable( statement.getDataContext() );
+
+        Iterator<Object> sourceIterator = enumerable.iterator();
+
+        if ( sourceIterator.hasNext() ) {
+            PolyGraph graph = (PolyGraph) sourceIterator.next();
+
+            if ( graph.getEdges().isEmpty() && graph.getNodes().isEmpty() ) {
+                // nothing to copy
+                return;
+            }
+
+            // we have a new statement
+            statement = transaction.createStatement();
+            builder = AlgBuilder.create( statement );
+
+            LogicalLpgValues values = getLogicalLpgValues( builder, graph );
+
+            LogicalLpgModify modify = new LogicalLpgModify( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), new LogicalGraph( target.id ), values, Operation.INSERT, null, null );
+
+            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeGraphDml( modify, statement, target, List.of( to.id ) );
+
+            result = statement.getQueryProcessor().prepareQuery(
+                    AlgRoot.of( routedModify, Kind.SELECT ),
+                    routedModify.getCluster().getTypeFactory().builder().build(),
+                    true,
+                    false,
+                    false );
+
+            final Enumerable<Object> modifyEnumerable = result.enumerable( statement.getDataContext() );
+
+            Iterator<Object> modifyIterator = modifyEnumerable.iterator();
+            if ( modifyIterator.hasNext() ) {
+                modifyIterator.next();
+            }
+
+        }
+
+
+    }
+
+
+    @NotNull
+    private static LogicalLpgValues getLogicalLpgValues( AlgBuilder builder, PolyGraph graph ) {
+        List<AlgDataTypeField> fields = new ArrayList<>();
+        int index = 0;
+        if ( !graph.getNodes().isEmpty() ) {
+            fields.add( new AlgDataTypeFieldImpl( "n", index, builder.getTypeFactory().createPolyType( PolyType.NODE ) ) );
+            index++;
+        }
+        if ( !graph.getEdges().isEmpty() ) {
+            fields.add( new AlgDataTypeFieldImpl( "e", index, builder.getTypeFactory().createPolyType( PolyType.EDGE ) ) );
+        }
+
+        return new LogicalLpgValues( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), graph.getNodes().values(), graph.getEdges().values(), ImmutableList.of(), new AlgRecordType( fields ) );
+    }
 
 
     @Override
@@ -108,7 +201,7 @@ public class DataMigratorImpl implements DataMigrator {
             Statement targetStatement = transaction.createStatement();
 
             Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( placementDistribution );
-            subDistribution.keySet().retainAll( Arrays.asList( partitionId ) );
+            subDistribution.keySet().retainAll( List.of( partitionId ) );
             AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
             AlgRoot targetAlg;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
@@ -128,7 +221,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void executeQuery( List<CatalogColumn> selectColumnList, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
-            PolyResult result;
+            PolyImplementation result;
             if ( isMaterializedView ) {
                 result = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
@@ -383,12 +476,12 @@ public class DataMigratorImpl implements DataMigrator {
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
 
-        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedTableScan( statement, cluster, placementDistribution );
+        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, placementDistribution );
         return AlgRoot.of( node, Kind.SELECT );
     }
 
 
-    private List<CatalogColumnPlacement> selectSourcePlacements( CatalogTable table, List<CatalogColumn> columns, int excludingAdapterId ) {
+    public static List<CatalogColumnPlacement> selectSourcePlacements( CatalogTable table, List<CatalogColumn> columns, int excludingAdapterId ) {
         // Find the adapter with the most column placements
         Catalog catalog = Catalog.getInstance();
         int adapterIdWithMostPlacements = -1;
@@ -407,7 +500,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        for ( long cid : table.columnIds ) {
+        for ( long cid : table.fieldIds ) {
             if ( columnIds.contains( cid ) ) {
                 if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
                     placementList.add( catalog.getColumnPlacement( adapterIdWithMostPlacements, cid ) );
@@ -473,7 +566,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyResult result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            PolyImplementation result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
             final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
@@ -596,7 +689,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyResult result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            PolyImplementation result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
             final Enumerable<?> enumerable = result.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();

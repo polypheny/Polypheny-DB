@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraProject;
+import org.polypheny.db.adapter.cassandra.CassandraScan;
 import org.polypheny.db.adapter.cassandra.CassandraSort;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
-import org.polypheny.db.adapter.cassandra.CassandraTableScan;
 import org.polypheny.db.adapter.cassandra.CassandraToEnumerableConverter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollation;
@@ -39,8 +39,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
@@ -128,7 +128,7 @@ public class CassandraRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link CassandraFilter}.
+     * Rule to convert a {@link LogicalFilter} to a {@link CassandraFilter}.
      */
     private static class CassandraFilterRuleOld extends AlgOptRule {
 
@@ -140,7 +140,7 @@ public class CassandraRules {
 
 
         private CassandraFilterRuleOld( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( operand( LogicalFilter.class, operand( CassandraTableScan.class, none() ) ), "CassandraFilterRule" );
+            super( operand( LogicalFilter.class, operand( CassandraScan.class, none() ) ), "CassandraFilterRule" );
             this.out = out;
         }
 
@@ -152,7 +152,7 @@ public class CassandraRules {
             RexNode condition = filter.getCondition();
 
             // Get field names from the scan operation
-            CassandraTableScan scan = call.alg( 1 );
+            CassandraScan scan = call.alg( 1 );
             Pair<List<String>, List<String>> keyFields = ((CassandraTable) scan.getTable()).getKeyFields();
             Set<String> partitionKeys = new HashSet<>( keyFields.left );
             List<String> fieldNames = CassandraRules.cassandraLogicalFieldNames( filter.getInput().getRowType() );
@@ -233,7 +233,7 @@ public class CassandraRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             LogicalFilter filter = call.alg( 0 );
-            CassandraTableScan scan = call.alg( 1 );
+            CassandraScan scan = call.alg( 1 );
             if ( filter.getTraitSet().contains( Convention.NONE ) ) {
                 final AlgNode converted = convert( filter, scan );
                 if ( converted != null ) {
@@ -243,7 +243,7 @@ public class CassandraRules {
         }
 
 
-        public AlgNode convert( LogicalFilter filter, CassandraTableScan scan ) {
+        public AlgNode convert( LogicalFilter filter, CassandraScan scan ) {
             final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
             final Pair<List<String>, List<String>> keyFields = ((CassandraTable) scan.getTable()).getKeyFields();
             return new CassandraFilter( filter.getCluster(), traitSet, convert( filter.getInput(), filter.getInput().getTraitSet().replace( out ) ), filter.getCondition(), keyFields.left, keyFields.right, ((CassandraTable) scan.getTable()).getClusteringOrder() );
@@ -253,7 +253,7 @@ public class CassandraRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link CassandraProject}.
+     * Rule to convert a {@link LogicalProject} to a {@link CassandraProject}.
      */
     private static class CassandraProjectRuleOld extends CassandraConverterRule {
 

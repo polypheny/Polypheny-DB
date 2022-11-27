@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -55,13 +55,13 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Rule that converts a {@link org.polypheny.db.algebra.logical.LogicalJoin} into a {@link org.polypheny.db.algebra.logical.LogicalCorrelate}, which can then be implemented using nested loops.
+ * Rule that converts a {@link LogicalJoin} into a {@link LogicalCorrelate}, which can then be implemented using nested loops.
  *
  * For example,
  *
  * <blockquote><code>select * from emp join dept on emp.deptno = dept.deptno</code></blockquote>
  *
- * becomes a Correlator which restarts LogicalTableScan("DEPT") for each row read from LogicalTableScan("EMP").
+ * becomes a Correlator which restarts LogicalScan("DEPT") for each row read from LogicalScan("EMP").
  *
  * This rule is not applicable if for certain types of outer join. For example,
  *

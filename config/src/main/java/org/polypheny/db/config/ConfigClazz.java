@@ -132,7 +132,6 @@ public class ConfigClazz extends Config {
         } catch ( ConfigException.WrongType e ) {
             throw new ConfigRuntimeException( "The value in the config file has a type which is incompatible with this config element." );
         }
-
     }
 
 

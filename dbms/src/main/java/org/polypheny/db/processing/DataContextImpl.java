@@ -17,7 +17,6 @@
 package org.polypheny.db.processing;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,6 +26,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -42,7 +42,7 @@ import org.polypheny.db.util.Holder;
  */
 public class DataContextImpl implements DataContext {
 
-    private final HashMap<String, Object> map;
+    private final Map<String, Object> map;
     private final PolyphenyDbSchema rootSchema;
     @Getter
     private final QueryProvider queryProvider;
@@ -54,18 +54,39 @@ public class DataContextImpl implements DataContext {
 
     @Getter
     @Setter
-    private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
+    private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data ExpressionType
     @Getter
     @Setter
     private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
+    private final Map<Integer, List<Map<Long, Object>>> otherParameterValues;
 
-    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
+    int i = 0;
+
+    @Getter
+    @Setter
+    private boolean isMixedModel = false;
+
+
+    private DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, Object>> parameterValues ) {
         this.queryProvider = queryProvider;
         this.typeFactory = typeFactory;
         this.rootSchema = rootSchema;
         this.statement = statement;
+        this.map = getMedaInfo( parameters );
+        this.parameterTypes = parameterTypes;
+        this.parameterValues = parameterValues;
+        otherParameterValues = new HashMap<>();
+    }
 
+
+    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
+        this( queryProvider, parameters, rootSchema, typeFactory, statement, new HashMap<>(), new LinkedList<>() );
+    }
+
+
+    @NotNull
+    private Map<String, Object> getMedaInfo( Map<String, Object> parameters ) {
         // Store the time at which the query started executing. The SQL standard says that functions such as CURRENT_TIMESTAMP return the same value throughout the query.
         final Holder<Long> timeHolder = Holder.of( System.currentTimeMillis() );
 
@@ -79,7 +100,7 @@ public class DataContextImpl implements DataContext {
         final Holder<Object[]> streamHolder = Holder.of( new Object[]{ System.in, System.out, System.err } );
         Hook.STANDARD_STREAMS.run( streamHolder );
 
-        map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         map.put( Variable.UTC_TIMESTAMP.camelName, time );
         map.put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset );
         map.put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset );
@@ -94,9 +115,7 @@ public class DataContextImpl implements DataContext {
             }
             map.put( entry.getKey(), e );
         }
-
-        parameterTypes = new HashMap<>();
-        parameterValues = new LinkedList<>();
+        return map;
     }
 
 
@@ -141,28 +160,6 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void addSingleValue( long index, AlgDataType type, Object data ) {
-        if ( parameterTypes.containsKey( index ) ) {
-            throw new RuntimeException( "There are already values assigned to this index" );
-        }
-        if ( parameterValues.size() == 0 ) {
-            parameterValues.add( new HashMap<>() );
-        }
-        if ( parameterValues.size() != 1 ) {
-            throw new RuntimeException( "Expecting 1 rows but 1 values specified!" );
-        }
-        parameterTypes.put( index, type );
-        parameterValues.get( 0 ).put( index, data );
-    }
-
-
-    @Override
-    public long getMaxParameterIndex() {
-        return Collections.max( parameterTypes.keySet() );
-    }
-
-
-    @Override
     public AlgDataType getParameterType( long index ) {
         return parameterTypes.get( index );
     }
@@ -172,6 +169,33 @@ public class DataContextImpl implements DataContext {
     public void resetParameterValues() {
         parameterTypes = new HashMap<>();
         parameterValues = new ArrayList<>();
+    }
+
+
+    @Override
+    public DataContext switchContext() {
+        if ( otherParameterValues.containsKey( i ) ) {
+            return new DataContextImpl( queryProvider, map, rootSchema, typeFactory, statement, parameterTypes, otherParameterValues.get( i++ ) );
+        }
+        return this;
+    }
+
+
+    @Override
+    public void addContext() {
+        otherParameterValues.put( otherParameterValues.size(), parameterValues );
+        parameterValues = new ArrayList<>();
+    }
+
+
+    @Override
+    public void resetContext() {
+        i = 0;
+        if ( otherParameterValues.size() > 0 ) {
+            parameterValues = otherParameterValues.get( i );
+        } else {
+            parameterValues = new ArrayList<>();
+        }
     }
 
 

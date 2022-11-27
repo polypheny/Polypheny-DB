@@ -65,7 +65,7 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
-import org.polypheny.db.processing.ConstraintEnforcer.ConstraintTracker;
+import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -90,7 +90,7 @@ public class PolyphenyDb {
     private final TransactionManager transactionManager = TransactionManagerImpl.getInstance();
 
     @Inject
-    public HelpOption helpOption;
+    public HelpOption<?> helpOption;
 
     @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
     public boolean resetCatalog = false;
@@ -160,6 +160,10 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        // Configuration shall not be persisted
+        ConfigManager.memoryMode = (testMode || memoryCatalog);
+        ConfigManager.resetCatalogOnStartup = resetCatalog;
+
         // Select behavior depending on arguments
         boolean showSplashScreen;
         boolean trayMenu;
@@ -219,9 +223,6 @@ public class PolyphenyDb {
                 throw new RuntimeException( "Unable to create the backup folder." );
             }
         }
-
-        // Configuration shall not be persisted
-        ConfigManager.memoryMode = (testMode || memoryCatalog);
 
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
@@ -329,11 +330,11 @@ public class PolyphenyDb {
             Catalog.defaultStore = Adapter.fromString( defaultStoreName );
             Catalog.defaultSource = Adapter.fromString( defaultSourceName );
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
-            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
-            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
             catalog.restoreViews( trx );
             trx.commit();

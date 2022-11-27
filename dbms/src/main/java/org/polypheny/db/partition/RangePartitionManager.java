@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
         super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
         if ( partitionColumn.type.getFamily() != PolyTypeFamily.NUMERIC ) {
-            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected Type: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
+            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected ExpressionType: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
         }
 
         for ( List<String> partitionQualifiers : partitionGroupQualifiers ) {

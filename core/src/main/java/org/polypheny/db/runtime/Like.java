@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class Like {
     /**
      * Translates a SQL LIKE pattern to Java regex pattern, with optional escape string.
      */
-    static String sqlToRegexLike( String sqlPattern, CharSequence escapeStr ) {
+    public static String sqlToRegexLike( String sqlPattern, CharSequence escapeStr ) {
         final char escapeChar;
         if ( escapeStr != null ) {
             if ( escapeStr.length() != 1 ) {
@@ -215,7 +215,7 @@ public class Like {
     /**
      * Translates a SQL SIMILAR pattern to Java regex pattern, with optional escape string.
      */
-    static String sqlToRegexSimilar( String sqlPattern, CharSequence escapeStr ) {
+    public static String sqlToRegexSimilar( String sqlPattern, CharSequence escapeStr ) {
         final char escapeChar;
         if ( escapeStr != null ) {
             if ( escapeStr.length() != 1 ) {
@@ -298,5 +298,6 @@ public class Like {
 
         return javaPattern.toString();
     }
+
 }
 

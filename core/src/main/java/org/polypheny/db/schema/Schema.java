@@ -81,6 +81,7 @@ public interface Schema {
      */
     Set<String> getTableNames();
 
+
     /**
      * Returns a type with a given name, or null if not found.
      *

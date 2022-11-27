@@ -109,7 +109,7 @@ public interface Convention extends AlgTrait, Serializable {
 
 
         @Override
-        public Class getInterface() {
+        public Class<?> getInterface() {
             return algClass;
         }
 

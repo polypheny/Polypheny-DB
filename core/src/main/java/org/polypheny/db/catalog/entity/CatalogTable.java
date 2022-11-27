@@ -27,24 +27,23 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 
 @EqualsAndHashCode
-public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
+public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
 
-    private static final long serialVersionUID = 1781666800808312001L;
+    private static final long serialVersionUID = 4653390333258552102L;
 
     public final long id;
     public final String name;
-    public final ImmutableList<Long> columnIds;
-    public final long schemaId;
+    public final ImmutableList<Long> fieldIds;
+    public final long namespaceId;
     public final long databaseId;
     public final int ownerId;
-    public final String ownerName;
-    public final TableType tableType;
+    public final EntityType entityType;
     public final Long primaryKey;
     public final boolean modifiable;
 
@@ -59,24 +58,22 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     public CatalogTable(
             final long id,
             @NonNull final String name,
-            final ImmutableList<Long> columnIds,
-            final long schemaId,
+            final ImmutableList<Long> fieldIds,
+            final long namespaceId,
             final long databaseId,
             final int ownerId,
-            @NonNull final String ownerName,
-            @NonNull final TableType type,
+            @NonNull final Catalog.EntityType type,
             final Long primaryKey,
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty ) {
         this.id = id;
         this.name = name;
-        this.columnIds = columnIds;
-        this.schemaId = schemaId;
+        this.fieldIds = fieldIds;
+        this.namespaceId = namespaceId;
         this.databaseId = databaseId;
         this.ownerId = ownerId;
-        this.ownerName = ownerName;
-        this.tableType = type;
+        this.entityType = type;
         this.primaryKey = primaryKey;
         this.modifiable = modifiable;
 
@@ -85,7 +82,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
         this.dataPlacements = ImmutableList.copyOf( dataPlacements );
 
-        if ( type == TableType.TABLE && !modifiable ) {
+        if ( type == EntityType.ENTITY && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
     }
@@ -94,12 +91,11 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     public CatalogTable(
             final long id,
             @NonNull final String name,
-            final ImmutableList<Long> columnIds,
-            final long schemaId,
+            final ImmutableList<Long> fieldIds,
+            final long namespaceId,
             final long databaseId,
             final int ownerId,
-            @NonNull final String ownerName,
-            @NonNull final TableType type,
+            @NonNull final Catalog.EntityType type,
             final Long primaryKey,
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
@@ -107,12 +103,11 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             ImmutableList<Long> connectedViews ) {
         this.id = id;
         this.name = name;
-        this.columnIds = columnIds;
-        this.schemaId = schemaId;
+        this.fieldIds = fieldIds;
+        this.namespaceId = namespaceId;
         this.databaseId = databaseId;
         this.ownerId = ownerId;
-        this.ownerName = ownerName;
-        this.tableType = type;
+        this.entityType = type;
         this.primaryKey = primaryKey;
         this.modifiable = modifiable;
 
@@ -122,7 +117,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
         this.dataPlacements = ImmutableList.copyOf( dataPlacements );
 
-        if ( type == TableType.TABLE && !modifiable ) {
+        if ( type == EntityType.ENTITY && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
     }
@@ -135,25 +130,31 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
 
     @SneakyThrows
-    public String getSchemaName() {
-        return Catalog.getInstance().getSchema( schemaId ).name;
+    public String getNamespaceName() {
+        return Catalog.getInstance().getSchema( namespaceId ).name;
     }
 
 
     @SneakyThrows
-    public SchemaType getSchemaType() {
-        return Catalog.getInstance().getSchema( schemaId ).schemaType;
+    public NamespaceType getNamespaceType() {
+        return Catalog.getInstance().getSchema( namespaceId ).namespaceType;
+    }
+
+
+    @SneakyThrows
+    public String getOwnerName() {
+        return Catalog.getInstance().getUser( ownerId ).name;
     }
 
 
     @SneakyThrows
     public List<String> getColumnNames() {
         Catalog catalog = Catalog.getInstance();
-        List<String> columnNames = new LinkedList<>();
-        for ( long columnId : columnIds ) {
-            columnNames.add( catalog.getColumn( columnId ).name );
+        List<String> fieldNames = new LinkedList<>();
+        for ( long fieldId : fieldIds ) {
+            fieldNames.add( catalog.getColumn( fieldId ).name );
         }
-        return columnNames;
+        return fieldNames;
     }
 
 
@@ -162,16 +163,18 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     public Serializable[] getParameterArray() {
         return new Serializable[]{
                 getDatabaseName(),
-                getSchemaName(),
+                getNamespaceName(),
                 name,
-                tableType.name(),
+                entityType.name(),
                 "",
                 null,
                 null,
                 null,
                 null,
                 null,
-                ownerName };
+                getOwnerName()
+
+        };
     }
 
 
@@ -180,7 +183,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         if ( o != null ) {
             int comp = (int) (this.databaseId - o.databaseId);
             if ( comp == 0 ) {
-                comp = (int) (this.schemaId - o.schemaId);
+                comp = (int) (this.namespaceId - o.namespaceId);
                 if ( comp == 0 ) {
                     return (int) (this.id - o.id);
                 } else {
@@ -195,16 +198,24 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     }
 
 
+    static String getEnumNameOrNull( Enum<?> theEnum ) {
+        if ( theEnum == null ) {
+            return null;
+        } else {
+            return theEnum.name();
+        }
+    }
+
+
     public CatalogTable getRenamed( String newName ) {
         return new CatalogTable(
                 id,
                 newName,
-                columnIds,
-                schemaId,
+                fieldIds,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 primaryKey,
                 dataPlacements,
                 modifiable,
@@ -217,12 +228,11 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         return new CatalogTable(
                 id,
                 name,
-                columnIds,
-                schemaId,
+                fieldIds,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 primaryKey,
                 dataPlacements,
                 modifiable,
@@ -236,11 +246,10 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 id,
                 name,
                 newColumnIds,
-                schemaId,
+                namespaceId,
                 databaseId,
                 ownerId,
-                ownerName,
-                tableType,
+                entityType,
                 primaryKey,
                 dataPlacements,
                 modifiable,
