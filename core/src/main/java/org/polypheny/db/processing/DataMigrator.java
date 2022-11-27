@@ -88,4 +88,5 @@ public interface DataMigrator {
 
     void copyGraphData( CatalogGraphDatabase graph, Transaction transaction, Integer existingAdapterId, CatalogAdapter adapter );
 
+    void copyRelationalDataToDocumentData(Transaction transaction , CatalogTable sourceTable, long targetSchemaId);
 }

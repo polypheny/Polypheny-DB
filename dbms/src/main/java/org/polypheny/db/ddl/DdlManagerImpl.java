@@ -18,6 +18,8 @@ package org.polypheny.db.ddl;
 
 
 import com.google.common.collect.ImmutableList;
+
+import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +33,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -119,6 +123,9 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.languages.mql.MqlNode;
+import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
@@ -128,6 +135,7 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.AutomaticDdlProcessor;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -136,11 +144,17 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.view.MaterializedViewManager;
+import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.SortState;
+import org.polypheny.db.webui.models.requests.QueryRequest;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
@@ -2267,15 +2281,21 @@ public class DdlManagerImpl extends DdlManager {
                     .collect(Collectors.toList());
             PlacementType placementType = catalog.getDataPlacement(sourceTable.dataPlacements.get(0), sourceTable.id).placementType;
             createCollection( targetSchemaId, sourceTable.name, false, stores, placementType, statement );
+            CatalogTable table;
             try {
-                CatalogTable table = catalog.getTable(targetSchemaId, sourceTable.name);
-                DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+                table = catalog.getTable(targetSchemaId, sourceTable.name);
                 // dataMigrator.copyRelationalDataToGraphData( statement.getTransaction(), stores )
             } catch (UnknownTableException e) {
                 throw new RuntimeException(e);
             }
             // Migrator
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            dataMigrator.copyRelationalDataToDocumentData( statement.getTransaction(), sourceTable, targetSchemaId );
+
             catalog.deleteTable(sourceTable.id);
+
+            statement.getQueryProcessor().resetCaches();
+
         }
 
 
@@ -2289,6 +2309,58 @@ public class DdlManagerImpl extends DdlManager {
         }
 
          */
+    }
+
+    @NotNull
+    public static Result getResult(QueryLanguage language, Statement statement, String query, PolyImplementation result, Transaction transaction, final boolean noLimit ) {
+        Catalog catalog = Catalog.getInstance();
+
+        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : language == QueryLanguage.CYPHER ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+
+        boolean hasMoreRows = result.hasMoreRows();
+
+        CatalogTable catalogTable = null;
+
+
+        ArrayList<DbColumn> header = new ArrayList<>();
+        for ( AlgDataTypeField metaData : result.rowType.getFieldList() ) {
+            String columnName = metaData.getName();
+
+
+            DbColumn dbCol = new DbColumn(
+                    metaData.getName(),
+                    metaData.getType().getFullTypeString(),
+                    metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
+                    metaData.getType().getPrecision(),
+                    null,
+                    null );
+
+            // Get column default values
+            if ( catalogTable != null ) {
+                try {
+                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                        if ( catalogColumn.defaultValue != null ) {
+                            dbCol.defaultValue = catalogColumn.defaultValue.value;
+                        }
+                    }
+                } catch ( UnknownColumnException e ) {
+                    log.error( "Caught exception", e );
+                }
+            }
+            header.add( dbCol );
+        }
+
+        ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
+
+        return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
+                .setNamespaceType( result.getNamespaceType() )
+                .setNamespaceName( "target" )
+                .setLanguage( language )
+                .setAffectedRows( data.size() )
+                .setHasMoreRows( hasMoreRows )
+                .setXid( transaction.getXid().toString() )
+                .setGeneratedQuery( query );
     }
 
 
