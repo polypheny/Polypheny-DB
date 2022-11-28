@@ -81,9 +81,9 @@ compileJava {
     dependsOn(":webui:processResources")
 }
 
-delombok {
+/*delombok {
     dependsOn(":webui:processResources")
-}
+}*/
 
 
 /**

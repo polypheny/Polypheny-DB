@@ -41,7 +41,7 @@ allprojects {
     }
 
     apply plugin: "java-library"
-    apply plugin: "io.freefair.lombok"
+    // apply plugin: "io.freefair.lombok"
     apply plugin: "com.adarshr.test-logger"
 
     compileJava.options.encoding = "UTF-8"
@@ -78,13 +78,6 @@ allprojects {
     configurations.all {
         // check for updates every build
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-    }
-
-    dependencies {
-        ////// SLF4J
-        implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
-            exclude group: "org.slf4j"
-        }
     }
 
     tasks.withType(Javadoc) {
@@ -138,6 +131,19 @@ allprojects {
         showSkippedStandardStreams false
         showFailedStandardStreams true
         logLevel 'lifecycle'
+    }
+
+    dependencies {
+        compileOnly 'org.projectlombok:lombok:1.18.24'
+        annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+        testCompileOnly 'org.projectlombok:lombok:1.18.24'
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+        ////// PF4J
+        compileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+            exclude group: "org.slf4j"
+        }
     }
 
 

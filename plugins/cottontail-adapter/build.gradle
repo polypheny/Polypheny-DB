@@ -13,6 +13,12 @@ dependencies {
 
     implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
 
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.24'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
@@ -29,9 +35,9 @@ compileJava {
     dependsOn(":plugins:sql-language:processResources")
 }
 
-delombok {
+/*delombok {
     dependsOn(":plugins:sql-language:processResources")
-}
+}*/
 
 inspectClassesForKotlinIC {
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")

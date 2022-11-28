@@ -47,10 +47,10 @@ compileJava {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
-delombok {
+/*delombok {
     dependsOn(":plugins:sql-language:processResources")
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
-}
+}*/
 
 compileTestJava {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
@@ -64,6 +64,7 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
+        attributes "Plugin-Dependencies": "sql-language, jdbc-adapter-framework"
     }
 }
 java {

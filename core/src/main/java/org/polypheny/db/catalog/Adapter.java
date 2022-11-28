@@ -54,7 +54,7 @@ public class Adapter {
 
 
     public static Adapter fromString( String adapterName, AdapterType adapterType ) {
-        return REGISTER.get( adapterName.toUpperCase() + "_" + adapterType );
+        return REGISTER.get( adapterName.toUpperCase().split( "-DB" )[0] + "_" + adapterType );// todo dl fix on UI layer
     }
 
 

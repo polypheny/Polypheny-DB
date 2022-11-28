@@ -84,9 +84,9 @@ compileJava {
     dependsOn(":core:processResources")
 }
 
-delombok {
+/*delombok {
     dependsOn(":dbms:processResources")
-}
+}*/
 
 sourceSets {
     main {

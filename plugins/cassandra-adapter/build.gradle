@@ -13,6 +13,12 @@ dependencies {
     implementation group: 'com.github.nosan', name: 'embedded-cassandra', version: cassandra_embedded_version  // Apache 2.0
 
 
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.24'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
@@ -50,9 +56,9 @@ compileJava {
     dependsOn(":plugins:sql-language:processResources")
 }
 
-delombok {
+/*delombok {
     dependsOn(":plugins:sql-language:processResources")
-}
+}*/
 
 /**
  * JARs

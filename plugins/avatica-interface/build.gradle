@@ -17,6 +17,11 @@ dependencies {
     ////// APACHE CALCITE AVATICA
     implementation group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
 
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.24'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -48,9 +53,9 @@ sourceSets {
     }
 }
 
-delombok {
+/* delombok {
     dependsOn(":monitoring:processResources")
-}
+}*/
 
 compileJava {
     dependsOn(":core:processResources")

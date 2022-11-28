@@ -41,6 +41,8 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
+    public static ClassLoader loader;
+
 
     public PolyPluginManager( String... paths ) {
         super( Arrays.stream( paths ).map( Path::of ).collect( Collectors.toList() ) );
@@ -50,6 +52,8 @@ public class PolyPluginManager extends DefaultPluginManager {
     public static void init() {
         // create the plugin manager
         final PluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins", "../../build/plugins" );
+
+        loader = new PolyClassLoader( pluginManager );
 
         // load the plugins
         pluginManager.loadPlugins();
@@ -74,16 +78,12 @@ public class PolyPluginManager extends DefaultPluginManager {
             // pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) ); // takes forever
         }
         // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); // does not work with ADP
-
     }
 
 
     public static void startUp() {
         AFTER_INIT.forEach( Runnable::run );
     }
-
-
-    public static PluginClassLoader loader;
 
 
     @Override
@@ -97,7 +97,7 @@ public class PolyPluginManager extends DefaultPluginManager {
                         /*if ( loader == null ) {
                             loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
                         }*/
-                        return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.PDA );
+                        return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
                     }
                 } )
                 /*.add( new JarPluginLoader( this ) )*/;
@@ -111,6 +111,37 @@ public class PolyPluginManager extends DefaultPluginManager {
                 // PropertiesPluginDescriptorFinder is commented out just to avoid error log
                 //.add( new PropertiesPluginDescriptorFinder() );
                 .add( new ManifestPluginDescriptorFinder() );
+    }
+
+
+    public static class PolyClassLoader extends ClassLoader {
+
+        PluginManager pluginManager;
+
+
+        public PolyClassLoader( PluginManager pluginManager ) {
+            this.pluginManager = pluginManager;
+        }
+
+
+        @Override
+        public Class<?> loadClass( String name ) throws ClassNotFoundException {
+            Class<?> clazz;
+            for ( PluginWrapper plugin : pluginManager.getPlugins() ) {
+                try {
+                    clazz = plugin.getPluginClassLoader().loadClass( name );
+
+                    if ( clazz != null ) {
+                        return clazz;
+                    }
+                } catch ( ClassNotFoundException e ) {
+                    // empty on purpose
+                }
+            }
+
+            throw new ClassNotFoundException( name );
+        }
+
     }
 
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+// @Category({ AdapterTestSuite.class }) todo dl enable
 public class CrossModelTestTemplate {
 
     public static void executeStatements( SqlConsumer... statementConsumers ) {

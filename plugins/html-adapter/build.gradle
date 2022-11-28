@@ -43,9 +43,9 @@ compileJava {
     dependsOn(":core:processResources")
 }
 
-delombok {
+/*delombok {
     dependsOn(":core:processResources")
-}
+}*/
 
 
 /**

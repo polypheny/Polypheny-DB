@@ -2,6 +2,7 @@ import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
 
 group "org.polypheny"
 
+apply plugin: "io.freefair.lombok"
 
 configurations {
     javacc
@@ -29,6 +30,11 @@ dependencies {
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
     api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+
+    ////// PF4J
+    implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+        exclude group: "org.slf4j"
+    }
 
     api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version  // Apache 2.0
     api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0

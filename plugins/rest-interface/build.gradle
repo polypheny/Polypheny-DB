@@ -5,7 +5,9 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":monitoring")
 
-    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude group: 'org.slf4j'
+    } // Apache 2.0
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
 
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version // Apache 2.0
@@ -51,9 +53,9 @@ compileJava {
     dependsOn(":monitoring:processResources")
 }
 
-delombok {
+/*delombok {
     dependsOn(":monitoring:processResources")
-}
+}*/
 
 
 /**
@@ -64,6 +66,7 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
+        attributes "Plugin-Dependencies": "sql-language"
     }
 }
 java {

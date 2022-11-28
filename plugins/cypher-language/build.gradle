@@ -75,10 +75,10 @@ compileJava {
     dependsOn(":dbms:processResources")
 }
 
-delombok {
+/*delombok {
     dependsOn(":core:processResources")
     dependsOn(":dbms:processResources")
-}
+}*/
 
 
 /**

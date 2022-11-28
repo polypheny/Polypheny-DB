@@ -39,9 +39,9 @@ compileJava {
 }
 
 
-delombok {
+/*delombok {
     dependsOn(":webui:processResources")
-}
+}*/
 
 javadoc {
     dependsOn(":plugins:http-interface:compileTestJava")
