@@ -23,7 +23,9 @@ import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.OptionType;
 import java.awt.SystemTray;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.Serializable;
+import java.util.Properties;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -117,6 +119,9 @@ public class PolyphenyDb {
 
     @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)
     protected String applicationConfPath;
+
+    @Option(name = { "-v", "--version" }, description = "Displays installed version")
+    public boolean version = false;
 
     // required for unit tests to determine when the system is ready to process queries
     @Getter
@@ -227,6 +232,20 @@ public class PolyphenyDb {
         // Otherwise, Config at default location is used.
         if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().checkIfExists( applicationConfPath ) ) {
             ConfigManager.getInstance().setApplicationConfFile( new File( applicationConfPath ) );
+        }
+
+        // Displays installed version
+        if ( version ) {
+            try{
+                FileInputStream inputStream = new FileInputStream("gradle.properties");
+                Properties properties = new Properties();
+                properties.load(inputStream);
+                log.info( "version " + properties.getProperty( "versionMajor" ) + '.'
+                        + properties.getProperty( "versionMinor" ) + '.' + properties.getProperty( "versionMicro" ));
+            }
+            catch (Exception e){
+                log.info( "Unable to get the version" );
+            }
         }
 
         class ShutdownHelper implements Runnable {
