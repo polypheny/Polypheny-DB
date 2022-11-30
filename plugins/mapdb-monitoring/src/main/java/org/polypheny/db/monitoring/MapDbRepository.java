@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.persistence;
+package org.polypheny.db.monitoring;
 
 import java.io.File;
 import java.sql.Timestamp;
@@ -46,7 +46,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    protected final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
+    protected final HashMap<Class<?>, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
     protected DB simpleBackendDb;
     protected BTreeMap<String, QueryPostCostImpl> queryPostCosts;
 

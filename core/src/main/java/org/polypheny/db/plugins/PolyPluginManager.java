@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
@@ -38,13 +39,20 @@ import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
 
+    @Getter
+    private static PersistentMonitoringRepository PERSISTENT_MONITORING;
     public static List<String> REGISTER = new ArrayList<>();
 
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
+
+    @Getter
+    private static Catalog CATALOG;
 
     public static PluginClassLoader loader;
 
@@ -83,11 +91,28 @@ public class PolyPluginManager extends DefaultPluginManager {
             // pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) ); // takes forever
         }
         // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); // does not work with ADP
+
     }
 
 
     public static void startUp() {
         AFTER_INIT.forEach( Runnable::run );
+    }
+
+
+    public static void setCatalog( Catalog catalog ) {
+        if ( CATALOG != null ) {
+            throw new RuntimeException( "There is already a catalog set." );
+        }
+        CATALOG = catalog;
+    }
+
+
+    public static void setPersistentRepository( PersistentMonitoringRepository repository ) {
+        if ( CATALOG != null ) {
+            throw new RuntimeException( "There is already a persistent repository." );
+        }
+        PERSISTENT_MONITORING = repository;
     }
 
 
@@ -102,10 +127,10 @@ public class PolyPluginManager extends DefaultPluginManager {
                         //((UrlClassLoader) ClassLoader.getSystemClassLoader()).getParent();
                         // -Djava.system.class.loader=org.polypheny.db.plugins.UrlClassLoader
                         if ( loader == null ) {
-                            loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.PAD );
+                            loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
                         }
                         //return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
-                        return loader; // new PolyClassLoader( (UrlClassLoader) super.getClass().getClassLoader(), pluginDescriptor, pluginManager );
+                        return loader; //new PolyClassLoader( (UrlClassLoader) super.getClass().getClassLoader(), pluginDescriptor, pluginManager );
                     }
                 } )
                 /*.add( new JarPluginLoader( this ) )*/;

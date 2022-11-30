@@ -2,7 +2,6 @@ rootProject.name = 'Polypheny-DB'
 
 // core modules
 include 'core'
-include 'catalog'
 include 'config'
 include 'information'
 include 'monitoring'
@@ -11,6 +10,11 @@ include 'webui'
 include 'dbms'
 
 include 'plugins'
+
+// catalog
+include 'plugins:mapdb-catalog'
+
+include 'plugins:mapdb-monitoring'
 
 // language plugins
 include 'plugins:sql-language'

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -95,7 +96,7 @@ import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
-public abstract class Catalog {
+public abstract class Catalog implements ExtensionPoint {
 
     public static Adapter defaultStore;
     public static Adapter defaultSource;

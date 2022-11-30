@@ -47,6 +47,7 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
+import org.pf4j.Extension;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.adapter.Adapter;
@@ -135,7 +136,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.view.MaterializedViewManager;
 
-
+@Extension
 @Slf4j
 public class CatalogImpl extends Catalog {
 

@@ -19,10 +19,8 @@ dependencies {
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
-    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
-        exclude(group: "org.slf4j")
-    } // Apache 2.0
-    // implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
 
     implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version  // Apache 2.0
     implementation group: "com.konghq", name: "unirest-java", version: unirest_version  // MIT

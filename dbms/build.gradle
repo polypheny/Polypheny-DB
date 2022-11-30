@@ -30,7 +30,6 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
-    implementation project(":catalog")
     implementation project(":webui")
     implementation project(":monitoring")
 
@@ -203,7 +202,6 @@ licensee {
 }
 
 compileJava {
-    dependsOn(":catalog:processResources")
     dependsOn(":webui:processResources")
     dependsOn(":monitoring:processResources")
 }

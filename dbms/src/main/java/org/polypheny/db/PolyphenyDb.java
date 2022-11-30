@@ -35,7 +35,6 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -126,6 +125,7 @@ public class PolyphenyDb {
     @Getter
     private volatile boolean isReady = false;
     private SplashHelper splashScreen;
+    private Catalog catalog;
 
 
     public static void main( final String[] args ) {
@@ -323,7 +323,6 @@ public class PolyphenyDb {
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
 
         // Startup and restore catalog
-        Catalog catalog;
         Transaction trx = null;
         try {
             Catalog.resetCatalog = resetCatalog;
@@ -332,7 +331,11 @@ public class PolyphenyDb {
             Catalog.resetDocker = resetDocker;
             Catalog.defaultStore = Adapter.fromString( defaultStoreName, AdapterType.STORE );
             Catalog.defaultSource = Adapter.fromString( defaultSourceName, AdapterType.SOURCE );
-            catalog = Catalog.setAndGetInstance( new CatalogImpl() );
+            catalog = PolyPluginManager.getCATALOG();
+            if ( catalog == null ) {
+                throw new RuntimeException( "There was no catalog submitted, aborting." );
+            }
+
             trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
             AdapterManager.getInstance().restoreAdapters();
             loadDefaults();
@@ -377,7 +380,7 @@ public class PolyphenyDb {
         LanguageManager.getINSTANCE().addQueryLanguage(
                 NamespaceType.RELATIONAL,
                 "rel",
-                List.of("rel", "relational"),
+                List.of( "rel", "relational" ),
                 null,
                 JsonRelProcessorImpl::new,
                 null );
