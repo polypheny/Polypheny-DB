@@ -20,8 +20,8 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.jdbc.sources.PostgresqlSource;
-import org.polypheny.db.adapter.jdbc.stores.PostgresqlStore;
+import org.polypheny.db.adapter.postgres.sources.PostgresqlSource;
+import org.polypheny.db.adapter.postgres.stores.PostgresqlStore;
 import org.polypheny.db.catalog.Adapter;
 
 public class PostgresqlPlugin extends Plugin {
