@@ -5,9 +5,12 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
 
-    implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+    /*implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
         exclude group: "org.slf4j"
-    }
+    }*/
+
+    compileOnly group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+    // implementation(group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version)
 
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0

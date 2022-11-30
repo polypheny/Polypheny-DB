@@ -41,7 +41,9 @@ dependencies {
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
 
     api group: "com.google.guava", name: "guava", version: guava_version
-    api group: "org.reflections", name: "reflections", version: reflections_version  // BSD 2-clause
+    api(group: "org.reflections", name: "reflections", version: reflections_version) {
+        exclude(group: "org.slf4j")
+    }// BSD 2-clause
     api group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
     implementation group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version  // Apache 2.0
     api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0

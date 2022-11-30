@@ -18,8 +18,6 @@ package org.polypheny.db.plugins;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,7 +27,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
@@ -102,11 +99,13 @@ public class PolyPluginManager extends DefaultPluginManager {
                     protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
                         // we load the existing applications classes first, then the dependencies and then the plugin
                         // we have to reuse the classloader else the code generation will not be able to find the added classes later on
+                        //((UrlClassLoader) ClassLoader.getSystemClassLoader()).getParent();
+                        // -Djava.system.class.loader=org.polypheny.db.plugins.UrlClassLoader
                         if ( loader == null ) {
                             loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.PAD );
                         }
                         //return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
-                        return loader;//new PolyClassLoader( ClassLoader.getPlatformClassLoader(), pluginDescriptor, pluginManager );
+                        return loader; // new PolyClassLoader( (UrlClassLoader) super.getClass().getClassLoader(), pluginDescriptor, pluginManager );
                     }
                 } )
                 /*.add( new JarPluginLoader( this ) )*/;
@@ -125,11 +124,11 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static class PolyClassLoader extends PluginClassLoader {
 
-        private final ClassLoader classLoader;
+        private final UrlClassLoader classLoader;
         private final PluginManager manager;
 
 
-        public PolyClassLoader( ClassLoader classLoader, PluginDescriptor pluginDescriptor, PluginManager manager ) {
+        public PolyClassLoader( UrlClassLoader classLoader, PluginDescriptor pluginDescriptor, PluginManager manager ) {
             super( manager, pluginDescriptor, classLoader );
             this.classLoader = classLoader;
             this.manager = manager;
@@ -138,33 +137,14 @@ public class PolyPluginManager extends DefaultPluginManager {
 
         @Override
         public void addURL( URL url ) {
-            try {
-                byte[] b = FileUtils.readFileToByteArray( new File( url.getFile() ) );
-                Method m = ClassLoader.class.getDeclaredMethod( "defineClass", byte[].class, int.class, int.class );
-                m.setAccessible( true );
-                m.invoke( super.getClass().getClassLoader(), b, 0, b.length );
-            } catch ( NoSuchMethodException | InvocationTargetException | IllegalAccessException | IOException e ) {
-                throw new RuntimeException( e );
-            }
+            classLoader.addURL( url );
         }
 
 
         @Override
         public void addFile( File file ) {
-            if ( file == null ) {
-                return;
-            }
-
             try {
-                if ( file.isDirectory() ) {
-                    for ( File listFile : file.listFiles() ) {
-                        addFile( listFile );
-                    }
-                } else {
-                    if ( file.getAbsolutePath().endsWith( ".class" ) && !file.getAbsolutePath().contains( "$1" ) ) {
-                        addURL( file.getCanonicalFile().toURI().toURL() );
-                    }
-                }
+                classLoader.addFile( file );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }

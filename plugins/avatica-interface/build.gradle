@@ -49,9 +49,9 @@ sourceSets {
     }
 }
 
-/* delombok {
+delombok {
     dependsOn(":monitoring:processResources")
-}*/
+}
 
 compileJava {
     dependsOn(":core:processResources")

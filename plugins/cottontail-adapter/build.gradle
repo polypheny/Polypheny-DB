@@ -7,17 +7,13 @@ dependencies {
     compileOnly project(":plugins:sql-language")
 
     // Cottontail DB
-    implementation group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version
+    implementation(group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version) {
+        exclude(group: "org.slf4j")
+    }
     implementation group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
 
-    implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
-
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
-
-    testCompileOnly 'org.projectlombok:lombok:1.18.24'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+    //implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

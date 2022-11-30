@@ -5,19 +5,21 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
 
-    implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version  // Apache 2.0
-    implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version  // Apache 2.0
-    implementation group: "com.datastax.oss", name: "java-driver-mapper-runtime", version: cassandra_driver_query_builder_version  // Apache 2.0
+    implementation(group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version) {
+        exclude(group: 'org.slf4j')
+    }  // Apache 2.0
+    implementation(group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version) {
+        exclude(group: 'org.slf4j')
+    }  // Apache 2.0
+    implementation(group: "com.datastax.oss", name: "java-driver-mapper-runtime", version: cassandra_driver_query_builder_version) {
+        exclude(group: 'org.slf4j')
+    }  // Apache 2.0
 
     // Embedded Cassandra
-    implementation group: 'com.github.nosan', name: 'embedded-cassandra', version: cassandra_embedded_version  // Apache 2.0
+    implementation(group: 'com.github.nosan', name: 'embedded-cassandra', version: cassandra_embedded_version) {
+        exclude(group: "org.slf4j")
+    }  // Apache 2.0
 
-
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
-
-    testCompileOnly 'org.projectlombok:lombok:1.18.24'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

@@ -78,11 +78,13 @@ compileJava {
     dependsOn(":information:processResources")
     dependsOn(":config:processResources")
     dependsOn(":webui:processResources")
+    dependsOn(":dbms:processResources")
 }
 
 delombok {
     dependsOn(":core:processResources")
     dependsOn(":webui:processResources")
+    dependsOn(":dbms:processResources")
 }
 
 
