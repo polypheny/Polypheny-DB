@@ -26,7 +26,6 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.csv.CsvPlugin.CsvSource;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptTable;

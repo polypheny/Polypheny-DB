@@ -41,7 +41,7 @@ allprojects {
     }
 
     apply plugin: "java-library"
-    // apply plugin: "io.freefair.lombok"
+    apply plugin: "io.freefair.lombok"
     apply plugin: "com.adarshr.test-logger"
 
     compileJava.options.encoding = "UTF-8"

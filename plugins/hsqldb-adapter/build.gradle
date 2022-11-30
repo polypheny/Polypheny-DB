@@ -6,6 +6,9 @@ dependencies {
     compileOnly project(":plugins:sql-language")
     compileOnly project(":plugins:jdbc-adapter-framework")
 
+    // api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+    api group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
+
     // JDBC Drivers
     implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version  // HSQLDB License (BSD-style)
 
@@ -47,10 +50,10 @@ compileJava {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":plugins:sql-language:processResources")
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
-}*/
+}
 
 compileTestJava {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
@@ -64,7 +67,6 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
-        attributes "Plugin-Dependencies": "sql-language, jdbc-adapter-framework"
     }
 }
 java {

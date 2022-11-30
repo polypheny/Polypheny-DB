@@ -54,10 +54,10 @@ compileTestJava {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":plugins:sql-language:processResources")
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
-}*/
+}
 
 /**
  * JARs

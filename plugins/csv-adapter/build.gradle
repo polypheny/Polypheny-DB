@@ -5,9 +5,12 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
 
+    implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+        exclude group: "org.slf4j"
+    }
+
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
-
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -47,9 +50,9 @@ compileJava {
     dependsOn(":plugins:sql-language:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":plugins:sql-language:processResources")
-}*/
+}
 
 
 /**
@@ -60,7 +63,6 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
-        attributes "Plugin-Dependencies": "sql-language"
     }
 }
 java {

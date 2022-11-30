@@ -29,7 +29,7 @@ dependencies {
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
-    api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+    // compileOnly group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
 
     ////// PF4J
     implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
@@ -63,7 +63,7 @@ dependencies {
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
-    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
+    // implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
 
     // https://github.com/docker-java/docker-java
     implementation group: 'com.github.docker-java', name: 'docker-java', version: java_docker_version // Apache 2.0

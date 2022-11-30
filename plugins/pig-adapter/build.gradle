@@ -4,7 +4,9 @@ group "org.polypheny"
 dependencies {
     compileOnly project(":core")
 
-    implementation group: "org.apache.pig", name: "pig", version: pig_version, classifier:"h2"  // Apache 2.0
+    implementation(group: "org.apache.pig", name: "pig", version: pig_version, classifier: "h2") {
+        exclude(group: "org.slf4j")
+    }  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -16,6 +18,9 @@ dependencies {
     testImplementation group: "org.apache.hadoop", name: "hadoop-client", version: hadoop_client_version  // Apache 2.0
     testImplementation group: "org.apache.hadoop", name: "hadoop-common", version: hadoop_common_version  // Apache 2.0
     testImplementation group: "org.apache.pig", name: "pigunit", version: pigunit_version  // Apache 2.0
+
+    // due to gradle 7.6+
+    testImplementation project(path: ':dbms', configuration: 'testClasses')
 }
 
 
@@ -42,9 +47,9 @@ sourceSets {
     }
 }
 
-/*delombok {
+delombok {
     dependsOn(":core:processResources")
-}*/
+}
 
 compileJava {
     dependsOn(":core:processResources")
@@ -77,3 +82,6 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+
+
+

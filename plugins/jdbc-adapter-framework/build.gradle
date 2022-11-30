@@ -48,9 +48,9 @@ compileJava {
     dependsOn(":plugins:sql-language:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":plugins:sql-language:processResources")
-}*/
+}
 
 /**
  * JARs
@@ -60,7 +60,6 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
-        attributes "Plugin-Dependencies": "sql-language"
     }
 }
 java {

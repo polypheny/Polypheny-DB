@@ -15,13 +15,9 @@ dependencies {
     implementation group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version  // Apache 2.0
 
     ////// APACHE CALCITE AVATICA
-    implementation group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
-
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
-
-    testCompileOnly 'org.projectlombok:lombok:1.18.24'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+    implementation(group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version) {
+        exclude(group: "org.slf4j")
+    }  // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

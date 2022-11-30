@@ -30,12 +30,14 @@ dependencies {
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
-    api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+    // api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
     implementation(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart"); exclude(group: "org.slf4j") }  // Apache 2.0
 
-    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude(group: "org.slf4j")
+    } // Apache 2.0
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
@@ -61,9 +63,9 @@ compileJava {
     dependsOn(":dbms:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":dbms:processResources")
-}*/
+}
 
 
 sourceSets {

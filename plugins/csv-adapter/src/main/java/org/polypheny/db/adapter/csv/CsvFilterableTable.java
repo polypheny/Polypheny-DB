@@ -23,7 +23,6 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.csv.CsvPlugin.CsvSource;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.rex.RexCall;

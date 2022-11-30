@@ -27,7 +27,9 @@ dependencies {
     implementation group: "commons-codec", name: "commons-codec", version: commons_codec_version  // // Apache 2.0
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version  // ISC
 
-    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude(group: "org.slf4j")
+    } // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -75,10 +77,10 @@ compileJava {
     dependsOn(":dbms:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":core:processResources")
     dependsOn(":dbms:processResources")
-}*/
+}
 
 
 /**

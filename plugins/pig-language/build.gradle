@@ -34,7 +34,9 @@ dependencies {
     testImplementation group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version  // Apache 2.0
     testImplementation group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version  // HSQLDB License (BSD-style)
 
-    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude(group: "org.slf4j")
+    } // Apache 2.0
 }
 
 /**
@@ -81,9 +83,9 @@ compileJava {
     dependsOn(":webui:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":webui:processResources")
-}*/
+}
 
 
 /**

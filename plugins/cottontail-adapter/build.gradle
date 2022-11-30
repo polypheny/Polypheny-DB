@@ -35,9 +35,9 @@ compileJava {
     dependsOn(":plugins:sql-language:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":plugins:sql-language:processResources")
-}*/
+}
 
 inspectClassesForKotlinIC {
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")

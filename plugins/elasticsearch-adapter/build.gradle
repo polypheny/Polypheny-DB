@@ -50,9 +50,9 @@ compileJava {
 }
 
 
-/*delombok {
+delombok {
     dependsOn(":core:processResources")
-}*/
+}
 
 javadoc {
     dependsOn(":core:processResources")

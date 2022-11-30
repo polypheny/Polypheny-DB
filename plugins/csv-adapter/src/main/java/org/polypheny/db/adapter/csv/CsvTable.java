@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.csv;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.adapter.csv.CsvPlugin.CsvSource;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;

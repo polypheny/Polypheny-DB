@@ -4,7 +4,10 @@ group "org.polypheny"
 dependencies {
     compileOnly project(":core")
 
-    implementation(group: "org.apache.geode", name: "geode-core", version: geode_core_version) { exclude(group: "org.apache.logging.log4j") }  // Apache 2.0
+    implementation(group: "org.apache.geode", name: "geode-core", version: geode_core_version) {
+        exclude(group: "org.apache.logging.log4j")
+        exclude(group: "org.slf4j")
+    }  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -43,9 +46,9 @@ compileJava {
     dependsOn(":core:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":core:processResources")
-}*/
+}
 
 javadoc {
     dependsOn(":core:processResources")

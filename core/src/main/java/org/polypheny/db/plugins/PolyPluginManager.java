@@ -16,12 +16,20 @@
 
 package org.polypheny.db.plugins;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
@@ -41,7 +49,7 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
-    public static ClassLoader loader;
+    public static PluginClassLoader loader;
 
 
     public PolyPluginManager( String... paths ) {
@@ -53,7 +61,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         // create the plugin manager
         final PluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins", "../../build/plugins" );
 
-        loader = new PolyClassLoader( pluginManager );
+        // loader = new PolyClassLoader( pluginManager );
 
         // load the plugins
         pluginManager.loadPlugins();
@@ -94,10 +102,11 @@ public class PolyPluginManager extends DefaultPluginManager {
                     protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
                         // we load the existing applications classes first, then the dependencies and then the plugin
                         // we have to reuse the classloader else the code generation will not be able to find the added classes later on
-                        /*if ( loader == null ) {
-                            loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.ADP );
-                        }*/
-                        return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
+                        if ( loader == null ) {
+                            loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.PAD );
+                        }
+                        //return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
+                        return loader;//new PolyClassLoader( ClassLoader.getPlatformClassLoader(), pluginDescriptor, pluginManager );
                     }
                 } )
                 /*.add( new JarPluginLoader( this ) )*/;
@@ -114,32 +123,88 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static class PolyClassLoader extends ClassLoader {
+    public static class PolyClassLoader extends PluginClassLoader {
 
-        PluginManager pluginManager;
+        private final ClassLoader classLoader;
+        private final PluginManager manager;
 
 
-        public PolyClassLoader( PluginManager pluginManager ) {
-            this.pluginManager = pluginManager;
+        public PolyClassLoader( ClassLoader classLoader, PluginDescriptor pluginDescriptor, PluginManager manager ) {
+            super( manager, pluginDescriptor, classLoader );
+            this.classLoader = classLoader;
+            this.manager = manager;
         }
 
 
         @Override
-        public Class<?> loadClass( String name ) throws ClassNotFoundException {
-            Class<?> clazz;
-            for ( PluginWrapper plugin : pluginManager.getPlugins() ) {
-                try {
-                    clazz = plugin.getPluginClassLoader().loadClass( name );
+        public void addURL( URL url ) {
+            try {
+                byte[] b = FileUtils.readFileToByteArray( new File( url.getFile() ) );
+                Method m = ClassLoader.class.getDeclaredMethod( "defineClass", byte[].class, int.class, int.class );
+                m.setAccessible( true );
+                m.invoke( super.getClass().getClassLoader(), b, 0, b.length );
+            } catch ( NoSuchMethodException | InvocationTargetException | IllegalAccessException | IOException e ) {
+                throw new RuntimeException( e );
+            }
+        }
 
-                    if ( clazz != null ) {
-                        return clazz;
-                    }
-                } catch ( ClassNotFoundException e ) {
-                    // empty on purpose
-                }
+
+        @Override
+        public void addFile( File file ) {
+            if ( file == null ) {
+                return;
             }
 
-            throw new ClassNotFoundException( name );
+            try {
+                if ( file.isDirectory() ) {
+                    for ( File listFile : file.listFiles() ) {
+                        addFile( listFile );
+                    }
+                } else {
+                    if ( file.getAbsolutePath().endsWith( ".class" ) && !file.getAbsolutePath().contains( "$1" ) ) {
+                        addURL( file.getCanonicalFile().toURI().toURL() );
+                    }
+                }
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
+
+        }
+
+
+        @Override
+        public Class<?> loadClass( String className ) throws ClassNotFoundException {
+            return classLoader.loadClass( className );
+        }
+
+
+        @Override
+        public URL getResource( String name ) {
+            return classLoader.getResource( name );
+        }
+
+
+        @Override
+        public Enumeration<URL> getResources( String name ) throws IOException {
+            return classLoader.getResources( name );
+        }
+
+
+        @Override
+        protected Class<?> loadClassFromDependencies( String className ) {
+            throw new RuntimeException( className );
+        }
+
+
+        @Override
+        protected URL findResourceFromDependencies( String name ) {
+            throw new RuntimeException( name );
+        }
+
+
+        @Override
+        protected Collection<URL> findResourcesFromDependencies( String name ) throws IOException {
+            throw new RuntimeException( name );
         }
 
     }

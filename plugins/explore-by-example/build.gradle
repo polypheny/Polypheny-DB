@@ -6,7 +6,9 @@ dependencies {
     compileOnly project(":webui")
 
     implementation group: 'nz.ac.waikato.cms.weka', name: 'weka-stable', version: weka_version  // GPL 3.0
-    compileOnly(group: "io.javalin", name: "javalin", version: javalin_version) // Apache 2.0
+    compileOnly(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude(group: "org.slf4j")
+    } // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -20,10 +22,10 @@ compileJava {
     dependsOn(":webui:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":core:processResources")
     dependsOn(":webui:processResources")
-}*/
+}
 
 
 sourceSets {

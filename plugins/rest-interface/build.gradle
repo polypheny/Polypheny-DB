@@ -53,9 +53,9 @@ compileJava {
     dependsOn(":monitoring:processResources")
 }
 
-/*delombok {
+delombok {
     dependsOn(":monitoring:processResources")
-}*/
+}
 
 
 /**
@@ -66,7 +66,6 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
-        attributes "Plugin-Dependencies": "sql-language"
     }
 }
 java {
