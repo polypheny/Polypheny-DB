@@ -9,6 +9,9 @@ configurations {
     tests {
         extendsFrom testRuntimeOnly
     }
+    testClasses {
+        extendsFrom(testImplementation)
+    }
 }
 
 
@@ -41,9 +44,7 @@ dependencies {
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
 
     api group: "com.google.guava", name: "guava", version: guava_version
-    api(group: "org.reflections", name: "reflections", version: reflections_version) {
-        exclude(group: "org.slf4j")
-    }// BSD 2-clause
+    api(group: "org.reflections", name: "reflections", version: reflections_version) // BSD 2-clause
     api group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
     implementation group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version  // Apache 2.0
     api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
@@ -65,8 +66,6 @@ dependencies {
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
-    // implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
-
     // https://github.com/docker-java/docker-java
     implementation group: 'com.github.docker-java', name: 'docker-java', version: java_docker_version // Apache 2.0
     implementation group: 'com.github.docker-java', name: 'docker-java-transport-httpclient5', version: java_docker_version //TODO: should probably be independent version in future
@@ -80,12 +79,6 @@ dependencies {
     testImplementation group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version // Apache 2.0
 
     testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
-
-    //testImplementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version  // Apache 2.0
-    //testImplementation group: "com.h2database", name: "h2", version: h2_version
-    //testImplementation group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version
-    //testImplementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
-    //testImplementation group: "org.postgresql", name: "postgresql", version: postgresql_version
 }
 
 

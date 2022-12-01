@@ -6,12 +6,13 @@ dependencies {
 
     implementation(group: "org.apache.geode", name: "geode-core", version: geode_core_version) {
         exclude(group: "org.apache.logging.log4j")
-        exclude(group: "org.slf4j")
     }  // Apache 2.0
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+
+    api group: "com.google.guava", name: "guava", version: guava_version
 
     testImplementation group: "junit", name: "junit", version: junit_version
 

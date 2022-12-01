@@ -9,8 +9,10 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
 
     testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "com.google.guava", name: "guava", version: guava_version
 
     testImplementation group: "com.github.fakemongo", name: "fongo", version: fongo_version  // Apache 2.0
     testImplementation group: "net.hydromatic", name: "foodmart-data-json", version: foodmart_data_json_version  // Apache 2.0

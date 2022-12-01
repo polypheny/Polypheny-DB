@@ -10,6 +10,7 @@ dependencies {
 
 
     // --- Test Compile ---
+    testImplementation project(path: ":core")
     testImplementation project(path: ":core", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
@@ -18,8 +19,11 @@ dependencies {
     testImplementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearch_version  // Apache 2.0
     testImplementation group: "org.elasticsearch.plugin", name: "transport-netty4-client", version: transport_netty4_client_version  // Apache 2.0
     testImplementation group: "org.codelibs.elasticsearch.module", name: "lang-painless", version: lang_painless_version  // Apache 2.0
-    //testImplementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
-    //testImplementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version
+
+    api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
+    api group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version  // Apache 2.0
+    api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
+    api group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version  // Apache 2.0
 }
 
 

@@ -20,7 +20,8 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    implementation 'org.junit.jupiter:junit-jupiter:5.7.0'// Apache 2.0
+    testImplementation project(path: ":dbms", configuration: "testClasses")
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'// Apache 2.0
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT

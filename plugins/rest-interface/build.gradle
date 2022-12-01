@@ -17,6 +17,8 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testCompileOnly group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
     testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version

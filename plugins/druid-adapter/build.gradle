@@ -10,6 +10,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
