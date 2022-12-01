@@ -47,6 +47,9 @@ dependencies {
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version
     implementation 'org.jetbrains:annotations:20.1.0'// ISC
 
+    // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
+    implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
+
     implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
         exclude(group: "org.slf4j")
     } // Apache 2.0 todo dl remove
