@@ -38,8 +38,8 @@ public class MapDBCatalogPlugin extends Plugin {
 
     @Override
     public void start() {
-        log.warn( "MapDB catalog was loaded" );
-        PolyPluginManager.setCatalog( Catalog.setAndGetInstance( new CatalogImpl() ) );
+        log.info( "MapDB catalog was loaded" );
+        PolyPluginManager.setCatalogsSupplier( () -> Catalog.setAndGetInstance( new CatalogImpl() ) );
     }
 
 }

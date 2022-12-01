@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.postgres.stores;
+package org.polypheny.db.adapter.postgres.store;
 
 
 import com.google.common.collect.ImmutableList;
@@ -46,6 +46,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
@@ -132,6 +133,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
         dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
+        dataSource.setDriverClassLoader( PolyPluginManager.loader );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 

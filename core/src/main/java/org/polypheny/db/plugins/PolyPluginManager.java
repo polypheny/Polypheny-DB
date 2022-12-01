@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,7 @@ public class PolyPluginManager extends DefaultPluginManager {
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
     @Getter
-    private static Catalog CATALOG;
+    private static Supplier<Catalog> CATALOG_SUPPLIER;
 
     public static PluginClassLoader loader;
 
@@ -100,16 +101,16 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static void setCatalog( Catalog catalog ) {
-        if ( CATALOG != null ) {
+    public static void setCatalogsSupplier( Supplier<Catalog> catalogSupplier ) {
+        if ( CATALOG_SUPPLIER != null ) {
             throw new RuntimeException( "There is already a catalog set." );
         }
-        CATALOG = catalog;
+        CATALOG_SUPPLIER = catalogSupplier;
     }
 
 
     public static void setPersistentRepository( PersistentMonitoringRepository repository ) {
-        if ( CATALOG != null ) {
+        if ( PERSISTENT_MONITORING != null ) {
             throw new RuntimeException( "There is already a persistent repository." );
         }
         PERSISTENT_MONITORING = repository;

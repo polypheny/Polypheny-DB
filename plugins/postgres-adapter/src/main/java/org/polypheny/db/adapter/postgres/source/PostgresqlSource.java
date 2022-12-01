@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.postgres.sources;
+package org.polypheny.db.adapter.postgres.source;
 
 
 import com.google.common.collect.ImmutableMap;
