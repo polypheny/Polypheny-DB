@@ -67,19 +67,11 @@ public class PolyPluginManager extends DefaultPluginManager {
         // create the plugin manager
         final PluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins", "../../build/plugins" );
 
-        // loader = new PolyClassLoader( pluginManager );
-
         // load the plugins
         pluginManager.loadPlugins();
 
-        // enable a disabled plugin
-        // pluginManager.disablePlugin("explore-by-example");
-
         // start (active/resolved) the plugins
         pluginManager.startPlugins();
-
-        // log.info( "Plugin Directory: " );
-        // log.info( "\t" + System.getProperty( "pf4j.pluginsDir", "plugins" ) + "\n" );
 
         REGISTER.addAll( pluginManager.getStartedPlugins().stream().map( PluginWrapper::getPluginId ).collect( Collectors.toList() ) );
 
@@ -88,11 +80,8 @@ public class PolyPluginManager extends DefaultPluginManager {
         for ( PluginWrapper plugin : startedPlugins ) {
             String pluginId = plugin.getDescriptor().getPluginId();
 
-            log.info( String.format( "Extensions added by plugin '%s':", pluginId ) );
-            // pluginManager.getExtensionClassNames( pluginId ).forEach( e -> log.info( "\t" + e ) ); // takes forever
+            log.info( String.format( "Plugin '%s' added", pluginId ) );
         }
-        // List<TransactionExtension> exceptions = pluginManager.getExtensions( TransactionExtension.class ); // does not work with ADP
-
     }
 
 
@@ -103,7 +92,7 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static void setCatalogsSupplier( Supplier<Catalog> catalogSupplier ) {
         if ( CATALOG_SUPPLIER != null ) {
-            throw new RuntimeException( "There is already a catalog set." );
+            throw new RuntimeException( "There is already a catalog supplier set." );
         }
         CATALOG_SUPPLIER = catalogSupplier;
     }

@@ -55,7 +55,7 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
-    // testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
+    testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
@@ -67,11 +67,6 @@ dependencies {
     testImplementation group: "monetdb", name: "monetdb-java-lite", version: embedded_monetdb_version
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
-
-    //testImplementation group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
-    //testImplementation group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version
-    //testImplementation group: "net.hydromatic", name: "quidem", version: quidem_version
-    //testImplementation group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
 
 }
 
