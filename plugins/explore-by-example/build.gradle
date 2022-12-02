@@ -67,3 +67,12 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+
+licensee {
+    ignoreDependencies('nz.ac.waikato.cms.weka') {
+        transitive = true
+        because "removed on release branches"
+    }
+
+}
+

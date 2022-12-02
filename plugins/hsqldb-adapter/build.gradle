@@ -77,3 +77,7 @@ java {
 javadoc {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
+
+licensee {
+    allowDependency('org.hsqldb', 'hsqldb', '2.6.1') { because 'BSD 3-Clause' }
+}

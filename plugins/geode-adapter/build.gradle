@@ -70,3 +70,25 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+
+licensee {
+    allow('Apache-2.0')
+    allow('MIT')
+
+    // Ignore these dependencies, remove on release branches!
+    // START
+    ignoreDependencies('antlr') {
+        transitive = true
+        because "removed on release branches"
+    }
+
+    ignoreDependencies('javax.resource') {
+        transitive = true
+        because "removed on release branches"
+    }
+
+    ignoreDependencies('net.java.dev.jna') {
+        transitive = true
+        because "removed on release branches"
+    }
+}

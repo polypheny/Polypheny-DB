@@ -67,3 +67,24 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+
+licensee {
+    allow('Apache-2.0')
+    allow('MIT')
+    allow('CC0-1.0')
+
+    allowDependency('com.github.jnr', 'jnr-posix', '3.0.47') { because 'Eclipse Public License v. 2.0' }
+
+    allowDependency('org.bouncycastle', 'bcprov-jdk15on', '1.65') { because 'MIT license' }
+
+    allowDependency('org.java-websocket', 'Java-WebSocket', '1.3.8') { because 'MIT license' }
+
+    allowDependency('org.ow2.asm', 'asm-util', '5.0.3') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-analysis', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-commons', '5.0.3') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-tree', '5.0.3') { because 'BSD 3-Clause' }
+}
+
+
+

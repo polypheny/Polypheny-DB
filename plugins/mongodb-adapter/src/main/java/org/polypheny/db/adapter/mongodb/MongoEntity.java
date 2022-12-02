@@ -50,7 +50,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.pf4j.Extension;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
@@ -350,7 +349,6 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
      *
      * @param <T> element type
      */
-    @Extension
     public static class MongoQueryable<T> extends AbstractTableQueryable<T> {
 
         MongoQueryable( DataContext dataContext, SchemaPlus schema, MongoEntity table, String tableName ) {
