@@ -74,4 +74,14 @@ java {
     withSourcesJar()
 }
 
+licensee {
+    allow('Apache-2.0')
+    allow('MIT')
+
+    // Category B
+    allow('EPL-1.0')
+
+    allowUrl('https://www.eclipse.org/licenses/edl-v10.html') // EDL 1.0
+}
+
 

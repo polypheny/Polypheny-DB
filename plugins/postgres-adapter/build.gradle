@@ -77,3 +77,11 @@ java {
 javadoc {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
+
+licensee {
+    allow('MIT')
+
+    allowDependency('org.postgresql', 'postgresql', '42.2.19') { because 'BSD 2-Clause' }
+}
+
+

@@ -140,3 +140,14 @@ artifacts {
     archives javadocJar // jar file containing the source files
     tests testJar // jar file containing the test classes
 }
+
+licensee {
+    allow('Apache-2.0')
+
+    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
+
+    allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
+        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
+    }
+}
+

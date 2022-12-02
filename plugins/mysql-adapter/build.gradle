@@ -74,3 +74,8 @@ java {
 javadoc {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
+
+licensee {
+    allow('LGPL-2.1') // lesser GNU
+}
+

@@ -83,5 +83,14 @@ java {
     withSourcesJar()
 }
 
+licensee {
+
+    ignoreDependencies('org.apache.pig') {
+        transitive = true
+        because "removed on release branches"
+    }
+}
+
+
 
 
