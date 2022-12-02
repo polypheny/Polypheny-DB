@@ -2,7 +2,7 @@ group "org.polypheny"
 
 
 dependencies {
-    api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
+    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
     // Apache 2.0
     implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
         exclude(group: "org.slf4j")

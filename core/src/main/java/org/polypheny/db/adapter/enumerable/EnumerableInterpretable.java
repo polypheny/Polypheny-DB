@@ -132,7 +132,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                         ? new Class[]{ Bindable.class, Typed.class }
                         : new Class[]{ ArrayBindable.class } );
 
-        cbe.setParentClassLoader( PolyPluginManager.loader );
+        cbe.setParentClassLoader( PolyPluginManager.getMainClassLoader() );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation( true, true, true );

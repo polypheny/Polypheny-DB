@@ -16,14 +16,9 @@
 
 package org.polypheny.db.plugins;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -48,14 +43,17 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     @Getter
     private static PersistentMonitoringRepository PERSISTENT_MONITORING;
-    public static List<String> REGISTER = new ArrayList<>();
-
-    public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
     @Getter
     private static Supplier<Catalog> CATALOG_SUPPLIER;
 
-    public static PluginClassLoader loader;
+    @Getter
+    public static List<String> PLUGINS = new ArrayList<>();
+
+    public static List<Runnable> AFTER_INIT = new ArrayList<>();
+
+    @Getter
+    private static PluginClassLoader mainClassLoader;
 
 
     public PolyPluginManager( String... paths ) {
@@ -73,7 +71,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         // start (active/resolved) the plugins
         pluginManager.startPlugins();
 
-        REGISTER.addAll( pluginManager.getStartedPlugins().stream().map( PluginWrapper::getPluginId ).collect( Collectors.toList() ) );
+        PLUGINS.addAll( pluginManager.getStartedPlugins().stream().map( PluginWrapper::getPluginId ).collect( Collectors.toList() ) );
 
         // print extensions for each started plugin
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
@@ -114,13 +112,10 @@ public class PolyPluginManager extends DefaultPluginManager {
                     protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
                         // we load the existing applications classes first, then the dependencies and then the plugin
                         // we have to reuse the classloader else the code generation will not be able to find the added classes later on
-                        //((UrlClassLoader) ClassLoader.getSystemClassLoader()).getParent();
-                        // -Djava.system.class.loader=org.polypheny.db.plugins.UrlClassLoader
-                        if ( loader == null ) {
-                            loader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
+                        if ( mainClassLoader == null ) {
+                            mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
                         }
-                        //return new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
-                        return loader; //new PolyClassLoader( (UrlClassLoader) super.getClass().getClassLoader(), pluginDescriptor, pluginManager );
+                        return mainClassLoader;
                     }
                 } )
                 /*.add( new JarPluginLoader( this ) )*/;
@@ -134,74 +129,6 @@ public class PolyPluginManager extends DefaultPluginManager {
                 // PropertiesPluginDescriptorFinder is commented out just to avoid error log
                 //.add( new PropertiesPluginDescriptorFinder() );
                 .add( new ManifestPluginDescriptorFinder() );
-    }
-
-
-    public static class PolyClassLoader extends PluginClassLoader {
-
-        private final UrlClassLoader classLoader;
-        private final PluginManager manager;
-
-
-        public PolyClassLoader( UrlClassLoader classLoader, PluginDescriptor pluginDescriptor, PluginManager manager ) {
-            super( manager, pluginDescriptor, classLoader );
-            this.classLoader = classLoader;
-            this.manager = manager;
-        }
-
-
-        @Override
-        public void addURL( URL url ) {
-            classLoader.addURL( url );
-        }
-
-
-        @Override
-        public void addFile( File file ) {
-            try {
-                classLoader.addFile( file );
-            } catch ( IOException e ) {
-                throw new RuntimeException( e );
-            }
-
-        }
-
-
-        @Override
-        public Class<?> loadClass( String className ) throws ClassNotFoundException {
-            return classLoader.loadClass( className );
-        }
-
-
-        @Override
-        public URL getResource( String name ) {
-            return classLoader.getResource( name );
-        }
-
-
-        @Override
-        public Enumeration<URL> getResources( String name ) throws IOException {
-            return classLoader.getResources( name );
-        }
-
-
-        @Override
-        protected Class<?> loadClassFromDependencies( String className ) {
-            throw new RuntimeException( className );
-        }
-
-
-        @Override
-        protected URL findResourceFromDependencies( String name ) {
-            throw new RuntimeException( name );
-        }
-
-
-        @Override
-        protected Collection<URL> findResourcesFromDependencies( String name ) throws IOException {
-            throw new RuntimeException( name );
-        }
-
     }
 
 

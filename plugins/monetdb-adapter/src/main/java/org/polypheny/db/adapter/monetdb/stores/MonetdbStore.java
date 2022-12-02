@@ -138,7 +138,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
         dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
-        dataSource.setDriverClassLoader( PolyPluginManager.loader );
+        dataSource.setDriverClassLoader( PolyPluginManager.getMainClassLoader() );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 

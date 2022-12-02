@@ -21,6 +21,7 @@ dependencies {
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
     implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
+    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
 
 
     // --- Test Compile ---

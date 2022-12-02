@@ -10,7 +10,6 @@ buildscript {
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
         classpath group: "com.adarshr", name: "gradle-test-logger-plugin", version: gradle_test_logger_version
         classpath group: "org.reflections", name: "reflections", version: reflections_version
-        classpath group: "com.netflix.nebula", name: "gradle-lint-plugin", version: gradle_lint_plugin
     }
 }
 
@@ -18,7 +17,6 @@ buildscript {
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.5.31"
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.1"
-    id "nebula.lint" version "$gradle_lint_plugin"
 }
 
 
@@ -45,11 +43,6 @@ allprojects {
     apply plugin: "java-library"
     apply plugin: "io.freefair.lombok"
     apply plugin: "com.adarshr.test-logger"
-    // dependencies
-    /*apply plugin: "nebula.lint"
-    gradleLint {
-        rules=['unused-dependency']
-    }*/
 
     compileJava.options.encoding = "UTF-8"
     compileTestJava.options.encoding = "UTF-8"

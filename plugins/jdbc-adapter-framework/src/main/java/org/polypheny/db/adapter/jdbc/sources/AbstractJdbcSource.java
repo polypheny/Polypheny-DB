@@ -90,7 +90,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
         dataSource.setUsername( settings.get( "username" ) );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
-        dataSource.setDriverClassLoader( PolyPluginManager.loader );
+        dataSource.setDriverClassLoader( PolyPluginManager.getMainClassLoader() );
         switch ( settings.get( "transactionIsolation" ) ) {
             case "SERIALIZABLE":
                 dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );

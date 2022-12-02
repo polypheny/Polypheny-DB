@@ -396,10 +396,6 @@ public class PolyphenyDb {
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
 
-        // hand parameters to extensions
-        TransactionExtension.REGISTER.forEach( e -> e.initExtension( transactionManager, authenticator ) );
-        httpServer.addRoute( "/getEnabledPlugins", ( r, c ) -> PolyPluginManager.REGISTER, Object.class, HandlerType.GET );
-
         // Add config and monitoring test page for UI testing
         if ( testMode ) {
             new UiTestingConfigPage();
@@ -415,6 +411,10 @@ public class PolyphenyDb {
             // Init TrayGUI
             TrayGui.getInstance();
         }
+
+        // hand parameters to extensions
+        TransactionExtension.REGISTER.forEach( e -> e.initExtension( transactionManager, authenticator ) );
+        httpServer.addRoute( "/getEnabledPlugins", ( r, c ) -> PolyPluginManager.getPLUGINS(), Object.class, HandlerType.GET );
 
         PolyPluginManager.startUp();
 
