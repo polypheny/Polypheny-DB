@@ -7,14 +7,13 @@ dependencies {
     compileOnly project(":plugins:jdbc-adapter-framework")
 
     // JDBC Drivers
-    implementation group: "org.mariadb.jdbc", name: "mariadb-java-client", version: mariadb_version // LGPL 2.1
+     // LGPL 2.1
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
 }
 
 

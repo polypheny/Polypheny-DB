@@ -8,10 +8,14 @@ dependencies {
 
     api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
 
+    api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
+
+    ////// SLF4J
+    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
-    testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion)
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 

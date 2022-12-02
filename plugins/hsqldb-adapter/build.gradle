@@ -10,14 +10,13 @@ dependencies {
     // api group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
 
     // JDBC Drivers
-    implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version  // HSQLDB License (BSD-style)
+      // HSQLDB License (BSD-style)
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
 }
 
 

@@ -12,18 +12,11 @@ dependencies {
 
     implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
 
-    //  Logging
-    // api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
-    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
-    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
-    // implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version  // Apache 2.0
-
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":dbms", configuration: "testClasses")
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'// Apache 2.0
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.7.0"// Apache 2.0
 
-    testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
 }
 
@@ -52,6 +45,7 @@ sourceSets {
 
 compileJava {
     dependsOn(":core:processResources")
+    dependsOn(":monitoring:processResources")
 }
 
 delombok {

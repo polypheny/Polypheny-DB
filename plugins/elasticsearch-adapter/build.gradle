@@ -23,7 +23,7 @@ dependencies {
     api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
     api group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version  // Apache 2.0
     api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
-    api group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version  // Apache 2.0
+      // Apache 2.0
 }
 
 

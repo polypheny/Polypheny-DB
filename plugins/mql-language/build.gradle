@@ -30,20 +30,16 @@ dependencies {
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
+    implementation group: 'org.eclipse.jetty.websocket', name: 'websocket-api', version: jetty_websocket_api_version
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
-    implementation(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart"); exclude(group: "org.slf4j") }  // Apache 2.0
 
-    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
-        exclude(group: "org.slf4j")
-    } // Apache 2.0
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
     testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion)
 
     testImplementation group: "junit", name: "junit", version: junit_version
-    testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
 }
 
 

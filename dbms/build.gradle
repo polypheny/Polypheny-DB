@@ -36,23 +36,14 @@ dependencies {
     ////// SLF4J
     implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
 
-    ////// Logging
-    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
-    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
-
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
-    implementation group: "org.apache.commons", name: "commons-math3", version: commons_math_version  // Apache 2.0
+
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version
     implementation 'org.jetbrains:annotations:20.1.0'// ISC
 
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
-
-    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
-        exclude(group: "org.slf4j")
-    } // Apache 2.0 todo dl remove
 
 
     // --- Test Compile ---

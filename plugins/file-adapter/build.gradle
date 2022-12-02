@@ -4,7 +4,7 @@ group "org.polypheny"
 dependencies {
     compileOnly project(":core")
 
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+      // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
 
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
@@ -12,8 +12,7 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
-    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    // BSD 3-clause
 }
 
 

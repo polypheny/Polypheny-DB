@@ -8,7 +8,7 @@ dependencies {
 
     // JDBC Drivers
     // implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version  // HSQLDB License (BSD-style)
-    implementation group: "org.postgresql", name: "postgresql", version: postgresql_version  // BSD 2-clause
+      // BSD 2-clause
     // implementation group: "monetdb", name: "monetdb-jdbc-new", version: monetdb_version
     // implementation group: "org.mariadb.jdbc", name: "mariadb-java-client", version: mariadb_version // LGPL 2.1
 
@@ -17,7 +17,6 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
 }
 
 

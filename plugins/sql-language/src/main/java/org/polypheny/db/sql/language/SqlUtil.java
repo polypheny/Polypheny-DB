@@ -101,6 +101,24 @@ public abstract class SqlUtil {
     }
 
 
+    /**
+     * Old method from commons-lang
+     * it only turns single-quotes into doubled single-quotes ("McHale's Navy" => "McHale''s Navy")
+     *
+     * todo rewrite as it was removed
+     * https://stackoverflow.com/questions/32096614/migrating-stringescapeutils-escapesql-from-commons-lang
+     *
+     * @param str input which is adjusted
+     * @return the adjusted input
+     */
+    public static String escapeSql( String str ) {
+        if ( str == null ) {
+            return null;
+        }
+        return str.replace( "'", "''" );
+    }
+
+
     private static void flatten( SqlNode node, ArrayList<SqlNode> list ) {
         switch ( node.getKind() ) {
             case JOIN:

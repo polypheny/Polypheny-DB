@@ -33,17 +33,12 @@ dependencies {
         exclude(group: "org.slf4j")
     } // Apache 2.0
 
-    // web todo dl maybe remove if hub is not necessary
-    implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version  // Apache 2.0
     implementation group: "com.konghq", name: "unirest-java", version: unirest_version  // MIT
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
-    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
-
-    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
-    implementation group: "com.jayway.jsonpath", name: "json-path", version: json_path_version  // Apache 2.0
-
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "testClasses")
+
+    testImplementation group: "com.jayway.jsonpath", name: "json-path", version: json_path_version  // Apache 2.0
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0

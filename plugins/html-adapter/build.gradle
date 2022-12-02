@@ -4,7 +4,7 @@ group "org.polypheny"
 dependencies {
     compileOnly project(":core")
 
-    implementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    testImplementation 'org.hamcrest:hamcrest-core:amcrest_core_versio'  // BSD 3-clause
     implementation(group: "com.joestelmach", name: "natty", version: natty_version) {
         exclude(group: "org.slf4j")
     }  // MIT

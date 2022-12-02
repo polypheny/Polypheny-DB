@@ -47,11 +47,11 @@ import java.util.zip.ZipOutputStream;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.sql.SqlLanguagePlugin;
+import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.web.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.sql.web.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.sql.web.hub.HubMeta;
@@ -422,13 +422,13 @@ public class SqlCrud {
                 rowJoiner = new StringJoiner( ",", "(", ")" );
                 for ( int i = 0; i < table.getColumns().size(); i++ ) {
                     if ( PolyType.get( table.getColumns().get( i ).type ).getFamily() == PolyTypeFamily.CHARACTER ) {
-                        rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        rowJoiner.add( "'" + SqlUtil.escapeSql( nextRecord[i] ) + "'" );
                     } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.DATE ) {
-                        rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        rowJoiner.add( "date '" + SqlUtil.escapeSql( nextRecord[i] ) + "'" );
                     } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIME ) {
-                        rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        rowJoiner.add( "time '" + SqlUtil.escapeSql( nextRecord[i] ) + "'" );
                     } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIMESTAMP ) {
-                        rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        rowJoiner.add( "timestamp '" + SqlUtil.escapeSql( nextRecord[i] ) + "'" );
                     } else {
                         rowJoiner.add( nextRecord[i] );
                     }

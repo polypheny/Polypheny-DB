@@ -32,12 +32,7 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
-    testImplementation group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version  // Apache 2.0
-    testImplementation group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version  // HSQLDB License (BSD-style)
-
-    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
-        exclude(group: "org.slf4j")
-    } // Apache 2.0
+    implementation group: 'org.eclipse.jetty.websocket', name: 'websocket-api', version: jetty_websocket_api_version
 }
 
 /**

@@ -36,23 +36,17 @@ dependencies {
     implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
         exclude group: "org.slf4j"
     }
-
-    api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version  // Apache 2.0
-    api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
+    api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
 
     api group: "com.google.guava", name: "guava", version: guava_version
     api(group: "org.reflections", name: "reflections", version: reflections_version) // BSD 2-clause
     api group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
     implementation group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version  // Apache 2.0
     api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
-    api group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version  // Apache 2.0
     api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
-    api group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version  // Apache 2.0
     api group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version  // Apache 2.0
-    implementation group: "com.yahoo.datasketches", name: "sketches-core", version: sketches_core_version  // Apache 2.0
     implementation(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart"); exclude(group: "org.slf4j") }  // Apache 2.0
-    api group: "net.hydromatic", name: "aggdesigner-algorithm", version: aggdesigner_algorithm_version  // Apache 2.0
     implementation group: "org.codehaus.janino", name: "janino", version: janino_version  // BSD
     implementation group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version  // BSD
     implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
@@ -72,11 +66,7 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
-    testImplementation group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
-    testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
-    testImplementation group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version // Apache 2.0
 
-    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
 }
 
 
