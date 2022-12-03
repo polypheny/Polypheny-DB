@@ -1,26 +1,9 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -52,9 +35,9 @@ import org.apache.calcite.linq4j.function.Parameter;
  */
 public abstract class ReflectUtil {
 
-    private static Map<Class, Class> primitiveToBoxingMap;
-    private static Map<Class, Method> primitiveToByteBufferReadMethod;
-    private static Map<Class, Method> primitiveToByteBufferWriteMethod;
+    private static final Map<Class<?>, Class<?>> primitiveToBoxingMap;
+    private static final Map<Class<?>, Method> primitiveToByteBufferReadMethod;
+    private static final Map<Class<?>, Method> primitiveToByteBufferWriteMethod;
 
 
     static {
@@ -72,7 +55,7 @@ public abstract class ReflectUtil {
         primitiveToByteBufferWriteMethod = new HashMap<>();
         Method[] methods = ByteBuffer.class.getDeclaredMethods();
         for ( Method method : methods ) {
-            Class[] paramTypes = method.getParameterTypes();
+            Class<?>[] paramTypes = method.getParameterTypes();
             if ( method.getName().startsWith( "get" ) ) {
                 if ( !method.getReturnType().isPrimitive() ) {
                     continue;
@@ -110,7 +93,7 @@ public abstract class ReflectUtil {
      * @param clazz the Class object representing the primitive type
      * @return corresponding method
      */
-    public static Method getByteBufferReadMethod( Class clazz ) {
+    public static Method getByteBufferReadMethod( Class<?> clazz ) {
         assert clazz.isPrimitive();
         return primitiveToByteBufferReadMethod.get( clazz );
     }
@@ -122,7 +105,7 @@ public abstract class ReflectUtil {
      * @param clazz the Class object representing the primitive type
      * @return corresponding method
      */
-    public static Method getByteBufferWriteMethod( Class clazz ) {
+    public static Method getByteBufferWriteMethod( Class<?> clazz ) {
         assert clazz.isPrimitive();
         return primitiveToByteBufferWriteMethod.get( clazz );
     }
@@ -134,7 +117,7 @@ public abstract class ReflectUtil {
      * @param primitiveClass representative class for primitive (e.g. java.lang.Integer.TYPE)
      * @return corresponding boxing Class (e.g. java.lang.Integer)
      */
-    public static Class getBoxingClass( Class primitiveClass ) {
+    public static Class<?> getBoxingClass( Class<?> primitiveClass ) {
         assert primitiveClass.isPrimitive();
         return primitiveToBoxingMap.get( primitiveClass );
     }
@@ -146,7 +129,7 @@ public abstract class ReflectUtil {
      * @param c the class of interest
      * @return the unqualified name
      */
-    public static String getUnqualifiedClassName( Class c ) {
+    public static String getUnqualifiedClassName( Class<?> c ) {
         String className = c.getName();
         int lastDot = className.lastIndexOf( '.' );
         if ( lastDot < 0 ) {
@@ -164,7 +147,7 @@ public abstract class ReflectUtil {
      * @param paramTypes method parameter types
      * @return unmangled method name
      */
-    public static String getUnmangledMethodName( Class declaringClass, String methodName, Class[] paramTypes ) {
+    public static String getUnmangledMethodName( Class<?> declaringClass, String methodName, Class<?>[] paramTypes ) {
         StringBuilder sb = new StringBuilder();
         sb.append( declaringClass.getName() );
         sb.append( "." );
@@ -205,7 +188,7 @@ public abstract class ReflectUtil {
      * @param visitMethodName name of visit method, e.g. "visit"
      * @return true if a matching visit method was found and invoked
      */
-    public static boolean invokeVisitor( ReflectiveVisitor visitor, Object visitee, Class hierarchyRoot, String visitMethodName ) {
+    public static boolean invokeVisitor( ReflectiveVisitor visitor, Object visitee, Class<?> hierarchyRoot, String visitMethodName ) {
         return invokeVisitorInternal( visitor, visitee, hierarchyRoot, visitMethodName );
     }
 
@@ -219,16 +202,16 @@ public abstract class ReflectUtil {
      * @param visitMethodName name of visit method, e.g. "visit"
      * @return true if a matching visit method was found and invoked
      */
-    private static boolean invokeVisitorInternal( Object visitor, Object visitee, Class hierarchyRoot, String visitMethodName ) {
+    private static boolean invokeVisitorInternal( Object visitor, Object visitee, Class<?> hierarchyRoot, String visitMethodName ) {
         Class<?> visitorClass = visitor.getClass();
-        Class visiteeClass = visitee.getClass();
+        Class<?> visiteeClass = visitee.getClass();
         Method method = lookupVisitMethod( visitorClass, visiteeClass, visitMethodName );
         if ( method == null ) {
             return false;
         }
 
         if ( hierarchyRoot != null ) {
-            Class paramType = method.getParameterTypes()[0];
+            Class<?> paramType = method.getParameterTypes()[0];
             if ( !hierarchyRoot.isAssignableFrom( paramType ) ) {
                 return false;
             }
@@ -271,7 +254,7 @@ public abstract class ReflectUtil {
      * @return method found, or null if none found
      * @see #createDispatcher(Class, Class)
      */
-    public static Method lookupVisitMethod( Class<?> visitorClass, Class<?> visiteeClass, String visitMethodName, List<Class> additionalParameterTypes ) {
+    public static Method lookupVisitMethod( Class<?> visitorClass, Class<?> visiteeClass, String visitMethodName, List<Class<?>> additionalParameterTypes ) {
         // Prepare an array to re-use in recursive calls.  The first argument will have the visitee class substituted into it.
         Class<?>[] paramTypes = new Class[1 + additionalParameterTypes.size()];
         int iParam = 0;
@@ -368,7 +351,7 @@ public abstract class ReflectUtil {
 
 
             @Override
-            public Method lookupVisitMethod( Class<? extends R> visitorClass, Class<? extends E> visiteeClass, String visitMethodName, List<Class> additionalParameterTypes ) {
+            public Method lookupVisitMethod( Class<? extends R> visitorClass, Class<? extends E> visiteeClass, String visitMethodName, List<Class<?>> additionalParameterTypes ) {
                 final List<Object> key = ImmutableList.of( visitorClass, visiteeClass, visitMethodName, additionalParameterTypes );
                 Method method = map.get( key );
                 if ( method == null ) {
@@ -414,9 +397,8 @@ public abstract class ReflectUtil {
      * <blockquote>String foo(Car, int, ArrayList)</blockquote>
      *
      * (only the first argument is polymorphic).
-     *
      * You must create an implementation of the method for the base class.
-     * Otherwise throws {@link IllegalArgumentException}.
+     * Otherwise, throws {@link IllegalArgumentException}.
      *
      * @param returnClazz Return type of method
      * @param visitor Object on which to invoke the method
@@ -424,11 +406,11 @@ public abstract class ReflectUtil {
      * @param arg0Clazz Base type of argument zero
      * @param otherArgClasses Types of remaining arguments
      */
-    public static <E, T> MethodDispatcher<T> createMethodDispatcher( final Class<T> returnClazz, final ReflectiveVisitor visitor, final String methodName, final Class<E> arg0Clazz, final Class... otherArgClasses ) {
-        final List<Class> otherArgClassList = ImmutableList.copyOf( otherArgClasses );
+    public static <E, T> MethodDispatcher<T> createMethodDispatcher( final Class<T> returnClazz, final ReflectiveVisitor visitor, final String methodName, final Class<E> arg0Clazz, final Class<?>... otherArgClasses ) {
+        final List<Class<?>> otherArgClassList = ImmutableList.copyOf( otherArgClasses );
         @SuppressWarnings({ "unchecked" }) final ReflectiveVisitDispatcher<ReflectiveVisitor, E> dispatcher = createDispatcher( (Class<ReflectiveVisitor>) visitor.getClass(), arg0Clazz );
 
-        return new MethodDispatcher<T>() {
+        return new MethodDispatcher<>() {
             @Override
             public T invoke( Object... args ) {
                 Method method = lookupMethod( args[0] );
@@ -447,7 +429,7 @@ public abstract class ReflectUtil {
                 }
                 Method method = dispatcher.lookupVisitMethod( visitor.getClass(), (Class<? extends E>) arg0.getClass(), methodName, otherArgClassList );
                 if ( method == null ) {
-                    List<Class> classList = new ArrayList<>();
+                    List<Class<?>> classList = new ArrayList<>();
                     classList.add( arg0Clazz );
                     classList.addAll( otherArgClassList );
                     throw new IllegalArgumentException( "Method not found: " + methodName + "(" + classList + ")" );

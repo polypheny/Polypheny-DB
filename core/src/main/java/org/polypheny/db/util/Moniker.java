@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.constant.MonikerType;
 public interface Moniker {
 
     Comparator<Moniker> COMPARATOR =
-            new Comparator<Moniker>() {
+            new Comparator<>() {
                 final Ordering<Iterable<String>> listOrdering = Ordering.<String>natural().lexicographical();
 
 

@@ -17,15 +17,8 @@ subprojects {
     apply plugin: "app.cash.licensee"
     apply plugin: "com.jaredsburrows.license"
 
-    licenseReport {
-        generateCsvReport = true
-        generateHtmlReport = true
-        generateJsonReport = true
-    }
-
 
     // jar
-
     jar {
         manifest {
             attributes 'Plugin-Class': "${pluginClass}",

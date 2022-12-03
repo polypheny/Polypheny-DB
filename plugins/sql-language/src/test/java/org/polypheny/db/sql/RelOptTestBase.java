@@ -22,13 +22,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -40,15 +35,11 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.sql.language.SqlToAlgTestBase;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.util.Closer;
 
 
 /**
@@ -61,12 +52,6 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
         return super.createTester().withDecorrelation( false );
     }
 
-
-    protected Tester createDynamicTester() {
-        return getTesterWithDynamicTable();
-    }
-
-
     /**
      * Checks the plan for a SQL statement before/after executing a given rule.
      *
@@ -78,29 +63,6 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
         programBuilder.addRuleInstance( rule );
 
         checkPlanning( programBuilder.build(), sql );
-    }
-
-
-    /**
-     * Checks the plan for a SQL statement before/after executing a given rule.
-     *
-     * @param rule Planner rule
-     * @param sql SQL query
-     */
-    protected void checkPlanningDynamic( AlgOptRule rule, String sql ) {
-        HepProgramBuilder programBuilder = HepProgram.builder();
-        programBuilder.addRuleInstance( rule );
-        checkPlanning( createDynamicTester(), null, new HepPlanner( programBuilder.build() ), sql );
-    }
-
-
-    /**
-     * Checks the plan for a SQL statement before/after executing a given rule.
-     *
-     * @param sql SQL query
-     */
-    protected void checkPlanningDynamic( String sql ) {
-        checkPlanning( createDynamicTester(), null, new HepPlanner( HepProgram.builder().build() ), sql );
     }
 
 
@@ -123,17 +85,6 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
      */
     protected void checkPlanning( AlgOptPlanner planner, String sql ) {
         checkPlanning( tester, null, planner, sql );
-    }
-
-
-    /**
-     * Checks that the plan is the same before and after executing a given planner. Useful for checking circumstances where rules should not fire.
-     *
-     * @param planner Planner
-     * @param sql SQL query
-     */
-    protected void checkPlanUnchanged( AlgOptPlanner planner, String sql ) {
-        checkPlanning( tester, null, planner, sql, true );
     }
 
 
@@ -209,128 +160,6 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
             }
         }
         SqlToAlgTestBase.assertValid( r );
-    }
-
-
-    /**
-     * Sets the SQL statement for a test.
-     */
-    Sql sql( String sql ) {
-        return new Sql( sql, null, null, ImmutableMap.of(), ImmutableList.of() );
-    }
-
-
-    /**
-     * Allows fluent testing.
-     */
-    class Sql {
-
-        private final String sql;
-        private HepProgram preProgram;
-        private final HepPlanner hepPlanner;
-        private final ImmutableMap<Hook, Consumer<?>> hooks;
-        private ImmutableList<Function<Tester, Tester>> transforms;
-
-
-        Sql( String sql, HepProgram preProgram, HepPlanner hepPlanner, ImmutableMap<Hook, Consumer<?>> hooks, ImmutableList<Function<Tester, Tester>> transforms ) {
-            this.sql = sql;
-            this.preProgram = preProgram;
-            this.hepPlanner = hepPlanner;
-            this.hooks = hooks;
-            this.transforms = transforms;
-        }
-
-
-        public Sql withPre( HepProgram preProgram ) {
-            return new Sql( sql, preProgram, hepPlanner, hooks, transforms );
-        }
-
-
-        public Sql with( HepPlanner hepPlanner ) {
-            return new Sql( sql, preProgram, hepPlanner, hooks, transforms );
-        }
-
-
-        public Sql with( HepProgram program ) {
-            return new Sql( sql, preProgram, new HepPlanner( program ), hooks, transforms );
-        }
-
-
-        public Sql withRule( AlgOptRule rule ) {
-            return with( HepProgram.builder().addRuleInstance( rule ).build() );
-        }
-
-
-        /**
-         * Adds a transform that will be applied to {@link #tester} just before running the query.
-         */
-        private Sql withTransform( Function<Tester, Tester> transform ) {
-            return new Sql( sql, preProgram, hepPlanner, hooks, FlatLists.append( transforms, transform ) );
-        }
-
-
-        /**
-         * Adds a hook and a handler for that hook. Polypheny-DB will create a thread hook (by calling {@link Hook#addThread(Consumer)}) just before running the query, and remove the hook afterwards.
-         */
-        public <T> Sql withHook( Hook hook, Consumer<T> handler ) {
-            return new Sql( sql, preProgram, hepPlanner, FlatLists.append( hooks, hook, handler ), transforms );
-        }
-
-
-        public <V> Sql withProperty( Hook hook, V value ) {
-            return withHook( hook, Hook.propertyJ( value ) );
-        }
-
-
-        public Sql expand( final boolean b ) {
-            return withTransform( tester -> tester.withExpand( b ) );
-        }
-
-
-        public Sql withLateDecorrelation( final boolean b ) {
-            return withTransform( tester -> tester.withLateDecorrelation( b ) );
-        }
-
-
-        public Sql withDecorrelation( final boolean b ) {
-            return withTransform( tester -> tester.withDecorrelation( b ) );
-        }
-
-
-        public Sql withTrim( final boolean b ) {
-            return withTransform( tester -> tester.withTrim( b ) );
-        }
-
-
-        public Sql withContext( final Context context ) {
-            return withTransform( tester -> tester.withContext( context ) );
-        }
-
-
-        public void check() {
-            check( false );
-        }
-
-
-        public void checkUnchanged() {
-            check( true );
-        }
-
-
-        @SuppressWarnings("unchecked")
-        private void check( boolean unchanged ) {
-            try ( Closer closer = new Closer() ) {
-                for ( Map.Entry<Hook, Consumer<?>> entry : hooks.entrySet() ) {
-                    closer.add( entry.getKey().addThread( entry.getValue() ) );
-                }
-                Tester t = tester;
-                for ( Function<Tester, Tester> transform : transforms ) {
-                    t = transform.apply( t );
-                }
-                checkPlanning( t, preProgram, hepPlanner, sql, unchanged );
-            }
-        }
-
     }
 
 }

@@ -38,6 +38,7 @@ dependencies {
     }
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
     api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
+    api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version  // Apache 2.0
 
     api group: "com.google.guava", name: "guava", version: guava_version
     api(group: "org.reflections", name: "reflections", version: reflections_version) // BSD 2-clause

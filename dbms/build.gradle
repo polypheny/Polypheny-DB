@@ -93,12 +93,6 @@ sourceSets {
     }
 }
 
-licenseReport {
-    generateCsvReport = true
-    generateHtmlReport = true
-    generateJsonReport = true
-}
-
 
 licensee {
     allow('Apache-2.0')

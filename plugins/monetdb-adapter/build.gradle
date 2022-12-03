@@ -6,6 +6,8 @@ dependencies {
     compileOnly project(":plugins:sql-language")
     compileOnly project(":plugins:jdbc-adapter-framework")
 
+    // JDBC Driver
+    implementation group: "monetdb", name: "monetdb-jdbc-new", version: monetdb_version
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

@@ -52,7 +52,7 @@ public class ExploreByExamplePlugin extends Plugin {
 
         public ExploreStarter() {
             // empty on purpose
-            log.info( "ExploreStarter" );
+            log.debug( "ExploreStarter started" );
         }
 
 

@@ -66,6 +66,7 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -199,17 +200,7 @@ public class CassandraPlugin extends Plugin {
             }
 
             try {
-                CqlSessionBuilder cluster = CqlSession.builder();
-                cluster.withLocalDatacenter( "datacenter1" );
-                List<InetSocketAddress> contactPoints = new ArrayList<>( 1 );
-                contactPoints.add( new InetSocketAddress( this.dbHostname, this.dbPort ) );
-                if ( this.dbUsername != null && this.dbPassword != null ) {
-                    cluster.addContactPoints( contactPoints ).withAuthCredentials( this.dbUsername, this.dbPassword );
-                } else {
-                    cluster.addContactPoints( contactPoints );
-                }
-                CqlSession mySession;
-                mySession = cluster.build();
+                CqlSession mySession = getSession();
                 try {
                     CreateKeyspace createKs = SchemaBuilder.createKeyspace( this.dbKeyspace ).ifNotExists().withSimpleStrategy( 1 );
                     mySession.execute( createKs.build() );
@@ -231,6 +222,21 @@ public class CassandraPlugin extends Plugin {
             } catch ( Exception e ) {
                 throw new RuntimeException( e );
             }
+        }
+
+
+        private CqlSession getSession() {
+            CqlSessionBuilder cluster = CqlSession.builder();
+            cluster.withClassLoader( PolyPluginManager.getMainClassLoader() );
+            cluster.withLocalDatacenter( "datacenter1" );
+            List<InetSocketAddress> contactPoints = new ArrayList<>( 1 );
+            contactPoints.add( new InetSocketAddress( this.dbHostname, this.dbPort ) );
+            if ( this.dbUsername != null && this.dbPassword != null ) {
+                cluster.addContactPoints( contactPoints ).withAuthCredentials( this.dbUsername, this.dbPassword );
+            } else {
+                cluster.addContactPoints( contactPoints );
+            }
+            return cluster.build();
         }
 
 
@@ -555,16 +561,7 @@ public class CassandraPlugin extends Plugin {
             }
 
             try {
-                CqlSessionBuilder cluster = CqlSession.builder();
-                cluster.withLocalDatacenter( "datacenter1" );
-                List<InetSocketAddress> contactPoints = new ArrayList<>( 1 );
-                contactPoints.add( new InetSocketAddress( this.dbHostname, this.dbPort ) );
-                if ( this.dbUsername != null && this.dbPassword != null ) {
-                    cluster.addContactPoints( contactPoints ).withAuthCredentials( this.dbUsername, this.dbPassword );
-                } else {
-                    cluster.addContactPoints( contactPoints );
-                }
-                mySession = cluster.build();
+                mySession = getSession();
                 ResultSet resultSet = mySession.execute( "SELECT release_version FROM system.local" );
                 if ( resultSet.one() != null ) {
                     try {
