@@ -63,6 +63,9 @@ dependencies {
     implementation group: 'com.github.docker-java', name: 'docker-java', version: java_docker_version // Apache 2.0
     implementation group: 'com.github.docker-java', name: 'docker-java-transport-httpclient5', version: java_docker_version //TODO: should probably be independent version in future
 
+    // uses config internally...
+    implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version // Apache 2.0
+
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause

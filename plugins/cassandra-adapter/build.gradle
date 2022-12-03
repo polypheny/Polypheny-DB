@@ -18,7 +18,6 @@ dependencies {
 
     testImplementation group: "junit", name: "junit", version: junit_version
 
-    // Apache 2.0
 }
 
 
