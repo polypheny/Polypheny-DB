@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -96,6 +97,8 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( table.getSimple() ) );
         } catch (EntityAlreadyExistsException e) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableExists(  table.names.get( 1 ) ) );
+        } catch ( DdlOnSourceException e ) {
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         }
     }
 
