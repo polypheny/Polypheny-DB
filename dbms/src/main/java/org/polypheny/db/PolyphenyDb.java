@@ -146,7 +146,7 @@ public class PolyphenyDb {
             }
 
             if ( polyphenyDb.versionOptionEnabled ) {
-                log.info("v{}", polyphenyDb.getClass().getPackage().getImplementationVersion());
+                System.out.println("v" + polyphenyDb.getClass().getPackage().getImplementationVersion());
                 return;
             }
 
