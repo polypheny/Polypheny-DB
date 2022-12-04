@@ -75,5 +75,5 @@ javadoc {
 }
 
 licensee {
-    allowDependency('org.hsqldb', 'hsqldb', '2.6.1') { because 'BSD 3-Clause' }
+    allowDependency('org.hsqldb', 'hsqldb', '2.7.1') { because 'BSD 3-Clause' }
 }

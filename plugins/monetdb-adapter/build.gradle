@@ -73,5 +73,9 @@ javadoc {
     dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
+licensee {
+    allow('MPL-2.0')
+}
+
 
 

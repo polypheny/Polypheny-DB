@@ -63,5 +63,4 @@ java {
 }
 
 licensee {
-    allow('Apache-2.0')
 }

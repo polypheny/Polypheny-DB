@@ -79,10 +79,6 @@ javadoc {
 }
 
 licensee {
-    ignoreDependencies('org.hamcrest') {
-        transitive = true
-        because "removed on release branches"
-    }
 
     ignoreDependencies('com.joestelmach') {
         transitive = true
