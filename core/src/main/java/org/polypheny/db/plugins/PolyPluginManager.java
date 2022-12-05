@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
@@ -33,13 +35,14 @@ import org.pf4j.ManifestPluginDescriptorFinder;
 import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginLoader;
-import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
+
+    private static PluginState state = PluginState.DIRTY;
 
     @Getter
     private static PersistentMonitoringRepository PERSISTENT_MONITORING;
@@ -48,12 +51,14 @@ public class PolyPluginManager extends DefaultPluginManager {
     private static Supplier<Catalog> CATALOG_SUPPLIER;
 
     @Getter
-    public static List<String> PLUGINS = new ArrayList<>();
+    public static List<PluginWrapper> PLUGINS = new ArrayList<>();
 
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
     @Getter
     private static PluginClassLoader mainClassLoader;
+    // create the plugin manager
+    private static final PolyPluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins", "../../build/plugins" );
 
 
     public PolyPluginManager( String... paths ) {
@@ -62,8 +67,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     public static void init() {
-        // create the plugin manager
-        final PluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins", "../../build/plugins" );
 
         // load the plugins
         pluginManager.loadPlugins();
@@ -71,7 +74,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         // start (active/resolved) the plugins
         pluginManager.startPlugins();
 
-        PLUGINS.addAll( pluginManager.getStartedPlugins().stream().map( PluginWrapper::getPluginId ).collect( Collectors.toList() ) );
+        PLUGINS.addAll( pluginManager.getStartedPlugins() );
 
         // print extensions for each started plugin
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
@@ -80,6 +83,37 @@ public class PolyPluginManager extends DefaultPluginManager {
 
             log.info( String.format( "Plugin '%s' added", pluginId ) );
         }
+        // reset the state
+        state = PluginState.CLEAN;
+    }
+
+
+    public static PluginStatus loadAdditionalPlugin( String path ) {
+        AFTER_INIT.clear();
+        PluginStatus status = new PluginStatus( path );
+        String pluginId;
+        try {
+            pluginId = pluginManager.loadPlugin( status.path );
+        } catch ( Exception e ) {
+            return status.loaded( false );
+        }
+        PLUGINS.add( pluginManager.getStartedPlugins().stream().filter( p -> p.getPluginId().equals( pluginId ) ).findFirst().orElseThrow() );
+        AFTER_INIT.forEach( Runnable::run );
+
+        return status.loaded( true );
+    }
+
+
+    public static PluginStatus unloadAdditionalPlugin( String pluginId ) {
+        PluginStatus status = new PluginStatus( pluginManager.getStartedPlugins().stream().filter( p -> p.getPluginId().equals( pluginId ) ).findFirst().orElseThrow().getPluginId() );
+        try {
+            pluginManager.unloadPlugin( pluginId );
+        } catch ( Exception e ) {
+            return status.loaded( true );
+        }
+        PLUGINS.remove( pluginId );
+        state = PluginState.DIRTY;
+        return status.loaded( false );
     }
 
 
@@ -131,5 +165,21 @@ public class PolyPluginManager extends DefaultPluginManager {
                 .add( new ManifestPluginDescriptorFinder() );
     }
 
+
+    private static class PluginStatus {
+
+        @Accessors(fluent = true)
+        @Setter
+        boolean loaded = false;
+        final String stringPath;
+        final Path path;
+
+
+        public PluginStatus( String stringPath ) {
+            this.stringPath = stringPath;
+            this.path = Path.of( stringPath );
+        }
+
+    }
 
 }

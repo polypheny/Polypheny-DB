@@ -148,6 +148,7 @@ import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.graph.GraphObject;
@@ -3551,6 +3552,26 @@ public class Crud implements InformationObserver {
      */
     public void getUsedDockerPorts( final Context ctx ) {
         ctx.json( DockerManager.getInstance().getUsedPortsSorted() );
+    }
+
+
+    /**
+     * Loads the plugin in the supplied path.
+     */
+    public void loadPlugin( final Context ctx ) {
+        String path = ctx.bodyAsClass( String.class );
+
+        ctx.json( PolyPluginManager.loadAdditionalPlugin( path ) );
+    }
+
+
+    /**
+     * Unload the plugin with the supplied pluginId.
+     */
+    public void unloadPlugin( final Context ctx ) {
+        String pluginId = ctx.bodyAsClass( String.class );
+
+        ctx.json( PolyPluginManager.unloadAdditionalPlugin( pluginId ) );
     }
 
 

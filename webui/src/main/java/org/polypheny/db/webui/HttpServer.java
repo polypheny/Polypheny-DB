@@ -229,14 +229,6 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/batchUpdate", crud::batchUpdate );
 
-        // webuiServer.post( "/classifyData", crud::classifyData );
-
-        // webuiServer.post( "/getExploreTables", crud::getExploreTables );
-
-        // webuiServer.post( "/createInitialExploreQuery", crud::createInitialExploreQuery );
-
-        // webuiServer.post( "/exploration", crud::exploration );
-
         webuiServer.post( "/allStatistics", ( ctx ) -> crud.statisticCrud.getStatistics( ctx, gsonExpose ) );
 
         webuiServer.post( "/getTableStatistics", crud.statisticCrud::getTableStatistics );
@@ -321,10 +313,6 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getForeignKeyActions", crud::getForeignKeyActions );
 
-        // webuiServer.post( "/importDataset", crud::importDataset );
-
-        // webuiServer.post( "/exportTable", crud::exportTable );
-
         webuiServer.get( "/getStores", crud::getStores );
 
         webuiServer.get( "/getSources", crud::getSources );
@@ -361,7 +349,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
-        // webuiServer.get( "/getEnabledPlugins", crud::getEnabledPlugins );
+        webuiServer.post( "/loadPlugin", crud::loadPlugin );
+
+        webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
 
     }
 
