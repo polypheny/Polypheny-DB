@@ -299,6 +299,7 @@ class RuleQueue {
                 // Identical match has already been added.
                 continue;
             }
+            matchList.names.add( matchName );
 
             String ruleClassName = match.getRule().getClass().getSimpleName();
 
