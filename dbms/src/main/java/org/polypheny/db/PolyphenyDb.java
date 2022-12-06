@@ -66,7 +66,6 @@ import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
-import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -77,7 +76,6 @@ import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.HttpServer.HandlerType;
 import org.polypheny.db.webui.InformationServer;
 import org.polypheny.db.webui.UiTestingConfigPage;
 import org.polypheny.db.webui.UiTestingMonitoringPage;
@@ -412,11 +410,7 @@ public class PolyphenyDb {
             TrayGui.getInstance();
         }
 
-        // hand parameters to extensions
-        TransactionExtension.REGISTER.forEach( e -> e.initExtension( transactionManager, authenticator ) );
-        httpServer.addRoute( "/getEnabledPlugins", ( r, c ) -> PolyPluginManager.getPLUGINS(), Object.class, HandlerType.GET );
-
-        PolyPluginManager.startUp();
+        PolyPluginManager.startUp( transactionManager, authenticator );
 
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );

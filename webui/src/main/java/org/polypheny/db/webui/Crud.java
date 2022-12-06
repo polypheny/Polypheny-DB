@@ -149,6 +149,7 @@ import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoCol
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.schema.graph.GraphObject;
@@ -3599,6 +3600,16 @@ public class Crud implements InformationObserver {
                 fin.close();
             }
         }
+    }
+
+
+    public void getAvailablePlugins( Context ctx ) {
+        ctx.json( PolyPluginManager
+                .getPLUGINS()
+                .values()
+                .stream()
+                .map( PluginStatus::from )
+                .collect( Collectors.toList() ) );
     }
 
 

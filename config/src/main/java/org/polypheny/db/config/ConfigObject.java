@@ -30,4 +30,9 @@ public abstract class ConfigObject extends ConfigScalar {
         super( key );
     }
 
+
+    protected ConfigObject( String key, String description ) {
+        super( key, description );
+    }
+
 }

@@ -18,5 +18,6 @@ package org.polypheny.db.plugins;
 
 public enum PluginState {
     DIRTY,
-    CLEAN
+    CLEAN;
+
 }

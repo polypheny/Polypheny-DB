@@ -77,6 +77,8 @@ public class ConfigList extends Config {
             booleanList( key, (List<Boolean>) list );
         } else if ( clazz.equals( ConfigDocker.class ) ) {
             dockerList( key, (List<ConfigDocker>) list );
+        } else if ( clazz.equals( ConfigPlugin.class ) ) {
+            pluginList( key, (List<ConfigPlugin>) list );
         } else {
             throw new UnsupportedOperationException( "A ConfigList, which uses that that type is not supported." );
         }
@@ -157,6 +159,13 @@ public class ConfigList extends Config {
 
     private void dockerList( String key, final List<ConfigDocker> list ) {
         this.template = new ConfigDocker( "localhost", null, null );
+        this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
+        this.defaultList = ImmutableList.copyOf( this.list );
+    }
+
+
+    private void pluginList( String key, List<ConfigPlugin> list ) {
+        this.template = new ConfigPlugin( "", false, "", "This is empty" );
         this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
         this.defaultList = ImmutableList.copyOf( this.list );
     }

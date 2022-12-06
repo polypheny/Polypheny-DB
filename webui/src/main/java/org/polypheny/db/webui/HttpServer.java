@@ -56,6 +56,7 @@ import org.polypheny.db.information.InformationDuration.Duration;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
+import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.models.Result;
@@ -114,6 +115,7 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( InformationPage.class, InformationPage.getSerializer() )
                 .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
                 .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
+                .registerTypeAdapter( PluginStatus.class, PluginStatus.getSerializer() )
                 .create();
     }
 
@@ -352,6 +354,8 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/loadPlugin", crud::loadPlugin );
 
         webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
+
+        webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
 
     }
 

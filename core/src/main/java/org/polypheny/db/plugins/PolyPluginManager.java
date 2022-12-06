@@ -16,11 +16,22 @@
 
 package org.polypheny.db.plugins;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
+import org.pf4j.DefaultPluginDescriptor;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.ManifestPluginDescriptorFinder;
@@ -37,7 +49,12 @@ import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.config.ConfigPlugin;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
+import org.polypheny.db.processing.TransactionExtension;
+import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
@@ -51,7 +68,7 @@ public class PolyPluginManager extends DefaultPluginManager {
     private static Supplier<Catalog> CATALOG_SUPPLIER;
 
     @Getter
-    public static List<PluginWrapper> PLUGINS = new ArrayList<>();
+    public static ObservableMap<String, PluginWrapper> PLUGINS = new ObservableMap<>();
 
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
@@ -67,6 +84,16 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     public static void init() {
+        PLUGINS.addListener( ( e ) -> {
+            RuntimeConfig.ACTIVE_PLUGINS.getList( ConfigPlugin.class ).clear();
+            RuntimeConfig.ACTIVE_PLUGINS.setList(
+                    PLUGINS
+                            .values()
+                            .stream()
+                            .map( p -> (PolyPluginDescriptor) p.getDescriptor() )
+                            .map( d -> new ConfigPlugin( d.getPluginId(), true, d.imagePath, d.getPluginDescription() ) )
+                            .collect( Collectors.toList() ) );
+        } );
 
         // load the plugins
         pluginManager.loadPlugins();
@@ -74,7 +101,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         // start (active/resolved) the plugins
         pluginManager.startPlugins();
 
-        PLUGINS.addAll( pluginManager.getStartedPlugins() );
+        PLUGINS.putAll( pluginManager.getStartedPlugins().stream().collect( Collectors.toMap( PluginWrapper::getPluginId, p -> p ) ) );
 
         // print extensions for each started plugin
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
@@ -90,22 +117,24 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static PluginStatus loadAdditionalPlugin( String path ) {
         AFTER_INIT.clear();
-        PluginStatus status = new PluginStatus( path );
-        String pluginId;
+        PluginStatus status = new PluginStatus( path, null );
+        PluginWrapper plugin;
         try {
-            pluginId = pluginManager.loadPlugin( status.path );
+            plugin = pluginManager.getPlugin( pluginManager.loadPlugin( status.getPath() ) );
+            status.id( plugin.getPluginId() );
         } catch ( Exception e ) {
             return status.loaded( false );
         }
-        PLUGINS.add( pluginManager.getStartedPlugins().stream().filter( p -> p.getPluginId().equals( pluginId ) ).findFirst().orElseThrow() );
+        PLUGINS.put( plugin.getPluginId(), plugin );
         AFTER_INIT.forEach( Runnable::run );
 
-        return status.loaded( true );
+        return status.loaded( true ).imagePath( ((PolyPluginDescriptor) plugin.getDescriptor()).imagePath );
     }
 
 
     public static PluginStatus unloadAdditionalPlugin( String pluginId ) {
-        PluginStatus status = new PluginStatus( pluginManager.getStartedPlugins().stream().filter( p -> p.getPluginId().equals( pluginId ) ).findFirst().orElseThrow().getPluginId() );
+        PluginWrapper plugin = pluginManager.getStartedPlugins().stream().filter( p -> p.getPluginId().equals( pluginId ) ).findFirst().orElseThrow();
+        PluginStatus status = new PluginStatus( plugin.getPluginId(), ((PolyPluginDescriptor) plugin.getDescriptor()).getImagePath() );
         try {
             pluginManager.unloadPlugin( pluginId );
         } catch ( Exception e ) {
@@ -117,7 +146,10 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static void startUp() {
+    public static void startUp( TransactionManager transactionManager, Authenticator authenticator ) {
+        // hand parameters to extensions
+        TransactionExtension.REGISTER.forEach( e -> e.initExtension( transactionManager, authenticator ) );
+
         AFTER_INIT.forEach( Runnable::run );
     }
 
@@ -151,6 +183,8 @@ public class PolyPluginManager extends DefaultPluginManager {
                         }
                         return mainClassLoader;
                     }
+
+
                 } )
                 /*.add( new JarPluginLoader( this ) )*/;
     }
@@ -162,22 +196,154 @@ public class PolyPluginManager extends DefaultPluginManager {
                 // Demo is using the Manifest file
                 // PropertiesPluginDescriptorFinder is commented out just to avoid error log
                 //.add( new PropertiesPluginDescriptorFinder() );
-                .add( new ManifestPluginDescriptorFinder() );
+                .add( new ManifestPluginDescriptorFinder() {
+                    public static final String PLUGIN_ICON_PATH = "Plugin-Icon-Path";
+
+
+                    @Override
+                    protected PluginDescriptor createPluginDescriptor( Manifest manifest ) {
+                        return new PolyPluginDescriptor( super.createPluginDescriptor( manifest ), manifest.getMainAttributes().getValue( PLUGIN_ICON_PATH ) );
+                    }
+                } );
     }
 
 
-    private static class PluginStatus {
+    public static class PolyPluginDescriptor extends DefaultPluginDescriptor {
 
-        @Accessors(fluent = true)
+        @Getter
+        private final String imagePath;
+
+
+        public PolyPluginDescriptor( PluginDescriptor descriptor, String imagePath ) {
+            super( descriptor.getPluginId(), descriptor.getPluginDescription(), descriptor.getPluginClass(), descriptor.getVersion(), descriptor.getRequires(), descriptor.getProvider(), descriptor.getLicense() );
+            this.imagePath = imagePath;
+        }
+
+    }
+
+
+    @Accessors(fluent = true)
+    public static class PluginStatus {
+
+
         @Setter
         boolean loaded = false;
         final String stringPath;
-        final Path path;
+
+        @Setter
+        private String id;
+
+        @Setter
+        private String imagePath;
 
 
-        public PluginStatus( String stringPath ) {
+        public PluginStatus( String stringPath, String imagePath ) {
             this.stringPath = stringPath;
-            this.path = Path.of( stringPath );
+            this.imagePath = imagePath;
+        }
+
+
+        public Path getPath() {
+            return Path.of( stringPath );
+        }
+
+
+        public static PluginStatus from( PluginWrapper wrapper ) {
+            return new PluginStatus( wrapper.getPluginPath().toAbsolutePath().toString(), ((PolyPluginDescriptor) wrapper.getDescriptor()).getImagePath() )
+                    .id( wrapper.getPluginId() )
+                    .loaded( PLUGINS.containsKey( wrapper.getPluginId() ) );
+        }
+
+
+        public static TypeAdapter<PluginStatus> getSerializer() {
+            return new TypeAdapter<>() {
+                @Override
+                public void write( JsonWriter out, PluginStatus value ) throws IOException {
+                    out.beginObject();
+                    out.name( "id" );
+                    out.value( value.id );
+                    out.name( "stringPath" );
+                    out.value( value.stringPath );
+                    out.name( "loaded" );
+                    out.value( value.loaded );
+                    out.name( "imagePath" );
+                    out.value( value.imagePath );
+                    out.endObject();
+                }
+
+
+                @Override
+                public PluginStatus read( JsonReader in ) throws IOException {
+                    in.beginObject();
+                    String id = null;
+                    String stringPath = null;
+                    boolean loaded = false;
+                    String imagePath = null;
+
+                    while ( in.peek() != JsonToken.END_OBJECT ) {
+                        String name = in.nextName();
+                        switch ( name ) {
+                            case "id":
+                                id = in.nextString();
+                                break;
+                            case "stringPath":
+                                stringPath = in.nextString();
+                                break;
+                            case "loaded":
+                                loaded = in.nextBoolean();
+                                break;
+                            case "imagePath":
+                                imagePath = in.nextString();
+                                break;
+                            default:
+                                log.error( "Name is not known." );
+                                return null;
+                        }
+                    }
+                    in.endObject();
+
+                    return new PluginStatus( stringPath, imagePath ).id( id ).loaded( loaded );
+                }
+            };
+        }
+
+    }
+
+
+    public static class ObservableMap<K, V> extends HashMap<K, V> {
+
+        protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+
+        public void addListener( PropertyChangeListener listener ) {
+            this.listeners.addPropertyChangeListener( listener );
+        }
+
+
+        public void removeListener( PropertyChangeListener listener ) {
+            this.listeners.removePropertyChangeListener( listener );
+        }
+
+
+        @Override
+        public V put( K key, V value ) {
+            V val = super.put( key, value );
+            listeners.firePropertyChange( new PropertyChangeEvent( this, "put", null, key ) );
+            return val;
+        }
+
+
+        @Override
+        public void clear() {
+            super.clear();
+            listeners.firePropertyChange( new PropertyChangeEvent( this, "clear", null, null ) );
+        }
+
+
+        @Override
+        public void putAll( Map<? extends K, ? extends V> m ) {
+            super.putAll( m );
+            listeners.firePropertyChange( new PropertyChangeEvent( this, "putAll", null, m ) );
         }
 
     }
