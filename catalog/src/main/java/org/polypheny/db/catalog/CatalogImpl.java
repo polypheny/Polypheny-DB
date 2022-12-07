@@ -1919,6 +1919,13 @@ public class CatalogImpl extends Catalog {
                 columnNames.remove( new Object[]{sourceTable.databaseId, sourceTable.namespaceId, sourceTable.id, targetCatalogColumn.name } );
                 columnNames.put( new Object[]{sourceTable.databaseId, targetNamespaceId, sourceTable.id, targetCatalogColumn.name }, targetCatalogColumn );
             }
+
+            if( getSchema(sourceTable.namespaceId).namespaceType == NamespaceType.DOCUMENT ) {
+                CatalogCollection targetCollection = transferCatalogCollection( collections.get( sourceTable.id ), targetNamespaceId );
+                collections.replace( sourceTable.id, targetCollection );
+                collectionNames.remove( new Object[]{ sourceTable.databaseId, sourceTable.namespaceId, sourceTable.name } );
+                collectionNames.put( new Object[]{ targetTable.databaseId, targetNamespaceId, targetTable.name }, targetCollection );
+            }
         }
         listeners.firePropertyChange( "table", sourceTable, null );
 
@@ -5504,7 +5511,6 @@ public class CatalogImpl extends Catalog {
         }
     }
 
-    @NotNull
     private static CatalogColumn transferCatalogColumn(long targetNamespaceId, CatalogColumn sourceCatalogColumn) {
         CatalogColumn targetCatalogColumn = new CatalogColumn(
                 sourceCatalogColumn.id,
@@ -5525,8 +5531,6 @@ public class CatalogImpl extends Catalog {
         return targetCatalogColumn;
     }
 
-
-    @NotNull
     private CatalogTable transferCatalogTable(CatalogTable sourceTable, long targetNamespaceId) {
         return new CatalogTable(
                 sourceTable.id,
@@ -5541,6 +5545,17 @@ public class CatalogImpl extends Catalog {
                 sourceTable.modifiable,
                 sourceTable.partitionProperty,
                 sourceTable.connectedViews);
+    }
+
+    private CatalogCollection transferCatalogCollection(CatalogCollection sourceCollection, long targetNamespaceId) {
+        return new CatalogCollection(
+                sourceCollection.databaseId,
+                targetNamespaceId,
+                sourceCollection.id,
+                sourceCollection.name,
+                sourceCollection.placements,
+                sourceCollection.entityType,
+                sourceCollection.physicalName);
     }
 
 
