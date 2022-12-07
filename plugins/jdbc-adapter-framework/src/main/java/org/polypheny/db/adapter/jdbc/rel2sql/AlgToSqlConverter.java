@@ -415,12 +415,12 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         }
         if ( e.fetch != null ) {
             builder = x.builder( e, false, Clause.FETCH );
-            builder.setFetch( (SqlNode) builder.context.toSql( null, e.fetch ) );
+            builder.setFetch( builder.context.toSql( null, e.fetch ) );
             x = builder.result();
         }
         if ( e.offset != null ) {
             builder = x.builder( e, false, Clause.OFFSET );
-            builder.setOffset( (SqlNode) builder.context.toSql( null, e.offset ) );
+            builder.setOffset( builder.context.toSql( null, e.offset ) );
             x = builder.result();
         }
         return x;
