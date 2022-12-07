@@ -17,6 +17,7 @@
 package org.polypheny.db.config;
 
 import com.typesafe.config.Config;
+import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
@@ -29,13 +30,15 @@ public class ConfigPlugin extends ConfigObject {
     private final PluginStatus status;
     @Getter
     private final String imageUrl;
+    private final List<String> categories;
 
 
-    public ConfigPlugin( String pluginId, PluginStatus status, String imageUrl, String description ) {
+    public ConfigPlugin( String pluginId, PluginStatus status, String imageUrl, List<String> categories, String description ) {
         super( "pluginConfig" + pluginId, description );
         this.pluginId = pluginId;
         this.status = status;
         this.imageUrl = imageUrl;
+        this.categories = categories;
 
         this.webUiFormType = WebUiFormType.PLUGIN_INSTANCE;
     }
@@ -47,7 +50,13 @@ public class ConfigPlugin extends ConfigObject {
                 (String) value.get( "pluginId" ),
                 PluginStatus.valueOf( (String) value.get( "status" ) ),
                 (String) value.get( "imageUrl" ),
+                mapCategories( (String) value.get( "categories" ) ),
                 (String) value.get( "description" ) );
+    }
+
+
+    private static List<String> mapCategories( String categories ) {
+        return List.of( categories.trim().replace( "[", "" ).replace( "]", "" ).split( "," ) );
     }
 
 

@@ -165,7 +165,7 @@ public class ConfigList extends Config {
 
 
     private void pluginList( String key, List<ConfigPlugin> list ) {
-        this.template = new ConfigPlugin( "", PluginStatus.UNLOADED, "", "This is empty" );
+        this.template = new ConfigPlugin( "", PluginStatus.UNLOADED, "", List.of(), "This is empty" );
         this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
         this.defaultList = ImmutableList.copyOf( this.list );
     }

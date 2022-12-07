@@ -61,8 +61,6 @@ import org.polypheny.db.transaction.TransactionManager;
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
 
-    private static PluginState state = PluginState.DIRTY;
-
     @Getter
     private static PersistentMonitoringRepository PERSISTENT_MONITORING;
 
@@ -93,7 +91,7 @@ public class PolyPluginManager extends DefaultPluginManager {
                             .values()
                             .stream()
                             .map( p -> (PolyPluginDescriptor) p.getDescriptor() )
-                            .map( d -> new ConfigPlugin( d.getPluginId(), org.polypheny.db.config.PluginStatus.ACTIVE, d.imagePath, d.getPluginDescription() ) )
+                            .map( d -> new ConfigPlugin( d.getPluginId(), org.polypheny.db.config.PluginStatus.ACTIVE, d.imagePath, d.categories, d.getPluginDescription() ) )
                             .collect( Collectors.toList() ) );
         } );
 
@@ -147,8 +145,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
             log.info( String.format( "Plugin '%s' added", pluginId ) );
         }
-        // reset the state
-        state = PluginState.CLEAN;
     }
 
 
@@ -205,7 +201,6 @@ public class PolyPluginManager extends DefaultPluginManager {
             return status.loaded( true );
         }
         PLUGINS.remove( pluginId );
-        state = PluginState.DIRTY;
         return status.loaded( false );
     }
 
@@ -261,12 +256,10 @@ public class PolyPluginManager extends DefaultPluginManager {
                 // PropertiesPluginDescriptorFinder is commented out just to avoid error log
                 //.add( new PropertiesPluginDescriptorFinder() );
                 .add( new ManifestPluginDescriptorFinder() {
-                    public static final String PLUGIN_ICON_PATH = "Plugin-Icon-Path";
-
 
                     @Override
                     protected PluginDescriptor createPluginDescriptor( Manifest manifest ) {
-                        return new PolyPluginDescriptor( super.createPluginDescriptor( manifest ), manifest.getMainAttributes().getValue( PLUGIN_ICON_PATH ) );
+                        return new PolyPluginDescriptor( super.createPluginDescriptor( manifest ), manifest );
                     }
                 } );
     }
@@ -274,13 +267,32 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static class PolyPluginDescriptor extends DefaultPluginDescriptor {
 
+        public static final String PLUGIN_ICON_PATH = "Plugin-Icon-Path";
+
+        public static final String PLUGIN_CATEGORIES = "Plugin-Categories";
+
         @Getter
         private final String imagePath;
 
+        @Getter
+        private final List<String> categories;
 
-        public PolyPluginDescriptor( PluginDescriptor descriptor, String imagePath ) {
+
+        public PolyPluginDescriptor( PluginDescriptor descriptor, Manifest manifest ) {
             super( descriptor.getPluginId(), descriptor.getPluginDescription(), descriptor.getPluginClass(), descriptor.getVersion(), descriptor.getRequires(), descriptor.getProvider(), descriptor.getLicense() );
-            this.imagePath = imagePath;
+            this.imagePath = manifest.getMainAttributes().getValue( PLUGIN_ICON_PATH );
+            this.categories = getCategories( manifest );
+        }
+
+
+        private List<String> getCategories( Manifest manifest ) {
+            String categories = manifest.getMainAttributes().getValue( PLUGIN_CATEGORIES );
+
+            if ( categories == null || categories.trim().equals( "" ) ) {
+                return List.of();
+            }
+
+            return Arrays.stream( categories.split( "," ) ).map( String::trim ).collect( Collectors.toList() );
         }
 
     }

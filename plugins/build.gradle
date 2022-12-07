@@ -26,7 +26,8 @@ subprojects {
                     'Plugin-Version': "${archiveVersion}",
                     'Plugin-Provider': "${pluginProvider}",
                     'Plugin-Dependencies': "${pluginDependencies}",
-                    'Plugin-Url-Path': "${pluginUrlPath}"
+                    'Plugin-Url-Path': "${pluginUrlPath}",
+                    'Plugin-Categories': "${pluginCategories}"
         }
     }
 
