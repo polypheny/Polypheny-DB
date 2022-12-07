@@ -139,6 +139,10 @@ allprojects {
             exclude group: "org.slf4j"
         }
         annotationProcessor group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+
+        testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+            exclude group: "org.slf4j"
+        }
     }
 
 

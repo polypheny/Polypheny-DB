@@ -14,7 +14,7 @@ dependencies {
     implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
 
     // --- Test Compile ---
-    testImplementation project(path: ":dbms", configuration: "testClasses")
+    testCompileOnly project(path: ":dbms", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 

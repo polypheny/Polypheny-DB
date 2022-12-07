@@ -59,7 +59,7 @@ import org.polypheny.db.runtime.Resources.StringProp;
  * <code>"saffron.properties"</code> in the current directory, it is read too.
  *
  * <p>Every property used in saffron code must have a method in this interface.
- * The method must return a sub-class of
+ * The method must return a subclass of
  * {@link org.polypheny.db.runtime.Resources.Prop}. The javadoc
  * comment must describe the name of the property (for example,
  * "net.sf.saffron.connection.PoolSize") and the default value, if any. <em>

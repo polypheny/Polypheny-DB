@@ -44,6 +44,11 @@ public class WebUiPage {
     @Setter
     @Getter
     private String label;
+
+    @Setter
+    @Getter
+    private boolean fullWidth;
+
     private String description;
     @Getter
     private String icon;

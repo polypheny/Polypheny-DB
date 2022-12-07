@@ -9,8 +9,8 @@ dependencies {
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
 
     // --- Test Compile ---
-    testImplementation project(path: ":dbms", configuration: "testClasses")
-    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":dbms", configuration: "tests")
+    testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language")
 
     testImplementation group: "junit", name: "junit", version: junit_version

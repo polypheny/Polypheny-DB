@@ -165,7 +165,7 @@ public class ConfigList extends Config {
 
 
     private void pluginList( String key, List<ConfigPlugin> list ) {
-        this.template = new ConfigPlugin( "", false, "", "This is empty" );
+        this.template = new ConfigPlugin( "", PluginStatus.UNLOADED, "", "This is empty" );
         this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
         this.defaultList = ImmutableList.copyOf( this.list );
     }
@@ -273,6 +273,8 @@ public class ConfigList extends Config {
             setter = ( key, value ) -> new ConfigBoolean( key, (Boolean) value );
         } else if ( clazz.equals( ConfigDocker.class ) ) {
             setter = ( key, value ) -> ConfigDocker.fromMap( (Map<String, Object>) value );
+        } else if ( clazz.equals( ConfigPlugin.class ) ) {
+            setter = ( key, value ) -> ConfigPlugin.fromMap( (Map<String, Object>) value );
         } else {
             return false;
         }

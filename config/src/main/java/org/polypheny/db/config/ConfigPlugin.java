@@ -17,22 +17,37 @@
 package org.polypheny.db.config;
 
 import com.typesafe.config.Config;
+import java.util.Map;
+import lombok.Getter;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 public class ConfigPlugin extends ConfigObject {
 
+    @Getter
     private final String pluginId;
-    private final boolean loaded;
+    @Getter
+    private final PluginStatus status;
+    @Getter
     private final String imageUrl;
 
 
-    public ConfigPlugin( String pluginId, boolean loaded, String imageUrl, String description ) {
+    public ConfigPlugin( String pluginId, PluginStatus status, String imageUrl, String description ) {
         super( "pluginConfig" + pluginId, description );
         this.pluginId = pluginId;
-        this.loaded = loaded;
+        this.status = status;
         this.imageUrl = imageUrl;
 
         this.webUiFormType = WebUiFormType.PLUGIN_INSTANCE;
+    }
+
+
+    public static ConfigScalar fromMap( Map<String, Object> value ) {
+
+        return new ConfigPlugin(
+                (String) value.get( "pluginId" ),
+                PluginStatus.valueOf( (String) value.get( "status" ) ),
+                (String) value.get( "imageUrl" ),
+                (String) value.get( "description" ) );
     }
 
 

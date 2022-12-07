@@ -203,13 +203,18 @@ shadowJar {
 
 // due to gradle 7.6+
 configurations {
-    testClasses {
-        extendsFrom(testImplementation)
+    tests {
+        extendsFrom testRuntimeOnly
     }
 }
 // due to gradle 7.6+
-task testJar(type: Jar) {
+/*task testJar(type: Jar) {
     archiveClassifier.set('test')
+    from sourceSets.test.output
+}*/
+
+task testJar(type: Jar, dependsOn: testClasses) {
+    classifier 'tests'
     from sourceSets.test.output
 }
 
@@ -220,7 +225,8 @@ artifacts {
     //archives sourcesJar // jar file containing the java doc files
     //archives javadocJar // jar file containing the source files
     // due to gradle 7.6+
-    testClasses testJar
+    //testClasses testJar
+    tests testJar
 }
 
 

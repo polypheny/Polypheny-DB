@@ -457,9 +457,9 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "monitoringGroup" ),
 
-    ACTIVE_PLUGINS(
-            "runtime/activePlugins",
-            "All plugins, are activated.",
+    AVAILABLE_PLUGINS(
+            "runtime/availablePlugins",
+            "All plugins, which are available, be it active, only loaded or unloaded.",
             List.of(),
             ConfigType.PLUGIN_LIST,
             "pluginsGroup"
@@ -544,7 +544,7 @@ public enum RuntimeConfig {
         final WebUiPage pluginPage = new WebUiPage(
                 "pluginsPage",
                 "Plugins",
-                "Settings regarding plugins." );
+                "Settings regarding plugins." ).setFullWidth( true );
 
         final WebUiGroup pluginGroup = new WebUiGroup( "pluginsGroup", pluginPage.getId() );
         configManager.registerWebUiPage( pluginPage );

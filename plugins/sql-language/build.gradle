@@ -36,7 +36,7 @@ dependencies {
     implementation group: "com.konghq", name: "unirest-java", version: unirest_version  // MIT
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     // --- Test Compile ---
-    testImplementation project(path: ":dbms", configuration: "testClasses")
+    testImplementation project(path: ":dbms", configuration: "tests")
 
     testImplementation group: "com.jayway.jsonpath", name: "json-path", version: json_path_version  // Apache 2.0
 

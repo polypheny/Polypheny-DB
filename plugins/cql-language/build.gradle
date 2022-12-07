@@ -28,7 +28,9 @@ dependencies {
 
     // --- Test Compile ---
     // due to gradle 7.6+
-    testImplementation project(path: ':dbms', configuration: 'testClasses')
+    testImplementation project(path: ':dbms', configuration: 'tests')
+    testImplementation project(path: ':dbms')
+    testImplementation project(path: ':core')
 
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
 

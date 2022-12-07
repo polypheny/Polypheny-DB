@@ -49,6 +49,8 @@ import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigPlugin;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -85,14 +87,49 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static void init() {
         PLUGINS.addListener( ( e ) -> {
-            RuntimeConfig.ACTIVE_PLUGINS.getList( ConfigPlugin.class ).clear();
-            RuntimeConfig.ACTIVE_PLUGINS.setList(
+            RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
+            RuntimeConfig.AVAILABLE_PLUGINS.setList(
                     PLUGINS
                             .values()
                             .stream()
                             .map( p -> (PolyPluginDescriptor) p.getDescriptor() )
-                            .map( d -> new ConfigPlugin( d.getPluginId(), true, d.imagePath, d.getPluginDescription() ) )
+                            .map( d -> new ConfigPlugin( d.getPluginId(), org.polypheny.db.config.PluginStatus.ACTIVE, d.imagePath, d.getPluginDescription() ) )
                             .collect( Collectors.toList() ) );
+        } );
+
+        RuntimeConfig.AVAILABLE_PLUGINS.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                // check if still the same plugins are present
+                List<ConfigPlugin> configs = RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class );
+
+                List<String> added = new ArrayList<>( PLUGINS.keySet() );
+                configs.forEach( p -> added.remove( p.getPluginId() ) );
+
+                List<String> removed = configs.stream().map( ConfigPlugin::getPluginId ).collect( Collectors.toList() );
+                PLUGINS.keySet().forEach( removed::remove );
+
+                added.forEach( PolyPluginManager::loadAdditionalPlugin );
+
+                configs.forEach( p -> {
+                    if ( toState( p.getStatus() ) != PLUGINS.get( p.getPluginId() ).getPluginState() ) {
+                        if ( p.getStatus() == org.polypheny.db.config.PluginStatus.ACTIVE ) {
+                            // start
+                            startAvailablePlugin( p.getPluginId() );
+                        } else {
+                            // stop
+                            stopAvailablePlugin( p.getPluginId() );
+                        }
+                    }
+                } );
+
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+
+            }
         } );
 
         // load the plugins
@@ -112,6 +149,33 @@ public class PolyPluginManager extends DefaultPluginManager {
         }
         // reset the state
         state = PluginState.CLEAN;
+    }
+
+
+    private static void stopAvailablePlugin( String pluginId ) {
+        pluginManager.stopPlugin( pluginId );
+        PLUGINS.get( pluginId ).setPluginState( org.pf4j.PluginState.STOPPED );
+    }
+
+
+    private static void startAvailablePlugin( String pluginId ) {
+        pluginManager.startPlugin( pluginId );
+        PLUGINS.get( pluginId ).setPluginState( org.pf4j.PluginState.STARTED );
+    }
+
+
+    private static org.pf4j.PluginState toState( org.polypheny.db.config.PluginStatus status ) {
+        switch ( status ) {
+
+            case UNLOADED:
+                return org.pf4j.PluginState.CREATED;
+            case LOADED:
+                return org.pf4j.PluginState.DISABLED;
+            case ACTIVE:
+                return org.pf4j.PluginState.STARTED;
+            default:
+                throw new RuntimeException( "Could not find the corresponding plugin state." );
+        }
     }
 
 
