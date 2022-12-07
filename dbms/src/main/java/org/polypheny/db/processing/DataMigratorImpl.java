@@ -208,12 +208,14 @@ public class DataMigratorImpl implements DataMigrator {
                     }
                     boolean firstColumn = true;
                     for ( Map.Entry<String, Object> entry : row.entrySet() ) {
-                        if ( firstColumn == true ) {
-                            firstColumn = false;
-                        } else {
-                            bf.append( "," );
+                        if (entry.getValue() != null ) {
+                            if ( firstColumn == true ) {
+                                firstColumn = false;
+                            } else {
+                                bf.append( "," );
+                            }
+                            bf.append( "\"" + entry.getKey() + "\" : \"" + entry.getValue() + "\"" );
                         }
-                        bf.append( "\"" + entry.getKey() + "\" : \"" + entry.getValue() + "\"" );
                     }
                     bf.append( "}" );
                 }
