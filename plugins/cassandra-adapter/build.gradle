@@ -14,9 +14,9 @@ dependencies {
 
 
     // --- Test Compile ---
-    testCompileOnly project(path: ':dbms', configuration: 'tests')
-    testCompileOnly project(path: ':core', configuration: 'tests')
-    testCompileOnly project(path: ':core')
+    testImplementation project(path: ':dbms', configuration: 'tests')
+    testImplementation project(path: ':core', configuration: 'tests')
+    testImplementation project(path: ':core')
 
     testImplementation group: "junit", name: "junit", version: junit_version
 

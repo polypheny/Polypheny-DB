@@ -15,6 +15,7 @@ dependencies {
 
     // --- Test Compile ---
     testCompileOnly project(path: ":dbms", configuration: "tests")
+    testImplementation project(path: ":core")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 
