@@ -78,6 +78,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.PlannerImpl;
 import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -109,7 +110,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link Planner}.
  */
-public class PlannerTest {
+public class PlannerTest extends SqlLanguageDependent {
 
     static {
         Catalog.testMode = true;
@@ -291,7 +292,7 @@ public class PlannerTest {
                         0,
                         null ) )
                 .build();
-        return Frameworks.getPlanner( config );
+        return new PlannerImpl( config );
     }
 
 

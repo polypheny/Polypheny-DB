@@ -37,6 +37,7 @@ dependencies {
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "tests")
+    testImplementation project(path: ":dbms")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
 
