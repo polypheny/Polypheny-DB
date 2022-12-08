@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.cottontail.algebra;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.AtomicPredicate;
-import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.BooleanPredicate;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.CompoundPredicate;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.CompoundPredicate.Op;
 
@@ -29,7 +28,7 @@ public class CottontailFilterTest {
 
     @Test
     public void simpleCnfTest() {
-        BooleanPredicate testPredicate = new CompoundPredicate( Op.ROOT,
+        CompoundPredicate testPredicate = new CompoundPredicate( Op.ROOT,
                 new CompoundPredicate( Op.NOT,
                         new CompoundPredicate(
                                 Op.OR,
@@ -40,7 +39,7 @@ public class CottontailFilterTest {
         while ( testPredicate.simplify() )
             ;
 
-        CompoundPredicate result = (CompoundPredicate) ((CompoundPredicate) testPredicate).left;
+        CompoundPredicate result = (CompoundPredicate) testPredicate.left;
 
         Assert.assertEquals( "Highest up predicate should be AND.", Op.AND, result.op );
         Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.left).op );

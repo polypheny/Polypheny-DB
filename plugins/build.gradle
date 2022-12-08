@@ -48,7 +48,7 @@ subprojects {
     }
 }
 
-task assemblePlugins(type: Copy) {
+tasks.register('assemblePlugins') {
     dependsOn subprojects.assemblePlugin
 }
 

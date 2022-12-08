@@ -50,6 +50,7 @@ compileJava {
 
 delombok {
     dependsOn(":core:processResources")
+    dependsOn(":monitoring:processResources")
 }
 
 
