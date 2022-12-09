@@ -58,22 +58,6 @@ import org.polypheny.db.util.NumberUtil;
 public class AlgMdUtil {
 
     public static final Operator ARTIFICIAL_SELECTIVITY_FUNC = new ArtificialSelectivityOperator();
-            /*LanguageManager.getInstance().createFunction(
-                    QueryLanguage.from( "sql" ),
-                    "ARTIFICIAL_SELECTIVITY",
-                    Kind.OTHER_FUNCTION,
-                    ReturnTypes.BOOLEAN, // returns boolean since we'll AND it
-                    null,
-                    OperandTypes.NUMERIC, // takes a numeric param
-                    FunctionCategory.SYSTEM );
-
-                    return new SqlFunction(
-                    name,
-                    kind,
-                    returnTypeInference, // returns boolean since we'll AND it
-                    o,
-                    typeChecker, // takes a numeric param
-                    system );*/
 
 
     private AlgMdUtil() {

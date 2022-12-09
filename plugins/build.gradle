@@ -17,6 +17,9 @@ subprojects {
     apply plugin: "app.cash.licensee"
     apply plugin: "com.jaredsburrows.license"
 
+    dependencies {
+        testImplementation project(path: ":core", configuration: "tests")
+    }
 
     // jar
     jar {

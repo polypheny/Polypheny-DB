@@ -36,7 +36,6 @@ package org.polypheny.db.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.AccessControlException;
 import java.util.Enumeration;
 import java.util.Properties;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
@@ -154,13 +153,11 @@ public interface SaffronProperties {
                 }
             } catch ( IOException e ) {
                 throw new RuntimeException( "while reading from saffron.properties file", e );
-            } catch ( AccessControlException e ) {
-                // we're in a sandbox
             }
 
             // copy in all system properties which start with "saffron."
             Properties source = System.getProperties();
-            for ( Enumeration keys = source.keys(); keys.hasMoreElements(); ) {
+            for ( Enumeration<?> keys = source.keys(); keys.hasMoreElements(); ) {
                 String key = (String) keys.nextElement();
                 String value = source.getProperty( key );
                 if ( key.startsWith( "saffron." ) || key.startsWith( "net.sf.saffron." ) ) {

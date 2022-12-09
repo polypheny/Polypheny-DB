@@ -479,16 +479,6 @@ public interface AlgDataTypeFactory {
 
 
         /**
-         * Adds a field with an interval type.
-         */
-        /*public Builder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
-            final IntervalQualifier q = LanguageManager.getInstance().createIntervalQualifier( QueryLanguage.from( "sql" ), startUnit, startPrecision, endUnit, fractionalSecondPrecision, ParserPos.ZERO );
-            add( name, physicalName, typeFactory.createSqlIntervalType( q ) );
-            return this;
-        }*/
-
-
-        /**
          * Changes the nullability of the last field added.
          *
          * @throws java.lang.IndexOutOfBoundsException if no fields have been added

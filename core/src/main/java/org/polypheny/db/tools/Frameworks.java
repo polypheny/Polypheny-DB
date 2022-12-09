@@ -228,8 +228,6 @@ public class Frameworks {
          * Creates a ConfigBuilder, initializing to defaults.
          */
         public ConfigBuilder() {
-            // convertletTable = LanguageManager.getInstance().getStandardConvertlet();
-            // operatorTable = LanguageManager.getInstance().getStdOperatorTable();
             programs = ImmutableList.of();
             parserConfig = ParserConfig.DEFAULT;
             sqlToRelConverterConfig = NodeToAlgConverter.Config.DEFAULT;

@@ -261,18 +261,15 @@ public abstract class Match extends SingleAlg {
             AggFunction aggFunction = null;
             switch ( call.getKind() ) {
                 case SUM:
-                    // aggFunction = LanguageManager.getInstance().createSumAggFunction( QueryLanguage.from( "sql" ), call.getType() );
                     aggFunction = OperatorRegistry.getAgg( OperatorName.SUM );
                     break;
                 case SUM0:
-                    // aggFunction = LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.from( "sql" ) );
                     aggFunction = OperatorRegistry.getAgg( OperatorName.SUM0 );
                     break;
                 case MAX:
                     aggFunction = OperatorRegistry.getAgg( OperatorName.MAX );
                     break;
                 case MIN:
-                    // aggFunction = LanguageManager.getInstance().createMinMaxAggFunction( QueryLanguage.from( "sql" ), call.getKind() );
                     aggFunction = OperatorRegistry.getAgg( OperatorName.MIN );
                     break;
                 case COUNT:
@@ -285,7 +282,6 @@ public abstract class Match extends SingleAlg {
                     aggFunction = OperatorRegistry.getAgg( OperatorName.BIT_AND );
                     break;
                 case BIT_OR:
-                    // aggFunction = LanguageManager.getInstance().createBitOpAggFunction( QueryLanguage.from( "sql" ), call.getKind() );
                     aggFunction = OperatorRegistry.getAgg( OperatorName.BIT_OR );
                     break;
                 default:
