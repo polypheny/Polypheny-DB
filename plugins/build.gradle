@@ -27,7 +27,8 @@ subprojects {
                     'Plugin-Provider': "${pluginProvider}",
                     'Plugin-Dependencies': "${pluginDependencies}",
                     'Plugin-Url-Path': "${pluginUrlPath}",
-                    'Plugin-Categories': "${pluginCategories}"
+                    'Plugin-Categories': "${pluginCategories}",
+                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}"
         }
     }
 

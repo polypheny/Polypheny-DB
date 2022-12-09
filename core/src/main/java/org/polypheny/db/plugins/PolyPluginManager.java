@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -155,8 +157,26 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     private static void startAvailablePlugin( String pluginId ) {
+        boolean isCompatible = isCompatible( ((PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor()).versionDependencies );
+
+        if ( !isCompatible ) {
+            log.debug( "Cannot load plugin {} with version {}.", pluginId, ((PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor()).versionDependencies );
+            return;
+        }
+
         pluginManager.startPlugin( pluginId );
         PLUGINS.get( pluginId ).setPluginState( org.pf4j.PluginState.STARTED );
+    }
+
+
+    private static boolean isCompatible( VersionDependency versionDependencies ) {
+        // todo check if main version fits
+        if ( versionDependencies.type == DependencyType.NONE ) {
+            return true;
+        }
+
+        throw new RuntimeException( "Polypheny dependencies for plugins are not yet supported." );
+
     }
 
 
@@ -271,17 +291,45 @@ public class PolyPluginManager extends DefaultPluginManager {
 
         public static final String PLUGIN_CATEGORIES = "Plugin-Categories";
 
+        public static final String PLUGIN_POLYPHENY_DEPENDENCIES = "Plugin-Polypheny-Dependencies";
+
         @Getter
         private final String imagePath;
 
         @Getter
         private final List<String> categories;
+        @Getter
+        private final VersionDependency versionDependencies;
 
 
         public PolyPluginDescriptor( PluginDescriptor descriptor, Manifest manifest ) {
             super( descriptor.getPluginId(), descriptor.getPluginDescription(), descriptor.getPluginClass(), descriptor.getVersion(), descriptor.getRequires(), descriptor.getProvider(), descriptor.getLicense() );
             this.imagePath = manifest.getMainAttributes().getValue( PLUGIN_ICON_PATH );
             this.categories = getCategories( manifest );
+            this.versionDependencies = getVersionDependencies( manifest );
+        }
+
+
+        private VersionDependency getVersionDependencies( Manifest manifest ) {
+            String dep = manifest.getMainAttributes().getValue( PLUGIN_POLYPHENY_DEPENDENCIES );
+
+            if ( dep == null || dep.trim().equals( "" ) ) {
+                return new VersionDependency( DependencyType.NONE, null );
+            }
+
+            String[] splits = dep.split( "-" );
+
+            if ( splits.length == 2 ) {
+                return new VersionDependency( DependencyType.RANGE, Stream.of( splits ).map( String::trim ).collect( Collectors.toList() ) );
+            }
+            splits = dep.split( "," );
+
+            if ( splits.length > 1 ) {
+                return new VersionDependency( DependencyType.LIST, Stream.of( splits ).map( String::trim ).collect( Collectors.toList() ) );
+            }
+
+            return new VersionDependency( DependencyType.SINGLE, List.of( dep.trim() ) );
+
         }
 
 
@@ -421,6 +469,24 @@ public class PolyPluginManager extends DefaultPluginManager {
             super.putAll( m );
             listeners.firePropertyChange( new PropertyChangeEvent( this, "putAll", null, m ) );
         }
+
+    }
+
+
+    public enum DependencyType {
+        SINGLE,
+        RANGE,
+        LIST,
+        NONE;
+    }
+
+
+    @AllArgsConstructor
+    public static class VersionDependency {
+
+        public DependencyType type;
+
+        final List<String> versions;
 
     }
 

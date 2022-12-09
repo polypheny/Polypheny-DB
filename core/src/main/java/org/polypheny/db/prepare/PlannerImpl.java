@@ -181,17 +181,6 @@ public class PlannerImpl implements Planner {
     @Override
     public Node validate( Node sqlNode ) throws ValidationException {
         ensure( State.STATE_3_PARSED );
-        /*final Conformance conformance = conformance();
-        final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
-        this.validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.from( "sql" ), operatorTable, catalogReader, typeFactory, conformance );
-        this.validator.setIdentifierExpansion( true );
-        try {
-            validatedSqlNode = validator.validate( sqlNode );
-        } catch ( RuntimeException e ) {
-            throw new ValidationException( e );
-        }
-        state = State.STATE_4_VALIDATED;
-        return validatedSqlNode;*/
         throw new UnsupportedOperationException( "This operation is not longer supported and it shouldn't." );
     }
 
@@ -208,34 +197,11 @@ public class PlannerImpl implements Planner {
     }
 
 
-    /*@Override
-    public Pair<Node, AlgDataType> validateAndGetType( Node sqlNode ) throws ValidationException {
-        final Node validatedNode = this.validate( sqlNode );
-        final AlgDataType type = this.validator.getValidatedNodeType( validatedNode );
-        return Pair.of( validatedNode, type );
-    }*/
-
 
     @Override
     public AlgRoot alg( Node sql ) throws AlgConversionException {
         ensure( State.STATE_4_VALIDATED );
-        /*assert validatedSqlNode != null;
-        final RexBuilder rexBuilder = createRexBuilder();
-        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
-        final NodeToAlgConverter.Config config =
-                new NodeToAlgConverter.ConfigBuilder()
-                        .config( sqlToRelConverterConfig )
-                        .trimUnusedFields( false )
-                        .convertTableAccess( false )
-                        .build();
-        final NodeToAlgConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.from( "sql" ), validator, createCatalogReader(), cluster, convertletTable, config );
-        root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
-        root = root.withAlg( sqlToRelConverter.flattenTypes( root.alg, true ) );
-        final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
-        root = root.withAlg( AlgDecorrelator.decorrelateQuery( root.alg, algBuilder ) );
-        state = State.STATE_5_CONVERTED;*/
         throw new UnsupportedOperationException( "This operation is not longer possible, and shouldn't." );
-        //return root;
     }
 
 

@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -67,6 +68,12 @@ import org.polypheny.db.util.Util;
  * Implementation of {@link Planner}.
  */
 public class PlannerImplMock implements Planner {
+
+    static {
+        Catalog.testMode = true;
+    }
+
+
     private final ImmutableList<Program> programs;
     private final FrameworkConfig config;
 
