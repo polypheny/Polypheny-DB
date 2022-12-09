@@ -80,8 +80,7 @@ public class FileRules {
 
         private static boolean supports( Modify node ) {
             if ( node.getSourceExpressionList() != null ) {
-                return /*node.getSourceExpressionList().stream().noneMatch( DocumentRules::containsDocumentUpdate )
-                        &&*/ node.getSourceExpressionList().stream().noneMatch( UnsupportedRexCallVisitor::containsUnsupportedCall );
+                return node.getSourceExpressionList().stream().noneMatch( UnsupportedRexCallVisitor::containsUnsupportedCall );
             }
             return true;
         }

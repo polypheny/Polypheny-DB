@@ -574,6 +574,7 @@ public class CassandraPlugin extends Plugin {
 
             } catch ( Exception e ) {
                 // ignore
+                log.debug( e.getMessage() );
             }
             if ( mySession != null ) {
                 try {

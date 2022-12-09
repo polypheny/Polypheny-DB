@@ -40,7 +40,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.Result;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
-@Category({ AdapterTestSuite.class })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class }) // cassandra can only compare primary key equality, but for streamer each key has to be compared
 public class DdlTest extends MqlTestTemplate {
 
     final static String collectionName = "doc";
@@ -148,7 +148,6 @@ public class DdlTest extends MqlTestTemplate {
 
 
     @Test
-    @Category(CassandraExcluded.class)
     public void deletePlacementDataTest() throws SQLException {
 
         String placement = "store1";
