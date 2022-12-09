@@ -28,12 +28,13 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
 
 
 public class FileFilter extends Filter implements FileAlg {
 
     protected FileFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
-        super( cluster, traits, child, condition );
+        super( cluster, traits.replace( ModelTrait.RELATIONAL ), child, condition );
     }
 
 

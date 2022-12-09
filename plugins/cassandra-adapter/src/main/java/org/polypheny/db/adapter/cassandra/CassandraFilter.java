@@ -44,6 +44,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
@@ -66,7 +67,7 @@ public class CassandraFilter extends Filter implements CassandraAlg {
             List<String> partitionKeys,
             List<String> clusteringKeys,
             List<AlgFieldCollation> implicitFieldCollations ) {
-        super( cluster, traitSet, child, condition );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), child, condition );
 
         this.singlePartition = false;
 //        List<String> clusteringKeys1 = new ArrayList<>( clusteringKeys );

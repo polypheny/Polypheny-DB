@@ -28,6 +28,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.ModelTrait;
 
 
 /**
@@ -49,7 +50,7 @@ public class CassandraScan extends Scan implements CassandraAlg {
      * @param projectRowType Fields and types to project; null to project raw row
      */
     protected CassandraScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, CassandraTable cassandraTable, AlgDataType projectRowType ) {
-        super( cluster, traitSet, table );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table );
         this.cassandraTable = cassandraTable;
         this.projectRowType = projectRowType;
 

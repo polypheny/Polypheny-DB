@@ -31,7 +31,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -78,7 +77,7 @@ public class FileTableModify extends Modify implements FileAlg {
     public void implement( final FileImplementor implementor ) {
         setOperation( implementor );//do it first, so children know that we have an insert/update/delete
         implementor.visitChild( 0, getInput() );
-        FileTranslatableTable fileTable = (FileTranslatableTable) ((AlgOptTableImpl) getTable()).getTable();
+        FileTranslatableTable fileTable = (FileTranslatableTable) getTable().getTable();
         implementor.setFileTable( fileTable );
         if ( getOperation() == Operation.UPDATE ) {
             if ( getSourceExpressionList() != null ) {

@@ -129,7 +129,6 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Category(FileExcluded.class)
     public void deleteTest() {
         deleteMany( "{}" );
     }
