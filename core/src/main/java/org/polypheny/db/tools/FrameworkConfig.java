@@ -18,6 +18,7 @@ package org.polypheny.db.tools;
 
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -68,6 +69,8 @@ public interface FrameworkConfig {
      * The order of programs provided here determines the zero-based indices of programs elsewhere in this class.
      */
     ImmutableList<Program> getPrograms();
+
+    OperatorTable getOperatorTable();
 
     /**
      * Returns the cost factory that should be used when creating the planner.

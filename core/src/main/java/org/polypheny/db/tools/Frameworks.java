@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -369,19 +370,28 @@ public class Frameworks {
     /**
      * An implementation of {@link FrameworkConfig} that uses standard Polypheny-DB classes to provide basic planner functionality.
      */
+    @Getter
     public static class StdFrameworkConfig implements FrameworkConfig {
 
         private final Context context;
         //private final RexConvertletTable convertletTable;
         private final OperatorTable operatorTable;
         private final ImmutableList<Program> programs;
+
         private final ImmutableList<AlgTraitDef> traitDefs;
+
         private final ParserConfig parserConfig;
+
         private final NodeToAlgConverter.Config sqlToRelConverterConfig;
+
         private final SchemaPlus defaultSchema;
+
         private final AlgOptCostFactory costFactory;
+
         private final AlgDataTypeSystem typeSystem;
+
         private final RexExecutor executor;
+
         private final org.polypheny.db.prepare.Context prepareContext;
 
 
@@ -412,65 +422,6 @@ public class Frameworks {
             this.prepareContext = prepareContext;
         }
 
-
-        @Override
-        public ParserConfig getParserConfig() {
-            return parserConfig;
-        }
-
-
-        @Override
-        public NodeToAlgConverter.Config getSqlToRelConverterConfig() {
-            return sqlToRelConverterConfig;
-        }
-
-
-        @Override
-        public SchemaPlus getDefaultSchema() {
-            return defaultSchema;
-        }
-
-
-        @Override
-        public RexExecutor getExecutor() {
-            return executor;
-        }
-
-
-        @Override
-        public ImmutableList<Program> getPrograms() {
-            return programs;
-        }
-
-
-        @Override
-        public AlgOptCostFactory getCostFactory() {
-            return costFactory;
-        }
-
-
-        @Override
-        public ImmutableList<AlgTraitDef> getTraitDefs() {
-            return traitDefs;
-        }
-
-
-        @Override
-        public Context getContext() {
-            return context;
-        }
-
-
-        @Override
-        public AlgDataTypeSystem getTypeSystem() {
-            return typeSystem;
-        }
-
-
-        @Override
-        public org.polypheny.db.prepare.Context getPrepareContext() {
-            return prepareContext;
-        }
 
     }
 

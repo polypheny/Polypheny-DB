@@ -48,7 +48,7 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
-        sb.append( intervalQualifier.typeName() );
+        // sb.append( intervalQualifier.typeName() );
         sb.append( "INTERVAL " );
         final String start = intervalQualifier.timeUnitRange.startUnit.name();
         final int fractionalSecondPrecision = intervalQualifier.getFractionalSecondPrecision( typeSystem );
@@ -69,6 +69,7 @@ public class IntervalPolyType extends AbstractPolyType {
             }
         } else {
             if ( !intervalQualifier.useDefaultStartPrecision() ) {
+                sb.append( start );
                 sb.append( "(" );
                 sb.append( startPrecision );
                 sb.append( ")" );
@@ -77,7 +78,7 @@ public class IntervalPolyType extends AbstractPolyType {
             }
 
             if ( null != intervalQualifier.timeUnitRange.endUnit ) {
-                sb.append( "TO" );
+                sb.append( " TO " );
                 final String end = intervalQualifier.timeUnitRange.endUnit.name();
                 if ( (TimeUnit.SECOND == intervalQualifier.timeUnitRange.endUnit) && (!intervalQualifier.useDefaultFractionalSecondPrecision()) ) {
                     sb.append( "(" );

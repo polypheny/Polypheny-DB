@@ -19,8 +19,6 @@ package org.polypheny.db.transaction;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Arrays;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.codec.binary.Hex;
@@ -295,27 +293,22 @@ public class PolyXid implements javax.transaction.xa.Xid, Serializable {
             final Field branchQualifier_Field = PolyXid.class.getDeclaredField( "branchQualifier" );
 
             synchronized ( CLONE_LOCK ) {
-                AccessController.doPrivileged( (PrivilegedAction<Void>) () -> {
-                    globalTransactionId_Field.setAccessible( true );
-                    branchQualifier_Field.setAccessible( true );
-                    return null;
-                } );
+
+                globalTransactionId_Field.setAccessible( true );
+                branchQualifier_Field.setAccessible( true );
 
                 globalTransactionId_Field.set( clone, this.globalTransactionId.clone() );
                 branchQualifier_Field.set( clone, this.branchQualifier.clone() );
 
-                AccessController.doPrivileged( (PrivilegedAction<Void>) () -> {
-                    globalTransactionId_Field.setAccessible( false );
-                    branchQualifier_Field.setAccessible( false );
-                    return null;
-                } );
+                globalTransactionId_Field.setAccessible( false );
+                branchQualifier_Field.setAccessible( false );
             }
 
             return clone;
         } catch ( CloneNotSupportedException | NoSuchFieldException e ) {
             throw new RuntimeException( "This should not happen.", e );
         } catch ( IllegalAccessException e ) {
-            throw new RuntimeException( "Cannot clone the PolyXid. It seems that a SecurityManager is installed.", e );
+            throw new RuntimeException( "Cannot clone the PolyXid.", e );
         }
     }
 
@@ -323,4 +316,5 @@ public class PolyXid implements javax.transaction.xa.Xid, Serializable {
     public boolean belongsTo( final PolyXid transactionId ) {
         return this.formatId == transactionId.formatId && Arrays.equals( this.globalTransactionId, transactionId.globalTransactionId );
     }
+
 }

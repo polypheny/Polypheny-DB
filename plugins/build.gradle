@@ -54,3 +54,5 @@ tasks.register('assemblePlugins') {
 }
 
 build.dependsOn project.tasks.assemblePlugins
+
+assemble.dependsOn project.tasks.assemblePlugins

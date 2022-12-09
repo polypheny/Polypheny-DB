@@ -336,8 +336,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
             SqlWriter writer,
             int leftPrec,
             int rightPrec ) {
-        writer.getDialect()
-                .unparseSqlIntervalQualifier( writer, this, AlgDataTypeSystem.DEFAULT );
+        writer.getDialect().unparseSqlIntervalQualifier( writer, this, AlgDataTypeSystem.DEFAULT );
     }
 
 

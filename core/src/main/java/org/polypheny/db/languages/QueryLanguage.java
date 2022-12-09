@@ -68,6 +68,13 @@ public class QueryLanguage {
     }
 
 
+    public static boolean containsLanguage( String name ) {
+        String normalized = name.toLowerCase( Locale.ROOT );
+
+        return LanguageManager.getLanguages().stream().anyMatch( l -> Objects.equals( l.serializedName, normalized ) );
+    }
+
+
     public static TypeAdapter<QueryLanguage> getSerializer() {
 
         return new TypeAdapter<>() {

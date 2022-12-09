@@ -294,56 +294,15 @@ public class RexImpTable {
         defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_ARRAY ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
         defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_SCALAR ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
 
-        defineBinary( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_SLICE ), BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXCLUDE ), BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
-
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
-        map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
-        map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UNWIND ), new UnwindImplementor() );
+        // Mongo functions
+        if ( QueryLanguage.containsLanguage( "mongo" ) ) {
+            defineMongoMethods();
+        }
 
         // Cypher functions
-        CypherImplementor implementor = new CypherImplementor();
-        map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ALL_MATCH ), implementor );
-        map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ANY_MATCH ), implementor );
-        map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SINGLE_MATCH ), implementor );
-        map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NONE_MATCH ), implementor );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.GRAPH_PATH_MATCH.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.GRAPH_NODE_EXTRACT.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_FROM_PATH ), BuiltInMethod.GRAPH_EXTRACT_FROM_PATH.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.GRAPH_NODE_MATCH.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SET_PROPERTY ), BuiltInMethod.CYPHER_SET_PROPERTY.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SET_PROPERTIES ), BuiltInMethod.CYPHER_SET_PROPERTIES.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SET_LABELS ), BuiltInMethod.CYPHER_SET_LABELS.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_REMOVE_LABELS ), BuiltInMethod.CYPHER_REMOVE_LABELS.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
+        if ( QueryLanguage.containsLanguage( "cypher" ) ) {
+            defineCypherMethods();
+        }
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
@@ -391,6 +350,62 @@ public class RexImpTable {
         winAggMap.put( OperatorRegistry.getAgg( OperatorName.NTILE ), constructorSupplier( NtileImplementor.class ) );
         winAggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountWinImplementor.class ) );
         winAggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountWinImplementor.class ) );
+    }
+
+
+    private void defineCypherMethods() {
+        CypherImplementor implementor = new CypherImplementor();
+        map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ALL_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ANY_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SINGLE_MATCH ), implementor );
+        map.put( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NONE_MATCH ), implementor );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.GRAPH_PATH_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.GRAPH_NODE_EXTRACT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_FROM_PATH ), BuiltInMethod.GRAPH_EXTRACT_FROM_PATH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.GRAPH_NODE_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SET_PROPERTY ), BuiltInMethod.CYPHER_SET_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SET_PROPERTIES ), BuiltInMethod.CYPHER_SET_PROPERTIES.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SET_LABELS ), BuiltInMethod.CYPHER_SET_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_REMOVE_LABELS ), BuiltInMethod.CYPHER_REMOVE_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
+    }
+
+
+    private void defineMongoMethods() {
+        defineBinary( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_SLICE ), BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXCLUDE ), BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
+
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
+        map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
+        map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UNWIND ), new UnwindImplementor() );
     }
 
 

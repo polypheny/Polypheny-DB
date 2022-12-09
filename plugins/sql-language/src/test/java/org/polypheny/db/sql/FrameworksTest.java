@@ -89,6 +89,7 @@ import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -104,7 +105,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for methods in {@link Frameworks}.
  */
-public class FrameworksTest {
+public class FrameworksTest extends SqlLanguageDependent {
 
     @Test
     public void testOptimize() {
@@ -259,7 +260,7 @@ public class FrameworksTest {
                         0,
                         null ) )
                 .build();
-        final Planner planner = Frameworks.getPlanner( config );
+        final Planner planner = new PlannerImplMock( config );
         Node parse = planner.parse( "select * from \"emps\" " );
         Node val = planner.validate( parse );
 

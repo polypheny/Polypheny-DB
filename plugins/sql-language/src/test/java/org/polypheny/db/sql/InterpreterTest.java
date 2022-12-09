@@ -45,6 +45,7 @@ import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.test.ScannableTableTest.BeatlesTable;
 import org.polypheny.db.test.ScannableTableTest.SimpleTable;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -56,7 +57,7 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Unit tests for {@link Interpreter}.
  */
-public class InterpreterTest {
+public class InterpreterTest extends SqlLanguageDependent {
 
     private SchemaPlus rootSchema;
     private Planner planner;
@@ -170,7 +171,7 @@ public class InterpreterTest {
                         0,
                         null ) )
                 .build();
-        planner = Frameworks.getPlanner( config );
+        planner = new PlannerImplMock( config );
         dataContext = new MyDataContext( planner );
     }
 

@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeParseException;
@@ -84,6 +85,7 @@ public class PlannerImplMock implements Planner {
 
     private final ParserConfig parserConfig;
     private final NodeToAlgConverter.Config sqlToRelConverterConfig;
+    private final OperatorTable operatorTable;
     //private final RexConvertletTable convertletTable;
 
     private State state;
@@ -117,6 +119,7 @@ public class PlannerImplMock implements Planner {
         this.sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
         this.state = State.STATE_0_CLOSED;
         this.traitDefs = config.getTraitDefs();
+        this.operatorTable = config.getOperatorTable();
         //this.convertletTable = config.getConvertletTable();
         this.executor = config.getExecutor();
         reset();
@@ -223,7 +226,7 @@ public class PlannerImplMock implements Planner {
         ensure( State.STATE_3_PARSED );
         final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
-        this.validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, typeFactory, conformance );
+        this.validator = new PolyphenyDbSqlValidator( operatorTable != null ? operatorTable : SqlStdOperatorTable.instance(), catalogReader, typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
         try {
             validatedSqlNode = validator.validate( sqlNode );

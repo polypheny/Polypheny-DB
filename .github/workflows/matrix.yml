@@ -29,12 +29,6 @@ jobs:
                 run: |
                     mkdir $POLYPHENY_HOME/.polypheny
                     mkdir $POLYPHENY_HOME/.polypheny/certs
-            -   name: Assemble Plugins
-                uses: nick-invision/retry@v2
-                with:
-                    max_attempts: 2
-                    timeout_minutes: 60
-                    command: ./gradlew assemblePlugins
             -   name: Assemble
                 uses: nick-invision/retry@v2
                 with:

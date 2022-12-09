@@ -78,7 +78,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.prepare.PlannerImpl;
 import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -89,6 +88,7 @@ import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.util.ListSqlOperatorTable;
+import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgConversionException;
@@ -237,7 +237,7 @@ public class PlannerTest extends SqlLanguageDependent {
                         0,
                         null ) )
                 .build();
-        final Planner planner = Frameworks.getPlanner( config );
+        final Planner planner = new PlannerImplMock( config );
         Node parse =
                 planner.parse( "select \"deptno\", my_count(\"empid\") from \"emps\"\n"
                         + "group by \"deptno\"" );
@@ -292,7 +292,7 @@ public class PlannerTest extends SqlLanguageDependent {
                         0,
                         null ) )
                 .build();
-        return new PlannerImpl( config );
+        return new PlannerImplMock( config );
     }
 
 
@@ -999,7 +999,7 @@ public class PlannerTest extends SqlLanguageDependent {
                         0,
                         null ) )
                 .build();
-        Planner planner = Frameworks.getPlanner( config );
+        Planner planner = new PlannerImplMock( config );
         Node parse = planner.parse( sql );
 
         Node validate = planner.validate( parse );
@@ -1055,7 +1055,7 @@ public class PlannerTest extends SqlLanguageDependent {
                         null ) )
                 .build();
         String plan;
-        try ( Planner p = Frameworks.getPlanner( config ) ) {
+        try ( Planner p = new PlannerImplMock( config ) ) {
             Node n = p.parse( tpchTestQuery );
             n = p.validate( n );
             AlgNode r = p.alg( n ).project();
@@ -1125,7 +1125,7 @@ public class PlannerTest extends SqlLanguageDependent {
                         null ) )
                 .build();
         String plan;
-        try ( Planner p = Frameworks.getPlanner( config ) ) {
+        try ( Planner p = new PlannerImplMock( config ) ) {
             Node n = p.parse( query );
             n = p.validate( n );
             AlgNode r = p.alg( n ).project();
