@@ -19,6 +19,7 @@ package org.polypheny.db.ddl;
 
 import com.google.common.collect.ImmutableList;
 
+import com.google.gson.JsonParser;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -128,6 +129,7 @@ import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -153,8 +155,6 @@ import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.Result;
-import org.polypheny.db.webui.models.SortState;
-import org.polypheny.db.webui.models.requests.QueryRequest;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
@@ -2267,14 +2267,14 @@ public class DdlManagerImpl extends DdlManager {
         if ( assertEntityExists( targetSchemaId, sourceTable.name, true ) ) {
             return;
         }
-        NamespaceType sourceNamespaceType = catalog.getSchema(sourceTable.namespaceId).namespaceType;
-        NamespaceType targetNamespaceType = catalog.getSchema(targetSchemaId).namespaceType;
+        CatalogSchema sourceNamespace = catalog.getSchema(sourceTable.namespaceId);
+        CatalogSchema targetNamespace = catalog.getSchema(targetSchemaId);
 
-        if ( sourceNamespaceType == targetNamespaceType ) {
+        if ( sourceNamespace.getNamespaceType() == targetNamespace.getNamespaceType() ) {
             catalog.relocateTable(sourceTable, targetSchemaId);
         }
 
-        if ( sourceNamespaceType == NamespaceType.RELATIONAL && targetNamespaceType == NamespaceType.DOCUMENT ) {
+        if ( sourceNamespace.getNamespaceType() == NamespaceType.RELATIONAL && targetNamespace.getNamespaceType() == NamespaceType.DOCUMENT ) {
             List<DataStore> stores = sourceTable.dataPlacements
                     .stream()
                     .map(id -> (DataStore) AdapterManager.getInstance().getAdapter(id))
@@ -2288,6 +2288,47 @@ public class DdlManagerImpl extends DdlManager {
 
             dropTable( sourceTable, statement );
 
+            statement.getQueryProcessor().resetCaches();
+        }
+
+        if ( sourceNamespace.getNamespaceType() == NamespaceType.DOCUMENT && targetNamespace.getNamespaceType() == NamespaceType.RELATIONAL ) {
+            CatalogCollection sourceCollection = catalog.getCollection( sourceTable.id );
+            List<DataStore> stores = sourceTable.dataPlacements
+                    .stream()
+                    .map(id -> (DataStore) AdapterManager.getInstance().getAdapter(id))
+                    .collect(Collectors.toList());
+            PlacementType placementType = catalog.getDataPlacement(sourceTable.dataPlacements.get(0), sourceTable.id).placementType;
+
+
+            String query = String.format( "db.%s.find({})", sourceTable.name );
+            QueryParameters parameters = new MqlQueryParameters( query,  sourceNamespace.name, NamespaceType.DOCUMENT );
+            AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
+            MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
+            AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
+            PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            Result result1 = getResult( QueryLanguage.MONGO_QL, statement, query, polyImplementation, statement.getTransaction(), false );
+
+            List<String> fieldNames = new ArrayList();
+            for ( String[] documents : result1.getData()) {
+                for ( String document : documents) {
+
+                    List<String> fieldsInDocument = new ArrayList<>(JsonParser.parseString( document ).getAsJsonObject().keySet());
+                    fieldsInDocument.removeAll( fieldNames );
+                    fieldsInDocument.remove(  "_id");
+                    fieldNames.addAll( fieldsInDocument );
+                }
+            }
+
+            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, true );
+            List<FieldInformation> fieldInformations = fieldNames
+                    .stream()
+                    .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, fieldNames.indexOf( fieldName ) + 1 ) )
+                    .collect( Collectors.toList());
+
+            List<ConstraintInformation> constraintInformations = Collections.singletonList( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( fieldNames.get( 0 ) ) ) );
+            createTable( targetSchemaId, sourceTable.name, fieldInformations, constraintInformations, false, stores, placementType, statement);
+
+            dropCollection( sourceCollection, statement );
             statement.getQueryProcessor().resetCaches();
         }
     }
