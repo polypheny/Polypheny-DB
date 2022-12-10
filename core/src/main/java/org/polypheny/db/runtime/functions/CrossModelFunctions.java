@@ -135,7 +135,7 @@ public class CrossModelFunctions {
             @Override
             public Enumerator<PolyNode> enumerator() {
                 return Linq4j.transform( enumerable.enumerator(), r -> {
-                    BsonDocument doc = BsonDocument.parse( (String) r );
+                    BsonDocument doc = BsonDocument.parse( r.toString() );
                     Map<String, Comparable<?>> map = new HashMap<>();
                     for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
                         if ( entry.getKey().equals( "_id" ) ) {

@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.mongodb;
 
 
-import java.util.function.Predicate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
@@ -42,7 +41,7 @@ public class MongoToEnumerableConverterRule extends ConverterRule {
     public MongoToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                (Predicate<AlgNode>) r -> true,
+                r -> true,
                 MongoAlg.CONVENTION,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,

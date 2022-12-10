@@ -2871,7 +2871,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     public AlgNode toAlg( final AlgOptTable table ) {
-        final AlgNode scan = table.toAlg( createToRelContext() );
+        final AlgNode scan = table.toAlg( createToRelContext(), cluster.traitSet() );
 
         final InitializerExpressionFactory ief =
                 Util.first(

@@ -537,7 +537,6 @@ public abstract class BaseRouter implements Router {
     private RoutedAlgBuilder handleTransformerDocScan( DocumentScan alg, Statement statement, RoutedAlgBuilder builder ) {
         AlgNode scan = buildJoinedScan( statement, alg.getCluster(), selectPlacement( catalog.getTable( alg.getCollection().getTable().getTableId() ) ) );
 
-        //List<RoutedAlgBuilder> scans = ((AbstractDqlRouter) RoutingManager.getInstance().getRouters().get( 0 )).buildDql( scan, List.of( builder ), statement, alg.getCluster(), queryInformation );
         builder.push( scan );
         AlgTraitSet out = alg.getTraitSet().replace( ModelTrait.RELATIONAL );
         builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), null, out.replace( ModelTrait.DOCUMENT ), ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, alg.getRowType(), false ) );

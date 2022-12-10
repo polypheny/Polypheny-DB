@@ -36,6 +36,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
@@ -165,7 +166,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
         return new CottontailScan( context.getCluster(), algOptTable, this, this.cottontailSchema.getConvention() );
     }
 

@@ -61,6 +61,7 @@ import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.prepare.Prepare;
@@ -412,7 +413,7 @@ public abstract class SqlToAlgTestBase {
 
 
             @Override
-            public AlgNode toAlg( ToAlgContext context ) {
+            public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
                 return LogicalScan.create( context.getCluster(), this );
             }
 
@@ -526,7 +527,7 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public AlgNode toAlg( ToAlgContext context ) {
+        public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
             return LogicalScan.create( context.getCluster(), this );
         }
 

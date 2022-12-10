@@ -57,6 +57,7 @@ import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
@@ -466,7 +467,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public AlgNode toAlg( ToAlgContext context ) {
+        public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
             return LogicalScan.create( context.getCluster(), this );
         }
 
@@ -608,11 +609,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
          * Recreates an immutable rowType, if the table has Dynamic Record Type, when converts table to Rel.
          */
         @Override
-        public AlgNode toAlg( ToAlgContext context ) {
+        public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
             if ( rowType.isDynamicStruct() ) {
                 rowType = new AlgRecordType( rowType.getFieldList() );
             }
-            return super.toAlg( context );
+            return super.toAlg( context, traitSet );
         }
 
     }

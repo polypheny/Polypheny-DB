@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
@@ -91,7 +92,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
         // Request all fields.
         return new CsvScan( context.getCluster(), algOptTable, this, fields );
     }

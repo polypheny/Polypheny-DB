@@ -45,7 +45,7 @@ dependencies {
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
 
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version
-    implementation 'org.jetbrains:annotations:20.1.0'// ISC
+    implementation group: 'org.jetbrains', name: 'annotations', version: '20.1.0'// ISC
 
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version

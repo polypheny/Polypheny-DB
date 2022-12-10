@@ -43,6 +43,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
@@ -197,7 +198,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
         return new JdbcScan( context.getCluster(), algOptTable, this, jdbcSchema.getConvention() );
     }
 

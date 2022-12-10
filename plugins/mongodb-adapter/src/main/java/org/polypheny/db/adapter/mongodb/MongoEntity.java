@@ -71,6 +71,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
@@ -158,9 +159,9 @@ public class MongoEntity extends AbstractQueryableTable implements TranslatableT
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new MongoScan( cluster, cluster.traitSetOf( MongoAlg.CONVENTION ), algOptTable, this, null );
+        return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), algOptTable, this, null );
     }
 
 

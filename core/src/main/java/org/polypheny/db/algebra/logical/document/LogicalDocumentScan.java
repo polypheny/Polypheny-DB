@@ -36,7 +36,7 @@ public class LogicalDocumentScan extends DocumentScan implements RelationalTrans
      * Subclass of {@link DocumentScan} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable document ) {
-        super( cluster, traitSet, document );
+        super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), document );
     }
 
 

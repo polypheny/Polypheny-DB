@@ -45,7 +45,7 @@ public class LogicalLpgScan extends LpgScan implements RelationalTransformable {
      * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, TranslatableGraph graph, AlgDataType rowType ) {
-        super( cluster, traitSet, graph );
+        super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
         this.rowType = rowType;
     }
 

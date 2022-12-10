@@ -52,9 +52,11 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
@@ -270,9 +272,9 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new CassandraScan( cluster, cluster.traitSetOf( cassandraSchema.getConvention() ), algOptTable, this, null );
+        return new CassandraScan( cluster, cluster.traitSetOf( cassandraSchema.getConvention() ).replace( traitSet.getTrait( ModelTraitDef.INSTANCE ) ), algOptTable, this, null );
     }
 
 

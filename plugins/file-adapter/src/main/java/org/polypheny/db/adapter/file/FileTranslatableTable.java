@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
@@ -104,7 +105,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
         return new FileScan( context.getCluster(), algOptTable, this );
     }

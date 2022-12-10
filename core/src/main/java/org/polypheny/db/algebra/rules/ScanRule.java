@@ -47,7 +47,7 @@ public class ScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalScan oldAlg = call.alg( 0 );
-        AlgNode newAlg = oldAlg.getTable().toAlg( oldAlg::getCluster );
+        AlgNode newAlg = oldAlg.getTable().toAlg( oldAlg::getCluster, oldAlg.getTraitSet() );
         call.transformTo( newAlg );
     }
 
