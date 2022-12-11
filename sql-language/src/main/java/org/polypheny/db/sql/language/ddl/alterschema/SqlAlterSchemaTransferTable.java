@@ -20,7 +20,9 @@ package org.polypheny.db.sql.language.ddl.alterschema;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
@@ -99,6 +101,10 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableExists(  table.names.get( 1 ) ) );
         } catch ( DdlOnSourceException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
+        } catch ( UnknownTableException e ) {
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName()) );
+        } catch ( UnknownColumnException e ) {
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFound( e.getColumnName() ));
         }
     }
 

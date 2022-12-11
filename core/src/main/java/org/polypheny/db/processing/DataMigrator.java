@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
@@ -24,9 +25,9 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-
 
 public interface DataMigrator {
 
@@ -89,4 +90,7 @@ public interface DataMigrator {
     void copyGraphData( CatalogGraphDatabase graph, Transaction transaction, Integer existingAdapterId, CatalogAdapter adapter );
 
     void copyRelationalDataToDocumentData(Transaction transaction , CatalogTable sourceTable, long targetSchemaId);
+
+    void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, CatalogTable table ) throws UnknownColumnException;
+
 }

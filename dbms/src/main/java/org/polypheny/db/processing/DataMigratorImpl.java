@@ -18,6 +18,8 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -26,6 +28,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
@@ -48,6 +51,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -234,6 +238,52 @@ public class DataMigratorImpl implements DataMigrator {
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
+    }
+
+
+    @Override
+    public void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, CatalogTable targetTable ) throws UnknownColumnException {
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        Catalog catalog = Catalog.getInstance();
+        Map<CatalogColumn, List<Object>> columnValues = new HashMap<>();
+        for ( JsonObject jsonObject : jsonObjects) {
+            for ( String columnName : targetTable.getColumnNames() ) {
+                CatalogColumn column = catalog.getColumn( targetTable.id, columnName );
+                if ( !columnValues.containsKey( column ) ) {
+                    columnValues.put( column, new LinkedList<>() );
+                }
+                JsonElement jsonElement = jsonObject.get( columnName );
+                if (jsonElement != null) {
+                    columnValues.get( column ).add( jsonElement.getAsString()  );
+                } else {
+                    columnValues.get( column ).add( null );
+                }
+            }
+        }
+
+        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
+        Statement targetStatement = transaction.createStatement();
+        AlgRoot targetAlg;
+        for ( Entry<CatalogColumn, List<Object>> entry : columnValues.entrySet() ) {
+            CatalogColumn targetColumn = catalog.getColumn( targetTable.id, entry.getKey().name );
+            targetStatement.getDataContext().addParameterValues(targetColumn.id, targetColumn.getAlgDataType( typeFactory ) , entry.getValue() );
+            List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( targetColumn );
+            for ( DataStore store : stores ) {
+                targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.getAdapterId(), targetColumn.id ) );
+            }
+        }
+
+        targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, targetTable.partitionProperty.partitionIds.get( 0 ) );
+        Iterator<?> iterator = targetStatement.getQueryProcessor()
+                .prepareQuery( targetAlg, targetAlg.validatedRowType, true, false, false )
+                .enumerable( targetStatement.getDataContext() )
+                .iterator();
+        //noinspection WhileLoopReplaceableByForEach
+        while ( iterator.hasNext() ) {
+            iterator.next();
+        }
+
+        targetStatement.getDataContext().resetParameterValues();
     }
 
 

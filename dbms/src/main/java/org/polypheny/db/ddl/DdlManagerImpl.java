@@ -19,6 +19,7 @@ package org.polypheny.db.ddl;
 
 import com.google.common.collect.ImmutableList;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
@@ -2262,7 +2263,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
     @Override
-    public void transferTable( CatalogTable sourceTable, long targetSchemaId, Statement statement) throws EntityAlreadyExistsException, DdlOnSourceException {
+    public void transferTable( CatalogTable sourceTable, long targetSchemaId, Statement statement) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException {
         // Check if there is already an entity with this name
         if ( assertEntityExists( targetSchemaId, sourceTable.name, true ) ) {
             return;
@@ -2306,27 +2307,34 @@ public class DdlManagerImpl extends DdlManager {
             MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
             AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
             PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-            Result result1 = getResult( QueryLanguage.MONGO_QL, statement, query, polyImplementation, statement.getTransaction(), false );
 
+            Result result = getResult( QueryLanguage.MONGO_QL, statement, query, polyImplementation, statement.getTransaction(), false );
             List<String> fieldNames = new ArrayList();
-            for ( String[] documents : result1.getData()) {
+            List<JsonObject> jsonObjects = new ArrayList();
+            for ( String[] documents : result.getData()) {
                 for ( String document : documents) {
-
-                    List<String> fieldsInDocument = new ArrayList<>(JsonParser.parseString( document ).getAsJsonObject().keySet());
+                    JsonObject jsonObject = JsonParser.parseString( document ).getAsJsonObject();
+                    List<String> fieldsInDocument = new ArrayList<>( jsonObject.keySet());
                     fieldsInDocument.removeAll( fieldNames );
                     fieldsInDocument.remove(  "_id");
                     fieldNames.addAll( fieldsInDocument );
+                    jsonObjects.add( jsonObject );
                 }
             }
 
-            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, true );
+            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
+
             List<FieldInformation> fieldInformations = fieldNames
                     .stream()
-                    .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, fieldNames.indexOf( fieldName ) + 1 ) )
+                    .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), "", fieldNames.indexOf( fieldName ) + 1 ) )
                     .collect( Collectors.toList());
 
             List<ConstraintInformation> constraintInformations = Collections.singletonList( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( fieldNames.get( 0 ) ) ) );
             createTable( targetSchemaId, sourceTable.name, fieldInformations, constraintInformations, false, stores, placementType, statement);
+
+            // Migrator
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            dataMigrator.copyDocumentDataToRelationalData( statement.getTransaction(), jsonObjects, catalog.getTable( targetSchemaId, sourceTable.name ) );
 
             dropCollection( sourceCollection, statement );
             statement.getQueryProcessor().resetCaches();
