@@ -152,7 +152,7 @@ public class CrossModelFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Enumerable<?> nodesToCollection( Enumerable<PolyNode> enumerable ) {
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
                 return Linq4j.transform(

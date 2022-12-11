@@ -45,10 +45,10 @@ public class Transformer extends AbstractAlgNode {
 
 
     /**
-     * Creates an {@link Transformer}, which is able to switch {@link org.polypheny.db.schema.ModelTraitDef} for
+     * Creates an {@link Transformer}, which is able to switch {@link ModelTraitDef} for
      * non-native underlying adapters if needed.
-     * For example, it will transform the {@link org.polypheny.db.algebra.core.lpg.LpgScan}, which can be handled directly by
-     * a native adapter, to a combination of {@link Scan} and {@link org.polypheny.db.algebra.core.Union}.
+     * For example, it will transform the {@link LpgScan}, which can be handled directly by
+     * a native adapter, to a combination of {@link Scan} and {@link Union}.
      */
     public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, @Nullable List<String> names, AlgTraitSet traitSet, ModelTrait inModelTrait, ModelTrait outModelTrait, AlgDataType rowType, boolean isCrossModel ) {
         super( cluster, traitSet.replace( outModelTrait ) );

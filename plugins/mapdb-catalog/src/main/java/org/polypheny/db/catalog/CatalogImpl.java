@@ -2295,7 +2295,7 @@ public class CatalogImpl extends Catalog {
             columnPlacements.put( new Object[]{ adapterId, columnId }, columnPlacement );
 
             // Adds this ColumnPlacement to existing DataPlacement container
-            addColumnsToDataPlacement( adapterId, column.tableId, Arrays.asList( columnId ) );
+            addColumnsToDataPlacement( adapterId, column.tableId, List.of( columnId ) );
         }
         listeners.firePropertyChange( "columnPlacement", null, columnPlacement );
     }
@@ -4769,7 +4769,7 @@ public class CatalogImpl extends Catalog {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
 
                 // Adds this PartitionPlacement to existing DataPlacement container
-                addPartitionsToDataPlacement( adapterId, tableId, Arrays.asList( partitionId ) );
+                addPartitionsToDataPlacement( adapterId, tableId, List.of( partitionId ) );
 
                 listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
             }

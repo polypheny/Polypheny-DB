@@ -2257,8 +2257,10 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         long collectionId;
+        long partitionId;
         try {
             collectionId = catalog.addCollectionLogistics( schemaId, name, stores, false );
+            partitionId = catalog.getPartitionGroups( collectionId ).get( 0 ).id;
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

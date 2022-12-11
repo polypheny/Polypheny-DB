@@ -71,7 +71,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -92,8 +91,6 @@ import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -1015,12 +1012,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     private AlgNode createDocumentTransform( AlgNode query, RexBuilder rexBuilder ) {
         List<String> names = new ArrayList<>();
-        List<RexNode> updates = new ArrayList<>();
-
         names.add( "_id_" );
         names.add( "_data_" );
-        updates.add( rexBuilder.makeCall( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ), List.of( RexInputRef.of( 0, query.getRowType() ), rexBuilder.makeArray( rexBuilder.getTypeFactory().createArrayType( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ), List.of( rexBuilder.makeLiteral( "_id" ) ) ) ) ) );
-        updates.add( RexInputRef.of( 0, query.getRowType() ) );
+        List<RexNode> updates = addDocumentNodes( query.getRowType(), rexBuilder, false );
 
         return LogicalProject.create( query, updates, names );
     }
@@ -1354,7 +1348,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     catalogTable.name,
                     placements.get( 0 ).physicalSchemaName,
                     partitionPlacement.physicalTableName,
-                    partitionPlacement.partitionId );
+                    partitionPlacement.partitionId,
+                    catalogTable.getNamespaceType() );
             LogicalScan scan = (LogicalScan) builder.build();
             builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
             return builder;
@@ -1377,7 +1372,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         catalogTable.name,
                         placements.get( 0 ).physicalSchemaName,
                         partitionPlacement.physicalTableName,
-                        partitionPlacement.partitionId );
+                        partitionPlacement.partitionId,
+                        catalogTable.getNamespaceType() );
 
                 return builder;
 

@@ -29,6 +29,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.function.Experimental;
@@ -322,6 +323,10 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             fieldInfo.add( new AlgDataTypeFieldImpl( "labels", 2, typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ) ) );
 
             return new TableEntryImpl( this, tableName, new LogicalTable( -1, name, tableName, List.of(), List.of(), AlgDataTypeImpl.proto( fieldInfo.build() ), NamespaceType.GRAPH ) );
+        } else if ( namespaceType == NamespaceType.DOCUMENT ) {
+            for ( Map.Entry<String, TableEntry> entry : tableMap.map().entrySet().stream().filter( t -> t.getKey().split( "_" )[0].equalsIgnoreCase( tableName.split( "_" )[0] ) ).collect( Collectors.toList() ) ) {
+                return entry.getValue();
+            }
         }
         return null;
     }

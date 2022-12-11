@@ -48,8 +48,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
@@ -67,12 +69,14 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
@@ -83,6 +87,7 @@ import org.polypheny.db.schema.graph.Graph;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Pair;
 
 
@@ -128,9 +133,32 @@ public abstract class BaseRouter implements Router {
             }
         }
 
-        return new HashMap<Long, List<CatalogColumnPlacement>>() {{
+        return new HashMap<>() {{
             put( table.partitionProperty.partitionIds.get( 0 ), placementList );
         }};
+    }
+
+
+    protected static List<RexNode> addDocumentNodes( AlgDataType rowType, RexBuilder rexBuilder, boolean forceVarchar ) {
+        AlgDataType data = rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 );
+        return List.of(
+                rexBuilder.makeCall(
+                        rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ),
+                        OperatorRegistry.get(
+                                QueryLanguage.from( "mongo" ),
+                                OperatorName.MQL_QUERY_VALUE ),
+                        List.of(
+                                RexInputRef.of( 0, rowType ),
+                                rexBuilder.makeArray( rexBuilder.getTypeFactory().createArrayType(
+                                                rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ),
+                                        List.of( rexBuilder.makeLiteral( "_id" ) ) ) ) ),
+                (forceVarchar
+                        ? rexBuilder.makeCall( data,
+                        OperatorRegistry.get(
+                                QueryLanguage.from( "mongo" ),
+                                OperatorName.MQL_JSONIFY ), List.of( RexInputRef.of( 0, rowType ) ) )
+                        : RexInputRef.of( 0, rowType ))
+        );
     }
 
 
@@ -154,7 +182,8 @@ public abstract class BaseRouter implements Router {
             String logicalTableName,
             String physicalSchemaName,
             String physicalTableName,
-            long partitionId ) {
+            long partitionId,
+            NamespaceType namespaceType ) {
 
         AlgNode node = builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
@@ -162,7 +191,29 @@ public abstract class BaseRouter implements Router {
 
         builder.push( node );
 
+        if ( namespaceType == NamespaceType.DOCUMENT ) {
+            // relational on document
+            AlgNode scan = builder.build();
+            builder.push( scan );
+            AlgDataType type = getDocumentRowType();
+            builder.documentProject( addDocumentNodes( scan.getRowType(), scan.getCluster().getRexBuilder(), true ), List.of( "_id_", "_data_" ) );
+
+            builder.push( new LogicalTransformer( builder.getCluster(), List.of( builder.build() ), List.of( "_id_, _data_" ), scan.getTraitSet(), ModelTrait.DOCUMENT, ModelTrait.RELATIONAL, type, false ) );
+        }
+
         return builder;
+    }
+
+
+    private AlgDataType getDocumentRowType() {
+        // label table for cross model queries
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+        final Builder fieldInfo = typeFactory.builder();
+        fieldInfo.add( new AlgDataTypeFieldImpl( "_id_", 0, typeFactory.createPolyType( PolyType.VARCHAR, 255 ) ) );
+        fieldInfo.add( new AlgDataTypeFieldImpl( "_data_", 1, typeFactory.createPolyType( PolyType.VARCHAR, 2064 ) ) );
+
+        return fieldInfo.build();
     }
 
 
@@ -242,7 +293,8 @@ public abstract class BaseRouter implements Router {
                         ccp.getLogicalTableName(),
                         ccp.physicalSchemaName,
                         cpp.physicalTableName,
-                        cpp.partitionId );
+                        cpp.partitionId,
+                        catalog.getTable( ccp.tableId ).getNamespaceType() );
                 // Final project
                 buildFinalProject( builder, currentPlacements );
 
@@ -282,7 +334,8 @@ public abstract class BaseRouter implements Router {
                             ccp.getLogicalTableName(),
                             ccp.physicalSchemaName,
                             cpp.physicalTableName,
-                            cpp.partitionId );
+                            cpp.partitionId,
+                            catalog.getTable( ccp.tableId ).getNamespaceType() );
                     if ( first ) {
                         first = false;
                     } else {

@@ -62,6 +62,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -344,6 +345,15 @@ public class MongoPlugin extends Plugin {
                     catalogCollection.getNamespaceName(),
                     this.currentSchema.database.getName(),
                     physicalCollectionName );
+
+            // for cross-model queries
+            CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    mapping.idId,
+                    catalogCollection.getNamespaceName(),
+                    null,
+                    false );
         }
 
 
