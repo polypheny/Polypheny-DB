@@ -482,6 +482,8 @@ public interface NeoUtil {
                     }
                     return String.format( "%s.%s", name, o.get( 1 ) );
                 };
+            case CYPHER_EXTRACT_ID:
+                return o -> String.format( " %s.id ", o.get( 0 ) );
             case CYPHER_HAS_PROPERTY:
                 return o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), o.get( 1 ) );
             case COUNT:
@@ -609,10 +611,11 @@ public interface NeoUtil {
     @Getter
     class NeoSupportVisitor extends RexVisitorImpl<Void> {
 
+        @Getter
         private boolean supports;
 
 
-        protected NeoSupportVisitor() {
+        public NeoSupportVisitor() {
             super( true );
             this.supports = true;
         }

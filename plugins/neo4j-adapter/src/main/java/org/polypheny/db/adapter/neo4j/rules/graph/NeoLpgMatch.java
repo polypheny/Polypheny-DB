@@ -63,7 +63,11 @@ public class NeoLpgMatch extends LpgMatch implements NeoGraphAlg {
                     neoMatches.add( node_( match.left, labels_( mappingLabel ) ) );
                     break;
                 case CYPHER_NODE_MATCH:
-                    neoMatches.add( node_( ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyNode.class ), mappingLabel, false ) );
+                    PolyNode node = ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyNode.class );
+                    if ( !match.left.equals( "" ) ) {
+                        node = new PolyNode( node.id, node.properties, node.labels, match.left );
+                    }
+                    neoMatches.add( node_( node, mappingLabel, false ) );
                     break;
                 case CYPHER_PATH_MATCH:
                     neoMatches.add( path_( match.left, ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyPath.class ), mappingLabel, false ) );

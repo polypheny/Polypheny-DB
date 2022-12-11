@@ -21,9 +21,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.function.BiConsumer;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
-// @Category({ AdapterTestSuite.class }) todo dl enable
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class CrossModelTestTemplate {
 
     public static void executeStatements( SqlConsumer... statementConsumers ) {

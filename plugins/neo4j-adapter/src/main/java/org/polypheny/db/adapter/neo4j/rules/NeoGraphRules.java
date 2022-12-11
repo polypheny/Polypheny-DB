@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgProject;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgSort;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgUnwind;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgValues;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil.NeoSupportVisitor;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -40,6 +41,7 @@ import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rex.RexNode;
 
 public interface NeoGraphRules {
 
@@ -94,10 +96,18 @@ public interface NeoGraphRules {
 
     }
 
+    static boolean supports( LpgProject r ) {
+
+        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        for ( RexNode project : r.getProjects() ) {
+            project.accept( visitor );
+        }
+        return visitor.isSupports();
+    }
 
     class NeoGraphProjectRule extends NeoConverterRule {
 
-        public static NeoGraphProjectRule INSTANCE = new NeoGraphProjectRule( LpgProject.class, r -> true, "NeoGraphProjectRule" );
+        public static NeoGraphProjectRule INSTANCE = new NeoGraphProjectRule( LpgProject.class, NeoGraphRules::supports, "NeoGraphProjectRule" );
 
 
         private <R extends AlgNode> NeoGraphProjectRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

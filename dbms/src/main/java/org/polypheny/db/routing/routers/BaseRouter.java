@@ -191,8 +191,11 @@ public abstract class BaseRouter implements Router {
 
         builder.push( node );
 
-        if ( namespaceType == NamespaceType.DOCUMENT ) {
-            // relational on document
+        if ( namespaceType == NamespaceType.DOCUMENT
+                && node.getRowType().getFieldCount() == 1
+                && node.getRowType().getFieldList().get( 0 ).getName().equals( "d" )
+                && node.getRowType().getFieldList().get( 0 ).getType().getPolyType() == PolyType.DOCUMENT ) {
+            // relational on document -> expand document field into _id_ & _data_
             AlgNode scan = builder.build();
             builder.push( scan );
             AlgDataType type = getDocumentRowType();
