@@ -119,6 +119,9 @@ public class PolyphenyDb {
     @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)
     protected String applicationConfPath;
 
+    @Option(name = {"-v", "--version"}, description = "Current version of Polypheny-DB")
+    public boolean versionOptionEnabled = false;
+
     // required for unit tests to determine when the system is ready to process queries
     @Getter
     private volatile boolean isReady = false;
@@ -141,6 +144,11 @@ public class PolyphenyDb {
             System.setProperty( "apple.awt.UIElement", "true" );
 
             if ( polyphenyDb.helpOption.showHelpIfRequested() ) {
+                return;
+            }
+
+            if ( polyphenyDb.versionOptionEnabled ) {
+                System.out.println("v" + polyphenyDb.getClass().getPackage().getImplementationVersion());
                 return;
             }
 
