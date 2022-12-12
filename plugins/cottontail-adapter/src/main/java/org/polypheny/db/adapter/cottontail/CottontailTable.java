@@ -167,7 +167,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
-        return new CottontailScan( context.getCluster(), algOptTable, this, this.cottontailSchema.getConvention() );
+        return new CottontailScan( context.getCluster(), algOptTable, this, traitSet, this.cottontailSchema.getConvention() );
     }
 
 

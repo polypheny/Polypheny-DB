@@ -36,8 +36,8 @@ public class CottontailScan extends Scan implements CottontailAlg {
     protected final CottontailTable cottontailTable;
 
 
-    public CottontailScan( AlgOptCluster cluster, AlgOptTable table, CottontailTable cottontailTable, CottontailConvention cottontailConvention ) {
-        super( cluster, cluster.traitSetOf( cottontailConvention ), table );
+    public CottontailScan( AlgOptCluster cluster, AlgOptTable table, CottontailTable cottontailTable, AlgTraitSet traitSet, CottontailConvention cottontailConvention ) {
+        super( cluster, traitSet.replace( cottontailConvention ), table );
         this.cottontailTable = cottontailTable;
     }
 
@@ -45,7 +45,7 @@ public class CottontailScan extends Scan implements CottontailAlg {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new CottontailScan( getCluster(), this.table, this.cottontailTable, (CottontailConvention) this.getConvention() );
+        return new CottontailScan( getCluster(), this.table, this.cottontailTable, traitSet, (CottontailConvention) this.getConvention() );
     }
 
 
