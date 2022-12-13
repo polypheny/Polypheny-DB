@@ -23,6 +23,7 @@ import com.google.gson.stream.JsonWriter;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -148,13 +149,9 @@ public class PolyPluginManager extends DefaultPluginManager {
                 // check if still the same plugins are present
                 List<ConfigPlugin> configs = RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class );
 
-                List<String> added = new ArrayList<>( PLUGINS.keySet() );
-                configs.forEach( p -> added.remove( p.getPluginId() ) );
-
                 List<String> removed = configs.stream().map( ConfigPlugin::getPluginId ).collect( Collectors.toList() );
                 PLUGINS.keySet().forEach( removed::remove );
 
-                added.forEach( PolyPluginManager::loadAdditionalPlugin );
 
                 configs.forEach( p -> {
                     if ( toState( p.getStatus() ) != PLUGINS.get( p.getPluginId() ).getPluginState() ) {
@@ -224,12 +221,12 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static PluginStatus loadAdditionalPlugin( String path ) {
+    public static PluginStatus loadAdditionalPlugin( File file ) {
         AFTER_INIT.clear();
-        PluginStatus status = new PluginStatus( path, null );
+        PluginStatus status = new PluginStatus( file.getPath(), null );
         PluginWrapper plugin;
         try {
-            plugin = pluginManager.getPlugin( pluginManager.loadPlugin( status.getPath() ) );
+            plugin = pluginManager.getPlugin( pluginManager.loadPlugin( file.toPath() ) );
             status.id( plugin.getPluginId() );
         } catch ( Exception e ) {
             return status.loaded( false );

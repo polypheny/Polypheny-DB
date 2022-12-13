@@ -351,7 +351,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
-        webuiServer.post( "/loadPlugin", crud::loadPlugin );
+        webuiServer.post( "/loadPlugins", crud::loadPlugins );
 
         webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
 

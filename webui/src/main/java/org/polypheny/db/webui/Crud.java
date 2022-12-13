@@ -2958,12 +2958,17 @@ public class Crud implements InformationObserver {
 
 
     void getFile( final Context ctx ) {
+        getFile( ctx, ".polypheny/tmp/", true );
+    }
+
+
+    private File getFile( Context ctx, String location, boolean sendBack ) {
         String fileName = ctx.pathParam( "file" );
-        File f = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + fileName );
+        File f = new File( System.getProperty( "user.home" ), location + fileName );
         if ( !f.exists() ) {
             ctx.status( 404 );
             ctx.result( "" );
-            return;
+            return f;
         } else if ( f.isDirectory() ) {
             getDirectory( f, ctx );
         }
@@ -3033,15 +3038,19 @@ public class Crud implements InformationObserver {
                 ctx.status( 500 );
             }
         } else {
-            ctx.res.setContentLengthLong( (int) fileLength );
-            try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res.getOutputStream() ) {
-                IOUtils.copyLarge( fis, os );
-                os.flush();
-            } catch ( IOException ignored ) {
-                ctx.status( 500 );
+            if ( sendBack ) {
+                ctx.res.setContentLengthLong( (int) fileLength );
+                try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res.getOutputStream() ) {
+                    IOUtils.copyLarge( fis, os );
+                    os.flush();
+                } catch ( IOException ignored ) {
+                    ctx.status( 500 );
+                }
             }
         }
         ctx.result( "" );
+
+        return f;
     }
 
 
@@ -3559,10 +3568,9 @@ public class Crud implements InformationObserver {
     /**
      * Loads the plugin in the supplied path.
      */
-    public void loadPlugin( final Context ctx ) {
-        String path = ctx.bodyAsClass( String.class );
-
-        ctx.json( PolyPluginManager.loadAdditionalPlugin( path ) );
+    public void loadPlugins( final Context ctx ) {
+        File file = getFile( ctx, ".polypheny/plugins/", false );
+        PolyPluginManager.loadAdditionalPlugin( file );
     }
 
 
