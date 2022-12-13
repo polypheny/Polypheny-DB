@@ -59,6 +59,7 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
@@ -77,7 +78,16 @@ public class PolyPluginManager extends DefaultPluginManager {
     @Getter
     private static PluginClassLoader mainClassLoader;
     // create the plugin manager
-    private static final PolyPluginManager pluginManager = new PolyPluginManager( "../build/plugins", "./build/plugins", "../../build/plugins" );
+    private static final PolyPluginManager pluginManager;
+
+
+    static {
+        pluginManager = new PolyPluginManager(
+                "../build/plugins",
+                "./build/plugins",
+                "../../build/plugins",
+                PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ).getPath() );
+    }
 
 
     public PolyPluginManager( String... paths ) {
@@ -86,6 +96,38 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     public static void init() {
+        attachRuntimeToPlugins();
+
+        // load the plugins
+        pluginManager.loadPlugins();
+
+        // start (active/resolved) the plugins
+        if ( RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).isEmpty() ) {
+            // no old config there so we just start all
+            pluginManager.startPlugins();
+        } else {
+            for ( ConfigPlugin plugin : RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ) ) {
+                if ( plugin.getStatus() == org.polypheny.db.config.PluginStatus.ACTIVE ) {
+                    pluginManager.startPlugin( plugin.getPluginId() );
+                }
+            }
+        }
+
+        PLUGINS.putAll( pluginManager.getStartedPlugins().stream().collect( Collectors.toMap( PluginWrapper::getPluginId, p -> p ) ) );
+
+        attachPluginsToRuntime();
+
+        // print extensions for each started plugin
+        List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
+        for ( PluginWrapper plugin : startedPlugins ) {
+            String pluginId = plugin.getDescriptor().getPluginId();
+
+            log.info( String.format( "Plugin '%s' added", pluginId ) );
+        }
+    }
+
+
+    private static void attachRuntimeToPlugins() {
         PLUGINS.addListener( ( e ) -> {
             RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
             RuntimeConfig.AVAILABLE_PLUGINS.setList(
@@ -93,10 +135,13 @@ public class PolyPluginManager extends DefaultPluginManager {
                             .values()
                             .stream()
                             .map( p -> (PolyPluginDescriptor) p.getDescriptor() )
-                            .map( d -> new ConfigPlugin( d.getPluginId(), org.polypheny.db.config.PluginStatus.ACTIVE, d.imagePath, d.categories, d.getPluginDescription() ) )
+                            .map( d -> new ConfigPlugin( d.getPluginId(), org.polypheny.db.config.PluginStatus.ACTIVE, d.imagePath, d.categories, d.getPluginDescription(), d.getVersion() ) )
                             .collect( Collectors.toList() ) );
         } );
+    }
 
+
+    private static void attachPluginsToRuntime() {
         RuntimeConfig.AVAILABLE_PLUGINS.addObserver( new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
@@ -131,22 +176,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
             }
         } );
-
-        // load the plugins
-        pluginManager.loadPlugins();
-
-        // start (active/resolved) the plugins
-        pluginManager.startPlugins();
-
-        PLUGINS.putAll( pluginManager.getStartedPlugins().stream().collect( Collectors.toMap( PluginWrapper::getPluginId, p -> p ) ) );
-
-        // print extensions for each started plugin
-        List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
-        for ( PluginWrapper plugin : startedPlugins ) {
-            String pluginId = plugin.getDescriptor().getPluginId();
-
-            log.info( String.format( "Plugin '%s' added", pluginId ) );
-        }
     }
 
 

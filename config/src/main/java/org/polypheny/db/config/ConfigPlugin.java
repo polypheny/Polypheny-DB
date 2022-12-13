@@ -17,6 +17,7 @@
 package org.polypheny.db.config;
 
 import com.typesafe.config.Config;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -31,14 +32,16 @@ public class ConfigPlugin extends ConfigObject {
     @Getter
     private final String imageUrl;
     private final List<String> categories;
+    private final String version;
 
 
-    public ConfigPlugin( String pluginId, PluginStatus status, String imageUrl, List<String> categories, String description ) {
-        super( "pluginConfig" + pluginId, description );
+    public ConfigPlugin( String pluginId, PluginStatus status, String imageUrl, List<String> categories, String description, String version ) {
+        super( pluginId + "_" + version.replace( ".", "_" ), description );
         this.pluginId = pluginId;
         this.status = status;
         this.imageUrl = imageUrl;
         this.categories = categories;
+        this.version = version;
 
         this.webUiFormType = WebUiFormType.PLUGIN_INSTANCE;
     }
@@ -50,13 +53,23 @@ public class ConfigPlugin extends ConfigObject {
                 (String) value.get( "pluginId" ),
                 PluginStatus.valueOf( (String) value.get( "status" ) ),
                 (String) value.get( "imageUrl" ),
-                mapCategories( (String) value.get( "categories" ) ),
-                (String) value.get( "description" ) );
+                (List<String>) value.get( "categories" ),
+                (String) value.get( "description" ),
+                (String) value.get( "version" ) );
     }
 
 
-    private static List<String> mapCategories( String categories ) {
-        return List.of( categories.trim().replace( "[", "" ).replace( "]", "" ).split( "," ) );
+    public static Object parseConfigToMap( Config conf ) {
+        Map<String, Object> confMap = new HashMap<>();
+
+        confMap.put( "pluginId", conf.getString( "pluginId" ) );
+        confMap.put( "status", conf.getString( "status" ) );
+        confMap.put( "imageUrl", conf.hasPath( "imageUrl" ) ? conf.getString( "imageUrl" ) : null );
+        confMap.put( "categories", conf.getStringList( "categories" ) );
+        confMap.put( "description", conf.getString( "description" ) );
+        confMap.put( "version", conf.getString( "version" ) );
+
+        return confMap;
     }
 
 
@@ -95,6 +108,20 @@ public class ConfigPlugin extends ConfigObject {
     public boolean parseStringAndSetValue( String value ) {
         throw new ConfigRuntimeException( "Not supported for Plugin Configs" );
         // todo dl
+    }
+
+
+    public Map<String, Object> asMap() {
+        Map<String, Object> map = new HashMap<>();
+
+        map.put( "pluginId", pluginId );
+        map.put( "status", status.toString() );
+        map.put( "imageUrl", imageUrl );
+        map.put( "categories", categories );
+        map.put( "description", getDescription() );
+        map.put( "version", version );
+
+        return map;
     }
 
 }

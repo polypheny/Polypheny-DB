@@ -26,7 +26,7 @@ subprojects {
         manifest {
             attributes 'Plugin-Class': "${pluginClass}",
                     'Plugin-Id': "${pluginId}",
-                    'Plugin-Version': "${archiveVersion}",
+                    'Plugin-Version': "${pluginVersion}",
                     'Plugin-Provider': "${pluginProvider}",
                     'Plugin-Dependencies': "${pluginDependencies}",
                     'Plugin-Url-Path': "${pluginUrlPath}",

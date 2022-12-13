@@ -197,6 +197,9 @@ public class ConfigManager {
                 if ( value instanceof ConfigDocker ) {
                     Map<String, String> settingsMap = ((ConfigDocker) value).getSettings();
                     myMap.put( ((ConfigObject) value).getKey(), settingsMap );
+                } else if ( value instanceof ConfigPlugin ) {
+                    Map<String, Object> plugin = ((ConfigPlugin) value).asMap();
+                    myMap.put( ((ConfigObject) value).getKey(), plugin );
                 } else if ( value instanceof Class ) {
                     String v = ((Class<?>) value).getName();
                     myList.add( v );

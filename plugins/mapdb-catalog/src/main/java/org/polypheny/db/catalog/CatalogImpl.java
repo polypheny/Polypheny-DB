@@ -3976,8 +3976,7 @@ public class CatalogImpl extends Catalog {
         uniqueName = uniqueName.toLowerCase();
 
         int id = queryInterfaceIdBuilder.getAndIncrement();
-        Map<String, String> temp = new HashMap<>();
-        settings.forEach( temp::put );
+        Map<String, String> temp = new HashMap<>( settings );
         CatalogQueryInterface queryInterface = new CatalogQueryInterface( id, uniqueName, clazz, temp );
         synchronized ( this ) {
             queryInterfaces.put( id, queryInterface );

@@ -96,6 +96,12 @@ public class RestInterfacePlugin extends Plugin {
     }
 
 
+    @Override
+    public void stop() {
+        QueryInterfaceManager.removeInterfaceType( HttpRestServer.class );
+    }
+
+
     @Slf4j
     @Extension
     public static class HttpRestServer extends QueryInterface {

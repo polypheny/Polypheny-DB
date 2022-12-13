@@ -87,6 +87,16 @@ public class QueryInterfaceManager {
     }
 
 
+    public static void removeInterfaceType( Class<? extends QueryInterface> clazz ) {
+        for ( CatalogQueryInterface queryInterface : Catalog.getInstance().getQueryInterfaces() ) {
+            if ( queryInterface.clazz.equals( clazz.getName() ) ) {
+                throw new RuntimeException( "Cannot remove the interface type, there is still a interface active." );
+            }
+        }
+        REGISTER.remove( clazz.getSimpleName() );
+    }
+
+
     public QueryInterface getQueryInterface( int id ) {
         return interfaceById.get( id );
     }

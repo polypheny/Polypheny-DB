@@ -165,7 +165,7 @@ public class ConfigList extends Config {
 
 
     private void pluginList( String key, List<ConfigPlugin> list ) {
-        this.template = new ConfigPlugin( "", PluginStatus.UNLOADED, "", List.of(), "This is empty" );
+        this.template = new ConfigPlugin( "", PluginStatus.UNLOADED, "", List.of(), "This is empty", "0.0.1" );
         this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
         this.defaultList = ImmutableList.copyOf( this.list );
     }
@@ -321,24 +321,32 @@ public class ConfigList extends Config {
         if ( this.oldList != null && this.oldList.equals( this.list ) ) {
             this.oldList = null;
         }
-        notifyConfigListeners();
-        return true;
+        try {
+            notifyConfigListeners();
+            return true;
+        } catch ( Exception e ) {
+            return false;
+        }
     }
 
 
     @Override
     void setValueFromFile( com.typesafe.config.Config conf ) {
-        if ( template instanceof ConfigDocker ) {
-            List<Object> tempList = new ArrayList<>();
-            com.typesafe.config.Config dockerInstancesConf = conf.getConfig( getKey() );
-            for ( Entry<String, Object> nestedConfObject : dockerInstancesConf.root().unwrapped().entrySet() ) {
-                String subInstanceKey = nestedConfObject.getKey();
-                tempList.add( ConfigDocker.parseConfigToMap( dockerInstancesConf.getConfig( subInstanceKey ) ) );
+
+        List<Object> tempList = new ArrayList<>();
+        com.typesafe.config.Config listConf = conf.getConfig( getKey() );
+        for ( Entry<String, Object> nested : listConf.root().unwrapped().entrySet() ) {
+            if ( template instanceof ConfigDocker ) {
+                tempList.add( ConfigDocker.parseConfigToMap( listConf.getConfig( nested.getKey() ) ) );
+            } else if ( template instanceof ConfigPlugin ) {
+                tempList.add( ConfigPlugin.parseConfigToMap( listConf.getConfig( nested.getKey() ) ) );
+            } else {
+                throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
             }
-            setConfigObjectList( tempList, getTemplateClass() );
-        } else {
-            throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
+
         }
+        setConfigObjectList( tempList, getTemplateClass() );
+
     }
 
 

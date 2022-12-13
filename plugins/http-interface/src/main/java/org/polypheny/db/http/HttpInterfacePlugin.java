@@ -81,6 +81,12 @@ public class HttpInterfacePlugin extends Plugin {
     }
 
 
+    @Override
+    public void stop() {
+        QueryInterfaceManager.removeInterfaceType( HttpInterface.class );
+    }
+
+
     @Slf4j
     @Extension
     public static class HttpInterface extends QueryInterface {
@@ -154,7 +160,6 @@ public class HttpInterfacePlugin extends Plugin {
             server.routes( () -> {
                 StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
             } );
-
 
             LanguageCrud.REGISTER.forEach( ( key, value ) -> addRoute( QueryLanguage.from( key ) ) );
         }
