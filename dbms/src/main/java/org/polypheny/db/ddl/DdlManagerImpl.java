@@ -3285,33 +3285,6 @@ public class DdlManagerImpl extends DdlManager {
         }
     }
 
-    protected CatalogTable getCatalogTable( Context context, SqlIdentifier tableName ) {
-        CatalogTable catalogTable;
-        try {
-            long schemaId;
-            String tableOldName;
-            Catalog catalog = Catalog.getInstance();
-            if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
-                tableOldName = tableName.names.get( 2 );
-            } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
-                tableOldName = tableName.names.get( 1 );
-            } else { // TableName
-                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
-                tableOldName = tableName.names.get( 0 );
-            }
-            catalogTable = catalog.getTable( schemaId, tableOldName );
-        } catch ( UnknownDatabaseException e ) {
-            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.databaseNotFound( tableName.toString() ) );
-        } catch ( UnknownSchemaException e ) {
-            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.schemaNotFound( tableName.toString() ) );
-        } catch ( UnknownTableException e ) {
-            throw CoreUtil.newContextException( tableName.getPos(), RESOURCE.tableNotFound( tableName.toString() ) );
-        }
-        return catalogTable;
-    }
-
     @Override
     public void dropFunction() {
         throw new RuntimeException( "Not supported yet" );
