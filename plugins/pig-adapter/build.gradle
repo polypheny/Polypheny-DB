@@ -10,8 +10,8 @@ dependencies {
 
 
     // --- Test Compile ---
-    testCompileOnly project(path: ":core", configuration: "tests")
-    testCompileOnly project(path: ":core")
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
 
     testCompileOnly group: "junit", name: "junit", version: junit_version
     testCompileOnly group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
@@ -21,7 +21,7 @@ dependencies {
     testCompileOnly group: "org.apache.pig", name: "pigunit", version: pigunit_version  // Apache 2.0
 
     // due to gradle 7.6+
-    testCompileOnly project(path: ':dbms', configuration: 'tests')
+    testImplementation project(path: ':dbms', configuration: 'tests')
 }
 
 
