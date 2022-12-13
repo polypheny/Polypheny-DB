@@ -130,7 +130,6 @@ import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
-import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -2263,7 +2262,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
     @Override
-    public void transferTable( CatalogTable sourceTable, long targetSchemaId, Statement statement) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException {
+    public void transferTable( CatalogTable sourceTable, long targetSchemaId, Statement statement, List<String> primaryKeyColumnNames ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException {
         // Check if there is already an entity with this name
         if ( assertEntityExists( targetSchemaId, sourceTable.name, true ) ) {
             return;
@@ -2326,10 +2325,10 @@ public class DdlManagerImpl extends DdlManager {
 
             List<FieldInformation> fieldInformations = fieldNames
                     .stream()
-                    .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), "", fieldNames.indexOf( fieldName ) + 1 ) )
+                    .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, fieldNames.indexOf( fieldName ) + 1 ) )
                     .collect( Collectors.toList());
 
-            List<ConstraintInformation> constraintInformations = Collections.singletonList( new ConstraintInformation( "primary", ConstraintType.PRIMARY, Collections.singletonList( fieldNames.get( 0 ) ) ) );
+            List<ConstraintInformation> constraintInformations = Collections.singletonList( new ConstraintInformation( "primary", ConstraintType.PRIMARY, primaryKeyColumnNames ) );
             createTable( targetSchemaId, sourceTable.name, fieldInformations, constraintInformations, false, stores, placementType, statement);
 
             // Migrator

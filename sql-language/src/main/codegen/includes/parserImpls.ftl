@@ -43,6 +43,7 @@ SqlAlterSchema SqlAlterSchema(Span s) :
     final SqlIdentifier schema;
     final SqlIdentifier name;
     final SqlIdentifier owner;
+    final SqlNodeList columnList;
 }
 {
     <SCHEMA>
@@ -50,8 +51,14 @@ SqlAlterSchema SqlAlterSchema(Span s) :
     (
         <TRANSFER>
         name = CompoundIdentifier()
+        (
+            <ADD> <PRIMARY> <KEY>
+            columnList = ParenthesizedSimpleIdentifierList()
+        |
+            { columnList = null; }
+        )
         {
-            return new SqlAlterSchemaTransferTable(s.end(this), name, schema);
+            return new SqlAlterSchemaTransferTable(s.end(this), name, schema, columnList);
         }
     |
         <RENAME> <TO>

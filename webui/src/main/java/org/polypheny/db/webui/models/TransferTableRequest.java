@@ -22,5 +22,6 @@ public class TransferTableRequest {
     public String table;
     public String sourceSchema;
     public String targetSchema;
+    public String primaryKeyNames;
 
 }

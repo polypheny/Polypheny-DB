@@ -620,7 +620,16 @@ public class Crud implements InformationObserver {
         StringBuilder query = new StringBuilder();
         String targetSchemaId = String.format( "\"%s\"", request.targetSchema );
         String tableId = String.format( "\"%s\".\"%s\"", request.sourceSchema, request.table );
-        query.append( "ALTER SCHEMA " ).append( targetSchemaId ).append( " TRANSFER " ).append(tableId);
+        query
+                .append( "ALTER SCHEMA " )
+                .append( targetSchemaId )
+                .append( " TRANSFER " )
+                .append(tableId);
+        if( request.primaryKeyNames != null && !request.primaryKeyNames.isBlank() ) {
+            query
+                    .append( " ADD PRIMARY KEY " )
+                    .append(request.primaryKeyNames);
+        }
         Result result;
 
         try {

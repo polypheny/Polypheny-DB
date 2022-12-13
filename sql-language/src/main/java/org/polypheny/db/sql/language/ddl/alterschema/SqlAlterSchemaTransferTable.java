@@ -17,6 +17,8 @@
 package org.polypheny.db.sql.language.ddl.alterschema;
 
 
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
@@ -32,6 +34,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterSchema;
 import org.polypheny.db.transaction.Statement;
@@ -51,15 +54,17 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
 
     private final SqlIdentifier table;
     private final SqlIdentifier targetSchema;
+    private final SqlNodeList primaryKeyColumns;
 
 
     /**
      * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterSchemaTransferTable(ParserPos pos, SqlIdentifier table, SqlIdentifier targetSchema) {
+    public SqlAlterSchemaTransferTable(ParserPos pos, SqlIdentifier table, SqlIdentifier targetSchema, SqlNodeList primaryKeyColumns ) {
         super( pos );
         this.table = Objects.requireNonNull(table);
         this.targetSchema = Objects.requireNonNull(targetSchema);
+        this.primaryKeyColumns = primaryKeyColumns;
     }
 
 
@@ -93,7 +98,12 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
             CatalogTable catalogTable = getCatalogTable( context, table);
 
             long targetSchemaId = catalog.getSchema( context.getDatabaseId(), targetSchema.getNames().get(0) ).id;
-            DdlManager.getInstance().transferTable( catalogTable, targetSchemaId, statement );
+
+            List<String> primaryKeyColumnNames = (primaryKeyColumns != null)
+                    ? primaryKeyColumns.getList().stream().map( Node::toString ).collect( Collectors.toList() )
+                    : null;
+
+            DdlManager.getInstance().transferTable( catalogTable, targetSchemaId, statement, primaryKeyColumnNames );
 
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( table.getSimple() ) );
