@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
@@ -24,9 +25,10 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-
 
 public interface DataMigrator {
 
@@ -100,7 +102,24 @@ public interface DataMigrator {
 
     AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
 
-
     void copyGraphData( CatalogGraphDatabase graph, Transaction transaction, Integer existingAdapterId, CatalogAdapter adapter );
+
+    /**
+     * Does migration when transferring between a relational and a document-based namespace.
+     *
+     * @param transaction Transactional scope
+     * @param sourceTable Source Table from where data is queried
+     * @param targetSchemaId ID of the target namespace
+     */
+    void copyRelationalDataToDocumentData(Transaction transaction , CatalogTable sourceTable, long targetSchemaId);
+
+    /**
+     * Does migration when transferring between a document-based and a relational namespace.
+     *
+     * @param transaction Transactional scope
+     * @param jsonObjects List of the JSON-objects of the source collection
+     * @param table Target table created in the {@link DdlManager}
+     */
+    void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, CatalogTable table ) throws UnknownColumnException;
 
 }

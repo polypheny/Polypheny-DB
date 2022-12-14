@@ -82,6 +82,7 @@ data: {
             "org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewRenameColumn"
             "org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaOwner"
             "org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaRename"
+            "org.polypheny.db.sql.language.ddl.alterschema.SqlAlterSchemaTransferTable"
             "org.polypheny.db.sql.language.ddl.altertable.SqlAlterSourceTableAddColumn"
             "org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableAddColumn"
             "org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableMergeColumns"
@@ -424,6 +425,7 @@ data: {
             "TRANSACTIONS_ACTIVE"
             "TRANSACTIONS_COMMITTED"
             "TRANSACTIONS_ROLLED_BACK"
+            "TRANSFER"
             "TRANSFORM"
             "TRANSFORMS"
             "TRIGGER_CATALOG"
@@ -525,4 +527,3 @@ data: {
 freemarkerLinks: {
     includes: includes/
 }
-

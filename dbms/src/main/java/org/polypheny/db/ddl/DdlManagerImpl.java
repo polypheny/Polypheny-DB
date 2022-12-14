@@ -18,6 +18,10 @@ package org.polypheny.db.ddl;
 
 
 import com.google.common.collect.ImmutableList;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,6 +36,8 @@ import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -120,6 +126,9 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.languages.mql.MqlNode;
+import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
@@ -128,17 +137,27 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
+import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.AutomaticDdlProcessor;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
+import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.view.MaterializedViewManager;
+import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.Result;
+
+import static org.polypheny.db.util.Static.RESOURCE;
 
 
 @Slf4j
@@ -2320,6 +2339,147 @@ public class DdlManagerImpl extends DdlManager {
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void transferTable( CatalogTable sourceTable, long targetSchemaId, Statement statement, List<String> primaryKeyColumnNames ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException {
+        // Check if there is already an entity with this name
+        if ( assertEntityExists( targetSchemaId, sourceTable.name, true ) ) {
+            return;
+        }
+
+        // Retrieve the catalog schema objects for later use
+        CatalogSchema sourceNamespace = catalog.getSchema( sourceTable.namespaceId );
+        CatalogSchema targetNamespace = catalog.getSchema( targetSchemaId );
+
+        if ( sourceNamespace.getNamespaceType() == targetNamespace.getNamespaceType() ) {
+            // If the source and target namespaces are from the same model, it is sufficient to just move them in the catalog
+            catalog.relocateTable( sourceTable, targetSchemaId );
+        } else if ( sourceNamespace.getNamespaceType() == NamespaceType.RELATIONAL && targetNamespace.getNamespaceType() == NamespaceType.DOCUMENT ) {
+            // If the source namespace is relational and the target is document-based, the migration has to be called
+            // Create the new collection in the same datastore
+            List<DataStore> stores = sourceTable.dataPlacements
+                    .stream()
+                    .map( id -> (DataStore) AdapterManager.getInstance().getAdapter( id ) )
+                    .collect( Collectors.toList() );
+            PlacementType placementType = catalog.getDataPlacement( sourceTable.dataPlacements.get( 0 ), sourceTable.id ).placementType;
+            createCollection( targetSchemaId, sourceTable.name, false, stores, placementType, statement );
+
+            // Call the migrator
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            dataMigrator.copyRelationalDataToDocumentData( statement.getTransaction(), sourceTable, targetSchemaId );
+
+            // Drop the source table
+            dropTable( sourceTable, statement );
+            statement.getQueryProcessor().resetCaches();
+        } else if ( sourceNamespace.getNamespaceType() == NamespaceType.DOCUMENT && targetNamespace.getNamespaceType() == NamespaceType.RELATIONAL ) {
+            // If the source namespace is document-based and the target is relational, the migration has to be called
+            // Retrieve the data placements of the source catalog
+            CatalogCollection sourceCollection = catalog.getCollection( sourceTable.id );
+            List<DataStore> stores = sourceTable.dataPlacements
+                    .stream()
+                    .map( id -> (DataStore) AdapterManager.getInstance().getAdapter( id ) )
+                    .collect( Collectors.toList() );
+            PlacementType placementType = catalog.getDataPlacement( sourceTable.dataPlacements.get( 0 ), sourceTable.id ).placementType;
+
+            // Get all documents of the source collection. Here it is necessary to create the target table with its columns
+            String query = String.format( "db.%s.find({})", sourceTable.name );
+            QueryParameters parameters = new MqlQueryParameters( query, sourceNamespace.name, NamespaceType.DOCUMENT );
+            AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
+            MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
+            AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
+            PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            Result result = getResult( QueryLanguage.MONGO_QL, statement, query, polyImplementation, statement.getTransaction(), false );
+
+            // Create a list of the JsonObjects skipping the _id column which is only needed for the documents but not for the table
+            List<String> fieldNames = new ArrayList();
+            List<JsonObject> jsonObjects = new ArrayList();
+            for ( String[] documents : result.getData() ) {
+                for ( String document : documents ) {
+                    JsonObject jsonObject = JsonParser.parseString( document ).getAsJsonObject();
+                    List<String> fieldsInDocument = new ArrayList<>( jsonObject.keySet() );
+                    fieldsInDocument.removeAll( fieldNames );
+                    fieldsInDocument.remove( "_id" );
+                    fieldNames.addAll( fieldsInDocument );
+                    jsonObjects.add( jsonObject );
+                }
+            }
+
+            // Create the target table
+            // Only VARCHAR(32) columns are added in the current version
+            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 32, null, null, null, false );
+            List<FieldInformation> fieldInformations = fieldNames
+                    .stream()
+                    .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, fieldNames.indexOf( fieldName ) + 1 ) )
+                    .collect( Collectors.toList() );
+
+            // Set the PKs selected by the user
+            List<ConstraintInformation> constraintInformations = Collections.singletonList( new ConstraintInformation( "primary", ConstraintType.PRIMARY, primaryKeyColumnNames ) );
+            createTable( targetSchemaId, sourceTable.name, fieldInformations, constraintInformations, false, stores, placementType, statement );
+
+            // Call the DataMigrator
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            dataMigrator.copyDocumentDataToRelationalData( statement.getTransaction(), jsonObjects, catalog.getTable( targetSchemaId, sourceTable.name ) );
+
+            // Remove the source collection
+            dropCollection( sourceCollection, statement );
+            statement.getQueryProcessor().resetCaches();
+        }
+    }
+
+
+    @NotNull
+    public static Result getResult( QueryLanguage language, Statement statement, String query, PolyImplementation result, Transaction transaction, final boolean noLimit ) {
+        Catalog catalog = Catalog.getInstance();
+
+        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : language == QueryLanguage.CYPHER ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+
+        boolean hasMoreRows = result.hasMoreRows();
+
+        CatalogTable catalogTable = null;
+
+        ArrayList<DbColumn> header = new ArrayList<>();
+        for ( AlgDataTypeField metaData : result.rowType.getFieldList() ) {
+            String columnName = metaData.getName();
+
+            DbColumn dbCol = new DbColumn(
+                    metaData.getName(),
+                    metaData.getType().getFullTypeString(),
+                    metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
+                    metaData.getType().getPrecision(),
+                    null,
+                    null );
+
+            // Get column default values
+            if ( catalogTable != null ) {
+                try {
+                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                        if ( catalogColumn.defaultValue != null ) {
+                            dbCol.defaultValue = catalogColumn.defaultValue.value;
+                        }
+                    }
+                } catch ( UnknownColumnException e ) {
+                    log.error( "Caught exception", e );
+                }
+            }
+            header.add( dbCol );
+        }
+
+        ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
+
+        return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
+                .setNamespaceType( result.getNamespaceType() )
+                .setNamespaceName( "target" )
+                .setLanguage( language )
+                .setAffectedRows( data.size() )
+                .setHasMoreRows( hasMoreRows )
+                .setXid( transaction.getXid().toString() )
+                .setGeneratedQuery( query );
     }
 
 

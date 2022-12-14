@@ -18,6 +18,10 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import java.util.*;
+
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -26,6 +30,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
@@ -44,7 +49,11 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.languages.mql.MqlNode;
+import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -63,6 +72,9 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
+import org.polypheny.db.webui.models.Result;
+
+import static org.polypheny.db.ddl.DdlManagerImpl.getResult;
 
 
 @Slf4j
@@ -133,6 +145,162 @@ public class DataMigratorImpl implements DataMigrator {
         }
 
 
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void copyRelationalDataToDocumentData( Transaction transaction, CatalogTable sourceTable, long targetSchemaId ) {
+        try {
+            Catalog catalog = Catalog.getInstance();
+
+            // Collect the columns of the source table
+            List<CatalogColumn> sourceColumns = new ArrayList<>();
+            for ( String columnName : sourceTable.getColumnNames() ) {
+                sourceColumns.add( catalog.getColumn( sourceTable.id, columnName ) );
+            }
+
+            // Retrieve the placements of the source table
+            Map<Long, List<CatalogColumnPlacement>> sourceColumnPlacements = new HashMap<>();
+            sourceColumnPlacements.put(
+                    sourceTable.partitionProperty.partitionIds.get( 0 ),
+                    selectSourcePlacements( sourceTable, sourceColumns, -1 ) );
+            Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( sourceColumnPlacements );
+            subDistribution.keySet().retainAll( Arrays.asList( sourceTable.partitionProperty.partitionIds.get( 0 ) ) );
+
+            // Initialize the source statement to read all values from the source table
+            Statement sourceStatement = transaction.createStatement();
+            AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
+            PolyImplementation result = sourceStatement.getQueryProcessor().prepareQuery(
+                    sourceAlg,
+                    sourceAlg.alg.getCluster().getTypeFactory().builder().build(),
+                    true,
+                    false,
+                    false );
+
+            // Build the data structure to map the columns to the physical placements
+            Map<String, Integer> sourceColMapping = new LinkedHashMap<>();
+            for ( CatalogColumn catalogColumn : sourceColumns ) {
+                int i = 0;
+                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+                    if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
+                        sourceColMapping.put( catalogColumn.name, i );
+                    }
+                    i++;
+                }
+            }
+
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+            final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
+            Iterator<Object> sourceIterator = enumerable.iterator();
+            while ( sourceIterator.hasNext() ) {
+                // Build a data structure for all values of the source table for the insert query
+                List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                List<LinkedHashMap<String, Object>> values = new ArrayList<>();
+                for ( List<Object> list : rows ) {
+                    LinkedHashMap<String, Object> currentRowValues = new LinkedHashMap<>();
+                    sourceColMapping.forEach( ( key, value ) -> currentRowValues.put( key, list.get( value ) ) );
+                    values.add( currentRowValues );
+                }
+
+                // Create the insert query for all documents in the collection
+                boolean firstRow = true;
+                StringBuffer bf = new StringBuffer();
+                bf.append( "db." + sourceTable.name + ".insertMany([" );
+                for ( Map<String, Object> row : values ) {
+                    if ( firstRow ) {
+                        bf.append( "{" );
+                        firstRow = false;
+                    } else {
+                        bf.append( ",{" );
+                    }
+                    boolean firstColumn = true;
+                    for ( Map.Entry<String, Object> entry : row.entrySet() ) {
+                        if ( entry.getValue() != null ) {
+                            if ( firstColumn == true ) {
+                                firstColumn = false;
+                            } else {
+                                bf.append( "," );
+                            }
+                            bf.append( "\"" + entry.getKey() + "\" : \"" + entry.getValue() + "\"" );
+                        }
+                    }
+                    bf.append( "}" );
+                }
+                bf.append( "])" );
+
+                // Insert als documents into the newlz created collection
+                Statement targetStatement = transaction.createStatement();
+                String query = bf.toString();
+                AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) transaction.getProcessor( Catalog.QueryLanguage.MONGO_QL );
+                QueryParameters parameters = new MqlQueryParameters( query, catalog.getSchema( targetSchemaId ).name, Catalog.NamespaceType.DOCUMENT );
+                MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
+                AlgRoot logicalRoot = mqlProcessor.translate( targetStatement, parsed, parameters );
+                PolyImplementation polyImplementation = targetStatement.getQueryProcessor().prepareQuery( logicalRoot, true );
+
+                // TODO: something is wrong with the transactions. Try to get rid of this.
+                Result updateRresult = getResult( Catalog.QueryLanguage.MONGO_QL, targetStatement, query, polyImplementation, transaction, false );
+            }
+        } catch ( Throwable t ) {
+            throw new RuntimeException( t );
+        }
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, CatalogTable targetTable ) throws UnknownColumnException {
+        Catalog catalog = Catalog.getInstance();
+
+        // Get the values in all documents of the collection
+        // TODO: A data structure is needed to represent also 1:N relations of multiple tables
+        Map<CatalogColumn, List<Object>> columnValues = new HashMap<>();
+        for ( JsonObject jsonObject : jsonObjects ) {
+            for ( String columnName : targetTable.getColumnNames() ) {
+                CatalogColumn column = catalog.getColumn( targetTable.id, columnName );
+                if ( !columnValues.containsKey( column ) ) {
+                    columnValues.put( column, new LinkedList<>() );
+                }
+                JsonElement jsonElement = jsonObject.get( columnName );
+                if ( jsonElement != null ) {
+                    columnValues.get( column ).add( jsonElement.getAsString() );
+                } else {
+                    columnValues.get( column ).add( null );
+                }
+            }
+        }
+
+        Statement targetStatement = transaction.createStatement();
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
+        for ( Entry<CatalogColumn, List<Object>> entry : columnValues.entrySet() ) {
+            // Add the values to the column to the statement
+            CatalogColumn targetColumn = catalog.getColumn( targetTable.id, entry.getKey().name );
+            targetStatement.getDataContext().addParameterValues( targetColumn.id, targetColumn.getAlgDataType( typeFactory ), entry.getValue() );
+
+            // Add all placements of the column to the targetColumnPlacements list
+            for ( DataStore store : RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( targetColumn ) ) {
+                CatalogColumnPlacement columnPlacement = Catalog.getInstance().getColumnPlacement( store.getAdapterId(), targetColumn.id );
+                targetColumnPlacements.add( columnPlacement );
+            }
+        }
+
+        // Prepare the insert query
+        AlgRoot targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, targetTable.partitionProperty.partitionIds.get( 0 ) );
+        Iterator<?> iterator = targetStatement.getQueryProcessor()
+                .prepareQuery( targetAlg, targetAlg.validatedRowType, true, false, false )
+                .enumerable( targetStatement.getDataContext() )
+                .iterator();
+        //noinspection WhileLoopReplaceableByForEach
+        while ( iterator.hasNext() ) {
+            iterator.next();
+        }
+
+        targetStatement.getDataContext().resetParameterValues();
     }
 
 

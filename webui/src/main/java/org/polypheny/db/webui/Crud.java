@@ -208,7 +208,7 @@ import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
-import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
+import org.polypheny.db.webui.models.requests.*;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
@@ -220,11 +220,7 @@ import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.MergeColumnsRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
-import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
-import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.requests.RelAlgRequest;
-import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
-import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.requests.TransferTableRequest;
 
 
 @Slf4j
@@ -607,6 +603,43 @@ public class Crud implements InformationObserver {
         if ( request.store != null && !request.store.equals( "" ) ) {
             query.append( String.format( " ON STORE \"%s\"", request.store ) );
         }
+
+        try {
+            int a = executeSqlUpdate( transaction, query.toString() );
+            result = new Result( a ).setGeneratedQuery( query.toString() );
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Caught exception while creating a table", e );
+            result = new Result( e ).setGeneratedQuery( query.toString() );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
+            }
+        }
+        ctx.json( result );
+    }
+
+    /**
+     * Transfer a table
+     */
+    void transferTable(final Context ctx ) {
+        TransferTableRequest request = ctx.bodyAsClass( TransferTableRequest.class );
+        Transaction transaction = getTransaction();
+        StringBuilder query = new StringBuilder();
+        String targetSchemaId = String.format( "\"%s\"", request.targetSchema );
+        String tableId = String.format( "\"%s\".\"%s\"", request.sourceSchema, request.table );
+        query
+                .append( "ALTER SCHEMA " )
+                .append( targetSchemaId )
+                .append( " TRANSFER " )
+                .append(tableId);
+        if( request.primaryKeyNames != null && !request.primaryKeyNames.isBlank() ) {
+            query
+                    .append( " ADD PRIMARY KEY " )
+                    .append(request.primaryKeyNames);
+        }
+        Result result;
 
         try {
             int a = executeSqlUpdate( transaction, query.toString() );
