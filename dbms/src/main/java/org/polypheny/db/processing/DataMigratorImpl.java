@@ -17,16 +17,9 @@
 package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
@@ -43,11 +36,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.*;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -296,6 +285,115 @@ public class DataMigratorImpl implements DataMigrator {
                             fields.get( resultColMapping.get( v.getKey() ) ).getType(),
                             v.getValue() );
                     pos++;
+                }
+
+                Iterator<?> iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( targetAlg, sourceAlg.validatedRowType, true, false, false )
+                        .enumerable( targetStatement.getDataContext() )
+                        .iterator();
+                //noinspection WhileLoopReplaceableByForEach
+                while ( iterator.hasNext() ) {
+                    iterator.next();
+                }
+                targetStatement.getDataContext().resetParameterValues();
+            }
+        } catch ( Throwable t ) {
+            throw new RuntimeException( t );
+        }
+    }
+
+
+    @Override
+    public void executeMergeQuery( List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
+        try {
+            PolyImplementation result;
+            if ( isMaterializedView ) {
+                result = sourceStatement.getQueryProcessor().prepareQuery(
+                        sourceAlg,
+                        sourceAlg.alg.getCluster().getTypeFactory().builder().build(),
+                        false,
+                        false,
+                        doesSubstituteOrderBy );
+            } else {
+                result = sourceStatement.getQueryProcessor().prepareQuery(
+                        sourceAlg,
+                        sourceAlg.alg.getCluster().getTypeFactory().builder().build(),
+                        true,
+                        false,
+                        false );
+            }
+            final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
+            //noinspection unchecked
+            Iterator<Object> sourceIterator = enumerable.iterator();
+
+            // Get the mappings of the source columns from the Catalog
+            Map<Long, Integer> sourceColMapping = new LinkedHashMap<>();
+            for ( CatalogColumn catalogColumn : sourceColumns ) {
+                int i = 0;
+                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+                    if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
+                        sourceColMapping.put( catalogColumn.id, i );
+                    }
+                    i++;
+                }
+            }
+
+            if ( isMaterializedView ) {
+                for ( CatalogColumn catalogColumn : sourceColumns ) {
+                    if ( !sourceColMapping.containsKey( catalogColumn.id ) ) {
+                        int i = sourceColMapping.values().stream().mapToInt( v -> v ).max().orElseThrow( NoSuchElementException::new );
+                        sourceColMapping.put( catalogColumn.id, i + 1 );
+                    }
+                }
+            }
+
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+            int i = 0;
+            while ( sourceIterator.hasNext() ) {
+                List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                Map<Long, List<Object>> values = new LinkedHashMap<>();
+
+                // Read the values of the source columns from all rows
+                for ( List<Object> list : rows ) {
+                    for ( Map.Entry<Long, Integer> entry : sourceColMapping.entrySet() ) {
+                        if ( !values.containsKey( entry.getKey() ) ) {
+                            values.put( entry.getKey(), new LinkedList<>() );
+                        }
+                        if ( isMaterializedView ) {
+                            if ( entry.getValue() > list.size() - 1 ) {
+                                values.get( entry.getKey() ).add( i );
+                                i++;
+                            } else {
+                                values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                            }
+                        } else {
+                            values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                        }
+                    }
+                }
+
+                // Combine the source values into a single string
+                final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+                List<Object> mergedValueList = null;
+                for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                    if ( !primaryKeyColumns.stream().map( c -> c.id ).collect( Collectors.toList() ).contains( v.getKey() ) ) {
+                        if ( mergedValueList == null ) {
+                            mergedValueList = v.getValue();
+                        } else {
+                            int j = 0;
+                            for ( Object value : mergedValueList ) {
+                                mergedValueList.set( j, ((String) value).concat( joinString + v.getValue().get( j++ ) ) );
+                            }
+                        }
+                    }
+                }
+                targetStatement.getDataContext().addParameterValues( targetColumn.id, targetColumn.getAlgDataType( typeFactory ), mergedValueList );
+
+                // Select the PK columns for the target statement
+                for ( CatalogColumn primaryKey : primaryKeyColumns ) {
+                    AlgDataType primaryKeyAlgDataType = primaryKey.getAlgDataType( typeFactory );
+                    List<Object> primaryKeyValues = values.get( primaryKey.id );
+                    targetStatement.getDataContext().addParameterValues( primaryKey.id, primaryKeyAlgDataType, primaryKeyValues );
                 }
 
                 Iterator<?> iterator = targetStatement.getQueryProcessor()
@@ -772,6 +870,44 @@ public class DataMigratorImpl implements DataMigrator {
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
+    }
+
+
+    @Override
+    public void mergeColumns( Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString ) {
+        CatalogTable table = Catalog.getInstance().getTable( sourceColumns.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+
+        List<CatalogColumn> selectColumnList = new LinkedList<>( sourceColumns );
+        List<CatalogColumn> primaryKeyList = new LinkedList<>();
+
+        // Add primary keys to select column list
+        for ( long cid : primaryKey.columnIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            if ( !selectColumnList.contains( catalogColumn ) ) {
+                selectColumnList.add( catalogColumn );
+            }
+            primaryKeyList.add( catalogColumn );
+        }
+
+        // Get the placements of the source columns
+        Map<Long, List<CatalogColumnPlacement>> sourceColumnPlacements = new HashMap<>();
+        sourceColumnPlacements.put(
+                table.partitionProperty.partitionIds.get( 0 ),
+                selectSourcePlacements( table, selectColumnList, -1 ) );
+
+        // Get the placement of the newly added target column
+        CatalogColumnPlacement targetColumnPlacement = Catalog.getInstance().getColumnPlacement( store.id, targetColumn.id );
+        Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( sourceColumnPlacements );
+        subDistribution.keySet().retainAll( Arrays.asList( table.partitionProperty.partitionIds.get( 0 ) ) );
+
+        // Initialize statements for the reading and inserting
+        Statement sourceStatement = transaction.createStatement();
+        Statement targetStatement = transaction.createStatement();
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
+        AlgRoot targetAlg = buildUpdateStatement( targetStatement, Collections.singletonList( targetColumnPlacement ), table.partitionProperty.partitionIds.get( 0 ) );
+
+        executeMergeQuery( primaryKeyList, selectColumnList, targetColumn, joinString, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
     }
 
 }
