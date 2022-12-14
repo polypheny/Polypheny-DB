@@ -1893,34 +1893,44 @@ public class CatalogImpl extends Catalog {
         return id;
     }
 
-    @Override
-    public long relocateTable(CatalogTable sourceTable, long targetNamespaceId ) {
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long relocateTable( CatalogTable sourceTable, long targetNamespaceId ) {
+        // Clone the source table by changing the ID of the parent namespace
         CatalogTable targetTable = transferCatalogTable( sourceTable, targetNamespaceId );
         synchronized ( this ) {
+            // Build the new immutable list for the source namespace by removing the table to transfer
             ImmutableList<Long> reducedSourceSchemaChildren = ImmutableList
                     .copyOf( Collections2.filter( schemaChildren.get( sourceTable.namespaceId ),
                             Predicates.not( Predicates.equalTo( sourceTable.id ) ) ) );
+            // Build the new immutable list for the target namespace by adding the table to transfer
             ImmutableList<Long> extendedTargetSchemaChildren = new ImmutableList.Builder<Long>()
-                    .addAll( schemaChildren.get(targetNamespaceId ) )
+                    .addAll( schemaChildren.get( targetNamespaceId ) )
                     .add( targetTable.id )
                     .build();
 
+            // Replace the immutable list for both the source and target namespaces
             schemaChildren.replace( sourceTable.namespaceId, reducedSourceSchemaChildren );
             schemaChildren.replace( targetNamespaceId, extendedTargetSchemaChildren );
 
+            // Replace the tables' trees with the cloned table
             tables.replace( sourceTable.id, targetTable );
             tableNames.remove( new Object[]{ sourceTable.databaseId, sourceTable.namespaceId, sourceTable.name } );
             tableNames.put( new Object[]{ targetTable.databaseId, targetNamespaceId, targetTable.name }, targetTable );
 
-            for( Long fieldId: sourceTable.fieldIds ) {
+            // Replace the trees of the tables' columns with cloned columns
+            for ( Long fieldId : sourceTable.fieldIds ) {
                 CatalogColumn targetCatalogColumn = transferCatalogColumn( targetNamespaceId, columns.get( fieldId ) );
                 columns.replace( fieldId, targetCatalogColumn );
-                columnNames.remove( new Object[]{sourceTable.databaseId, sourceTable.namespaceId, sourceTable.id, targetCatalogColumn.name } );
-                columnNames.put( new Object[]{sourceTable.databaseId, targetNamespaceId, sourceTable.id, targetCatalogColumn.name }, targetCatalogColumn );
+                columnNames.remove( new Object[]{ sourceTable.databaseId, sourceTable.namespaceId, sourceTable.id, targetCatalogColumn.name } );
+                columnNames.put( new Object[]{ sourceTable.databaseId, targetNamespaceId, sourceTable.id, targetCatalogColumn.name }, targetCatalogColumn );
             }
 
-            if( getSchema(sourceTable.namespaceId).namespaceType == NamespaceType.DOCUMENT ) {
+            // When transferring between document-based namespaces, also replace the collection trees.
+            if ( getSchema( sourceTable.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
                 CatalogCollection targetCollection = transferCatalogCollection( collections.get( sourceTable.id ), targetNamespaceId );
                 collections.replace( sourceTable.id, targetCollection );
                 collectionNames.remove( new Object[]{ sourceTable.databaseId, sourceTable.namespaceId, sourceTable.name } );
@@ -1931,6 +1941,7 @@ public class CatalogImpl extends Catalog {
 
         return sourceTable.id;
     }
+
 
     /**
      * {@inheritDoc}
@@ -5511,7 +5522,8 @@ public class CatalogImpl extends Catalog {
         }
     }
 
-    private static CatalogColumn transferCatalogColumn(long targetNamespaceId, CatalogColumn sourceCatalogColumn) {
+
+    private static CatalogColumn transferCatalogColumn( long targetNamespaceId, CatalogColumn sourceCatalogColumn ) {
         CatalogColumn targetCatalogColumn = new CatalogColumn(
                 sourceCatalogColumn.id,
                 sourceCatalogColumn.name,
@@ -5527,11 +5539,12 @@ public class CatalogImpl extends Catalog {
                 sourceCatalogColumn.cardinality,
                 sourceCatalogColumn.nullable,
                 sourceCatalogColumn.collation,
-                sourceCatalogColumn.defaultValue);
+                sourceCatalogColumn.defaultValue );
         return targetCatalogColumn;
     }
 
-    private CatalogTable transferCatalogTable(CatalogTable sourceTable, long targetNamespaceId) {
+
+    private CatalogTable transferCatalogTable( CatalogTable sourceTable, long targetNamespaceId ) {
         return new CatalogTable(
                 sourceTable.id,
                 sourceTable.name,
@@ -5544,10 +5557,11 @@ public class CatalogImpl extends Catalog {
                 sourceTable.dataPlacements,
                 sourceTable.modifiable,
                 sourceTable.partitionProperty,
-                sourceTable.connectedViews);
+                sourceTable.connectedViews );
     }
 
-    private CatalogCollection transferCatalogCollection(CatalogCollection sourceCollection, long targetNamespaceId) {
+
+    private CatalogCollection transferCatalogCollection( CatalogCollection sourceCollection, long targetNamespaceId ) {
         return new CatalogCollection(
                 sourceCollection.databaseId,
                 targetNamespaceId,
@@ -5555,7 +5569,7 @@ public class CatalogImpl extends Catalog {
                 sourceCollection.name,
                 sourceCollection.placements,
                 sourceCollection.entityType,
-                sourceCollection.physicalName);
+                sourceCollection.physicalName );
     }
 
 

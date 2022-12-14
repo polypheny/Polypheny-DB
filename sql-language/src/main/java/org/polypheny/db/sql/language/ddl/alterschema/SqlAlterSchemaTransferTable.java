@@ -48,7 +48,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 
 /**
- * Parse tree for {@code ALTER SCHEMA name OWNER TO} statement.
+ * Parse tree for {@code ALTER SCHEMA name TRANSFER tanle TO namespace} statement.
  */
 public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
 
@@ -60,23 +60,23 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
     /**
      * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterSchemaTransferTable(ParserPos pos, SqlIdentifier table, SqlIdentifier targetSchema, SqlNodeList primaryKeyColumns ) {
+    public SqlAlterSchemaTransferTable( ParserPos pos, SqlIdentifier table, SqlIdentifier targetSchema, SqlNodeList primaryKeyColumns ) {
         super( pos );
-        this.table = Objects.requireNonNull(table);
-        this.targetSchema = Objects.requireNonNull(targetSchema);
+        this.table = Objects.requireNonNull( table );
+        this.targetSchema = Objects.requireNonNull( targetSchema );
         this.primaryKeyColumns = primaryKeyColumns;
     }
 
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of(table, targetSchema);
+        return ImmutableNullableList.of( table, targetSchema );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of(table, targetSchema);
+        return ImmutableNullableList.of( table, targetSchema );
     }
 
 
@@ -95,9 +95,9 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         try {
             Catalog catalog = Catalog.getInstance();
-            CatalogTable catalogTable = getCatalogTable( context, table);
+            CatalogTable catalogTable = getCatalogTable( context, table );
 
-            long targetSchemaId = catalog.getSchema( context.getDatabaseId(), targetSchema.getNames().get(0) ).id;
+            long targetSchemaId = catalog.getSchema( context.getDatabaseId(), targetSchema.getNames().get( 0 ) ).id;
 
             List<String> primaryKeyColumnNames = (primaryKeyColumns != null)
                     ? primaryKeyColumns.getList().stream().map( Node::toString ).collect( Collectors.toList() )
@@ -107,14 +107,14 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
 
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( table.getSimple() ) );
-        } catch (EntityAlreadyExistsException e) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableExists(  table.names.get( 1 ) ) );
+        } catch ( EntityAlreadyExistsException e ) {
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableExists( table.names.get( 1 ) ) );
         } catch ( DdlOnSourceException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
         } catch ( UnknownTableException e ) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName()) );
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName() ) );
         } catch ( UnknownColumnException e ) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFound( e.getColumnName() ));
+            throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         }
     }
 

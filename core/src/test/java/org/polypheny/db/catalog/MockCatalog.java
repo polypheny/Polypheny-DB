@@ -351,8 +351,9 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+
     @Override
-    public long relocateTable(CatalogTable sourceTable, long targetNamespaceId ) {
+    public long relocateTable( CatalogTable sourceTable, long targetNamespaceId ) {
         throw new NotImplementedException();
     }
 

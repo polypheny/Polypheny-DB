@@ -451,6 +451,15 @@ public abstract class DdlManager {
      */
     public abstract void createTable( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
+    /**
+     * Transfer a table between two namespaces.
+     * Currently, the transfer works between namespaces of the same model and between relational and document-based and vice versa.
+     *
+     * @param table the table about to be transfered
+     * @param targetSchemaId the id of the target namespace
+     * @param statement the used statement
+     * @param statement the used statement
+     */
     public abstract void transferTable( CatalogTable table, long targetSchemaId, Statement statement, List<String> primaryKeyColumnNames ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException;
 
     /**

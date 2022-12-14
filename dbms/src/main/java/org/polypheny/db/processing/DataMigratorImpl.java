@@ -150,25 +150,30 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void copyRelationalDataToDocumentData( Transaction transaction, CatalogTable sourceTable, long targetSchemaId ) {
         try {
             Catalog catalog = Catalog.getInstance();
+
+            // Collect the columns of the source table
             List<CatalogColumn> sourceColumns = new ArrayList<>();
             for ( String columnName : sourceTable.getColumnNames() ) {
                 sourceColumns.add( catalog.getColumn( sourceTable.id, columnName ) );
             }
 
+            // Retrieve the placements of the source table
             Map<Long, List<CatalogColumnPlacement>> sourceColumnPlacements = new HashMap<>();
             sourceColumnPlacements.put(
                     sourceTable.partitionProperty.partitionIds.get( 0 ),
                     selectSourcePlacements( sourceTable, sourceColumns, -1 ) );
-
-            Statement sourceStatement = transaction.createStatement();
-
             Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( sourceColumnPlacements );
             subDistribution.keySet().retainAll( Arrays.asList( sourceTable.partitionProperty.partitionIds.get( 0 ) ) );
 
+            // Initialize the source statement to read all values from the source table
+            Statement sourceStatement = transaction.createStatement();
             AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
             PolyImplementation result = sourceStatement.getQueryProcessor().prepareQuery(
                     sourceAlg,
@@ -177,6 +182,7 @@ public class DataMigratorImpl implements DataMigrator {
                     false,
                     false );
 
+            // Build the data structure to map the columns to the physical placements
             Map<String, Integer> sourceColMapping = new LinkedHashMap<>();
             for ( CatalogColumn catalogColumn : sourceColumns ) {
                 int i = 0;
@@ -192,6 +198,7 @@ public class DataMigratorImpl implements DataMigrator {
             final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
             Iterator<Object> sourceIterator = enumerable.iterator();
             while ( sourceIterator.hasNext() ) {
+                // Build a data structure for all values of the source table for the insert query
                 List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
                 List<LinkedHashMap<String, Object>> values = new ArrayList<>();
                 for ( List<Object> list : rows ) {
@@ -200,6 +207,7 @@ public class DataMigratorImpl implements DataMigrator {
                     values.add( currentRowValues );
                 }
 
+                // Create the insert query for all documents in the collection
                 boolean firstRow = true;
                 StringBuffer bf = new StringBuffer();
                 bf.append( "db." + sourceTable.name + ".insertMany([" );
@@ -212,7 +220,7 @@ public class DataMigratorImpl implements DataMigrator {
                     }
                     boolean firstColumn = true;
                     for ( Map.Entry<String, Object> entry : row.entrySet() ) {
-                        if (entry.getValue() != null ) {
+                        if ( entry.getValue() != null ) {
                             if ( firstColumn == true ) {
                                 firstColumn = false;
                             } else {
@@ -225,14 +233,16 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 bf.append( "])" );
 
-                String query = bf.toString();
-
+                // Insert als documents into the newlz created collection
                 Statement targetStatement = transaction.createStatement();
+                String query = bf.toString();
                 AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) transaction.getProcessor( Catalog.QueryLanguage.MONGO_QL );
                 QueryParameters parameters = new MqlQueryParameters( query, catalog.getSchema( targetSchemaId ).name, Catalog.NamespaceType.DOCUMENT );
                 MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
                 AlgRoot logicalRoot = mqlProcessor.translate( targetStatement, parsed, parameters );
                 PolyImplementation polyImplementation = targetStatement.getQueryProcessor().prepareQuery( logicalRoot, true );
+
+                // TODO: something is wrong with the transactions. Try to get rid of this.
                 Result updateRresult = getResult( Catalog.QueryLanguage.MONGO_QL, targetStatement, query, polyImplementation, transaction, false );
             }
         } catch ( Throwable t ) {
@@ -241,39 +251,48 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, CatalogTable targetTable ) throws UnknownColumnException {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         Catalog catalog = Catalog.getInstance();
+
+        // Get the values in all documents of the collection
+        // TODO: A data structure is needed to represent also 1:N relations of multiple tables
         Map<CatalogColumn, List<Object>> columnValues = new HashMap<>();
-        for ( JsonObject jsonObject : jsonObjects) {
+        for ( JsonObject jsonObject : jsonObjects ) {
             for ( String columnName : targetTable.getColumnNames() ) {
                 CatalogColumn column = catalog.getColumn( targetTable.id, columnName );
                 if ( !columnValues.containsKey( column ) ) {
                     columnValues.put( column, new LinkedList<>() );
                 }
                 JsonElement jsonElement = jsonObject.get( columnName );
-                if (jsonElement != null) {
-                    columnValues.get( column ).add( jsonElement.getAsString()  );
+                if ( jsonElement != null ) {
+                    columnValues.get( column ).add( jsonElement.getAsString() );
                 } else {
                     columnValues.get( column ).add( null );
                 }
             }
         }
 
-        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
         Statement targetStatement = transaction.createStatement();
-        AlgRoot targetAlg;
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
         for ( Entry<CatalogColumn, List<Object>> entry : columnValues.entrySet() ) {
+            // Add the values to the column to the statement
             CatalogColumn targetColumn = catalog.getColumn( targetTable.id, entry.getKey().name );
-            targetStatement.getDataContext().addParameterValues(targetColumn.id, targetColumn.getAlgDataType( typeFactory ) , entry.getValue() );
-            List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( targetColumn );
-            for ( DataStore store : stores ) {
-                targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.getAdapterId(), targetColumn.id ) );
+            targetStatement.getDataContext().addParameterValues( targetColumn.id, targetColumn.getAlgDataType( typeFactory ), entry.getValue() );
+
+            // Add all placements of the column to the targetColumnPlacements list
+            for ( DataStore store : RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( targetColumn ) ) {
+                CatalogColumnPlacement columnPlacement = Catalog.getInstance().getColumnPlacement( store.getAdapterId(), targetColumn.id );
+                targetColumnPlacements.add( columnPlacement );
             }
         }
 
-        targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, targetTable.partitionProperty.partitionIds.get( 0 ) );
+        // Prepare the insert query
+        AlgRoot targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, targetTable.partitionProperty.partitionIds.get( 0 ) );
         Iterator<?> iterator = targetStatement.getQueryProcessor()
                 .prepareQuery( targetAlg, targetAlg.validatedRowType, true, false, false )
                 .enumerable( targetStatement.getDataContext() )

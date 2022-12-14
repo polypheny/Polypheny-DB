@@ -2261,87 +2261,99 @@ public class DdlManagerImpl extends DdlManager {
         }
     }
 
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void transferTable( CatalogTable sourceTable, long targetSchemaId, Statement statement, List<String> primaryKeyColumnNames ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException {
         // Check if there is already an entity with this name
         if ( assertEntityExists( targetSchemaId, sourceTable.name, true ) ) {
             return;
         }
-        CatalogSchema sourceNamespace = catalog.getSchema(sourceTable.namespaceId);
-        CatalogSchema targetNamespace = catalog.getSchema(targetSchemaId);
+
+        // Retrieve the catalog schema objects for later use
+        CatalogSchema sourceNamespace = catalog.getSchema( sourceTable.namespaceId );
+        CatalogSchema targetNamespace = catalog.getSchema( targetSchemaId );
 
         if ( sourceNamespace.getNamespaceType() == targetNamespace.getNamespaceType() ) {
-            catalog.relocateTable(sourceTable, targetSchemaId);
-        }
-
-        if ( sourceNamespace.getNamespaceType() == NamespaceType.RELATIONAL && targetNamespace.getNamespaceType() == NamespaceType.DOCUMENT ) {
+            // If the source and target namespaces are from the same model, it is sufficient to just move them in the catalog
+            catalog.relocateTable( sourceTable, targetSchemaId );
+        } else if ( sourceNamespace.getNamespaceType() == NamespaceType.RELATIONAL && targetNamespace.getNamespaceType() == NamespaceType.DOCUMENT ) {
+            // If the source namespace is relational and the target is document-based, the migration has to be called
+            // Create the new collection in the same datastore
             List<DataStore> stores = sourceTable.dataPlacements
                     .stream()
-                    .map(id -> (DataStore) AdapterManager.getInstance().getAdapter(id))
-                    .collect(Collectors.toList());
-            PlacementType placementType = catalog.getDataPlacement(sourceTable.dataPlacements.get(0), sourceTable.id).placementType;
+                    .map( id -> (DataStore) AdapterManager.getInstance().getAdapter( id ) )
+                    .collect( Collectors.toList() );
+            PlacementType placementType = catalog.getDataPlacement( sourceTable.dataPlacements.get( 0 ), sourceTable.id ).placementType;
             createCollection( targetSchemaId, sourceTable.name, false, stores, placementType, statement );
 
-            // Migrator
+            // Call the migrator
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
             dataMigrator.copyRelationalDataToDocumentData( statement.getTransaction(), sourceTable, targetSchemaId );
 
+            // Drop the source table
             dropTable( sourceTable, statement );
-
             statement.getQueryProcessor().resetCaches();
-        }
-
-        if ( sourceNamespace.getNamespaceType() == NamespaceType.DOCUMENT && targetNamespace.getNamespaceType() == NamespaceType.RELATIONAL ) {
+        } else if ( sourceNamespace.getNamespaceType() == NamespaceType.DOCUMENT && targetNamespace.getNamespaceType() == NamespaceType.RELATIONAL ) {
+            // If the source namespace is document-based and the target is relational, the migration has to be called
+            // Retrieve the data placements of the source catalog
             CatalogCollection sourceCollection = catalog.getCollection( sourceTable.id );
             List<DataStore> stores = sourceTable.dataPlacements
                     .stream()
-                    .map(id -> (DataStore) AdapterManager.getInstance().getAdapter(id))
-                    .collect(Collectors.toList());
-            PlacementType placementType = catalog.getDataPlacement(sourceTable.dataPlacements.get(0), sourceTable.id).placementType;
+                    .map( id -> (DataStore) AdapterManager.getInstance().getAdapter( id ) )
+                    .collect( Collectors.toList() );
+            PlacementType placementType = catalog.getDataPlacement( sourceTable.dataPlacements.get( 0 ), sourceTable.id ).placementType;
 
-
+            // Get all documents of the source collection. Here it is necessary to create the target table with its columns
             String query = String.format( "db.%s.find({})", sourceTable.name );
-            QueryParameters parameters = new MqlQueryParameters( query,  sourceNamespace.name, NamespaceType.DOCUMENT );
+            QueryParameters parameters = new MqlQueryParameters( query, sourceNamespace.name, NamespaceType.DOCUMENT );
             AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
             MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
             AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
             PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-
             Result result = getResult( QueryLanguage.MONGO_QL, statement, query, polyImplementation, statement.getTransaction(), false );
+
+            // Create a list of the JsonObjects skipping the _id column which is only needed for the documents but not for the table
             List<String> fieldNames = new ArrayList();
             List<JsonObject> jsonObjects = new ArrayList();
-            for ( String[] documents : result.getData()) {
-                for ( String document : documents) {
+            for ( String[] documents : result.getData() ) {
+                for ( String document : documents ) {
                     JsonObject jsonObject = JsonParser.parseString( document ).getAsJsonObject();
-                    List<String> fieldsInDocument = new ArrayList<>( jsonObject.keySet());
+                    List<String> fieldsInDocument = new ArrayList<>( jsonObject.keySet() );
                     fieldsInDocument.removeAll( fieldNames );
-                    fieldsInDocument.remove(  "_id");
+                    fieldsInDocument.remove( "_id" );
                     fieldNames.addAll( fieldsInDocument );
                     jsonObjects.add( jsonObject );
                 }
             }
 
-            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
-
+            // Create the target table
+            // Only VARCHAR(32) columns are added in the current version
+            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 32, null, null, null, false );
             List<FieldInformation> fieldInformations = fieldNames
                     .stream()
                     .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, fieldNames.indexOf( fieldName ) + 1 ) )
-                    .collect( Collectors.toList());
+                    .collect( Collectors.toList() );
 
+            // Set the PKs selected by the user
             List<ConstraintInformation> constraintInformations = Collections.singletonList( new ConstraintInformation( "primary", ConstraintType.PRIMARY, primaryKeyColumnNames ) );
-            createTable( targetSchemaId, sourceTable.name, fieldInformations, constraintInformations, false, stores, placementType, statement);
+            createTable( targetSchemaId, sourceTable.name, fieldInformations, constraintInformations, false, stores, placementType, statement );
 
-            // Migrator
+            // Call the DataMigrator
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
             dataMigrator.copyDocumentDataToRelationalData( statement.getTransaction(), jsonObjects, catalog.getTable( targetSchemaId, sourceTable.name ) );
 
+            // Remove the source collection
             dropCollection( sourceCollection, statement );
             statement.getQueryProcessor().resetCaches();
         }
     }
 
+
     @NotNull
-    public static Result getResult(QueryLanguage language, Statement statement, String query, PolyImplementation result, Transaction transaction, final boolean noLimit ) {
+    public static Result getResult( QueryLanguage language, Statement statement, String query, PolyImplementation result, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : language == QueryLanguage.CYPHER ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
@@ -2350,11 +2362,9 @@ public class DdlManagerImpl extends DdlManager {
 
         CatalogTable catalogTable = null;
 
-
         ArrayList<DbColumn> header = new ArrayList<>();
         for ( AlgDataTypeField metaData : result.rowType.getFieldList() ) {
             String columnName = metaData.getName();
-
 
             DbColumn dbCol = new DbColumn(
                     metaData.getName(),
@@ -3284,6 +3294,7 @@ public class DdlManagerImpl extends DdlManager {
             statement.setMonitoringEvent( event );
         }
     }
+
 
     @Override
     public void dropFunction() {
