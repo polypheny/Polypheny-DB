@@ -55,6 +55,7 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
     private final boolean nullable;
     private final SqlNode defaultValue;
 
+
     public SqlAlterTableMergeColumns(
             ParserPos pos,
             SqlIdentifier table,
@@ -63,7 +64,7 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
             SqlNode joinString,
             SqlDataTypeSpec type,
             boolean nullable,
-            SqlNode defaultValue) {
+            SqlNode defaultValue ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnsToMerge = columnsToMerge;
@@ -88,7 +89,7 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
 
 
     @Override
-    public void unparse(SqlWriter writer, int leftPrec, int rightPrec ) {
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -127,13 +128,13 @@ public class SqlAlterTableMergeColumns extends SqlAlterTable {
         try {
             DdlManager.getInstance().mergeColumns(
                     catalogTable,
-                    columnsToMerge.getList().stream().map( Node::toString ).collect( Collectors.toList()),
+                    columnsToMerge.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                     targetColumnName.getSimple(),
                     joinString,
                     ColumnTypeInformation.fromDataTypeSpec( type ),
                     nullable,
                     defaultValue,
-                    statement);
+                    statement );
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( columnsToMerge.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( ColumnAlreadyExistsException e ) {

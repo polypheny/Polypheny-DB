@@ -304,7 +304,7 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public void executeMergeQuery(List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
+    public void executeMergeQuery( List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
             PolyImplementation result;
             if ( isMaterializedView ) {
@@ -326,6 +326,7 @@ public class DataMigratorImpl implements DataMigrator {
             //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
 
+            // Get the mappings of the source columns from the Catalog
             Map<Long, Integer> sourceColMapping = new LinkedHashMap<>();
             for ( CatalogColumn catalogColumn : sourceColumns ) {
                 int i = 0;
@@ -352,6 +353,7 @@ public class DataMigratorImpl implements DataMigrator {
                 List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
                 Map<Long, List<Object>> values = new LinkedHashMap<>();
 
+                // Read the values of the source columns from all rows
                 for ( List<Object> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : sourceColMapping.entrySet() ) {
                         if ( !values.containsKey( entry.getKey() ) ) {
@@ -370,27 +372,28 @@ public class DataMigratorImpl implements DataMigrator {
                     }
                 }
 
+                // Combine the source values into a single string
                 final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-
                 List<Object> mergedValueList = null;
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
-                    if ( !primaryKeyColumns.stream().map(c -> c.id).collect(Collectors.toList()).contains( v.getKey() ) ) {
-                        if( mergedValueList == null ) {
+                    if ( !primaryKeyColumns.stream().map( c -> c.id ).collect( Collectors.toList() ).contains( v.getKey() ) ) {
+                        if ( mergedValueList == null ) {
                             mergedValueList = v.getValue();
                         } else {
                             int j = 0;
-                            for (Object value : mergedValueList) {
-                                mergedValueList.set(j, ((String) value).concat(joinString + v.getValue().get(j++)));
+                            for ( Object value : mergedValueList ) {
+                                mergedValueList.set( j, ((String) value).concat( joinString + v.getValue().get( j++ ) ) );
                             }
                         }
                     }
                 }
-                targetStatement.getDataContext().addParameterValues(targetColumn.id, targetColumn.getAlgDataType( typeFactory ) , mergedValueList );
+                targetStatement.getDataContext().addParameterValues( targetColumn.id, targetColumn.getAlgDataType( typeFactory ), mergedValueList );
 
+                // Select the PK columns for the target statement
                 for ( CatalogColumn primaryKey : primaryKeyColumns ) {
                     AlgDataType primaryKeyAlgDataType = primaryKey.getAlgDataType( typeFactory );
                     List<Object> primaryKeyValues = values.get( primaryKey.id );
-                    targetStatement.getDataContext().addParameterValues(primaryKey.id, primaryKeyAlgDataType , primaryKeyValues );
+                    targetStatement.getDataContext().addParameterValues( primaryKey.id, primaryKeyAlgDataType, primaryKeyValues );
                 }
 
                 Iterator<?> iterator = targetStatement.getQueryProcessor()
@@ -407,7 +410,6 @@ public class DataMigratorImpl implements DataMigrator {
             throw new RuntimeException( t );
         }
     }
-
 
 
     @Override
@@ -872,12 +874,12 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public void mergeColumns(Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString) {
+    public void mergeColumns( Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString ) {
         CatalogTable table = Catalog.getInstance().getTable( sourceColumns.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
         List<CatalogColumn> selectColumnList = new LinkedList<>( sourceColumns );
-        List<CatalogColumn> primaryKeyList = new LinkedList<>( );
+        List<CatalogColumn> primaryKeyList = new LinkedList<>();
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
@@ -888,19 +890,20 @@ public class DataMigratorImpl implements DataMigrator {
             primaryKeyList.add( catalogColumn );
         }
 
+        // Get the placements of the source columns
         Map<Long, List<CatalogColumnPlacement>> sourceColumnPlacements = new HashMap<>();
         sourceColumnPlacements.put(
                 table.partitionProperty.partitionIds.get( 0 ),
-                selectSourcePlacements( table, selectColumnList, -1) );
+                selectSourcePlacements( table, selectColumnList, -1 ) );
 
+        // Get the placement of the newly added target column
         CatalogColumnPlacement targetColumnPlacement = Catalog.getInstance().getColumnPlacement( store.id, targetColumn.id );
+        Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( sourceColumnPlacements );
+        subDistribution.keySet().retainAll( Arrays.asList( table.partitionProperty.partitionIds.get( 0 ) ) );
 
+        // Initialize statements for the reading and inserting
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
-
-        Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( sourceColumnPlacements );
-        subDistribution.keySet().retainAll( Arrays.asList( table.partitionProperty.partitionIds.get( 0 )  ) );
-
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
         AlgRoot targetAlg = buildUpdateStatement( targetStatement, Collections.singletonList( targetColumnPlacement ), table.partitionProperty.partitionIds.get( 0 ) );
 

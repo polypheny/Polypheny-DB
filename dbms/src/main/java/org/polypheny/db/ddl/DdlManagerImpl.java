@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -597,13 +598,13 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
     }
 
-    public void mergeColumns(CatalogTable catalogTable, List<String> sourceColumnNames, String newColumnName, String joinString, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
 
-        if ( catalog.checkIfExistsColumn( catalogTable.id, newColumnName) ) {
-            throw new ColumnAlreadyExistsException(newColumnName, catalogTable.name );
+    public void mergeColumns( CatalogTable catalogTable, List<String> sourceColumnNames, String newColumnName, String joinString, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
+        if ( catalog.checkIfExistsColumn( catalogTable.id, newColumnName ) ) {
+            throw new ColumnAlreadyExistsException( newColumnName, catalogTable.name );
         }
 
-        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, sourceColumnNames.get( sourceColumnNames.size()-1 ) );
+        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, sourceColumnNames.get( sourceColumnNames.size() - 1 ) );
         int position = updateAdjacentPositions( catalogTable, null, afterColumn );
 
         long columnId = catalog.addColumn(
@@ -622,7 +623,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Add default value
         addDefaultValue( defaultValue, columnId );
-        CatalogColumn addedColumn = catalog.getColumn  ( columnId );
+        CatalogColumn addedColumn = catalog.getColumn( columnId );
 
         // Remove quotes from joinString
         if ( joinString.startsWith( "'" ) ) {
@@ -638,7 +639,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( String columnName : sourceColumnNames ) {
             sourceCatalogColumns.add( catalog.getColumn( catalogTable.id, columnName ) );
         }
-        CatalogColumn targetCatalogColumn = catalog.getColumn( catalogTable.id, newColumnName);
+        CatalogColumn targetCatalogColumn = catalog.getColumn( catalogTable.id, newColumnName );
 
         // Add column on underlying data stores and insert default value
         for ( DataStore store : stores ) {
@@ -646,13 +647,13 @@ public class DdlManagerImpl extends DdlManager {
                     store.getAdapterId(),
                     addedColumn.id,
                     PlacementType.AUTOMATIC,
-                    null, // Will be set later
-                    null, // Will be set later
-                    null // Will be set later
-            );//Not a valid partitionID --> placeholder
+                    null,
+                    null,
+                    null
+            );
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
             // Call migrator
-            dataMigrator.mergeColumns( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), sourceCatalogColumns, targetCatalogColumn, joinString);
+            dataMigrator.mergeColumns( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), sourceCatalogColumns, targetCatalogColumn, joinString );
 
             for ( CatalogColumn sourceCatalogColumn : sourceCatalogColumns ) {
                 // Delete column from underlying data stores
@@ -668,9 +669,7 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.deleteColumn( sourceCatalogColumn.id );
                 if ( sourceCatalogColumn.position != columns.size() ) {
                     // Update position of the other columns
-                    for ( int i = sourceCatalogColumn.position; i < columns.size(); i++ ) {
-                        catalog.setColumnPosition( columns.get( i ).id, i );
-                    }
+                    IntStream.range( sourceCatalogColumn.position, columns.size() ).forEach( i -> catalog.setColumnPosition( columns.get( i ).id, i ) );
                 }
             }
         }

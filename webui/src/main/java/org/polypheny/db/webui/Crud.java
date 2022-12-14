@@ -1745,6 +1745,7 @@ public class Crud implements InformationObserver {
         ctx.json( result );
     }
 
+
     /**
      * Delete a column of a table
      */
@@ -1773,8 +1774,9 @@ public class Crud implements InformationObserver {
         ctx.json( result );
     }
 
+
     /**
-     * Add a column to an existing table
+     * Merge multiple columns of table
      */
     void mergeColumns( final Context ctx ) {
         MergeColumnsRequest request = ctx.bodyAsClass( MergeColumnsRequest.class );
@@ -1785,7 +1787,7 @@ public class Crud implements InformationObserver {
 
         boolean nullable = Arrays.stream( request.sourceColumns ).allMatch( c -> c.nullable );
         Integer precison = Arrays.stream( request.sourceColumns ).mapToInt( c -> c.precision ).sum();
-        DbColumn newColumn = new DbColumn(request.targetColumnName, "varchar", nullable, precison, null, null);
+        DbColumn newColumn = new DbColumn( request.targetColumnName, "varchar", nullable, precison, null, null );
         newColumn.collectionsType = "";
 
         String as = "";
@@ -1798,14 +1800,14 @@ public class Crud implements InformationObserver {
 
         String listOfColumnsToMerge =
                 Arrays.stream( request.sourceColumns )
-                        .map( s -> "\"" + s.name + "\"")
-                        .collect( Collectors.joining(", "));
+                        .map( s -> "\"" + s.name + "\"" )
+                        .collect( Collectors.joining( ", " ) );
         String query = String.format( "ALTER TABLE %s MERGE COLUMNS (%s) INTO \"%s\" WITH '%s' %s %s",
                 tableId, listOfColumnsToMerge, newColumn.name, request.joinString, as, dataType );
 
         //we don't want precision, scale etc. for source columns
         if ( newColumn.as == null ) {
-            if (newColumn.precision != null ) {
+            if ( newColumn.precision != null ) {
                 query = query + "(" + newColumn.precision;
                 if ( newColumn.scale != null ) {
                     query = query + "," + newColumn.scale;
@@ -1826,8 +1828,8 @@ public class Crud implements InformationObserver {
         String defaultValue = Arrays
                 .stream( request.sourceColumns )
                 .map( c -> c.defaultValue )
-                .filter(s -> s != null && !s.isEmpty())
-                .collect( Collectors.joining(request.joinString));
+                .filter( s -> s != null && !s.isEmpty() )
+                .collect( Collectors.joining( request.joinString ) );
 
         if ( defaultValue != null && !defaultValue.equals( "" ) ) {
             query = query + " DEFAULT " + String.format( "'%s'", defaultValue );
@@ -1849,6 +1851,7 @@ public class Crud implements InformationObserver {
         }
         ctx.json( result );
     }
+
 
     /**
      * Get artificially generated index/foreign key/constraint names for placeholders in the UI

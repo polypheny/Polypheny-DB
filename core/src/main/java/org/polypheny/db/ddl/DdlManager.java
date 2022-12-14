@@ -205,7 +205,7 @@ public abstract class DdlManager {
      * @param defaultValue the new default value of the merged column
      * @param statement the initial query statement
      */
-    public abstract void mergeColumns(CatalogTable catalogTable, List<String> sourceColumnNames, String newColumnName, String joinString, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException;
+    public abstract void mergeColumns( CatalogTable catalogTable, List<String> sourceColumnNames, String newColumnName, String joinString, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException;
 
     /**
      * Adds an index to a table
