@@ -3569,8 +3569,20 @@ public class Crud implements InformationObserver {
      * Loads the plugin in the supplied path.
      */
     public void loadPlugins( final Context ctx ) {
-        File file = getFile( ctx, ".polypheny/plugins/", false );
-        PolyPluginManager.loadAdditionalPlugin( file );
+        ctx.uploadedFiles( "plugins" ).forEach( file -> {
+            String[] splits = file.getFilename().split( "/" );
+            String normalizedFileName = splits[splits.length - 1];
+            splits = normalizedFileName.split( "\\\\" );
+            normalizedFileName = splits[splits.length - 1];
+            File f = new File( System.getProperty( "user.home" ), ".polypheny/plugins/" + normalizedFileName );
+            try {
+                FileUtils.copyInputStreamToFile( file.getContent(), f );
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
+            PolyPluginManager.loadAdditionalPlugin( f );
+        } );
+
     }
 
 
