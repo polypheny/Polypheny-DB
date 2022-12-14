@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -616,6 +617,85 @@ public class DdlManagerImpl extends DdlManager {
         catalog.addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
     }
 
+
+    public void mergeColumns( CatalogTable catalogTable, List<String> sourceColumnNames, String newColumnName, String joinString, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException {
+        if ( catalog.checkIfExistsColumn( catalogTable.id, newColumnName ) ) {
+            throw new ColumnAlreadyExistsException( newColumnName, catalogTable.name );
+        }
+
+        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, sourceColumnNames.get( sourceColumnNames.size() - 1 ) );
+        int position = updateAdjacentPositions( catalogTable, null, afterColumn );
+
+        long columnId = catalog.addColumn(
+                newColumnName,
+                catalogTable.id,
+                position,
+                type.type,
+                type.collectionType,
+                type.precision,
+                type.scale,
+                type.dimension,
+                type.cardinality,
+                nullable,
+                Collation.getDefaultCollation()
+        );
+
+        // Add default value
+        addDefaultValue( defaultValue, columnId );
+        CatalogColumn addedColumn = catalog.getColumn( columnId );
+
+        // Remove quotes from joinString
+        if ( joinString.startsWith( "'" ) ) {
+            joinString = joinString.substring( 1, joinString.length() - 1 );
+        }
+
+        // Ask router on which stores this column shall be placed
+        List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
+        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+
+        // Build catalog columns
+        List<CatalogColumn> sourceCatalogColumns = new LinkedList<>();
+        for ( String columnName : sourceColumnNames ) {
+            sourceCatalogColumns.add( catalog.getColumn( catalogTable.id, columnName ) );
+        }
+        CatalogColumn targetCatalogColumn = catalog.getColumn( catalogTable.id, newColumnName );
+
+        // Add column on underlying data stores and insert default value
+        for ( DataStore store : stores ) {
+            catalog.addColumnPlacement(
+                    store.getAdapterId(),
+                    addedColumn.id,
+                    PlacementType.AUTOMATIC,
+                    null,
+                    null,
+                    null
+            );
+            AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
+            // Call migrator
+            dataMigrator.mergeColumns( statement.getTransaction(), catalog.getAdapter( store.getAdapterId() ), sourceCatalogColumns, targetCatalogColumn, joinString );
+
+            for ( CatalogColumn sourceCatalogColumn : sourceCatalogColumns ) {
+                // Delete column from underlying data stores
+                for ( CatalogColumnPlacement dp : catalog.getColumnPlacementsByColumn( sourceCatalogColumn.id ) ) {
+                    if ( catalogTable.entityType == EntityType.ENTITY ) {
+                        AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( statement.getPrepareContext(), dp );
+                    }
+                    catalog.deleteColumnPlacement( dp.adapterId, dp.columnId, true );
+                }
+
+                // Delete from catalog
+                List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
+                catalog.deleteColumn( sourceCatalogColumn.id );
+                if ( sourceCatalogColumn.position != columns.size() ) {
+                    // Update position of the other columns
+                    IntStream.range( sourceCatalogColumn.position, columns.size() ).forEach( i -> catalog.setColumnPosition( columns.get( i ).id, i ) );
+                }
+            }
+        }
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+    }
 
     @Override
     public void addIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {

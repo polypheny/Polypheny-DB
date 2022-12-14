@@ -78,10 +78,25 @@ public interface DataMigrator {
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
+    /**
+     * Used to merge columns in a relational table. The values of the source columns will be selected,
+     * concatenated and inserted into the target column.
+     *
+     * @param transaction   Transactional scope
+     * @param store         Target Store where data should be migrated to
+     * @param sourceColumns Columns to be merged
+     * @param targetColumn  New column to be added
+     * @param joinString    String delimiter between the values to be merged
+     */
+    void mergeColumns( Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString );
+
     AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
-    //is used within copyData
+    // is used within copyData
     void executeQuery( List<CatalogColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+
+    // is used within mergeColumns
+    void executeMergeQuery( List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
     AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
