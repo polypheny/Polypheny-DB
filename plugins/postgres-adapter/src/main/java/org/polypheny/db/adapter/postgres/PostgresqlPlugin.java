@@ -26,6 +26,10 @@ import org.polypheny.db.catalog.Adapter;
 
 public class PostgresqlPlugin extends Plugin {
 
+
+    public static final String ADAPTER_NAME = "POSTGRESQL";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -48,8 +52,15 @@ public class PostgresqlPlugin extends Plugin {
                 "maxConnections", "25"
         );
 
-        Adapter.addAdapter( PostgresqlStore.class, "POSTGRESQL", settings );
-        Adapter.addAdapter( PostgresqlSource.class, "POSTGRESQL", settings );
+        Adapter.addAdapter( PostgresqlStore.class, ADAPTER_NAME, settings );
+        Adapter.addAdapter( PostgresqlSource.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( PostgresqlStore.class, ADAPTER_NAME );
+        Adapter.removeAdapter( PostgresqlSource.class, ADAPTER_NAME );
     }
 
 }

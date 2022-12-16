@@ -42,6 +42,10 @@ import org.polypheny.db.webui.models.requests.QueryRequest;
 
 public class CypherLanguagePlugin extends Plugin {
 
+
+    public static final String NAME = "cypher";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -56,11 +60,22 @@ public class CypherLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "cypher", CypherLanguagePlugin::anyCypherQuery ) );
-        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.GRAPH, "cypher", List.of( "cypher", "opencypher" ), CypherParserImpl.FACTORY, CypherProcessorImpl::new, null );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( NAME, CypherLanguagePlugin::anyCypherQuery ) );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.GRAPH, NAME, List.of( NAME, "opencypher" ), CypherParserImpl.FACTORY, CypherProcessorImpl::new, null );
 
         if ( !CypherRegisterer.isInit() ) {
             CypherRegisterer.registerOperators();
+        }
+    }
+
+
+    @Override
+    public void stop() {
+        LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
+        LanguageManager.removeQueryLanguage( NAME );
+
+        if( CypherRegisterer.isInit() ){
+            CypherRegisterer.removeOperators();
         }
     }
 
@@ -76,7 +91,7 @@ public class CypherLanguagePlugin extends Plugin {
         String query = request.query;
 
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface Cypher" );
-        AutomaticDdlProcessor cypherProcessor = (AutomaticDdlProcessor) transaction.getProcessor( QueryLanguage.from( "cypher" ) );
+        AutomaticDdlProcessor cypherProcessor = (AutomaticDdlProcessor) transaction.getProcessor( QueryLanguage.from( NAME ) );
 
         List<Result> results = new ArrayList<>();
 
@@ -135,7 +150,7 @@ public class CypherLanguagePlugin extends Plugin {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().start( "Execution" );
                     }
-                    results.add( LanguageCrud.getResult( QueryLanguage.from( "cypher" ), statement, request, query, polyImplementation, transaction, query.toLowerCase().contains( " limit " ) ).setNamespaceName( request.database ) );
+                    results.add( LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, query.toLowerCase().contains( " limit " ) ).setNamespaceName( request.database ) );
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Execution" );
                     }

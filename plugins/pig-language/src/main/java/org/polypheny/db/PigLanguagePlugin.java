@@ -44,6 +44,10 @@ import org.polypheny.db.webui.models.requests.QueryRequest;
 @Slf4j
 public class PigLanguagePlugin extends Plugin {
 
+
+    public static final String NAME = "pig";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -58,8 +62,15 @@ public class PigLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "pig", PigLanguagePlugin::anyPigQuery ) );
-        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "pig", List.of( "pig", "piglet" ), null, PigProcessorImpl::new, null );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( NAME, PigLanguagePlugin::anyPigQuery ) );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessorImpl::new, null );
+    }
+
+
+    @Override
+    public void stop() {
+        LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
+        LanguageManager.removeQueryLanguage( NAME );
     }
 
 
@@ -72,7 +83,7 @@ public class PigLanguagePlugin extends Plugin {
             Crud crud ) {
         String query = request.query;
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface Pig" );
-        QueryLanguage language = QueryLanguage.from( "pig" );
+        QueryLanguage language = QueryLanguage.from( NAME );
 
         try {
             if ( query.trim().equals( "" ) ) {

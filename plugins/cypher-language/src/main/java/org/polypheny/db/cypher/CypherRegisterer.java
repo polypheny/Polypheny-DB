@@ -81,4 +81,9 @@ public class CypherRegisterer {
         OperatorRegistry.register( QueryLanguage.from( "cypher" ), name, operator );
     }
 
+
+    public static void removeOperators() {
+        OperatorRegistry.remove( QueryLanguage.from( "cypher" ) );
+    }
+
 }

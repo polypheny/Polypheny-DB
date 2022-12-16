@@ -40,6 +40,10 @@ import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 
 public class MysqlSourcePlugin extends Plugin {
 
+
+    public static final String ADAPTER_NAME = "MYSQL";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -56,7 +60,13 @@ public class MysqlSourcePlugin extends Plugin {
     public void start() {
         Map<String, String> settings = ImmutableMap.of();
 
-        Adapter.addAdapter( MysqlSource.class, "MYSQL", settings );
+        Adapter.addAdapter( MysqlSource.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( MysqlSource.class, ADAPTER_NAME );
     }
 
 

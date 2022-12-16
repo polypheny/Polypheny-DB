@@ -46,6 +46,10 @@ import org.polypheny.db.webui.models.requests.QueryRequest;
 @Slf4j
 public class CqlLanguagePlugin extends Plugin {
 
+
+    public static final String NAME = "cql";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -60,8 +64,15 @@ public class CqlLanguagePlugin extends Plugin {
 
     @Override
     public void start() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "cql", CqlLanguagePlugin::processCqlRequest ) );
-        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "cql", List.of( "cql" ), null, null, null );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( NAME, CqlLanguagePlugin::processCqlRequest ) );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME ), null, null, null );
+    }
+
+
+    @Override
+    public void stop() {
+        LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
+        LanguageManager.removeQueryLanguage( NAME );
     }
 
 
@@ -124,7 +135,7 @@ public class CqlLanguagePlugin extends Plugin {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Execution" );
             }
-            Result result = LanguageCrud.getResult( QueryLanguage.from( "cql" ), statement, request, query, polyImplementation, transaction, request.noLimit );
+            Result result = LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, request.noLimit );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Execution" );
             }

@@ -385,6 +385,11 @@ public class LanguageCrud {
     }
 
 
+    public void removeLanguage( String name ) {
+        REGISTER.remove( name );
+    }
+
+
     @FunctionalInterface
     public interface Consumer7<One, Two, Three, Four, Five, Six, Seven> {
 

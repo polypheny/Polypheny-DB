@@ -46,6 +46,16 @@ public class ExploreByExamplePlugin extends Plugin {
     }
 
 
+    @Override
+    public void stop() {
+        HttpServer server = HttpServer.getInstance();
+        server.removeRoute( "/classifyData", HandlerType.POST );
+        server.removeRoute( "/getExploreTables", HandlerType.POST );
+        server.removeRoute( "/createInitialExploreQuery", HandlerType.POST );
+        server.removeRoute( "/exploration", HandlerType.POST );
+    }
+
+
     @Slf4j
     @Extension
     public static class ExploreStarter implements TransactionExtension {

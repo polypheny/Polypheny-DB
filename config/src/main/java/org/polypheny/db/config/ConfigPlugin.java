@@ -100,14 +100,12 @@ public class ConfigPlugin extends ConfigObject {
     @Override
     void setValueFromFile( Config conf ) {
         throw new ConfigRuntimeException( "Not supported for Plugin Configs" );
-        // todo dl
     }
 
 
     @Override
     public boolean parseStringAndSetValue( String value ) {
         throw new ConfigRuntimeException( "Not supported for Plugin Configs" );
-        // todo dl
     }
 
 

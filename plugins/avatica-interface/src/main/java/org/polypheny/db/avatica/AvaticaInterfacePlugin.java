@@ -66,6 +66,12 @@ public class AvaticaInterfacePlugin extends Plugin {
     }
 
 
+    @Override
+    public void stop() {
+        QueryInterfaceManager.removeInterfaceType( AvaticaInterface.class );
+    }
+
+
     @Slf4j
     @Extension
     public static class AvaticaInterface extends QueryInterface implements PropertyChangeListener {

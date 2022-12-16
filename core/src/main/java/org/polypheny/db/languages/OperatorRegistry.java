@@ -171,5 +171,10 @@ public class OperatorRegistry {
                 .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
     }
 
+
+    public static void remove( QueryLanguage language ) {
+        registry.remove( language );
+    }
+
 }
 

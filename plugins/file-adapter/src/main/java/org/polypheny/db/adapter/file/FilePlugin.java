@@ -71,6 +71,10 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 public class FilePlugin extends Plugin {
 
+
+    public static final String ADAPTER_NAME = "FILE";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -89,7 +93,13 @@ public class FilePlugin extends Plugin {
                 "mode", "embedded"
         );
 
-        Adapter.addAdapter( FileStore.class, "FILE", settings );
+        Adapter.addAdapter( FileStore.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( FileStore.class, ADAPTER_NAME );
     }
 
 

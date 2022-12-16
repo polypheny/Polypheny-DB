@@ -53,6 +53,10 @@ import org.web3j.protocol.http.HttpService;
 
 public class EthereumPlugin extends Plugin {
 
+
+    public static final String ADAPTER_NAME = "ETHEREUM";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -73,7 +77,13 @@ public class EthereumPlugin extends Plugin {
                 "ExperimentalFiltering", "false"
         );
 
-        Adapter.addAdapter( EthereumDataSource.class, "ETHEREUM", settings );
+        Adapter.addAdapter( EthereumDataSource.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( EthereumDataSource.class, ADAPTER_NAME );
     }
 
 

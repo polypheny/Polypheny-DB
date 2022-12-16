@@ -24,6 +24,10 @@ import org.polypheny.db.catalog.Adapter;
 
 public class HsqldbPlugin extends Plugin {
 
+
+    public static final String ADAPTER_NAME = "HSQLDB";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -47,7 +51,13 @@ public class HsqldbPlugin extends Plugin {
                 "trxIsolationLevel", "read_committed"
         ) );
 
-        Adapter.addAdapter( HsqldbStore.class, "HSQLDB", settings );
+        Adapter.addAdapter( HsqldbStore.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( HsqldbStore.class, ADAPTER_NAME );
     }
 
 }

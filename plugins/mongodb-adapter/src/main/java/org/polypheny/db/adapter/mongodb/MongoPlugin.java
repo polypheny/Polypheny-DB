@@ -88,6 +88,10 @@ import org.polypheny.db.util.Pair;
 
 public class MongoPlugin extends Plugin {
 
+
+    public static final String ADAPTER_NAME = "MONGODB";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -111,7 +115,13 @@ public class MongoPlugin extends Plugin {
                 "trxLifetimeLimit", "1209600"
         ) );
 
-        Adapter.addAdapter( MongoStore.class, "MONGODB", settings );
+        Adapter.addAdapter( MongoStore.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( MongoStore.class, ADAPTER_NAME );
     }
 
 

@@ -95,6 +95,10 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 
 public class CottontailPlugin extends Plugin {
 
+
+    public static final String ADAPTER_NAME = "COTTONTAIL";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -117,7 +121,13 @@ public class CottontailPlugin extends Plugin {
                 "host", "localhost"
         );
 
-        Adapter.addAdapter( CottontailStore.class, "COTTONTAIL", settings );
+        Adapter.addAdapter( CottontailStore.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( CottontailStore.class, ADAPTER_NAME );
     }
 
 

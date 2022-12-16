@@ -77,6 +77,10 @@ import org.polypheny.db.type.PolyType;
 
 public class CassandraPlugin extends Plugin {
 
+
+    public static final String ADAPTER_NAME = "CASSANDRA";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -97,7 +101,13 @@ public class CassandraPlugin extends Plugin {
                 "port", "9042"
         );
 
-        Adapter.addAdapter( CassandraStore.class, "CASSANDRA", settings );
+        Adapter.addAdapter( CassandraStore.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( CassandraStore.class, ADAPTER_NAME );
     }
 
 

@@ -20,10 +20,15 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
+import org.polypheny.db.adapter.monetdb.sources.MonetdbSource;
 import org.polypheny.db.adapter.monetdb.stores.MonetdbStore;
 import org.polypheny.db.catalog.Adapter;
 
 public class MonetdbPlugin extends Plugin {
+
+
+    public static final String ADAPTER_NAME = "MONETDB";
+
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
@@ -47,7 +52,15 @@ public class MonetdbPlugin extends Plugin {
                 "port", "5000"
         );
 
-        Adapter.addAdapter( MonetdbStore.class, "MONETDB", settings );
+        Adapter.addAdapter( MonetdbStore.class, ADAPTER_NAME, settings );
+        Adapter.addAdapter( MonetdbSource.class, ADAPTER_NAME, settings );
+    }
+
+
+    @Override
+    public void stop() {
+        Adapter.removeAdapter( MonetdbStore.class, ADAPTER_NAME );
+        Adapter.removeAdapter( MonetdbSource.class, ADAPTER_NAME );
     }
 
 }

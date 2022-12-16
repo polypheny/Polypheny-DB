@@ -80,6 +80,9 @@ import org.polypheny.db.type.PolyTypeFamily;
 public class Neo4jPlugin extends Plugin {
 
 
+    public static final String ADAPTER_NAME = "NEO4J";
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
@@ -101,20 +104,15 @@ public class Neo4jPlugin extends Plugin {
                 "instanceId", "0",
                 "type", "neo4j" );
 
-        Adapter.addAdapter( Neo4jStore.class, "NEO4J", settings );
+        Adapter.addAdapter( Neo4jStore.class, ADAPTER_NAME, settings );
     }
 
 
     @Override
     public void stop() {
-        System.out.println( "stopped plugin" );
+        Adapter.removeAdapter( Neo4jStore.class, ADAPTER_NAME );
     }
 
-
-    @Override
-    public void delete() {
-        System.out.println( "deleted plugin" );
-    }
 
 
     public static String getPhysicalEntityName( long namespaceId, long entityId, long partitionId ) {

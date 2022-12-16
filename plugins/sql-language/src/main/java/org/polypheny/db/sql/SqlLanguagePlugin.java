@@ -189,6 +189,12 @@ public class SqlLanguagePlugin extends Plugin {
     }
 
 
+    @Override
+    public void stop() {
+        throw new RuntimeException( "Cannot remove language SQL." );
+    }
+
+
     public static void startup() {
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "sql", (
                 session,

@@ -20,17 +20,12 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -46,6 +41,7 @@ import org.pf4j.CompoundPluginLoader;
 import org.pf4j.DefaultPluginDescriptor;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.DefaultPluginManager;
+import org.pf4j.JarPluginLoader;
 import org.pf4j.ManifestPluginDescriptorFinder;
 import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
@@ -152,7 +148,6 @@ public class PolyPluginManager extends DefaultPluginManager {
                 List<String> removed = configs.stream().map( ConfigPlugin::getPluginId ).collect( Collectors.toList() );
                 PLUGINS.keySet().forEach( removed::remove );
 
-
                 configs.forEach( p -> {
                     if ( toState( p.getStatus() ) != PLUGINS.get( p.getPluginId() ).getPluginState() ) {
                         if ( p.getStatus() == org.polypheny.db.config.PluginStatus.ACTIVE ) {
@@ -176,6 +171,11 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Sop a plugin, which was loaded and started previously.
+     *
+     * @param pluginId identifier of the plugin
+     */
     private static void stopAvailablePlugin( String pluginId ) {
         pluginManager.stopPlugin( pluginId );
         PLUGINS.get( pluginId ).setPluginState( org.pf4j.PluginState.STOPPED );
@@ -206,6 +206,12 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Mapping of the internal PluginStatus to the PF4J PluginStatus
+     *
+     * @param status the status in the Polypheny format
+     * @return the status in the PF4j format
+     */
     private static org.pf4j.PluginState toState( org.polypheny.db.config.PluginStatus status ) {
         switch ( status ) {
 
@@ -221,6 +227,12 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Tries to load a provided plugin
+     *
+     * @param file a file, which might point to a plugin
+     * @return the status of the loading process
+     */
     public static PluginStatus loadAdditionalPlugin( File file ) {
         AFTER_INIT.clear();
         PluginStatus status = new PluginStatus( file.getPath(), null );
@@ -231,6 +243,10 @@ public class PolyPluginManager extends DefaultPluginManager {
         } catch ( Exception e ) {
             return status.loaded( false );
         }
+        if ( PLUGINS.containsKey( plugin.getPluginId() ) ) {
+            return status.loaded( false );
+        }
+
         PLUGINS.put( plugin.getPluginId(), plugin );
         AFTER_INIT.forEach( Runnable::run );
 
@@ -238,6 +254,12 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Tries to unload a plugin.
+     *
+     * @param pluginId the identifier of the plugin to unload
+     * @return the status of the unloading process
+     */
     public static PluginStatus unloadAdditionalPlugin( String pluginId ) {
         PluginWrapper plugin = pluginManager.getStartedPlugins().stream().filter( p -> p.getPluginId().equals( pluginId ) ).findFirst().orElseThrow();
         PluginStatus status = new PluginStatus( plugin.getPluginId(), ((PolyPluginDescriptor) plugin.getDescriptor()).getImagePath() );
@@ -251,6 +273,12 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * The processes, which plugins can register on start, which will be executed as late as possible.
+     *
+     * @param transactionManager the transactionManager, which plugins like explore-by-example use
+     * @param authenticator the authenticator, which plugins like mapdb-catalog use
+     */
     public static void startUp( TransactionManager transactionManager, Authenticator authenticator ) {
         // hand parameters to extensions
         TransactionExtension.REGISTER.forEach( e -> e.initExtension( transactionManager, authenticator ) );
@@ -259,6 +287,11 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Sets a catalog supplier, which allows to load a {@link Catalog} on runtime.
+     *
+     * @param catalogSupplier the supplier, which returns a {@link Catalog} implementation
+     */
     public static void setCatalogsSupplier( Supplier<Catalog> catalogSupplier ) {
         if ( CATALOG_SUPPLIER != null ) {
             throw new RuntimeException( "There is already a catalog supplier set." );
@@ -267,6 +300,11 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Allows to set a {@link PersistentMonitoringRepository } used to store monitoring events during runtime.
+     *
+     * @param repository the implementation
+     */
     public static void setPersistentRepository( PersistentMonitoringRepository repository ) {
         if ( PERSISTENT_MONITORING != null ) {
             throw new RuntimeException( "There is already a persistent repository." );
@@ -275,23 +313,37 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Creates a single {@link ClassLoader}, which holds the classes for all loaded plugins.
+     *
+     * We load the existing applications classes first, then the dependencies and then the plugin
+     * We have to reuse the classloader else the code generation will not be able to find the added classes later on
+     *
+     * @return the custom {@link ClassLoader}
+     */
     @Override
     protected PluginLoader createPluginLoader() {
         return new CompoundPluginLoader()
                 .add( new DefaultPluginLoader( this ) {
                     @Override
                     protected PluginClassLoader createPluginClassLoader( Path pluginPath, PluginDescriptor pluginDescriptor ) {
-                        // we load the existing applications classes first, then the dependencies and then the plugin
-                        // we have to reuse the classloader else the code generation will not be able to find the added classes later on
-                        if ( mainClassLoader == null ) {
-                            mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, super.getClass().getClassLoader(), ClassLoadingStrategy.APD );
-                        }
-                        return mainClassLoader;
+                        return getCustomClassLoader( pluginDescriptor );
                     }
-
-
                 } )
-                /*.add( new JarPluginLoader( this ) )*/;
+                .add( new JarPluginLoader( this ) {
+                    @Override
+                    public ClassLoader loadPlugin( Path pluginPath, PluginDescriptor pluginDescriptor ) {
+                        return getCustomClassLoader( pluginDescriptor );
+                    }
+                } );
+    }
+
+
+    private static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
+        if ( mainClassLoader == null ) {
+            mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
+        }
+        return mainClassLoader;
     }
 
 
@@ -455,45 +507,6 @@ public class PolyPluginManager extends DefaultPluginManager {
                     return new PluginStatus( stringPath, imagePath ).id( id ).loaded( loaded );
                 }
             };
-        }
-
-    }
-
-
-    public static class ObservableMap<K, V> extends HashMap<K, V> {
-
-        protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
-
-        public void addListener( PropertyChangeListener listener ) {
-            this.listeners.addPropertyChangeListener( listener );
-        }
-
-
-        public void removeListener( PropertyChangeListener listener ) {
-            this.listeners.removePropertyChangeListener( listener );
-        }
-
-
-        @Override
-        public V put( K key, V value ) {
-            V val = super.put( key, value );
-            listeners.firePropertyChange( new PropertyChangeEvent( this, "put", null, key ) );
-            return val;
-        }
-
-
-        @Override
-        public void clear() {
-            super.clear();
-            listeners.firePropertyChange( new PropertyChangeEvent( this, "clear", null, null ) );
-        }
-
-
-        @Override
-        public void putAll( Map<? extends K, ? extends V> m ) {
-            super.putAll( m );
-            listeners.firePropertyChange( new PropertyChangeEvent( this, "putAll", null, m ) );
         }
 
     }
