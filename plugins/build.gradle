@@ -36,6 +36,16 @@ subprojects {
     }
 
     task plugin(type: Jar) {
+        manifest {
+            attributes 'Plugin-Class': "${pluginClass}",
+                    'Plugin-Id': "${pluginId}",
+                    'Plugin-Version': "${pluginVersion}",
+                    'Plugin-Provider': "${pluginProvider}",
+                    'Plugin-Dependencies': "${pluginDependencies}",
+                    'Plugin-Url-Path': "${pluginUrlPath}",
+                    'Plugin-Categories': "${pluginCategories}",
+                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}"
+        }
         archiveBaseName = "plugin-${pluginId}"
         into('classes') {
             with jar
@@ -43,7 +53,7 @@ subprojects {
         into('lib') {
             from configurations.runtimeClasspath
         }
-        archiveExtension = 'zip'
+        extension('zip')
     }
 
     task assemblePlugin(type: Copy) {
