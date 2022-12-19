@@ -33,15 +33,19 @@ public class ConfigPlugin extends ConfigObject {
     private final String imageUrl;
     private final List<String> categories;
     private final String version;
+    private final boolean isSystemComponent;
+    private final boolean isUiVisible;
 
 
-    public ConfigPlugin( String pluginId, PluginStatus status, String imageUrl, List<String> categories, String description, String version ) {
+    public ConfigPlugin( String pluginId, PluginStatus status, String imageUrl, List<String> categories, String description, String version, boolean isSystemComponent, boolean isUiVisible ) {
         super( pluginId + "_" + version.replace( ".", "_" ), description );
         this.pluginId = pluginId;
         this.status = status;
         this.imageUrl = imageUrl;
         this.categories = categories;
         this.version = version;
+        this.isSystemComponent = isSystemComponent;
+        this.isUiVisible = isUiVisible;
 
         this.webUiFormType = WebUiFormType.PLUGIN_INSTANCE;
     }
@@ -55,7 +59,9 @@ public class ConfigPlugin extends ConfigObject {
                 (String) value.get( "imageUrl" ),
                 (List<String>) value.get( "categories" ),
                 (String) value.get( "description" ),
-                (String) value.get( "version" ) );
+                (String) value.get( "version" ),
+                (boolean) value.get( "isSystemComponent" ),
+                (boolean) value.get( "isUiVisible" ) );
     }
 
 
@@ -68,6 +74,8 @@ public class ConfigPlugin extends ConfigObject {
         confMap.put( "categories", conf.getStringList( "categories" ) );
         confMap.put( "description", conf.getString( "description" ) );
         confMap.put( "version", conf.getString( "version" ) );
+        confMap.put( "isSystemComponent", conf.getBoolean( "isSystemComponent" ) );
+        confMap.put( "isUiVisible", conf.getBoolean( "isUiVisible" ) );
 
         return confMap;
     }
@@ -118,6 +126,8 @@ public class ConfigPlugin extends ConfigObject {
         map.put( "categories", categories );
         map.put( "description", getDescription() );
         map.put( "version", version );
+        map.put( "isSystemComponent", isSystemComponent );
+        map.put( "isUiVisible", isUiVisible );
 
         return map;
     }

@@ -520,7 +520,7 @@ public abstract class Config {
      * @param clazz the class, which the raw values belong to
      * @return if the parsing and setting was successful
      */
-    public boolean setConfigObjectList( final List<Object> values, Class<? extends ConfigScalar> clazz ) {
+    public Feedback setConfigObjectList( final List<Object> values, Class<? extends ConfigScalar> clazz ) {
         throw new ConfigRuntimeException( "Not possible to set a list on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 

@@ -35,6 +35,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.commons.io.FileUtils;
 import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
@@ -80,10 +82,10 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     static {
         pluginManager = new PolyPluginManager(
+                PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ).getPath(),
                 "../build/plugins",
                 "./build/plugins",
-                "../../build/plugins",
-                PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ).getPath() );
+                "../../build/plugins" );
     }
 
 
@@ -95,12 +97,18 @@ public class PolyPluginManager extends DefaultPluginManager {
     public static void init() {
         attachRuntimeToPlugins();
 
-        // load the plugins
+        deletePluginFolderIfNecessary();
+
         pluginManager.loadPlugins();
 
         // start (active/resolved) the plugins
         if ( RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).isEmpty() ) {
-            // no old config there so we just start all
+            // no old config there so we just start, except the blocked ones
+            for ( PluginWrapper resolvedPlugin : pluginManager.resolvedPlugins ) {
+                if ( !RuntimeConfig.BLOCKED_PLUGINS.getStringList().contains( resolvedPlugin.getPluginId() ) ) {
+                    pluginManager.startPlugin( resolvedPlugin.getPluginId() );
+                }
+            }
             pluginManager.startPlugins();
         } else {
             for ( ConfigPlugin plugin : RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ) ) {
@@ -124,6 +132,18 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    private static void deletePluginFolderIfNecessary() {
+        if ( Catalog.resetCatalog ) {
+            try {
+                FileUtils.deleteDirectory( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ) );
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
+
+        }
+    }
+
+
     private static void attachRuntimeToPlugins() {
         PLUGINS.addListener( ( e ) -> {
             RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
@@ -132,7 +152,14 @@ public class PolyPluginManager extends DefaultPluginManager {
                             .values()
                             .stream()
                             .map( p -> (PolyPluginDescriptor) p.getDescriptor() )
-                            .map( d -> new ConfigPlugin( d.getPluginId(), org.polypheny.db.config.PluginStatus.ACTIVE, d.imagePath, d.categories, d.getPluginDescription(), d.getVersion() ) )
+                            .map( d -> new ConfigPlugin(
+                                    d.getPluginId(),
+                                    org.polypheny.db.config.PluginStatus.ACTIVE,
+                                    d.imagePath, d.categories,
+                                    d.getPluginDescription(),
+                                    d.getVersion(),
+                                    d.isSystemComponent,
+                                    d.isUiVisible ) )
                             .collect( Collectors.toList() ) );
         } );
     }
@@ -235,7 +262,7 @@ public class PolyPluginManager extends DefaultPluginManager {
      */
     public static PluginStatus loadAdditionalPlugin( File file ) {
         AFTER_INIT.clear();
-        PluginStatus status = new PluginStatus( file.getPath(), null );
+        PluginStatus status = new PluginStatus( file.getPath(), null, false, false );
         PluginWrapper plugin;
         try {
             plugin = pluginManager.getPlugin( pluginManager.loadPlugin( file.toPath() ) );
@@ -250,7 +277,11 @@ public class PolyPluginManager extends DefaultPluginManager {
         PLUGINS.put( plugin.getPluginId(), plugin );
         AFTER_INIT.forEach( Runnable::run );
 
-        return status.loaded( true ).imagePath( ((PolyPluginDescriptor) plugin.getDescriptor()).imagePath );
+        PolyPluginDescriptor descriptor = (PolyPluginDescriptor) plugin.getDescriptor();
+        return status.loaded( true )
+                .imagePath( descriptor.imagePath )
+                .isUiVisible( descriptor.isUiVisible )
+                .isSystemComponent( descriptor.isSystemComponent );
     }
 
 
@@ -262,7 +293,8 @@ public class PolyPluginManager extends DefaultPluginManager {
      */
     public static PluginStatus unloadAdditionalPlugin( String pluginId ) {
         PluginWrapper plugin = pluginManager.getStartedPlugins().stream().filter( p -> p.getPluginId().equals( pluginId ) ).findFirst().orElseThrow();
-        PluginStatus status = new PluginStatus( plugin.getPluginId(), ((PolyPluginDescriptor) plugin.getDescriptor()).getImagePath() );
+        PolyPluginDescriptor descriptor = ((PolyPluginDescriptor) plugin.getDescriptor());
+        PluginStatus status = new PluginStatus( plugin.getPluginId(), descriptor.getImagePath(), descriptor.isSystemComponent, descriptor.isUiVisible );
         try {
             pluginManager.unloadPlugin( pluginId );
         } catch ( Exception e ) {
@@ -371,6 +403,10 @@ public class PolyPluginManager extends DefaultPluginManager {
 
         public static final String PLUGIN_POLYPHENY_DEPENDENCIES = "Plugin-Polypheny-Dependencies";
 
+        public static final String PLUGIN_SYSTEM_COMPONENT = "Plugin-System-Component";
+
+        public static final String PLUGIN_UI_VISIBLE = "Plugin-Ui-Visible";
+
         @Getter
         private final String imagePath;
 
@@ -378,6 +414,8 @@ public class PolyPluginManager extends DefaultPluginManager {
         private final List<String> categories;
         @Getter
         private final VersionDependency versionDependencies;
+        private final boolean isSystemComponent;
+        private final boolean isUiVisible;
 
 
         public PolyPluginDescriptor( PluginDescriptor descriptor, Manifest manifest ) {
@@ -385,6 +423,22 @@ public class PolyPluginManager extends DefaultPluginManager {
             this.imagePath = manifest.getMainAttributes().getValue( PLUGIN_ICON_PATH );
             this.categories = getCategories( manifest );
             this.versionDependencies = getVersionDependencies( manifest );
+            this.isSystemComponent = Boolean.TRUE.equals( getManifestValue( Boolean::valueOf, manifest, PLUGIN_SYSTEM_COMPONENT, false ) );
+            this.isUiVisible = Boolean.TRUE.equals( getManifestValue( Boolean::valueOf, manifest, PLUGIN_UI_VISIBLE, false ) );
+        }
+
+
+        private <T> T getManifestValue( Function1<String, T> transformer, Manifest manifest, String key, boolean allowsNull ) {
+            String attribute = manifest.getMainAttributes().getValue( key );
+
+            if ( attribute == null && !allowsNull ) {
+                if ( !allowsNull ) {
+                    throw new RuntimeException( String.format( "Plugin contains not all required keys: %s", key ) );
+                }
+                return null;
+            }
+
+            return transformer.apply( attribute );
         }
 
 
@@ -438,10 +492,18 @@ public class PolyPluginManager extends DefaultPluginManager {
         @Setter
         private String imagePath;
 
+        @Setter
+        private boolean isSystemComponent;
 
-        public PluginStatus( String stringPath, String imagePath ) {
+        @Setter
+        private boolean isUiVisible;
+
+
+        public PluginStatus( String stringPath, String imagePath, boolean isSystemComponent, boolean isUiVisible ) {
             this.stringPath = stringPath;
             this.imagePath = imagePath;
+            this.isSystemComponent = isSystemComponent;
+            this.isUiVisible = isUiVisible;
         }
 
 
@@ -451,7 +513,8 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
         public static PluginStatus from( PluginWrapper wrapper ) {
-            return new PluginStatus( wrapper.getPluginPath().toAbsolutePath().toString(), ((PolyPluginDescriptor) wrapper.getDescriptor()).getImagePath() )
+            PolyPluginDescriptor descriptor = ((PolyPluginDescriptor) wrapper.getDescriptor());
+            return new PluginStatus( wrapper.getPluginPath().toAbsolutePath().toString(), descriptor.getImagePath(), descriptor.isSystemComponent, descriptor.isUiVisible )
                     .id( wrapper.getPluginId() )
                     .loaded( PLUGINS.containsKey( wrapper.getPluginId() ) );
         }
@@ -470,6 +533,10 @@ public class PolyPluginManager extends DefaultPluginManager {
                     out.value( value.loaded );
                     out.name( "imagePath" );
                     out.value( value.imagePath );
+                    out.name( "isSystemComponent" );
+                    out.value( value.isSystemComponent );
+                    out.name( "isUiVisible" );
+                    out.value( value.isUiVisible );
                     out.endObject();
                 }
 
@@ -481,6 +548,8 @@ public class PolyPluginManager extends DefaultPluginManager {
                     String stringPath = null;
                     boolean loaded = false;
                     String imagePath = null;
+                    boolean isSystemComponent = false;
+                    boolean isUiVisible = false;
 
                     while ( in.peek() != JsonToken.END_OBJECT ) {
                         String name = in.nextName();
@@ -497,6 +566,12 @@ public class PolyPluginManager extends DefaultPluginManager {
                             case "imagePath":
                                 imagePath = in.nextString();
                                 break;
+                            case "isSystemComponent":
+                                isSystemComponent = in.nextBoolean();
+                                break;
+                            case "isUiVisible":
+                                isUiVisible = in.nextBoolean();
+                                break;
                             default:
                                 log.error( "Name is not known." );
                                 return null;
@@ -504,7 +579,7 @@ public class PolyPluginManager extends DefaultPluginManager {
                     }
                     in.endObject();
 
-                    return new PluginStatus( stringPath, imagePath ).id( id ).loaded( loaded );
+                    return new PluginStatus( stringPath, imagePath, isSystemComponent, isUiVisible ).id( id ).loaded( loaded );
                 }
             };
         }

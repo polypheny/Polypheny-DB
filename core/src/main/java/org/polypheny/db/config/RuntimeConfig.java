@@ -463,6 +463,17 @@ public enum RuntimeConfig {
             List.of(),
             ConfigType.PLUGIN_LIST,
             "pluginsGroup"
+    ),
+
+    BLOCKED_PLUGINS(
+            "runtime/blockedPlugins",
+            "All plugins, which are blocked by default.",
+            List.of( "druid-adapter",
+                    "elasticsearch-adapter",
+                    "geode-adapter",
+                    "html-adapter",
+                    "pig-adapter" ),
+            ConfigType.STRING_LIST
     );
 
 

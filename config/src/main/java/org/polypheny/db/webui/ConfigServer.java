@@ -27,11 +27,13 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.config.Feedback;
 
 
 /**
@@ -106,56 +108,66 @@ public class ConfigServer implements ConfigListener {
                         Double d = (Double) entry.getValue();
                         if ( !c.setInt( d.intValue() ) ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            appendError( feedback, entry, c );
                         }
                         break;
                     case "ConfigDouble":
                         if ( !c.setDouble( (double) entry.getValue() ) ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            appendError( feedback, entry, c );
                         }
                         break;
                     case "ConfigDecimal":
                         if ( !c.setDecimal( (BigDecimal) entry.getValue() ) ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            appendError( feedback, entry, c );
                         }
                         break;
                     case "ConfigLong":
                         if ( !c.setLong( (long) entry.getValue() ) ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            appendError( feedback, entry, c );
                         }
                     case "ConfigString":
                         if ( !c.setString( (String) entry.getValue() ) ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            appendError( feedback, entry, c );
                         }
                         break;
                     case "ConfigBoolean":
                         if ( !c.setBoolean( (boolean) entry.getValue() ) ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            appendError( feedback, entry, c );
                         }
                         break;
                     case "ConfigClazz":
                     case "ConfigEnum":
                         if ( !c.parseStringAndSetValue( (String) entry.getValue() ) ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            appendError( feedback, entry, c );
                         }
                         break;
                     case "ConfigClazzList":
                     case "ConfigEnumList":
                         if ( !c.parseStringAndSetValue( gson.toJson( entry.getValue(), ArrayList.class ) ) ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            appendError( feedback, entry, c );
                         }
                         break;
                     case "ConfigList":
-                        if ( !c.setConfigObjectList( (List<Object>) entry.getValue(), c.getTemplateClass() ) ) {
+                        Feedback res = c.setConfigObjectList( (List<Object>) entry.getValue(), c.getTemplateClass() );
+                        if ( !res.successful ) {
                             allValid = false;
-                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                            if ( res.message.trim().equals( "" ) ) {
+                                appendError( feedback, entry, c );
+                            } else {
+                                feedback.append( "Could not set " )
+                                        .append( c.getKey() )
+                                        .append( " due to: " )
+                                        .append( res.message )
+                                        .append( " " );
+                            }
+
                         }
                         break;
                     default:
@@ -171,6 +183,15 @@ public class ConfigServer implements ConfigListener {
                 ctx.result( "{\"warning\": \"" + feedback + "\"}" );
             }
         } );
+    }
+
+
+    private static void appendError( StringBuilder feedback, Entry<String, Object> entry, Config c ) {
+        feedback.append( "Could not set " )
+                .append( c.getKey() )
+                .append( " to " )
+                .append( entry.getValue() )
+                .append( " because it was blocked by Java validation.\n" );
     }
 
 

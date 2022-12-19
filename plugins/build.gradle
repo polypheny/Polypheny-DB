@@ -31,7 +31,9 @@ subprojects {
                     'Plugin-Dependencies': "${pluginDependencies}",
                     'Plugin-Url-Path': "${pluginUrlPath}",
                     'Plugin-Categories': "${pluginCategories}",
-                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}"
+                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}",
+                    'Plugin-System-Component': "${pluginIsSystemComponent}",
+                    'Plugin-Ui-Visible': "${pluginIsUiVisible}"
         }
     }
 
@@ -44,7 +46,9 @@ subprojects {
                     'Plugin-Dependencies': "${pluginDependencies}",
                     'Plugin-Url-Path': "${pluginUrlPath}",
                     'Plugin-Categories': "${pluginCategories}",
-                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}"
+                    'Plugin-Polypheny-Dependencies': "${pluginPolyDependencies}",
+                    'Plugin-System-Component': "${pluginIsSystemComponent}",
+                    'Plugin-Ui-Visible': "${pluginIsUiVisible}"
         }
         archiveBaseName = "plugin-${pluginId}"
         into('classes') {

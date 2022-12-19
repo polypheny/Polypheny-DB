@@ -57,12 +57,12 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
             // can not test use default comparator method as id is dynamic
             List<Object[]> data = TestHelper.convertResultSetToList( result );
-            assert (data.size() == 1);
+            assert (data.size() == 1) : format( "Too much or not enough rows in the answer, rows: %s", data.size() );
             assert (data.get( 0 ).length == 3);
 
             result = s.executeQuery( String.format( "SELECT * FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL + 1 ) );
             data = TestHelper.convertResultSetToList( result );
-            assert (data.size() == 1);
+            assert (data.size() == 1) : format( "Too much or not enough rows in the answer, rows: %s", data.size() );
             assert (data.get( 0 ).length == 3);
         } );
 
