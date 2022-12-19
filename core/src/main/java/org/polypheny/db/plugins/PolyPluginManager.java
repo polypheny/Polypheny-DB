@@ -48,6 +48,7 @@ import org.pf4j.ManifestPluginDescriptorFinder;
 import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginLoader;
+import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.Config;
@@ -199,18 +200,41 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     /**
-     * Sop a plugin, which was loaded and started previously.
+     * Stop a plugin, which was loaded and started previously.
      *
      * @param pluginId identifier of the plugin
      */
     private static void stopAvailablePlugin( String pluginId ) {
+        if ( !PLUGINS.containsKey( pluginId ) ) {
+            throw new RuntimeException( "Plugin is not not loaded and can not be stopped." );
+        }
+        PluginWrapper plugin = PLUGINS.get( pluginId );
+
+        if ( plugin.getPluginState() != PluginState.STARTED ) {
+            throw new RuntimeException( "Plugin is not active and can not be stopped." );
+        }
+        PolyPluginDescriptor descriptor = (PolyPluginDescriptor) plugin.getDescriptor();
+        if ( descriptor.isSystemComponent ) {
+            throw new RuntimeException( "Plugin is system component and cannot be stopped." );
+        }
+
         pluginManager.stopPlugin( pluginId );
         PLUGINS.get( pluginId ).setPluginState( org.pf4j.PluginState.STOPPED );
     }
 
 
+    /**
+     * Starts a plugin, which was loaded previously.
+     *
+     * @param pluginId identifier of the plugin
+     */
     private static void startAvailablePlugin( String pluginId ) {
-        boolean isCompatible = isCompatible( ((PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor()).versionDependencies );
+        if ( !PLUGINS.containsKey( pluginId ) ) {
+            throw new RuntimeException( "Plugin is not not loaded and can not be started." );
+        }
+
+        PolyPluginDescriptor descriptor = (PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor();
+        boolean isCompatible = isCompatible( descriptor.versionDependencies );
 
         if ( !isCompatible ) {
             log.debug( "Cannot load plugin {} with version {}.", pluginId, ((PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor()).versionDependencies );
