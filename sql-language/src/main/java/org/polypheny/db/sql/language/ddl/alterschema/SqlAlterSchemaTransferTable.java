@@ -17,15 +17,17 @@
 package org.polypheny.db.sql.language.ddl.alterschema;
 
 
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.commons.lang.StringUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -98,12 +100,7 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
             CatalogTable catalogTable = getCatalogTable( context, table );
 
             long targetSchemaId = catalog.getSchema( context.getDatabaseId(), targetSchema.getNames().get( 0 ) ).id;
-
-            List<String> primaryKeyColumnNames = (primaryKeyColumns != null)
-                    ? primaryKeyColumns.getList().stream().map( Node::toString ).collect( Collectors.toList() )
-                    : null;
-
-            DdlManager.getInstance().transferTable( catalogTable, targetSchemaId, statement, primaryKeyColumnNames );
+            DdlManager.getInstance().transferTable( catalogTable, targetSchemaId, statement, buildPkColumnNamesOfTables() );
 
         } catch ( UnknownSchemaException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( table.getSimple() ) );
@@ -115,7 +112,25 @@ public class SqlAlterSchemaTransferTable extends SqlAlterSchema {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName() ) );
         } catch ( UnknownColumnException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
         }
+    }
+
+
+    private Map<String, List<String>> buildPkColumnNamesOfTables() {
+        Map<String, List<String>> pkColumnNamesOfTables = new HashMap();
+        if(primaryKeyColumns != null) {
+            for (Node pkNode : primaryKeyColumns.getList()) {
+                String tableName = StringUtils.substringBefore( pkNode.toString(), "." );
+                String columnName = StringUtils.substringAfter( pkNode.toString(), "." );
+                if( !pkColumnNamesOfTables.containsKey( tableName )) {
+                    pkColumnNamesOfTables.put( tableName, new ArrayList<>() );
+                }
+                pkColumnNamesOfTables.get( tableName ).add( columnName );
+            }
+        }
+        return pkColumnNamesOfTables;
     }
 
 }

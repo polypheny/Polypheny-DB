@@ -474,7 +474,7 @@ public abstract class DdlManager {
      * @param statement the used statement
      * @param statement the used statement
      */
-    public abstract void transferTable( CatalogTable table, long targetSchemaId, Statement statement, List<String> primaryKeyColumnNames ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException;
+    public abstract void transferTable( CatalogTable table, long targetSchemaId, Statement statement, Map<String, List<String>> primaryKeyColumnNames ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException, GenericCatalogException;
 
     /**
      * Create a new view

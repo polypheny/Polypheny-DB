@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -118,8 +119,8 @@ public interface DataMigrator {
      *
      * @param transaction Transactional scope
      * @param jsonObjects List of the JSON-objects of the source collection
-     * @param table Target table created in the {@link DdlManager}
+     * @param table Target tables created in the {@link DdlManager}
      */
-    void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, CatalogTable table ) throws UnknownColumnException;
+    void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, List<CatalogTable> table ) throws UnknownColumnException, UnknownTableException;
 
 }

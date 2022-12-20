@@ -52,7 +52,7 @@ SqlAlterSchema SqlAlterSchema(Span s) :
         <TRANSFER>
         name = CompoundIdentifier()
         (
-            <ADD> <PRIMARY> <KEY>
+            <SET> <PRIMARY> <KEYS>
             columnList = ParenthesizedSimpleIdentifierList()
         |
             { columnList = null; }

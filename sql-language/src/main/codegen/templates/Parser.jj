@@ -6311,6 +6311,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < JSON_QUERY: "JSON_QUERY" >
 |   < K: "K" >
 |   < KEY: "KEY" >
+|   < KEYS: "KEYS" >
 |   < KEY_MEMBER: "KEY_MEMBER" >
 |   < KEY_TYPE: "KEY_TYPE" >
 |   < DISTANCE: "DISTANCE" >

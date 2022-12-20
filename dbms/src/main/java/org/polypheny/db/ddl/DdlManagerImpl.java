@@ -18,7 +18,7 @@ package org.polypheny.db.ddl;
 
 
 import com.google.common.collect.ImmutableList;
-
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.sql.ResultSetMetaData;
@@ -27,14 +27,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
@@ -137,7 +142,6 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.AutomaticDdlProcessor;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
@@ -145,19 +149,15 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.Result;
-
-import static org.polypheny.db.util.Static.RESOURCE;
 
 
 @Slf4j
@@ -696,6 +696,7 @@ public class DdlManagerImpl extends DdlManager {
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
+
 
     @Override
     public void addIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
@@ -2346,7 +2347,7 @@ public class DdlManagerImpl extends DdlManager {
      * {@inheritDoc}
      */
     @Override
-    public void transferTable( CatalogTable sourceTable, long targetSchemaId, Statement statement, List<String> primaryKeyColumnNames ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException {
+    public void transferTable( CatalogTable sourceTable, long targetSchemaId, Statement statement, Map<String, List<String>> pkColumnNamesOfTables ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException, GenericCatalogException {
         // Check if there is already an entity with this name
         if ( assertEntityExists( targetSchemaId, sourceTable.name, true ) ) {
             return;
@@ -2396,38 +2397,101 @@ public class DdlManagerImpl extends DdlManager {
             Result result = getResult( QueryLanguage.MONGO_QL, statement, query, polyImplementation, statement.getTransaction(), false );
 
             // Create a list of the JsonObjects skipping the _id column which is only needed for the documents but not for the table
-            List<String> fieldNames = new ArrayList();
             List<JsonObject> jsonObjects = new ArrayList();
+            LinkedList<String> currentPosition = new LinkedList<>( Arrays.asList( sourceTable.name ) );
+            LinkedMap<LinkedList, LinkedHashSet> documentHierarchy = new LinkedMap<>( Map.of( currentPosition, new LinkedHashSet() ) );
             for ( String[] documents : result.getData() ) {
                 for ( String document : documents ) {
                     JsonObject jsonObject = JsonParser.parseString( document ).getAsJsonObject();
-                    List<String> fieldsInDocument = new ArrayList<>( jsonObject.keySet() );
-                    fieldsInDocument.removeAll( fieldNames );
-                    fieldsInDocument.remove( "_id" );
-                    fieldNames.addAll( fieldsInDocument );
+                    buildDocumentHierarchy( jsonObject, documentHierarchy, currentPosition, pkColumnNamesOfTables );
                     jsonObjects.add( jsonObject );
                 }
             }
 
             // Create the target table
             // Only VARCHAR(32) columns are added in the current version
-            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 32, null, null, null, false );
-            List<FieldInformation> fieldInformations = fieldNames
-                    .stream()
-                    .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, fieldNames.indexOf( fieldName ) + 1 ) )
-                    .collect( Collectors.toList() );
+            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 64, null, null, null, false );
+            List<CatalogTable> addedTables = new ArrayList();
+            for ( Entry<LinkedList, LinkedHashSet> hierarchyEntry : documentHierarchy.entrySet() ) {
+                LinkedList<String> tablePath = hierarchyEntry.getKey();
+                LinkedHashSet<String> tableChildren = hierarchyEntry.getValue();
+                String tableName = tablePath.getLast();
 
-            // Set the PKs selected by the user
-            List<ConstraintInformation> constraintInformations = Collections.singletonList( new ConstraintInformation( "primary", ConstraintType.PRIMARY, primaryKeyColumnNames ) );
-            createTable( targetSchemaId, sourceTable.name, fieldInformations, constraintInformations, false, stores, placementType, statement );
+                // If the table has already added. E.g. when it has multiple parents
+                if ( !addedTables.stream().anyMatch( table -> tableName.equals( table.name ) ) ) {
+                    // If the table has also another parent, merge the tableChildren
+                    List<LinkedList> sameTableWithOtherParents = documentHierarchy.keySet()
+                            .stream()
+                            .filter( k -> !k.equals( hierarchyEntry.getKey() ) && k.getLast().equals( hierarchyEntry.getKey().getLast() ) )
+                            .collect( Collectors.toList() );
+                    for ( LinkedList sameTableWithOtherParent : sameTableWithOtherParents ) {
+                        tableChildren.addAll( documentHierarchy.get( sameTableWithOtherParent ) );
+                    }
 
-            // Call the DataMigrator
+                    // Create the list of the PKs for the current table
+                    List<ConstraintInformation> constraintInformations =
+                            List.of( new ConstraintInformation( "primary", ConstraintType.PRIMARY, pkColumnNamesOfTables.get( tableName ) ) );
+                    List<FieldInformation> fieldInformations = tableChildren
+                            .stream()
+                            .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, new ArrayList( tableChildren ).indexOf( fieldName ) + 1 ) )
+                            .collect( Collectors.toList() );
+                    createTable( targetSchemaId, tableName, fieldInformations, constraintInformations, false, stores, placementType, statement );
+                    addedTables.add( catalog.getTable( targetSchemaId, tableName ) );
+                }
+                // Add FK if it's a child table
+                CatalogTable table = catalog.getTable( targetSchemaId, tableName );
+                if ( tablePath.size() > 1 ) {
+                    CatalogTable refTable = catalog.getTable( targetSchemaId, tablePath.get( tablePath.size() - 2 ) );
+                    List<String> refColumnNames = pkColumnNamesOfTables.get( refTable.name );
+                    List<String> columnNames = refColumnNames
+                            .stream()
+                            .map( columnName -> "fk_" + refTable.name + "_" + columnName )
+                            .collect( Collectors.toList() );
+                    addForeignKey( table, refTable, columnNames, refColumnNames, "fk_from_" + table.name + "_to_" + refTable.name, ForeignKeyOption.NONE, ForeignKeyOption.NONE );
+                }
+            }
+
+            //Call the DataMigrator
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-            dataMigrator.copyDocumentDataToRelationalData( statement.getTransaction(), jsonObjects, catalog.getTable( targetSchemaId, sourceTable.name ) );
+            dataMigrator.copyDocumentDataToRelationalData( statement.getTransaction(), jsonObjects, addedTables );
 
             // Remove the source collection
             dropCollection( sourceCollection, statement );
             statement.getQueryProcessor().resetCaches();
+        }
+    }
+
+
+    private static void buildDocumentHierarchy( JsonElement jsonObject, Map<LinkedList, LinkedHashSet> documentHierarchy, LinkedList<String> currentPath,
+            Map<String, List<String>> pkColumnNamesOfTables ) {
+        Set currentTableColumnNames = documentHierarchy.get( currentPath );
+        for ( String fieldName : ((JsonObject) jsonObject).keySet() ) {
+            JsonElement jsonElement = ((JsonObject) jsonObject).get( fieldName );
+            if ( jsonElement instanceof JsonObject ) {
+                LinkedList<String> childTablePath = (LinkedList<String>) currentPath.clone();
+                childTablePath.add( fieldName );
+                if ( !documentHierarchy.containsKey( childTablePath ) ) {
+                    documentHierarchy.put( childTablePath, new LinkedHashSet() );
+                }
+                buildDocumentHierarchy( jsonElement, documentHierarchy, childTablePath, pkColumnNamesOfTables );
+            } else if ( !currentTableColumnNames.contains( fieldName ) && !fieldName.equals( "_id" ) ) {
+                currentTableColumnNames.add( fieldName );
+            }
+        }
+        // if no PK column was given, select the _id column.
+        // if the _id column not exist add it to the columns of the table
+        if ( !pkColumnNamesOfTables.containsKey( currentPath.getLast() ) ) {
+            pkColumnNamesOfTables.put( currentPath.getLast(), List.of( "_id" ) );
+            currentTableColumnNames.add( "_id" );
+        }
+
+        // Add the PKs of the parent table to te current table as FKs, if it's a child table
+        if ( currentPath.size() > 1 ) {
+            String parentTableName = currentPath.get( currentPath.size() - 2 );
+            pkColumnNamesOfTables.getOrDefault( parentTableName, List.of( "_id" ) )
+                    .stream()
+                    .map( parentPkColumnName -> "fk_" + parentTableName + "_" + parentPkColumnName )
+                    .forEach( currentTableColumnNames::add );
         }
     }
 

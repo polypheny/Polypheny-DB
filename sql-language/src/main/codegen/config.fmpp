@@ -254,6 +254,7 @@ data: {
             "JSON"
             "K"
             "KEY"
+            "KEYS"
             "KEY_MEMBER"
             "KEY_TYPE"
             "LABEL"

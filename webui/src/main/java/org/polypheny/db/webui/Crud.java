@@ -636,7 +636,7 @@ public class Crud implements InformationObserver {
                 .append(tableId);
         if( request.primaryKeyNames != null && !request.primaryKeyNames.isBlank() ) {
             query
-                    .append( " ADD PRIMARY KEY " )
+                    .append( " SET PRIMARY KEYS " )
                     .append(request.primaryKeyNames);
         }
         Result result;

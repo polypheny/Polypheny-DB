@@ -22,12 +22,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.*;
 
-import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataStore;
@@ -46,10 +46,12 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -72,6 +74,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
+import org.polypheny.db.webui.models.ForeignKey;
 import org.polypheny.db.webui.models.Result;
 
 import static org.polypheny.db.ddl.DdlManagerImpl.getResult;
@@ -253,54 +256,107 @@ public class DataMigratorImpl implements DataMigrator {
      * {@inheritDoc}
      */
     @Override
-    public void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, CatalogTable targetTable ) throws UnknownColumnException {
+    public void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, List<CatalogTable> targetTables ) throws UnknownColumnException, UnknownTableException {
         Catalog catalog = Catalog.getInstance();
 
         // Get the values in all documents of the collection
-        // TODO: A data structure is needed to represent also 1:N relations of multiple tables
         Map<CatalogColumn, List<Object>> columnValues = new HashMap<>();
         for ( JsonObject jsonObject : jsonObjects ) {
-            for ( String columnName : targetTable.getColumnNames() ) {
-                CatalogColumn column = catalog.getColumn( targetTable.id, columnName );
-                if ( !columnValues.containsKey( column ) ) {
-                    columnValues.put( column, new LinkedList<>() );
+            getColumnValuesForTable( catalog, targetTables.get( 0 ), columnValues, jsonObject, Collections.emptyMap() );
+        }
+
+        for ( CatalogTable targetTable : targetTables ) {
+            Statement targetStatement = transaction.createStatement();
+            final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+            List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
+            for ( CatalogColumn targetColumn : catalog.getColumns( targetTable.id ) ) {
+                // Add the values to the column to the statement
+                targetStatement.getDataContext().addParameterValues( targetColumn.id, targetColumn.getAlgDataType( typeFactory ), columnValues.get( targetColumn ) );
+
+                // Add all placements of the column to the targetColumnPlacements list
+                for ( DataStore store : RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( targetColumn ) ) {
+                    CatalogColumnPlacement columnPlacement = Catalog.getInstance().getColumnPlacement( store.getAdapterId(), targetColumn.id );
+                    targetColumnPlacements.add( columnPlacement );
                 }
-                JsonElement jsonElement = jsonObject.get( columnName );
-                if ( jsonElement != null ) {
-                    columnValues.get( column ).add( jsonElement.getAsString() );
-                } else {
+            }
+
+            // Prepare the insert query
+            AlgRoot targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, targetTable.partitionProperty.partitionIds.get( 0 ) );
+            Iterator<?> iterator = targetStatement.getQueryProcessor()
+                    .prepareQuery( targetAlg, targetAlg.validatedRowType, true, false, false )
+                    .enumerable( targetStatement.getDataContext() )
+                    .iterator();
+            //noinspection WhileLoopReplaceableByForEach
+            while ( iterator.hasNext() ) {
+                iterator.next();
+            }
+            targetStatement.getDataContext().resetParameterValues();
+        }
+    }
+
+
+    private static void getColumnValuesForTable( Catalog catalog, CatalogTable table, Map<CatalogColumn, List<Object>> columnValues, JsonObject jsonObject, Map<String, String> parentPkValues ) throws UnknownColumnException, UnknownTableException {
+        Map<String, String> pkValues = new HashMap();
+
+        // For the columns are not in the current document
+        for ( String columnName : table.getColumnNames() ) {
+            if ( !jsonObject.keySet().contains( columnName ) ) {
+                CatalogColumn column = catalog.getColumn( table.id, columnName );
+                if ( !columnValues.containsKey( column ) ) {
+                    columnValues.put( column, new ArrayList<>() );
+                }
+                if ( catalog.getPrimaryKey( table.primaryKey ).columnIds.contains( column.id ) ) {
+                    // Generate _id if it's not in the document.
+                    String generatedValue = UUID.randomUUID().toString();
+                    columnValues.get( column ).add( generatedValue );
+                    pkValues.put( String.join( ".", table.name, column.name ), generatedValue );
+                } else if ( !catalog.getForeignKeys( table.id ).stream().anyMatch( fk -> fk.getColumnNames().contains( columnName ) ) ) {
+                    // It's not a FK in the table just simply add null.
                     columnValues.get( column ).add( null );
                 }
             }
         }
 
-        Statement targetStatement = transaction.createStatement();
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
-        for ( Entry<CatalogColumn, List<Object>> entry : columnValues.entrySet() ) {
-            // Add the values to the column to the statement
-            CatalogColumn targetColumn = catalog.getColumn( targetTable.id, entry.getKey().name );
-            targetStatement.getDataContext().addParameterValues( targetColumn.id, targetColumn.getAlgDataType( typeFactory ), entry.getValue() );
+        for ( String fieldName : jsonObject.keySet() ) {
+            // Skip the _id field if the target table is not intended to contain the _id column
+            if ( fieldName.equals( "_id" ) && !table.getColumnNames().contains( "_id" ) ) {
+                continue;
+            }
 
-            // Add all placements of the column to the targetColumnPlacements list
-            for ( DataStore store : RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( targetColumn ) ) {
-                CatalogColumnPlacement columnPlacement = Catalog.getInstance().getColumnPlacement( store.getAdapterId(), targetColumn.id );
-                targetColumnPlacements.add( columnPlacement );
+            JsonElement jsonElement = jsonObject.get( fieldName );
+            // If it's a parent element
+            if ( jsonElement instanceof JsonObject ) {
+                // Add PKs from the document
+                for ( long pkColumnId : catalog.getPrimaryKey( table.primaryKey ).columnIds ) {
+                    String pkColumnName = catalog.getColumn( pkColumnId ).name;
+                    if ( jsonObject.has( pkColumnName ) ) {
+                        pkValues.put( String.join( ".", table.name, pkColumnName ), jsonObject.get( pkColumnName ).getAsString() );
+                    }
+                }
+
+                CatalogTable childTable = catalog.getTable( table.namespaceId, fieldName );
+                getColumnValuesForTable( catalog, childTable, columnValues, (JsonObject) jsonElement, pkValues );
+            } else {
+                CatalogColumn column = catalog.getColumn( table.id, fieldName );
+                if ( !columnValues.containsKey( column ) ) {
+                    columnValues.put( column, new LinkedList<>() );
+                }
+                columnValues.get( column ).add( jsonObject.get( fieldName ).getAsString() );
             }
         }
 
-        // Prepare the insert query
-        AlgRoot targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, targetTable.partitionProperty.partitionIds.get( 0 ) );
-        Iterator<?> iterator = targetStatement.getQueryProcessor()
-                .prepareQuery( targetAlg, targetAlg.validatedRowType, true, false, false )
-                .enumerable( targetStatement.getDataContext() )
-                .iterator();
-        //noinspection WhileLoopReplaceableByForEach
-        while ( iterator.hasNext() ) {
-            iterator.next();
+        // Add the FK columns
+        for ( CatalogForeignKey fk : catalog.getForeignKeys( table.id ) ) {
+            int i = 0;
+            for ( String refColumnName : fk.getReferencedKeyColumnNames() ) {
+                CatalogColumn fkColumn = catalog.getColumn( table.id, fk.getColumnNames().get( i++ ) );
+                if ( !columnValues.containsKey( fkColumn ) ) {
+                    columnValues.put( fkColumn, new ArrayList<>() );
+                }
+                String refColumnValue = parentPkValues.get( String.join( ".", fk.getReferencedKeyTableName(), refColumnName ) );
+                columnValues.get( fkColumn ).add( refColumnValue );
+            }
         }
-
-        targetStatement.getDataContext().resetParameterValues();
     }
 
 
