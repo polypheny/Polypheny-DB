@@ -21,7 +21,7 @@ dependencies {
     testImplementation group: "org.apache.pig", name: "pigunit", version: pigunit_version  // Apache 2.0
 
     // due to gradle 7.6+
-    testImplementation project(path: ':dbms', configuration: 'tests')
+    testImplementation project(path: ':dbms', configuration: 'test')
 }
 
 

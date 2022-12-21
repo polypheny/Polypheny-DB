@@ -164,7 +164,6 @@ compileJava {
     dependsOn(":monitoring:processResources")
 }
 
-
 /**
  * JARs
  */
@@ -203,15 +202,11 @@ shadowJar {
 
 // due to gradle 7.6+
 configurations {
-    tests {
+    test {
         extendsFrom testRuntimeOnly
     }
 }
-// due to gradle 7.6+
-/*task testJar(type: Jar) {
-    archiveClassifier.set('test')
-    from sourceSets.test.output
-}*/
+
 
 task testJar(type: Jar, dependsOn: testClasses) {
     classifier 'tests'
@@ -224,9 +219,8 @@ artifacts {
     archives shadowJar // fat jar which additionally contains all dependencies
     //archives sourcesJar // jar file containing the java doc files
     //archives javadocJar // jar file containing the source files
-    // due to gradle 7.6+
-    //testClasses testJar
-    tests testJar
+    // due to plugins
+    test testJar
 }
 
 
@@ -268,25 +262,6 @@ shadowDistTar {
 
 shadowDistZip {
     dependsOn(jar)
-}
-
-task uberjar(type: Jar, dependsOn: ['compileJava']) {
-    duplicatesStrategy = 'include'
-    zip64 true
-    from configurations.runtimeClasspath.asFileTree.files.collect {
-        exclude "META-INF/*.SF"
-        exclude "META-INF/*.DSA"
-        exclude "META-INF/*.RSA"
-        zipTree(it)
-    }
-    from files(sourceSets.main.output.classesDirs)
-    from files(sourceSets.main.resources)
-    manifest {
-        attributes 'Main-Class': mainClassName
-    }
-
-    archiveBaseName = "${project.name}-plugin-demo"
-    archiveClassifier = "uberjar"
 }
 
 /*licensee {

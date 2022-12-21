@@ -27,7 +27,7 @@ dependencies {
     implementation group: 'org.eclipse.jetty.websocket', name: 'websocket-api', version: jetty_websocket_api_version
 
     // --- Test Compile ---
-    testImplementation project(path: ':dbms', configuration: 'tests')
+    testImplementation project(path: ':dbms', configuration: 'test')
     testImplementation project(path: ':dbms')
     testImplementation project(path: ':core')
 

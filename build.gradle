@@ -166,9 +166,8 @@ allprojects {
 ext.pluginsDir = rootProject.buildDir.path + '/plugins'
 
 build {
-    dependsOn(":dbms:uberjar")
+    dependsOn(":plugins:build")
 }
-
 
 idea {
     project {
