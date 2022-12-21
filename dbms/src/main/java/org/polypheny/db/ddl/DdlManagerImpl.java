@@ -2356,115 +2356,134 @@ public class DdlManagerImpl extends DdlManager {
         // Retrieve the catalog schema objects for later use
         CatalogSchema sourceNamespace = catalog.getSchema( sourceTable.namespaceId );
         CatalogSchema targetNamespace = catalog.getSchema( targetSchemaId );
-
         if ( sourceNamespace.getNamespaceType() == targetNamespace.getNamespaceType() ) {
             // If the source and target namespaces are from the same model, it is sufficient to just move them in the catalog
             catalog.relocateTable( sourceTable, targetSchemaId );
         } else if ( sourceNamespace.getNamespaceType() == NamespaceType.RELATIONAL && targetNamespace.getNamespaceType() == NamespaceType.DOCUMENT ) {
-            // If the source namespace is relational and the target is document-based, the migration has to be called
-            // Create the new collection in the same datastore
-            List<DataStore> stores = sourceTable.dataPlacements
-                    .stream()
-                    .map( id -> (DataStore) AdapterManager.getInstance().getAdapter( id ) )
-                    .collect( Collectors.toList() );
-            PlacementType placementType = catalog.getDataPlacement( sourceTable.dataPlacements.get( 0 ), sourceTable.id ).placementType;
-            createCollection( targetSchemaId, sourceTable.name, false, stores, placementType, statement );
-
-            // Call the migrator
-            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-            dataMigrator.copyRelationalDataToDocumentData( statement.getTransaction(), sourceTable, targetSchemaId );
-
-            // Drop the source table
-            dropTable( sourceTable, statement );
-            statement.getQueryProcessor().resetCaches();
+            // If the source namespace is relational and the target is document-based (the DataMigrator will to be also called)
+            transferRelationalToDocument( sourceTable, targetSchemaId, statement );
         } else if ( sourceNamespace.getNamespaceType() == NamespaceType.DOCUMENT && targetNamespace.getNamespaceType() == NamespaceType.RELATIONAL ) {
-            // If the source namespace is document-based and the target is relational, the migration has to be called
-            // Retrieve the data placements of the source catalog
-            CatalogCollection sourceCollection = catalog.getCollection( sourceTable.id );
-            List<DataStore> stores = sourceTable.dataPlacements
-                    .stream()
-                    .map( id -> (DataStore) AdapterManager.getInstance().getAdapter( id ) )
-                    .collect( Collectors.toList() );
-            PlacementType placementType = catalog.getDataPlacement( sourceTable.dataPlacements.get( 0 ), sourceTable.id ).placementType;
-
-            // Get all documents of the source collection. Here it is necessary to create the target table with its columns
-            String query = String.format( "db.%s.find({})", sourceTable.name );
-            QueryParameters parameters = new MqlQueryParameters( query, sourceNamespace.name, NamespaceType.DOCUMENT );
-            AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
-            MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
-            AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
-            PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-            Result result = getResult( QueryLanguage.MONGO_QL, statement, query, polyImplementation, statement.getTransaction(), false );
-
-            // Create a list of the JsonObjects skipping the _id column which is only needed for the documents but not for the table
-            List<JsonObject> jsonObjects = new ArrayList();
-            LinkedList<String> currentPosition = new LinkedList<>( Arrays.asList( sourceTable.name ) );
-            LinkedMap<LinkedList, LinkedHashSet> documentHierarchy = new LinkedMap<>( Map.of( currentPosition, new LinkedHashSet() ) );
-            for ( String[] documents : result.getData() ) {
-                for ( String document : documents ) {
-                    JsonObject jsonObject = JsonParser.parseString( document ).getAsJsonObject();
-                    buildDocumentHierarchy( jsonObject, documentHierarchy, currentPosition, pkColumnNamesOfTables );
-                    jsonObjects.add( jsonObject );
-                }
-            }
-
-            // Create the target table
-            // Only VARCHAR(32) columns are added in the current version
-            ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 64, null, null, null, false );
-            List<CatalogTable> addedTables = new ArrayList();
-            for ( Entry<LinkedList, LinkedHashSet> hierarchyEntry : documentHierarchy.entrySet() ) {
-                LinkedList<String> tablePath = hierarchyEntry.getKey();
-                LinkedHashSet<String> tableChildren = hierarchyEntry.getValue();
-                String tableName = tablePath.getLast();
-
-                // If the table has already added. E.g. when it has multiple parents
-                if ( !addedTables.stream().anyMatch( table -> tableName.equals( table.name ) ) ) {
-                    // If the table has also another parent, merge the tableChildren
-                    List<LinkedList> sameTableWithOtherParents = documentHierarchy.keySet()
-                            .stream()
-                            .filter( k -> !k.equals( hierarchyEntry.getKey() ) && k.getLast().equals( hierarchyEntry.getKey().getLast() ) )
-                            .collect( Collectors.toList() );
-                    for ( LinkedList sameTableWithOtherParent : sameTableWithOtherParents ) {
-                        tableChildren.addAll( documentHierarchy.get( sameTableWithOtherParent ) );
-                    }
-
-                    // Create the list of the PKs for the current table
-                    List<ConstraintInformation> constraintInformations =
-                            List.of( new ConstraintInformation( "primary", ConstraintType.PRIMARY, pkColumnNamesOfTables.get( tableName ) ) );
-                    List<FieldInformation> fieldInformations = tableChildren
-                            .stream()
-                            .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, new ArrayList( tableChildren ).indexOf( fieldName ) + 1 ) )
-                            .collect( Collectors.toList() );
-                    createTable( targetSchemaId, tableName, fieldInformations, constraintInformations, false, stores, placementType, statement );
-                    addedTables.add( catalog.getTable( targetSchemaId, tableName ) );
-                }
-                // Add FK if it's a child table
-                CatalogTable table = catalog.getTable( targetSchemaId, tableName );
-                if ( tablePath.size() > 1 ) {
-                    CatalogTable refTable = catalog.getTable( targetSchemaId, tablePath.get( tablePath.size() - 2 ) );
-                    List<String> refColumnNames = pkColumnNamesOfTables.get( refTable.name );
-                    List<String> columnNames = refColumnNames
-                            .stream()
-                            .map( columnName -> "fk_" + refTable.name + "_" + columnName )
-                            .collect( Collectors.toList() );
-                    addForeignKey( table, refTable, columnNames, refColumnNames, "fk_from_" + table.name + "_to_" + refTable.name, ForeignKeyOption.NONE, ForeignKeyOption.NONE );
-                }
-            }
-
-            //Call the DataMigrator
-            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-            dataMigrator.copyDocumentDataToRelationalData( statement.getTransaction(), jsonObjects, addedTables );
-
-            // Remove the source collection
-            dropCollection( sourceCollection, statement );
-            statement.getQueryProcessor().resetCaches();
+            // If the source namespace is document-based and the target is relational (the DataMigrator will to be also called)
+            transferDocumentToRelational( sourceTable, targetSchemaId, pkColumnNamesOfTables, statement );
         }
+    }
+
+
+    private void transferRelationalToDocument( CatalogTable sourceTable, long targetSchemaId, Statement statement ) throws EntityAlreadyExistsException, DdlOnSourceException {
+        // Create the new collection in the same datastore
+        List<DataStore> stores = sourceTable.dataPlacements
+                .stream()
+                .map( id -> (DataStore) AdapterManager.getInstance().getAdapter( id ) )
+                .collect( Collectors.toList() );
+        PlacementType placementType = catalog.getDataPlacement( sourceTable.dataPlacements.get( 0 ), sourceTable.id ).placementType;
+        createCollection( targetSchemaId, sourceTable.name, false, stores, placementType, statement );
+
+        // Call the migrator
+        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+        dataMigrator.copyRelationalDataToDocumentData( statement.getTransaction(), sourceTable, targetSchemaId );
+
+        // Drop the source table
+        dropTable( sourceTable, statement );
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private void transferDocumentToRelational( CatalogTable sourceTable, long targetSchemaId, Map<String, List<String>> pkColumnNamesOfTables, Statement statement ) throws EntityAlreadyExistsException, UnknownTableException, UnknownColumnException, GenericCatalogException {
+        // Retrieve the data placements of the source catalog
+        CatalogCollection sourceCollection = catalog.getCollection( sourceTable.id );
+        List<DataStore> stores = sourceTable.dataPlacements
+                .stream()
+                .map( id -> (DataStore) AdapterManager.getInstance().getAdapter( id ) )
+                .collect( Collectors.toList() );
+        PlacementType placementType = catalog.getDataPlacement( sourceTable.dataPlacements.get( 0 ), sourceTable.id ).placementType;
+
+        // Get all documents of the source collection. Here it is necessary to create the target table with its columns
+        String query = String.format( "db.%s.find({})", sourceTable.name );
+
+        QueryParameters parameters = new MqlQueryParameters( query, catalog.getSchema( sourceTable.namespaceId ).name, NamespaceType.DOCUMENT );
+        AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
+        MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
+        AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
+        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+        Result result = getResult( QueryLanguage.MONGO_QL, statement, query, polyImplementation, statement.getTransaction(), false );
+
+        // Create a list of the JsonObjects skipping the _id column which is only needed for the documents but not for the table
+        List<JsonObject> jsonObjects = new ArrayList();
+        LinkedList<String> currentPosition = new LinkedList<>( Arrays.asList( sourceTable.name ) );
+        LinkedMap<LinkedList, LinkedHashSet> documentHierarchy = new LinkedMap<>( Map.of( currentPosition, new LinkedHashSet() ) );
+
+        for ( String document : result.getData()[0] ) {
+            JsonObject jsonObject = JsonParser.parseString( document ).getAsJsonObject();
+            buildDocumentHierarchy( jsonObject, documentHierarchy, currentPosition, pkColumnNamesOfTables );
+            jsonObjects.add( jsonObject );
+        }
+
+        // Create the target table
+        // Only VARCHAR(32) columns are added in the current version
+        ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 64, null, null, null, false );
+        List<CatalogTable> addedTables = new ArrayList();
+        for ( Entry<LinkedList, LinkedHashSet> hierarchyEntry : documentHierarchy.entrySet() ) {
+            LinkedList<String> tablePath = hierarchyEntry.getKey();
+            LinkedHashSet<String> tableChildren = hierarchyEntry.getValue();
+            String tableName = tablePath.getLast();
+
+            // If the table has already added. E.g. when it has multiple parents
+            if ( !addedTables.stream().anyMatch( table -> tableName.equals( table.name ) ) ) {
+                // If the table has also another parent, merge the tableChildren
+                List<LinkedList> sameTableWithOtherParents = documentHierarchy.keySet()
+                        .stream()
+                        .filter( k -> !k.equals( hierarchyEntry.getKey() ) && k.getLast().equals( hierarchyEntry.getKey().getLast() ) )
+                        .collect( Collectors.toList() );
+                for ( LinkedList sameTableWithOtherParent : sameTableWithOtherParents ) {
+                    tableChildren.addAll( documentHierarchy.get( sameTableWithOtherParent ) );
+                }
+
+                // Create the list of the PKs for the current table
+                List<ConstraintInformation> constraintInformations =
+                        List.of( new ConstraintInformation( "primary", ConstraintType.PRIMARY, pkColumnNamesOfTables.get( tableName ) ) );
+
+                List<FieldInformation> fieldInformations = tableChildren
+                        .stream()
+                        .map( fieldName -> new FieldInformation( fieldName, typeInformation, Collation.getDefaultCollation(), null, new ArrayList( tableChildren ).indexOf( fieldName ) + 1 ) )
+                        .collect( Collectors.toList() );
+
+                createTable( targetSchemaId, tableName, fieldInformations, constraintInformations, false, stores, placementType, statement );
+                addedTables.add( catalog.getTable( targetSchemaId, tableName ) );
+            }
+            // Add FK if it's a child table
+            CatalogTable table = catalog.getTable( targetSchemaId, tableName );
+            if ( tablePath.size() > 1 ) {
+                CatalogTable refTable = catalog.getTable( targetSchemaId, tablePath.get( tablePath.size() - 2 ) );
+                List<String> refColumnNames = pkColumnNamesOfTables.get( refTable.name );
+                List<String> columnNames = refColumnNames
+                        .stream()
+                        .map( columnName -> "fk_" + refTable.name + "_" + columnName )
+                        .collect( Collectors.toList() );
+                addForeignKey( table, refTable, columnNames, refColumnNames, "fk_from_" + table.name + "_to_" + refTable.name, ForeignKeyOption.NONE, ForeignKeyOption.NONE );
+            }
+        }
+
+        //Call the DataMigrator
+        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+        dataMigrator.copyDocumentDataToRelationalData( statement.getTransaction(), jsonObjects, addedTables );
+
+        // Remove the source collection
+        dropCollection( sourceCollection, statement );
+        statement.getQueryProcessor().resetCaches();
     }
 
 
     private static void buildDocumentHierarchy( JsonElement jsonObject, Map<LinkedList, LinkedHashSet> documentHierarchy, LinkedList<String> currentPath,
             Map<String, List<String>> pkColumnNamesOfTables ) {
         Set currentTableColumnNames = documentHierarchy.get( currentPath );
+
+        // if no PK column was given, select the _id column.
+        // if the _id column not exist add it to the columns of the table
+        if ( !pkColumnNamesOfTables.containsKey( currentPath.getLast() ) ) {
+            pkColumnNamesOfTables.put( currentPath.getLast(), List.of( "_id" ) );
+            currentTableColumnNames.add( "_id" );
+        }
+
         for ( String fieldName : ((JsonObject) jsonObject).keySet() ) {
             JsonElement jsonElement = ((JsonObject) jsonObject).get( fieldName );
             if ( jsonElement instanceof JsonObject ) {
@@ -2477,12 +2496,6 @@ public class DdlManagerImpl extends DdlManager {
             } else if ( !currentTableColumnNames.contains( fieldName ) && !fieldName.equals( "_id" ) ) {
                 currentTableColumnNames.add( fieldName );
             }
-        }
-        // if no PK column was given, select the _id column.
-        // if the _id column not exist add it to the columns of the table
-        if ( !pkColumnNamesOfTables.containsKey( currentPath.getLast() ) ) {
-            pkColumnNamesOfTables.put( currentPath.getLast(), List.of( "_id" ) );
-            currentTableColumnNames.add( "_id" );
         }
 
         // Add the PKs of the parent table to te current table as FKs, if it's a child table

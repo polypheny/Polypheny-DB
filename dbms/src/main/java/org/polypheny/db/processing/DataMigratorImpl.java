@@ -16,18 +16,28 @@
 
 package org.polypheny.db.processing;
 
-import com.google.common.collect.ImmutableList;
+import static org.polypheny.db.ddl.DdlManagerImpl.getResult;
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.commons.lang.StringUtils;
+import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataStore;
@@ -41,7 +51,12 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.type.*;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -74,10 +89,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
-import org.polypheny.db.webui.models.ForeignKey;
 import org.polypheny.db.webui.models.Result;
-
-import static org.polypheny.db.ddl.DdlManagerImpl.getResult;
 
 
 @Slf4j
@@ -307,7 +319,7 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 if ( catalog.getPrimaryKey( table.primaryKey ).columnIds.contains( column.id ) ) {
                     // Generate _id if it's not in the document.
-                    String generatedValue = UUID.randomUUID().toString();
+                    String generatedValue = new ObjectId().toString();
                     columnValues.get( column ).add( generatedValue );
                     pkValues.put( String.join( ".", table.name, column.name ), generatedValue );
                 } else if ( !catalog.getForeignKeys( table.id ).stream().anyMatch( fk -> fk.getColumnNames().contains( columnName ) ) ) {
