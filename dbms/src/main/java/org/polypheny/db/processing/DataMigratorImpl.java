@@ -16,8 +16,6 @@
 
 package org.polypheny.db.processing;
 
-import static org.polypheny.db.ddl.DdlManagerImpl.getResult;
-
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -89,7 +87,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.LimitIterator;
-import org.polypheny.db.webui.models.Result;
 
 
 @Slf4j
@@ -246,17 +243,24 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 bf.append( "])" );
 
-                // Insert als documents into the newlz created collection
+                // Insert als documents into the newly created collection
                 Statement targetStatement = transaction.createStatement();
                 String query = bf.toString();
                 AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) transaction.getProcessor( Catalog.QueryLanguage.MONGO_QL );
                 QueryParameters parameters = new MqlQueryParameters( query, catalog.getSchema( targetSchemaId ).name, Catalog.NamespaceType.DOCUMENT );
                 MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
                 AlgRoot logicalRoot = mqlProcessor.translate( targetStatement, parsed, parameters );
-                PolyImplementation polyImplementation = targetStatement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
-                // TODO: something is wrong with the transactions. Try to get rid of this.
-                Result updateRresult = getResult( Catalog.QueryLanguage.MONGO_QL, targetStatement, query, polyImplementation, transaction, false );
+                // Prepare the insert query
+                Iterator<?> iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( logicalRoot, true )
+                        .enumerable( targetStatement.getDataContext() )
+                        .iterator();
+                //noinspection WhileLoopReplaceableByForEach
+                while ( iterator.hasNext() ) {
+                    iterator.next();
+                }
+                targetStatement.getDataContext().resetParameterValues();
             }
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
