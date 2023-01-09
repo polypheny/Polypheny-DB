@@ -56,6 +56,8 @@ public class Server implements Runnable {
     private final int port;
     private final SchemaExtractor schemaExtractorParent;
 
+    private ServerControl serverControl;
+
 
     public Server(int port, TransactionManager transactionManager, SchemaExtractor schemaExtractorParent) {
         this.transactionManager = transactionManager;
@@ -199,24 +201,29 @@ public class Server implements Runnable {
                 log.debug( String.valueOf( userID ) + " joined schema extraction server listeners" );
                 broadcastMessage( "Server", "connect", (userID + " joined listeners") );
                 nextClientNumber++;
-            } );
-            ws.onClose( ctx -> {
-                String userIDAsString = String.valueOf( listenerMap.get( ctx ) );
-                listenerMap.remove( ctx );
-                log.debug( userIDAsString + " left schema extraction server listeners" );
-                broadcastMessage( "Server", "disconnect", (userIDAsString + " left listeners") );
-            } );
-        } );
+            });
+            ws.onClose(ctx -> {
+                String userIDAsString = String.valueOf(listenerMap.get(ctx));
+                listenerMap.remove(ctx);
+                log.debug(userIDAsString + " left schema extraction server listeners");
+                broadcastMessage("Server", "disconnect", (userIDAsString + " left listeners"));
+            });
+        });
 
         // /config (e.g. user parameters)
-        javalin.get( "/config/get", ServerControl::getCurrentConfigAsJson );
+        javalin.get("/config/get", ctx -> {
+            serverControl.getCurrentConfigAsJson(ctx);
+        });
+        //javalin.post("/config/setSpeedThoroughness", ctx -> {
+        //    serverControl.setSpeedThoroughness(Integer.parseInt(Objects.requireNonNull(ctx.formParam("preference"))));
+        //});
 
         // /receive a (SQL) query from Python
-        javalin.post( "/query", ctx -> {
-            String queryLanguage = ctx.formParam( "querylanguage" );
-            if ( Objects.equals( queryLanguage, "SQL" ) ) {
+        javalin.post("/query", ctx -> {
+            String queryLanguage = ctx.formParam("querylanguage");
+            if (Objects.equals(queryLanguage, "SQL")) {
                 // Run query sent by Python
-                String query = ctx.formParam( "query" );
+                String query = ctx.formParam("query");
                 try {
                     QueryResult queryResult = executeSQL(query);
                     ctx.result(Arrays.deepToString(queryResult.data));
@@ -229,7 +236,7 @@ public class Server implements Runnable {
         });
 
         javalin.post("/result", ctx -> {
-            String result_content = ctx.queryParam("results");
+            String result_content = ctx.formParam("results");
             schemaExtractorParent.updateResultCode(result_content);
         });
 

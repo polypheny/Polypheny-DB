@@ -21,11 +21,29 @@ import io.javalin.http.Context;
 
 public class ServerControl {
 
-    private static Gson gson = new Gson();
+    private Gson gson = new Gson();
 
+    private ServerConfig serverConfig = new ServerConfig();
 
-    public static void getCurrentConfigAsJson( Context ctx ) {
-        ctx.result( "{'configParam1':1, 'configParam2':2}" );
+    public void getCurrentConfigAsJson(Context ctx) {
+        String jsonInString = gson.toJson(serverConfig);
+        ctx.result(jsonInString);
     }
 
+    public void setSpeedThoroughness(int speedThoroughness) {
+        serverConfig.setSpeedThoroughness(speedThoroughness);
+    }
+
+}
+
+class ServerConfig {
+    public int speedThoroughness;
+
+    ServerConfig() {
+        speedThoroughness = 0;
+    }
+
+    public void setSpeedThoroughness(int speedThoroughness) {
+        this.speedThoroughness = speedThoroughness;
+    }
 }
