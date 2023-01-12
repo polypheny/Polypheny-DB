@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -675,6 +675,15 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 op.getOperandTypeChecker() == null
                         ? PolyOperandTypeChecker.Consistency.NONE
                         : op.getOperandTypeChecker().getConsistency();
+        if ( op.getOperatorName() == OperatorName.CROSS_MODEL_ITEM ) {
+            // todo dl, check if this is okey
+            RexNode target = cx.convertExpression( call.operand( 0 ) );
+            return rexBuilder.makeCall(
+                    rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ),
+                    OperatorRegistry.get( OperatorName.CROSS_MODEL_ITEM ),
+                    List.of( target, rexBuilder.makeLiteral( ((SqlIdentifier) call.operand( 1 )).names.get( 0 ) ) ) );
+        }
+
         final List<RexNode> exprs = convertExpressionList( cx, operands, consistency );
         AlgDataType type;
         if ( call.getOperator() instanceof SqlItemOperator ) {

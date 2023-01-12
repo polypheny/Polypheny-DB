@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -253,6 +253,9 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                                 Collections.sort( list );
                                 throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFoundDidYouMean( columnName, Util.sepList( list, "', '" ) ) );
                             }
+                        } else if ( SqlValidatorUtil.isTableNonRelational( validator ) ) {
+                            // todo dl, check if this does not lead to problems
+                            return SqlQualified.create( this, 0, validator.getSqlNamespace( identifier ), identifier );
                         }
                         throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( columnName ) );
                     case 1:

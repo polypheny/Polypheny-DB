@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,16 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
             ResultSet result = s.executeQuery( String.format( "SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
             TestHelper.checkResultSet( result,
                     ImmutableList.of( new Object[]{ "{key=3}", new Object[]{ DATA_LABEL } } ) );
+        } );
+
+    }
+
+
+    @Test
+    public void itemSelectTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT properties[\"key\"] FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
+            TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "3" } ) );
         } );
 
     }

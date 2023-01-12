@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
@@ -136,6 +137,7 @@ import org.polypheny.db.sql.language.SqlWindow;
 import org.polypheny.db.sql.language.SqlWith;
 import org.polypheny.db.sql.language.SqlWithItem;
 import org.polypheny.db.sql.language.fun.SqlCase;
+import org.polypheny.db.sql.language.fun.SqlCrossMapItemOperator;
 import org.polypheny.db.sql.language.util.SqlShuttle;
 import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.type.ArrayType;
@@ -228,6 +230,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * The name-resolution scope of a LATERAL TABLE clause.
      */
+    @Getter
     private TableScope tableScope = null;
 
     /**
@@ -5390,6 +5393,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         @Override
         public AlgDataType visit( Call call ) {
             final Operator operator = call.getOperator();
+
+            if ( operator instanceof SqlCrossMapItemOperator ) {
+                return typeFactory.createPolyType( PolyType.VARCHAR, 255 );
+            }
+
             return operator.deriveType( SqlValidatorImpl.this, scope, call );
         }
 
@@ -5448,6 +5456,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( type == null ) {
                 final SqlIdentifier last = ((SqlIdentifier) id).getComponent( i - 1, i );
                 throw newValidationError( last, RESOURCE.unknownIdentifier( last.toString() ) );
+
             }
 
             // Resolve rest of identifier
@@ -5534,6 +5543,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
             // Only visits arguments which are expressions. We don't want to qualify non-expressions such as 'x' in 'empno * 5 AS x'.
             ArgHandler<SqlNode> argHandler = new CallCopyingArgHandler( call, false );
+
+            if ( SqlValidatorUtil.isTableNonRelational( validator ) && call.getKind() == Kind.OTHER_FUNCTION && call.getOperator().getOperatorName() == OperatorName.ITEM ) {
+                return new SqlBasicCall( new SqlCrossMapItemOperator(), call.getOperandList().toArray( SqlNode[]::new ), ParserPos.ZERO );
+            }
+
             call.getOperator().acceptCall( this, call, true, argHandler );
             final SqlNode result = argHandler.result();
             validator.setOriginal( result, call );

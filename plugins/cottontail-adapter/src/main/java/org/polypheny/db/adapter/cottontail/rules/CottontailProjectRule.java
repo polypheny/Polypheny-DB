@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,18 @@ import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.language.fun.SqlDistanceFunction;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 
 public class CottontailProjectRule extends CottontailConverterRule {
 
     CottontailProjectRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Project.class, p -> !DocumentRules.containsDocument( p ), Convention.NONE, out, algBuilderFactory, "CottontailProjectRule:" + out.getName() );
+        super( Project.class,
+                p -> !DocumentRules.containsDocument( p ) && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ),
+                Convention.NONE,
+                out,
+                algBuilderFactory,
+                "CottontailProjectRule:" + out.getName() );
     }
 
 

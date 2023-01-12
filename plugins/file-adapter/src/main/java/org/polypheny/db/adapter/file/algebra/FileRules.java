@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptRule;
@@ -50,6 +49,7 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 
 @Slf4j
@@ -80,7 +80,7 @@ public class FileRules {
 
         private static boolean supports( Modify node ) {
             if ( node.getSourceExpressionList() != null ) {
-                return node.getSourceExpressionList().stream().noneMatch( UnsupportedRexCallVisitor::containsUnsupportedCall );
+                return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressionList() );
             }
             return true;
         }
@@ -155,7 +155,7 @@ public class FileRules {
 
 
         public FileProjectRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Project.class, p -> !functionInProject( p ), Convention.NONE, out, algBuilderFactory, "FileProjectRule:" + out.getName() );
+            super( Project.class, p -> !functionInProject( p ) && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ), Convention.NONE, out, algBuilderFactory, "FileProjectRule:" + out.getName() );
             this.convention = out;
         }
 
@@ -308,35 +308,6 @@ public class FileRules {
                 }
             }
             return false;
-        }
-
-    }
-
-
-    private static class UnsupportedRexCallVisitor extends RexVisitorImpl<Void> {
-
-        @Getter
-        boolean containsUnsupportedRexCall = false;
-
-
-        protected UnsupportedRexCallVisitor() {
-            super( true );
-        }
-
-
-        @Override
-        public Void visitCall( RexCall call ) {
-            if ( call.op.getOperatorName() != OperatorName.ARRAY_VALUE_CONSTRUCTOR ) {
-                containsUnsupportedRexCall = true;
-            }
-            return super.visitCall( call );
-        }
-
-
-        static boolean containsUnsupportedCall( RexNode node ) {
-            UnsupportedRexCallVisitor visitor = new UnsupportedRexCallVisitor();
-            node.accept( visitor );
-            return visitor.containsUnsupportedRexCall;
         }
 
     }

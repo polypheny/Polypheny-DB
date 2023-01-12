@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 public interface NeoUtil {
 
@@ -545,15 +546,15 @@ public interface NeoUtil {
         return visitor.supports;
     }
 
-    static boolean supports( Project r ) {
-        if ( r.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+    static boolean supports( Project p ) {
+        if ( p.getTraitSet().contains( ModelTrait.GRAPH ) ) {
             return false;
         }
         NeoSupportVisitor visitor = new NeoSupportVisitor();
-        for ( RexNode project : r.getProjects() ) {
+        for ( RexNode project : p.getProjects() ) {
             project.accept( visitor );
         }
-        return visitor.supports;
+        return visitor.supports && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() );
     }
 
     static Object fixParameterValue( Object value, Pair<PolyType, PolyType> type ) {

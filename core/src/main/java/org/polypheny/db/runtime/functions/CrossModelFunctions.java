@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -426,6 +426,26 @@ public class CrossModelFunctions {
     @SuppressWarnings("unused")
     public static Enumerable<?> mergeNodeCollections( List<Enumerable<PolyNode>> enumerables ) {
         return Linq4j.concat( enumerables );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Object graphItem( String map, String key ) {
+        return mapFromString( map ).get( key );
+    }
+
+
+    private static Map<String, String> mapFromString( String map ) {
+        // remove "{" and "}"
+        String adjusted = map.substring( 1, map.length() - 1 );
+        String[] splits = adjusted.split( "," );
+
+        Map<String, String> res = new HashMap<>();
+        for ( String split : splits ) {
+            String[] pair = split.split( "=" );
+            res.put( pair[0], pair[1] );
+        }
+        return res;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -46,8 +47,10 @@ import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.ExtensibleTable;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -635,6 +638,20 @@ public class SqlValidatorUtil {
             }
         }
         return false;
+    }
+
+
+    public static boolean isTableNonRelational( SqlValidatorImpl validator ) {
+        if ( validator.getTableScope() == null ) {
+            return false;
+        }
+        if ( !(validator.getTableScope().getNode() instanceof SqlIdentifier) ) {
+            return false;
+        }
+        SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
+        PolyphenyDbSchema schema = validator.getCatalogReader().getRootSchema().getSubSchema( id.names.get( 0 ), false );
+
+        return ((AbstractPolyphenyDbSchema) schema).namespaceType != NamespaceType.RELATIONAL;
     }
 
 

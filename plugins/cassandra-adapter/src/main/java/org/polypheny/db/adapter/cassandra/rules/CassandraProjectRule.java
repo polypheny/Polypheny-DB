@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 
 /**
@@ -42,20 +42,10 @@ public class CassandraProjectRule extends CassandraConverterRule {
         super( Project.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraProjectRule:" + out.getName() );
     }
 
-
-    // TODO js: Reimplement the old checks!
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         Project project = call.alg( 0 );
-        for ( RexNode e : project.getProjects() ) {
-            if ( !(e instanceof RexInputRef) && !(e instanceof RexLiteral) ) {
-                if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
+        return !UnsupportedRexCallVisitor.containsArrayConstructorOrModelItem( project.getProjects() );
     }
 
 

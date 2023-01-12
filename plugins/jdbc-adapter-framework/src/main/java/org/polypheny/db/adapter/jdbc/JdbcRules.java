@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,7 @@ import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -407,7 +408,7 @@ public class JdbcRules {
          * Creates a JdbcProjectRule.
          */
         public JdbcProjectRule( final JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Project.class, (Predicate<Project>) project ->
+            super( Project.class, project ->
                             (out.dialect.supportsWindowFunctions()
                                     || !RexOver.containsOver( project.getProjects(), null ))
                                     && !userDefinedFunctionInProject( project )
@@ -415,8 +416,15 @@ public class JdbcRules {
                                     && !multimediaFunctionInProject( project )
                                     && !DocumentRules.containsJson( project )
                                     && !DocumentRules.containsDocument( project )
+                                    && supports( project )
                                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project )),
                     Convention.NONE, out, algBuilderFactory, "JdbcProjectRule." + out );
+        }
+
+
+        private static boolean supports( Project project ) {
+            return !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() );
+
         }
 
 

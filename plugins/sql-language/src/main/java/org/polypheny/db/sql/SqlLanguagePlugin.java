@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
+import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -2478,6 +2479,10 @@ public class SqlLanguagePlugin extends Plugin {
                         writer.endList( frame );
                     }
                 } );
+
+        register(
+                OperatorName.CROSS_MODEL_ITEM,
+                new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
 
         isInit = true;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,6 +95,7 @@ import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -666,7 +667,7 @@ public class MongoRules {
             super(
                     LogicalProject.class,
                     project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
-                            && !containsIncompatible( project ),
+                            && !containsIncompatible( project ) && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
                     "MongoProjectRule" );
