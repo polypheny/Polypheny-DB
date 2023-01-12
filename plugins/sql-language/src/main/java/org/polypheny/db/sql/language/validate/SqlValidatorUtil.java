@@ -650,8 +650,11 @@ public class SqlValidatorUtil {
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
         PolyphenyDbSchema schema = validator.getCatalogReader().getRootSchema().getSubSchema( id.names.get( 0 ), false );
+        if ( schema == null ) {
+            return false;
+        }
 
-        return ((AbstractPolyphenyDbSchema) schema).namespaceType != NamespaceType.RELATIONAL;
+        return ((AbstractPolyphenyDbSchema) schema).getNamespaceType() != NamespaceType.RELATIONAL;
     }
 
 
