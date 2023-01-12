@@ -431,21 +431,7 @@ public class CrossModelFunctions {
 
     @SuppressWarnings("unused")
     public static Object graphItem( String map, String key ) {
-        return mapFromString( map ).get( key );
-    }
-
-
-    private static Map<String, String> mapFromString( String map ) {
-        // remove "{" and "}"
-        String adjusted = map.substring( 1, map.length() - 1 );
-        String[] splits = adjusted.split( "," );
-
-        Map<String, String> res = new HashMap<>();
-        for ( String split : splits ) {
-            String[] pair = split.split( "=" );
-            res.put( pair[0], pair[1] );
-        }
-        return res;
+        return PolyDictionary.fromString( map ).getOrDefault( key, null ).toString();
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class QueryLanguage {
     public static QueryLanguage from( String name ) {
         String normalized = name.toLowerCase( Locale.ROOT );
 
-        return LanguageManager.getLanguages().stream().filter( l -> Objects.equals( l.serializedName, normalized ) )
+        return LanguageManager.getLanguages().stream().filter( l -> Objects.equals( l.serializedName, normalized ) || l.otherNames.contains( normalized ) )
                 .findFirst()
                 .orElseThrow( () -> new RuntimeException( "The query language seems not to be supported!" ) );
 

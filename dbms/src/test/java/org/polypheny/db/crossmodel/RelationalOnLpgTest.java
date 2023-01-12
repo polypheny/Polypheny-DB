@@ -92,7 +92,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
             TestHelper.checkResultSet( result,
-                    ImmutableList.of( new Object[]{ "{key=3}", new Object[]{ DATA_LABEL } } ) );
+                    ImmutableList.of( new Object[]{ "{\"key\":\"3\"}", new Object[]{ DATA_LABEL } } ) );
         } );
 
     }
