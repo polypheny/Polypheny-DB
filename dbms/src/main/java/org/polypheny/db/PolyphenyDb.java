@@ -414,6 +414,7 @@ public class PolyphenyDb {
 
         // Initialize schema extractor
         SchemaExtractor extractor = SchemaExtractor.getInstance();
+        extractor.setTransactionManager( transactionManager );
         extractor.startServer( transactionManager );
 
         // Add icon to system tray

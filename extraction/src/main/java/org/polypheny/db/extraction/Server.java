@@ -161,7 +161,6 @@ public class Server implements Runnable {
         String[][] d = data.toArray( new String[0][] );
 
         return new QueryResult( d, rows.size(), typeInfo, name );
-
     }
 
 
