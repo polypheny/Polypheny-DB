@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -263,6 +264,28 @@ public class SchemaExtractor {
         return propertyNames;
     }
 
+    public List<String> getFirstLevelTagsFromCollection(String collectionName, String namespace) {
+        List<String> tagNames = new ArrayList<>();
+        String query = "SELECT * FROM " + namespace + ".\"" + collectionName + "\"";
+        QueryResult queryResult = executeSQL(query);
+        for (String[] row : queryResult.data) {
+            // remove leading and trailing curly braces
+            String singleTags = row[0].substring(1, row[0].length() - 1);
+            String[] tagParts = singleTags.split(",");
+            for (String tagPart : tagParts) {
+                String[] tag = tagPart.split(":");
+                String tagName = tag[0];
+                // trim whitespace and leading/trailing "
+                tagName = tagName.trim();
+                tagName = tagName.substring(1, tagName.length() - 1);
+                if (!tagNames.contains(tagName)) {
+                    tagNames.add(tagName);
+                }
+            }
+        }
+        return tagNames;
+    }
+
 
     /**
      * Your central method that serves as an entry point. Start with your implementation in this method.
@@ -374,6 +397,26 @@ public class SchemaExtractor {
                 }
                 break;
             case "DOCUMENT":
+                for (CatalogCollection catalogCollection : catalog.getCollections(namespaceId, null)) {
+
+                    // Collection name
+                    // it will be handled as equivalent to table name
+                    String collectionName = catalogCollection.name;
+
+                    // Array of collection names in namespace
+                    JsonArrayBuilder tagsBuilder = Json.createArrayBuilder();
+                    List<String> firstLevelTagNames = getFirstLevelTagsFromCollection(collectionName, namespaceName);
+                    for (String firstLevelTag : firstLevelTagNames) {
+                        tagsBuilder.add(firstLevelTag);
+                    }
+
+                    // Send all information arrays to Python part
+                    tablesBuilder.add(Json.createObjectBuilder()
+                            .add("namespaceName", namespaceName)
+                            .add("collectionName", collectionName)
+                            .add("firstLevelTags", tagsBuilder)
+                    );
+                }
 
                 break;
         }
