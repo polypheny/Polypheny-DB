@@ -26,11 +26,11 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -101,7 +101,7 @@ public class HttpInterfacePlugin extends Plugin {
                 new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 )
         );
 
-        private Set<String> xIds = new HashSet<>();
+        private final ConcurrentHashMap<String, Set<String>> sessionXids = new ConcurrentHashMap<>();
 
         private final int port;
         private final String uniqueName;
@@ -175,8 +175,8 @@ public class HttpInterfacePlugin extends Plugin {
 
         public void anyQuery( QueryLanguage language, final Context ctx ) {
             QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
-
-            cleanup();
+            String sessionId = ctx.req.getSession().getId();
+            cleanupOldInfoAndFiles( sessionId );
 
             List<Result> results = LanguageCrud.anyQuery(
                     language,
@@ -192,16 +192,22 @@ public class HttpInterfacePlugin extends Plugin {
                 statementCounters.put( language, new AtomicLong() );
             }
             statementCounters.get( language ).incrementAndGet();
-            xIds.addAll( results.stream().map( Result::getXid ).filter( Objects::nonNull ).collect( Collectors.toSet() ) );
+            // is empty from cleanupOldInfoAndFiles
+            sessionXids.put( sessionId, results.stream().map( Result::getXid ).filter( Objects::nonNull ).collect( Collectors.toSet() ) );
         }
 
 
-        private void cleanup() {
+        private void cleanupOldInfoAndFiles( String sessionId ) {
             // todo change this also in websocket logic, rather hacky
-            for ( String xId : xIds ) {
+            if ( !sessionXids.containsKey( sessionId ) ) {
+                return;
+            }
+            for ( String xId : sessionXids.get( sessionId ) ) {
                 InformationManager.close( xId );
                 TemporalFileManager.deleteFilesOfTransaction( xId );
             }
+
+            sessionXids.get( sessionId ).clear();
         }
 
 

@@ -19,9 +19,9 @@ package org.polypheny.db.webui;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -37,7 +37,7 @@ public final class TemporalFileManager {
     }
 
 
-    static HashMap<String, Set<File>> temporaryFiles = new HashMap<>();
+    static ConcurrentHashMap<String, Set<File>> temporaryFiles = new ConcurrentHashMap<>();
 
 
     static {
