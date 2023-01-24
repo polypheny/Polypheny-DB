@@ -461,39 +461,97 @@ public class SchemaExtractor {
                 SchemaExtractor.getInstance().execute(catalogSchema.id, namespaceName );
             }
             return "Running schema integration!";
-        } ).withParameters( "namespace" );
-        runAction.setOrder( 2 );
-        im.registerInformation( runAction);
+        }).withParameters("namespace");
+        runAction.setOrder(2);
+        im.registerInformation(runAction);
 
         InformationGroup logGroup = new InformationGroup(page, "Log Output").setOrder(2);
         im.addGroup(logGroup);
         informationLogOutput = new InformationCode(logGroup, "");
         im.registerInformation(informationLogOutput);
 
+        InformationAction clearLog = new InformationAction(logGroup, "Clear", parameters -> {
+            this.updateLogCode("");
+            return "Successfully cleared log!";
+        });
+        clearLog.setOrder(1);
+        im.registerInformation(clearLog);
+
         InformationGroup resultGroup = new InformationGroup(page, "Result").setOrder(3);
         im.addGroup(resultGroup);
         informationResult = new InformationCode(resultGroup, "");
         im.registerInformation(informationResult);
 
-        InformationGroup speedThoroughnessGroup = new InformationGroup(page, "Speed/Thoroughness").setOrder(4);
-        im.addGroup(speedThoroughnessGroup);
+        InformationGroup configParametersGroup = new InformationGroup(page, "Config parameters").setOrder(4);
+        im.addGroup(configParametersGroup);
 
-        InformationText speedThoroughnessText = new InformationText(
-                speedThoroughnessGroup,
-                "Set speed/thoroughness preference: 1 = all speed. 5 = all thoroughness.");
-        actionText.setOrder(4);
-        im.registerInformation(speedThoroughnessText);
+        InformationText setMatchingThresholdText = new InformationText(
+                configParametersGroup,
+                "Set matching threshold: [0, 1] (0 = reject all matches. 1 = allow all matches. Default: 0.5.) \r\n");
+        setMatchingThresholdText.setOrder(1);
+        im.registerInformation(setMatchingThresholdText);
 
-        InformationAction runSpeedThoroughness = new InformationAction(speedThoroughnessGroup, "Set", parameters -> {
-            if (parameters == null || parameters.size() != 1 || parameters.get("st") == null) {
+        InformationAction setMatchingThreshold = new InformationAction(configParametersGroup, "Set", parameters -> {
+            if (parameters == null || parameters.get("matchingThreshold") == null) {
                 return "No or invalid parameter!";
             }
-            String speedThoroughness = parameters.get("st");
-            Server.broadcastMessage("Server", "speedThoroughness", speedThoroughness);
-            return "Successfully set speed/thoroughness preference!";
-        }).withParameters("st");
-        runAction.setOrder(5);
-        im.registerInformation(runSpeedThoroughness);
+            String matchingThreshold = parameters.get("matchingThreshold");
+            Server.broadcastMessage("Server", "matchingThreshold", matchingThreshold);
+            return "Successfully set matching threshold!";
+        }).withParameters("matchingThreshold");
+        setMatchingThreshold.setOrder(2);
+        im.registerInformation(setMatchingThreshold);
+
+        InformationText setSampleSizeText = new InformationText(
+                configParametersGroup,
+                "Set sample size: n ∈ N. Default: 5. \r\n");
+        setSampleSizeText.setOrder(3);
+        im.registerInformation(setSampleSizeText);
+
+        InformationAction setSampleSize = new InformationAction(configParametersGroup, "Set", parameters -> {
+            if (parameters == null || parameters.size() != 1 || parameters.get("sampleSize") == null) {
+                return "No or invalid parameter!";
+            }
+            String sampleSize = parameters.get("sampleSize");
+            Server.broadcastMessage("Server", "sampleSize", sampleSize);
+            return "Successfully set sample size!";
+        }).withParameters("sampleSize");
+        setSampleSize.setOrder(4);
+        im.registerInformation(setSampleSize);
+
+        InformationText setValentineAlgoText = new InformationText(
+                configParametersGroup,
+                "Set Valentine matching algorithm. Default: automatic. \r\n");
+        setValentineAlgoText.setOrder(5);
+        im.registerInformation(setValentineAlgoText);
+
+        InformationAction setValentineAlgo = new InformationAction(configParametersGroup, "Set", parameters -> {
+            if (parameters == null || parameters.get("valentineAlgorithm") == null) {
+                return "No or invalid parameter!";
+            }
+            String sampleSize = parameters.get("valentineAlgorithm");
+            Server.broadcastMessage("Server", "valentineAlgorithm", sampleSize);
+            return "Successfully set valentine algorithm!";
+        }).withParameters("valentineAlgorithm");
+        setValentineAlgo.setOrder(6);
+        im.registerInformation(setValentineAlgo);
+
+        InformationText setKBestMappingsText = new InformationText(
+                configParametersGroup,
+                "Set number of best mappings to show: n ∈ N. Default: 3. \r\n");
+        setKBestMappingsText.setOrder(7);
+        im.registerInformation(setKBestMappingsText);
+
+        InformationAction setKBestMappings = new InformationAction(configParametersGroup, "Set", parameters -> {
+            if (parameters == null || parameters.size() != 1 || parameters.get("kBestMappings") == null) {
+                return "No or invalid parameter!";
+            }
+            String sampleSize = parameters.get("kBestMappings");
+            Server.broadcastMessage("Server", "kBestMappings", sampleSize);
+            return "Successfully set number of mappings to show!";
+        }).withParameters("kBestMappings");
+        setKBestMappings.setOrder(8);
+        im.registerInformation(setKBestMappings);
 
 //        InformationGroup groundTruthGroup = new InformationGroup(page, "Ground Truth").setOrder(6);
 //        im.addGroup(groundTruthGroup);
@@ -519,6 +577,8 @@ public class SchemaExtractor {
     public void updateLogCode(String newLogInformation) {
         if (!Objects.equals(newLogInformation, "")) {
             informationLogOutput.extendCode(newLogInformation + "\r\n");
+        } else {
+            informationLogOutput.updateCode("");
         }
     }
 
