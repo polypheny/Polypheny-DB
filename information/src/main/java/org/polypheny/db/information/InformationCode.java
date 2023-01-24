@@ -85,8 +85,18 @@ public class InformationCode extends Information {
      *
      * @param code The code to set for this element
      */
-    public void updateCode( final String code ) {
+    public void updateCode(final String code) {
         this.code = code;
+        notifyManager();
+    }
+
+    /**
+     * Extend (append to) the content of an InformationCode object.
+     *
+     * @param code The code to set for this element
+     */
+    public void extendCode(final String code) {
+        this.code = this.code + code;
         notifyManager();
     }
 

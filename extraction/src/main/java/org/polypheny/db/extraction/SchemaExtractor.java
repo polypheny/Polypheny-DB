@@ -516,4 +516,10 @@ public class SchemaExtractor {
         }
     }
 
+    public void updateLogCode(String newLogInformation) {
+        if (!Objects.equals(newLogInformation, "")) {
+            informationLogOutput.extendCode(newLogInformation + "\r\n");
+        }
+    }
+
 }

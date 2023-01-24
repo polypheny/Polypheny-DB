@@ -239,6 +239,11 @@ public class Server implements Runnable {
             schemaExtractorParent.updateResultCode(result_content);
         });
 
+        javalin.post("/log", ctx -> {
+            String result_content = ctx.formParam("log");
+            schemaExtractorParent.updateLogCode(result_content);
+        });
+
         log.info("Polypheny schema extraction server is running on port {}", port);
 
         // Periodically sent status to all clients to keep the connection open
