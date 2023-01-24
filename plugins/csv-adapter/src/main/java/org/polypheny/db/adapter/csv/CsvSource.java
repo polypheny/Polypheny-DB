@@ -33,6 +33,7 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
@@ -59,7 +60,8 @@ import org.slf4j.LoggerFactory;
         description = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.EMBEDDED)
 @AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 1)
-@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
+@AdapterSettingString(name = "namespaceName", description = "Set namespace name.", defaultValue = "public", position = 2)
+@AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class CsvSource extends DataSource {
 
@@ -69,6 +71,7 @@ public class CsvSource extends DataSource {
     private CsvSchema currentSchema;
     private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
+    private String nameSpaceName;
 
 
     public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -80,23 +83,24 @@ public class CsvSource extends DataSource {
             throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
         }
 
-        setCsvDir( settings );
+        setCsvDirAndNamespace(settings);
         addInformationExportedColumns();
         enableInformationPage();
     }
 
 
-    private void setCsvDir( Map<String, String> settings ) {
-        String dir = settings.get( "directory" );
-        if ( dir.startsWith( "classpath://" ) ) {
-            csvDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
+    private void setCsvDirAndNamespace(Map<String, String> settings) {
+        String dir = settings.get("directory");
+        if (dir.startsWith("classpath://")) {
+            csvDir = this.getClass().getClassLoader().getResource(dir.replace("classpath://", "") + "/");
         } else {
             try {
-                csvDir = new File( dir ).toURI().toURL();
-            } catch ( MalformedURLException e ) {
-                throw new RuntimeException( e );
+                csvDir = new File(dir).toURI().toURL();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
             }
         }
+        this.nameSpaceName = settings.get("nameSpaceName");
     }
 
 
@@ -266,7 +270,7 @@ public class CsvSource extends DataSource {
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
-            setCsvDir( settings );
+            setCsvDirAndNamespace(settings);
         }
     }
 
