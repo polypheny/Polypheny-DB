@@ -245,20 +245,30 @@ public class DdlManagerImpl extends DdlManager {
             for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
                 // Make sure the table name is unique
                 String tableName = entry.getKey();
-                if ( catalog.checkIfExistsEntity( 1, tableName ) ) {
+                if (catalog.checkIfExistsEntity(1, tableName)) {
                     int i = 0;
-                    while ( catalog.checkIfExistsEntity( 1, tableName + i ) ) {
+                    while (catalog.checkIfExistsEntity(1, tableName + i)) {
                         i++;
                     }
                     tableName += i;
                 }
-
-                long tableId = catalog.addTable( tableName, 1, 1, EntityType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
+                int namespaceId = 1;
+                if (config.containsKey("namespaceName")) {
+                    String namespaceName = config.get("namespaceName");
+                    try {
+                        namespaceId = (int) catalog.getSchema(Catalog.defaultDatabaseId, namespaceName).id;
+                    } catch (UnknownSchemaException e) {
+                        throw new RuntimeException("Exception while looking for namespace id set in namespaceName parameter.");
+                    } catch (Exception e) {
+                        throw new RuntimeException("khjhk");
+                    }
+                }
+                long tableId = catalog.addTable(tableName, namespaceId, 1, EntityType.SOURCE, !((DataSource) adapter).isDataReadOnly());
                 List<Long> primaryKeyColIds = new ArrayList<>();
                 int colPos = 1;
                 String physicalSchemaName = null;
                 String physicalTableName = null;
-                for ( ExportedColumn exportedColumn : entry.getValue() ) {
+                for (ExportedColumn exportedColumn : entry.getValue()) {
                     long columnId = catalog.addColumn(
                             exportedColumn.name,
                             tableId,

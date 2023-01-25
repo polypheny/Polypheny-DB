@@ -100,7 +100,6 @@ public class CsvSource extends DataSource {
                 throw new RuntimeException(e);
             }
         }
-        this.nameSpaceName = settings.get("nameSpaceName");
     }
 
 

@@ -18,9 +18,6 @@ package org.polypheny.db.sql.language.ddl;
 
 
 import com.google.gson.Gson;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
@@ -30,13 +27,13 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.sql.language.SqlAlter;
-import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.sql.language.SqlOperator;
-import org.polypheny.db.sql.language.SqlSpecialOperator;
-import org.polypheny.db.sql.language.SqlWriter;
+import org.polypheny.db.sql.language.*;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 
 /**
