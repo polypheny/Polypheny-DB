@@ -430,8 +430,9 @@ public class CrossModelFunctions {
 
 
     @SuppressWarnings("unused")
-    public static Object graphItem( String map, String key ) {
-        return PolyDictionary.fromString( map ).getOrDefault( key, null ).toString();
+    public static Object docItem( String map, String key ) {
+        Object value = PolyDictionary.fromString( map ).getOrDefault( key, null );
+        return value != null ? value.toString() : null;
     }
 
 }
