@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -228,6 +229,21 @@ public class Crud implements InformationObserver {
         this.userId = userId;
         this.languageCrud = new LanguageCrud( this );
         this.statisticCrud = new StatisticCrud( this );
+    }
+
+
+    /**
+     * Closes analyzers and deletes temporary files.
+     */
+    public static void cleanupOldSession( ConcurrentHashMap<String, Set<String>> sessionXIds, final String sessionId ) {
+        Set<String> xIds = sessionXIds.remove( sessionId );
+        if ( xIds == null || xIds.size() == 0 ) {
+            return;
+        }
+        for ( String xId : xIds ) {
+            InformationManager.close( xId );
+            TemporalFileManager.deleteFilesOfTransaction( xId );
+        }
     }
 
 

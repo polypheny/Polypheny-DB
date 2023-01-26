@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,8 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -176,7 +176,7 @@ public class HttpInterfacePlugin extends Plugin {
         public void anyQuery( QueryLanguage language, final Context ctx ) {
             QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
             String sessionId = ctx.req.getSession().getId();
-            cleanupOldInfoAndFiles( sessionId );
+            Crud.cleanupOldSession( sessionXids, sessionId );
 
             List<Result> results = LanguageCrud.anyQuery(
                     language,
@@ -194,20 +194,6 @@ public class HttpInterfacePlugin extends Plugin {
             statementCounters.get( language ).incrementAndGet();
             // is empty from cleanupOldInfoAndFiles
             sessionXids.put( sessionId, results.stream().map( Result::getXid ).filter( Objects::nonNull ).collect( Collectors.toSet() ) );
-        }
-
-
-        private void cleanupOldInfoAndFiles( String sessionId ) {
-            // todo change this also in websocket logic, rather hacky
-            if ( !sessionXids.containsKey( sessionId ) ) {
-                return;
-            }
-            for ( String xId : sessionXids.get( sessionId ) ) {
-                InformationManager.close( xId );
-                TemporalFileManager.deleteFilesOfTransaction( xId );
-            }
-
-            sessionXids.get( sessionId ).clear();
         }
 
 
