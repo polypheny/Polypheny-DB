@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -427,7 +427,9 @@ public enum PolyType {
 
     public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE );
 
-    public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY );
+    public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY, DOCUMENT );
+
+    public static final List<PolyType> JSON_TYPES = combine( DOCUMENT_TYPES, STRING_TYPES );
 
     public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, EDGE );
 

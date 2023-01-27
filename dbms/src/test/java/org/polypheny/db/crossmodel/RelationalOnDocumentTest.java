@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.util.List;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.mql.MqlTestTemplate;
@@ -68,13 +67,22 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
-    @Ignore
     @Test
     public void itemJsonSelectTest() {
         executeStatements( ( s, c ) -> {
-            ResultSet result = s.executeQuery( String.format( "SELECT JSON_VALUE(d, '$.test') FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
-            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ "3.0" } } ) );
+            ResultSet result = s.executeQuery( String.format( "SELECT JSON_VALUE(CAST(d AS VARCHAR(2050)), 'lax $.test') FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
+            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ "3" } } ) );
         } );
     }
+
+
+    @Test
+    public void itemJsonSelectUnknownLaxTest() {
+        executeStatements( ( s, c ) -> {
+            ResultSet result = s.executeQuery( String.format( "SELECT JSON_VALUE(CAST(d AS VARCHAR(2050)), 'lax $.other') FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
+            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ null } } ) );
+        } );
+    }
+
 
 }
