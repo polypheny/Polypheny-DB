@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1357,10 +1357,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
 
             if ( table.getTable() instanceof LogicalTable ) {
+                CatalogTable fromTable = catalogTable;
                 // Special handling for INSERT INTO foo SELECT * FROM foo2
-                if ( ((LogicalTable) table.getTable()).getTableId() != catalogTable.id ) {
-                    // TODO: how build select from here?
-                    // return buildSelect( node, builder, statement, cluster );
+                if ( table.getTable().getTableId() != catalogTable.id ) {
+                    return handleSelectFromOtherTable( builder, catalogTable, statement, table );
                 }
 
                 builder = super.handleScan(
@@ -1368,12 +1368,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         statement,
                         placements.get( 0 ).tableId,
                         placements.get( 0 ).adapterUniqueName,
-                        catalogTable.getNamespaceName(),
-                        catalogTable.name,
+                        fromTable.getNamespaceName(),
+                        fromTable.name,
                         placements.get( 0 ).physicalSchemaName,
                         partitionPlacement.physicalTableName,
                         partitionPlacement.partitionId,
-                        catalogTable.getNamespaceType() );
+                        fromTable.getNamespaceType() );
 
                 return builder;
 
@@ -1444,6 +1444,52 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         } else {
             return super.handleGeneric( node, builder );
         }
+    }
+
+
+    private AlgBuilder handleSelectFromOtherTable( RoutedAlgBuilder builder, CatalogTable catalogTable, Statement statement, AlgOptTableImpl table ) {
+        CatalogTable fromTable;
+        // Select from other table
+        fromTable = catalog.getTable( table.getTable().getTableId() );
+        // PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        //PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( fromTable.partitionProperty.partitionType );
+
+        if ( fromTable.partitionProperty.isPartitioned ) {
+            throw new UnsupportedOperationException( "DMLs from other partitioned tables is not supported" );
+        }
+
+        long pkid = fromTable.primaryKey;
+        List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
+        CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
+        List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
+
+        List<AlgNode> nodes = new ArrayList<>();
+        for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
+
+            catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
+            fromTable = catalog.getTable( table.getTable().getTableId() );
+
+            CatalogPartitionPlacement partition = catalog.getPartitionPlacement( pkPlacement.adapterId, fromTable.partitionProperty.partitionIds.get( 0 ) );
+
+            nodes.add( super.handleScan(
+                    builder,
+                    statement,
+                    pkPlacements.get( 0 ).tableId,
+                    pkPlacements.get( 0 ).adapterUniqueName,
+                    fromTable.getNamespaceName(),
+                    fromTable.name,
+                    pkPlacements.get( 0 ).physicalSchemaName,
+                    partition.physicalTableName,
+                    partition.partitionId,
+                    fromTable.getNamespaceType() ).build() );
+
+        }
+
+        if ( nodes.size() == 1 ) {
+            return builder.push( nodes.get( 0 ) );
+        }
+
+        return builder.pushAll( nodes ).union( true );
     }
 
 

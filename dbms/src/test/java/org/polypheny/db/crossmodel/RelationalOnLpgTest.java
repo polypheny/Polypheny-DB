@@ -113,7 +113,6 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
-    @Category(Neo4jExcluded.class) // see simpleProjectTest method
     public void itemSelectJsonTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT JSON_VALUE(CAST(properties AS VARCHAR(2050)), 'lax $.key') FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
