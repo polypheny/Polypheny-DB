@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoEntity;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
@@ -50,6 +51,10 @@ public class NeoScan extends Scan implements NeoRelAlg {
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
+        if ( implementor.getTable() != null && !Objects.equals( table.getTable().getTableId(), implementor.getTable().getTable().getTableId() ) ) {
+            handleInsertFromOther( implementor );
+        }
+
         implementor.setTable( table );
 
         implementor.add( match_( node_( neoEntity.physicalEntityName, labels_( neoEntity.physicalEntityName ) ) ) );
@@ -63,6 +68,11 @@ public class NeoScan extends Scan implements NeoRelAlg {
 
             implementor.add( with_( list_( mapping ) ) );
         }
+    }
+
+
+    private void handleInsertFromOther( NeoRelationalImplementor implementor ) {
+        implementor.selectFromTable = (NeoEntity) table;
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,12 +47,15 @@ public interface NeoStatements {
         RETURN( "RETURN" ),
         WITH( "WITH" ),
         SET( "SET" ),
+
+        FOREACH( "FOREACH" ),
         DELETE( "DELETE" ),
         DELETE_DETACH( "DETACH DELETE" ),
         UNWIND( "UNWIND" ),
         LIMIT( "LIMIT" ),
         SKIP( "SKIP" ),
-        ORDER_BY( "ORDER BY" );
+        ORDER_BY( "ORDER BY" ),
+        AGGREGATE( "AGGREGATE" );
 
         public final String identifier;
 
@@ -162,11 +165,49 @@ public interface NeoStatements {
 
         enum ElementType {
             EDGE,
-            NODE
+            NODE,
+            COLLECTION
         }
 
     }
 
+
+    class CollectionStatement extends ElementStatement {
+
+        private final String identifier;
+        private final String wrapper;
+
+
+        protected CollectionStatement( String wrapper, String identifier ) {
+            this.identifier = identifier == null ? "" : identifier;
+            this.wrapper = wrapper;
+        }
+
+
+        @Override
+        public String build() {
+            return String.format( "%s( %s )", wrapper, identifier );
+        }
+
+
+        @Override
+        public ElementType getType() {
+            return ElementType.COLLECTION;
+        }
+
+    }
+
+    static CollectionStatement nodes_( String identifier ) {
+        return new CollectionStatement( "nodes", identifier );
+    }
+
+    static CollectionStatement relationships_( String identifier ) {
+        return new CollectionStatement( "relationships", identifier );
+    }
+
+    static CollectionStatement properties_( String identifier ) {
+        return new CollectionStatement( "properties", identifier );
+    }
 
     class NodeStatement extends ElementStatement {
 
@@ -192,6 +233,7 @@ public interface NeoStatements {
 
 
     }
+
 
     static NodeStatement node_( String identifier, LabelsStatement labels, PropertyStatement... properties ) {
         return new NodeStatement( identifier, labels, list_( Arrays.asList( properties ), "{", "}" ) );
@@ -631,6 +673,33 @@ public interface NeoStatements {
         return new MatchStatement( list_( Arrays.asList( statement ) ) );
     }
 
+    class ForeachStatement extends OperatorStatement {
+
+        private final String elementId;
+        private final NeoStatement collection;
+        private final ListStatement<NeoStatement> statements;
+
+
+        protected ForeachStatement( String elementId, NeoStatement collection, ListStatement<NeoStatement> statements ) {
+            super( StatementType.FOREACH, statements );
+
+            this.elementId = elementId;
+            this.collection = collection;
+            this.statements = statements;
+        }
+
+
+        @Override
+        public String build() {
+            return String.format( "%s (%s IN %s | %s )", StatementType.FOREACH.toString(), elementId, collection.build(), statements.build() );
+        }
+
+    }
+
+    static ForeachStatement foreach_( String elementId, NeoStatement collection, NeoStatement... statement ) {
+        return new ForeachStatement( elementId, collection, list_( Arrays.asList( statement ) ) );
+    }
+
 
     class WithStatement extends OperatorStatement {
 
@@ -702,6 +771,30 @@ public interface NeoStatements {
 
     static OrderByStatement orderBy_( ListStatement<?> statements ) {
         return new OrderByStatement( statements );
+    }
+
+    class AggregateStatement extends NeoStatement {
+
+        private final String wrapper;
+        private final String identifier;
+
+
+        protected AggregateStatement( String wrapper, String identifier ) {
+            super( StatementType.AGGREGATE );
+            this.wrapper = wrapper;
+            this.identifier = identifier;
+        }
+
+
+        @Override
+        public String build() {
+            return String.format( "%s(%s)", wrapper, identifier );
+        }
+
+    }
+
+    static AggregateStatement count_( String identifier ) {
+        return new AggregateStatement( "COUNT", identifier );
     }
 
 }

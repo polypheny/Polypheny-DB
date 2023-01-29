@@ -90,12 +90,15 @@ public class FileRules {
         public boolean matches( AlgOptRuleCall call ) {
             final Modify modify = call.alg( 0 );
             if ( modify.getTable().unwrap( FileTranslatableTable.class ) == null ) {
+                // todo insert from select is not correctly implemented
                 return false;
             }
-            FileTranslatableTable table = modify.getTable().unwrap( FileTranslatableTable.class );
-            /*if ( convention.getFileSchema() != table.getFileSchema() ) {
+
+            if ( modify.isInsert() && UnsupportedFromInsertShuttle.contains( modify ) ) {
                 return false;
-            }*/
+            }
+
+            FileTranslatableTable table = modify.getTable().unwrap( FileTranslatableTable.class );
             convention.setModification( true );
             return true;
         }
@@ -105,7 +108,7 @@ public class FileRules {
         public AlgNode convert( AlgNode alg ) {
             final Modify modify = (Modify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
-            //todo this check might be redundant
+
             if ( modifiableTable == null ) {
                 log.warn( "Returning null during conversion" );
                 return null;

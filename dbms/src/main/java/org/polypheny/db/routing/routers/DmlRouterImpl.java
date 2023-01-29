@@ -132,362 +132,375 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeDml( LogicalModify modify, Statement statement ) {
         AlgOptCluster cluster = modify.getCluster();
 
-        if ( modify.getTable() != null ) {
-            AlgOptTableImpl table = (AlgOptTableImpl) modify.getTable();
-            if ( table.getTable() instanceof LogicalTable ) {
-                LogicalTable t = ((LogicalTable) table.getTable());
-                // Get placements of this table
-                CatalogTable catalogTable = catalog.getTable( t.getTableId() );
+        if ( modify.getTable() == null ) {
+            throw new RuntimeException( "Unexpected operator!" );
+        }
 
-                // Make sure that this table can be modified
-                if ( !catalogTable.modifiable ) {
-                    if ( catalogTable.entityType == EntityType.ENTITY ) {
-                        throw new RuntimeException( "Unable to modify a table marked as read-only!" );
-                    } else if ( catalogTable.entityType == EntityType.SOURCE ) {
-                        throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
-                    } else if ( catalogTable.entityType == EntityType.VIEW ) {
-                        throw new RuntimeException( "Polypheny-DB does not support modifying views." );
+        AlgOptTableImpl table = (AlgOptTableImpl) modify.getTable();
+
+        if ( !(table.getTable() instanceof LogicalTable) ) {
+            throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
+        }
+
+        LogicalTable t = ((LogicalTable) table.getTable());
+        // Get placements of this table
+        CatalogTable catalogTable = catalog.getTable( t.getTableId() );
+
+        // Make sure that this table can be modified
+        if ( !catalogTable.modifiable ) {
+            if ( catalogTable.entityType == EntityType.ENTITY ) {
+                throw new RuntimeException( "Unable to modify a table marked as read-only!" );
+            } else if ( catalogTable.entityType == EntityType.SOURCE ) {
+                throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
+            } else if ( catalogTable.entityType == EntityType.VIEW ) {
+                throw new RuntimeException( "Polypheny-DB does not support modifying views." );
+            }
+            throw new RuntimeException( "Unknown table type: " + catalogTable.entityType.name() );
+        }
+
+        long pkid = catalogTable.primaryKey;
+        List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
+        CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
+
+        // Essentially gets a list of all stores where this table resides
+        List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
+
+        if ( catalogTable.partitionProperty.isPartitioned && log.isDebugEnabled() ) {
+            log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
+            for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
+                log.debug(
+                        "\t\t -> '{}' {}\t{}",
+                        dataPlacement.adapterUniqueName,
+                        catalog.getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
+                        catalog.getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
+            }
+        }
+
+        // Execute on all primary key placements
+        List<AlgNode> modifies = new ArrayList<>();
+
+        // Needed for partitioned updates when source partition and target partition are not equal
+        // SET Value is the new partition, where clause is the source
+        boolean operationWasRewritten = false;
+        List<Map<Long, Object>> tempParamValues = null;
+
+        Map<Long, AlgDataType> types = statement.getDataContext().getParameterTypes();
+        List<Map<Long, Object>> allValues = statement.getDataContext().getParameterValues();
+
+        Map<Long, Object> newParameterValues = new HashMap<>();
+        for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
+
+            CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+
+            // Get placements on store
+            List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
+
+            // If this is an update, check whether we need to execute on this store at all
+            List<String> updateColumnList = modify.getUpdateColumnList();
+            List<RexNode> sourceExpressionList = modify.getSourceExpressionList();
+            if ( placementsOnAdapter.size() != catalogTable.fieldIds.size() ) {
+
+                if ( modify.getOperation() == Operation.UPDATE ) {
+                    updateColumnList = new LinkedList<>( modify.getUpdateColumnList() );
+                    sourceExpressionList = new LinkedList<>( modify.getSourceExpressionList() );
+                    Iterator<String> updateColumnListIterator = updateColumnList.iterator();
+                    Iterator<RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
+                    while ( updateColumnListIterator.hasNext() ) {
+                        String columnName = updateColumnListIterator.next();
+                        sourceExpressionListIterator.next();
+                        try {
+                            CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                            if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.adapterId, catalogColumn.id ) ) {
+                                updateColumnListIterator.remove();
+                                sourceExpressionListIterator.remove();
+                            }
+                        } catch ( UnknownColumnException e ) {
+                            throw new RuntimeException( e );
+                        }
                     }
-                    throw new RuntimeException( "Unknown table type: " + catalogTable.entityType.name() );
+                    if ( updateColumnList.size() == 0 ) {
+                        continue;
+                    }
+                }
+            }
+
+            long identPart = -1;
+            long identifiedPartitionForSetValue = -1;
+            Set<Long> accessedPartitionList = new HashSet<>();
+            // Identify where clause of UPDATE
+            if ( catalogTable.partitionProperty.isPartitioned ) {
+                boolean worstCaseRouting = false;
+                Set<Long> identifiedPartitionsInFilter = new HashSet<>();
+
+                PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+                PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
+
+                WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.fieldIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
+                modify.accept( new AlgShuttleImpl() {
+                    @Override
+                    public AlgNode visit( LogicalFilter filter ) {
+                        super.visit( filter );
+                        filter.accept( whereClauseVisitor );
+                        return filter;
+                    }
+                } );
+
+                List<String> whereClauseValues = null;
+                if ( !whereClauseVisitor.getValues().isEmpty() ) {
+
+                    whereClauseValues = whereClauseVisitor.getValues().stream()
+                            .map( Object::toString )
+                            .collect( Collectors.toList() );
+                    if ( log.isDebugEnabled() ) {
+                        log.debug( "Found Where Clause Values: {}", whereClauseValues );
+                    }
+                    worstCaseRouting = true;
                 }
 
-                long pkid = catalogTable.primaryKey;
-                List<Long> pkColumnIds = catalog.getPrimaryKey( pkid ).columnIds;
-                CatalogColumn pkColumn = catalog.getColumn( pkColumnIds.get( 0 ) );
-
-                // Essentially gets a list of all stores where this table resides
-                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
-
-                if ( catalogTable.partitionProperty.isPartitioned && log.isDebugEnabled() ) {
-                    log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
-                    for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
-                        log.debug(
-                                "\t\t -> '{}' {}\t{}",
-                                dataPlacement.adapterUniqueName,
-                                catalog.getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
-                                catalog.getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
+                if ( whereClauseValues != null ) {
+                    for ( String value : whereClauseValues ) {
+                        worstCaseRouting = false;
+                        identPart = (int) partitionManager.getTargetPartitionId( catalogTable, value );
+                        accessedPartitionList.add( identPart );
+                        identifiedPartitionsInFilter.add( identPart );
                     }
                 }
 
-                // Execute on all primary key placements
-                List<AlgNode> modifies = new ArrayList<>();
+                String partitionValue = "";
+                // Set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
 
-                // Needed for partitioned updates when source partition and target partition are not equal
-                // SET Value is the new partition, where clause is the source
-                boolean operationWasRewritten = false;
-                List<Map<Long, Object>> tempParamValues = null;
+                if ( modify.getOperation() == Operation.UPDATE ) {
+                    // In case of update always use worst case routing for now.
+                    // Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
+                    int index = 0;
 
-                Map<Long, AlgDataType> types = statement.getDataContext().getParameterTypes();
-                List<Map<Long, Object>> allValues = statement.getDataContext().getParameterValues();
+                    for ( String cn : updateColumnList ) {
+                        try {
+                            if ( catalog.getColumn( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionProperty.partitionColumnId, index );
+                                }
+                                // Routing/Locking can now be executed on certain partitions
+                                partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug(
+                                            "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
+                                            partitionValue,
+                                            partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
+                                }
+                                identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                // Needed to verify if UPDATE shall be executed on two partitions or not
+                                identifiedPartitionForSetValue = identPart;
+                                accessedPartitionList.add( identPart );
+                                break;
+                            }
+                        } catch ( UnknownColumnException e ) {
+                            throw new RuntimeException( e );
+                        }
+                        index++;
+                    }
 
-                Map<Long, Object> newParameterValues = new HashMap<>();
-                for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
+                    // If WHERE clause has any value for partition column
+                    if ( identifiedPartitionsInFilter.size() > 0 ) {
 
-                    CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+                        // Partition has been identified in SET
+                        if ( identifiedPartitionForSetValue != -1 ) {
 
-                    // Get placements on store
-                    List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
+                            // SET value and single WHERE clause point to same partition.
+                            // Inplace update possible
+                            if ( identifiedPartitionsInFilter.size() == 1 && identifiedPartitionsInFilter.contains( identifiedPartitionForSetValue ) ) {
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug( "oldValue and new value reside on same partition: {}", identifiedPartitionForSetValue );
+                                }
+                                worstCaseRouting = false;
+                            } else {
+                                throw new RuntimeException( "Updating partition key is not allowed" );
+                            }
+                        }// WHERE clause only
+                        else {
+                            throw new RuntimeException( "Updating partition key is not allowed" );
 
-                    // If this is an update, check whether we need to execute on this store at all
-                    List<String> updateColumnList = modify.getUpdateColumnList();
-                    List<RexNode> sourceExpressionList = modify.getSourceExpressionList();
-                    if ( placementsOnAdapter.size() != catalogTable.fieldIds.size() ) {
+                            //Simply execute the UPDATE on all identified partitions
+                            //Nothing to do
+                            //worstCaseRouting = false;
+                        }
+                    }// If only SET is specified
+                    // Changes the value of partition column of complete table to only reside on one partition
+                    else if ( identifiedPartitionForSetValue != -1 ) {
 
-                        if ( modify.getOperation() == Operation.UPDATE ) {
-                            updateColumnList = new LinkedList<>( modify.getUpdateColumnList() );
-                            sourceExpressionList = new LinkedList<>( modify.getSourceExpressionList() );
-                            Iterator<String> updateColumnListIterator = updateColumnList.iterator();
-                            Iterator<RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
-                            while ( updateColumnListIterator.hasNext() ) {
-                                String columnName = updateColumnListIterator.next();
-                                sourceExpressionListIterator.next();
-                                try {
-                                    CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
-                                    if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.adapterId, catalogColumn.id ) ) {
-                                        updateColumnListIterator.remove();
-                                        sourceExpressionListIterator.remove();
-                                    }
-                                } catch ( UnknownColumnException e ) {
-                                    throw new RuntimeException( e );
+                        // Data Migrate copy of all other partitions beside the identified on towards the identified one
+                        // Then inject a DELETE statement for all those partitions
+
+                        // Do the update only on the identified partition
+
+                    }// If nothing has been specified
+                    //Partition functionality cannot be used --> worstCase --> send query to every partition
+                    else {
+                        worstCaseRouting = true;
+                        accessedPartitionList = new HashSet<>( catalogTable.partitionProperty.partitionIds );
+                    }
+
+                } else if ( modify.getOperation() == Operation.INSERT ) {
+                    int i;
+
+                    if ( modify.getInput() instanceof LogicalValues ) {
+
+                        // Get fieldList and map columns to index since they could be in arbitrary order
+                        int partitionColumnIndex = -1;
+                        Map<Long, Integer> resultColMapping = new HashMap<>();
+                        for ( int j = 0; j < (modify.getInput()).getRowType().getFieldList().size(); j++ ) {
+                            String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getKey();
+
+                            // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
+                            int columnIndex = catalogTable.getColumnNames().indexOf( columnFieldName );
+                            resultColMapping.put( catalogTable.fieldIds.get( columnIndex ), j );
+
+                            // Determine location of partitionColumn in fieldList
+                            if ( catalogTable.fieldIds.get( columnIndex ) == catalogTable.partitionProperty.partitionColumnId ) {
+                                partitionColumnIndex = columnIndex;
+                                if ( log.isDebugEnabled() ) {
+                                    log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionProperty.partitionColumnId, j );
+                                    worstCaseRouting = false;
+
                                 }
                             }
-                            if ( updateColumnList.size() == 0 ) {
+                        }
+
+                        // Will executed all required tuples that belong on the same partition jointly
+                        Map<Long, List<ImmutableList<RexLiteral>>> tuplesOnPartition = new HashMap<>();
+                        for ( ImmutableList<RexLiteral> currentTuple : ((LogicalValues) modify.getInput()).tuples ) {
+
+                            worstCaseRouting = false;
+                            if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
+                                partitionValue = partitionManager.getUnifiedNullValue();
+                            } else {
+                                partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
+                            }
+                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                            accessedPartitionList.add( identPart );
+
+                            if ( !tuplesOnPartition.containsKey( identPart ) ) {
+                                tuplesOnPartition.put( identPart, new ArrayList<>() );
+                            }
+                            tuplesOnPartition.get( identPart ).add( currentTuple );
+
+                        }
+
+                        for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
+                            Long currentPartitionId = partitionMapping.getKey();
+
+                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( currentPartitionId ) ) {
                                 continue;
                             }
+
+                            for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
+                                LogicalValues newLogicalValues = new LogicalValues(
+                                        cluster,
+                                        cluster.traitSet(),
+                                        (modify.getInput()).getRowType(),
+                                        ImmutableList.copyOf( ImmutableList.of( row ) ) );
+
+                                AlgNode input = buildDml(
+                                        newLogicalValues,
+                                        RoutedAlgBuilder.create( statement, cluster ),
+                                        catalogTable,
+                                        placementsOnAdapter,
+                                        catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
+                                        statement,
+                                        cluster,
+                                        true,
+                                        statement.getDataContext().getParameterValues() ).build();
+
+                                List<String> qualifiedTableName = ImmutableList.of(
+                                        PolySchemaBuilder.buildAdapterSchemaName(
+                                                pkPlacement.adapterUniqueName,
+                                                catalogTable.getNamespaceName(),
+                                                pkPlacement.physicalSchemaName
+                                        ),
+                                        t.getLogicalTableName() + "_" + currentPartitionId );
+                                AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                                ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+                                // Build DML
+                                Modify adjustedModify = modifiableTable.toModificationAlg(
+                                        cluster,
+                                        physical,
+                                        catalogReader,
+                                        input,
+                                        modify.getOperation(),
+                                        updateColumnList,
+                                        sourceExpressionList,
+                                        modify.isFlattened() );
+
+                                modifies.add( adjustedModify );
+
+                            }
                         }
-                    }
+                        operationWasRewritten = true;
 
-                    long identPart = -1;
-                    long identifiedPartitionForSetValue = -1;
-                    Set<Long> accessedPartitionList = new HashSet<>();
-                    // Identify where clause of UPDATE
-                    if ( catalogTable.partitionProperty.isPartitioned ) {
-                        boolean worstCaseRouting = false;
-                        Set<Long> identifiedPartitionsInFilter = new HashSet<>();
+                    } else if ( modify.getInput() instanceof LogicalProject
+                            && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
 
-                        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-                        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
+                        String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
+                        List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
 
-                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.fieldIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
-                        modify.accept( new AlgShuttleImpl() {
-                            @Override
-                            public AlgNode visit( LogicalFilter filter ) {
-                                super.visit( filter );
-                                filter.accept( whereClauseVisitor );
-                                return filter;
-                            }
-                        } );
+                        LogicalModify ltm = modify;
+                        LogicalProject lproject = (LogicalProject) ltm.getInput();
 
-                        List<String> whereClauseValues = null;
-                        if ( !whereClauseVisitor.getValues().isEmpty() ) {
+                        List<RexNode> fieldValues = lproject.getProjects();
 
-                            whereClauseValues = whereClauseVisitor.getValues().stream()
-                                    .map( Object::toString )
-                                    .collect( Collectors.toList() );
-                            if ( log.isDebugEnabled() ) {
-                                log.debug( "Found Where Clause Values: {}", whereClauseValues );
-                            }
-                            worstCaseRouting = true;
-                        }
+                        for ( i = 0; i < fieldNames.size(); i++ ) {
+                            String columnName = fieldNames.get( i );
 
-                        if ( whereClauseValues != null ) {
-                            for ( String value : whereClauseValues ) {
-                                worstCaseRouting = false;
-                                identPart = (int) partitionManager.getTargetPartitionId( catalogTable, value );
-                                accessedPartitionList.add( identPart );
-                                identifiedPartitionsInFilter.add( identPart );
-                            }
-                        }
+                            if ( partitionColumnName.equals( columnName ) ) {
 
-                        String partitionValue = "";
-                        // Set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
+                                if ( ((LogicalProject) modify.getInput()).getProjects().get( i ).getKind().equals( Kind.DYNAMIC_PARAM ) ) {
 
-                        if ( modify.getOperation() == Operation.UPDATE ) {
-                            // In case of update always use worst case routing for now.
-                            // Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
-                            int index = 0;
+                                    // Needed to identify the column which contains the partition value
+                                    long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
 
-                            for ( String cn : updateColumnList ) {
-                                try {
-                                    if ( catalog.getColumn( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
-                                        if ( log.isDebugEnabled() ) {
-                                            log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionProperty.partitionColumnId, index );
-                                        }
-                                        // Routing/Locking can now be executed on certain partitions
-                                        partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
-                                        if ( log.isDebugEnabled() ) {
-                                            log.debug(
-                                                    "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
-                                                    partitionValue,
-                                                    partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
-                                        }
-                                        identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                                        // Needed to verify if UPDATE shall be executed on two partitions or not
-                                        identifiedPartitionForSetValue = identPart;
-                                        accessedPartitionList.add( identPart );
-                                        break;
-                                    }
-                                } catch ( UnknownColumnException e ) {
-                                    throw new RuntimeException( e );
-                                }
-                                index++;
-                            }
+                                    long tempPartitionId = 0;
+                                    // Get partitionValue per row/tuple to be inserted
+                                    // Create as many independent TableModifies as there are entries in getParameterValues
 
-                            // If WHERE clause has any value for partition column
-                            if ( identifiedPartitionsInFilter.size() > 0 ) {
+                                    Map<Long, List<Map<Long, Object>>> tempValues = new HashMap<>();
+                                    statement.getDataContext().resetContext();
+                                    for ( Map<Long, Object> currentRow : allValues ) {
+                                        // first we sort the values to insert according to the partitionManager and their partitionId
 
-                                // Partition has been identified in SET
-                                if ( identifiedPartitionForSetValue != -1 ) {
+                                        tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
 
-                                    // SET value and single WHERE clause point to same partition.
-                                    // Inplace update possible
-                                    if ( identifiedPartitionsInFilter.size() == 1 && identifiedPartitionsInFilter.contains( identifiedPartitionForSetValue ) ) {
-                                        if ( log.isDebugEnabled() ) {
-                                            log.debug( "oldValue and new value reside on same partition: {}", identifiedPartitionForSetValue );
-                                        }
-                                        worstCaseRouting = false;
-                                    } else {
-                                        throw new RuntimeException( "Updating partition key is not allowed" );
-
-                                        /* TODO add possibility to substitute the update as a insert into target partition from all source partitions
-                                        // IS currently blocked
-                                        // needs to to a insert into target partitions select from all other partitions first and then delete on source partitions
-                                        worstCaseRouting = false;
-                                        log.debug( "oldValue and new value reside on same partition: " + identifiedPartitionForSetValue );
-
-                                        //Substitute UPDATE operation with DELETE on all partitionIds of WHERE Clause
-                                        for ( long currentPart : identifiedPartitionsInFilter ) {
-
-                                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogEntity.id ).contains( currentPart ) ) {
-                                                continue;
-                                            }
-
-                                            List<String> qualifiedTableName = ImmutableList.of(
-                                                    PolySchemaBuilder.buildAdapterSchemaName(
-                                                            pkPlacement.adapterUniqueName,
-                                                            catalogEntity.getSchemaName(),
-                                                            pkPlacement.physicalSchemaName ),
-                                                    t.getLogicalTableName() + "_" + partitionId) );
-                                            RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
-                                            ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
-
-                                            {@link AlgNode} input = buildDml(
-                                                    recursiveCopy( node.getInput( 0 ) ),
-                                                    AlgBuilder.create( statement, cluster ),
-                                                    catalogEntity,
-                                                    placementsOnAdapter,
-                                                    catalog.getPartitionPlacement( pkPlacement.adapterId, currentPart ),
-                                                    statement,
-                                                    cluster ).build();
-
-                                            Modify deleteModify = LogicalModify.create(
-                                                    physical,
-                                                    catalogReader,
-                                                    input,
-                                                    Operation.DELETE,
-                                                    null,
-                                                    null,
-                                                    ((LogicalModify) node).isFlattened() );
-
-                                            modifies.add( deleteModify );
-
-
+                                        if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
+                                            continue;
                                         }
 
-                                                //Inject INSERT statement for identified SET partitionId
-                                                //Otherwise data migrator would be needed
-                                        if ( catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogEntity.id ).contains( identifiedPartitionForSetValue ) ) {
+                                        statement.getDataContext().setParameterTypes( statement.getDataContext().getParameterTypes() );
+                                        statement.getDataContext().setParameterValues( tempValues.get( tempPartitionId ) );
 
-                                           /* List<String> qualifiedTableName = ImmutableList.of(
-                                                    PolySchemaBuilder.buildAdapterSchemaName(
-                                                            pkPlacement.adapterUniqueName,
-                                                            catalogEntity.getSchemaName(),
-                                                            pkPlacement.physicalSchemaName,
-                                                            identifiedPartitionForSetValue ),
-                                                    t.getLogicalTableName() );
-                                            RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
-                                            ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+                                        List<Map<Long, Object>> parameterValues = new ArrayList<>();
+                                        parameterValues.add( new HashMap<>( newParameterValues ) );
+                                        parameterValues.get( 0 ).putAll( currentRow );
 
-                                            {@link AlgNode} input = buildDml(
-                                                    recursiveCopy( node.getInput( 0 ) ),
-                                                    AlgBuilder.create( statement, cluster ),
-                                                    catalogEntity,
-                                                    placementsOnAdapter,
-                                                    catalog.getPartitionPlacement( pkPlacement.adapterId, identifiedPartitionForSetValue ),
-                                                    statement,
-                                                    cluster ).build();
-
-                                            Modify insertModify = modifiableTable.toModificationRel(
-                                                    cluster,
-                                                    physical,
-                                                    catalogReader,
-                                                    input,
-                                                    Operation.INSERT,
-                                                    null,
-                                                    null,
-                                                    ((LogicalModify) node).isFlattened()
-                                            );
-
-                                            modifies.add( insertModify );
+                                        if ( !tempValues.containsKey( tempPartitionId ) ) {
+                                            tempValues.put( tempPartitionId, new ArrayList<>() );
                                         }
-                                                //operationWasRewritten = true;
-
-                                         */
-                                    }
-                                }// WHERE clause only
-                                else {
-                                    throw new RuntimeException( "Updating partition key is not allowed" );
-
-                                    //Simply execute the UPDATE on all identified partitions
-                                    //Nothing to do
-                                    //worstCaseRouting = false;
-                                }
-                            }// If only SET is specified
-                            // Changes the value of partition column of complete table to only reside on one partition
-                            else if ( identifiedPartitionForSetValue != -1 ) {
-
-                                // Data Migrate copy of all other partitions beside the identified on towards the identified one
-                                // Then inject a DELETE statement for all those partitions
-
-                                // Do the update only on the identified partition
-
-                            }// If nothing has been specified
-                            //Partition functionality cannot be used --> worstCase --> send query to every partition
-                            else {
-                                worstCaseRouting = true;
-                                accessedPartitionList = new HashSet<>( catalogTable.partitionProperty.partitionIds );
-                            }
-
-                        } else if ( modify.getOperation() == Operation.INSERT ) {
-                            int i;
-
-                            if ( modify.getInput() instanceof LogicalValues ) {
-
-                                // Get fieldList and map columns to index since they could be in arbitrary order
-                                int partitionColumnIndex = -1;
-                                Map<Long, Integer> resultColMapping = new HashMap<>();
-                                for ( int j = 0; j < (modify.getInput()).getRowType().getFieldList().size(); j++ ) {
-                                    String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getKey();
-
-                                    // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
-                                    int columnIndex = catalogTable.getColumnNames().indexOf( columnFieldName );
-                                    resultColMapping.put( catalogTable.fieldIds.get( columnIndex ), j );
-
-                                    // Determine location of partitionColumn in fieldList
-                                    if ( catalogTable.fieldIds.get( columnIndex ) == catalogTable.partitionProperty.partitionColumnId ) {
-                                        partitionColumnIndex = columnIndex;
-                                        if ( log.isDebugEnabled() ) {
-                                            log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionProperty.partitionColumnId, j );
-                                            worstCaseRouting = false;
-
-                                        }
-                                    }
-                                }
-
-                                // Will executed all required tuples that belong on the same partition jointly
-                                Map<Long, List<ImmutableList<RexLiteral>>> tuplesOnPartition = new HashMap<>();
-                                for ( ImmutableList<RexLiteral> currentTuple : ((LogicalValues) modify.getInput()).tuples ) {
-
-                                    worstCaseRouting = false;
-                                    if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
-                                        partitionValue = partitionManager.getUnifiedNullValue();
-                                    } else {
-                                        partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
-                                    }
-                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                                    accessedPartitionList.add( identPart );
-
-                                    if ( !tuplesOnPartition.containsKey( identPart ) ) {
-                                        tuplesOnPartition.put( identPart, new ArrayList<>() );
-                                    }
-                                    tuplesOnPartition.get( identPart ).add( currentTuple );
-
-                                }
-
-                                for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
-                                    Long currentPartitionId = partitionMapping.getKey();
-
-                                    if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( currentPartitionId ) ) {
-                                        continue;
+                                        tempValues.get( tempPartitionId ).add( currentRow );
                                     }
 
-                                    for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
-                                        LogicalValues newLogicalValues = new LogicalValues(
-                                                cluster,
-                                                cluster.traitSet(),
-                                                (modify.getInput()).getRowType(),
-                                                ImmutableList.copyOf( ImmutableList.of( row ) ) );
+                                    for ( Entry<Long, List<Map<Long, Object>>> entry : tempValues.entrySet() ) {
+                                        // then we add a modification for each partition
+                                        statement.getDataContext().setParameterValues( entry.getValue() );
 
                                         AlgNode input = buildDml(
-                                                newLogicalValues,
+                                                super.recursiveCopy( modify.getInput( 0 ) ),
                                                 RoutedAlgBuilder.create( statement, cluster ),
                                                 catalogTable,
                                                 placementsOnAdapter,
-                                                catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
+                                                catalog.getPartitionPlacement( pkPlacement.adapterId, entry.getKey() ),
                                                 statement,
                                                 cluster,
-                                                true,
-                                                statement.getDataContext().getParameterValues() ).build();
+                                                false,
+                                                entry.getValue() ).build();
 
                                         List<String> qualifiedTableName = ImmutableList.of(
                                                 PolySchemaBuilder.buildAdapterSchemaName(
@@ -495,7 +508,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         catalogTable.getNamespaceName(),
                                                         pkPlacement.physicalSchemaName
                                                 ),
-                                                t.getLogicalTableName() + "_" + currentPartitionId );
+                                                t.getLogicalTableName() + "_" + entry.getKey() );
                                         AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
@@ -510,250 +523,142 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 sourceExpressionList,
                                                 modify.isFlattened() );
 
-                                        modifies.add( adjustedModify );
-
+                                        statement.getDataContext().addContext();
+                                        modifies.add( new LogicalContextSwitcher( adjustedModify ) );
                                     }
+
+                                    operationWasRewritten = true;
+                                    worstCaseRouting = false;
+                                } else {
+                                    partitionValue = ((LogicalProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
+                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                    accessedPartitionList.add( identPart );
+                                    worstCaseRouting = false;
                                 }
-                                operationWasRewritten = true;
+                                break;
+                            } else {
+                                // When loop is finished
+                                if ( i == fieldNames.size() - 1 ) {
 
-                            } else if ( modify.getInput() instanceof LogicalProject
-                                    && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
-
-                                String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
-                                List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
-
-                                LogicalModify ltm = modify;
-                                LogicalProject lproject = (LogicalProject) ltm.getInput();
-
-                                List<RexNode> fieldValues = lproject.getProjects();
-
-                                for ( i = 0; i < fieldNames.size(); i++ ) {
-                                    String columnName = fieldNames.get( i );
-
-                                    if ( partitionColumnName.equals( columnName ) ) {
-
-                                        if ( ((LogicalProject) modify.getInput()).getProjects().get( i ).getKind().equals( Kind.DYNAMIC_PARAM ) ) {
-
-                                            // Needed to identify the column which contains the partition value
-                                            long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
-
-                                            long tempPartitionId = 0;
-                                            // Get partitionValue per row/tuple to be inserted
-                                            // Create as many independent TableModifies as there are entries in getParameterValues
-
-                                            Map<Long, List<Map<Long, Object>>> tempValues = new HashMap<>();
-                                            statement.getDataContext().resetContext();
-                                            for ( Map<Long, Object> currentRow : allValues ) {
-                                                // first we sort the values to insert according to the partitionManager and their partitionId
-
-                                                tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
-
-                                                if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
-                                                    continue;
-                                                }
-
-                                                statement.getDataContext().setParameterTypes( statement.getDataContext().getParameterTypes() );
-                                                statement.getDataContext().setParameterValues( tempValues.get( tempPartitionId ) );
-
-                                                List<Map<Long, Object>> parameterValues = new ArrayList<>();
-                                                parameterValues.add( new HashMap<>( newParameterValues ) );
-                                                parameterValues.get( 0 ).putAll( currentRow );
-
-                                                if ( !tempValues.containsKey( tempPartitionId ) ) {
-                                                    tempValues.put( tempPartitionId, new ArrayList<>() );
-                                                }
-                                                tempValues.get( tempPartitionId ).add( currentRow );
-                                            }
-
-                                            for ( Entry<Long, List<Map<Long, Object>>> entry : tempValues.entrySet() ) {
-                                                // then we add a modification for each partition
-                                                statement.getDataContext().setParameterValues( entry.getValue() );
-
-                                                AlgNode input = buildDml(
-                                                        super.recursiveCopy( modify.getInput( 0 ) ),
-                                                        RoutedAlgBuilder.create( statement, cluster ),
-                                                        catalogTable,
-                                                        placementsOnAdapter,
-                                                        catalog.getPartitionPlacement( pkPlacement.adapterId, entry.getKey() ),
-                                                        statement,
-                                                        cluster,
-                                                        false,
-                                                        entry.getValue() ).build();
-
-                                                List<String> qualifiedTableName = ImmutableList.of(
-                                                        PolySchemaBuilder.buildAdapterSchemaName(
-                                                                pkPlacement.adapterUniqueName,
-                                                                catalogTable.getNamespaceName(),
-                                                                pkPlacement.physicalSchemaName
-                                                        ),
-                                                        t.getLogicalTableName() + "_" + entry.getKey() );
-                                                AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
-                                                ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
-
-                                                // Build DML
-                                                Modify adjustedModify = modifiableTable.toModificationAlg(
-                                                        cluster,
-                                                        physical,
-                                                        catalogReader,
-                                                        input,
-                                                        modify.getOperation(),
-                                                        updateColumnList,
-                                                        sourceExpressionList,
-                                                        modify.isFlattened() );
-
-                                                statement.getDataContext().addContext();
-                                                modifies.add( new LogicalContextSwitcher( adjustedModify ) );
-                                            }
-
-                                            operationWasRewritten = true;
-                                            worstCaseRouting = false;
-                                        } else {
-                                            partitionValue = ((LogicalProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
-                                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                                            accessedPartitionList.add( identPart );
-                                            worstCaseRouting = false;
-                                        }
-                                        break;
-                                    } else {
-                                        // When loop is finished
-                                        if ( i == fieldNames.size() - 1 ) {
-
-                                            worstCaseRouting = true;
-                                            // Because partitionColumn has not been specified in insert
-                                        }
-                                    }
+                                    worstCaseRouting = true;
+                                    // Because partitionColumn has not been specified in insert
                                 }
-                            } else {
-                                worstCaseRouting = true;
                             }
-
-                            if ( log.isDebugEnabled() ) {
-                                String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
-                                String partitionName = catalog.getPartitionGroup( identPart ).partitionGroupName;
-                                log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
-                                        partitionValue, identPart, partitionName, partitionColumnName );
-                            }
-
-
-                        } else if ( modify.getOperation() == Operation.DELETE ) {
-                            if ( whereClauseValues == null ) {
-                                worstCaseRouting = true;
-                            } else {
-                                worstCaseRouting = whereClauseValues.size() >= 4;
-                            }
-
-                        }
-
-                        if ( worstCaseRouting ) {
-                            log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worst-case: Routing to ALL PARTITIONS" );
-                            accessedPartitionList = catalogTable.partitionProperty.partitionIds.stream().collect( Collectors.toSet() );
                         }
                     } else {
-                        // un-partitioned tables only have one partition anyway
-                        identPart = catalogTable.partitionProperty.partitionIds.get( 0 );
-                        accessedPartitionList.add( identPart );
+                        worstCaseRouting = true;
                     }
 
-                    if ( statement.getMonitoringEvent() != null ) {
-                        statement.getMonitoringEvent()
-                                .updateAccessedPartitions(
-                                        Collections.singletonMap( catalogTable.id, accessedPartitionList )
-                                );
+                    if ( log.isDebugEnabled() ) {
+                        String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
+                        String partitionName = catalog.getPartitionGroup( identPart ).partitionGroupName;
+                        log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
+                                partitionValue, identPart, partitionName, partitionColumnName );
                     }
 
-                    if ( !operationWasRewritten ) {
 
-                        for ( long partitionId : accessedPartitionList ) {
-
-                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( partitionId ) ) {
-                                continue;
-                            }
-
-                            List<String> qualifiedTableName = ImmutableList.of(
-                                    PolySchemaBuilder.buildAdapterSchemaName(
-                                            pkPlacement.adapterUniqueName,
-                                            catalogTable.getNamespaceName(),
-                                            pkPlacement.physicalSchemaName
-                                    ),
-                                    t.getLogicalTableName() + "_" + partitionId );
-                            AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
-
-                            // Build DML
-                            Modify adjustedModify;
-                            AlgNode input = buildDml(
-                                    super.recursiveCopy( modify.getInput( 0 ) ),
-                                    RoutedAlgBuilder.create( statement, cluster ),
-                                    catalogTable,
-                                    placementsOnAdapter,
-                                    catalog.getPartitionPlacement( pkPlacement.adapterId, partitionId ),
-                                    statement,
-                                    cluster,
-                                    false,
-                                    statement.getDataContext().getParameterValues() ).build();
-
-                            ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
-
-                            if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
-                                adjustedModify = modifiableTable.toModificationAlg(
-                                        cluster,
-                                        physical,
-                                        catalogReader,
-                                        input,
-                                        modify.getOperation(),
-                                        updateColumnList,
-                                        sourceExpressionList,
-                                        modify.isFlattened()
-                                );
-                            } else {
-                                adjustedModify = LogicalModify.create(
-                                        physical,
-                                        catalogReader,
-                                        input,
-                                        modify.getOperation(),
-                                        updateColumnList,
-                                        sourceExpressionList,
-                                        modify.isFlattened()
-                                );
-                            }
-                            modifies.add( adjustedModify );
-                        }
+                } else if ( modify.getOperation() == Operation.DELETE ) {
+                    if ( whereClauseValues == null ) {
+                        worstCaseRouting = true;
+                    } else {
+                        worstCaseRouting = whereClauseValues.size() >= 4;
                     }
+
                 }
 
-                // Update parameter values (horizontal partitioning)
-                if ( !newParameterValues.isEmpty() ) {
-                    statement.getDataContext().resetParameterValues();
-                    int idx = 0;
-                    for ( Map.Entry<Long, Object> entry : newParameterValues.entrySet() ) {
-                        statement.getDataContext().addParameterValues(
-                                entry.getKey(),
-                                statement.getDataContext().getParameterType( idx++ ),
-                                ImmutableList.of( entry.getValue() ) );
-                    }
-                }
-
-                if ( modifies.size() == 1 ) {
-                    return modifies.get( 0 );
-                } else {
-                    /*RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
-                    for ( int i = 0; i < modifies.size(); i++ ) {
-                        if ( i == 0 ) {
-                            builder.push( modifies.get( i ) );
-                        } else {
-                            builder.push( modifies.get( i ) );
-                            builder.replaceTop( LogicalModifyCollect.create(
-                                    ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ),
-                                    true ) );
-                        }
-                    }
-                    return builder.build();*/
-                    return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), modifies, true );
+                if ( worstCaseRouting ) {
+                    log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worst-case: Routing to ALL PARTITIONS" );
+                    accessedPartitionList = catalogTable.partitionProperty.partitionIds.stream().collect( Collectors.toSet() );
                 }
             } else {
-                throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
+                // un-partitioned tables only have one partition anyway
+                identPart = catalogTable.partitionProperty.partitionIds.get( 0 );
+                accessedPartitionList.add( identPart );
+            }
+
+            if ( statement.getMonitoringEvent() != null ) {
+                statement.getMonitoringEvent()
+                        .updateAccessedPartitions(
+                                Collections.singletonMap( catalogTable.id, accessedPartitionList )
+                        );
+            }
+
+            if ( !operationWasRewritten ) {
+
+                for ( long partitionId : accessedPartitionList ) {
+
+                    if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( partitionId ) ) {
+                        continue;
+                    }
+
+                    List<String> qualifiedTableName = ImmutableList.of(
+                            PolySchemaBuilder.buildAdapterSchemaName(
+                                    pkPlacement.adapterUniqueName,
+                                    catalogTable.getNamespaceName(),
+                                    pkPlacement.physicalSchemaName
+                            ),
+                            t.getLogicalTableName() + "_" + partitionId );
+                    AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+
+                    // Build DML
+                    Modify adjustedModify;
+                    AlgNode input = buildDml(
+                            super.recursiveCopy( modify.getInput( 0 ) ),
+                            RoutedAlgBuilder.create( statement, cluster ),
+                            catalogTable,
+                            placementsOnAdapter,
+                            catalog.getPartitionPlacement( pkPlacement.adapterId, partitionId ),
+                            statement,
+                            cluster,
+                            false,
+                            statement.getDataContext().getParameterValues() ).build();
+
+                    ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+                    if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
+                        adjustedModify = modifiableTable.toModificationAlg(
+                                cluster,
+                                physical,
+                                catalogReader,
+                                input,
+                                modify.getOperation(),
+                                updateColumnList,
+                                sourceExpressionList,
+                                modify.isFlattened()
+                        );
+                    } else {
+                        adjustedModify = LogicalModify.create(
+                                physical,
+                                catalogReader,
+                                input,
+                                modify.getOperation(),
+                                updateColumnList,
+                                sourceExpressionList,
+                                modify.isFlattened()
+                        );
+                    }
+                    modifies.add( adjustedModify );
+                }
             }
         }
-        throw new RuntimeException( "Unexpected operator!" );
+
+        // Update parameter values (horizontal partitioning)
+        if ( !newParameterValues.isEmpty() ) {
+            statement.getDataContext().resetParameterValues();
+            int idx = 0;
+            for ( Map.Entry<Long, Object> entry : newParameterValues.entrySet() ) {
+                statement.getDataContext().addParameterValues(
+                        entry.getKey(),
+                        statement.getDataContext().getParameterType( idx++ ),
+                        ImmutableList.of( entry.getValue() ) );
+            }
+        }
+
+        if ( modifies.size() == 1 ) {
+            return modifies.get( 0 );
+        } else {
+            return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), modifies, true );
+        }
     }
 
 

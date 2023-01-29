@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,18 @@ package org.polypheny.db.adapter.neo4j;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.assign_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.count_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.create_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.delete_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.foreach_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.nodes_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.prepared_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.properties_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.property_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.return_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.set_;
@@ -72,6 +77,7 @@ import org.polypheny.db.util.Pair;
 public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     private final List<OperatorStatement> statements = new ArrayList<>();
+    public NeoEntity selectFromTable = null;
 
     @Setter
     @Getter
@@ -103,6 +109,11 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
+    public void addAll( List<OperatorStatement> statements ) {
+        statements.forEach( this::add );
+    }
+
+
     public void setTable( AlgOptTable table ) {
         this.table = table;
         this.entity = (NeoEntity) table.getTable();
@@ -123,9 +134,16 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
      * Adds a cypher <code>CREATE</code> statement, which is used to map most SQL <code>DML</code> statements.
      */
     public void addCreate() {
-        Pair<Integer, OperatorStatement> res = createCreate( values, entity );
-        add( res.right );
-        addRowCount( res.left );
+        if ( values != null ) {
+            Pair<Integer, OperatorStatement> res = createCreate( values, entity );
+            add( res.right );
+            addRowCount( res.left );
+        } else if ( selectFromTable != null ) {
+            addAll( createFromCreateAndReturn( entity, selectFromTable ) );
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
 
@@ -164,6 +182,29 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
      */
     public void addWith( NeoProject project ) {
         add( create( NeoStatements::with_, project, last, this ) );
+    }
+
+
+    /**
+     * <code><pre>
+     * MATCH c=(n:tester)
+     * FOREACH (d IN nodes(c) | CREATE (s:testx1) SET s = properties(d)) RETURN COUNT(c)
+     * </code></pre>
+     * AKA
+     * <code><pre>
+     * INSERT ... SELECT ... FROM ...
+     * </code></pre>
+     */
+    private List<OperatorStatement> createFromCreateAndReturn( NeoEntity entity, NeoEntity selectFromTable ) {
+        List<OperatorStatement> nodes = new ArrayList<>();
+        String name = selectFromTable.physicalEntityName;
+        nodes.add( match_( assign_( literal_( "c" ), node_( "e", labels_( name ) ) ) ) );
+        nodes.add( foreach_(
+                "d", nodes_( "c" ),
+                create_( node_( "s", labels_( entity.physicalEntityName ) ) ), set_( assign_( literal_( "s" ), properties_( "d" ) ) ) ) );
+        nodes.add( return_( count_( "c" ) ) );
+
+        return nodes;
     }
 
 
