@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -455,7 +455,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * This may make things easier for the optimizer, by removing crud that would expand the search space, but is difficult for the optimizer itself to do it, because optimizer rules must preserve the number and type of
      * fields. Hence, this transform that operates on the entire tree, similar to the {@link AlgStructuredTypeFlattener type-flattening transform}.
      *
-     * Currently this functionality is disabled in farrago/luciddb; the default implementation of this method does nothing.
+     * Currently, this functionality is disabled in farrago/luciddb; the default implementation of this method does nothing.
      *
      * @param ordered Whether the relational expression must produce results in a particular order (typically because it has an ORDER BY at top level)
      * @param rootAlg Relational expression that is at the root of the tree
@@ -733,8 +733,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // If extra expressions were added to the project list for sorting, add another project to remove them. But make the collation empty, because we can't represent the real collation.
         //
-        // If it is the top node, use the real collation, but don't trim fields.
-        if ( orderExprList.size() > 0 && !bb.top ) {
+        // If it is the top node, use the real collation, but don't trim fields. // todo dl is this really what we want?
+        if ( orderExprList.size() > 0 ) {//&& !bb.top ) {
             final List<RexNode> exprs = new ArrayList<>();
             final AlgDataType rowType = bb.root.getRowType();
             final int fieldCount = rowType.getFieldCount() - orderExprList.size();
@@ -3464,7 +3464,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             fieldNames.add( deriveAlias( expr, aliases, i ) );
         }
 
-        // Project extra fields for sorting.
+        // Project extra fields for sorting. todo do we need to have them?
         for ( SqlNode expr : orderList ) {
             ++i;
             SqlNode expr2 = validator.expandOrderExpr( select, expr );
