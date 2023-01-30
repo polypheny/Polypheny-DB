@@ -29,8 +29,13 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+/**
+ * SELECT col1, col2 FROM table ORDER BY col3
+ * results in SELECT col1, col2, col3 FROM table ORDER BY col3
+ * which is often not desired
+ */
 @Category(AdapterTestSuite.class)
-public class SqlSortBugTest {
+public class SqlSortExcludeTest {
 
     @BeforeClass
     public static void start() throws SQLException {

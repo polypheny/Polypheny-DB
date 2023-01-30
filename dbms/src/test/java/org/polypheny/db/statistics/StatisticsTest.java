@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,11 @@ public class StatisticsTest {
             + "n_regionkey INTEGER NOT NULL,"
             + "n_comment VARCHAR(152),"
             + "PRIMARY KEY (n_nationkey) )";
+
+    private final static String DATE_TABLE = "CREATE TABLE statisticschema.nulldate ( "
+            + "n_id  INTEGER NOT NULL,"
+            + "n_date DATE,"
+            + "PRIMARY KEY (n_id) )";
 
     private final static String NATION_TABLE_DATA = "INSERT INTO statisticschema.nation VALUES ("
             + "1,"
@@ -208,7 +213,23 @@ public class StatisticsTest {
                             statement.executeQuery( "SELECT * FROM statisticschema.region" ),
                             REGION_TEST_DATA
                     );
-                    connection.commit();
+                } finally {
+                    connection.rollback();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testDateType() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( DATE_TABLE );
+                    statement.executeUpdate( "INSERT INTO statisticschema.nulldate VALUES(0, null)" );
+
                 } finally {
                     connection.rollback();
                 }
@@ -317,18 +338,8 @@ public class StatisticsTest {
         }
     }
 
-    /*
 
-      statement.executeUpdate("DELETE FROM statisticSchema.region WHERE r_regionkey = 2");
 
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticSchema.region" ),
-                            ImmutableList.of( new Object[]{
-        1,
-                "Basel",
-                "nice" } )
-            );
 
-     */
 
 }
