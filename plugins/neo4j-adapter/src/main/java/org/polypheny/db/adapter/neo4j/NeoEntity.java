@@ -77,6 +77,12 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
+    public Long getTableId() {
+        return id;
+    }
+
+
+    @Override
     public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
         return new NeoQueryable<>( dataContext, schema, this, tableName );
     }

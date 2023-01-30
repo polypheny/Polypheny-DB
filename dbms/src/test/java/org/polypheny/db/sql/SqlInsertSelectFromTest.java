@@ -75,7 +75,7 @@ public class SqlInsertSelectFromTest {
 
                     statement.executeUpdate( CREATE_TABLE_TEST_2 );
 
-                    statement.executeUpdate( "INSERT INTO select_insert_test_2 SELECT * FROM select_insert_test_1" );
+                    int i = statement.executeUpdate( "INSERT INTO select_insert_test_2 SELECT * FROM select_insert_test_1" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM select_insert_test_2 ORDER BY ctid" ),
                             ImmutableList.of(

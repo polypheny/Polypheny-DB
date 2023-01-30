@@ -25,6 +25,7 @@ import org.polypheny.db.adapter.neo4j.rules.relational.NeoProject;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoValues;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
@@ -61,7 +62,12 @@ public interface NeoRules {
 
     class NeoModifyRule extends NeoConverterRule {
 
-        public static NeoModifyRule INSTANCE = new NeoModifyRule( Modify.class, r -> true, "NeoModifyRule" );
+        public static NeoModifyRule INSTANCE = new NeoModifyRule( Modify.class, NeoModifyRule::supports, "NeoModifyRule" );
+
+
+        private static boolean supports( Modify modify ) {
+            return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
+        }
 
 
         private <R extends AlgNode> NeoModifyRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

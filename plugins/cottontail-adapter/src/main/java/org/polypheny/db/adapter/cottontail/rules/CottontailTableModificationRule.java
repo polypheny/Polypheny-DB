@@ -21,6 +21,7 @@ import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailTable;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptRule;
@@ -34,7 +35,12 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public class CottontailTableModificationRule extends CottontailConverterRule {
 
     CottontailTableModificationRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Modify.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
+        super( Modify.class, CottontailTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
+    }
+
+
+    private static boolean supports( Modify modify ) {
+        return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
     }
 
 

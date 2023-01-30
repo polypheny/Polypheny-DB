@@ -18,18 +18,13 @@ package org.polypheny.db.adapter.neo4j;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.assign_;
-import static org.polypheny.db.adapter.neo4j.util.NeoStatements.count_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.create_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.delete_;
-import static org.polypheny.db.adapter.neo4j.util.NeoStatements.foreach_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
-import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
-import static org.polypheny.db.adapter.neo4j.util.NeoStatements.nodes_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.prepared_;
-import static org.polypheny.db.adapter.neo4j.util.NeoStatements.properties_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.property_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.return_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.set_;
@@ -138,10 +133,8 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             Pair<Integer, OperatorStatement> res = createCreate( values, entity );
             add( res.right );
             addRowCount( res.left );
-        } else if ( selectFromTable != null ) {
-            addAll( createFromCreateAndReturn( entity, selectFromTable ) );
         } else {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException( "Neither values nor a source table was selected for the CREATE" );
         }
 
     }
@@ -184,28 +177,6 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         add( create( NeoStatements::with_, project, last, this ) );
     }
 
-
-    /**
-     * <code><pre>
-     * MATCH c=(n:tester)
-     * FOREACH (d IN nodes(c) | CREATE (s:testx1) SET s = properties(d)) RETURN COUNT(c)
-     * </code></pre>
-     * AKA
-     * <code><pre>
-     * INSERT ... SELECT ... FROM ...
-     * </code></pre>
-     */
-    private List<OperatorStatement> createFromCreateAndReturn( NeoEntity entity, NeoEntity selectFromTable ) {
-        List<OperatorStatement> nodes = new ArrayList<>();
-        String name = selectFromTable.physicalEntityName;
-        nodes.add( match_( assign_( literal_( "c" ), node_( "e", labels_( name ) ) ) ) );
-        nodes.add( foreach_(
-                "d", nodes_( "c" ),
-                create_( node_( "s", labels_( entity.physicalEntityName ) ) ), set_( assign_( literal_( "s" ), properties_( "d" ) ) ) ) );
-        nodes.add( return_( count_( "c" ) ) );
-
-        return nodes;
-    }
 
 
     /**

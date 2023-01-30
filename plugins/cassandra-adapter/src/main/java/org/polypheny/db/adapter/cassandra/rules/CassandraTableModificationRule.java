@@ -22,6 +22,7 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptRule;
@@ -36,7 +37,12 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public class CassandraTableModificationRule extends CassandraConverterRule {
 
     CassandraTableModificationRule( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Modify.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraTableModificationRule:" + out.getName() );
+        super( Modify.class, CassandraTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "CassandraTableModificationRule:" + out.getName() );
+    }
+
+
+    private static boolean supports( Modify modify ) {
+        return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
     }
 
 

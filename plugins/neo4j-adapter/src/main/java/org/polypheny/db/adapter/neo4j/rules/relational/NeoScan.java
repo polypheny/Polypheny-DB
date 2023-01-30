@@ -53,6 +53,7 @@ public class NeoScan extends Scan implements NeoRelAlg {
     public void implement( NeoRelationalImplementor implementor ) {
         if ( implementor.getTable() != null && !Objects.equals( table.getTable().getTableId(), implementor.getTable().getTable().getTableId() ) ) {
             handleInsertFromOther( implementor );
+            return;
         }
 
         implementor.setTable( table );
@@ -72,7 +73,7 @@ public class NeoScan extends Scan implements NeoRelAlg {
 
 
     private void handleInsertFromOther( NeoRelationalImplementor implementor ) {
-        implementor.selectFromTable = (NeoEntity) table;
+        implementor.selectFromTable = (NeoEntity) table.getTable();
     }
 
 

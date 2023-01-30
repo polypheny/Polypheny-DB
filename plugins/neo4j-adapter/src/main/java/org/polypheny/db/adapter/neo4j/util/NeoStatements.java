@@ -677,11 +677,11 @@ public interface NeoStatements {
 
         private final String elementId;
         private final NeoStatement collection;
-        private final ListStatement<NeoStatement> statements;
+        private final List<NeoStatement> statements;
 
 
-        protected ForeachStatement( String elementId, NeoStatement collection, ListStatement<NeoStatement> statements ) {
-            super( StatementType.FOREACH, statements );
+        protected ForeachStatement( String elementId, NeoStatement collection, List<NeoStatement> statements ) {
+            super( StatementType.FOREACH, list_( statements ) );
 
             this.elementId = elementId;
             this.collection = collection;
@@ -691,13 +691,13 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return String.format( "%s (%s IN %s | %s )", StatementType.FOREACH.toString(), elementId, collection.build(), statements.build() );
+            return String.format( "%s (%s IN %s | %s )", StatementType.FOREACH.toString(), elementId, collection.build(), statements.stream().map( NeoStatement::build ).collect( Collectors.joining( "" ) ) );
         }
 
     }
 
     static ForeachStatement foreach_( String elementId, NeoStatement collection, NeoStatement... statement ) {
-        return new ForeachStatement( elementId, collection, list_( Arrays.asList( statement ) ) );
+        return new ForeachStatement( elementId, collection, Arrays.asList( statement ) );
     }
 
 

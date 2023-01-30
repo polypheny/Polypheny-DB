@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file.algebra;
+package org.polypheny.db.algebra;
 
 import java.util.Objects;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.plan.volcano.AlgSubset;
 
-class UnsupportedFromInsertShuttle extends AlgShuttleImpl {
+public class UnsupportedFromInsertShuttle extends AlgShuttleImpl {
 
     private final Long tableId;
     private boolean containsOtherTableId = false;
