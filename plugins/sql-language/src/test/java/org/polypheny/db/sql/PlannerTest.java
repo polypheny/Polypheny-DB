@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -480,9 +480,10 @@ public class PlannerTest extends SqlLanguageDependent {
     public void testDuplicateSortPlan() throws Exception {
         runDuplicateSortCheck(
                 "select empid from ( select * from emps order by emps.deptno) order by deptno",
-                "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1])\n"
-                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
+                "EnumerableProject(model=[RELATIONAL], empid=[$0])\n"
+                        + "  EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "    EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1])\n"
+                        + "      EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -494,9 +495,10 @@ public class PlannerTest extends SqlLanguageDependent {
     public void testDuplicateSortPlanWithExpr() throws Exception {
         runDuplicateSortCheck(
                 "select empid+deptno from ( select empid, deptno from emps order by emps.deptno) order by deptno",
-                "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
+                "EnumerableProject(model=[RELATIONAL], EXPR$0=[$0])\n"
+                        + "  EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "    EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
+                        + "      EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -504,9 +506,10 @@ public class PlannerTest extends SqlLanguageDependent {
     public void testTwoSortRemoveInnerSort() throws Exception {
         runDuplicateSortCheck(
                 "select empid+deptno from ( select empid, deptno from emps order by empid) order by deptno",
-                "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
+                "EnumerableProject(model=[RELATIONAL], EXPR$0=[$0])\n"
+                        + "  EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "    EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
+                        + "      EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -523,10 +526,11 @@ public class PlannerTest extends SqlLanguageDependent {
                         + "   order by emps.deptno) "
                         + ")"
                         + "order by deptno",
-                "EnumerableSort(model=[RELATIONAL], sort0=[$2], dir0=[ASC])\n"
-                        + "  EnumerableProject(model=[RELATIONAL], emp_cnt=[$5], EXPR$1=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableWindow(model=[RELATIONAL], window#0=[window(partition {1} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
-                        + "      EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
+                "EnumerableProject(model=[RELATIONAL], emp_cnt=[$0], EXPR$1=[$1])\n"
+                        + "  EnumerableSort(model=[RELATIONAL], sort0=[$2], dir0=[ASC])\n"
+                        + "    EnumerableProject(model=[RELATIONAL], emp_cnt=[$5], EXPR$1=[+($0, $1)], deptno=[$1])\n"
+                        + "      EnumerableWindow(model=[RELATIONAL], window#0=[window(partition {1} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
+                        + "        EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -540,9 +544,10 @@ public class PlannerTest extends SqlLanguageDependent {
                         + "   order by emps.deptno) "
                         + ")"
                         + "order by deptno",
-                "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
+                "EnumerableProject(model=[RELATIONAL], EXPR$0=[$0])\n"
+                        + "  EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "    EnumerableProject(model=[RELATIONAL], EXPR$0=[+($0, $1)], deptno=[$1])\n"
+                        + "      EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" );
     }
 
 
@@ -584,9 +589,10 @@ public class PlannerTest extends SqlLanguageDependent {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                equalTo( "EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
-                        + "  EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1])\n"
-                        + "    EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(model=[RELATIONAL], empid=[$0])\n"
+                        + "  EnumerableSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC])\n"
+                        + "    EnumerableProject(model=[RELATIONAL], empid=[$0], deptno=[$1])\n"
+                        + "      EnumerableScan(model=[RELATIONAL], table=[[hr, emps]])\n" ) );
     }
 
 

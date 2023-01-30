@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ import org.polypheny.db.util.Util;
 /**
  * Tests the application of the {@link SortRemoveRule}.
  */
-public final class SortRemoveRuleTest {
+public final class SortRemoveRuleTest extends SqlLanguageDependent {
 
     /**
      * The default schema that is used in these tests provides tables sorted on the primary key. Due to this scan operators always come with a {@link AlgCollation} trait.
@@ -116,7 +116,7 @@ public final class SortRemoveRuleTest {
                         EnumerableRules.ENUMERABLE_SORT_RULE,
                         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE );
         for ( String joinType : Arrays.asList( "left", "right", "full", "inner" ) ) {
-            String sql = "select e.\"deptno\" from \"hr\".\"emps\" e " + joinType + " join \"hr\".\"depts\" d on e.\"deptno\" = d.\"deptno\" order by e.\"empid\" ";
+            String sql = "select e.\"deptno\", e.\"empid\" from \"hr\".\"emps\" e " + joinType + " join \"hr\".\"depts\" d on e.\"deptno\" = d.\"deptno\" order by e.\"empid\" ";
             AlgNode actualPlan = transform( sql, prepareRules );
             assertThat(
                     toString( actualPlan ),
@@ -141,7 +141,7 @@ public final class SortRemoveRuleTest {
                         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE );
         // Inner join is not considered since the ENUMERABLE_JOIN_RULE does not generate a theta join in the case of inner joins.
         for ( String joinType : Arrays.asList( "left", "right", "full" ) ) {
-            String sql = "select e.\"deptno\" from \"hr\".\"emps\" e " + joinType + " join \"hr\".\"depts\" d on e.\"deptno\" > d.\"deptno\" order by e.\"empid\" ";
+            String sql = "select e.\"deptno\", e.\"empid\" from \"hr\".\"emps\" e " + joinType + " join \"hr\".\"depts\" d on e.\"deptno\" > d.\"deptno\" order by e.\"empid\" ";
             AlgNode actualPlan = transform( sql, prepareRules );
             assertThat(
                     toString( actualPlan ),
@@ -167,7 +167,7 @@ public final class SortRemoveRuleTest {
                         EnumerableRules.ENUMERABLE_FILTER_RULE,
                         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE );
         for ( String joinType : Arrays.asList( "left", "inner" ) ) {
-            String sql = "select e.\"deptno\" from \"hr\".\"emps\" e " + joinType + " join \"hr\".\"depts\" d on e.\"deptno\" = d.\"deptno\" order by e.\"empid\" ";
+            String sql = "select e.\"deptno\", e.\"empid\" from \"hr\".\"emps\" e " + joinType + " join \"hr\".\"depts\" d on e.\"deptno\" = d.\"deptno\" order by e.\"empid\" ";
             AlgNode actualPlan = transform( sql, prepareRules );
             assertThat(
                     toString( actualPlan ),
@@ -193,7 +193,7 @@ public final class SortRemoveRuleTest {
                         EnumerableRules.ENUMERABLE_SEMI_JOIN_RULE,
                         EnumerableRules.ENUMERABLE_FILTER_RULE,
                         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE );
-        String sql = "select e.\"deptno\" from \"hr\".\"emps\" e\n"
+        String sql = "select e.\"deptno\", e.\"empid\" from \"hr\".\"emps\" e\n"
                 + " where e.\"deptno\" in (select d.\"deptno\" from \"hr\".\"depts\" d)\n"
                 + " order by e.\"empid\"";
         AlgNode actualPlan = transform( sql, prepareRules );

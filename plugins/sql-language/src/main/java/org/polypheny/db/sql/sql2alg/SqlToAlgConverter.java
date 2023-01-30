@@ -733,7 +733,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // If extra expressions were added to the project list for sorting, add another project to remove them. But make the collation empty, because we can't represent the real collation.
         //
-        // If it is the top node, use the real collation, but don't trim fields. // todo dl is this really what we want?
+        // If it is the top node, use the real collation, but don't trim fields.
         if ( orderExprList.size() > 0 ) {//&& !bb.top ) {
             final List<RexNode> exprs = new ArrayList<>();
             final AlgDataType rowType = bb.root.getRowType();
@@ -745,6 +745,22 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     LogicalProject.create( bb.root, exprs, rowType.getFieldNames().subList( 0, fieldCount ) ),
                     false );
         }
+    }
+
+
+    private boolean expressionsDifferent( List<SqlNode> list, List<SqlNode> others ) {
+        for ( SqlNode node : list ) {
+            if ( !others.contains( node ) ) {
+                return true;
+            }
+        }
+
+        for ( SqlNode node : others ) {
+            if ( !list.contains( node ) ) {
+                return true;
+            }
+        }
+        return false;
     }
 
 

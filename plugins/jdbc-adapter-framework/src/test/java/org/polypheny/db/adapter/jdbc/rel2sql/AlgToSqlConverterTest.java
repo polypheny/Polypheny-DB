@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -563,9 +563,9 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
     @Test
     public void testSelectQueryWithOrderByClause() {
         String query = "select \"product_id\"  from \"product\" order by \"net_weight\"";
-        final String expected = "SELECT \"product_id\", \"net_weight\"\n"
+        final String expected = "SELECT \"product_id\"\nFROM (SELECT \"product_id\", \"net_weight\"\n"
                 + "FROM \"foodmart\".\"product\"\n"
-                + "ORDER BY \"net_weight\"";
+                + "ORDER BY \"net_weight\") AS \"t0\"";
         sql( query ).ok( expected );
     }
 
@@ -583,9 +583,9 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
     @Test
     public void testSelectQueryWithTwoOrderByClause() {
         String query = "select \"product_id\"  from \"product\" order by \"net_weight\", \"gross_weight\"";
-        final String expected = "SELECT \"product_id\", \"net_weight\", \"gross_weight\"\n"
+        final String expected = "SELECT \"product_id\"\nFROM (SELECT \"product_id\", \"net_weight\", \"gross_weight\"\n"
                 + "FROM \"foodmart\".\"product\"\n"
-                + "ORDER BY \"net_weight\", \"gross_weight\"";
+                + "ORDER BY \"net_weight\", \"gross_weight\") AS \"t0\"";
         sql( query ).ok( expected );
     }
 
@@ -593,10 +593,10 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
     @Test
     public void testSelectQueryWithAscDescOrderByClause() {
         String query = "select \"product_id\" from \"product\" order by \"net_weight\" asc, \"gross_weight\" desc, \"low_fat\"";
-        final String expected = "SELECT"
+        final String expected = "SELECT \"product_id\"\nFROM (SELECT"
                 + " \"product_id\", \"net_weight\", \"gross_weight\", \"low_fat\"\n"
                 + "FROM \"foodmart\".\"product\"\n"
-                + "ORDER BY \"net_weight\", \"gross_weight\" DESC, \"low_fat\"";
+                + "ORDER BY \"net_weight\", \"gross_weight\" DESC, \"low_fat\") AS \"t0\"";
         sql( query ).ok( expected );
     }
 
@@ -1069,11 +1069,11 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
     @Test
     public void testSelectQueryWithLimitOffsetClause() {
         String query = "select \"product_id\"  from \"product\" order by \"net_weight\" asc limit 100 offset 10";
-        final String expected = "SELECT \"product_id\", \"net_weight\"\n"
+        final String expected = "SELECT \"product_id\"\nFROM (SELECT \"product_id\", \"net_weight\"\n"
                 + "FROM \"foodmart\".\"product\"\n"
                 + "ORDER BY \"net_weight\"\n"
                 + "OFFSET 10 ROWS\n"
-                + "FETCH NEXT 100 ROWS ONLY";
+                + "FETCH NEXT 100 ROWS ONLY) AS \"t2\"";
         sql( query ).ok( expected );
     }
 
