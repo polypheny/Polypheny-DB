@@ -20,6 +20,7 @@ plugins {
 
 run {
     systemProperty 'pf4j.pluginsDir', '../build/plugins'
+    dependsOn(":plugins:assemblePlugins")
 }
 
 apply plugin: "app.cash.licensee"
@@ -232,6 +233,15 @@ application {
     applicationName = 'Polypheny-DB'
     //applicationDefaultJvmArgs = ["-Dlog4j.configuration=config/log4j.properties"]
 }
+
+tasks.register('runReset', JavaExec) {
+    group = "Execution"
+    description = "Run the main class with JavaExecTask"
+    classpath sourceSets.main.runtimeClasspath
+    mainClass = 'org.polypheny.db.PolyphenyDb'
+    args "-resetCatalog"
+}
+
 startScripts {
     defaultJvmOpts += ['-Xmx6g', '-XX:+HeapDumpOnOutOfMemoryError', '-Dfile.encoding=UTF-8']
     dependsOn(shadowJar)
