@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,67 @@ import org.polypheny.db.excluded.CassandraExcluded;
 public class JoinTest {
 
 
+    public static final String CREATE_OUTER_JOIN_CUSTOMERS = "CREATE TABLE Join_Customers("
+            + "CustomerID INTEGER NOT NULL, "
+            + "CustomerName VARCHAR(255), "
+            + "ContactName VARCHAR(255), "
+            + "Address VARCHAR(255), "
+            + "City VARCHAR(255), "
+            + "PostalCode VARCHAR(12), "
+            + "Country VARCHAR(255), "
+            + "PRIMARY KEY (CustomerID))";
+
+    public static final String CREATE_OUTER_JOIN_ORDERS = "CREATE TABLE Join_Orders("
+            + "OrderID INTEGER NOT NULL, "
+            + "CustomerID INTEGER, "
+            + "EmployeeID INTEGER, "
+            + "OrderDate DATE, "
+            + "ShipperId Integer, "
+            + "PRIMARY KEY (OrderID))";
+    public static final String CUSTOMER_1 = "INSERT INTO Join_Customers VALUES ("
+            + "1, "
+            + "'Alfreds Futterkiste', "
+            + "'Maria Anders', "
+            + "'Obere Str. 57', "
+            + "'Berlin', "
+            + "'12209', "
+            + "'Germany')";
+    public static final String CUSTOMER_2 = "INSERT INTO Join_Customers VALUES ("
+            + "2, "
+            + "'Ana Trujillo Emparedados y helados', "
+            + "'Ana Trujillo', "
+            + "'Avda. de la Constitución 2222', "
+            + "'México D.F.', "
+            + "'05021', "
+            + "'Mexico')";
+    public static final String CUSTOMER_3 = "INSERT INTO Join_Customers VALUES ("
+            + "1, "
+            + "'Antonio Moreno Taquería', "
+            + "'Antonio Moreno', "
+            + "'Mataderos 2312', "
+            + "'México D.F.', "
+            + "'05023', "
+            + "'Mexico')";
+    public static final String ORDER_1 = "INSERT INTO Join_Orders VALUES ("
+            + "10308, "
+            + "2, "
+            + "7, "
+            + "date '1996-09-18', "
+            + "3)";
+    public static final String ORDER_2 = "INSERT INTO Join_Orders VALUES ("
+            + "10309, "
+            + "37, "
+            + "3, "
+            + "date '1996-09-19', "
+            + "1)";
+    public static final String ORDER_3 = "INSERT INTO Join_Orders VALUES ("
+            + "10310, "
+            + "77, "
+            + "8, "
+            + "date '1996-09-20', "
+            + "2)";
+
+
     @BeforeClass
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
@@ -57,10 +118,21 @@ public class JoinTest {
                 statement.executeUpdate( "INSERT INTO TableA VALUES ('Bc', 'Name2',  5000.00)" );
                 statement.executeUpdate( "INSERT INTO TableA VALUES ('Cd', 'Name3',  7000.00)" );
 
+                statement.executeUpdate( CREATE_OUTER_JOIN_CUSTOMERS );
+                statement.executeUpdate( CUSTOMER_1 );
+                statement.executeUpdate( CUSTOMER_2 );
+                statement.executeUpdate( CUSTOMER_3 );
+
+                statement.executeUpdate( CREATE_OUTER_JOIN_ORDERS );
+                statement.executeUpdate( ORDER_1 );
+                statement.executeUpdate( ORDER_2 );
+                statement.executeUpdate( ORDER_3 );
+
                 connection.commit();
             }
         }
     }
+
 
 
     @AfterClass
@@ -165,6 +237,36 @@ public class JoinTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S FULL JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name" ),
+                        expectedResult,
+                        true );
+            }
+        }
+    }
+
+
+    /**
+     * The FULL OUTER JOIN keyword returns all matching records from both tables whether the other table matches or not.
+     * If there are rows in "Customers" that do not have matches in "Orders",
+     * or if there are rows in "Orders" that do not have matches in "Customers",
+     * those rows will be listed as well.
+     */
+    @Test
+    public void fullOuterJoinTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ null, 10309 },
+                        new Object[]{ null, 10310 },
+                        new Object[]{ "Alfreds Futterkiste", null },
+                        new Object[]{ "Ana Trujillo Emparedados y helados", 10308 },
+                        new Object[]{ "Antonio Moreno Taquería", null }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT Join_Customers.CustomerName, Join_Orders.OrderID"
+                                + " FROM Join_Customers"
+                                + " FULL OUTER JOIN Join_Orders ON Join_Customers.CustomerID = Join_Orders.CustomerID"
+                                + " ORDER BY Join_Customers.CustomerName" ),
                         expectedResult,
                         true );
             }
