@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,10 @@ import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
+/**
+ * Own implementation of the PluginManager from PF4J, which handles the default location, where plugins are loaded from.
+ * Custom properties include picture, required-version-of-polypheny.
+ */
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
 
@@ -406,9 +410,6 @@ public class PolyPluginManager extends DefaultPluginManager {
     @Override
     protected CompoundPluginDescriptorFinder createPluginDescriptorFinder() {
         return new CompoundPluginDescriptorFinder()
-                // Demo is using the Manifest file
-                // PropertiesPluginDescriptorFinder is commented out just to avoid error log
-                //.add( new PropertiesPluginDescriptorFinder() );
                 .add( new ManifestPluginDescriptorFinder() {
 
                     @Override
@@ -419,6 +420,9 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Custom plugin descriptor, which are unique and required for this implementation and the supported plugins.
+     */
     public static class PolyPluginDescriptor extends DefaultPluginDescriptor {
 
         public static final String PLUGIN_ICON_PATH = "Plugin-Icon-Path";
@@ -611,10 +615,13 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    /**
+     * Different potential types of dependencies.
+     */
     public enum DependencyType {
-        SINGLE,
-        RANGE,
-        LIST,
+        SINGLE, // specific version e.g. 0.8.1
+        RANGE, // range of potential versions e.g. 0.8 - 0.9
+        LIST, // different supported version e.g. 0.8.1, 0.9.*
         NONE;
     }
 
