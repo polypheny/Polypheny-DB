@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,10 +156,10 @@ public class UniqueConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1)" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 2, 3, 4)" );
-                        connection.commit(); // todo remove when auto-commit works
+
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
@@ -168,7 +168,7 @@ public class UniqueConstraintTest {
                     }
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 1, 1, 4)" );
-                        connection.commit(); // todo remove when auto-commit works
+
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
@@ -204,10 +204,10 @@ public class UniqueConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1)" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 2, 3, 4), (4, 2, 3, 1)" );
-                        connection.commit(); // todo remove when auto-commit works
+
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
@@ -243,9 +243,8 @@ public class UniqueConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
-                    connection.commit();  // todo remove when auto-commit works
                     statement.executeUpdate( "INSERT INTO constraint_test SELECT ctid + 2 AS ctid, a, b + 2 AS b, c FROM constraint_test" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(
@@ -279,7 +278,7 @@ public class UniqueConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test SELECT * FROM constraint_test" );
                         connection.commit();
@@ -321,7 +320,7 @@ public class UniqueConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 5), (2, 2, 2, 5)" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test SELECT c AS ctid, a + 2 AS a, b, c FROM constraint_test" );
                         connection.commit();
@@ -349,7 +348,7 @@ public class UniqueConstraintTest {
 
     @Test
     public void batchInsertTest() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
@@ -395,7 +394,7 @@ public class UniqueConstraintTest {
                         preparedStatement.addBatch();
                     }
                     preparedStatement.executeBatch();
-                    connection.commit(); // todo remove when auto-commit works
+                    connection.commit();
 
                     // This should not work
                     for ( int i = 8; i > 3; i-- ) {
@@ -448,7 +447,6 @@ public class UniqueConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3),(4, 4, 4, 4)" );
-                    connection.commit(); // todo remove when auto-commit works
 
                     PreparedStatement preparedStatement = connection.prepareStatement( "UPDATE constraint_test SET a = ?, b = ? WHERE ctid = ?" );
 
@@ -483,7 +481,6 @@ public class UniqueConstraintTest {
                     preparedStatement.addBatch();
 
                     preparedStatement.executeBatch();
-                    connection.commit(); // todo remove when auto-commit works
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
@@ -506,7 +503,6 @@ public class UniqueConstraintTest {
                     preparedStatement.addBatch();
                     try {
                         preparedStatement.executeBatch();
-                        connection.commit();// todo remove when auto-commit works
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
@@ -538,15 +534,15 @@ public class UniqueConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3), (4, 4, 4, 4)" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     statement.executeUpdate( "UPDATE constraint_test SET a = ctid" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     statement.executeUpdate( "UPDATE constraint_test SET a = 2 * ctid, b = 2 * ctid" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     statement.executeUpdate( "UPDATE constraint_test SET c = 1" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     statement.executeUpdate( "UPDATE constraint_test SET c = 2 WHERE ctid = 3" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(
@@ -580,7 +576,7 @@ public class UniqueConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3), (4, 4, 4, 4)" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 1" );
                         connection.commit();

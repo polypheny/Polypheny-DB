@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1204,7 +1204,18 @@ public class DbmsMeta implements ProtobufMeta {
 
         try {
             prepare( h, statementHandle.getPreparedQuery() );
-            return new ExecuteResult( execute( h, connection, statementHandle, maxRowsInFirstFrame ) );
+            List<MetaResultSet> results = execute( h, connection, statementHandle, maxRowsInFirstFrame );
+            if ( List.of( StatementType.OTHER_DDL, StatementType.OTHER_DDL, StatementType.IS_DML ).contains( statementHandle.getSignature().statementType ) && connection.isAutoCommit() ) {
+                try {
+                    commit( connection.getHandle() );
+                } catch ( Exception e ) {
+                    rollback( connection.getHandle() );
+
+                    throw new RuntimeException( "Error on auto-commit, transaction was rolled back.\n\n" + e );
+                }
+            }
+
+            return new ExecuteResult( results );
         } catch ( Throwable e ) {
             log.error( "Exception while preparing query", e );
             String message = e.getLocalizedMessage();

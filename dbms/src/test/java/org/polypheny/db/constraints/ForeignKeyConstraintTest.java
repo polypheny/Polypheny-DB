@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,7 +167,7 @@ public class ForeignKeyConstraintTest {
     @Category(MongodbExcluded.class) // COUNT() on empty collection returns no result and not 0...
     // https://jira.mongodb.org/browse/SERVER-54958
     public void testInsertConflict() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
@@ -183,10 +183,10 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
-                    connection.commit(); // todo remove when auto-commit works
+                    connection.commit();
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 1), (4, 3)" );
-                        connection.commit(); // todo remove when auto-commit works
+                        connection.commit();
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaClientRuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
@@ -273,11 +273,11 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
-                    connection.commit(); // todo remove when auto-commit works
+
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 SELECT ctid + 10 AS ct2id, ctid * 2 AS ctid FROM constraint_test" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaClientRuntimeException e ) {
+                    } catch ( RuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" ) && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
                             throw new RuntimeException( "Unexpected exception", e );
                         }
@@ -349,7 +349,7 @@ public class ForeignKeyConstraintTest {
 
     @Test
     public void testUpdateOutConflict() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
@@ -365,9 +365,8 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
-                    connection.commit(); // todo remove when auto-commit works
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 3), (1, 1)" );
-                    connection.commit(); // todo remove when auto-commit works
+                    connection.commit();
                     try {
                         statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );
                         connection.commit();
@@ -448,7 +447,7 @@ public class ForeignKeyConstraintTest {
 
     @Test
     public void testUpdateInConflict() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
@@ -464,12 +463,11 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
-                    connection.commit(); // todo remove when auto-commit works
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
-                    connection.commit(); // todo remove when auto-commit works
+                    connection.commit();
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE ctid = 1" );
-                        connection.commit(); // todo remove when auto-commit works
+                        connection.commit();
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaClientRuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
@@ -546,7 +544,7 @@ public class ForeignKeyConstraintTest {
 
     @Test
     public void testDeleteConflict() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
@@ -562,9 +560,8 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
-                    connection.commit(); // todo remove when auto-commit works
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
-                    connection.commit(); // todo remove when auto-commit works
+                    connection.commit();
                     try {
                         statement.executeUpdate( "DELETE FROM constraint_test WHERE ctid = 1" );
                         connection.commit();
