@@ -28,13 +28,14 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 
 /**
  * SELECT col1, col2 FROM table ORDER BY col3
  * results in SELECT col1, col2, col3 FROM table ORDER BY col3
  * which is often not desired
  */
-@Category(AdapterTestSuite.class)
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class SqlSortExcludeTest {
 
     @BeforeClass
