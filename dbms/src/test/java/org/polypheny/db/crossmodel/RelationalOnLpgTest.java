@@ -68,7 +68,13 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
                 false,
                 Row.of( TestNode.from(
                         List.of( DATA_LABEL ),
-                        Pair.of( "key", "3" ) )
+                        Pair.of( "key", "3" ) ) ),
+                Row.of( TestNode.from(
+                        List.of( DATA_LABEL + 1 ),
+                        Pair.of( "key", "4" ) ) ),
+                Row.of( TestNode.from(
+                        List.of( DATA_LABEL.toUpperCase() ),
+                        Pair.of( "key", "5" ) )
                 ) );
     }
 
