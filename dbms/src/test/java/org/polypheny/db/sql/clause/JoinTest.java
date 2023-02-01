@@ -73,7 +73,7 @@ public class JoinTest {
             + "'05021', "
             + "'Mexico')";
     public static final String CUSTOMER_3 = "INSERT INTO Join_Customers VALUES ("
-            + "1, "
+            + "3, "
             + "'Antonio Moreno Taquería', "
             + "'Antonio Moreno', "
             + "'Mataderos 2312', "
@@ -141,6 +141,8 @@ public class JoinTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "DROP TABLE TableA" );
+                statement.executeUpdate( "DROP TABLE Join_Customers" );
+                statement.executeUpdate( "DROP TABLE Join_Orders" );
             }
             connection.commit();
         }
