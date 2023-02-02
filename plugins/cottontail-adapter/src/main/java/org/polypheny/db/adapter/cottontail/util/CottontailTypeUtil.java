@@ -172,7 +172,7 @@ public class CottontailTypeUtil {
                     return Type.STRING;
                 case FILE:
                 case IMAGE:
-                case SOUND:
+                case AUDIO:
                 case VIDEO:
                     return Type.STRING;
             }
@@ -245,7 +245,7 @@ public class CottontailTypeUtil {
                 case VARBINARY:
                 case BINARY:
                 case FILE:
-                case SOUND:
+                case AUDIO:
                 case IMAGE:
                 case VIDEO:
                     constantExpression = Expressions.constant( rexLiteral.getValueAs( ByteString.class ).toBase64String() );
@@ -414,7 +414,7 @@ public class CottontailTypeUtil {
             }
             case FILE:
             case IMAGE:
-            case SOUND:
+            case AUDIO:
             case VIDEO:
                 if ( value instanceof String ) {
                     return builder.setStringData( value.toString() ).build();

@@ -133,7 +133,7 @@ public interface NeoUtil {
             case FILE:
             case IMAGE:
             case VIDEO:
-            case SOUND:
+            case AUDIO:
                 return Value::asByteArray;
             case ANY:
             case SYMBOL:
@@ -311,7 +311,7 @@ public interface NeoUtil {
             case FILE:
             case IMAGE:
             case VIDEO:
-            case SOUND:
+            case AUDIO:
                 return Arrays.toString( literal.getValueAs( byte[].class ) );
             case NULL:
                 return null;

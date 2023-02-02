@@ -226,7 +226,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case FILE:
                 case IMAGE:
                 case VIDEO:
-                case SOUND:
+                case AUDIO:
                 case ANY:
                     return Object.class;
             }

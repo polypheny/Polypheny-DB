@@ -3236,7 +3236,7 @@ public class Crud implements InformationObserver {
                             break;
                         case "FILE":
                         case "IMAGE":
-                        case "SOUND":
+                        case "AUDIO":
                         case "VIDEO":
                             String columnName = String.valueOf( header.get( counter ).name.hashCode() );
                             File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );

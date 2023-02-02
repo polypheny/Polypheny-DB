@@ -191,7 +191,7 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
             case COLUMN_LIST:
                 return ImmutableList.of( PolyType.COLUMN_LIST );
             case MULTIMEDIA:
-                return ImmutableList.of( PolyType.FILE, PolyType.IMAGE, PolyType.VIDEO, PolyType.SOUND );
+                return ImmutableList.of( PolyType.FILE, PolyType.IMAGE, PolyType.VIDEO, PolyType.AUDIO );
             default:
                 throw new IllegalArgumentException();
         }

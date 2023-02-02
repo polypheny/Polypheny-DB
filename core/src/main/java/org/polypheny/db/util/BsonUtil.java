@@ -206,7 +206,7 @@ public class BsonUtil {
                 return new BsonBoolean( (Boolean) obj );
             case BINARY:
                 return new BsonString( ((ByteString) obj).toBase64String() );
-            case SOUND:
+            case AUDIO:
             case IMAGE:
             case VIDEO:
             case FILE:
@@ -286,7 +286,7 @@ public class BsonUtil {
                 return BsonUtil::handleBoolean;
             case BINARY:
                 return BsonUtil::handleBinary;
-            case SOUND:
+            case AUDIO:
             case IMAGE:
             case VIDEO:
             case FILE:
@@ -566,7 +566,7 @@ public class BsonUtil {
             case FILE:
             case IMAGE:
             case VIDEO:
-            case SOUND:
+            case AUDIO:
                 return el.getValueAs( ByteString.class ).toBase64String();
             default:
                 return el.getValue();
@@ -635,7 +635,7 @@ public class BsonUtil {
             case FILE:
             case IMAGE:
             case VIDEO:
-            case SOUND:
+            case AUDIO:
                 return PushbackInputStream.class;
             default:
                 throw new IllegalStateException( "Unexpected value: " + type );

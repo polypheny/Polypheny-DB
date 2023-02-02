@@ -4544,7 +4544,7 @@ PolyType PolyType(Span s) :
 |
     <VIDEO> { return PolyType.VIDEO; }
 |
-    <SOUND> { return PolyType.SOUND; }
+    <AUDIO> { return PolyType.AUDIO; }
 |
     <ANY> { return PolyType.ANY; }
 }
@@ -6545,7 +6545,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SKIP_: "SKIP" >
 |   < SMALLINT: "SMALLINT" >
 |   < SOME: "SOME" >
-|   < SOUND: "SOUND" >
+|   < AUDIO: "AUDIO" >
 |   < SOURCE: "SOURCE" >
 |   < SPACE: "SPACE" >
 |   < SPECIFIC: "SPECIFIC" >

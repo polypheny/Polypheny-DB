@@ -164,7 +164,7 @@ public class PolyTypeAssignmentRules {
         rule.clear();
         rule.add( PolyType.IMAGE );
         rule.add( PolyType.VIDEO );
-        rule.add( PolyType.SOUND );
+        rule.add( PolyType.AUDIO );
         rules.add( PolyType.FILE, rule );
 
         // DATE is assignable from...

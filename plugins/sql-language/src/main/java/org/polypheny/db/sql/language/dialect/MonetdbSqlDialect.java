@@ -82,7 +82,7 @@ public class MonetdbSqlDialect extends SqlDialect {
             case FILE:
             case IMAGE:
             case VIDEO:
-            case SOUND:
+            case AUDIO:
                 // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_BLOB";
                 break;

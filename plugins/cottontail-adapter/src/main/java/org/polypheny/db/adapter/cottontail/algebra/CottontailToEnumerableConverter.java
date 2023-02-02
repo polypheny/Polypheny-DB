@@ -268,7 +268,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case BINARY:
             case VARBINARY:
             case IMAGE:
-            case SOUND:
+            case AUDIO:
             case VIDEO:
             case FILE:
                 // Binary and VarBinary are turned into base64 string

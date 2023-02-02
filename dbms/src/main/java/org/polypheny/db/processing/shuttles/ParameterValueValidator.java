@@ -173,7 +173,7 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                             case VIDEO:
                                 valid = Arrays.asList( videoTypes ).contains( info.getContentType() );
                                 break;
-                            case SOUND:
+                            case AUDIO:
                                 valid = Arrays.asList( soundTypes ).contains( info.getContentType() );
                                 break;
                             //case File:

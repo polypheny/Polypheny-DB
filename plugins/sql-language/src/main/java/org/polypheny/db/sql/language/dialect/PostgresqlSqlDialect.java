@@ -112,7 +112,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case FILE:
             case IMAGE:
             case VIDEO:
-            case SOUND:
+            case AUDIO:
                 castSpec = "_BYTEA";
                 break;
             case ARRAY:
