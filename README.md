@@ -1,6 +1,11 @@
+
 <a href="https://polypheny.org/">
-    <img align="right" width="200" height="200" src="https://polypheny.org/community/logo/logo.png" alt="Resume application project app icon">
-</a>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/polypheny/Admin/master/Logo/logo-white-text_cropped.png">
+  <img alt="Light: 'Resume application project app icon' Dark: 'Resume application project app icon'" srcset="https://raw.githubusercontent.com/polypheny/Admin/master/Logo/logo-transparent_cropped.png">
+</picture>
+</a>    
+
 
 # Polypheny-DB
 
