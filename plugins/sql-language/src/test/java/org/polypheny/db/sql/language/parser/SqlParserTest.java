@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.sql.DiffTestCase;
+import org.polypheny.db.sql.SqlLanguageDependent;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlSetOption;
@@ -81,7 +82,7 @@ import org.polypheny.db.util.Util;
  *
  * To reuse this test for an extension parser, implement the {@link #parserImplFactory()} method to return the extension parser implementation.
  */
-public class SqlParserTest {
+public class SqlParserTest extends SqlLanguageDependent {
 
     /**
      * List of reserved keywords.
@@ -116,6 +117,7 @@ public class SqlParserTest {
             "ASYMMETRIC", "99", "2003", "2011", "2014", "c",
             "AT", "92", "99", "2003", "2011", "2014", "c",
             "ATOMIC", "99", "2003", "2011", "2014", "c",
+            "AUDIO", "92", "99", "2003", "2011", "2014", "c",      // DL: renaming
             "AUTHORIZATION", "92", "99", "2003", "2011", "2014", "c",
             "AVG", "92", "2011", "2014", "c",
             "BEFORE", "99",
@@ -477,7 +479,6 @@ public class SqlParserTest {
             "SKIP", "2014", "c",
             "SMALLINT", "92", "99", "2003", "2011", "2014", "c",
             "SOME", "92", "99", "2003", "2011", "2014", "c",
-            "SOUND", "92", "99", "2003", "2011", "2014", "c",      // NH: Added for Polypheny-MM
             "SPACE", "92", "99",
             "SPECIFIC", "92", "99", "2003", "2011", "2014", "c",
             "SPECIFICTYPE", "99", "2003", "2011", "2014", "c",
