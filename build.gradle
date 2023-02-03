@@ -175,10 +175,10 @@ idea {
         settings {
             runConfigurations {
                 "Polypheny"(Gradle) {
-                    taskNames = ["run"]
+                    taskNames = ["assemblePlugins", "run"]
                 }
                 "Polypheny (reset)"(Gradle) {
-                    taskNames = [":dbms:runReset"]
+                    taskNames = ["assemblePlugins", ":dbms:runReset"]
                 }
             }
             copyright {
