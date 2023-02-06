@@ -176,6 +176,8 @@ class EmbeddedElasticsearchNode implements AutoCloseable {
         private LocalNode( Settings settings, Collection<Class<? extends Plugin>> classpathPlugins ) {
             super( InternalSettingsPreparer.prepareEnvironment( settings, null ), classpathPlugins );
         }
+
     }
+
 }
 

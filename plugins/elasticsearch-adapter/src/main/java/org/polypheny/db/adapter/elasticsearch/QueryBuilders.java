@@ -223,6 +223,7 @@ class QueryBuilders {
          * @throws IOException if IO error occurred
          */
         abstract void writeJson( JsonGenerator generator ) throws IOException;
+
     }
 
 
@@ -295,6 +296,7 @@ class QueryBuilders {
                 gen.writeEndArray();
             }
         }
+
     }
 
 
@@ -323,6 +325,7 @@ class QueryBuilders {
             generator.writeEndObject();
             generator.writeEndObject();
         }
+
     }
 
 
@@ -355,6 +358,7 @@ class QueryBuilders {
             generator.writeEndObject();
             generator.writeEndObject();
         }
+
     }
 
 
@@ -462,6 +466,7 @@ class QueryBuilders {
             generator.writeEndObject();
             generator.writeEndObject();
         }
+
     }
 
 
@@ -484,6 +489,7 @@ class QueryBuilders {
         void writeJson( final JsonGenerator generator ) throws IOException {
             throw new UnsupportedOperationException();
         }
+
     }
 
 
@@ -509,6 +515,7 @@ class QueryBuilders {
             generator.writeEndObject();
             generator.writeEndObject();
         }
+
     }
 
 
@@ -535,6 +542,7 @@ class QueryBuilders {
             generator.writeEndObject();
             generator.writeEndObject();
         }
+
     }
 
 
@@ -560,6 +568,8 @@ class QueryBuilders {
             generator.writeEndObject();
             generator.writeEndObject();
         }
+
     }
+
 }
 

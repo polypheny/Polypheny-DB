@@ -118,11 +118,13 @@ public class VirtualColumn implements DruidJson {
         public VirtualColumn build() {
             return new VirtualColumn( name, expression, type );
         }
+
     }
 
 
     public static Builder builder() {
         return new Builder();
     }
+
 }
 

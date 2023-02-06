@@ -1,4 +1,3 @@
-
 /**
  * Query provider based on Apache Geode (Gemfire) In Memory Data Grid
  */

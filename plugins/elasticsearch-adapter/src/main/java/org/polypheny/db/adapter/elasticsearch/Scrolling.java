@@ -152,6 +152,7 @@ class Scrolling {
             next.scrollId().ifPresent( id -> scrollId = id );
             return next;
         }
+
     }
 
 
@@ -186,5 +187,7 @@ class Scrolling {
 
             return transport.scroll().apply( scrollId );
         }
+
     }
+
 }

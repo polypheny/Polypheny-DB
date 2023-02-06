@@ -73,6 +73,7 @@ public interface AlgInput {
     AlgCollation getCollation();
 
     AlgDistribution getDistribution();
+
     boolean getBoolean( String tag, boolean default_ );
 
 }

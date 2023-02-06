@@ -363,7 +363,6 @@ public class AlgJson {
     }
 
 
-
     private String toJson( Operator operator ) {
         // User-defined operators are not yet handled.
         return operator.getName();

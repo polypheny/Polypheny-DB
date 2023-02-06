@@ -81,4 +81,5 @@ public class GenericSerializer<T extends Serializable> implements org.mapdb.Seri
         return object;
 
     }
+
 }

@@ -162,5 +162,6 @@ public class ElasticsearchSchema extends AbstractSchema {
     public String getIndex() {
         return index;
     }
+
 }
 

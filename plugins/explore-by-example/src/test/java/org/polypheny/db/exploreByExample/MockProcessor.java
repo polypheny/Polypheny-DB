@@ -41,4 +41,5 @@ public class MockProcessor extends ExploreQueryProcessor {
         res = new ExploreQueryResult( new String[][]{}, 0, Collections.singletonList( "INTEGER" ), Collections.singletonList( "public.depts.deptno" ) );
         return res;
     }
+
 }

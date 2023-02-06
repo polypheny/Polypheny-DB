@@ -1,4 +1,3 @@
-
 /**
  * Query provider that reads from files and web pages in various formats.
  *

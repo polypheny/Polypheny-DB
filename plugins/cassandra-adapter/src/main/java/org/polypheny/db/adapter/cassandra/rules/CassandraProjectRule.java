@@ -42,6 +42,7 @@ public class CassandraProjectRule extends CassandraConverterRule {
         super( Project.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraProjectRule:" + out.getName() );
     }
 
+
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         Project project = call.alg( 0 );

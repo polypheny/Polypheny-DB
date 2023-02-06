@@ -480,6 +480,8 @@ public abstract class ReflectUtil {
          * @return Return value of method
          */
         T invoke( Object... args );
+
     }
+
 }
 

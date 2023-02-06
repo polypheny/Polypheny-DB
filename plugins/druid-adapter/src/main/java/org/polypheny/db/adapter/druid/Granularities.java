@@ -142,6 +142,8 @@ public class Granularities {
         public Type getType() {
             return type;
         }
+
     }
+
 }
 

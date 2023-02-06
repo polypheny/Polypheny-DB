@@ -124,8 +124,8 @@ class ElasticsearchMapping {
         // pre-cache missing values
         private static final Set<JsonNode> MISSING_VALUES =
                 Stream.of( "string", // for ES2
-                        "text", "keyword",
-                        "date", "long", "integer", "double", "float" )
+                                "text", "keyword",
+                                "date", "long", "integer", "double", "float" )
                         .map( Datatype::missingValueForType )
                         .collect( Collectors.toSet() );
 
@@ -194,6 +194,7 @@ class ElasticsearchMapping {
         static boolean isMissingValue( JsonNode node ) {
             return MISSING_VALUES.contains( node );
         }
+
     }
 
 }

@@ -178,7 +178,6 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-
     /**
      * Attaches a <code>CREATE</code> cypher statement which is used to map a SQL DML.
      */

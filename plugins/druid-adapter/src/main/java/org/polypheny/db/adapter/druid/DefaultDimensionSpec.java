@@ -96,5 +96,6 @@ public class DefaultDimensionSpec implements DimensionSpec {
     public String getDimension() {
         return dimension;
     }
+
 }
 

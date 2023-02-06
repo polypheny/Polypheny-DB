@@ -33,4 +33,5 @@ public class ParserException extends RuntimeException {
         this.errorCode = errorCode;
         this.violatingInput = violatingInput;
     }
+
 }

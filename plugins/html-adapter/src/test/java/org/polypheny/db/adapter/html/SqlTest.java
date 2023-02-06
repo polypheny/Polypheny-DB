@@ -402,6 +402,8 @@ public class SqlTest {
         Fluent returnsUnordered( String... expectedLines ) {
             return checking( expectUnordered( expectedLines ) );
         }
+
     }
+
 }
 

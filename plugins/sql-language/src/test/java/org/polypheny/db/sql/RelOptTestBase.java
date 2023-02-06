@@ -52,6 +52,7 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
         return super.createTester().withDecorrelation( false );
     }
 
+
     /**
      * Checks the plan for a SQL statement before/after executing a given rule.
      *

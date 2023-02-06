@@ -59,7 +59,6 @@ public final class LogicalAggregate extends Aggregate {
     }
 
 
-
     /**
      * Creates a LogicalAggregate.
      */

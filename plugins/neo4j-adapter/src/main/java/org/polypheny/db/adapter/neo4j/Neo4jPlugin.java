@@ -114,7 +114,6 @@ public class Neo4jPlugin extends Plugin {
     }
 
 
-
     public static String getPhysicalEntityName( long namespaceId, long entityId, long partitionId ) {
         return format( "n_%d_entity_%d_%d", namespaceId, entityId, partitionId );
     }

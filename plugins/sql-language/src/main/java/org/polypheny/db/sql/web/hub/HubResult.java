@@ -35,10 +35,13 @@ public class HubResult {
     String user;
     String secret;
 
+
     public HubResult( final String error ) {
         this.error = error;
     }
 
+
     public HubResult() {
     }
+
 }

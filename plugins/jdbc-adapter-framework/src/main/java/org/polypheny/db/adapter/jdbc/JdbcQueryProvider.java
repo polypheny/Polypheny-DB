@@ -39,5 +39,6 @@ public final class JdbcQueryProvider extends QueryProviderImpl {
     public <T> Enumerator<T> executeQuery( Queryable<T> queryable ) {
         return null;
     }
+
 }
 

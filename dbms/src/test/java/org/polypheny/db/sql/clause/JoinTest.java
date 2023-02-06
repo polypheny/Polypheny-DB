@@ -134,7 +134,6 @@ public class JoinTest {
     }
 
 
-
     @AfterClass
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {

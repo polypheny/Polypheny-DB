@@ -28,14 +28,14 @@ public class ExploreTest {
 
 
     @Test
-    public void parallelExploreTest(){
+    public void parallelExploreTest() {
         String query = "SELECT public.depts.deptno\nFROM public.depts";
         ExploreManager manager = ExploreManager.getInstance();
         manager.setExploreQueryProcessor( new MockProcessor() );
         Explore explore = manager.createSqlQuery( null, query );
-        assertNotNull(explore);
+        assertNotNull( explore );
 
-        assertEquals(manager.getExploreInformation( explore.getId() ), explore);
+        assertEquals( manager.getExploreInformation( explore.getId() ), explore );
 
         Explore explore2 = manager.createSqlQuery( null, query );
         assertNotNull( explore2 );

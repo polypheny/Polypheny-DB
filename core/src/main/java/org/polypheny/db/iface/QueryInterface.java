@@ -198,6 +198,7 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         }
     }
 
+
     public abstract void languageChange();
 
 }

@@ -194,6 +194,7 @@ public class ElasticsearchSearchResult {
         public Map<String, Object> sourceOrFields() {
             return source != null ? source : fields;
         }
+
     }
 
 }

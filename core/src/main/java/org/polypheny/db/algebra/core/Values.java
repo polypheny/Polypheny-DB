@@ -68,7 +68,6 @@ public abstract class Values extends AbstractAlgNode {
     }
 
 
-
     /**
      * Predicate, to be used when defining an operand of a {@link AlgOptRule}, that returns true if a Values contains zero tuples.
      *

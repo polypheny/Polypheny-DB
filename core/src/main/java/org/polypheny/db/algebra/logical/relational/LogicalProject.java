@@ -58,7 +58,6 @@ public final class LogicalProject extends Project {
     }
 
 
-
     /**
      * Creates a LogicalProject.
      */

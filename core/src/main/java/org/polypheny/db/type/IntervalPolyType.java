@@ -147,10 +147,10 @@ public class IntervalPolyType extends AbstractPolyType {
 
         AlgDataType intervalType = typeFactory.createIntervalType(
                 new IntervalQualifierImpl(
-                    thisStart,
-                    intervalQualifier.startPrecision,
-                    thisEnd,
-                    intervalQualifier.fractionalSecondPrecision )
+                        thisStart,
+                        intervalQualifier.startPrecision,
+                        thisEnd,
+                        intervalQualifier.fractionalSecondPrecision )
         );
         intervalType = typeFactory.createTypeWithNullability( intervalType, nullable );
         return (IntervalPolyType) intervalType;

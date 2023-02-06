@@ -31,4 +31,5 @@ public class IllegalColumnException extends RuntimeException {
         super( "Column ID '" + catalogColumn.id + "' cannot be used as it is not part of any of the queried tables." );
         this.catalogColumn = catalogColumn;
     }
+
 }

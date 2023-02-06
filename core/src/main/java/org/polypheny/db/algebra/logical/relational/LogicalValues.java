@@ -54,7 +54,6 @@ public class LogicalValues extends Values {
     }
 
 
-
     /**
      * Creates a LogicalValues.
      */

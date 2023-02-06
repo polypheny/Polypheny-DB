@@ -45,5 +45,6 @@ public abstract class AbstractPigTest {
     protected String getFullPathForTestDataFile( String fileName ) {
         return Sources.of( getClass().getResource( "/" + fileName ) ).file().getAbsolutePath();
     }
+
 }
 

@@ -188,6 +188,7 @@ final class ElasticsearchJson {
         public int hashCode() {
             return this.hashCode;
         }
+
     }
 
 
@@ -408,6 +409,7 @@ final class ElasticsearchJson {
         Map<String, Object> sourceOrFields() {
             return source != null ? source : fields;
         }
+
     }
 
 
@@ -503,6 +505,7 @@ final class ElasticsearchJson {
     interface HasAggregations {
 
         Aggregations getAggregations();
+
     }
 
 
@@ -515,7 +518,8 @@ final class ElasticsearchJson {
         private final List<Bucket> buckets;
 
 
-        MultiBucketsAggregation( final String name,
+        MultiBucketsAggregation(
+                final String name,
                 final List<Bucket> buckets ) {
             this.name = name;
             this.buckets = buckets;
@@ -534,6 +538,7 @@ final class ElasticsearchJson {
         public String getName() {
             return name;
         }
+
     }
 
 
@@ -591,6 +596,7 @@ final class ElasticsearchJson {
         public String getName() {
             return name;
         }
+
     }
 
 
@@ -654,6 +660,7 @@ final class ElasticsearchJson {
         static GroupValue of( String name, Object value ) {
             return new GroupValue( name, Collections.singletonMap( "value", value ) );
         }
+
     }
 
 

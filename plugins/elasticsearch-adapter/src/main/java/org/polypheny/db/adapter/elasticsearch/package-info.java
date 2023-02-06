@@ -1,4 +1,3 @@
-
 /**
  * Query provider based on an Elasticsearch2 DB.
  */

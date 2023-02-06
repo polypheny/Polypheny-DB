@@ -120,6 +120,7 @@ public class AvaticaInterfacePlugin extends Plugin {
 
         }
 
+
         @Override
         public void propertyChange( PropertyChangeEvent evt ) {
 

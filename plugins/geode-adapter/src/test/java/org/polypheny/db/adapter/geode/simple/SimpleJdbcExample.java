@@ -98,4 +98,5 @@ public class SimpleJdbcExample {
         statement.close();
         connection.close();
     }
+
 }

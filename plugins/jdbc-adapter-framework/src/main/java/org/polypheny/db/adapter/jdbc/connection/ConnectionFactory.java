@@ -37,4 +37,5 @@ public interface ConnectionFactory {
     int getNumActive();
 
     int getNumIdle();
+
 }

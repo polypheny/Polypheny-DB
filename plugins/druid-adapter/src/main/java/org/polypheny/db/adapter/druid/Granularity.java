@@ -71,4 +71,5 @@ public interface Granularity extends DruidJson {
 
     @Nonnull
     Type getType();
+
 }

@@ -689,6 +689,7 @@ class DruidConnectionImpl implements DruidConnection {
                 throw new RuntimeException( e );
             }
         }
+
     }
 
 
@@ -706,6 +707,7 @@ class DruidConnectionImpl implements DruidConnection {
         public String toString() {
             return "{" + pagingIdentifier + ": " + offset + "}";
         }
+
     }
 
 
@@ -721,6 +723,7 @@ class DruidConnectionImpl implements DruidConnection {
         public long size;
         public long numRows;
         public Map<String, JsonAggregator> aggregators;
+
     }
 
 
@@ -735,6 +738,7 @@ class DruidConnectionImpl implements DruidConnection {
         public int size;
         public Integer cardinality;
         public String errorMessage;
+
     }
 
 
@@ -752,5 +756,7 @@ class DruidConnectionImpl implements DruidConnection {
         DruidType druidType() {
             return DruidType.getTypeFromMetric( type );
         }
+
     }
+
 }

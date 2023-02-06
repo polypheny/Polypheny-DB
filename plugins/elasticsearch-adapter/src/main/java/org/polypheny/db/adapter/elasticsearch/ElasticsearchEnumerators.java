@@ -152,5 +152,6 @@ class ElasticsearchEnumerators {
         }
         return o;
     }
+
 }
 

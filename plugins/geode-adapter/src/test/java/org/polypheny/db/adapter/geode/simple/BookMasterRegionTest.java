@@ -72,5 +72,6 @@ public class BookMasterRegionTest {
         SelectResults result = (SelectResults) queryService.newQuery( oql ).execute();
         System.out.println( result.asList() );
     }
+
 }
 

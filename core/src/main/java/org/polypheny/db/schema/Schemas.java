@@ -273,7 +273,6 @@ public final class Schemas {
         }
     }
 
-
     /**
      * Parses and validates a SQL query. For use within Polypheny-DB only.
      */
@@ -288,7 +287,6 @@ public final class Schemas {
             PolyphenyDbPrepare.Dummy.pop( context );
         }
     }*/
-
 
     /**
      * Parses and validates a SQL query and converts to relational algebra. For use within Polypheny-DB only.

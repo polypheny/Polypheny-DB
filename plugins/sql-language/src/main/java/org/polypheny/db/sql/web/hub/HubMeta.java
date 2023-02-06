@@ -31,9 +31,11 @@ public class HubMeta {
     private long fileSize;
     private final HashMap<String, TableMapping> tables = new HashMap<>();
 
+
     public HubMeta( String schema ) {
         this.schema = schema;
     }
+
 
     public HubMeta addTable( final String table, final int numberOfRows ) {
         this.tables.put( table, new TableMapping( table ) );
@@ -41,13 +43,17 @@ public class HubMeta {
         return this;
     }
 
+
     public static class TableMapping {
 
         public String initialName;
         public String newName;
 
+
         public TableMapping( final String initialName ) {
             this.initialName = initialName;
         }
+
     }
+
 }

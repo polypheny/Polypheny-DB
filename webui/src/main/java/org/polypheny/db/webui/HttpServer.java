@@ -450,7 +450,7 @@ public class HttpServer implements Runnable {
 
 
     public void removeRoute( String route, HandlerType type ) {
-        addRoute( route, (ctx, crud) -> null, Object.class ,type );
+        addRoute( route, ( ctx, crud ) -> null, Object.class, type );
     }
 
 

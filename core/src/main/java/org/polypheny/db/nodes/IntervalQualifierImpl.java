@@ -34,7 +34,8 @@ public class IntervalQualifierImpl implements IntervalQualifier {
     private final int fractionalSecondPrecision;
 
 
-    public IntervalQualifierImpl( TimeUnit startUnit,
+    public IntervalQualifierImpl(
+            TimeUnit startUnit,
             int startPrecision,
             TimeUnit endUnit,
             int fractionalSecondPrecision ) {
@@ -78,6 +79,7 @@ public class IntervalQualifierImpl implements IntervalQualifier {
             return fractionalSecondPrecision;
         }
     }
+
 
     /**
      * Returns {@code true} if fractional second precision is not specified.

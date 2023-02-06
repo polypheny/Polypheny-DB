@@ -74,7 +74,7 @@ public class CypherLanguagePlugin extends Plugin {
         LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
         LanguageManager.removeQueryLanguage( NAME );
 
-        if( CypherRegisterer.isInit() ){
+        if ( CypherRegisterer.isInit() ) {
             CypherRegisterer.removeOperators();
         }
     }
@@ -105,7 +105,6 @@ public class CypherLanguagePlugin extends Plugin {
             queryAnalyzer = LanguageCrud.attachAnalyzerIfSpecified( request, crud, transaction );
 
             executionTime = System.nanoTime();
-
 
             Statement statement = transaction.createStatement();
             ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, request.database );

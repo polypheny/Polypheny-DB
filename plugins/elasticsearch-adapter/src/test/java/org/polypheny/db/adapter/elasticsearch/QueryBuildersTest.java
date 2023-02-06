@@ -160,5 +160,6 @@ public class QueryBuildersTest {
         gen.close();
         return writer.toString();
     }
+
 }
 

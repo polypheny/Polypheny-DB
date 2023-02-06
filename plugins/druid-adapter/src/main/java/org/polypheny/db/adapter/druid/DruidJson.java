@@ -45,5 +45,6 @@ import java.io.IOException;
 public interface DruidJson {
 
     void write( JsonGenerator generator ) throws IOException;
+
 }
 

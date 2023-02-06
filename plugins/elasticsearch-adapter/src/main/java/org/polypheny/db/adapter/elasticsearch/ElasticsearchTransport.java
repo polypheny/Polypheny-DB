@@ -270,6 +270,7 @@ final class ElasticsearchTransport {
                 throw new UncheckedIOException( message, e );
             }
         }
+
     }
 
 
@@ -315,6 +316,8 @@ final class ElasticsearchTransport {
 
             return response;
         }
+
     }
+
 }
 

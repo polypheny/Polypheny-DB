@@ -299,7 +299,6 @@ public abstract class Prepare {
      * Protected method to allow subclasses to override construction of SqlToRelConverter.
      */
     //protected abstract NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config );
-
     public abstract AlgNode flattenTypes( AlgNode rootRel, boolean restructure );
 
     protected abstract AlgNode decorrelate( NodeToAlgConverter sqlToRelConverter, Node query, AlgNode rootRel );
@@ -322,8 +321,6 @@ public abstract class Prepare {
         final boolean dml = Kind.DML.contains( root.kind );
         return root.withAlg( converter.trimUnusedFields( dml || ordered, root.alg ) );
     }*/
-
-
     private boolean shouldTrim( AlgNode rootRel ) {
         // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past
         // joins and seem to prevent join-reordering.

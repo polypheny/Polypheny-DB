@@ -179,7 +179,6 @@ public class WebSocket implements Consumer<WsConfig> {
     }
 
 
-
     @Override
     public void accept( WsConfig wsConfig ) {
         wsConfig.onConnect( this::connected );

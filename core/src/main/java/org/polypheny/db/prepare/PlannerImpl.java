@@ -197,7 +197,6 @@ public class PlannerImpl implements Planner {
     }
 
 
-
     @Override
     public AlgRoot alg( Node sql ) throws AlgConversionException {
         ensure( State.STATE_4_VALIDATED );

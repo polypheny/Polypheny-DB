@@ -80,5 +80,6 @@ public class ElasticsearchVersionTest {
             // expected
         }
     }
+
 }
 

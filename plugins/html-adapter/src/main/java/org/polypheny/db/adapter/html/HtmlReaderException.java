@@ -47,5 +47,6 @@ class HtmlReaderException extends Exception {
     HtmlReaderException( String message, Throwable e ) {
         super( message, e );
     }
+
 }
 

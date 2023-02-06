@@ -57,5 +57,6 @@ public class PigSchema extends AbstractSchema {
     void registerTable( String name, PigTable table ) {
         tableMap.put( name, table );
     }
+
 }
 

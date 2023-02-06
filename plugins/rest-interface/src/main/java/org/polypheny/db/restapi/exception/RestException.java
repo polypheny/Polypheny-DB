@@ -30,4 +30,5 @@ public class RestException extends RuntimeException {
     public RestException( RestErrorCode errorCode ) {
         this.errorCode = errorCode;
     }
+
 }

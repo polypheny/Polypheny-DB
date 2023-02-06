@@ -102,4 +102,5 @@ public class DruidSchema extends AbstractSchema {
 
         return DruidTable.create( DruidSchema.this, tableName, null, fieldMap, metricNameSet, DruidTable.DEFAULT_TIMESTAMP_COLUMN, complexMetrics );
     }
+
 }

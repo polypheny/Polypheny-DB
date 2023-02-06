@@ -3325,13 +3325,13 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
         private final Config config;
 
 
-         Sql( SchemaPlus schema, String sql, SqlDialect dialect, Config config, List<Function<AlgNode, AlgNode>> transforms ) {
-             this.schema = schema;
-             this.sql = sql;
-             this.dialect = dialect;
-             this.transforms = ImmutableList.copyOf( transforms );
-             this.config = config;
-         }
+        Sql( SchemaPlus schema, String sql, SqlDialect dialect, Config config, List<Function<AlgNode, AlgNode>> transforms ) {
+            this.schema = schema;
+            this.sql = sql;
+            this.dialect = dialect;
+            this.transforms = ImmutableList.copyOf( transforms );
+            this.config = config;
+        }
 
 
         Sql dialect( SqlDialect dialect ) {

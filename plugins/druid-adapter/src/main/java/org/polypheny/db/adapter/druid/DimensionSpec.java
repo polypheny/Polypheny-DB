@@ -52,5 +52,6 @@ public interface DimensionSpec extends DruidJson {
     ExtractionFunction getExtractionFn();
 
     String getDimension();
+
 }
 

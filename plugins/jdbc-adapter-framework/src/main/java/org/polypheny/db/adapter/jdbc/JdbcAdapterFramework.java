@@ -33,5 +33,4 @@ public class JdbcAdapterFramework extends Plugin {
     }
 
 
-
 }

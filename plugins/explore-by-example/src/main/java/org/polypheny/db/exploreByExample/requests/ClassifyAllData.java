@@ -31,4 +31,5 @@ public class ClassifyAllData extends UIRequest {
      */
     public boolean analyze;
     public int cPage;
+
 }

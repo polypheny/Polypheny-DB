@@ -250,6 +250,8 @@ public class HtmlReader implements Iterable<Elements> {
         public void remove() {
             throw new UnsupportedOperationException( "NFW - can't remove!" );
         }
+
     }
+
 }
 

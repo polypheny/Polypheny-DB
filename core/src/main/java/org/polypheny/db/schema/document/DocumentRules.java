@@ -57,7 +57,6 @@ public class DocumentRules {
     }
 
 
-
     public static class DocUpdateVisitor extends RexVisitorImpl<Void> {
 
         @Getter

@@ -81,5 +81,6 @@ class JsonEnumerator implements Enumerator<Object[]> {
             throw new RuntimeException( "Error closing JSON reader", e );
         }
     }
+
 }
 

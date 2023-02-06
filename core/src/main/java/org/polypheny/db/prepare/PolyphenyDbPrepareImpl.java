@@ -313,8 +313,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final AlgRoot root = converter.convertQuery( sqlNode1, false, true );
         return new ConvertResult( this, validator, sql, sqlNode1, validator.getValidatedNodeType( sqlNode1 ), root );
     }*/
-
-
     @Override
     public void executeDdl( Context context, Node node ) {
         if ( node instanceof ExecutableStatement ) {
