@@ -208,7 +208,7 @@ import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
-import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
+import org.polypheny.db.webui.models.requests.*;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
@@ -217,13 +217,10 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
+import org.polypheny.db.webui.models.requests.MergeColumnsRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
-import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
-import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.requests.RelAlgRequest;
-import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
-import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.requests.TransferTableRequest;
 
 
 @Slf4j
@@ -606,6 +603,43 @@ public class Crud implements InformationObserver {
         if ( request.store != null && !request.store.equals( "" ) ) {
             query.append( String.format( " ON STORE \"%s\"", request.store ) );
         }
+
+        try {
+            int a = executeSqlUpdate( transaction, query.toString() );
+            result = new Result( a ).setGeneratedQuery( query.toString() );
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Caught exception while creating a table", e );
+            result = new Result( e ).setGeneratedQuery( query.toString() );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
+            }
+        }
+        ctx.json( result );
+    }
+
+    /**
+     * Transfer a table
+     */
+    void transferTable(final Context ctx ) {
+        TransferTableRequest request = ctx.bodyAsClass( TransferTableRequest.class );
+        Transaction transaction = getTransaction();
+        StringBuilder query = new StringBuilder();
+        String targetSchemaId = String.format( "\"%s\"", request.targetSchema );
+        String tableId = String.format( "\"%s\".\"%s\"", request.sourceSchema, request.table );
+        query
+                .append( "ALTER SCHEMA " )
+                .append( targetSchemaId )
+                .append( " TRANSFER " )
+                .append(tableId);
+        if( request.primaryKeyNames != null && !request.primaryKeyNames.isBlank() ) {
+            query
+                    .append( " SET PRIMARY KEYS " )
+                    .append(request.primaryKeyNames);
+        }
+        Result result;
 
         try {
             int a = executeSqlUpdate( transaction, query.toString() );
@@ -1763,6 +1797,84 @@ public class Crud implements InformationObserver {
             result = new Result( affectedRows );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping a column", e );
+            result = new Result( e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+        ctx.json( result );
+    }
+
+
+    /**
+     * Merge multiple columns of table
+     */
+    void mergeColumns( final Context ctx ) {
+        MergeColumnsRequest request = ctx.bodyAsClass( MergeColumnsRequest.class );
+        Transaction transaction = getTransaction();
+
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
+        boolean nullable = Arrays.stream( request.sourceColumns ).allMatch( c -> c.nullable );
+        Integer precison = Arrays.stream( request.sourceColumns ).mapToInt( c -> c.precision ).sum();
+        DbColumn newColumn = new DbColumn( request.targetColumnName, "varchar", nullable, precison, null, null );
+        newColumn.collectionsType = "";
+
+        String as = "";
+        String dataType = newColumn.dataType;
+        if ( newColumn.as != null ) {
+            //for data sources
+            as = "AS \"" + newColumn.as + "\"";
+            dataType = "";
+        }
+
+        String listOfColumnsToMerge =
+                Arrays.stream( request.sourceColumns )
+                        .map( s -> "\"" + s.name + "\"" )
+                        .collect( Collectors.joining( ", " ) );
+        String query = String.format( "ALTER TABLE %s MERGE COLUMNS (%s) INTO \"%s\" WITH '%s' %s %s",
+                tableId, listOfColumnsToMerge, newColumn.name, request.joinString, as, dataType );
+
+        //we don't want precision, scale etc. for source columns
+        if ( newColumn.as == null ) {
+            if ( newColumn.precision != null ) {
+                query = query + "(" + newColumn.precision;
+                if ( newColumn.scale != null ) {
+                    query = query + "," + newColumn.scale;
+                }
+                query = query + ")";
+            }
+            if ( !newColumn.collectionsType.equals( "" ) ) {
+                query = query + " " + newColumn.collectionsType;
+                int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
+                int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
+                query = query + String.format( "(%d,%d)", dimension, cardinality );
+            }
+            if ( !newColumn.nullable ) {
+                query = query + " NOT NULL";
+            }
+        }
+
+        String defaultValue = Arrays
+                .stream( request.sourceColumns )
+                .map( c -> c.defaultValue )
+                .filter( s -> s != null && !s.isEmpty() )
+                .collect( Collectors.joining( request.joinString ) );
+
+        if ( defaultValue != null && !defaultValue.equals( "" ) ) {
+            query = query + " DEFAULT " + String.format( "'%s'", defaultValue );
+        }
+
+        Result result;
+        try {
+            int affectedRows = executeSqlUpdate( transaction, query );
+            transaction.commit();
+            result = new Result( affectedRows ).setGeneratedQuery( query );
+        } catch ( TransactionException | QueryExecutionException e ) {
+            log.error( "Caught exception while adding a column", e );
             result = new Result( e );
             try {
                 transaction.rollback();

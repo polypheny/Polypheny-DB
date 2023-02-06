@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
@@ -24,9 +25,11 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-
 
 public interface DataMigrator {
 
@@ -76,16 +79,48 @@ public interface DataMigrator {
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
+    /**
+     * Used to merge columns in a relational table. The values of the source columns will be selected,
+     * concatenated and inserted into the target column.
+     *
+     * @param transaction   Transactional scope
+     * @param store         Target Store where data should be migrated to
+     * @param sourceColumns Columns to be merged
+     * @param targetColumn  New column to be added
+     * @param joinString    String delimiter between the values to be merged
+     */
+    void mergeColumns( Transaction transaction, CatalogAdapter store, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString );
+
     AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
-    //is used within copyData
+    // is used within copyData
     void executeQuery( List<CatalogColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+
+    // is used within mergeColumns
+    void executeMergeQuery( List<CatalogColumn> primaryKeyColumns, List<CatalogColumn> sourceColumns, CatalogColumn targetColumn, String joinString, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
     AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
     AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
 
-
     void copyGraphData( CatalogGraphDatabase graph, Transaction transaction, Integer existingAdapterId, CatalogAdapter adapter );
+
+    /**
+     * Does migration when transferring between a relational and a document-based namespace.
+     *
+     * @param transaction Transactional scope
+     * @param sourceTable Source Table from where data is queried
+     * @param targetSchemaId ID of the target namespace
+     */
+    void copyRelationalDataToDocumentData(Transaction transaction , CatalogTable sourceTable, long targetSchemaId);
+
+    /**
+     * Does migration when transferring between a document-based and a relational namespace.
+     *
+     * @param transaction Transactional scope
+     * @param jsonObjects List of the JSON-objects of the source collection
+     * @param table Target tables created in the {@link DdlManager}
+     */
+    void copyDocumentDataToRelationalData( Transaction transaction, List<JsonObject> jsonObjects, List<CatalogTable> table ) throws UnknownColumnException, UnknownTableException;
 
 }

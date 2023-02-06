@@ -17,23 +17,15 @@
 package org.polypheny.db.catalog;
 
 
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -1898,6 +1890,55 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( "Error when adding table " + name, e );
         }
         return id;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long relocateTable( CatalogTable sourceTable, long targetNamespaceId ) {
+        // Clone the source table by changing the ID of the parent namespace
+        CatalogTable targetTable = transferCatalogTable( sourceTable, targetNamespaceId );
+        synchronized ( this ) {
+            // Build the new immutable list for the source namespace by removing the table to transfer
+            ImmutableList<Long> reducedSourceSchemaChildren = ImmutableList
+                    .copyOf( Collections2.filter( schemaChildren.get( sourceTable.namespaceId ),
+                            Predicates.not( Predicates.equalTo( sourceTable.id ) ) ) );
+            // Build the new immutable list for the target namespace by adding the table to transfer
+            ImmutableList<Long> extendedTargetSchemaChildren = new ImmutableList.Builder<Long>()
+                    .addAll( schemaChildren.get( targetNamespaceId ) )
+                    .add( targetTable.id )
+                    .build();
+
+            // Replace the immutable list for both the source and target namespaces
+            schemaChildren.replace( sourceTable.namespaceId, reducedSourceSchemaChildren );
+            schemaChildren.replace( targetNamespaceId, extendedTargetSchemaChildren );
+
+            // Replace the tables' trees with the cloned table
+            tables.replace( sourceTable.id, targetTable );
+            tableNames.remove( new Object[]{ sourceTable.databaseId, sourceTable.namespaceId, sourceTable.name } );
+            tableNames.put( new Object[]{ targetTable.databaseId, targetNamespaceId, targetTable.name }, targetTable );
+
+            // Replace the trees of the tables' columns with cloned columns
+            for ( Long fieldId : sourceTable.fieldIds ) {
+                CatalogColumn targetCatalogColumn = transferCatalogColumn( targetNamespaceId, columns.get( fieldId ) );
+                columns.replace( fieldId, targetCatalogColumn );
+                columnNames.remove( new Object[]{ sourceTable.databaseId, sourceTable.namespaceId, sourceTable.id, targetCatalogColumn.name } );
+                columnNames.put( new Object[]{ sourceTable.databaseId, targetNamespaceId, sourceTable.id, targetCatalogColumn.name }, targetCatalogColumn );
+            }
+
+            // When transferring between document-based namespaces, also replace the collection trees.
+            if ( getSchema( sourceTable.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
+                CatalogCollection targetCollection = transferCatalogCollection( collections.get( sourceTable.id ), targetNamespaceId );
+                collections.replace( sourceTable.id, targetCollection );
+                collectionNames.remove( new Object[]{ sourceTable.databaseId, sourceTable.namespaceId, sourceTable.name } );
+                collectionNames.put( new Object[]{ targetTable.databaseId, targetNamespaceId, targetTable.name }, targetCollection );
+            }
+        }
+        listeners.firePropertyChange( "table", sourceTable, null );
+
+        return sourceTable.id;
     }
 
 
@@ -5478,6 +5519,56 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownKeyIdRuntimeException( keyId );
         }
+    }
+
+
+    private static CatalogColumn transferCatalogColumn( long targetNamespaceId, CatalogColumn sourceCatalogColumn ) {
+        CatalogColumn targetCatalogColumn = new CatalogColumn(
+                sourceCatalogColumn.id,
+                sourceCatalogColumn.name,
+                sourceCatalogColumn.tableId,
+                targetNamespaceId,
+                sourceCatalogColumn.databaseId,
+                sourceCatalogColumn.position,
+                sourceCatalogColumn.type,
+                sourceCatalogColumn.collectionsType,
+                sourceCatalogColumn.length,
+                sourceCatalogColumn.scale,
+                sourceCatalogColumn.dimension,
+                sourceCatalogColumn.cardinality,
+                sourceCatalogColumn.nullable,
+                sourceCatalogColumn.collation,
+                sourceCatalogColumn.defaultValue );
+        return targetCatalogColumn;
+    }
+
+
+    private CatalogTable transferCatalogTable( CatalogTable sourceTable, long targetNamespaceId ) {
+        return new CatalogTable(
+                sourceTable.id,
+                sourceTable.name,
+                sourceTable.fieldIds,
+                targetNamespaceId,
+                sourceTable.databaseId,
+                sourceTable.ownerId,
+                sourceTable.entityType,
+                sourceTable.primaryKey,
+                sourceTable.dataPlacements,
+                sourceTable.modifiable,
+                sourceTable.partitionProperty,
+                sourceTable.connectedViews );
+    }
+
+
+    private CatalogCollection transferCatalogCollection( CatalogCollection sourceCollection, long targetNamespaceId ) {
+        return new CatalogCollection(
+                sourceCollection.databaseId,
+                targetNamespaceId,
+                sourceCollection.id,
+                sourceCollection.name,
+                sourceCollection.placements,
+                sourceCollection.entityType,
+                sourceCollection.physicalName );
     }
 
 

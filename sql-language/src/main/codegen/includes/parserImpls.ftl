@@ -43,11 +43,24 @@ SqlAlterSchema SqlAlterSchema(Span s) :
     final SqlIdentifier schema;
     final SqlIdentifier name;
     final SqlIdentifier owner;
+    final SqlNodeList columnList;
 }
 {
     <SCHEMA>
     schema = CompoundIdentifier()
     (
+        <TRANSFER>
+        name = CompoundIdentifier()
+        (
+            <SET> <PRIMARY> <KEYS>
+            columnList = ParenthesizedSimpleIdentifierList()
+        |
+            { columnList = null; }
+        )
+        {
+            return new SqlAlterSchemaTransferTable(s.end(this), name, schema, columnList);
+        }
+    |
         <RENAME> <TO>
         name = CompoundIdentifier()
         {
@@ -200,6 +213,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier physicalName;
     final SqlIdentifier partitionType;
     final SqlIdentifier partitionColumn;
+    final SqlNode joinString;
     List<Integer> partitionList = new ArrayList<Integer>();
     int partitionIndex = 0;
     int numPartitionGroups = 0;
@@ -655,6 +669,32 @@ SqlAlterTable SqlAlterTable(Span s) :
         {
             return new SqlAlterTableMergePartitions(s.end(this), table);
         }
+    |
+        <MERGE> <COLUMNS>
+            columnList = ParenthesizedSimpleIdentifierList()
+        <INTO>
+            name = SimpleIdentifier()
+        <WITH>
+            joinString = Literal()
+            type = DataType()
+            (
+                <NULL> { nullable = true; }
+            |
+                <NOT> <NULL> { nullable = false; }
+            |
+                { nullable = true; }
+            )
+            (
+                <DEFAULT_>
+                defaultValue = Literal()
+            |
+                defaultValue = ArrayConstructor()
+            |
+                { defaultValue = null; }
+            )
+            {
+                return new SqlAlterTableMergeColumns(s.end(this), table, columnList, name, joinString, type, nullable, defaultValue);
+            }
     )
 }
 

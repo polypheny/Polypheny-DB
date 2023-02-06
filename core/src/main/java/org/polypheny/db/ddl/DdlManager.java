@@ -194,6 +194,20 @@ public abstract class DdlManager {
     public abstract void addForeignKey( CatalogTable catalogTable, CatalogTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException;
 
     /**
+     * Merge multiple columns into one new column
+     *
+     * @param catalogTable the table
+     * @param sourceColumnNames name of the columns to be merged
+     * @param newColumnName name of the new column to be added
+     * @param joinString the string to place between the values
+     * @param type the SQL data type specification of the merged column
+     * @param nullable if the merged column should be nullable
+     * @param defaultValue the new default value of the merged column
+     * @param statement the initial query statement
+     */
+    public abstract void mergeColumns( CatalogTable catalogTable, List<String> sourceColumnNames, String newColumnName, String joinString, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws UnknownColumnException, ColumnAlreadyExistsException, ColumnNotExistsException;
+
+    /**
      * Adds an index to a table
      *
      * @param catalogTable the table to which an index should be added
@@ -450,6 +464,17 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void createTable( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+
+    /**
+     * Transfer a table between two namespaces.
+     * Currently, the transfer works between namespaces of the same model and between relational and document-based and vice versa.
+     *
+     * @param table the table about to be transfered
+     * @param targetSchemaId the id of the target namespace
+     * @param statement the used statement
+     * @param statement the used statement
+     */
+    public abstract void transferTable( CatalogTable table, long targetSchemaId, Statement statement, Map<String, List<String>> primaryKeyColumnNames ) throws EntityAlreadyExistsException, DdlOnSourceException, UnknownTableException, UnknownColumnException, GenericCatalogException;
 
     /**
      * Create a new view

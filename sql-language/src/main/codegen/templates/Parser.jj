@@ -6311,6 +6311,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < JSON_QUERY: "JSON_QUERY" >
 |   < K: "K" >
 |   < KEY: "KEY" >
+|   < KEYS: "KEYS" >
 |   < KEY_MEMBER: "KEY_MEMBER" >
 |   < KEY_TYPE: "KEY_TYPE" >
 |   < DISTANCE: "DISTANCE" >
@@ -6350,6 +6351,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MEASURES: "MEASURES" >
 |   < MEMBER: "MEMBER" >
 |   < MERGE: "MERGE" >
+|   < COLUMNS: "COLUMNS" >
 |   < MESSAGE_LENGTH: "MESSAGE_LENGTH" >
 |   < MESSAGE_OCTET_LENGTH: "MESSAGE_OCTET_LENGTH" >
 |   < MESSAGE_TEXT: "MESSAGE_TEXT" >
@@ -6649,6 +6651,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < TRANSACTIONS_ACTIVE: "TRANSACTIONS_ACTIVE" >
 |   < TRANSACTIONS_COMMITTED: "TRANSACTIONS_COMMITTED" >
 |   < TRANSACTIONS_ROLLED_BACK: "TRANSACTIONS_ROLLED_BACK" >
+|   < TRANSFER: "TRANSFER" >
 |   < TRANSFORM: "TRANSFORM" >
 |   < TRANSFORMS: "TRANSFORMS" >
 |   < TRANSLATE: "TRANSLATE" >

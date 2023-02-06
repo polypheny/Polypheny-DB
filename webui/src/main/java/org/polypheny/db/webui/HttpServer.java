@@ -241,6 +241,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/dropColumn", crud::dropColumn );
 
+        webuiServer.post( "/mergeColumns", crud::mergeColumns );
+
         webuiServer.post( "/getTables", crud::getTables );
 
         webuiServer.post( "/renameTable", crud::renameTable );
@@ -248,6 +250,8 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/dropTruncateTable", crud::dropTruncateTable );
 
         webuiServer.post( "/createTable", crud::createTable );
+
+        webuiServer.post( "/transferTable", crud::transferTable);
 
         webuiServer.post( "/createCollection", crud.languageCrud::createCollection );
 

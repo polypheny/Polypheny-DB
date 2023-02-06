@@ -489,6 +489,15 @@ public abstract class Catalog {
      */
     public abstract long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
 
+    /**
+     * Relocate a table from one namespace to another if the model of both namespaces is the same.
+     *
+     * @param table The name of the table to add
+     * @param targetNamespaceId The id of the schema
+     * @return The id of the table (the ID of the target table remains the same as that of the source table)
+     */
+    public abstract long relocateTable( CatalogTable table, long targetNamespaceId );
+
 
     /**
      * Adds a view to a specified schema.
