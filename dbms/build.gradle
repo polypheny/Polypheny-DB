@@ -107,8 +107,7 @@ licensee {
     allowUrl('http://www.opensource.org/licenses/bsd-license.php') // BSD 2-Clause
     allowUrl('http://www.eclipse.org/org/documents/edl-v10.php') // EDL 1.0
     allowUrl('http://www.opensource.org/licenses/Apache-2.0') // Apache 2.0
-    allowUrl('http://www.jcabi.com/LICENSE.txt') // Own licensee but conforms
-    //allowUrl('https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html') // LGPL Lesser GNU license allows to combine with proprietary software(not free)
+    allowUrl('http://www.jcabi.com/LICENSE.txt') // Own license but conforms
 
     allowDependency('com.j256.simplemagic', 'simplemagic', '1.16') { because 'ISC license' }
     allowDependency('com.adobe.xmp', 'xmpcore', '6.0.6') { because 'BSD 3-Clause' }
