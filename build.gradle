@@ -174,10 +174,10 @@ idea {
     project {
         settings {
             runConfigurations {
-                "Polypheny"(Gradle) {
+                "Polypheny-DB"(Gradle) {
                     taskNames = ["assemblePlugins", "run"]
                 }
-                "Polypheny (reset)"(Gradle) {
+                "Polypheny-DB (reset)"(Gradle) {
                     taskNames = ["assemblePlugins", ":dbms:runReset"]
                 }
             }
